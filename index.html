@@ -457,13 +457,20 @@
     .steps { grid-template-columns: repeat(4, 1fr); }
     .gallery { grid-template-columns: repeat(3, 1fr); }
     .brand-grid { grid-template-columns: repeat(3, 1fr); }
-    .testimonial-grid { grid-template-columns: repeat(3, 1fr); }
-    .photo-testimonial-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 22px; }
+    .testimonial-grid { grid-template-columns: repeat(3, 1fr); gap: 26px; }
+    .photo-testimonial-grid { display: grid; grid-template-columns: 0.7fr 1.3fr; gap: 26px; }
 
     .card,
     .step,
     .brand-card,
-    .testimonial,
+    .testimonial {
+      padding: 36px;
+      font-size: 1.08rem;
+    }
+
+    .card,
+    .step,
+    .brand-card,
     .contact-shell,
     .gallery img,
     .callout,
@@ -561,11 +568,13 @@
       object-fit: cover;
       object-position: center center;
       background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,240,246,0.9));
-      padding: 0;
+      padding: 12px; /* more zoomed-out framed look */
       border-radius: 28px 18px 26px 20px;
       cursor: pointer;
       overflow: hidden;
-      transform: none;
+      transform: scale(0.9);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+      filter: saturate(1.03) contrast(1.02);
       transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
       filter: saturate(1.03) contrast(1.02);
     }
@@ -668,11 +677,12 @@
     }
 
     .customer-photo-card img {
-      width: 100%;
+      width: 70%;
+      margin: 0 auto 14px;
+      display: block;
       aspect-ratio: 4 / 5;
       object-fit: cover;
       border-radius: 22px;
-      margin-bottom: 14px;
     }
 
     .quote-mark {
