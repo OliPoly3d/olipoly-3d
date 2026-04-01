@@ -457,7 +457,7 @@
     .steps { grid-template-columns: repeat(4, 1fr); }
     .gallery { grid-template-columns: repeat(3, 1fr); }
     .brand-grid { grid-template-columns: repeat(3, 1fr); }
-    .testimonial-grid { grid-template-columns: repeat(3, 1fr); gap: 26px; }
+    .testimonial-grid { grid-template-columns: 1fr; gap: 0; }
     .photo-testimonial-grid { display: grid; grid-template-columns: 0.7fr 1.3fr; gap: 26px; }
 
     .card,
@@ -677,11 +677,11 @@
     }
 
     .customer-photo-card img {
-      width: 70%;
+      width: 100%;
       margin: 0 auto 14px;
       display: block;
-      aspect-ratio: 4 / 5;
-      object-fit: cover;
+      aspect-ratio: auto;
+      object-fit: contain;
       border-radius: 22px;
     }
 
@@ -693,6 +693,22 @@
       opacity: 0.8;
       display: block;
       margin-bottom: 8px;
+    }
+
+    .testimonial-stars {
+      display: inline-flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      color: var(--brand-accent);
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+    }
+
+    .testimonial-separator {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(236,72,153,0.18), rgba(167,139,250,0.18), rgba(236,72,153,0));
+      margin: 18px 0;
+      border: 0;
     }
 
     .testimonial-name {
@@ -1010,19 +1026,24 @@
 
           <div class="testimonial-grid">
             <article class="testimonial">
+              <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
               <span class="quote-mark">“</span>
               <p>The final piece turned out even better than I imagined, and the process was simple from start to finish.</p>
-              <span class="testimonial-name">Customer testimonial</span>
+              <span class="testimonial-name">Alyssia B.</span>
             </article>
+            <div class="testimonial-separator"></div>
             <article class="testimonial">
+              <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
               <span class="quote-mark">“</span>
               <p>Great communication, thoughtful design help, and a finished print that looked polished and professional.</p>
-              <span class="testimonial-name">Customer testimonial</span>
+              <span class="testimonial-name">Dana M.</span>
             </article>
+            <div class="testimonial-separator"></div>
             <article class="testimonial">
+              <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
               <span class="quote-mark">“</span>
               <p>I only had a rough idea, but OliPoly 3D helped turn it into something real and exactly what I needed.</p>
-              <span class="testimonial-name">Customer testimonial</span>
+              <span class="testimonial-name">Tom L.</span>
             </article>
           </div>
         </div>
