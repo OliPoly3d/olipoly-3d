@@ -810,7 +810,7 @@
     }
 
     .gallery img:nth-child(1) {
-      object-position: center 42%;
+      object-position: center 82%;
       border-radius: 30px 16px 24px 20px;
     }
 
@@ -820,7 +820,7 @@
     }
 
     .gallery img:nth-child(3) {
-      object-position: center 48%;
+      object-position: center 84%;
       border-radius: 26px 20px 30px 16px;
     }
 
@@ -1795,7 +1795,12 @@
       (formspree.q = formspree.q || []).push(arguments);
     };
     formspree('initForm', { formElement: '#contact-form', formId: 'xojplkjw' });
-  </script>
+  // Ensure page loads at top on refresh
+    window.addEventListener('load', function () {
+      window.scrollTo(0, 0);
+    });
+
+    </script>
   <script src="https://unpkg.com/@formspree/ajax@1" defer></script>
 </body>
 </html>
