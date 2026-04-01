@@ -26,7 +26,7 @@
 
   <style>
     :root {
-      --bg: #fff7fb;
+      --bg: #f2eaf3;
       --bg-soft: #ffffff;
       --panel: #ffffff;
       --panel-2: #fff0f6;
@@ -51,9 +51,9 @@
       margin: 0;
       font-family: 'Inter', sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(236,72,153,0.12), transparent 28%),
-        radial-gradient(circle at top right, rgba(167,139,250,0.10), transparent 24%),
-        linear-gradient(180deg, #f7fbff 0%, var(--bg) 100%);
+        radial-gradient(circle at top left, rgba(236,72,153,0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(167,139,250,0.12), transparent 24%),
+        linear-gradient(180deg, #eef2f7 0%, var(--bg) 100%);
       color: var(--text);
       line-height: 1.6;
     }
@@ -154,14 +154,16 @@
 
     nav {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
-      gap: 18px;
+      justify-content: flex-end;
+      gap: 14px;
+      white-space: nowrap;
     }
 
     nav a {
       color: var(--muted);
-      font-size: 0.96rem;
+      font-size: 0.92rem;
       font-weight: 500;
       transition: color 0.2s ease;
     }
@@ -235,6 +237,69 @@
       font-size: clamp(2.8rem, 5vw, 4.8rem);
       line-height: 1.05;
       letter-spacing: -0.03em;
+      animation: heroFadeUp 0.9s ease-out both;
+    }
+
+    @keyframes heroFadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes heroSoftGlow {
+      0%, 100% {
+        text-shadow: 0 0 0 rgba(236,72,153,0);
+      }
+      50% {
+        text-shadow: 0 0 18px rgba(236,72,153,0.14);
+      }
+    }
+
+    .hero h1 .accent {
+      color: var(--brand-primary);
+      text-shadow: 0 0 12px rgba(236,72,153,0.12);
+      animation: heroSoftGlow 4s ease-in-out infinite;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 640px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      animation: heroFadeUp 0.9s ease-out 0.12s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+      animation: heroFadeUp 0.9s ease-out 0.22s both;
+    }
+
+    .trust-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      animation: heroFadeUp 0.9s ease-out 0.32s both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero h1,
+      .hero p,
+      .hero-actions,
+      .trust-row,
+      .hero h1 .accent {
+        animation: none;
+      }
     }
 
     .hero h1 .accent {
@@ -306,20 +371,19 @@
     .stat,
     .mini-card,
     .color-chip {
-      background: rgba(255,255,255,0.8);
-      border: 1px solid rgba(0,0,0,0.06);
-      border-radius: var(--radius-sm);
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,244,248,0.88));
+      border: 1px solid rgba(236,72,153,0.10);
+      border-radius: 20px;
+      box-shadow: 0 10px 24px rgba(236,72,153,0.06);
     }
 
     .stat {
-      padding: 22px;
+      padding: 24px;
       position: relative;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(167,139,250,0.08));
     }
 
     .stat::before {
@@ -359,11 +423,7 @@
     }
 
     .mini-card {
-      padding: 20px 22px;
-      border-radius: 20px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,240,246,0.72));
-      border: 1px solid rgba(236,72,153,0.10);
-      box-shadow: 0 10px 24px rgba(236,72,153,0.06);
+      padding: 24px;
       position: relative;
       overflow: hidden;
     }
@@ -470,6 +530,132 @@
       max-height: 120px;
       margin-top: 8px;
     }
+
+    .event-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .event-item {
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,240,246,0.78));
+      border: 1px solid rgba(236,72,153,0.10);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .event-item.next-event {
+      border-color: rgba(236,72,153,0.28);
+      box-shadow: 0 16px 34px rgba(236,72,153,0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,240,246,0.92));
+    }
+
+    
+
+    .event-summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      min-height: 72px;
+    }
+
+    .event-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .event-title-wrap {
+      display: grid;
+      gap: 4px;
+    }
+
+    .event-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--brand-primary);
+      font-weight: 600;
+    }
+
+    .event-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.35rem;
+      color: var(--text);
+      line-height: 1.1;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .event-item.next-event .event-name::after {
+      content: "Next";
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: white;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      box-shadow: 0 6px 14px rgba(236,72,153,0.18);
+      transform: translateY(-1px);
+    }
+
+    .event-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(236,72,153,0.14), rgba(167,139,250,0.14));
+      color: var(--brand-primary);
+      font-size: 1.1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .event-item[open] .event-toggle {
+      transform: rotate(45deg);
+    }
+
+    .event-body {
+      padding: 0 20px 20px;
+      color: var(--muted);
+      font-size: 0.97rem;
+    }
+
+    .event-body span {
+      overflow-wrap: anywhere;
+    }
+
+    .event-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 20px;
+      margin-top: 10px;
+    }
+
+    .event-meta strong {
+      display: block;
+      font-size: 0.84rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .event-note {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
     .steps { grid-template-columns: repeat(4, 1fr); }
     .gallery { grid-template-columns: repeat(3, 1fr); }
     .brand-grid { grid-template-columns: repeat(3, 1fr); }
@@ -479,20 +665,23 @@
     .card,
     .step,
     .brand-card,
-    .testimonial {
-      padding: 36px;
-      font-size: 1.08rem;
+    .testimonial,
+    .contact-shell,
+    .customer-photo-card,
+    .pricing-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,244,248,0.88));
+      border: 1px solid rgba(236,72,153,0.10);
+      border-radius: 20px;
+      box-shadow: 0 10px 24px rgba(236,72,153,0.06);
+      padding: 24px;
     }
 
-    .card,
-    .step,
-    .brand-card,
-    .contact-shell,
     .gallery img,
-    .callout,
-    .pricing-card,
-    .customer-photo-card {
-      padding: 18px;
+    .callout {
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,244,248,0.88));
+      border: 1px solid rgba(236,72,153,0.10);
+      border-radius: 20px;
+      box-shadow: 0 10px 24px rgba(236,72,153,0.06);
     }
 
     .customer-mini-gallery {
@@ -502,29 +691,30 @@
       margin-bottom: 14px;
     }
 
-    .pricing-card,
-    .customer-photo-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.025));
-      border: 1px solid rgba(0,0,0,0.06);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
+    
 
     .card,
     .step,
     .brand-card,
     .testimonial,
-    .callout {
-      padding: 24px;
+    .contact-shell,
+    .customer-photo-card,
+    .pricing-card,
+    .mini-card,
+    .stat {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .card:hover,
     .step:hover,
     .brand-card:hover,
-    .testimonial:hover {
+    .testimonial:hover,
+    .contact-shell:hover,
+    .customer-photo-card:hover,
+    .mini-card:hover,
+    .stat:hover {
       transform: translateY(-3px);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 18px 34px rgba(0,0,0,0.3);
+      box-shadow: 0 18px 34px rgba(236,72,153,0.12);
     }
 
     .gallery img:hover {
@@ -673,9 +863,7 @@
       gap: 20px;
     }
 
-    .pricing-card {
-      padding: 24px;
-    }
+    
 
     .pricing-card .price {
       display: block;
@@ -693,7 +881,7 @@
     }
 
     .customer-photo-card {
-      padding: 18px;
+      padding: 24px;
     }
 
     .customer-photo-card img {
@@ -746,9 +934,7 @@
       align-items: start;
     }
 
-    .contact-shell {
-      padding: 24px;
-    }
+    
 
     form {
       display: flex;
@@ -848,6 +1034,9 @@
     }
 
     @media (max-width: 680px) {
+      .site-header {
+        position: static;
+      }
       .nav-wrap {
         flex-direction: column;
         align-items: flex-start;
@@ -874,17 +1063,21 @@
       }
 
       nav {
-        gap: 8px 10px;
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
         width: 100%;
       }
 
       nav a {
-        padding: 8px 10px;
+        padding: 8px 6px;
         border-radius: 999px;
         background: rgba(255,255,255,0.7);
         border: 1px solid rgba(0,0,0,0.05);
-        font-size: 0.9rem;
-        line-height: 1.2;
+        font-size: 0.78rem;
+        line-height: 1.15;
+        text-align: center;
+        white-space: nowrap;
       }
 
       nav a:hover {
@@ -898,8 +1091,10 @@
       .testimonial-grid,
       .photo-testimonial-grid,
       .pricing-grid,
-      .mini-grid {
+      .mini-grid,
+      .event-meta {
         grid-template-columns: 1fr;
+        gap: 10px;
       }
 
       .hero {
@@ -945,6 +1140,8 @@
         border-radius: 22px;
       }
 
+      .stat,
+      .mini-card,
       .stat,
       .mini-card,
       .card,
@@ -1032,6 +1229,48 @@
       select {
         padding: 13px 14px;
       }
+
+      .event-summary {
+        padding: 14px;
+        align-items: flex-start;
+        gap: 12px;
+        min-height: auto;
+      }
+
+      .event-name {
+        font-size: 1.08rem;
+        line-height: 1.15;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .event-date {
+        font-size: 0.84rem;
+      }
+
+      .event-toggle {
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+      }
+
+      .event-body {
+        padding: 0 14px 14px;
+        font-size: 0.94rem;
+      }
+
+      .event-item {
+        border-radius: 16px;
+      }
+
+      .event-note {
+        margin-top: 12px;
+        padding-top: 12px;
+      }
+
+      .event-meta {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -1063,6 +1302,7 @@
         <a href="#services">Services</a>
         <a href="#how-it-works">How It Works</a>
         <a href="#gallery">Gallery</a>
+        <a href="#events">Events</a>
         <a href="#order">Order</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -1073,7 +1313,6 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <div class="eyebrow">Designed for everyone — from makers and small businesses to gifts and prototypes</div>
           <h1>Custom 3D printing that feels <span class="accent">creative</span>, polished, and easy to order.</h1>
           <p>OliPoly 3D helps turn ideas into real parts, prototypes, and custom creations with thoughtful design support, clean communication, and a maker-first approach.</p>
           <div class="hero-actions">
@@ -1116,7 +1355,7 @@
           <div>
             <h2>What OliPoly 3D offers</h2>
           </div>
-          <p>Turning your ideas into real, functional, and creative 3D printed pieces — made to fit exactly what you need.</p>
+          <p>Custom, functional, and creative 3D prints—built for your needs.</p>
         </div>
 
         <div class="cards">
@@ -1144,7 +1383,7 @@
           <div>
             <h2>How it works</h2>
           </div>
-          <p>A simple, guided process that makes it easy to turn your idea into a finished piece — even if you’re not sure exactly what you need yet.</p>
+          <p>A simple process to turn your idea into a finished piece.</p>
         </div>
 
         <div class="steps">
@@ -1232,6 +1471,94 @@
               <span class="testimonial-name">Tom L.</span>
             </article>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="events">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Upcoming events</h2>
+          </div>
+          <p>Tap each event for details.</p>
+        </div>
+
+        <div class="event-list">
+          <details class="event-item" data-event-date="2026-04-25T13:00:00">
+            <summary class="event-summary">
+              <div class="event-title-wrap">
+                <span class="event-date">April 25, 2026</span>
+                <span class="event-name">Bloomfield Craft Show & Farmers Market</span>
+              </div>
+              <span class="event-toggle">+</span>
+            </summary>
+            <div class="event-body">
+              <div class="event-meta">
+                <div>
+                  <strong>Address</strong>
+                  <span>8303 North Park Avenue Extension, North Bloomfield, OH 44450</span>
+                </div>
+                <div>
+                  <strong>Time</strong>
+                  <span>1:00 PM – 5:00 PM</span>
+                </div>
+                
+                
+              </div>
+              <p class="event-note">Stop by to shop customer favorites, see new seasonal prints, and ask questions in person about custom orders.</p>
+            </div>
+          </details>
+
+          <details class="event-item" data-event-date="2026-05-02T09:00:00">
+            <summary class="event-summary">
+              <div class="event-title-wrap">
+                <span class="event-date">May 2, 2026</span>
+                <span class="event-name">Imagination Station Park Grand Opening</span>
+              </div>
+              <span class="event-toggle">+</span>
+            </summary>
+            <div class="event-body">
+              <div class="event-meta">
+                <div>
+                  <strong>Address</strong>
+                  <span>3372 Warren Meadville Road, Cortland, OH 44410</span>
+                </div>
+                <div>
+                  <strong>Time</strong>
+                  <span>10:00 AM – 4:00 PM</span>
+                </div>
+                
+                
+              </div>
+              <p class="event-note">A great chance to browse gifts, practical prints, and summer-ready products. Custom request forms will also be available at the booth.</p>
+            </div>
+                    </details>
+
+          <details class="event-item" data-event-date="2026-05-16T09:00:00">
+            <summary class="event-summary">
+              <div class="event-title-wrap">
+                <span class="event-date">May 16, 2026</span>
+                <span class="event-name">Trumbull County Fairgrounds Flea Market & Craft Show</span>
+              </div>
+              <span class="event-toggle">+</span>
+            </summary>
+            <div class="event-body">
+              <div class="event-meta">
+                <div>
+                  <strong>Address</strong>
+                  <span>899 Everett Hull Rd, Bazetta, OH 44410</span>
+                </div>
+                <div>
+                  <strong>Time</strong>
+                  <span>9:00 AM – 3:00 PM</span>
+                </div>
+                
+                
+              </div>
+              <p class="event-note">Explore a wide range of vendors, flea market finds, and handmade goods. Stop by to see new prints and talk custom ideas in person.</p>
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -1385,6 +1712,39 @@
 
         tryNext();
       });
+
+      const eventList = document.querySelector('.event-list');
+      if (eventList) {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const events = Array.from(eventList.querySelectorAll('.event-item'));
+
+        const upcomingEvents = events
+          .map(event => ({
+            element: event,
+            date: new Date(event.getAttribute('data-event-date'))
+          }))
+          .filter(item => !Number.isNaN(item.date.getTime()))
+          .filter(item => item.date >= todayStart)
+          .sort((a, b) => a.date - b.date);
+
+        events.forEach(event => {
+          event.classList.remove('next-event');
+          const date = new Date(event.getAttribute('data-event-date'));
+          if (Number.isNaN(date.getTime()) || date < todayStart) {
+            event.style.display = 'none';
+          }
+        });
+
+        upcomingEvents.forEach(item => {
+          item.element.style.display = '';
+          eventList.appendChild(item.element);
+        });
+
+        if (upcomingEvents.length > 0) {
+          upcomingEvents[0].element.classList.add('next-event');
+        }
+      }
     });
     function openModal(src) {
       document.getElementById('modal').style.display = 'flex';
