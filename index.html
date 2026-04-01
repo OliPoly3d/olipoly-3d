@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D</title>
+  <meta name="description" content="OliPoly 3D creates custom 3D prints, prototypes, and creative builds with a polished maker aesthetic." />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #fff7fb;
+      --bg-soft: #ffffff;
+      --panel: #ffffff;
+      --panel-2: #fff0f6;
+      --text: #1f1a24;
+      --muted: #7a6b80;
+      --line: rgba(0,0,0,0.06);
+      --brand-primary: #ec4899; /* soft pink */
+      --brand-secondary: #a78bfa; /* lavender */
+      --brand-accent: #fb7185; /* rose coral */
+      --success: #16a34a;
+      --shadow: 0 12px 30px rgba(0,0,0,0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --max: 1140px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(236,72,153,0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(167,139,250,0.10), transparent 24%),
+        linear-gradient(180deg, #f7fbff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.85);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      display: inline-block;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    /* Static version for print/export */
+    .logo-static {
+      animation: none !important;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+      100% { transform: translateY(0px); }
+    }
+
+    /* Disable animation for users who prefer reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .logo {
+        animation: none;
+      }
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+
+    .brand-name span {
+      background: linear-gradient(270deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 6s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .brand-tag {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 18px;
+    }
+
+    nav a {
+      color: var(--muted);
+      font-size: 0.96rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    nav a:hover { color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      color: white;
+      box-shadow: 0 10px 24px rgba(236,72,153,0.18);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.02);
+      border-color: rgba(255,255,255,0.12);
+      color: var(--text);
+    }
+
+    .hero {
+      padding: 68px 0 42px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(0,0,0,0.06);
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brand-accent);
+      box-shadow: 0 0 10px rgba(251,113,133,0.45);
+    }
+
+    .hero h1 {
+      margin: 0 0 16px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.8rem, 5vw, 4.8rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .hero h1 .accent {
+      color: var(--brand-primary);
+      text-shadow: 0 0 18px rgba(35,213,213,0.18);
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 640px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .trust-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .trust-row span::before {
+      content: "✓";
+      color: var(--success);
+      margin-right: 8px;
+      font-weight: 700;
+    }
+
+    .hero-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.75));
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -50px auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(236,72,153,0.22), transparent 65%);
+    }
+
+    .hero-visual {
+      display: grid;
+      gap: 16px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .stat,
+    .mini-card,
+    .color-chip {
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: var(--radius-sm);
+    }
+
+    .stat {
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(167,139,250,0.08));
+    }
+
+    .stat::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(167,139,250,0.12));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .stat:hover::before {
+      opacity: 1;
+    }
+
+    .stat strong {
+      font-size: 1.4rem;
+      font-family: 'Cormorant Garamond', serif;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .stat span {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--muted);
+      max-width: 240px;
+    }
+
+    .stat span,
+    .mini-card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .mini-card {
+      padding: 20px 22px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,240,246,0.72));
+      border: 1px solid rgba(236,72,153,0.10);
+      box-shadow: 0 10px 24px rgba(236,72,153,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mini-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      opacity: 0.9;
+    }
+
+    .mini-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+      font-family: 'Cormorant Garamond', serif;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+
+    .section {
+      padding: 34px 0 18px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 680px;
+    }
+
+    .cards,
+    .steps,
+    .gallery,
+    .brand-grid,
+    .testimonial-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .cards { grid-template-columns: repeat(3, 1fr); }
+
+    /* FAQ accordion */
+    .faq-item {
+      border-bottom: 1px solid var(--line);
+      padding: 14px 0;
+      cursor: pointer;
+    }
+
+    .faq-question {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+    }
+
+    .faq-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      color: white;
+      font-size: 0.9rem;
+      margin-right: 10px;
+    }
+
+    .faq-q-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      color: var(--muted);
+      font-size: 0.95rem;
+      padding-left: 38px;
+    }
+
+    .faq-item.active .faq-answer {
+      max-height: 120px;
+      margin-top: 8px;
+    }
+    .steps { grid-template-columns: repeat(4, 1fr); }
+    .gallery { grid-template-columns: repeat(3, 1fr); }
+    .brand-grid { grid-template-columns: repeat(3, 1fr); }
+    .testimonial-grid { grid-template-columns: repeat(3, 1fr); }
+    .photo-testimonial-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 22px; }
+
+    .card,
+    .step,
+    .brand-card,
+    .testimonial,
+    .contact-shell,
+    .gallery img,
+    .callout,
+    .pricing-card,
+    .customer-photo-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.025));
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .pricing-card,
+    .customer-photo-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.025));
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .card,
+    .step,
+    .brand-card,
+    .testimonial,
+    .callout {
+      padding: 24px;
+    }
+
+    .card:hover,
+    .step:hover,
+    .brand-card:hover,
+    .testimonial:hover {
+      transform: translateY(-3px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 18px 34px rgba(0,0,0,0.3);
+    }
+
+    .gallery img:hover {
+      transform: translateY(-4px) rotate(0deg) scale(1.02);
+      box-shadow: 0 20px 38px rgba(236,72,153,0.16);
+      filter: saturate(1.08) contrast(1.03);
+    }
+
+    .icon-dot {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-weight: 700;
+      font-family: 'Cormorant Garamond', serif;
+      color: white;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    }
+
+    .card h3,
+    .step h3,
+    .brand-card h3,
+    .testimonial h3,
+    .contact-shell h3 {
+      margin: 0 0 10px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+    }
+
+    .card p,
+    .step p,
+    .brand-card p,
+    .testimonial p,
+    .callout p,
+    .contact-shell p,
+    .pricing-card p,
+    .customer-photo-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+      background: rgba(167,139,250,0.2);
+      color: #d8d0ff;
+      font-weight: 700;
+    }
+
+    .gallery img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      object-position: center center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,240,246,0.9));
+      padding: 0;
+      border-radius: 28px 18px 26px 20px;
+      cursor: pointer;
+      overflow: hidden;
+      transform: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+      filter: saturate(1.03) contrast(1.02);
+    }
+
+    .gallery img:nth-child(1) {
+      object-position: center 42%;
+      border-radius: 30px 16px 24px 20px;
+    }
+
+    .gallery img:nth-child(2) {
+      object-position: center 35%;
+      border-radius: 18px 30px 20px 28px;
+    }
+
+    .gallery img:nth-child(3) {
+      object-position: center 48%;
+      border-radius: 26px 20px 30px 16px;
+    }
+
+    .brand-card small {
+      display: block;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .color-chip {
+      width: 68px;
+      height: 68px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .color-chip.primary { background: var(--brand-primary); }
+    .color-chip.secondary { background: var(--brand-secondary); }
+    .color-chip.accent { background: var(--brand-accent); }
+
+    .color-labels {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: center;
+      margin-top: 26px;
+    }
+
+    .callout h3 {
+      margin: 0 0 10px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.55rem;
+    }
+
+    .callout ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .pricing-card {
+      padding: 24px;
+    }
+
+    .pricing-card .price {
+      display: block;
+      margin: 10px 0 12px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      line-height: 1;
+      color: var(--brand-primary);
+    }
+
+    .pricing-card small {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+    }
+
+    .customer-photo-card {
+      padding: 18px;
+    }
+
+    .customer-photo-card img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      border-radius: 22px;
+      margin-bottom: 14px;
+    }
+
+    .quote-mark {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.6rem;
+      line-height: 0.8;
+      color: var(--brand-secondary);
+      opacity: 0.8;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .testimonial-name {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .contact-shell {
+      padding: 24px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 14px 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.06);
+      background: rgba(255,255,255,0.8);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.98rem;
+      outline: none;
+    }
+
+    input::placeholder,
+    textarea::placeholder { color: #8aa0b7; }
+
+    textarea { min-height: 130px; resize: vertical; }
+
+    .helper {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    [data-fs-success],
+    [data-fs-error],
+    [data-fs-error="name"],
+    [data-fs-error="email"],
+    [data-fs-error="message"] {
+      color: #ffd2c8;
+      font-size: 0.9rem;
+      min-height: 1em;
+    }
+
+    [data-fs-success] { color: #b8f0c8; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      z-index: 100;
+    }
+
+    .modal img {
+      max-width: min(960px, 92vw);
+      max-height: 88vh;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+    }
+
+    footer {
+      padding: 40px 0 60px;
+      color: var(--muted);
+    }
+
+    .footer-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .callout,
+      .contact-grid,
+      .cards,
+      .steps,
+      .gallery,
+      .brand-grid,
+      .testimonial-grid,
+      .photo-testimonial-grid,
+      .pricing-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .hero-grid,
+      .callout,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      nav { justify-content: flex-end; }
+    }
+
+    @media (max-width: 680px) {
+      .nav-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      nav { gap: 12px; }
+
+      .cards,
+      .steps,
+      .gallery,
+      .brand-grid,
+      .testimonial-grid,
+      .photo-testimonial-grid,
+      .pricing-grid,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero { padding-top: 42px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .section-head { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="8" width="52" height="48" rx="12" fill="rgba(255,255,255,0.95)" stroke="var(--line)" stroke-width="2"/>
+          <rect x="10" y="8" width="44" height="8" rx="4" fill="var(--brand-secondary)" opacity="0.6"/>
+          <rect x="12" y="18" width="40" height="30" rx="8" fill="rgba(167,139,250,0.12)" stroke="var(--brand-secondary)" stroke-width="1.5"/>
+          <rect x="16" y="22" width="32" height="2" rx="1" fill="var(--muted)" opacity="0.5"/>
+          <rect x="26" y="22" width="12" height="10" rx="3" fill="var(--brand-primary)">
+            <animate attributeName="x" values="20;36;20" dur="2.4s" begin="0s" repeatCount="indefinite" />
+          </rect>
+          <circle cx="32" cy="36" r="4" fill="var(--brand-accent)">
+            <animate attributeName="r" values="4;5;4" dur="2.4s" begin="0s" repeatCount="indefinite" />
+          </circle>
+          <rect x="18" y="40" width="28" height="4" rx="2" fill="var(--text)" opacity="0.35"/>
+        </svg>
+        <div class="brand-text">
+          <div class="brand-name">
+            Oli<span>Poly</span> 3D
+          </div>
+          <div class="brand-tag">Creative 3D printing • Custom builds • Prototypes</div>
+        </div>
+      </div>
+      <nav>
+        <a href="#services">Services</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#order">Order</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Designed for everyone — from makers and small businesses to gifts and prototypes</div>
+          <h1>Custom 3D printing that feels <span class="accent">creative</span>, polished, and easy to order.</h1>
+          <p>OliPoly 3D helps turn ideas into real parts, prototypes, and custom creations with thoughtful design support, clean communication, and a maker-first approach.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#order">Start Your Project</a>
+            <a class="btn btn-secondary" href="#gallery">View Recent Work</a>
+          </div>
+          <div class="trust-row">
+            <span>Custom one-off prints</span>
+            <span>Prototype-friendly process</span>
+            <span>Creative collaboration</span>
+          </div>
+        </div>
+
+        <div class="hero-card hero-visual">
+          <div class="mini-grid" style="align-items: stretch;">
+            <div class="stat">
+              <strong>Custom tailored prints</strong>
+              <span>Designed to match your exact vision — from one-of-a-kind pieces to functional parts.</span>
+            </div>
+            <div class="stat">
+              <strong>Fast, simple inquiry</strong>
+              <span>Tell us your idea in minutes and get clear next steps without the back-and-forth.</span>
+            </div>
+          </div>
+          <div class="mini-card">
+            <h3>Built for real-world requests</h3>
+            <p>Whether you’re ordering a gift, a functional part, or an early prototype, the process is shaped around what you actually need.</p>
+          </div>
+          <div class="mini-card">
+            <h3>Not sure what to send?</h3>
+            <p>A simple description is enough to get started. If you have sketches, STL files, or inspiration photos, you can share them after you submit.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="services">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>What OliPoly 3D offers</h2>
+          </div>
+          <p>Turning your ideas into real, functional, and creative 3D printed pieces — made to fit exactly what you need.</p>
+        </div>
+
+        <div class="cards">
+          <article class="card">
+            <h3>Custom pieces</h3>
+            <p>One-of-a-kind prints for gifts, decor, and creative ideas — designed to match your vision.</p>
+          </article>
+
+          <article class="card">
+            <h3>Functional parts</h3>
+            <p>Practical prints for real-world use, including replacements, tools, and custom solutions.</p>
+          </article>
+
+          <article class="card">
+            <h3>Prototypes</h3>
+            <p>Early-stage models and concept prints to help test, refine, and bring ideas to life.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how-it-works">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>How it works</h2>
+          </div>
+          <p>A simple, guided process that makes it easy to turn your idea into a finished piece — even if you’re not sure exactly what you need yet.</p>
+        </div>
+
+        <div class="steps">
+          <article class="step">
+            <div class="step-number">1</div>
+            <h3>Submit your idea</h3>
+            <p>Start by telling us what you have in mind. Whether it’s a gift, idea, or functional part, a few details is all it takes to get started.</p>
+          </article>
+          <article class="step">
+            <div class="step-number">2</div>
+            <h3>Send references</h3>
+            <p>If you have files, sketches, or inspiration photos, you can send them over to help bring your idea into focus.</p>
+          </article>
+          <article class="step">
+            <div class="step-number">3</div>
+            <h3>Review options</h3>
+            <p>We’ll walk you through the best options for materials, design, and next steps so you feel confident moving forward.</p>
+          </article>
+          <article class="step">
+            <div class="step-number">4</div>
+            <h3>Bring it to life</h3>
+            <p>Once everything is set, we create your custom print and bring your idea to life.</p>
+          </article>
+        </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="gallery">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Recent work</h2>
+          </div>
+          
+        </div>
+
+        <div class="gallery">
+          <img class="smart-crop" data-base="images/print1" data-focus-y="42" alt="Custom 3D printed planter" onclick="openModal(this.src)">
+          <img class="smart-crop" data-base="images/print2" data-focus-y="35" alt="Prototype enclosure" onclick="openModal(this.src)">
+          <img class="smart-crop" data-base="images/print3" data-focus-y="48" alt="Custom name sign" onclick="openModal(this.src)">
+        </div>
+      </div>
+    </section>
+
+    
+
+    <section class="section" id="social-proof">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Customer favorites</h2>
+          </div>
+        </div>
+
+        <div class="photo-testimonial-grid">
+          <article class="customer-photo-card">
+            <img data-base="images/customer1" alt="Happy customer holding a finished custom 3D print" onclick="openModal(this.src)">
+            <h3>Real customer photos</h3>
+            <p>Add photos of finished prints in real settings, gift moments, display shelves, or customers holding their pieces.</p>
+          </article>
+
+          <div class="testimonial-grid">
+            <article class="testimonial">
+              <span class="quote-mark">“</span>
+              <p>The final piece turned out even better than I imagined, and the process was simple from start to finish.</p>
+              <span class="testimonial-name">Customer testimonial</span>
+            </article>
+            <article class="testimonial">
+              <span class="quote-mark">“</span>
+              <p>Great communication, thoughtful design help, and a finished print that looked polished and professional.</p>
+              <span class="testimonial-name">Customer testimonial</span>
+            </article>
+            <article class="testimonial">
+              <span class="quote-mark">“</span>
+              <p>I only had a rough idea, but OliPoly 3D helped turn it into something real and exactly what I needed.</p>
+              <span class="testimonial-name">Customer testimonial</span>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Frequently asked questions</h2>
+          </div>
+        </div>
+
+        <div class="cards">
+          <article class="card">
+            <h3>Do I need a design file?</h3>
+            <p>No. A simple description is enough to get started. You can send sketches, references, or files later if you have them.</p>
+          </article>
+
+          <article class="card">
+            <h3>What materials do you offer?</h3>
+            <p>Common materials include PLA, PETG, and ABS. If you're not sure what you need, we’ll help you choose the best option.</p>
+          </article>
+
+          <article class="card">
+            <h3>How long does it take?</h3>
+            <p>Most projects are reviewed within 24 hours. Production time depends on size and complexity, but we’ll outline timing up front.</p>
+          </article>
+
+          <article class="card">
+            <h3>Can you help design my idea?</h3>
+            <p>Yes. If you don’t have a finished design, we can help refine your idea and guide you toward something that prints well.</p>
+          </article>
+
+          <article class="card">
+            <h3>What types of projects do you take?</h3>
+            <p>Everything from gifts and custom pieces to functional parts and prototypes. If you have an idea, it’s worth asking.</p>
+          </article>
+
+          <article class="card">
+            <h3>How do I get started?</h3>
+            <p>Just fill out the form below with a short description. We’ll follow up with next steps and options within 24 hours.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="order">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Start your custom print</h2>
+          </div>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-shell">
+            <h3>What to include</h3>
+            <p>Share a quick description of your idea, intended use, approximate size, and any timeline you have in mind.</p>
+            <p>If you have files, sketches, or reference images, you can send them after submitting to help clarify your request.</p>
+
+            <h3 style="margin-top:14px;">After you submit</h3>
+            <p>We review your request and follow up with next steps, material options, and any questions needed to move forward. We typically respond within 24 hours.</p>
+          </div>
+
+          <div class="contact-shell">
+            <form action="https://formspree.io/f/xojplkjw" method="POST">
+              <input type="text" name="name" placeholder="Your name" required>
+              <input type="email" name="email" placeholder="Your email" required>
+              <select name="material">
+                <option value="">Preferred material</option>
+                <option>PLA</option>
+                <option>PETG</option>
+                <option>ABS</option>
+                <option>Not sure yet</option>
+              </select>
+              <textarea name="details" placeholder="Tell us about your project"></textarea>
+              <p class="helper">We typically respond within 24 hours.</p>
+              <button class="btn btn-primary" type="submit">Submit Order Request</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>Have a question first?</h2>
+          </div>
+          
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-shell">
+            <h3>Get in touch</h3>
+            <p>If you are still figuring out your idea, reach out here. A short message is enough to start the conversation, and we’ll get back to you within 24 hours.</p>
+          </div>
+
+          <div class="contact-shell">
+            <div data-fs-success></div>
+            <div data-fs-error></div>
+            <form id="contact-form">
+              <input type="text" name="name" placeholder="Your name" data-fs-field required>
+              <span data-fs-error="name"></span>
+              <input type="email" name="email" placeholder="Your email" data-fs-field required>
+              <span data-fs-error="email"></span>
+              <textarea name="message" placeholder="How can OliPoly 3D help?" data-fs-field required></textarea>
+              <span data-fs-error="message"></span>
+              <button class="btn btn-primary" type="submit" data-fs-submit-btn>Send Message</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="modal" onclick="closeModal()">
+    <img id="modalImg" alt="Expanded gallery view">
+  </div>
+
+  <footer>
+    <div class="container footer-wrap">
+      <div>© 2026 OliPoly 3D</div>
+      <div>Creative maker branding • Custom prints • Prototypes</div>
+    </div>
+  </footer>
+
+  <script>
+    function openModal(src) {
+      document.getElementById('modal').style.display = 'flex';
+      document.getElementById('modalImg').src = src;
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    // Try multiple image formats automatically
+    const extensions = ['jpg','jpeg','png','webp','heic'];
+    document.querySelectorAll('.gallery img').forEach(img => {
+      const base = img.getAttribute('data-base');
+      const focusY = img.getAttribute('data-focus-y');
+      if (focusY) {
+        img.style.objectPosition = `center ${focusY}%`;
+      }
+      let i = 0;
+
+      function tryNext() {
+        if (i >= extensions.length) return;
+        const testSrc = `${base}.${extensions[i]}`;
+        const testImg = new Image();
+        testImg.onload = () => {
+          img.src = testSrc;
+          const ratio = testImg.naturalWidth / testImg.naturalHeight;
+          if (ratio > 1.2) {
+            img.style.aspectRatio = '5 / 4';
+          } else if (ratio < 0.85) {
+            img.style.aspectRatio = '4 / 5';
+          } else {
+            img.style.aspectRatio = '1 / 1.08';
+          }
+        };
+        testImg.onerror = () => { i++; tryNext(); };
+        testImg.src = testSrc;
+      }
+
+      tryNext();
+    });
+
+    window.formspree = window.formspree || function () {
+      (formspree.q = formspree.q || []).push(arguments);
+    };
+    formspree('initForm', { formElement: '#contact-form', formId: 'xojplkjw' });
+  </script>
+  <script src="https://unpkg.com/@formspree/ajax@1" defer></script>
+</body>
+</html>
