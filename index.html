@@ -10,6 +10,11 @@
   <meta property="og:title" content="OliPoly 3D" />
   <meta property="og:description" content="Custom 3D prints, prototypes, and creative builds." />
   <meta property="og:image" content="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.jpg" />
+  <meta property="og:image:secure_url" content="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://olipoly3d.github.io/olipoly-3d/" />
   <meta property="og:type" content="website" />
 
   <meta name="twitter:card" content="summary_large_image" />
@@ -487,10 +492,14 @@
     .callout,
     .pricing-card,
     .customer-photo-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.025));
-      border: 1px solid rgba(0,0,0,0.06);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .customer-mini-gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .pricing-card,
@@ -689,11 +698,12 @@
 
     .customer-photo-card img {
       width: 100%;
-      margin: 0 auto 14px;
+      margin: 0;
       display: block;
-      aspect-ratio: auto;
-      object-fit: contain;
+      aspect-ratio: 1 / 1.15;
+      object-fit: cover;
       border-radius: 22px;
+      cursor: pointer;
     }
 
     .quote-mark {
@@ -993,7 +1003,11 @@
       }
 
       .customer-photo-card img {
-        max-width: 82%;
+        max-width: 100%;
+      }
+
+      .customer-mini-gallery {
+        gap: 10px;
       }
 
       .testimonial-grid {
@@ -1189,7 +1203,10 @@
 
         <div class="photo-testimonial-grid">
           <article class="customer-photo-card">
-            <img src="images/print4.jpg" alt="Featured customer favorite 3D print" onclick="openModal(this.src)">
+            <div class="customer-mini-gallery">
+              <img data-base="images/print12" alt="Customer favorite 3D print photo 1" onclick="openModal(this.src)">
+              <img data-base="images/print13" alt="Customer favorite 3D print photo 2" onclick="openModal(this.src)">
+            </div>
             <h3>Real customer photos</h3>
           </article>
 
@@ -1197,7 +1214,7 @@
             <article class="testimonial">
               <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
               <span class="quote-mark">“</span>
-              <p>The final piece turned out even better than I imagined, and the process was simple from start to finish.</p>
+              <p>I sent OliPoly a few ideas for my upcoming beach trip, and <strong>he brought them to life perfectly</strong>.<br><br>My kids (and husband!) had an absolute blast with the 3D-printed brick maker for the sand and the Bogg bag table was a huge hit. The entire process was simple and smooth from start to finish—couldn't be happier with the experience.</p>
               <span class="testimonial-name">Alyssia B.</span>
             </article>
             <div class="testimonial-separator"></div>
@@ -1344,6 +1361,31 @@
   </footer>
 
   <script>
+    // Load images with multiple file type support (jpg, png, webp, heic, etc.)
+    document.addEventListener("DOMContentLoaded", function () {
+      const extensions = ['jpg','jpeg','png','webp','heic'];
+      document.querySelectorAll('[data-base]').forEach(img => {
+        const base = img.getAttribute('data-base');
+        let i = 0;
+
+        function tryNext() {
+          if (i >= extensions.length) return;
+          const testImg = new Image();
+          testImg.src = base + '.' + extensions[i];
+
+          testImg.onload = function () {
+            img.src = testImg.src;
+          };
+
+          testImg.onerror = function () {
+            i++;
+            tryNext();
+          };
+        }
+
+        tryNext();
+      });
+    });
     function openModal(src) {
       document.getElementById('modal').style.display = 'flex';
       document.getElementById('modalImg').src = src;
