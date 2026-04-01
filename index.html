@@ -974,9 +974,9 @@
         </div>
 
         <div class="gallery">
-          <img class="smart-crop" data-base="images/print1" data-focus-y="42" alt="Custom 3D printed planter" onclick="openModal(this.src)">
-          <img class="smart-crop" data-base="images/print2" data-focus-y="35" alt="Prototype enclosure" onclick="openModal(this.src)">
-          <img class="smart-crop" data-base="images/print3" data-focus-y="48" alt="Custom name sign" onclick="openModal(this.src)">
+          <img src="images/print1.jpg" alt="Custom 3D printed planter" onclick="openModal(this.src)">
+          <img src="images/print2.jpg" alt="Prototype enclosure" onclick="openModal(this.src)">
+          <img src="images/print3.jpg" alt="Custom name sign" onclick="openModal(this.src)">
         </div>
       </div>
     </section>
@@ -993,7 +993,7 @@
 
         <div class="photo-testimonial-grid">
           <article class="customer-photo-card">
-            <img data-base="images/customer1" alt="Happy customer holding a finished custom 3D print" onclick="openModal(this.src)">
+            <img src="images/print4.jpg" alt="Featured customer favorite 3D print" onclick="openModal(this.src)">
             <h3>Real customer photos</h3>
             <p>Add photos of finished prints in real settings, gift moments, display shelves, or customers holding their pieces.</p>
           </article>
@@ -1152,38 +1152,6 @@
     function closeModal() {
       document.getElementById('modal').style.display = 'none';
     }
-
-    // Try multiple image formats automatically
-    const extensions = ['jpg','jpeg','png','webp','heic'];
-    document.querySelectorAll('.gallery img').forEach(img => {
-      const base = img.getAttribute('data-base');
-      const focusY = img.getAttribute('data-focus-y');
-      if (focusY) {
-        img.style.objectPosition = `center ${focusY}%`;
-      }
-      let i = 0;
-
-      function tryNext() {
-        if (i >= extensions.length) return;
-        const testSrc = `${base}.${extensions[i]}`;
-        const testImg = new Image();
-        testImg.onload = () => {
-          img.src = testSrc;
-          const ratio = testImg.naturalWidth / testImg.naturalHeight;
-          if (ratio > 1.2) {
-            img.style.aspectRatio = '5 / 4';
-          } else if (ratio < 0.85) {
-            img.style.aspectRatio = '4 / 5';
-          } else {
-            img.style.aspectRatio = '1 / 1.08';
-          }
-        };
-        testImg.onerror = () => { i++; tryNext(); };
-        testImg.src = testSrc;
-      }
-
-      tryNext();
-    });
 
     window.formspree = window.formspree || function () {
       (formspree.q = formspree.q || []).push(arguments);
