@@ -50,12 +50,13 @@
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
+      font-size: 1.02rem;
       background:
         radial-gradient(circle at top left, rgba(236,72,153,0.14), transparent 28%),
         radial-gradient(circle at top right, rgba(167,139,250,0.12), transparent 24%),
         linear-gradient(180deg, #eef2f7 0%, var(--bg) 100%);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     a { color: inherit; text-decoration: none; }
@@ -100,6 +101,52 @@
       animation: none !important;
     }
 
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 0.95;
+      color: var(--text);
+      text-wrap: balance;
+    }
+
+    .brand-name span {
+      background: linear-gradient(270deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 14px rgba(236,72,153,0.16);
+      animation: brandGradientShift 6s ease-in-out infinite, brandGlowPulse 4.2s ease-in-out infinite;
+    }
+
+    .brand-tag {
+      font-size: 0.82rem;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+    }
+
+    @keyframes brandGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes brandGlowPulse {
+      0%, 100% {
+        filter: drop-shadow(0 0 0 rgba(236,72,153,0));
+      }
+      50% {
+        filter: drop-shadow(0 0 10px rgba(236,72,153,0.22));
+      }
+    }
+
     @keyframes float {
       0% { transform: translateY(0px); }
       50% { transform: translateY(-4px); }
@@ -114,9 +161,122 @@
       .trust-row,
       .hero h1 .accent,
       .hero-image,
-      .hero-image-wrap::before {
+      .hero-image-wrap::before,
+      .brand-name span,
+      .logo {
         animation: none;
       }
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 22px;
+      flex-wrap: nowrap;
+    }
+
+    nav a {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      position: relative;
+      padding: 6px 4px;
+      white-space: nowrap;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 0%;
+      height: 2px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      transition: width 0.25s ease;
+      border-radius: 2px;
+    }
+
+    nav a:hover {
+      color: var(--brand-primary);
+      transform: translateY(-1px);
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    nav a.cta {
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      color: white;
+      box-shadow: 0 10px 22px rgba(236,72,153,0.22);
+    }
+
+    nav a.cta:hover {
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(236,72,153,0.28);
+    }
+
+    nav a.cta::after {
+      display: none;
+    }
+
+    .hero-actions {
+      align-items: center;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.06);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      white-space: nowrap;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(0,0,0,0.10);
+      background: rgba(255,255,255,1);
+    }
+
+    a.cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      color: white;
+      box-shadow: 0 10px 22px rgba(236,72,153,0.22);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+    }
+
+    a.cta:hover {
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(236,72,153,0.28);
+    }
+
+    a.cta::after {
+      display: none;
     }
 
     .hero {
@@ -202,6 +362,14 @@
       color: var(--success);
       margin-right: 8px;
       font-weight: 700;
+    }
+
+    .hero-divider {
+      margin-top: 28px;
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(90deg, transparent, rgba(236,72,153,0.25), rgba(167,139,250,0.25), transparent);
+      opacity: 0.8;
     }
 
     .hero-card {
@@ -308,9 +476,9 @@
 
     .mini-card h3 {
       margin: 0 0 10px;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       font-family: 'Cormorant Garamond', serif;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.01em;
       color: var(--text);
     }
 
@@ -329,8 +497,9 @@
     .section-head h2 {
       margin: 0;
       font-family: 'Cormorant Garamond', serif;
-      font-size: 2rem;
-      line-height: 1.1;
+      font-size: clamp(2.2rem, 3vw, 2.6rem);
+      line-height: 1.08;
+      letter-spacing: -0.01em;
     }
 
     .section-head p {
@@ -627,7 +796,9 @@
     .contact-shell h3 {
       margin: 0 0 10px;
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.15rem;
+      font-size: 1.3rem;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
     }
 
     .card p,
@@ -640,6 +811,8 @@
     .customer-photo-card p {
       margin: 0;
       color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.6;
     }
 
     .step-number {
@@ -779,6 +952,27 @@
 
     .customer-photo-card {
       padding: 24px;
+    }
+
+    .customer-photo-card h3 {
+      margin: 0 0 10px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .testimonial {
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .testimonial-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
     }
 
     .customer-photo-card img {
@@ -936,8 +1130,7 @@
         grid-template-columns: 1fr;
       }
 
-      nav { justify-content: flex-end; }
-    }
+      }
 
     @media (max-width: 680px) {
       .site-header {
@@ -960,8 +1153,13 @@
       }
 
       .brand-name {
-        font-size: 1.25rem;
-        letter-spacing: 0.03em;
+        font-size: 1.45rem;
+        letter-spacing: 0.01em;
+        line-height: 0.95;
+      }
+
+      .brand-name span {
+        animation-duration: 7s, 4.6s;
       }
 
       .brand-tag {
@@ -1230,7 +1428,7 @@
         <a href="#how-it-works">How It Works</a>
         <a href="#gallery">Gallery</a>
         <a href="#events">Events</a>
-        <a href="#order">Order</a>
+        <a href="#order" class="cta">Start Your Project</a>
         <a href="#contact">Contact</a>
       </nav>
     </div>
@@ -1243,7 +1441,7 @@
           <h1>Custom 3D printing that feels <span class="accent">creative</span>, polished, and easy to order.</h1>
           <p>OliPoly 3D helps turn ideas into real parts, prototypes, and custom creations with thoughtful design support, clean communication, and a maker-first approach.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#order">Start Your Project</a>
+            <a class="cta" href="#order">Start Your Project</a>
             <a class="btn btn-secondary" href="#gallery">View Recent Work</a>
           </div>
           <div class="trust-row">
@@ -1257,7 +1455,6 @@
 
         <div class="hero-image-wrap">
           <img src="images/print20.jpg" alt="Bambu Lab P2S with AMS Pro" class="hero-image">
-        </div>
         </div>
       </div>
     </section>
