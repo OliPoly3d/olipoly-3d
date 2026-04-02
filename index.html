@@ -1817,9 +1817,19 @@
       (formspree.q = formspree.q || []).push(arguments);
     };
     formspree('initForm', { formElement: '#contact-form', formId: 'xojplkjw' });
-  // Ensure page loads at top on refresh
-    window.addEventListener('load', function () {
+  // Ensure page loads at top on refresh (mobile-safe)
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    window.addEventListener('beforeunload', function () {
       window.scrollTo(0, 0);
+    });
+
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        window.scrollTo(0, 0);
+      }, 0);
     });
 
     </script>
