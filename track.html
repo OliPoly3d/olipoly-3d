@@ -1,1 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Your Order | OliPoly 3D</title>
 
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #f2eaf3;
+      --text: #1f1a24;
+      --muted: #7a6b80;
+      --brand-primary: #ec4899;
+      --brand-secondary: #a78bfa;
+      --line: rgba(0,0,0,0.06);
+      --shadow: 0 12px 30px rgba(0,0,0,0.08);
+      --radius: 18px;
+      --max: 900px;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(236,72,153,0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(167,139,250,0.12), transparent 24%),
+        linear-gradient(180deg, #eef2f7 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .container {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .brand-name span {
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero {
+      padding: 60px 0 30px;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.4rem, 5vw, 3.4rem);
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: var(--muted);
+    }
+
+    .card {
+      margin-top: 30px;
+      padding: 28px;
+      border-radius: var(--radius);
+      background: white;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(236,72,153,0.1);
+    }
+
+    .status {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      margin: 10px 0;
+      color: var(--brand-primary);
+    }
+
+    .meta {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      color: white;
+      box-shadow: 0 10px 22px rgba(236,72,153,0.22);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      margin-top: 24px;
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+    }
+
+    .secondary {
+      margin-left: 10px;
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.06);
+    }
+
+    @media (max-width: 600px) {
+      .cta {
+        width: 100%;
+        margin-top: 12px;
+      }
+
+      .secondary {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="container">
+    <div class="brand-name">
+      Oli<span>Poly</span> 3D
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <h1>Track your order</h1>
+      <p>Check the current status of your custom 3D print.</p>
+
+      <div class="card">
+        <p><strong>Order #:</strong> OP-1024</p>
+        <div class="status">In Production</div>
+        <div class="meta">Last updated: April 28, 2026</div>
+
+        <p style="margin-top:14px;">
+          Your print is currently in progress. Estimated completion is within 2–3 business days.
+        </p>
+
+        <div style="margin-top:20px;">
+          <a href="index.html" class="cta secondary">Back to Home</a>
+          <a href="index.html#contact" class="cta">Contact About Order</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+</body>
+</html>
