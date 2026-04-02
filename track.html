@@ -458,77 +458,64 @@
 
   <script>
     /*
-      SIMPLE TEMPLATE FOR NEW ORDERS
-      --------------------------------
-      Copy this block, paste it below the last order, and replace the values:
+      QUICK ADD (MINIMAL)
+      -------------------
+      You can now add an order with ONLY these fields:
 
       'OP-0000': {
-        project: 'Project name here',
-        status: 'Received',
-        updated: 'Last updated: Month Day, Year',
-        eta: 'Add estimated completion',
-        step: 1,
-        notes: 'Add a short customer-facing update here.',
-        paymentStatus: 'Not Ready Yet',
-        paymentText: 'Add payment message here.',
-        paymentLink: '',
-        invoiceLink: '',
-        paymentNote: 'Add a short payment note here.'
+        project: 'Short name',
+        step: 1, // 1=Received, 2=Design, 3=Production, 4=Complete
+        invoiceLink: '' // optional (Stripe link)
       },
 
-      STEP GUIDE
-      1 = Received
-      2 = In Design
-      3 = In Production
-      4 = Complete
+      Everything else auto-fills for you.
+
+      If you also use admin.html, locally saved orders from that page
+      will automatically override or add to the orders below in this browser.
     */
-    const orders = 
+    const orders = {
       'OP-1024': {
-        project: 'Custom beach accessories set',
+        project: 'Beach accessory set',
         status: 'In Production',
-        updated: 'Last updated: April 28, 2026',
-        eta: '2–3 business days',
+        updated: 'Updated: April 28, 2026',
+        eta: '2–3 days',
         step: 3,
-        notes: 'Your print is currently in progress. Finishing and final quality checks are the next steps.',
-        paymentStatus: 'Pending',
-        paymentText: 'Your invoice is ready. Click below to view and complete payment securely.',
+        notes: 'Printing now. Finishing next.',
+        paymentText: 'Your invoice is ready below.',
         paymentLink: '',
         invoiceLink: 'https://invoice.stripe.com/i/acct_1THk5372E9ISGDYx/test_YWNjdF8xVEhrNTM3MkU5SVNHRFl4LF9VR0dxRjJDck1POHBZS2x4OXdyZUJuVlVXWGR5cXZYLDE2NTY3Mzk1OQ0200h3yvHkue?s=db',
-        paymentNote: 'Secure payment powered by Stripe.'
+        paymentNote: 'Secure Stripe payment.'
       },
       'OP-1052': {
-        project: 'Custom gaming accessory order',
+        project: 'Gaming accessories',
         status: 'In Design',
-        updated: 'Last updated: April 29, 2026',
-        eta: 'Awaiting design approval',
+        updated: 'Updated: April 29, 2026',
+        eta: 'Waiting for approval',
         step: 2,
-        notes: 'Design refinements are in progress. You will receive an update once the final version is ready for production.',
-        paymentStatus: 'Not Ready Yet',
-        paymentText: 'Payment will be added once design details are finalized and your order is ready to move forward.',
+        notes: 'Design in progress.',
+        paymentText: 'Payment will be added soon.',
         paymentLink: '',
         invoiceLink: '',
-        paymentNote: 'You will receive a payment link after approval.'
+        paymentNote: 'We will send a link when ready.'
       },
       'OP-1088': {
-        project: 'Functional household part set',
+        project: 'Household parts',
         status: 'Complete',
-        updated: 'Last updated: April 30, 2026',
-        eta: 'Ready for pickup / delivery',
+        updated: 'Updated: April 30, 2026',
+        eta: 'Ready',
         step: 4,
-        notes: 'Your order has been completed and is ready for the next delivery or pickup step.',
-        paymentStatus: 'Paid',
-        paymentText: 'Payment has been received for this order.',
+        notes: 'Order finished and ready.',
+        paymentText: 'Payment received.',
         paymentLink: '',
         invoiceLink: 'https://example.com/invoice/op-1088',
-        paymentNote: 'You can still view your invoice for your records.'
+        paymentNote: 'Invoice available below.'
       }
     };
 
-    const input = document.getElementById('orderLookup');
+    const STORAGE_KEY = 'olipolyOrders';
+    const STEP_LABELS = ['Received', 'In Design', 'In Production', 'Complete'];
 
-    // QUICK ADD TEMPLATE
-    // Duplicate one order entry above and only change:
-    // order number, project, status, updated, eta, step, notes, paymentLink, invoiceLink
+    const input = document.getElementById('orderLookup');
     const button = document.getElementById('lookupBtn');
     const result = document.getElementById('orderResult');
     const empty = document.getElementById('emptyState');
@@ -539,17 +526,59 @@
     const paymentText = document.getElementById('paymentText');
     const paymentNote = document.getElementById('paymentNote');
 
+    function loadLocalOrders() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function getMergedOrders() {
+      return {
+        ...orders,
+        ...loadLocalOrders()
+      };
+    }
+
+    function normalizeOrder(key, o) {
+      const step = Number(o.step) || 1;
+      const today = new Date();
+      const fmt = today.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+
+      return {
+        project: o.project || 'Custom order',
+        status: o.status || STEP_LABELS[step - 1],
+        updated: o.updated || `Updated: ${fmt}`,
+        eta: o.eta || (step < 3 ? 'TBD' : (step === 3 ? '1–3 days' : 'Ready')),
+        step,
+        notes: o.notes || (
+          step === 1 ? 'Order received.' :
+          step === 2 ? 'Design in progress.' :
+          step === 3 ? 'Printing now.' :
+          'Order complete.'
+        ),
+        paymentText: o.paymentText || (o.invoiceLink ? 'Your invoice is ready below.' : 'Payment will be added when ready.'),
+        paymentLink: o.paymentLink || '',
+        invoiceLink: o.invoiceLink || '',
+        paymentNote: o.paymentNote || (o.invoiceLink ? 'Secure Stripe payment.' : '')
+      };
+    }
+
     function lookupOrder() {
       const key = input.value.trim().toUpperCase();
-      const order = orders[key];
+      const allOrders = getMergedOrders();
+      const raw = allOrders[key];
 
-      if (!order) {
+      if (!raw) {
         result.classList.remove('active');
         empty.classList.add('active');
         paymentButton.style.display = 'none';
         invoiceButton.style.display = 'none';
         return;
       }
+
+      const order = normalizeOrder(key, raw);
 
       empty.classList.remove('active');
       result.classList.add('active');
@@ -559,10 +588,10 @@
       document.getElementById('resultStatus').textContent = order.status;
       document.getElementById('resultProject').textContent = order.project;
       document.getElementById('resultEta').textContent = order.eta;
-      document.getElementById('resultStepLabel').textContent = progressSteps[order.step - 1]?.textContent || '';
+      document.getElementById('resultStepLabel').textContent = STEP_LABELS[order.step - 1] || '';
       document.getElementById('resultNotes').textContent = order.notes;
-      paymentText.textContent = order.paymentText || 'A payment link will appear here when your order is ready for payment.';
-      paymentNote.textContent = order.paymentNote || '';
+      paymentText.textContent = order.paymentText;
+      paymentNote.textContent = order.paymentNote;
 
       if (order.paymentLink) {
         paymentButton.href = order.paymentLink;
