@@ -1,1 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Admin | OliPoly 3D</title>
 
+  <link href="https://fonts.googleapis.com/css2?family=Inter&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f2eaf3;
+      color: #1f1a24;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.5rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #ec4899, #a78bfa);
+      color: white;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .order {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h1>Order Admin</h1>
+
+  <input id="orderNumber" placeholder="Order Number (OP-2001)" />
+  <input id="project" placeholder="Project name" />
+
+  <select id="step">
+    <option value="1">Received</option>
+    <option value="2">In Design</option>
+    <option value="3">In Production</option>
+    <option value="4">Complete</option>
+  </select>
+
+  <input id="invoiceLink" placeholder="Stripe invoice link" />
+
+  <button onclick="saveOrder()">Save Order</button>
+
+  <h2>Saved Orders</h2>
+  <div id="ordersList"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'olipolyOrders';
+
+function getOrders() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+}
+
+function saveOrder() {
+  const orderNumber = document.getElementById('orderNumber').value.toUpperCase();
+  const project = document.getElementById('project').value;
+  const step = document.getElementById('step').value;
+  const invoiceLink = document.getElementById('invoiceLink').value;
+
+  if (!orderNumber) return;
+
+  const orders = getOrders();
+
+  orders[orderNumber] = {
+    project,
+    step: Number(step),
+    invoiceLink
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+
+  renderOrders();
+}
+
+function deleteOrder(key) {
+  const orders = getOrders();
+  delete orders[key];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+  renderOrders();
+}
+
+function renderOrders() {
+  const orders = getOrders();
+  const container = document.getElementById('ordersList');
+  container.innerHTML = '';
+
+  Object.keys(orders).forEach(key => {
+    const o = orders[key];
+
+    container.innerHTML += `
+      <div class="order">
+        <strong>${key}</strong><br>
+        ${o.project}<br>
+        Step: ${o.step}<br>
+        <button onclick="deleteOrder('${key}')">Delete</button>
+      </div>
+    `;
+  });
+}
+
+renderOrders();
+</script>
+</body>
+</html>
