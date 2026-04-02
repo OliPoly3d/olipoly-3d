@@ -226,6 +226,30 @@
       display: none;
     }
 
+    button.cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      color: white;
+      box-shadow: 0 10px 22px rgba(236,72,153,0.22);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    button.cta:hover {
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(236,72,153,0.28);
+    }
+
     .hero-actions {
       align-items: center;
     }
@@ -1684,7 +1708,7 @@
               </select>
               <textarea name="details" placeholder="Tell us about your project"></textarea>
               <p class="helper">We typically respond within 24 hours.</p>
-              <button class="btn btn-primary" type="submit">Submit Order Request</button>
+              <button class="cta" type="submit">Submit Order Request</button>
             </form>
           </div>
         </div>
@@ -1716,7 +1740,7 @@
               <span data-fs-error="email"></span>
               <textarea name="message" placeholder="How can OliPoly 3D help?" data-fs-field required></textarea>
               <span data-fs-error="message"></span>
-              <button class="btn btn-primary" type="submit" data-fs-submit-btn>Send Message</button>
+              <button class="cta" type="submit" data-fs-submit-btn>Send Message</button>
             </form>
           </div>
         </div>
