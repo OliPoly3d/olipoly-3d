@@ -429,16 +429,8 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
         <div class="upload-shell">
           <h3>Upload reference files</h3>
           <p>Add a sketch, photo, or file after submitting your request.</p>
-          <form id="upload-form" action="https://api.web3forms.com/submit" method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="access_key" value="7d46e043-96a3-41f8-8e07-40ae67ee7173">
-            <input type="hidden" name="subject" value="OliPoly 3D File Upload">
-            <input type="text" name="name" placeholder="Your name" required>
-            <input type="email" name="email" placeholder="Your email" required>
-            <input type="file" name="attachment" class="file-input" accept=".jpg,.jpeg,.png,.webp,.heic,.pdf,.stl,.3mf,.obj,.zip">
-            <textarea name="message" placeholder="Optional note about your upload"></textarea>
-            <p class="upload-note">Single file uploads up to 5 MB are supported with Web3Forms file attachments.</p>
-            <button class="btn-secondary" type="submit">Upload Attachment</button>
-          </form>
+          <a class="btn-secondary" href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>
+          <p class="upload-note">Use this form to send sketches, photos, or reference files after submitting your request.</p>
         </div>
       </div>
     </div>
@@ -475,18 +467,6 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
   </div>
 </div>
 
-<div class="success-popup" id="uploadSuccessPopup" aria-hidden="true">
-  <div class="success-card">
-    <h3>Attachment received</h3>
-    <p>Thanks — your file was submitted successfully.</p>
-    <ul class="success-steps">
-      <li>We’ll match it with your request using your name and email.</li>
-      <li>If needed, we’ll follow up with any questions.</li>
-    </ul>
-    <div class="success-actions"><button class="cta" type="button" id="closeUploadSuccess">Close</button></div>
-  </div>
-</div>
-</div>
 
 <footer>
   <details class="legal-toggle">
@@ -546,32 +526,14 @@ function bindForm(formId,popupId){
   });
 }
 
-function bindUploadForm(){
-  const form=document.getElementById('upload-form');
-  if(!form) return;
-  form.addEventListener('submit',async e=>{
-    e.preventDefault();
-    try{
-      const res=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{Accept:'application/json'}});
-      if(!res.ok) throw 0;
-      form.reset();
-      togglePopup('uploadSuccessPopup',true);
-    }catch{
-      alert('There was a problem uploading the file. Please check your Web3Forms access key and try again.');
-    }
-  });
-}
-
 document.addEventListener('DOMContentLoaded',()=>{
   loadImages();
   markNextEvent();
   $('#modal')?.addEventListener('click',e=>e.target.id==='modal'&&closeModal());
   $('#closeOrderSuccess')?.addEventListener('click',()=>togglePopup('orderSuccessPopup',false));
   $('#closeContactSuccess')?.addEventListener('click',()=>togglePopup('contactSuccessPopup',false));
-  $('#closeUploadSuccess')?.addEventListener('click',()=>togglePopup('uploadSuccessPopup',false));
   bindForm('order-form','orderSuccessPopup');
   bindForm('contact-form','contactSuccessPopup');
-  bindUploadForm();
 });
 </script>
 </body>
