@@ -552,7 +552,7 @@ function bindUploadForm(){
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     try{
-      const res=await fetch(form.action,{method:'POST',body:new FormData(form)});
+      const res=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{Accept:'application/json'}});
       if(!res.ok) throw 0;
       form.reset();
       togglePopup('uploadSuccessPopup',true);
