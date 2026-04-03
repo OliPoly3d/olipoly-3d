@@ -91,36 +91,26 @@ nav a.cta{padding:8px 16px;color:#fff} nav a.cta::after{display:none}
 .hero-image{position:relative;z-index:1;width:100%;max-width:420px;border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.12);object-fit:cover;animation:floatImage 5s ease-in-out infinite}
 
 .section{padding:34px 0 18px}.section-head{align-items:end;gap:24px;margin-bottom:22px}.section-head h2{margin:0;font-size:clamp(2.25rem,3vw,2.7rem);line-height:1.05;letter-spacing:-.02em;color:#241b2b}.section-head p{margin:0;max-width:680px;color:#866f8d;font-size:1rem}
-.gallery{grid-template-columns:repeat(6,1fr);grid-auto-rows:140px;align-items:stretch}
-.photo-testimonial-grid{grid-template-columns:.7fr 1.3fr;gap:26px}
-.testimonial-grid{grid-template-columns:1fr;gap:0}
-.split-grid{grid-template-columns:1fr 1fr;gap:20px;align-items:start}
-.steps{grid-template-columns:repeat(4,1fr);gap:20px;align-items:start;position:relative;width:100%}
-.steps::before{content:"";position:absolute;top:36px;left:8%;right:8%;height:2px;background:linear-gradient(90deg,var(--p),var(--s));opacity:.25;z-index:0}
-.step{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;padding:16px 14px 14px;z-index:1}
-.step:not(:last-child)::after{content:""}
-.step:hover{transform:translateY(-4px)}
-.step:hover::after{opacity:1;transform:translateX(3px)}
-.step-number{width:30px;height:30px;border-radius:999px;margin-bottom:6px;background:linear-gradient(135deg,var(--p),var(--s));color:#fff;font-weight:700;font-size:1rem;box-shadow:0 8px 18px rgba(236,72,153,.18)}
-.step h3,.step p{opacity:.9;transform:none;transition:.2s ease}
-.step h3{font-size:1.05rem;margin:4px 0;white-space:nowrap}
-.step p{font-size:.9rem;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.step:hover h3,.step:hover p{opacity:1;transform:none}
+.gallery{grid-template-columns:repeat(12,1fr);grid-auto-rows:190px;gap:18px;align-items:stretch}
+.gallery-item{position:relative;overflow:hidden;border-radius:26px}
+.gallery img{width:100%;height:100%;object-fit:cover;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,240,246,.92));padding:8px;border-radius:26px;cursor:pointer;filter:saturate(1.04) contrast(1.02);transform:none}
+.gallery img:hover{transform:translateY(-6px) scale(1.015);box-shadow:0 22px 40px rgba(236,72,153,.18);filter:saturate(1.1) contrast(1.03)}
+.gallery-category{position:absolute;left:18px;bottom:18px;transform:none;min-width:auto;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:1px solid rgba(236,72,153,.12);box-shadow:0 10px 22px rgba(236,72,153,.14);font:.78rem "Cormorant Garamond",serif;letter-spacing:.05em;white-space:nowrap;pointer-events:none;animation:none}
+.gallery-item:hover .gallery-category{transform:translateY(-2px)}
+.gallery-item:nth-child(1){grid-column:span 5;grid-row:span 2}
+.gallery-item:nth-child(2){grid-column:span 3;grid-row:span 1}
+.gallery-item:nth-child(3){grid-column:span 4;grid-row:span 1}
+.gallery-item:nth-child(4){grid-column:span 4;grid-row:span 1}
+.gallery-item:nth-child(5){grid-column:span 3;grid-row:span 1}
+.gallery-item:nth-child(1) img{object-position:center 70%;border-radius:30px 18px 26px 22px}
+.gallery-item:nth-child(2) img{object-position:center 35%;border-radius:20px 28px 20px 24px}
+.gallery-item:nth-child(3) img{object-position:center 80%;border-radius:28px 20px 30px 18px}
+.gallery-item:nth-child(4) img{object-position:center 44%;border-radius:22px 28px 18px 24px}
+.gallery-item:nth-child(5) img{object-position:center 40%;border-radius:26px 18px 24px 20px}
 
-.gallery-item{position:relative}
-.gallery img{width:100%;height:100%;object-fit:cover;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,240,246,.9));padding:10px;border-radius:24px;cursor:pointer;transform:scale(.94);filter:saturate(1.03) contrast(1.02)}
-.gallery img:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 20px 38px rgba(236,72,153,.16);filter:saturate(1.08) contrast(1.03)}
-.gallery-category{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);min-width:96px;padding:6px 12px;border-radius:999px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,248,.88));border:1px solid rgba(236,72,153,.14);box-shadow:0 10px 22px rgba(236,72,153,.12);font:.72rem "Cormorant Garamond",serif;letter-spacing:.05em;white-space:nowrap;pointer-events:none;animation:labelFloat 4.6s ease-in-out infinite}
-.gallery-item:hover .gallery-category{transform:translateX(-50%) translateY(-2px);box-shadow:0 14px 28px rgba(236,72,153,.16)}
-.gallery-item:nth-child(1) img{object-position:center 82%;border-radius:30px 16px 24px 20px}
-.gallery-item:nth-child(2) img{object-position:center 35%;border-radius:18px 30px 20px 28px}
-.gallery-item:nth-child(3) img{object-position:center 84%;border-radius:26px 20px 30px 16px}
-.gallery-item:nth-child(4) img{grid-column:span 3;object-position:center 44%;border-radius:20px 26px 18px 24px}
-.gallery-item:nth-child(5) img{grid-column:span 3;object-position:center 40%;border-radius:26px 18px 24px 20px}
-
-.customer-mini-gallery{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.customer-mini-gallery img{aspect-ratio:1/1.15;object-fit:cover;border-radius:22px;cursor:pointer}
-.customer-mini-gallery img:hover{transform:scale(1.05);box-shadow:0 16px 28px rgba(236,72,153,.18);z-index:2}
+.customer-mini-gallery{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.customer-mini-gallery img{width:100%;aspect-ratio:1/1.02;object-fit:cover;border-radius:22px;cursor:pointer;box-shadow:0 10px 24px rgba(236,72,153,.08)}
+.customer-mini-gallery img:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 18px 30px rgba(236,72,153,.18);z-index:2}
 .testimonial{font-size:1rem;line-height:1.7;color:#5f4d69}
 .testimonial-stars{display:inline-flex;gap:4px;margin-bottom:12px;color:var(--a);font-size:.95rem;letter-spacing:.04em}
 .quote-mark{display:block;margin-bottom:8px;font:2.6rem/.8 "Cormorant Garamond",serif;color:var(--s);opacity:.8}
@@ -169,6 +159,10 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
 @media (prefers-reduced-motion:reduce){.hero h1,.hero p,.hero-actions,.trust-row,.hero-image,.hero-image-wrap::before,.brand-name span,.logo,.gallery-category{animation:none}}
 @media (max-width:980px){
   .hero-grid,.steps,.testimonial-grid,.photo-testimonial-grid{grid-template-columns:1fr 1fr}
+  .gallery{grid-template-columns:repeat(6,1fr);grid-auto-rows:170px}
+  .gallery-item:nth-child(1){grid-column:span 3;grid-row:span 2}
+  .gallery-item:nth-child(2),.gallery-item:nth-child(3),.gallery-item:nth-child(4){grid-column:span 3;grid-row:span 1}
+  .gallery-item:nth-child(5){grid-column:span 6;grid-row:span 1}
   .hero-grid,.callout,.contact-grid{grid-template-columns:1fr;gap:20px}
   .hero-grid>.hero-image-wrap{order:-1;justify-content:center}
 }
@@ -429,8 +423,8 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
         <div class="upload-shell">
           <h3>Upload reference files</h3>
           <p>Add a sketch, photo, or file after submitting your request.</p>
-          <a class="btn-secondary" href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>
-          <p class="upload-note">Use this form to send sketches, photos, or reference files after submitting your request.</p>
+          <a class="cta" href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>
+          
         </div>
       </div>
     </div>
