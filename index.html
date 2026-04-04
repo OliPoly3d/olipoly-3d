@@ -587,14 +587,7 @@ function bindForm(formId,popupId){
       if(!res.ok) throw 0;
       form.reset();
       togglePopup(popupId,true);
-      setTimeout(()=>{
-        const upload=document.querySelector('.upload-shell');
-        if(upload){
-          upload.classList.add('highlight');
-          upload.scrollIntoView({behavior:'smooth',block:'center'});
-          setTimeout(()=>upload.classList.remove('highlight'),2200);
-        }
-      },300);
+      
     }catch{
       alert('There was a problem submitting the form. Please try again.');
     }
@@ -605,7 +598,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadImages();
   markNextEvent();
   $('#modal')?.addEventListener('click',e=>e.target.id==='modal'&&closeModal());
-  $('#closeOrderSuccess')?.addEventListener('click',()=>togglePopup('orderSuccessPopup',false));
+  $('#closeOrderSuccess')?.addEventListener('click',()=>{
+    togglePopup('orderSuccessPopup',false);
+    const upload=document.querySelector('.upload-shell');
+    if(upload){
+      setTimeout(()=>{
+        upload.classList.add('highlight');
+        upload.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>upload.classList.remove('highlight'),2200);
+      },150);
+    }
+  });
   $('#closeContactSuccess')?.addEventListener('click',()=>togglePopup('contactSuccessPopup',false));
   bindForm('order-form','orderSuccessPopup');
   bindForm('contact-form','contactSuccessPopup');
