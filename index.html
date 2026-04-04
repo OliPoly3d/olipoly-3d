@@ -148,7 +148,8 @@ input,textarea,select{width:100%;padding:10px 12px;border-radius:12px;border:1px
 input::placeholder,textarea::placeholder{color:#8aa0b7} textarea{min-height:110px;resize:vertical}
 [data-fs-success],[data-fs-error],[data-fs-error="name"],[data-fs-error="email"],[data-fs-error="message"]{font-size:.9rem;min-height:1em;color:#ffd2c8}[data-fs-success]{color:#b8f0c8}
 
-.upload-shell{margin-top:16px;padding:16px 18px;border:1px dashed rgba(236,72,153,.28);border-radius:16px;background:rgba(255,255,255,.72)}
+.upload-shell{margin-top:16px;padding:16px 18px;border:1px dashed rgba(236,72,153,.28);border-radius:16px;background:rgba(255,255,255,.72);transition:.35s ease}
+.upload-shell.highlight{box-shadow:0 0 0 3px rgba(236,72,153,.25),0 12px 28px rgba(236,72,153,.18);transform:translateY(-2px)}
 .upload-shell h3{margin:0 0 6px}
 .upload-shell p{margin:0 0 12px}
 .upload-note{font-size:.88rem;color:#8a7691}
@@ -515,6 +516,7 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
       <li>We’ll review your details.</li>
       <li>We’ll follow up with next steps.</li>
       <li>You can expect a response within 24 hours.</li>
+      <li>Upload files below to help your request.</li>
     </ul>
     <div class="success-actions"><button class="cta" type="button" id="closeOrderSuccess">Close</button></div>
   </div>
@@ -585,6 +587,14 @@ function bindForm(formId,popupId){
       if(!res.ok) throw 0;
       form.reset();
       togglePopup(popupId,true);
+      setTimeout(()=>{
+        const upload=document.querySelector('.upload-shell');
+        if(upload){
+          upload.classList.add('highlight');
+          upload.scrollIntoView({behavior:'smooth',block:'center'});
+          setTimeout(()=>upload.classList.remove('highlight'),2200);
+        }
+      },300);
     }catch{
       alert('There was a problem submitting the form. Please try again.');
     }
