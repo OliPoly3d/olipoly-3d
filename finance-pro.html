@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Financial Tracker Pro</title>
+  <style>
+    :root {
+      --bg: #08101f;
+      --bg2: #0d1730;
+      --panel: rgba(12, 19, 40, 0.88);
+      --panel-2: rgba(17, 26, 52, 0.92);
+      --line: rgba(126, 144, 255, 0.18);
+      --text: #eef4ff;
+      --muted: #a8b5db;
+      --accent: #7e7bff;
+      --accent2: #2ee6c4;
+      --accent3: #ff77c8;
+      --danger: #ff6e91;
+      --success: #4fe0a3;
+      --warning: #ffc364;
+      --radius: 24px;
+      --radius-sm: 16px;
+      --shadow: 0 18px 50px rgba(0,0,0,.32);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(126,123,255,.22), transparent 28%),
+        radial-gradient(circle at top right, rgba(46,230,196,.16), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(255,119,200,.12), transparent 22%),
+        linear-gradient(180deg, #060b16 0%, #0a1225 50%, #08101f 100%);
+      min-height: 100vh;
+    }
+
+    .glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .glow::before,
+    .glow::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(80px);
+      opacity: .28;
+      animation: drift 15s ease-in-out infinite alternate;
+    }
+    .glow::before {
+      width: 280px; height: 280px;
+      background: rgba(126,123,255,.9);
+      left: 4%; top: 8%;
+    }
+    .glow::after {
+      width: 260px; height: 260px;
+      background: rgba(255,119,200,.8);
+      right: 4%; bottom: 8%;
+      animation-duration: 19s;
+    }
+    @keyframes drift {
+      from { transform: translate3d(0,0,0) scale(1); }
+      to { transform: translate3d(25px,-12px,0) scale(1.08); }
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(8, 14, 30, .72);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-icon {
+      width: 42px; height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 26px rgba(126,123,255,.28);
+      font-size: 20px;
+      flex: 0 0 auto;
+    }
+    .brand-copy h1 {
+      margin: 0;
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    .brand-copy p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .actions, .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .card, .hero, .panel, .summary-card, .login-card, .table-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      border-radius: 30px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 20px;
+      margin-bottom: 22px;
+      align-items: center;
+    }
+    .hero h2 {
+      margin: 0 0 10px;
+      font-size: clamp(1.9rem, 4vw, 3rem);
+      line-height: 1.03;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 740px;
+    }
+    .hero-note {
+      border-radius: 22px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+    }
+    .hero-note strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+    .hero-note span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: .94rem;
+    }
+
+    .btn, .btn-ghost, .btn-danger {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .btn:hover, .btn-ghost:hover, .btn-danger:hover { transform: translateY(-1px); }
+    .btn {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 10px 26px rgba(102,112,255,.25);
+    }
+    .btn-ghost {
+      color: var(--text);
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--line);
+    }
+    .btn-danger {
+      color: white;
+      background: linear-gradient(135deg, #f45f85, #ffa46a);
+      box-shadow: 0 10px 26px rgba(244,95,133,.23);
+    }
+
+    .hidden { display: none !important; }
+
+    .login-wrap {
+      min-height: calc(100vh - 120px);
+      display: grid;
+      place-items: center;
+    }
+    .login-card {
+      width: min(560px, 100%);
+      border-radius: 28px;
+      padding: 30px;
+      background: var(--panel-2);
+    }
+    .login-card h2 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 4vw, 2.3rem);
+    }
+    .login-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .setup-box {
+      margin-top: 18px;
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,195,100,.22);
+      background: rgba(255,195,100,.09);
+      color: #ffe2af;
+      line-height: 1.55;
+      font-size: .92rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .summary-card {
+      border-radius: 22px;
+      padding: 18px;
+    }
+    .summary-card span {
+      display: block;
+      color: var(--muted);
+      font-size: .8rem;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .summary-card strong {
+      display: block;
+      font-size: clamp(1.22rem, 2.8vw, 1.9rem);
+      line-height: 1.08;
+    }
+    .summary-card small {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: .84rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+    .panel, .table-card {
+      border-radius: 26px;
+      padding: 22px;
+    }
+    .panel h3, .table-card h3 {
+      margin: 0 0 6px;
+      font-size: 1.2rem;
+    }
+    .sub {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: .95rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .full { grid-column: 1 / -1; }
+    .triple { grid-column: span 1; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+    input, select, textarea {
+      width: 100%;
+      font: inherit;
+      color: var(--text);
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(151,179,255,.18);
+      border-radius: 16px;
+      padding: 12px 14px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(126,123,255,.62);
+      box-shadow: 0 0 0 4px rgba(126,123,255,.12);
+    }
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+    }
+    .filters input, .filters select {
+      min-width: 160px;
+    }
+
+    .stat-note, .empty-state, .message {
+      border-radius: 18px;
+      padding: 14px 16px;
+      line-height: 1.6;
+      font-size: .92rem;
+    }
+    .stat-note, .empty-state {
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      border: 1px dashed rgba(255,255,255,.08);
+    }
+    .message {
+      color: #cffff0;
+      background: rgba(79,224,163,.1);
+      border: 1px solid rgba(79,224,163,.18);
+      margin-top: 14px;
+    }
+
+    .monthly-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .month-card {
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+    }
+    .month-card strong { display:block; margin-bottom: 8px; }
+    .month-card div {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.55;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      vertical-align: top;
+      font-size: .93rem;
+    }
+    th {
+      color: var(--muted);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .type-income {
+      color: #c9fff0;
+      background: rgba(79,224,163,.13);
+      border: 1px solid rgba(79,224,163,.2);
+    }
+    .type-expense {
+      color: #ffd7e1;
+      background: rgba(255,110,145,.12);
+      border: 1px solid rgba(255,110,145,.2);
+    }
+
+    .mini-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .mini-actions button {
+      padding: 9px 12px;
+      font-size: .82rem;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      text-align: center;
+      font-size: .84rem;
+    }
+
+    @media (max-width: 1020px) {
+      .hero, .grid, .summary-grid { grid-template-columns: 1fr; }
+      .monthly-grid { grid-template-columns: 1fr 1fr; }
+      .topbar {
+        border-radius: 24px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .actions { width: 100%; justify-content: stretch; }
+      .actions button { flex: 1 1 auto; }
+    }
+
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 16px, 1180px); padding-top: 14px; }
+      .hero, .panel, .table-card, .summary-card, .login-card { border-radius: 22px; }
+      .hero, .panel, .table-card, .login-card { padding: 18px; }
+      .form-grid, .monthly-grid { grid-template-columns: 1fr; }
+      th:nth-child(5), td:nth-child(5), th:nth-child(6), td:nth-child(6) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon">📊</div>
+        <div class="brand-copy">
+          <h1>OliPoly 3D Financial Tracker Pro</h1>
+          <p>Real login + online storage with Supabase</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost hidden" id="refreshBtn" type="button">Refresh Data</button>
+        <button class="btn-ghost hidden" id="exportBtn" type="button">Export CSV</button>
+        <button class="btn-danger hidden" id="logoutBtn" type="button">Log Out</button>
+      </div>
+    </div>
+
+    <section id="loginSection" class="login-wrap">
+      <div class="login-card">
+        <h2>Sign in to your private tracker</h2>
+        <p>This version uses <strong>Supabase</strong> for a real login and cloud-stored data, so your entries can be accessed across devices instead of living only in one browser.</p>
+
+        <div class="form-grid">
+          <div class="full">
+            <label for="emailInput">Email</label>
+            <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email" />
+          </div>
+          <div class="full">
+            <label for="passwordInput">Password</label>
+            <input id="passwordInput" type="password" placeholder="Enter password" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="button-row" style="margin-top:16px; justify-content:flex-start;">
+          <button class="btn" id="loginBtn" type="button">Log In</button>
+          <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
+        </div>
+
+        <div class="setup-box" id="authMessage">
+          Setup required before publish: add your Supabase URL, anon key, and database table using the instructions in the code comments near the bottom of this page.
+        </div>
+      </div>
+    </section>
+
+    <section id="appSection" class="hidden">
+      <div class="hero">
+        <div>
+          <h2>Track sales, real costs, shipping, and monthly profit.</h2>
+          <p>Log income and expenses for your OliPoly business, separate shipping charged to customers from shipping you paid out, edit entries anytime, and keep your numbers synced online through your account.</p>
+        </div>
+        <div class="hero-note">
+          <strong>Best use for your workflow</strong>
+          <span>Add each customer payment as income, track filament or materials separately, add shipping charged to the customer as revenue, add shipping cost as an expense, and use notes for order number, customer name, pickup, or shipping details.</span>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span>Product Revenue</span>
+          <strong id="productRevenue">$0.00</strong>
+          <small>Base sales amount, excluding shipping charged.</small>
+        </div>
+        <div class="summary-card">
+          <span>Shipping Revenue</span>
+          <strong id="shippingRevenue">$0.00</strong>
+          <small>Shipping amounts charged to customers.</small>
+        </div>
+        <div class="summary-card">
+          <span>Total Costs</span>
+          <strong id="totalCosts">$0.00</strong>
+          <small>Base expenses plus your shipping paid out.</small>
+        </div>
+        <div class="summary-card">
+          <span>Net Profit</span>
+          <strong id="netProfit">$0.00</strong>
+          <small>Total revenue minus all visible costs.</small>
+        </div>
+        <div class="summary-card">
+          <span>Entries</span>
+          <strong id="entryCount">0</strong>
+          <small>Total records shown by your current filters.</small>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <h3 id="formHeading">Add Financial Entry</h3>
+          <p class="sub">Use income for customer payments and expense for materials, shipping labels, packaging, event fees, machine maintenance, and other business costs.</p>
+
+          <form id="entryForm">
+            <div class="form-grid">
+              <div>
+                <label for="entryType">Entry Type</label>
+                <select id="entryType" required>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+              </div>
+              <div>
+                <label for="entryDate">Date</label>
+                <input id="entryDate" type="date" required />
+              </div>
+              <div>
+                <label for="entryCategory">Category</label>
+                <select id="entryCategory" required>
+                  <option value="Sale">Sale</option>
+                  <option value="Material">Material</option>
+                  <option value="Shipping">Shipping</option>
+                  <option value="Packaging">Packaging</option>
+                  <option value="Marketplace Fee">Marketplace Fee</option>
+                  <option value="Machine Maintenance">Machine Maintenance</option>
+                  <option value="Event Booth">Event Booth</option>
+                  <option value="Supplies">Supplies</option>
+                  <option value="Custom">Custom</option>
+                </select>
+              </div>
+              <div>
+                <label for="entryAmount">Base Amount</label>
+                <input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
+              </div>
+              <div>
+                <label for="shippingCharged">Shipping Charged to Customer</label>
+                <input id="shippingCharged" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div>
+                <label for="shippingCost">Shipping Cost You Paid</label>
+                <input id="shippingCost" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div class="full">
+                <label for="entryTitle">Title</label>
+                <input id="entryTitle" type="text" maxlength="120" placeholder="Example: Beach toy order / PETG filament / Craft show booth fee" required />
+              </div>
+              <div class="full">
+                <label for="entryNotes">Notes</label>
+                <textarea id="entryNotes" maxlength="500" placeholder="Optional details: order number, customer name, shipping vs pickup, color/material, vendor, etc."></textarea>
+              </div>
+            </div>
+
+            <div class="button-row" style="margin-top:16px; justify-content:flex-start;">
+              <button class="btn" id="saveBtn" type="submit">Save Entry</button>
+              <button class="btn-ghost" id="cancelEditBtn" type="button">Cancel Edit</button>
+            </div>
+          </form>
+
+          <div class="message hidden" id="formMessage"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Monthly Profit Summary</h3>
+          <p class="sub">This rolls up each month’s visible entries so you can quickly see revenue, costs, and profit trends.</p>
+          <div id="monthlySummary" class="stat-note">No monthly data yet. Add entries to start building your summary.</div>
+          <div class="monthly-grid" id="monthlyGrid"></div>
+        </section>
+      </div>
+
+      <section class="table-card">
+        <h3>Transactions</h3>
+        <div class="filters">
+          <select id="typeFilter">
+            <option value="all">All Types</option>
+            <option value="income">Income Only</option>
+            <option value="expense">Expense Only</option>
+          </select>
+          <input id="monthFilter" type="month" />
+          <input id="searchFilter" type="text" placeholder="Search title, category, or notes" />
+          <button class="btn-ghost" id="clearFiltersBtn" type="button">Clear Filters</button>
+        </div>
+        <div id="tableWrap"></div>
+      </section>
+
+      <p class="footer-note">Private OliPoly 3D tracker powered by Supabase login and cloud storage.</p>
+    </section>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    /*
+      =========================
+      OLI POLY SETUP INSTRUCTIONS
+      =========================
+
+      1) Create a free Supabase project.
+
+      2) In Supabase, create a table named: financial_entries
+
+      3) Use this SQL in Supabase SQL Editor:
+
+      create table public.financial_entries (
+        id uuid primary key default gen_random_uuid(),
+        user_id uuid not null references auth.users(id) on delete cascade,
+        type text not null check (type in ('income','expense')),
+        entry_date date not null,
+        category text not null,
+        title text not null,
+        notes text,
+        amount numeric(10,2) not null default 0,
+        shipping_charged numeric(10,2) not null default 0,
+        shipping_cost numeric(10,2) not null default 0,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+
+      alter table public.financial_entries enable row level security;
+
+      create policy "Users can view their own entries"
+      on public.financial_entries
+      for select
+      using (auth.uid() = user_id);
+
+      create policy "Users can insert their own entries"
+      on public.financial_entries
+      for insert
+      with check (auth.uid() = user_id);
+
+      create policy "Users can update their own entries"
+      on public.financial_entries
+      for update
+      using (auth.uid() = user_id);
+
+      create policy "Users can delete their own entries"
+      on public.financial_entries
+      for delete
+      using (auth.uid() = user_id);
+
+      4) In Supabase Authentication, enable Email sign-in.
+
+      5) Replace the two values below with your Supabase project values.
+
+      6) Save this file as something like finance-pro.html and upload it to GitHub Pages.
+    */
+
+    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+    const loginSection = document.getElementById('loginSection');
+    const appSection = document.getElementById('appSection');
+    const authMessage = document.getElementById('authMessage');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const exportBtn = document.getElementById('exportBtn');
+
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+
+    const entryForm = document.getElementById('entryForm');
+    const formHeading = document.getElementById('formHeading');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const formMessage = document.getElementById('formMessage');
+
+    const entryType = document.getElementById('entryType');
+    const entryDate = document.getElementById('entryDate');
+    const entryCategory = document.getElementById('entryCategory');
+    const entryAmount = document.getElementById('entryAmount');
+    const shippingCharged = document.getElementById('shippingCharged');
+    const shippingCost = document.getElementById('shippingCost');
+    const entryTitle = document.getElementById('entryTitle');
+    const entryNotes = document.getElementById('entryNotes');
+
+    const productRevenueEl = document.getElementById('productRevenue');
+    const shippingRevenueEl = document.getElementById('shippingRevenue');
+    const totalCostsEl = document.getElementById('totalCosts');
+    const netProfitEl = document.getElementById('netProfit');
+    const entryCountEl = document.getElementById('entryCount');
+
+    const monthlySummary = document.getElementById('monthlySummary');
+    const monthlyGrid = document.getElementById('monthlyGrid');
+    const tableWrap = document.getElementById('tableWrap');
+
+    const typeFilter = document.getElementById('typeFilter');
+    const monthFilter = document.getElementById('monthFilter');
+    const searchFilter = document.getElementById('searchFilter');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+    let supabase = null;
+    let currentUser = null;
+    let entries = [];
+    let editingId = null;
+
+    function todayISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showMessage(text, type = 'success') {
+      formMessage.textContent = text;
+      formMessage.classList.remove('hidden');
+      formMessage.style.background = type === 'error' ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+      formMessage.style.borderColor = type === 'error' ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+      formMessage.style.color = type === 'error' ? '#ffd7e1' : '#cffff0';
+    }
+
+    function hideMessage() {
+      formMessage.classList.add('hidden');
+    }
+
+    function resetForm() {
+      editingId = null;
+      entryForm.reset();
+      entryDate.value = todayISO();
+      entryType.value = 'income';
+      entryCategory.value = 'Sale';
+      formHeading.textContent = 'Add Financial Entry';
+      saveBtn.textContent = 'Save Entry';
+      cancelEditBtn.classList.add('hidden');
+      hideMessage();
+    }
+
+    function setLoggedInUI(isLoggedIn) {
+      loginSection.classList.toggle('hidden', isLoggedIn);
+      appSection.classList.toggle('hidden', !isLoggedIn);
+      logoutBtn.classList.toggle('hidden', !isLoggedIn);
+      refreshBtn.classList.toggle('hidden', !isLoggedIn);
+      exportBtn.classList.toggle('hidden', !isLoggedIn);
+    }
+
+    function getFilteredEntries() {
+      const typeVal = typeFilter.value;
+      const monthVal = monthFilter.value;
+      const searchVal = searchFilter.value.trim().toLowerCase();
+
+      return [...entries]
+        .filter((entry) => {
+          if (typeVal !== 'all' && entry.type !== typeVal) return false;
+          if (monthVal && !entry.entry_date.startsWith(monthVal)) return false;
+          if (searchVal) {
+            const haystack = `${entry.title} ${entry.category} ${entry.notes || ''}`.toLowerCase();
+            if (!haystack.includes(searchVal)) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date));
+    }
+
+    function updateSummary(filtered) {
+      const productRevenue = filtered
+        .filter(e => e.type === 'income')
+        .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+      const shippingRevenue = filtered
+        .filter(e => e.type === 'income')
+        .reduce((sum, e) => sum + Number(e.shipping_charged || 0), 0);
+
+      const totalCosts = filtered.reduce((sum, e) => {
+        const base = e.type === 'expense' ? Number(e.amount || 0) : 0;
+        const shipCost = Number(e.shipping_cost || 0);
+        return sum + base + shipCost;
+      }, 0);
+
+      const totalRevenue = productRevenue + shippingRevenue;
+      const netProfit = totalRevenue - totalCosts;
+
+      productRevenueEl.textContent = money(productRevenue);
+      shippingRevenueEl.textContent = money(shippingRevenue);
+      totalCostsEl.textContent = money(totalCosts);
+      netProfitEl.textContent = money(netProfit);
+      entryCountEl.textContent = filtered.length;
+    }
+
+    function renderMonthlySummary(filtered) {
+      if (!filtered.length) {
+        monthlySummary.textContent = 'No monthly data yet. Add entries to start building your summary.';
+        monthlyGrid.innerHTML = '';
+        return;
+      }
+
+      const months = {};
+      filtered.forEach(entry => {
+        const monthKey = entry.entry_date.slice(0, 7);
+        if (!months[monthKey]) {
+          months[monthKey] = { productRevenue: 0, shippingRevenue: 0, costs: 0 };
+        }
+
+        if (entry.type === 'income') {
+          months[monthKey].productRevenue += Number(entry.amount || 0);
+          months[monthKey].shippingRevenue += Number(entry.shipping_charged || 0);
+        } else {
+          months[monthKey].costs += Number(entry.amount || 0);
+        }
+
+        months[monthKey].costs += Number(entry.shipping_cost || 0);
+      });
+
+      const ordered = Object.entries(months)
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .slice(0, 6);
+
+      monthlySummary.textContent = 'Latest visible months are summarized below.';
+      monthlyGrid.innerHTML = ordered.map(([month, vals]) => {
+        const totalRevenue = vals.productRevenue + vals.shippingRevenue;
+        const profit = totalRevenue - vals.costs;
+        return `
+          <div class="month-card">
+            <strong>${month}</strong>
+            <div>Revenue: ${money(totalRevenue)}</div>
+            <div>Costs: ${money(vals.costs)}</div>
+            <div>Profit: ${money(profit)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTable(filtered) {
+      if (!filtered.length) {
+        tableWrap.innerHTML = '<div class="empty-state">No entries match your current filters.</div>';
+        return;
+      }
+
+      tableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Base</th>
+              <th>Ship In</th>
+              <th>Ship Out</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(entry => `
+              <tr>
+                <td>${entry.entry_date}</td>
+                <td><span class="type-pill ${entry.type === 'income' ? 'type-income' : 'type-expense'}">${entry.type}</span></td>
+                <td>
+                  <strong>${escapeHtml(entry.title)}</strong>
+                  ${entry.notes ? `<div style="margin-top:6px; color:var(--muted); font-size:.86rem; line-height:1.5;">${escapeHtml(entry.notes)}</div>` : ''}
+                </td>
+                <td>${escapeHtml(entry.category)}</td>
+                <td>${money(entry.amount)}</td>
+                <td>${money(entry.shipping_charged || 0)}</td>
+                <td>${money(entry.shipping_cost || 0)}</td>
+                <td>
+                  <div class="mini-actions">
+                    <button class="btn-ghost" type="button" data-edit="${entry.id}">Edit</button>
+                    <button class="btn-danger" type="button" data-delete="${entry.id}">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      tableWrap.querySelectorAll('[data-edit]').forEach(btn => {
+        btn.addEventListener('click', () => startEdit(btn.getAttribute('data-edit')));
+      });
+      tableWrap.querySelectorAll('[data-delete]').forEach(btn => {
+        btn.addEventListener('click', () => deleteEntry(btn.getAttribute('data-delete')));
+      });
+    }
+
+    function renderAll() {
+      const filtered = getFilteredEntries();
+      updateSummary(filtered);
+      renderMonthlySummary(filtered);
+      renderTable(filtered);
+    }
+
+    function exportCSV() {
+      if (!entries.length) {
+        alert('There are no entries to export yet.');
+        return;
+      }
+
+      const rows = [
+        ['Date','Type','Category','Title','Base Amount','Shipping Charged','Shipping Cost','Notes'],
+        ...entries.map(e => [
+          e.entry_date,
+          e.type,
+          e.category,
+          e.title,
+          Number(e.amount || 0).toFixed(2),
+          Number(e.shipping_charged || 0).toFixed(2),
+          Number(e.shipping_cost || 0).toFixed(2),
+          e.notes || ''
+        ])
+      ];
+
+      const csv = rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `olipoly-financial-export-${todayISO()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function fetchEntries() {
+      if (!supabase || !currentUser) return;
+
+      const { data, error } = await supabase
+        .from('financial_entries')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('entry_date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        authMessage.textContent = `Could not load entries: ${error.message}`;
+        return;
+      }
+
+      entries = data || [];
+      renderAll();
+    }
+
+    function startEdit(id) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      editingId = id;
+      formHeading.textContent = 'Edit Financial Entry';
+      saveBtn.textContent = 'Update Entry';
+      cancelEditBtn.classList.remove('hidden');
+
+      entryType.value = entry.type;
+      entryDate.value = entry.entry_date;
+      entryCategory.value = ['Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance','Event Booth','Supplies'].includes(entry.category) ? entry.category : 'Custom';
+      entryAmount.value = entry.amount;
+      shippingCharged.value = entry.shipping_charged || '';
+      shippingCost.value = entry.shipping_cost || '';
+      entryTitle.value = entry.title;
+      entryNotes.value = entry.notes || '';
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm('Delete this entry?')) return;
+
+      const { error } = await supabase
+        .from('financial_entries')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', currentUser.id);
+
+      if (error) {
+        showMessage(`Delete failed: ${error.message}`, 'error');
+        return;
+      }
+
+      showMessage('Entry deleted.');
+      if (editingId === id) resetForm();
+      await fetchEntries();
+    }
+
+    async function saveEntry(event) {
+      event.preventDefault();
+      hideMessage();
+
+      let categoryValue = entryCategory.value;
+      if (categoryValue === 'Custom') {
+        categoryValue = (prompt('Enter custom category name:') || '').trim() || 'Custom';
+      }
+
+      const payload = {
+        user_id: currentUser.id,
+        type: entryType.value,
+        entry_date: entryDate.value,
+        category: categoryValue,
+        title: entryTitle.value.trim(),
+        notes: entryNotes.value.trim(),
+        amount: Number(entryAmount.value || 0),
+        shipping_charged: Number(shippingCharged.value || 0),
+        shipping_cost: Number(shippingCost.value || 0),
+        updated_at: new Date().toISOString()
+      };
+
+      let response;
+      if (editingId) {
+        response = await supabase
+          .from('financial_entries')
+          .update(payload)
+          .eq('id', editingId)
+          .eq('user_id', currentUser.id);
+      } else {
+        response = await supabase
+          .from('financial_entries')
+          .insert(payload);
+      }
+
+      if (response.error) {
+        showMessage(`Save failed: ${response.error.message}`, 'error');
+        return;
+      }
+
+      showMessage(editingId ? 'Entry updated.' : 'Entry saved.');
+      resetForm();
+      await fetchEntries();
+    }
+
+    async function login() {
+      if (!emailInput.value || !passwordInput.value) {
+        authMessage.textContent = 'Enter your email and password.';
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailInput.value.trim(),
+        password: passwordInput.value
+      });
+
+      authMessage.textContent = error ? `Login failed: ${error.message}` : 'Logged in.';
+    }
+
+    async function signup() {
+      if (!emailInput.value || !passwordInput.value) {
+        authMessage.textContent = 'Enter an email and password to create your account.';
+        return;
+      }
+
+      const { error } = await supabase.auth.signUp({
+        email: emailInput.value.trim(),
+        password: passwordInput.value
+      });
+
+      authMessage.textContent = error
+        ? `Signup failed: ${error.message}`
+        : 'Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.';
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      currentUser = null;
+      setLoggedInUI(false);
+      authMessage.textContent = 'Logged out.';
+      entries = [];
+      tableWrap.innerHTML = '';
+      monthlyGrid.innerHTML = '';
+      monthlySummary.textContent = 'No monthly data yet. Add entries to start building your summary.';
+      resetForm();
+    }
+
+    async function init() {
+      entryDate.value = todayISO();
+      cancelEditBtn.classList.add('hidden');
+
+      if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
+        authMessage.textContent = 'Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.';
+        return;
+      }
+
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      currentUser = session?.user || null;
+      setLoggedInUI(!!currentUser);
+      if (currentUser) await fetchEntries();
+
+      supabase.auth.onAuthStateChange(async (_event, sessionData) => {
+        currentUser = sessionData?.user || null;
+        setLoggedInUI(!!currentUser);
+        if (currentUser) {
+          await fetchEntries();
+        } else {
+          entries = [];
+          renderAll();
+        }
+      });
+    }
+
+    loginBtn.addEventListener('click', login);
+    signupBtn.addEventListener('click', signup);
+    logoutBtn.addEventListener('click', logout);
+    refreshBtn.addEventListener('click', fetchEntries);
+    exportBtn.addEventListener('click', exportCSV);
+    entryForm.addEventListener('submit', saveEntry);
+    cancelEditBtn.addEventListener('click', resetForm);
+    clearFiltersBtn.addEventListener('click', () => {
+      typeFilter.value = 'all';
+      monthFilter.value = '';
+      searchFilter.value = '';
+      renderAll();
+    });
+
+    [typeFilter, monthFilter, searchFilter].forEach(el => {
+      el.addEventListener('input', renderAll);
+      el.addEventListener('change', renderAll);
+    });
+
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    init();
+  </script>
+</body>
+</html>
