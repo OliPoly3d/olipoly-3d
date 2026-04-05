@@ -1023,8 +1023,20 @@ const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
       hideMessage();
 
       let categoryValue = entryCategory.value;
+
+      // Fix: only prompt once and persist the custom value
       if (categoryValue === 'Custom') {
-        categoryValue = (prompt('Enter custom category name:') || '').trim() || 'Custom';
+        const customInput = prompt('Enter custom category name:');
+
+        if (!customInput) {
+          showMessage('Custom category is required.', 'error');
+          return;
+        }
+
+        categoryValue = customInput.trim();
+
+        // Optional: set it back to dropdown temporarily so it doesn't loop
+        entryCategory.value = 'Sale';
       }
 
       const payload = {
