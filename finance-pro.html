@@ -57,7 +57,7 @@
         <section class="panel">
           <h3 id="formHeading">Add Financial Entry</h3>
           <p class="sub">Use income for customer payments and expense for materials, shipping labels, packaging, event fees, machine maintenance, and other business costs.</p>
-          <form id="entryForm">
+          <form id="entryForm" novalidate>
             <div class="form-grid">
               <div><label for="entryType">Entry Type</label><select id="entryType" required><option value="income">Income</option><option value="expense">Expense</option></select></div>
               <div><label for="entryDate">Date</label><input id="entryDate" type="date" required></div>
@@ -140,9 +140,13 @@
     function startEdit(id){const e=entries.find(x=>x.id===id);if(!e)return;editingId=id;const isCapex=e.category==='Equipment (CapEx)';customCategoryValue=BASE_CATEGORIES.includes(e.category)||isCapex?'':(e.category||'');els.formHeading.textContent='Edit Financial Entry';els.saveBtn.textContent='Update Entry';els.cancelEditBtn.classList.remove('hidden');[['entryType','type'],['entryDate','entry_date'],['shippingCharged','shipping_charged'],['taxIncluded','tax_included'],['salesTaxRate','sales_tax_rate'],['salesTaxCollected','sales_tax_collected'],['shippingCost','shipping_cost'],['materialCost','material_cost'],['packagingCost','packaging_cost'],['laborCost','labor_cost'],['otherDirectCost','other_direct_cost'],['entryTitle','title'],['entryNotes','notes']].forEach(([k,p])=>els[k].value=(e[p]??''));els.entryAmount.value=(num(e.amount)+num(e.sales_tax_collected))||'';els.netRevenuePreview.value=e.amount??'';els.entryCategory.value=isCapex?'Equipment':(BASE_CATEGORIES.includes(e.category)?e.category:'Custom');els.capexToggle.checked=isCapex;els.taxCategory.value=e.tax_category||'auto';updateEntryTypeHint();updateTaxPreview();window.scrollTo({top:0,behavior:'smooth'});}
     async function deleteEntry(id){if(!confirm('Delete this entry?'))return;const {error}=await supabase.from('financial_entries').delete().eq('id',id).eq('user_id',currentUser.id);if(error)return setMsg(`Delete failed: ${error.message}`,true);setMsg('Entry deleted.');if(editingId===id)resetForm();await fetchEntries();}
     async function saveEntry(e){
-      e.preventDefault();
+      e?.preventDefault?.();
       hide(els.formMessage);
       updateEntryTypeHint();
+      if(!els.entryDate.value) return setMsg('Date is required.',true);
+      if(!els.entryCategory.value) return setMsg('Category is required.',true);
+      if(!els.entryTitle.value.trim()) return setMsg('Title is required.',true);
+      if(els.entryAmount.value===''||Number.isNaN(num(els.entryAmount.value))) return setMsg('Amount is required.',true);
       try{
         let category=els.entryCategory.value;
         const isCapexEquipment=category==='Equipment' && els.capexToggle.checked;
@@ -208,7 +212,7 @@
     async function login(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter your email and password.',true);setAuthMsg('Signing in...');const {error}=await supabase.auth.signInWithPassword({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Login failed: ${error.message}`,true);hide(els.authMessage);}async function signup(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter an email and password to create your account.',true);setAuthMsg('Creating account...');const {error}=await supabase.auth.signUp({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Signup failed: ${error.message}`,true);setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');}async function logout(){await supabase.auth.signOut();currentUser=null;setUI(false);entries=[];resetForm();renderAll();setAuthMsg('Logged out.');}
     async function init(){hide(els.authMessage);els.entryDate.value=todayISO();els.taxYearFilter.value=currentYear();if(SUPABASE_URL.includes('PASTE_')||SUPABASE_ANON_KEY.includes('PASTE_'))return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.',true);updateEntryTypeHint();supabase=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);const {data:{session}}=await supabase.auth.getSession();currentUser=session?.user||null;setUI(!!currentUser);renderTaxReport();if(currentUser)await fetchEntries();supabase.auth.onAuthStateChange(async(_,s)=>{currentUser=s?.user||null;setUI(!!currentUser);if(currentUser){hide(els.authMessage);await fetchEntries();}else{entries=[];renderAll();}});}
     [els.entryType,els.entryCategory,els.capexToggle,els.entryAmount,els.taxIncluded,els.salesTaxRate].forEach(el=>el.oninput=el.onchange=()=>{updateEntryTypeHint();updateTaxPreview();});
-    els.passwordInput.classList.add('mask-password');els.showPasswordToggle.onchange=()=>els.passwordInput.classList.toggle('mask-password',!els.showPasswordToggle.checked);els.loginBtn.onclick=login;els.signupBtn.onclick=signup;els.logoutBtn.onclick=logout;els.refreshBtn.onclick=fetchEntries;els.exportBtn.onclick=exportCSV;els.taxExportBtn.onclick=exportTaxReport;els.runTaxReportBtn.onclick=renderTaxReport;els.saveBtn.onclick=null;els.entryForm.onsubmit=saveEntry;els.cancelEditBtn.onclick=resetForm;els.clearFiltersBtn.onclick=()=>{els.typeFilter.value='all';els.monthFilter.value='';els.searchFilter.value='';renderAll();};[els.typeFilter,els.monthFilter,els.searchFilter,els.taxYearFilter].forEach(el=>el.oninput=el.onchange=renderAll);els.passwordInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();login();}};init();
+    els.passwordInput.classList.add('mask-password');els.showPasswordToggle.onchange=()=>els.passwordInput.classList.toggle('mask-password',!els.showPasswordToggle.checked);els.loginBtn.onclick=login;els.signupBtn.onclick=signup;els.logoutBtn.onclick=logout;els.refreshBtn.onclick=fetchEntries;els.exportBtn.onclick=exportCSV;els.taxExportBtn.onclick=exportTaxReport;els.runTaxReportBtn.onclick=renderTaxReport;els.saveBtn.onclick=saveEntry;els.entryForm.onsubmit=saveEntry;els.cancelEditBtn.onclick=resetForm;els.clearFiltersBtn.onclick=()=>{els.typeFilter.value='all';els.monthFilter.value='';els.searchFilter.value='';renderAll();};[els.typeFilter,els.monthFilter,els.searchFilter,els.taxYearFilter].forEach(el=>el.oninput=el.onchange=renderAll);els.passwordInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();login();}};init();
   </script>
 </body>
 </html>
