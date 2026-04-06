@@ -45,6 +45,7 @@
       <div class="hero"><div><h2>Track sales, tax collected, real costs, shipping, and monthly profit.</h2><p>Income entries can now treat your amount as tax-inclusive. The tracker will back sales tax out automatically so only pre-tax revenue feeds your revenue totals.</p></div><div class="hero-note"><strong>Best use for your workflow</strong><span>For a tax-inclusive customer total, enter the full paid amount, turn on tax-inclusive mode, and enter the tax rate. The page will auto-calculate net revenue and sales tax collected for that sale.</span></div></div>
 
       <div class="summary-grid">
+        <div class="summary-card"><span>Startup Expenses</span><strong id="startupTotal">$0.00</strong><small>Expenses before first sale.</small></div>
         <div class="summary-card"><span>Product Revenue</span><strong id="productRevenue">$0.00</strong><small>Pre-tax product revenue only.</small></div>
         <div class="summary-card"><span>Shipping Revenue</span><strong id="shippingRevenue">$0.00</strong><small>Pre-tax shipping revenue only.</small></div>
         <div class="summary-card"><span>Sales Tax Collected</span><strong id="salesTaxCollectedTotal">$0.00</strong><small>Tracked separately from revenue.</small></div>
@@ -61,7 +62,21 @@
             <div class="form-grid">
               <div><label for="entryType">Entry Type</label><select id="entryType" required><option value="income">Income</option><option value="expense">Expense</option></select></div>
               <div><label for="entryDate">Date</label><input id="entryDate" type="date" required></div>
-              <div><label for="entryCategory">Category</label><select id="entryCategory" required><option value="Sale">Sale</option><option value="Material">Material</option><option value="Shipping">Shipping</option><option value="Packaging">Packaging</option><option value="Marketplace Fee">Marketplace Fee</option><option value="Machine Maintenance">Machine Maintenance</option><option value="Equipment">Equipment</option><option value="Event Booth">Event Booth</option><option value="Supplies">Supplies</option><option value="Custom">Custom</option></select></div>
+              <div><label for="entryCategory">Category</label><select id="entryCategory" required>
+  <option value="Sale">Sale</option>
+  <option value="Material">Material</option>
+  <option value="Shipping">Shipping</option>
+  <option value="Packaging">Packaging</option>
+  <option value="Marketplace Fee">Marketplace Fee</option>
+  <option value="Machine Maintenance">Machine Maintenance</option>
+  <option value="Equipment">Equipment</option>
+  <option value="Admin / Setup">Admin / Setup</option>
+  <option value="Software / Subscriptions">Software / Subscriptions</option>
+  <option value="Fees">Fees</option>
+  <option value="Event Booth">Event Booth</option>
+  <option value="Supplies">Supplies</option>
+  <option value="Custom">Custom</option>
+</select></div>
               <div id="capexWrap" class="hidden"><label style="display:flex;align-items:center;gap:8px;"><input id="capexToggle" type="checkbox" style="width:auto;accent-color:var(--accent);"> Mark as CapEx (Asset Purchase)</label></div>
               <div><label for="taxCategory">Tax Category</label><select id="taxCategory"><option value="auto">Auto from category</option><option value="income_sales">Sales Income</option><option value="income_shipping">Shipping Income</option><option value="materials">Materials</option><option value="packaging">Packaging</option><option value="shipping_out">Shipping Purchased</option><option value="marketplace_fees">Marketplace Fees</option><option value="equipment_maintenance">Equipment & Maintenance</option><option value="event_fees">Event & Booth Fees</option><option value="supplies">Supplies</option><option value="other">Other</option></select></div>
               <div><label for="entryAmount">Amount Entered</label><input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required></div>
@@ -109,12 +124,27 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co',SUPABASE_ANON_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
     const $=id=>document.getElementById(id),num=v=>+v||0,money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v)),todayISO=()=>new Date().toISOString().slice(0,10),currentYear=()=>new Date().getFullYear(),csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`,escapeHtml=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-    const ids=['loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn','emailInput','passwordInput','showPasswordToggle','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryTypeHint','entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','salesTaxRate','salesTaxCollected','netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes','productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid','tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap','capexWrap','capexToggle'];
-    const els=ids.reduce((a,id)=>(a[id]=$(id),a),{});const BASE_CATEGORIES=['Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance','Equipment','Event Booth','Supplies'];let supabase,currentUser=null,entries=[],editingId=null,customCategoryValue='';
+    const ids=['startupTotal','loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn','emailInput','passwordInput','showPasswordToggle','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryTypeHint','entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','salesTaxRate','salesTaxCollected','netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes','productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid','tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap','capexWrap','capexToggle'];
+    const els=ids.reduce((a,id)=>(a[id]=$(id),a),{});const BASE_CATEGORIES=['Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance','Equipment','Admin / Setup','Software / Subscriptions','Fees','Event Booth','Supplies'];let supabase,currentUser=null,entries=[],editingId=null,customCategoryValue='';
 
     const setPanel=(el,text,isError=false,palette='green')=>{el.textContent=text;el.classList.remove('hidden');const themes={green:['rgba(79,224,163,.1)','rgba(79,224,163,.18)','#cffff0'],amber:['rgba(255,195,100,.09)','rgba(255,195,100,.22)','#ffe2af'],red:['rgba(255,110,145,.1)','rgba(255,110,145,.22)','#ffd7e1']};const [bg,border,color]=isError?themes.red:themes[palette];Object.assign(el.style,{background:bg,borderColor:border,color})};
     const hide=el=>el.classList.add('hidden');const setMsg=(t,e=false)=>setPanel(els.formMessage,t,e,'green');const setAuthMsg=(t,e=false)=>setPanel(els.authMessage,t,e,'amber');
-    const defaultTax=(type,cat)=>type==='income'?(cat==='Shipping'?'income_shipping':'income_sales'):({Material:'materials',Packaging:'packaging',Shipping:'shipping_out','Marketplace Fee':'marketplace_fees','Machine Maintenance':'equipment_maintenance','Equipment':'equipment_maintenance','Equipment (CapEx)':'equipment_maintenance','Event Booth':'event_fees',Supplies:'supplies'})[cat]||'other';
+    const defaultTax=(type,cat)=>type==='income'
+      ? (cat==='Shipping'?'income_shipping':'income_sales')
+      : ({
+          Material:'materials',
+          Packaging:'packaging',
+          Shipping:'shipping_out',
+          'Marketplace Fee':'marketplace_fees',
+          'Machine Maintenance':'equipment_maintenance',
+          Equipment:'equipment_maintenance',
+          'Equipment (CapEx)':'equipment_maintenance',
+          'Admin / Setup':'other',
+          'Software / Subscriptions':'other',
+          Fees:'marketplace_fees',
+          'Event Booth':'event_fees',
+          Supplies:'supplies'
+        })[cat]||'other';
     const directCost=e=>num(e.material_cost)+num(e.packaging_cost)+num(e.labor_cost)+num(e.other_direct_cost);
     const visibleCost=e=>(e.type==='expense'?num(e.amount):0)+num(e.shipping_cost)+directCost(e);
 
@@ -126,7 +156,15 @@
     function setUI(on){els.loginSection.classList.toggle('hidden',on);els.appSection.classList.toggle('hidden',!on);['logoutBtn','refreshBtn','exportBtn','taxExportBtn'].forEach(k=>els[k].classList.toggle('hidden',!on));}
     function filteredEntries(){const search=els.searchFilter.value.trim().toLowerCase();return [...entries].filter(e=>{if(els.typeFilter.value!=='all'&&e.type!==els.typeFilter.value)return false;if(els.monthFilter.value&&!e.entry_date.startsWith(els.monthFilter.value))return false;if(search&&!`${e.title} ${e.category} ${e.notes||''}`.toLowerCase().includes(search))return false;return true}).sort((a,b)=>new Date(b.entry_date)-new Date(a.entry_date));}
 
-    function updateSummary(list){let pr=0,sr=0,st=0,tc=0;list.forEach(e=>{if(e.type==='income'){pr+=num(e.amount);sr+=num(e.shipping_charged);st+=num(e.sales_tax_collected)}tc+=visibleCost(e)});els.productRevenue.textContent=money(pr);els.shippingRevenue.textContent=money(sr);els.salesTaxCollectedTotal.textContent=money(st);els.totalCosts.textContent=money(tc);els.netProfit.textContent=money(pr+sr-tc);els.entryCount.textContent=list.length;}
+    function updateSummary(list){
+      let startup=0;
+      const firstIncomeDate=getFirstIncomeDate();
+      entries.forEach(e=>{
+        if(e.type==='expense'){
+          if(!firstIncomeDate || e.entry_date<firstIncomeDate) startup+=visibleCost(e);
+        }
+      });
+      if(els.startupTotal) els.startupTotal.textContent=money(startup);let pr=0,sr=0,st=0,tc=0;list.forEach(e=>{if(e.type==='income'){pr+=num(e.amount);sr+=num(e.shipping_charged);st+=num(e.sales_tax_collected)}tc+=visibleCost(e)});els.productRevenue.textContent=money(pr);els.shippingRevenue.textContent=money(sr);els.salesTaxCollectedTotal.textContent=money(st);els.totalCosts.textContent=money(tc);els.netProfit.textContent=money(pr+sr-tc);els.entryCount.textContent=list.length;}
     function renderMonthly(list){if(!list.length){els.monthlySummary.textContent='No monthly data yet. Add entries to start building your summary.';els.monthlyGrid.innerHTML='';return}const m={};list.forEach(e=>{const k=e.entry_date.slice(0,7);m[k]??={r:0,t:0,c:0,o:0};if(e.type==='income'){m[k].r+=num(e.amount)+num(e.shipping_charged);m[k].t+=num(e.sales_tax_collected);m[k].c+=directCost(e);m[k].o+=num(e.shipping_cost)}else m[k].o+=num(e.amount)+num(e.shipping_cost)});els.monthlySummary.textContent='Latest visible months are summarized below.';els.monthlyGrid.innerHTML=Object.entries(m).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6).map(([k,v])=>`<div class="month-card"><strong>${k}</strong><div>Revenue: ${money(v.r)}</div><div>Tax Collected: ${money(v.t)}</div><div>COGS: ${money(v.c)}</div><div>Other Costs: ${money(v.o)}</div><div>Profit: ${money(v.r-v.c-v.o)}</div></div>`).join('');}
     function renderTable(list){if(!list.length){els.tableWrap.innerHTML='<div class="empty-state">No entries match your current filters.</div>';return}els.tableWrap.innerHTML=`<table><thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Category</th><th>Revenue</th><th>Tax</th><th>Ship In</th><th>Ship Out</th><th>COGS</th><th>Actions</th></tr></thead><tbody>${list.map(e=>`<tr><td>${e.entry_date}</td><td><span class="type-pill ${e.type==='income'?'type-income':'type-expense'}">${e.type}</span></td><td><strong>${escapeHtml(e.title)}</strong>${e.notes?`<div style="margin-top:6px;color:var(--muted);font-size:.86rem;line-height:1.5;">${escapeHtml(e.notes)}</div>`:''}</td><td>${escapeHtml(e.category)}</td><td>${money(e.amount)}</td><td>${money(e.sales_tax_collected)}</td><td>${money(e.shipping_charged)}</td><td>${money(e.shipping_cost)}</td><td>${money(directCost(e))}</td><td><div class="mini-actions"><button class="btn-ghost" type="button" data-edit="${e.id}">Edit</button><button class="btn-danger" type="button" data-delete="${e.id}">Delete</button></div></td></tr>`).join('')}</tbody></table>`;els.tableWrap.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>startEdit(b.dataset.edit));els.tableWrap.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteEntry(b.dataset.delete));}
     function taxBuckets(year){const out={income_sales:0,income_shipping:0,sales_tax_collected:0,materials:0,packaging:0,shipping_out:0,marketplace_fees:0,equipment_maintenance:0,event_fees:0,supplies:0,other:0};entries.filter(e=>!year||e.entry_date.startsWith(String(year))).forEach(e=>{if(e.type==='income'){out.income_sales+=num(e.amount);out.income_shipping+=num(e.shipping_charged);out.sales_tax_collected+=num(e.sales_tax_collected);out.materials+=num(e.material_cost);out.packaging+=num(e.packaging_cost);out.other+=num(e.labor_cost)+num(e.other_direct_cost);out.shipping_out+=num(e.shipping_cost)}else{const k=e.tax_category||defaultTax(e.type,e.category);out[k]=(out[k]||0)+num(e.amount)+num(e.shipping_cost)}});return out;}
@@ -139,6 +177,11 @@
     async function fetchEntries(){if(!supabase||!currentUser)return;const {data,error}=await supabase.from('financial_entries').select('*').eq('user_id',currentUser.id).order('entry_date',{ascending:false}).order('created_at',{ascending:false});if(error)return setAuthMsg(`Could not load entries: ${error.message}`,true);hide(els.authMessage);entries=data||[];renderAll();}
     function startEdit(id){const e=entries.find(x=>x.id===id);if(!e)return;editingId=id;const isCapex=e.category==='Equipment (CapEx)';customCategoryValue=BASE_CATEGORIES.includes(e.category)||isCapex?'':(e.category||'');els.formHeading.textContent='Edit Financial Entry';els.saveBtn.textContent='Update Entry';els.cancelEditBtn.classList.remove('hidden');[['entryType','type'],['entryDate','entry_date'],['shippingCharged','shipping_charged'],['taxIncluded','tax_included'],['salesTaxRate','sales_tax_rate'],['salesTaxCollected','sales_tax_collected'],['shippingCost','shipping_cost'],['materialCost','material_cost'],['packagingCost','packaging_cost'],['laborCost','labor_cost'],['otherDirectCost','other_direct_cost'],['entryTitle','title'],['entryNotes','notes']].forEach(([k,p])=>els[k].value=(e[p]??''));els.entryAmount.value=(num(e.amount)+num(e.sales_tax_collected))||'';els.netRevenuePreview.value=e.amount??'';els.entryCategory.value=isCapex?'Equipment':(BASE_CATEGORIES.includes(e.category)?e.category:'Custom');els.capexToggle.checked=isCapex;els.taxCategory.value=e.tax_category||'auto';updateEntryTypeHint();updateTaxPreview();window.scrollTo({top:0,behavior:'smooth'});}
     async function deleteEntry(id){if(!confirm('Delete this entry?'))return;const {error}=await supabase.from('financial_entries').delete().eq('id',id).eq('user_id',currentUser.id);if(error)return setMsg(`Delete failed: ${error.message}`,true);setMsg('Entry deleted.');if(editingId===id)resetForm();await fetchEntries();}
+    function getFirstIncomeDate(){
+      const incomeDates = entries.filter(x=>x.type==='income').map(x=>x.entry_date).sort();
+      return incomeDates.length ? incomeDates[0] : null;
+    }
+
     async function saveEntry(e){
       e?.preventDefault?.();
       hide(els.formMessage);
@@ -176,14 +219,30 @@
           amount=x.net;
         }
 
+        const firstIncomeDate = getFirstIncomeDate();
+
+        let notes = els.entryNotes.value.trim();
+        let taxCat = els.taxCategory.value==='auto'?defaultTax(els.entryType.value,category):els.taxCategory.value;
+
+        // AUTO STARTUP TAGGING
+        if(els.entryType.value==='expense'){
+          const entryDate = els.entryDate.value;
+          if(!firstIncomeDate || entryDate < firstIncomeDate){
+            if(!notes.toLowerCase().includes('startup')){
+              notes = `[Startup Expense] ${notes}`.trim();
+            }
+            taxCat = 'other';
+          }
+        }
+
         const payload={
           user_id:currentUser.id,
           type:els.entryType.value,
           entry_date:els.entryDate.value,
           category,
-          tax_category:els.taxCategory.value==='auto'?defaultTax(els.entryType.value,category):els.taxCategory.value,
+          tax_category: taxCat,
           title:els.entryTitle.value.trim(),
-          notes:els.entryNotes.value.trim(),
+          notes: notes,
           amount,
           shipping_charged:isIncome?num(els.shippingCharged.value):0,
           tax_included:isIncome?els.taxIncluded.value:'no',
