@@ -30,6 +30,17 @@
     .quote-box{background:var(--panel2)} .calc-row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)} .calc-row:last-child{border-bottom:none}.calc-row strong{font-size:1rem}.total{font-size:1.12rem}
     .note,.empty{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}
     .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    .advanced-wrap{margin-top:18px}.advanced-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;font-weight:800}.advanced-toggle small{color:var(--muted);font-weight:600}.advanced-panel.hidden{display:none}
+    .pdf-sheet{display:none}
+    .pdf-shell{max-width:900px;margin:0 auto;padding:28px;background:linear-gradient(180deg,#08101f 0%,#0d1730 100%);color:#eef4ff}
+    .pdf-card{border:1px solid rgba(126,144,255,.18);border-radius:28px;background:rgba(12,19,40,.96);box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden}
+    .pdf-hero{padding:28px 30px;background:radial-gradient(circle at top left,rgba(126,123,255,.24),transparent 40%),radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 35%),linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08))}
+    .pdf-brand{display:flex;align-items:center;gap:14px;margin-bottom:18px}.pdf-icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:24px}
+    .pdf-brand h2,.pdf-brand p,.pdf-hero h1,.pdf-hero p{margin:0}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#a8b5db}.pdf-hero h1{font-size:2rem;line-height:1.04;margin-bottom:10px}.pdf-grid,.pdf-totals{display:grid;gap:14px}.pdf-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:24px 30px}.pdf-panel{padding:18px;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+    .pdf-line{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.pdf-line:last-child{border-bottom:none}.pdf-line strong{font-size:1rem}.pdf-totals{padding:0 30px 24px}.pdf-total-card{padding:18px;border-radius:22px;background:linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08));border:1px solid rgba(126,144,255,.18)}.pdf-total-card .pdf-line{border-color:rgba(255,255,255,.12)}
+    .pdf-footer{padding:0 30px 30px}.pdf-note{padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);line-height:1.65;color:#d9e3ff}
+    @media print{body{background:#fff;color:#111}.wrap{display:none!important}.pdf-sheet{display:block!important}.pdf-shell{padding:0;max-width:none;background:#fff;color:#111}.pdf-card,.pdf-panel,.pdf-total-card,.pdf-note{box-shadow:none;background:#fff!important;color:#111!important;border:1px solid #d9deea}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#4a5568!important}.pdf-hero{background:#fff!important;padding-bottom:18px}.pdf-icon{box-shadow:none}.pdf-grid{grid-template-columns:1fr 1fr}}
+    @media (max-width:720px){.pdf-grid{grid-template-columns:1fr}}
     @media (max-width:1020px){.hero,.grid,.summary-grid{grid-template-columns:1fr}}
     @media (max-width:720px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.topbar{border-radius:24px}.hero>.card,.summary,.card{padding:18px;border-radius:22px}.form-grid,.triple{grid-template-columns:1fr}.line-head{align-items:flex-start;flex-direction:column}}
   </style>
@@ -48,6 +59,7 @@
         <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
         <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
         <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
+        <button class="btn" id="customerPdfBtn" type="button">Generate Customer PDF</button>
         <button class="btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
         <button class="btn-danger" id="resetBtn" type="button">Reset</button>
       </div>
@@ -121,47 +133,77 @@
           <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions" placeholder="Example: quote includes one design proof, standard color only, hardware as listed, shipping estimate subject to final address."></textarea></div>
         </div>
 
-        <h3 style="margin-top:20px;">Material + Time Helpers</h3>
-        <p class="sub">Use these helper values to calculate material and time-based pricing more consistently.</p>
+        <h3 style="margin-top:20px;">Simple Quote Inputs</h3>
+        <p class="sub">For a fast quote, enter up to 4 filament colors or materials, then add design labor, post-process labor, machine hours, and machine cost per hour.</p>
         <div class="form-grid">
-          <div><label for="spoolCost">Spool Cost</label><input id="spoolCost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="spoolWeight">Spool Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
-          <div><label for="gramsPerUnit">Estimated Grams Per Print Unit</label><input id="gramsPerUnit" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="printHours">Estimated Print Hours Total</label><input id="printHours" type="number" min="0" step="0.1" value="0" /></div>
-          <div><label for="machineRate">Machine Rate / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="designHours">Design Hours</label><input id="designHours" type="number" min="0" step="0.1" value="0" /></div>
-          <div><label for="designRate">Design Rate / Hour</label><input id="designRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="postHours">Post-Processing Hours</label><input id="postHours" type="number" min="0" step="0.1" value="0" /></div>
-          <div><label for="postRate">Post-Processing Rate / Hour</label><input id="postRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
+          <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
+          <div><label for="filament1Cost">Filament 1 Roll Cost</label><input id="filament1Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament1Used">Filament 1 Grams Used</label><input id="filament1Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament2Cost">Filament 2 Roll Cost</label><input id="filament2Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament2Used">Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament3Cost">Filament 3 Roll Cost</label><input id="filament3Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament3Used">Filament 3 Grams Used</label><input id="filament3Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament4Cost">Filament 4 Roll Cost</label><input id="filament4Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament4Used">Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simplePackaging">Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleShipping">Shipping</label><input id="simpleShipping" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleHardware">Hardware / Inserts / Magnets</label><input id="simpleHardware" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="designLabor">Design Labor</label><input id="designLabor" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="postLabor">Post-Process Labor</label><input id="postLabor" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="machineHours">Machine Time (Hours)</label><input id="machineHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="marketplacePercent">Marketplace / Payment Fee %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
-          <div class="full"><div class="note" id="helperSummary">No helper values applied yet.</div></div>
+          <div class="full"><div class="note" id="simpleSummary">Enter your simple quote inputs to auto-populate the quote.</div></div>
         </div>
 
-        <h3 style="margin-top:20px;">Direct Cost Breakdown</h3>
-        <p class="sub">These are per-order costs that would not exist if the order did not happen.</p>
-        <div class="line-items" id="directItems"></div>
-        <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="addDirectBtn" type="button">Add Direct Cost</button><button class="btn-ghost" id="applyHelpersBtn" type="button">Apply Helper Values</button></div>
+        <div class="advanced-wrap">
+          <button class="advanced-toggle" id="advancedToggle" type="button">
+            <span>Advanced Cost Breakdown</span>
+            <small id="advancedToggleText">Show details</small>
+          </button>
+          <div class="advanced-panel hidden" id="advancedPanel">
+            <h3 style="margin-top:20px;">Direct Cost Breakdown</h3>
+            <p class="sub">These are per-order costs that would not exist if the order did not happen.</p>
+            <div class="line-items" id="directItems"></div>
+            <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="addDirectBtn" type="button">Add Direct Cost</button><button class="btn-ghost" id="applyHelpersBtn" type="button">Apply Helper Values</button></div>
 
-        <h3 style="margin-top:20px;">Overhead / Business Cost Allocation</h3>
-        <p class="sub">These are costs you choose to allocate into the quote for time, wear, fees, and business overhead.</p>
-        <div class="line-items" id="overheadItems"></div>
-        <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="addOverheadBtn" type="button">Add Overhead Cost</button></div>
+            <h3 style="margin-top:20px;">Overhead / Business Cost Allocation</h3>
+            <p class="sub">These are costs you choose to allocate into the quote for time, wear, fees, and business overhead.</p>
+            <div class="line-items" id="overheadItems"></div>
+            <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="addOverheadBtn" type="button">Add Overhead Cost</button></div>
+          </div>
+        </div>
       </section>
 
       <section class="card quote-box">
-        <h3>Batch Cost Calculator</h3>
-        <p class="sub">Use this for pre-made inventory, craft shows, and repeat products so you can estimate cost per piece before quoting or logging sales.</p>
+        <h3>Craft Show / Pre-Made Batch Inputs</h3>
+        <p class="sub">Use this simplified section for pre-made inventory, craft shows, and future inventory tracking. It is designed so the same fields can feed a dedicated inventory page later.</p>
         <div class="form-grid">
-          <div><label for="batchName">Batch / Product Name</label><input id="batchName" placeholder="Example: Mini fidgets, beach toys, bag hooks" /></div>
-          <div><label for="batchUnits">Units Made in Batch</label><input id="batchUnits" type="number" min="1" step="1" value="1" /></div>
-          <div><label for="batchMaterials">Total Material Cost</label><input id="batchMaterials" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="batchPackaging">Total Packaging Cost</label><input id="batchPackaging" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="batchLabor">Total Labor Cost</label><input id="batchLabor" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="batchOther">Other Direct Batch Cost</label><input id="batchOther" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="batchOverhead">Allocated Overhead for Batch</label><input id="batchOverhead" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchName">Product / Batch Name</label><input id="batchName" placeholder="Example: Mini fidgets, beach toys, bag hooks" /></div>
+          <div><label for="batchSku">SKU / Batch Code</label><input id="batchSku" placeholder="Example: FIDG-MINI-001" /></div>
+          <div><label for="batchUnits">Units Made</label><input id="batchUnits" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="batchColors">Colors / Filaments Used</label><input id="batchColors" type="number" min="1" max="4" step="1" value="1" /></div>
+          <div><label for="batchRollWeight">Roll Weight (g)</label><input id="batchRollWeight" type="number" min="1" step="1" value="1000" /></div>
+          <div><label for="batchPriceTarget">Target Sell Price Each</label><input id="batchPriceTarget" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament1Cost">Filament 1 Roll Cost</label><input id="batchFilament1Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament1Used">Filament 1 Grams Used</label><input id="batchFilament1Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament2Cost">Filament 2 Roll Cost</label><input id="batchFilament2Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament2Used">Filament 2 Grams Used</label><input id="batchFilament2Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament3Cost">Filament 3 Roll Cost</label><input id="batchFilament3Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament3Used">Filament 3 Grams Used</label><input id="batchFilament3Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament4Cost">Filament 4 Roll Cost</label><input id="batchFilament4Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchFilament4Used">Filament 4 Grams Used</label><input id="batchFilament4Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchPackaging">Packaging Total</label><input id="batchPackaging" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchLabor">Labor Total</label><input id="batchLabor" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchOther">Other Direct Total</label><input id="batchOther" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="batchOverhead">Allocated Overhead Total</label><input id="batchOverhead" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="batchSold">Units Sold</label><input id="batchSold" type="number" min="0" step="1" value="0" /></div>
+          <div><label for="batchLocation">Show / Location</label><input id="batchLocation" placeholder="Example: Craft show, booth, store shelf" /></div>
         </div>
+        <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="applyBatchBtn" type="button">Apply Batch Inputs</button></div>
         <div class="note" style="margin-top:16px;" id="batchSummary">No batch estimate yet.</div>
+        <div class="note" style="margin-top:12px;" id="inventoryReadyView">No inventory-ready output yet.</div>
 
         <h3 style="margin-top:20px;">Pricing Output</h3>
         <p class="sub">Choose how you want to add profit.</p>
@@ -216,6 +258,52 @@
     <p class="footer">Standalone quote helper for internal use. Save accepted quotes manually into your finance tracker as income orders later.</p>
   </div>
 
+  <section class="pdf-sheet" id="pdfSheet" aria-hidden="true">
+    <div class="pdf-shell">
+      <div class="pdf-card">
+        <div class="pdf-hero">
+          <div class="pdf-brand">
+            <div class="pdf-icon">✨</div>
+            <div>
+              <h2>OliPoly 3D</h2>
+              <p>Custom 3D printing quote</p>
+            </div>
+          </div>
+          <h1 id="pdfTitle">Customer Quote</h1>
+          <p id="pdfSubtitle">A polished customer-ready quote for your order.</p>
+        </div>
+        <div class="pdf-grid">
+          <div class="pdf-panel">
+            <div class="pdf-line"><span>Quote Number</span><strong id="pdfQuoteNumber">—</strong></div>
+            <div class="pdf-line"><span>Date</span><strong id="pdfQuoteDate">—</strong></div>
+            <div class="pdf-line"><span>Valid Through</span><strong id="pdfValidThrough">—</strong></div>
+            <div class="pdf-line"><span>Turnaround</span><strong id="pdfTurnaround">—</strong></div>
+            <div class="pdf-line"><span>Status</span><strong id="pdfStatus">Pending</strong></div>
+          </div>
+          <div class="pdf-panel">
+            <div class="pdf-line"><span>Customer</span><strong id="pdfCustomerName">—</strong></div>
+            <div class="pdf-line"><span>Quantity</span><strong id="pdfQty">1</strong></div>
+            <div class="pdf-line"><span>Price Per Item</span><strong id="pdfPerItem">$0.00</strong></div>
+            <div class="pdf-line"><span>Project</span><strong id="pdfProject">—</strong></div>
+          </div>
+        </div>
+        <div class="pdf-totals">
+          <div class="pdf-total-card">
+            <div class="pdf-line"><span>Subtotal</span><strong id="pdfSubtotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfTax">$0.00</strong></div>
+            <div class="pdf-line"><span>Total Quote</span><strong id="pdfTotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Deposit Due</span><strong id="pdfDeposit">$0.00</strong></div>
+            <div class="pdf-line"><span>Balance Due</span><strong id="pdfBalance">$0.00</strong></div>
+          </div>
+        </div>
+        <div class="pdf-footer">
+          <div class="pdf-note" id="pdfCustomerNotes">No customer-facing notes added yet.</div>
+          <div class="pdf-note" id="pdfAssumptions" style="margin-top:14px;">No exclusions or assumptions added yet.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <template id="lineItemTemplate">
     <div class="line-item">
       <div class="line-head">
@@ -234,11 +322,12 @@
   <script>
     const $=id=>document.getElementById(id),money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(+v||0),num=v=>+v||0;
     const els={
-      saveQuoteBtn:$('saveQuoteBtn'),quoteStatus:$('quoteStatus'),savedQuotesSelect:$('savedQuotesSelect'),loadQuoteBtn:$('loadQuoteBtn'),deleteQuoteBtn:$('deleteQuoteBtn'),historySummary:$('historySummary'),
+      customerPdfBtn:$('customerPdfBtn'),pdfSheet:$('pdfSheet'),pdfTitle:$('pdfTitle'),pdfSubtitle:$('pdfSubtitle'),pdfQuoteNumber:$('pdfQuoteNumber'),pdfQuoteDate:$('pdfQuoteDate'),pdfValidThrough:$('pdfValidThrough'),pdfTurnaround:$('pdfTurnaround'),pdfStatus:$('pdfStatus'),pdfCustomerName:$('pdfCustomerName'),pdfQty:$('pdfQty'),pdfPerItem:$('pdfPerItem'),pdfProject:$('pdfProject'),pdfSubtotal:$('pdfSubtotal'),pdfTax:$('pdfTax'),pdfTotal:$('pdfTotal'),pdfDeposit:$('pdfDeposit'),pdfBalance:$('pdfBalance'),pdfCustomerNotes:$('pdfCustomerNotes'),pdfAssumptions:$('pdfAssumptions'),
+      saveQuoteBtn:$('saveQuoteBtn'),quoteStatus:$('quoteStatus'),savedQuotesSelect:$('savedQuotesSelect'),loadQuoteBtn:$('loadQuoteBtn'),deleteQuoteBtn:$('deleteQuoteBtn'),historySummary:$('historySummary'),advancedToggle:$('advancedToggle'),advancedToggleText:$('advancedToggleText'),advancedPanel:$('advancedPanel'),
       suggestedMode:$('suggestedMode'),sumPerItem:$('sumPerItem'),sumMargin:$('sumMargin'),sumBreakEven:$('sumBreakEven'),profitGuardrail:$('profitGuardrail'),outPerItem:$('outPerItem'),outBreakEven:$('outBreakEven'),outMargin:$('outMargin'),profitWarning:$('profitWarning'),financeReadyView:$('financeReadyView'),copyFinanceBtn:$('copyFinanceBtn'),
       quoteNumber:$('quoteNumber'),quoteDate:$('quoteDate'),validThrough:$('validThrough'),turnaround:$('turnaround'),presetSelect:$('presetSelect'),depositPercent:$('depositPercent'),customerNotes:$('customerNotes'),assumptions:$('assumptions'),
-      spoolCost:$('spoolCost'),spoolWeight:$('spoolWeight'),gramsPerUnit:$('gramsPerUnit'),printHours:$('printHours'),machineRate:$('machineRate'),designHours:$('designHours'),designRate:$('designRate'),postHours:$('postHours'),postRate:$('postRate'),marketplacePercent:$('marketplacePercent'),helperSummary:$('helperSummary'),applyHelpersBtn:$('applyHelpersBtn'),
-      batchName:$('batchName'),batchUnits:$('batchUnits'),batchMaterials:$('batchMaterials'),batchPackaging:$('batchPackaging'),batchLabor:$('batchLabor'),batchOther:$('batchOther'),batchOverhead:$('batchOverhead'),batchSold:$('batchSold'),batchUnitCost:$('batchUnitCost'),batchTotalCost:$('batchTotalCost'),batchUnitsOut:$('batchUnitsOut'),batchUnsoldValue:$('batchUnsoldValue'),batchSummary:$('batchSummary'),materialUnitCost:$('materialUnitCost'),activePreset:$('activePreset'),
+      filamentCount:$('filamentCount'),filament1Cost:$('filament1Cost'),filament1Used:$('filament1Used'),filament2Cost:$('filament2Cost'),filament2Used:$('filament2Used'),filament3Cost:$('filament3Cost'),filament3Used:$('filament3Used'),filament4Cost:$('filament4Cost'),filament4Used:$('filament4Used'),simplePackaging:$('simplePackaging'),simpleShipping:$('simpleShipping'),simpleHardware:$('simpleHardware'),designLabor:$('designLabor'),postLabor:$('postLabor'),machineHours:$('machineHours'),spoolCost:$('spoolCost'),spoolWeight:$('spoolWeight'),gramsPerUnit:$('gramsPerUnit'),printHours:$('printHours'),machineRate:$('machineRate'),designHours:$('designHours'),designRate:$('designRate'),postHours:$('postHours'),postRate:$('postRate'),marketplacePercent:$('marketplacePercent'),helperSummary:$('helperSummary'),simpleSummary:$('simpleSummary'),applyHelpersBtn:$('applyHelpersBtn'),
+      batchName:$('batchName'),batchSku:$('batchSku'),batchUnits:$('batchUnits'),batchColors:$('batchColors'),batchRollWeight:$('batchRollWeight'),batchPriceTarget:$('batchPriceTarget'),batchFilament1Cost:$('batchFilament1Cost'),batchFilament1Used:$('batchFilament1Used'),batchFilament2Cost:$('batchFilament2Cost'),batchFilament2Used:$('batchFilament2Used'),batchFilament3Cost:$('batchFilament3Cost'),batchFilament3Used:$('batchFilament3Used'),batchFilament4Cost:$('batchFilament4Cost'),batchFilament4Used:$('batchFilament4Used'),batchPackaging:$('batchPackaging'),batchLabor:$('batchLabor'),batchOther:$('batchOther'),batchOverhead:$('batchOverhead'),batchSold:$('batchSold'),batchLocation:$('batchLocation'),applyBatchBtn:$('applyBatchBtn'),inventoryReadyView:$('inventoryReadyView'),batchUnitCost:$('batchUnitCost'),batchTotalCost:$('batchTotalCost'),batchUnitsOut:$('batchUnitsOut'),batchUnsoldValue:$('batchUnsoldValue'),batchSummary:$('batchSummary'),materialUnitCost:$('materialUnitCost'),activePreset:$('activePreset'),
       quoteTitle:$('quoteTitle'),customerName:$('customerName'),qty:$('qty'),unitsPerItem:$('unitsPerItem'),quoteNotes:$('quoteNotes'),
       directItems:$('directItems'),overheadItems:$('overheadItems'),addDirectBtn:$('addDirectBtn'),addOverheadBtn:$('addOverheadBtn'),
       profitMode:$('profitMode'),profitValue:$('profitValue'),discount:$('discount'),salesTax:$('salesTax'),
@@ -286,27 +375,37 @@
     }
 
     function helperValues(){
+      const simpleCount=Math.max(1,Math.min(4,num(els.filamentCount.value)||1));
+      const simpleWeight=Math.max(1,num(els.spoolWeight.value)||1000);
+      const simpleMaterials=[1,2,3,4].slice(0,simpleCount).map(i=>(num(els[`filament${i}Used`].value)/simpleWeight)*num(els[`filament${i}Cost`].value));
+      const simpleMaterialTotal=simpleMaterials.reduce((a,b)=>a+b,0);
+      const simpleDesignTotal=num(els.designLabor.value);
+      const simplePrintTotal=num(els.machineHours.value)*num(els.machineRate.value);
+      const simplePostTotal=num(els.postLabor.value);
       const qty=Math.max(1,num(els.qty.value)||1),unitsPerItem=Math.max(1,num(els.unitsPerItem.value)||1),units=qty*unitsPerItem;
       const materialPerUnit=(num(els.gramsPerUnit.value)/Math.max(1,num(els.spoolWeight.value)||1))*num(els.spoolCost.value);
-      const materialTotal=materialPerUnit*units;
-      const designTotal=num(els.designHours.value)*num(els.designRate.value);
-      const printTotal=num(els.printHours.value)*num(els.machineRate.value);
-      const postTotal=num(els.postHours.value)*num(els.postRate.value);
-      return {units,materialPerUnit,materialTotal,designTotal,printTotal,postTotal};
+      const materialTotal=materialPerUnit*units || simpleMaterialTotal;
+      const designTotal=num(els.designHours.value)*num(els.designRate.value) || simpleDesignTotal;
+      const printTotal=num(els.printHours.value)*num(els.machineRate.value) || simplePrintTotal;
+      const postTotal=num(els.postHours.value)*num(els.postRate.value) || simplePostTotal;
+      return {units,materialPerUnit:units?materialTotal/units:0,materialTotal,designTotal,printTotal,postTotal,simpleMaterialTotal,simpleDesignTotal,simplePrintTotal,simplePostTotal,simplePackaging:num(els.simplePackaging.value),simpleShipping:num(els.simpleShipping.value),simpleHardware:num(els.simpleHardware.value),simpleCount};
     }
 
     function applyHelperValues(){
       const h=helperValues();
       const direct=[...els.directItems.children],over=[...els.overheadItems.children];
-      if(direct[0]) direct[0].querySelector('.item-amount').value=h.materialPerUnit.toFixed(2);
-      if(over[0]) over[0].querySelector('.item-amount').value=h.designTotal.toFixed(2);
-      if(over[1]) over[1].querySelector('.item-amount').value=h.printTotal.toFixed(2);
-      if(over[2]) over[2].querySelector('.item-amount').value=(h.postTotal||num(over[2].querySelector('.item-amount').value)).toFixed(2);
+      if(direct[0]){direct[0].querySelector('.item-label').value=`Filament / Material (${h.simpleCount} color${h.simpleCount===1?'':'s'})`;direct[0].querySelector('.item-type').value='per_order';direct[0].querySelector('.item-amount').value=h.materialTotal.toFixed(2);}
+      if(direct[1]){direct[1].querySelector('.item-label').value='Packaging';direct[1].querySelector('.item-type').value='per_order';direct[1].querySelector('.item-amount').value=h.simplePackaging.toFixed(2);}
+      if(direct[2]){direct[2].querySelector('.item-label').value='Shipping';direct[2].querySelector('.item-type').value='per_order';direct[2].querySelector('.item-amount').value=h.simpleShipping.toFixed(2);}
+      if(direct[3]){direct[3].querySelector('.item-label').value='Hardware / Inserts / Magnets';direct[3].querySelector('.item-type').value='per_order';direct[3].querySelector('.item-amount').value=h.simpleHardware.toFixed(2);}
+      if(over[0]){over[0].querySelector('.item-label').value='Design Labor';over[0].querySelector('.item-type').value='per_order';over[0].querySelector('.item-amount').value=h.designTotal.toFixed(2);}
+      if(over[1]){over[1].querySelector('.item-label').value='Machine Time';over[1].querySelector('.item-type').value='per_order';over[1].querySelector('.item-amount').value=h.printTotal.toFixed(2);}
+      if(over[2]){over[2].querySelector('.item-label').value='Post-Process Labor';over[2].querySelector('.item-type').value='per_order';over[2].querySelector('.item-amount').value=h.postTotal.toFixed(2);}
       render();
     }
 
     function suggestedProfitPercent(){
-      const preset=els.presetSelect.value, custom=!!(num(els.designHours.value)||num(els.postHours.value)), qty=Math.max(1,num(els.qty.value)||1);
+      const preset=els.presetSelect.value, custom=!!(num(els.designHours.value)||num(els.postHours.value)||num(els.designLabor.value)||num(els.postLabor.value)), qty=Math.max(1,num(els.qty.value)||1);
       if(els.suggestedMode.value==='off') return null;
       const aggressive=els.suggestedMode.value==='aggressive';
       let pct=35;
@@ -353,6 +452,38 @@
       return `${title}${name?` for ${name}`:''}: ${qty} item${qty===1?'':'s'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(profit)} target profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value)?' including tax':''}.`;
     }
 
+    function fillCustomerPdf(total,beforeTax,tax,deposit,balance,perItem){
+      els.pdfTitle.textContent=els.quoteTitle.value.trim()||'Customer Quote';
+      els.pdfSubtitle.textContent=els.customerNotes.value.trim()||'Custom 3D printing quote prepared for your order.';
+      els.pdfQuoteNumber.textContent=els.quoteNumber.value||'—';
+      els.pdfQuoteDate.textContent=els.quoteDate.value||'—';
+      els.pdfValidThrough.textContent=els.validThrough.value||'—';
+      els.pdfTurnaround.textContent=els.turnaround.value||'—';
+      els.pdfStatus.textContent=(els.quoteStatus.value||'pending').replace(/^./,function(m){return m.toUpperCase()});
+      els.pdfCustomerName.textContent=els.customerName.value.trim()||'—';
+      els.pdfQty.textContent=String(Math.max(1,num(els.qty.value)||1));
+      els.pdfPerItem.textContent=money(perItem);
+      els.pdfProject.textContent=els.quoteTitle.value.trim()||'—';
+      els.pdfSubtotal.textContent=money(beforeTax);
+      els.pdfTax.textContent=money(tax);
+      els.pdfTotal.textContent=money(total);
+      els.pdfDeposit.textContent=money(deposit);
+      els.pdfBalance.textContent=money(balance);
+      els.pdfCustomerNotes.textContent=els.customerNotes.value.trim()||'No customer-facing notes added yet.';
+      els.pdfAssumptions.textContent=els.assumptions.value.trim()||'No exclusions or assumptions added yet.';
+    }
+
+    function generateCustomerPdf(){
+      const total=parseFloat((els.outFinal.textContent||'').replace(/[^\d.-]/g,''))||0;
+      const beforeTax=parseFloat((els.outBeforeTax.textContent||'').replace(/[^\d.-]/g,''))||0;
+      const tax=parseFloat((els.outTax.textContent||'').replace(/[^\d.-]/g,''))||0;
+      const deposit=parseFloat((els.outDeposit.textContent||'').replace(/[^\d.-]/g,''))||0;
+      const balance=parseFloat((els.outBalance.textContent||'').replace(/[^\d.-]/g,''))||0;
+      const perItem=parseFloat((els.outPerItem.textContent||'').replace(/[^\d.-]/g,''))||0;
+      fillCustomerPdf(total,beforeTax,tax,deposit,balance,perItem);
+      window.print();
+    }
+
     function customerView(total,beforeTax,tax,deposit,balance){
       const lines=[
         `<strong>${els.quoteTitle.value.trim()||'Quote'}</strong>`,
@@ -366,18 +497,72 @@
       return lines.map(s=>`<div style="margin-bottom:12px;">${s}</div>`).join('');
     }
 
+    function batchValues(){
+      const colors=Math.max(1,Math.min(4,num(els.batchColors.value)||1));
+      const weight=Math.max(1,num(els.batchRollWeight.value)||1000);
+      const mats=[1,2,3,4].slice(0,colors).map(i=>(num(els[`batchFilament${i}Used`].value)/weight)*num(els[`batchFilament${i}Cost`].value));
+      const materialTotal=mats.reduce((a,b)=>a+b,0);
+      const total=materialTotal+num(els.batchPackaging.value)+num(els.batchLabor.value)+num(els.batchOther.value)+num(els.batchOverhead.value);
+      const units=Math.max(1,num(els.batchUnits.value)||1);
+      const sold=Math.min(units,Math.max(0,num(els.batchSold.value)||0));
+      const unit=total/units;
+      const unsold=units-sold;
+      const unsoldValue=unit*unsold;
+      const soldCost=unit*sold;
+      const target=num(els.batchPriceTarget.value);
+      const estimatedRevenue=target*sold;
+      const estimatedProfit=estimatedRevenue-soldCost;
+      return {colors,materialTotal,total,units,sold,unit,unsold,unsoldValue,soldCost,target,estimatedRevenue,estimatedProfit};
+    }
+
+    function applyBatchInputs(){
+      const b=batchValues();
+      els.batchMaterials.value=b.materialTotal.toFixed(2);
+      renderBatch();
+    }
+
     function renderBatch(){
-      const units=Math.max(1,num(els.batchUnits.value)||1),sold=Math.min(units,Math.max(0,num(els.batchSold.value)||0));
-      const total=num(els.batchMaterials.value)+num(els.batchPackaging.value)+num(els.batchLabor.value)+num(els.batchOther.value)+num(els.batchOverhead.value);
-      const unit=total/units,unsold=units-sold,unsoldValue=unit*unsold,soldCost=unit*sold,name=els.batchName.value.trim()||'This batch';
-      els.batchUnitCost.textContent=money(unit); els.batchTotalCost.textContent=money(total); els.batchUnitsOut.textContent=String(units); els.batchUnsoldValue.textContent=money(unsoldValue);
-      els.batchSummary.textContent=`${name}: ${units} total units at ${money(unit)} each. If you sell ${sold}, estimated COGS is ${money(soldCost)} and remaining unsold inventory value is ${money(unsoldValue)} across ${unsold} unit${unsold===1?'':'s'}.`;
+      const b=batchValues();
+      const name=els.batchName.value.trim()||'This batch';
+      els.batchUnitCost.textContent=money(b.unit);
+      els.batchTotalCost.textContent=money(b.total);
+      els.batchUnitsOut.textContent=String(b.units);
+      els.batchUnsoldValue.textContent=money(b.unsoldValue);
+      els.batchSummary.textContent=`${name}: ${b.units} total units at ${money(b.unit)} each. If you sell ${b.sold}, estimated COGS is ${money(b.soldCost)} and remaining unsold inventory value is ${money(b.unsoldValue)} across ${b.unsold} unit${b.unsold===1?'':'s'}.`;
+      els.inventoryReadyView.textContent=`Inventory-ready output → Product: ${name} | SKU: ${els.batchSku.value||'N/A'} | Units made: ${b.units} | Unit cost: ${b.unit.toFixed(2)} | Units sold: ${b.sold} | Unsold units: ${b.unsold} | Unsold value: ${b.unsoldValue.toFixed(2)} | Target sell price each: ${b.target.toFixed(2)} | Estimated sold revenue: ${b.estimatedRevenue.toFixed(2)} | Estimated sold profit: ${b.estimatedProfit.toFixed(2)} | Location: ${els.batchLocation.value||'N/A'}`;
     }
 
     function render(){
       const h=helperValues();
       els.materialUnitCost.textContent=money(h.materialPerUnit);
-      els.helperSummary.textContent=`Material estimate: ${money(h.materialPerUnit)} per print unit / ${money(h.materialTotal)} total. Design time: ${money(h.designTotal)}. Print time allocation: ${money(h.printTotal)}. Post-processing allocation: ${money(h.postTotal)}.`;
+      if(els.helperSummary) els.helperSummary.textContent=`Material estimate: ${money(h.materialPerUnit)} per print unit / ${money(h.materialTotal)} total. Design time: ${money(h.designTotal)}. Print time allocation: ${money(h.printTotal)}. Post-processing allocation: ${money(h.postTotal)}.`;
+      els.simpleSummary.textContent=`Simple inputs: ${money(h.materialTotal)} material, ${money(h.simplePackaging)} packaging, ${money(h.simpleShipping)} shipping, ${money(h.simpleHardware)} hardware, ${money(h.designTotal)} design labor, ${money(h.printTotal)} machine time, ${money(h.postTotal)} post-process labor.`;
+      const directRows=[...els.directItems.children],overRows=[...els.overheadItems.children];
+      if(directRows.length>=4&&overRows.length>=3){
+        if(directRows[0].querySelector('.item-label').value.startsWith('Filament / Material')||directRows[0].querySelector('.item-label').value==='Filament / Material'){
+          directRows[0].querySelector('.item-label').value=`Filament / Material (${h.simpleCount} color${h.simpleCount===1?'':'s'})`;
+          directRows[0].querySelector('.item-type').value='per_order';
+          directRows[0].querySelector('.item-amount').value=h.materialTotal.toFixed(2);
+          directRows[1].querySelector('.item-label').value='Packaging';
+          directRows[1].querySelector('.item-type').value='per_order';
+          directRows[1].querySelector('.item-amount').value=h.simplePackaging.toFixed(2);
+          directRows[2].querySelector('.item-label').value='Shipping';
+          directRows[2].querySelector('.item-type').value='per_order';
+          directRows[2].querySelector('.item-amount').value=h.simpleShipping.toFixed(2);
+          directRows[3].querySelector('.item-label').value='Hardware / Inserts / Magnets';
+          directRows[3].querySelector('.item-type').value='per_order';
+          directRows[3].querySelector('.item-amount').value=h.simpleHardware.toFixed(2);
+          overRows[0].querySelector('.item-label').value='Design Labor';
+          overRows[0].querySelector('.item-type').value='per_order';
+          overRows[0].querySelector('.item-amount').value=h.designTotal.toFixed(2);
+          overRows[1].querySelector('.item-label').value='Machine Time';
+          overRows[1].querySelector('.item-type').value='per_order';
+          overRows[1].querySelector('.item-amount').value=h.printTotal.toFixed(2);
+          overRows[2].querySelector('.item-label').value='Post-Process Labor';
+          overRows[2].querySelector('.item-type').value='per_order';
+          overRows[2].querySelector('.item-amount').value=h.postTotal.toFixed(2);
+        }
+      }
       els.activePreset.textContent=PRESETS[els.presetSelect.value]?.name||'Custom';
 
       let direct=totalOf(els.directItems),overhead=totalOf(els.overheadItems),base=direct+overhead;
@@ -398,6 +583,7 @@
       els.quoteSummary.textContent=summaryText(finalQuote,direct,overhead,profit,deposit,balance);
       els.profitWarning.textContent=lowProfit&&lowMargin?`Warning: profit is only ${money(profit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price.`:lowProfit?`Warning: profit is only ${money(profit)}. Consider increasing price.`:lowMargin?`Warning: margin is only ${marginPct.toFixed(1)}%. Consider increasing price.`:'No pricing warnings.';
       els.customerQuoteView.innerHTML=customerView(finalQuote,beforeTax,tax,deposit,balance);
+      fillCustomerPdf(finalQuote,beforeTax,tax,deposit,balance,perItem);
       els.financeReadyView.textContent=financeEntryText(finalQuote,beforeTax,tax);
       renderBatch();
     }
@@ -406,10 +592,10 @@
       const p=PRESETS[name]||PRESETS.custom;
       if(p.profit!=null) els.profitValue.value=p.profit;
       if(p.deposit!=null) els.depositPercent.value=p.deposit;
-      if(p.designRate!=null) els.designRate.value=p.designRate;
-      if(p.postRate!=null) els.postRate.value=p.postRate;
+      if(p.designRate!=null){els.designRate.value=p.designRate;els.designLabor.value=p.designRate;}
+      if(p.postRate!=null){els.postRate.value=p.postRate;els.postLabor.value=p.postRate;}
       if(p.machineRate!=null) els.machineRate.value=p.machineRate;
-      if(p.grams!=null) els.gramsPerUnit.value=p.grams;
+      if(p.grams!=null){els.gramsPerUnit.value=p.grams;els.filament1Used.value=p.grams;}
       const direct=[...els.directItems.children],over=[...els.overheadItems.children];
       if(direct[1]&&p.packaging!=null) direct[1].querySelector('.item-amount').value=p.packaging;
       if(over[1]&&p.machine!=null) over[1].querySelector('.item-amount').value=p.machine;
@@ -425,7 +611,7 @@
     }
 
     function snapshotQuote(){
-      const snap={quoteNumber:els.quoteNumber.value||`Q-${Date.now()}`,quoteDate:els.quoteDate.value,validThrough:els.validThrough.value,turnaround:els.turnaround.value,quoteTitle:els.quoteTitle.value,customerName:els.customerName.value,qty:els.qty.value,unitsPerItem:els.unitsPerItem.value,presetSelect:els.presetSelect.value,depositPercent:els.depositPercent.value,quoteStatus:els.quoteStatus.value,quoteNotes:els.quoteNotes.value,customerNotes:els.customerNotes.value,assumptions:els.assumptions.value,suggestedMode:els.suggestedMode.value,profitMode:els.profitMode.value,profitValue:els.profitValue.value,discount:els.discount.value,salesTax:els.salesTax.value,spoolCost:els.spoolCost.value,spoolWeight:els.spoolWeight.value,gramsPerUnit:els.gramsPerUnit.value,printHours:els.printHours.value,machineRate:els.machineRate.value,designHours:els.designHours.value,designRate:els.designRate.value,postHours:els.postHours.value,postRate:els.postRate.value,marketplacePercent:els.marketplacePercent.value,batchName:els.batchName.value,batchUnits:els.batchUnits.value,batchMaterials:els.batchMaterials.value,batchPackaging:els.batchPackaging.value,batchLabor:els.batchLabor.value,batchOther:els.batchOther.value,batchOverhead:els.batchOverhead.value,batchSold:els.batchSold.value,directItems:getRowsData(els.directItems),overheadItems:getRowsData(els.overheadItems),savedAt:new Date().toISOString(),finalQuote:els.outFinal.textContent};
+      const snap={quoteNumber:els.quoteNumber.value||`Q-${Date.now()}`,quoteDate:els.quoteDate.value,validThrough:els.validThrough.value,turnaround:els.turnaround.value,quoteTitle:els.quoteTitle.value,customerName:els.customerName.value,qty:els.qty.value,unitsPerItem:els.unitsPerItem.value,presetSelect:els.presetSelect.value,depositPercent:els.depositPercent.value,quoteStatus:els.quoteStatus.value,quoteNotes:els.quoteNotes.value,customerNotes:els.customerNotes.value,assumptions:els.assumptions.value,suggestedMode:els.suggestedMode.value,profitMode:els.profitMode.value,profitValue:els.profitValue.value,discount:els.discount.value,salesTax:els.salesTax.value,spoolCost:els.spoolCost.value,spoolWeight:els.spoolWeight.value,gramsPerUnit:els.gramsPerUnit.value,printHours:els.printHours.value,machineRate:els.machineRate.value,designHours:els.designHours.value,designRate:els.designRate.value,postHours:els.postHours.value,postRate:els.postRate.value,marketplacePercent:els.marketplacePercent.value,batchName:els.batchName.value,batchSku:els.batchSku.value,batchUnits:els.batchUnits.value,batchColors:els.batchColors.value,batchRollWeight:els.batchRollWeight.value,batchPriceTarget:els.batchPriceTarget.value,batchFilament1Cost:els.batchFilament1Cost.value,batchFilament1Used:els.batchFilament1Used.value,batchFilament2Cost:els.batchFilament2Cost.value,batchFilament2Used:els.batchFilament2Used.value,batchFilament3Cost:els.batchFilament3Cost.value,batchFilament3Used:els.batchFilament3Used.value,batchFilament4Cost:els.batchFilament4Cost.value,batchFilament4Used:els.batchFilament4Used.value,batchMaterials:els.batchMaterials.value,batchPackaging:els.batchPackaging.value,batchLabor:els.batchLabor.value,batchOther:els.batchOther.value,batchOverhead:els.batchOverhead.value,batchSold:els.batchSold.value,batchLocation:els.batchLocation.value,directItems:getRowsData(els.directItems),overheadItems:getRowsData(els.overheadItems),savedAt:new Date().toISOString(),finalQuote:els.outFinal.textContent};
       return snap;
     }
 
@@ -453,8 +639,9 @@
       els.quoteDate.value=today(); els.validThrough.value=addDays(today(),14);
       els.qty.value=1; els.unitsPerItem.value=1; els.presetSelect.value='custom'; els.depositPercent.value=50;
       els.profitMode.value='percent'; els.profitValue.value=30; els.discount.value=0; els.salesTax.value=0;
-      ['spoolCost','gramsPerUnit','printHours','machineRate','designHours','designRate','postHours','postRate','marketplacePercent','batchMaterials','batchPackaging','batchLabor','batchOther','batchOverhead'].forEach(k=>els[k].value=0);
-      els.spoolWeight.value=1000; els.batchUnits.value=1; els.batchSold.value=0;
+      ['filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','spoolCost','gramsPerUnit','printHours','machineRate','designHours','designRate','postHours','postRate','marketplacePercent','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchMaterials','batchPackaging','batchLabor','batchOther','batchOverhead','batchPriceTarget'].forEach(k=>els[k].value=0);
+      els.filamentCount.value=1;
+      els.spoolWeight.value=1000; els.batchRollWeight.value=1000; els.batchColors.value=1; els.batchUnits.value=1; els.batchSold.value=0; els.batchSku.value=''; els.batchLocation.value='';
       els.directItems.innerHTML=''; els.overheadItems.innerHTML='';
       seedDefaults();
     refreshHistoryUI();
@@ -479,23 +666,28 @@
       els.turnaround.value='5–7 business days'; els.qty.value=2; els.unitsPerItem.value=1; els.profitValue.value=35; els.salesTax.value=7.25;
       els.customerNotes.value='Includes 2 custom beach toys in selected colors. Shipping or pickup handled as arranged.';
       els.assumptions.value='Quote includes one round of minor revisions. Final shipping may vary slightly if destination changes.';
-      const direct=[...els.directItems.children],over=[...els.overheadItems.children];
-      direct[0].querySelector('.item-amount').value=3.5; direct[1].querySelector('.item-amount').value=1.25; direct[2].querySelector('.item-amount').value=4.5; direct[3].querySelector('.item-amount').value=0.75;
-      over[0].querySelector('.item-amount').value=6; over[1].querySelector('.item-amount').value=1.5; over[2].querySelector('.item-amount').value=2.25;
+      els.filamentCount.value=2;
+      els.filament1Cost.value=20; els.filament1Used.value=120;
+      els.filament2Cost.value=22; els.filament2Used.value=35;
+      els.simplePackaging.value=1.25; els.simpleShipping.value=4.5; els.simpleHardware.value=0.75;
+      els.designLabor.value=6; els.machineHours.value=1.5; els.machineRate.value=1; els.postLabor.value=2.25;
       render();
     }
 
-    ['quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','salesTax','depositPercent','presetSelect','suggestedMode','spoolCost','spoolWeight','gramsPerUnit','printHours','machineRate','designHours','designRate','postHours','postRate','marketplacePercent','batchName','batchUnits','batchMaterials','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold'].forEach(id=>els[id].addEventListener('input',render));
+    ['quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','salesTax','depositPercent','presetSelect','suggestedMode','filamentCount','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','spoolCost','spoolWeight','gramsPerUnit','printHours','machineRate','designHours','designRate','postHours','postRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchMaterials','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation'].forEach(id=>els[id].addEventListener('input',render));
     els.presetSelect.onchange=()=>setPreset(els.presetSelect.value);
+    els.advancedToggle.onclick=()=>{const hidden=els.advancedPanel.classList.toggle('hidden');els.advancedToggleText.textContent=hidden?'Show details':'Hide details';};
     els.addDirectBtn.onclick=()=>addItem(els.directItems,'Direct Cost',{label:'New direct cost'});
     els.addOverheadBtn.onclick=()=>addItem(els.overheadItems,'Overhead Cost',{label:'New overhead cost'});
-    els.applyHelpersBtn.onclick=applyHelperValues;
+    if(els.applyHelpersBtn) els.applyHelpersBtn.onclick=applyHelperValues;
     els.saveQuoteBtn.onclick=saveQuote;
     els.copySummaryBtn.onclick=copySummary;
     els.loadQuoteBtn.onclick=loadQuote;
     els.deleteQuoteBtn.onclick=deleteQuote;
     els.copyFinanceBtn.onclick=copyFinance;
+    els.applyBatchBtn.onclick=applyBatchInputs;
     els.demoBtn.onclick=loadDemo;
+    els.customerPdfBtn.onclick=generateCustomerPdf;
     els.printBtn.onclick=()=>window.print();
     els.resetBtn.onclick=resetPage;
 
