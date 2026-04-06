@@ -411,7 +411,9 @@
     }
 
     function suggestedProfitPercent(){
-      const preset=els.presetSelect.value, custom=!!(num(els.designHours.value)||num(els.postHours.value)||num(els.designLabor.value)||num(els.postLabor.value)), qty=Math.max(1,num(els.qty.value)||1);
+      const preset=els.presetSelect.value;
+      const custom=!!(num(els.designLabor.value)||num(els.postLabor.value)||num(els.machineHours.value));
+      const qty=Math.max(1,num(els.qty.value)||1);
       if(els.suggestedMode.value==='off') return null;
       const aggressive=els.suggestedMode.value==='aggressive';
       let pct=35;
@@ -522,8 +524,6 @@
     }
 
     function applyBatchInputs(){
-      const b=batchValues();
-      els.batchMaterials.value=b.materialTotal.toFixed(2);
       renderBatch();
     }
 
@@ -602,9 +602,8 @@
       if(p.postRate!=null) els.postLabor.value=p.postRate;
       if(p.machineRate!=null) els.machineRate.value=p.machineRate;
       if(p.grams!=null) els.filament1Used.value=p.grams;
-      const direct=[...els.directItems.children],over=[...els.overheadItems.children];
-      if(direct[1]&&p.packaging!=null) direct[1].querySelector('.item-amount').value=p.packaging;
-      if(over[1]&&p.machine!=null) over[1].querySelector('.item-amount').value=p.machine;
+      if(p.packaging!=null) els.simplePackaging.value=p.packaging;
+      if(p.machine!=null && !num(els.machineHours.value)) els.machineHours.value=1;
       render();
     }
 
@@ -617,8 +616,69 @@
     }
 
     function snapshotQuote(){
-      const snap={quoteNumber:els.quoteNumber.value||`Q-${Date.now()}`,quoteDate:els.quoteDate.value,validThrough:els.validThrough.value,turnaround:els.turnaround.value,quoteTitle:els.quoteTitle.value,customerName:els.customerName.value,qty:els.qty.value,unitsPerItem:els.unitsPerItem.value,presetSelect:els.presetSelect.value,depositPercent:els.depositPercent.value,quoteStatus:els.quoteStatus.value,quoteNotes:els.quoteNotes.value,customerNotes:els.customerNotes.value,assumptions:els.assumptions.value,suggestedMode:els.suggestedMode.value,profitMode:els.profitMode.value,profitValue:els.profitValue.value,discount:els.discount.value,salesTax:els.salesTax.value,spoolWeight:els.spoolWeight.value,machineRate:els.machineRate.value,marketplacePercent:els.marketplacePercent.value,filamentCount:els.filamentCount.value,filament1Cost:els.filament1Cost.value,filament1Used:els.filament1Used.value,filament2Cost:els.filament2Cost.value,filament2Used:els.filament2Used.value,filament3Cost:els.filament3Cost.value,filament3Used:els.filament3Used.value,filament4Cost:els.filament4Cost.value,filament4Used:els.filament4Used.value,simplePackaging:els.simplePackaging.value,simpleShipping:els.simpleShipping.value,simpleHardware:els.simpleHardware.value,designLabor:els.designLabor.value,postLabor:els.postLabor.value,machineHours:els.machineHours.value,batchName:els.batchName.value,batchSku:els.batchSku.value,batchUnits:els.batchUnits.value,batchColors:els.batchColors.value,batchRollWeight:els.batchRollWeight.value,batchPriceTarget:els.batchPriceTarget.value,batchFilament1Cost:els.batchFilament1Cost.value,batchFilament1Used:els.batchFilament1Used.value,batchFilament2Cost:els.batchFilament2Cost.value,batchFilament2Used:els.batchFilament2Used.value,batchFilament3Cost:els.batchFilament3Cost.value,batchFilament3Used:els.batchFilament3Used.value,batchFilament4Cost:els.batchFilament4Cost.value,batchFilament4Used:els.batchFilament4Used.value,batchMaterials:els.batchMaterials.value,batchPackaging:els.batchPackaging.value,batchLabor:els.batchLabor.value,batchOther:els.batchOther.value,batchOverhead:els.batchOverhead.value,batchSold:els.batchSold.value,batchLocation:els.batchLocation.value,directItems:getRowsData(els.directItems),overheadItems:getRowsData(els.overheadItems),savedAt:new Date().toISOString(),finalQuote:els.outFinal.textContent};
-      return snap;
+      return {
+        quoteNumber:els.quoteNumber.value||`Q-${Date.now()}`,
+        quoteDate:els.quoteDate.value,
+        validThrough:els.validThrough.value,
+        turnaround:els.turnaround.value,
+        quoteTitle:els.quoteTitle.value,
+        customerName:els.customerName.value,
+        qty:els.qty.value,
+        unitsPerItem:els.unitsPerItem.value,
+        presetSelect:els.presetSelect.value,
+        depositPercent:els.depositPercent.value,
+        quoteStatus:els.quoteStatus.value,
+        quoteNotes:els.quoteNotes.value,
+        customerNotes:els.customerNotes.value,
+        assumptions:els.assumptions.value,
+        suggestedMode:els.suggestedMode.value,
+        profitMode:els.profitMode.value,
+        profitValue:els.profitValue.value,
+        discount:els.discount.value,
+        salesTax:els.salesTax.value,
+        spoolWeight:els.spoolWeight.value,
+        machineRate:els.machineRate.value,
+        marketplacePercent:els.marketplacePercent.value,
+        filamentCount:els.filamentCount.value,
+        filament1Cost:els.filament1Cost.value,
+        filament1Used:els.filament1Used.value,
+        filament2Cost:els.filament2Cost.value,
+        filament2Used:els.filament2Used.value,
+        filament3Cost:els.filament3Cost.value,
+        filament3Used:els.filament3Used.value,
+        filament4Cost:els.filament4Cost.value,
+        filament4Used:els.filament4Used.value,
+        simplePackaging:els.simplePackaging.value,
+        simpleShipping:els.simpleShipping.value,
+        simpleHardware:els.simpleHardware.value,
+        designLabor:els.designLabor.value,
+        postLabor:els.postLabor.value,
+        machineHours:els.machineHours.value,
+        batchName:els.batchName.value,
+        batchSku:els.batchSku.value,
+        batchUnits:els.batchUnits.value,
+        batchColors:els.batchColors.value,
+        batchRollWeight:els.batchRollWeight.value,
+        batchPriceTarget:els.batchPriceTarget.value,
+        batchFilament1Cost:els.batchFilament1Cost.value,
+        batchFilament1Used:els.batchFilament1Used.value,
+        batchFilament2Cost:els.batchFilament2Cost.value,
+        batchFilament2Used:els.batchFilament2Used.value,
+        batchFilament3Cost:els.batchFilament3Cost.value,
+        batchFilament3Used:els.batchFilament3Used.value,
+        batchFilament4Cost:els.batchFilament4Cost.value,
+        batchFilament4Used:els.batchFilament4Used.value,
+        batchPackaging:els.batchPackaging.value,
+        batchLabor:els.batchLabor.value,
+        batchOther:els.batchOther.value,
+        batchOverhead:els.batchOverhead.value,
+        batchSold:els.batchSold.value,
+        batchLocation:els.batchLocation.value,
+        directItems:getRowsData(els.directItems),
+        overheadItems:getRowsData(els.overheadItems),
+        savedAt:new Date().toISOString(),
+        finalQuote:els.outFinal.textContent
+      };
     }
 
     function readHistory(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch{return []}}
@@ -642,15 +702,29 @@
     function resetPage(){
       ['quoteNumber','quoteTitle','customerName','quoteNotes','customerNotes','assumptions','batchName','turnaround'].forEach(k=>els[k].value='');
       els.quoteStatus.value='pending';
-      els.quoteDate.value=today(); els.validThrough.value=addDays(today(),14);
-      els.qty.value=1; els.unitsPerItem.value=1; els.presetSelect.value='custom'; els.depositPercent.value=50;
-      els.profitMode.value='percent'; els.profitValue.value=30; els.discount.value=0; els.salesTax.value=0;
+      els.quoteDate.value=today();
+      els.validThrough.value=addDays(today(),14);
+      els.qty.value=1;
+      els.unitsPerItem.value=1;
+      els.presetSelect.value='custom';
+      els.depositPercent.value=50;
+      els.profitMode.value='percent';
+      els.profitValue.value=30;
+      els.discount.value=0;
+      els.salesTax.value=0;
       ['filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','machineRate','marketplacePercent','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchPriceTarget'].forEach(k=>els[k].value=0);
       els.filamentCount.value=1;
-      els.spoolWeight.value=1000; els.batchRollWeight.value=1000; els.batchColors.value=1; els.batchUnits.value=1; els.batchSold.value=0; els.batchSku.value=''; els.batchLocation.value='';
-      els.directItems.innerHTML=''; els.overheadItems.innerHTML='';
+      els.spoolWeight.value=1000;
+      els.batchRollWeight.value=1000;
+      els.batchColors.value=1;
+      els.batchUnits.value=1;
+      els.batchSold.value=0;
+      els.batchSku.value='';
+      els.batchLocation.value='';
+      els.directItems.innerHTML='';
+      els.overheadItems.innerHTML='';
       seedDefaults();
-    refreshHistoryUI();
+      refreshHistoryUI();
     }
 
     function seedDefaults(){
