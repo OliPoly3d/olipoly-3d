@@ -320,11 +320,32 @@
 
     function financeEntryText(finalQuote,beforeTax,tax){
       const qty=Math.max(1,num(els.qty.value)||1), units=Math.max(1,num(els.unitsPerItem.value)||1), title=els.quoteTitle.value.trim()||'Accepted Quote';
-      const notes=[els.customerName.value&&`Customer: ${els.customerName.value.trim()}`,`Quote #: ${els.quoteNumber.value||'N/A'}`,`Quantity: ${qty}`,els.turnaround.value&&`Turnaround: ${els.turnaround.value}`,els.quoteNotes.value&&`Internal notes: ${els.quoteNotes.value.trim()}`].filter(Boolean).join(' | ');
+      const notes=[
+        els.customerName.value&&`Customer: ${els.customerName.value.trim()}`,
+        `Quote #: ${els.quoteNumber.value||'N/A'}`,
+        `Quantity: ${qty}`,
+        els.turnaround.value&&`Turnaround: ${els.turnaround.value}`,
+        els.quoteNotes.value&&`Internal notes: ${els.quoteNotes.value.trim()}`
+      ].filter(Boolean).join(' | ');
       const rows=[...els.directItems.children], shippingRow=rows.find(r=>/shipping/i.test(r.querySelector('.item-label').value)), materialRow=rows.find(r=>/filament|material/i.test(r.querySelector('.item-label').value)), packagingRow=rows.find(r=>/packaging/i.test(r.querySelector('.item-label').value)), hardwareRow=rows.find(r=>/hardware|insert|magnet/i.test(r.querySelector('.item-label').value));
       const shippingCost=shippingRow?rowValue(shippingRow,qty,units):0, materialCost=materialRow?rowValue(materialRow,qty,units):0, packagingCost=packagingRow?rowValue(packagingRow,qty,units):0;
       const direct=totalOf(els.directItems), overhead=totalOf(els.overheadItems), otherDirect=hardwareRow?rowValue(hardwareRow,qty,units):Math.max(0,direct-materialCost-packagingCost-shippingCost);
-      return ['Type: Income','Category: Sale',`Title: ${title}`,`Base Amount: ${beforeTax.toFixed(2)}`,'Shipping Charged: 0.00','Amount Includes Sales Tax?: No',`Sales Tax Collected: ${tax.toFixed(2)}`,`Material Cost: ${materialCost.toFixed(2)}`,`Packaging Cost: ${packagingCost.toFixed(2)}`,'Labor Cost: 0.00',`Other Direct Cost: ${(otherDirect+overhead).toFixed(2)}`,`Shipping Cost You Paid: ${shippingCost.toFixed(2)}`,`Customer Total Paid: ${finalQuote.toFixed(2)}`,`Notes: ${notes}`].join('
+      return [
+        'Type: Income',
+        'Category: Sale',
+        `Title: ${title}`,
+        `Base Amount: ${beforeTax.toFixed(2)}`,
+        'Shipping Charged: 0.00',
+        'Amount Includes Sales Tax?: No',
+        `Sales Tax Collected: ${tax.toFixed(2)}`,
+        `Material Cost: ${materialCost.toFixed(2)}`,
+        `Packaging Cost: ${packagingCost.toFixed(2)}`,
+        'Labor Cost: 0.00',
+        `Other Direct Cost: ${(otherDirect+overhead).toFixed(2)}`,
+        `Shipping Cost You Paid: ${shippingCost.toFixed(2)}`,
+        `Customer Total Paid: ${finalQuote.toFixed(2)}`,
+        `Notes: ${notes}`
+      ].join('
 ');
     }
 
@@ -420,7 +441,13 @@
       const text=els.quoteSummary.textContent + '
 
 ' + els.customerQuoteView.innerText;
-      try{await navigator.clipboard.writeText(text); els.copySummaryBtn.textContent='Copied'; setTimeout(()=>els.copySummaryBtn.textContent='Copy Summary',1200);}catch{alert('Could not copy summary.');}
+      try{
+        await navigator.clipboard.writeText(text);
+        els.copySummaryBtn.textContent='Copied';
+        setTimeout(()=>els.copySummaryBtn.textContent='Copy Summary',1200);
+      }catch{
+        alert('Could not copy summary.');
+      }
     }
 
     function resetPage(){
