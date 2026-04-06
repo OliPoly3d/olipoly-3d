@@ -515,28 +515,31 @@
       const preDiscount = base + profit;
       const discount = Math.min(num(els.discount.value), preDiscount);
       const beforeTaxRaw = Math.max(0, preDiscount - discount);
+      const taxRate = num(els.salesTax.value) / 100;
+      const finalRaw = beforeTaxRaw * (1 + taxRate);
       const roundingStep = num(els.roundingMode?.value);
-      const beforeTax = roundingStep > 0 ? Math.round(beforeTaxRaw / roundingStep) * roundingStep : beforeTaxRaw;
-      const roundingGain = beforeTax - beforeTaxRaw;
-      const tax = beforeTax * (num(els.salesTax.value) / 100);
-      const finalQuote = beforeTax + tax;
+      const finalQuote = roundingStep > 0 ? Math.round(finalRaw / roundingStep) * roundingStep : finalRaw;
+      const beforeTax = taxRate > 0 ? finalQuote / (1 + taxRate) : finalQuote;
+      const tax = finalQuote - beforeTax;
+      const roundingGain = finalQuote - finalRaw;
+      const actualProfit = profit + roundingGain;
       const qty = Math.max(1, num(els.qty.value) || 1);
       const perItem = finalQuote / qty;
-      const marginPct = finalQuote ? (profit / finalQuote) * 100 : 0;
+      const marginPct = finalQuote ? (actualProfit / finalQuote) * 100 : 0;
       const deposit = finalQuote * (num(els.depositPercent.value) / 100);
       const balance = finalQuote - deposit;
       const pairs = {
-        sumDirect: direct, sumOverhead: overhead, sumProfit: profit, sumDeposit: deposit, sumBalance: balance, sumQuote: finalQuote, sumPerItem: perItem, sumBreakEven: base,
-        outDirect: direct, outOverhead: overhead, outBase: base, outProfit: profit, outPerItem: perItem, outBreakEven: base, outPreDiscount: preDiscount, outBeforeTax: beforeTaxRaw, outRoundedBeforeTax: beforeTax, outRoundingGain: roundingGain, outTax: tax, outDeposit: deposit, outBalance: balance, outFinal: finalQuote
+        sumDirect: direct, sumOverhead: overhead, sumProfit: actualProfit, sumDeposit: deposit, sumBalance: balance, sumQuote: finalQuote, sumPerItem: perItem, sumBreakEven: base,
+        outDirect: direct, outOverhead: overhead, outBase: base, outProfit: actualProfit, outPerItem: perItem, outBreakEven: base, outPreDiscount: preDiscount, outBeforeTax: beforeTaxRaw, outRoundedBeforeTax: beforeTax, outRoundingGain: roundingGain, outTax: tax, outDeposit: deposit, outBalance: balance, outFinal: finalQuote
       };
       Object.entries(pairs).forEach(([k, v]) => { if (els[k]) els[k].textContent = money(v); });
       els.sumMargin.textContent = `${marginPct.toFixed(1)}%`;
       els.outMargin.textContent = `${marginPct.toFixed(1)}%`;
       els.outDiscount.textContent = `-${money(discount)}`;
-      els.profitGuardrail.textContent = (profit < 5 || marginPct < 25) ? 'Warning' : 'OK';
+      els.profitGuardrail.textContent = (actualProfit < 5 || marginPct < 25) ? 'Warning' : 'OK';
       els.activePreset.textContent = PRESETS[els.presetSelect.value]?.name || 'Custom';
-      els.quoteSummary.textContent = `${els.quoteTitle.value.trim() || 'Untitled quote'}${els.customerName.value ? ` for ${els.customerName.value}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(profit)} target profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
-      els.profitWarning.textContent = profit < 5 || marginPct < 25 ? `Warning: profit is ${money(profit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price.` : 'No pricing warnings.';
+      els.quoteSummary.textContent = `${els.quoteTitle.value.trim() || 'Untitled quote'}${els.customerName.value ? ` for ${els.customerName.value}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(actualProfit)} actual profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
+      els.profitWarning.textContent = actualProfit < 5 || marginPct < 25 ? `Warning: profit is ${money(actualProfit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price.` : 'No pricing warnings.';
       els.customerQuoteView.innerHTML = [
         `<div style="margin-bottom:12px;"><strong>${els.quoteTitle.value.trim() || 'Quote'}</strong></div>`,
         `<div style="margin-bottom:12px;">${els.quoteNumber.value ? `Quote #: ${els.quoteNumber.value}<br>` : ''}${els.quoteDate.value ? `Date: ${els.quoteDate.value}<br>` : ''}${els.validThrough.value ? `Valid Through: ${els.validThrough.value}<br>` : ''}${els.turnaround.value ? `Turnaround: ${els.turnaround.value}` : ''}</div>`,
@@ -752,9 +755,14 @@ ${els.customerQuoteView.innerText}`;
     }
 
     const renderIds = ['quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','taxPreset','salesTax','roundingMode','depositPercent','presetSelect','suggestedMode','filamentCount','spoolWeight','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designHours','designRate','postHours','postRate','machineHours','machineRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation'];
-      renderIds.forEach(id => els[id]?.addEventListener('input', render));
+    renderIds.forEach(id => {
+      if (!els[id]) return;
+      els[id].addEventListener('input', render);
+      els[id].addEventListener('change', render);
+    });
     els.presetSelect.onchange = () => setPreset(els.presetSelect.value);
     els.taxPreset.onchange = () => { applyTaxPreset(); render(); };
+    els.roundingMode.onchange = render;
     els.advancedToggle.onclick = () => {
       const hidden = els.advancedPanel.classList.toggle('hidden');
       els.advancedToggleText.textContent = hidden ? 'Show details' : 'Hide details';
