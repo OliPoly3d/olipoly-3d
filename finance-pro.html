@@ -139,12 +139,74 @@
     async function fetchEntries(){if(!supabase||!currentUser)return;const {data,error}=await supabase.from('financial_entries').select('*').eq('user_id',currentUser.id).order('entry_date',{ascending:false}).order('created_at',{ascending:false});if(error)return setAuthMsg(`Could not load entries: ${error.message}`,true);hide(els.authMessage);entries=data||[];renderAll();}
     function startEdit(id){const e=entries.find(x=>x.id===id);if(!e)return;editingId=id;const isCapex=e.category==='Equipment (CapEx)';customCategoryValue=BASE_CATEGORIES.includes(e.category)||isCapex?'':(e.category||'');els.formHeading.textContent='Edit Financial Entry';els.saveBtn.textContent='Update Entry';els.cancelEditBtn.classList.remove('hidden');[['entryType','type'],['entryDate','entry_date'],['shippingCharged','shipping_charged'],['taxIncluded','tax_included'],['salesTaxRate','sales_tax_rate'],['salesTaxCollected','sales_tax_collected'],['shippingCost','shipping_cost'],['materialCost','material_cost'],['packagingCost','packaging_cost'],['laborCost','labor_cost'],['otherDirectCost','other_direct_cost'],['entryTitle','title'],['entryNotes','notes']].forEach(([k,p])=>els[k].value=(e[p]??''));els.entryAmount.value=(num(e.amount)+num(e.sales_tax_collected))||'';els.netRevenuePreview.value=e.amount??'';els.entryCategory.value=isCapex?'Equipment':(BASE_CATEGORIES.includes(e.category)?e.category:'Custom');els.capexToggle.checked=isCapex;els.taxCategory.value=e.tax_category||'auto';updateEntryTypeHint();updateTaxPreview();window.scrollTo({top:0,behavior:'smooth'});}
     async function deleteEntry(id){if(!confirm('Delete this entry?'))return;const {error}=await supabase.from('financial_entries').delete().eq('id',id).eq('user_id',currentUser.id);if(error)return setMsg(`Delete failed: ${error.message}`,true);setMsg('Entry deleted.');if(editingId===id)resetForm();await fetchEntries();}
-    async function saveEntry(e){e.preventDefault();hide(els.formMessage);updateEntryTypeHint();let category=els.entryCategory.value;
-      if(category==='Equipment' && els.capexToggle.checked){category='Equipment (CapEx)';}if(category==='Custom'){if(!customCategoryValue){const customInput=prompt('Enter custom category name:',customCategoryValue||'')?.trim();if(!customInput)return setMsg('Custom category is required.',true);customCategoryValue=customInput;}category=customCategoryValue;}const isIncome=els.entryType.value==='income';const saleCosts=num(els.shippingCost.value)+num(els.materialCost.value)+num(els.packagingCost.value)+num(els.laborCost.value)+num(els.otherDirectCost.value);const suspiciousExpense=/material|filament|spool|fee|maintenance|booth|supplies/i.test(`${els.entryTitle.value} ${category}`);if(!isIncome&&saleCosts>0&&num(els.entryAmount.value)===0)return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Base Amount.',true);if(isIncome&&suspiciousExpense&&num(els.shippingCharged.value)===0&&saleCosts===0)return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.',true);let amount=num(els.entryAmount.value),salesTaxCollected=0;if(isIncome&&els.taxIncluded.value==='yes'){if(num(els.salesTaxRate.value)<=0)return setMsg('Enter a sales tax rate when tax-inclusive mode is on.',true);const x=computeTaxExclusive(amount,num(els.salesTaxRate.value));salesTaxCollected=x.tax;amount=x.net;}const payload={user_id:currentUser.id,type:els.entryType.value,entry_date:els.entryDate.value,category,tax_category:els.taxCategory.value==='auto'?defaultTax(els.entryType.value,category):els.taxCategory.value,title:els.entryTitle.value.trim(),notes:els.entryNotes.value.trim(),amount,shipping_charged:num(els.shippingCharged.value),tax_included:els.taxIncluded.value,sales_tax_rate:num(els.salesTaxRate.value),sales_tax_collected:salesTaxCollected,shipping_cost:num(els.shippingCost.value),material_cost:num(els.materialCost.value),packaging_cost:num(els.packagingCost.value),labor_cost:num(els.laborCost.value),other_direct_cost:num(els.otherDirectCost.value),updated_at:new Date().toISOString()};const r=editingId?await supabase.from('financial_entries').update(payload).eq('id',editingId).eq('user_id',currentUser.id).select().single():await supabase.from('financial_entries').insert(payload).select().single();if(r.error)return setMsg(`Save failed: ${r.error.message}`,true);setMsg(editingId?'Entry updated.':'Entry saved.');resetForm();await fetchEntries();}
+    async function saveEntry(e){
+      e.preventDefault();
+      hide(els.formMessage);
+      updateEntryTypeHint();
+      try{
+        let category=els.entryCategory.value;
+        if(category==='Equipment' && els.capexToggle.checked) category='Equipment (CapEx)';
+        if(category==='Custom'){
+          if(!customCategoryValue){
+            const customInput=prompt('Enter custom category name:',customCategoryValue||'')?.trim();
+            if(!customInput) return setMsg('Custom category is required.',true);
+            customCategoryValue=customInput;
+          }
+          category=customCategoryValue;
+        }
+
+        const isIncome=els.entryType.value==='income';
+        const saleCosts=num(els.shippingCost.value)+num(els.materialCost.value)+num(els.packagingCost.value)+num(els.laborCost.value)+num(els.otherDirectCost.value);
+        const suspiciousExpense=/material|filament|spool|fee|maintenance|booth|supplies/i.test(`${els.entryTitle.value} ${category}`);
+
+        if(!isIncome&&saleCosts>0&&num(els.entryAmount.value)===0) return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Base Amount.',true);
+        if(isIncome&&suspiciousExpense&&num(els.shippingCharged.value)===0&&saleCosts===0) return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.',true);
+
+        let amount=num(els.entryAmount.value),salesTaxCollected=0;
+        if(isIncome&&els.taxIncluded.value==='yes'){
+          if(num(els.salesTaxRate.value)<=0) return setMsg('Enter a sales tax rate when tax-inclusive mode is on.',true);
+          const x=computeTaxExclusive(amount,num(els.salesTaxRate.value));
+          salesTaxCollected=x.tax;
+          amount=x.net;
+        }
+
+        const payload={
+          user_id:currentUser.id,
+          type:els.entryType.value,
+          entry_date:els.entryDate.value,
+          category,
+          tax_category:els.taxCategory.value==='auto'?defaultTax(els.entryType.value,category):els.taxCategory.value,
+          title:els.entryTitle.value.trim(),
+          notes:els.entryNotes.value.trim(),
+          amount,
+          shipping_charged:isIncome?num(els.shippingCharged.value):0,
+          tax_included:isIncome?els.taxIncluded.value:'no',
+          sales_tax_rate:isIncome?num(els.salesTaxRate.value):0,
+          sales_tax_collected:isIncome?salesTaxCollected:0,
+          shipping_cost:num(els.shippingCost.value),
+          material_cost:num(els.materialCost.value),
+          packaging_cost:num(els.packagingCost.value),
+          labor_cost:num(els.laborCost.value),
+          other_direct_cost:num(els.otherDirectCost.value),
+          updated_at:new Date().toISOString()
+        };
+
+        const r=editingId
+          ? await supabase.from('financial_entries').update(payload).eq('id',editingId).eq('user_id',currentUser.id)
+          : await supabase.from('financial_entries').insert(payload);
+
+        if(r.error) return setMsg(`Save failed: ${r.error.message}`,true);
+        setMsg(editingId?'Entry updated.':'Entry saved.');
+        resetForm();
+        await fetchEntries();
+      }catch(err){
+        setMsg(`Save failed: ${err?.message||err}`,true);
+      }
+    }
     async function login(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter your email and password.',true);setAuthMsg('Signing in...');const {error}=await supabase.auth.signInWithPassword({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Login failed: ${error.message}`,true);hide(els.authMessage);}async function signup(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter an email and password to create your account.',true);setAuthMsg('Creating account...');const {error}=await supabase.auth.signUp({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Signup failed: ${error.message}`,true);setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');}async function logout(){await supabase.auth.signOut();currentUser=null;setUI(false);entries=[];resetForm();renderAll();setAuthMsg('Logged out.');}
     async function init(){hide(els.authMessage);els.entryDate.value=todayISO();els.taxYearFilter.value=currentYear();if(SUPABASE_URL.includes('PASTE_')||SUPABASE_ANON_KEY.includes('PASTE_'))return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.',true);updateEntryTypeHint();supabase=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);const {data:{session}}=await supabase.auth.getSession();currentUser=session?.user||null;setUI(!!currentUser);renderTaxReport();if(currentUser)await fetchEntries();supabase.auth.onAuthStateChange(async(_,s)=>{currentUser=s?.user||null;setUI(!!currentUser);if(currentUser){hide(els.authMessage);await fetchEntries();}else{entries=[];renderAll();}});}
     [els.entryType,els.entryAmount,els.taxIncluded,els.salesTaxRate].forEach(el=>el.oninput=el.onchange=()=>{updateEntryTypeHint();updateTaxPreview();});
-    els.passwordInput.classList.add('mask-password');els.showPasswordToggle.onchange=()=>els.passwordInput.classList.toggle('mask-password',!els.showPasswordToggle.checked);els.loginBtn.onclick=login;els.signupBtn.onclick=signup;els.logoutBtn.onclick=logout;els.refreshBtn.onclick=fetchEntries;els.exportBtn.onclick=exportCSV;els.taxExportBtn.onclick=exportTaxReport;els.runTaxReportBtn.onclick=renderTaxReport;els.entryForm.onsubmit=saveEntry;els.cancelEditBtn.onclick=resetForm;els.clearFiltersBtn.onclick=()=>{els.typeFilter.value='all';els.monthFilter.value='';els.searchFilter.value='';renderAll();};[els.typeFilter,els.monthFilter,els.searchFilter,els.taxYearFilter].forEach(el=>el.oninput=el.onchange=renderAll);els.passwordInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();login();}};init();
+    els.passwordInput.classList.add('mask-password');els.showPasswordToggle.onchange=()=>els.passwordInput.classList.toggle('mask-password',!els.showPasswordToggle.checked);els.loginBtn.onclick=login;els.signupBtn.onclick=signup;els.logoutBtn.onclick=logout;els.refreshBtn.onclick=fetchEntries;els.exportBtn.onclick=exportCSV;els.taxExportBtn.onclick=exportTaxReport;els.runTaxReportBtn.onclick=renderTaxReport;els.saveBtn.onclick=()=>els.entryForm.requestSubmit();els.entryForm.onsubmit=saveEntry;els.cancelEditBtn.onclick=resetForm;els.clearFiltersBtn.onclick=()=>{els.typeFilter.value='all';els.monthFilter.value='';els.searchFilter.value='';renderAll();};[els.typeFilter,els.monthFilter,els.searchFilter,els.taxYearFilter].forEach(el=>el.oninput=el.onchange=renderAll);els.passwordInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();login();}};init();
   </script>
 </body>
 </html>
