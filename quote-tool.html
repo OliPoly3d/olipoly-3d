@@ -155,6 +155,7 @@
           <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="marketplacePercent">Marketplace / Payment Fee %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
           <div class="full"><div class="note" id="simpleSummary">Enter your simple quote inputs to auto-populate the quote.</div></div>
+          <div class="full"><div class="btn-row"><button class="btn" id="generateQuoteBtn" type="button">Generate Quote</button></div></div>
         </div>
 
         <div class="advanced-wrap">
@@ -322,11 +323,11 @@
   <script>
     const $=id=>document.getElementById(id),money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(+v||0),num=v=>+v||0;
     const els={
-      customerPdfBtn:$('customerPdfBtn'),pdfSheet:$('pdfSheet'),pdfTitle:$('pdfTitle'),pdfSubtitle:$('pdfSubtitle'),pdfQuoteNumber:$('pdfQuoteNumber'),pdfQuoteDate:$('pdfQuoteDate'),pdfValidThrough:$('pdfValidThrough'),pdfTurnaround:$('pdfTurnaround'),pdfStatus:$('pdfStatus'),pdfCustomerName:$('pdfCustomerName'),pdfQty:$('pdfQty'),pdfPerItem:$('pdfPerItem'),pdfProject:$('pdfProject'),pdfSubtotal:$('pdfSubtotal'),pdfTax:$('pdfTax'),pdfTotal:$('pdfTotal'),pdfDeposit:$('pdfDeposit'),pdfBalance:$('pdfBalance'),pdfCustomerNotes:$('pdfCustomerNotes'),pdfAssumptions:$('pdfAssumptions'),
+      customerPdfBtn:$('customerPdfBtn'),generateQuoteBtn:$('generateQuoteBtn'),pdfSheet:$('pdfSheet'),pdfTitle:$('pdfTitle'),pdfSubtitle:$('pdfSubtitle'),pdfQuoteNumber:$('pdfQuoteNumber'),pdfQuoteDate:$('pdfQuoteDate'),pdfValidThrough:$('pdfValidThrough'),pdfTurnaround:$('pdfTurnaround'),pdfStatus:$('pdfStatus'),pdfCustomerName:$('pdfCustomerName'),pdfQty:$('pdfQty'),pdfPerItem:$('pdfPerItem'),pdfProject:$('pdfProject'),pdfSubtotal:$('pdfSubtotal'),pdfTax:$('pdfTax'),pdfTotal:$('pdfTotal'),pdfDeposit:$('pdfDeposit'),pdfBalance:$('pdfBalance'),pdfCustomerNotes:$('pdfCustomerNotes'),pdfAssumptions:$('pdfAssumptions'),
       saveQuoteBtn:$('saveQuoteBtn'),quoteStatus:$('quoteStatus'),savedQuotesSelect:$('savedQuotesSelect'),loadQuoteBtn:$('loadQuoteBtn'),deleteQuoteBtn:$('deleteQuoteBtn'),historySummary:$('historySummary'),advancedToggle:$('advancedToggle'),advancedToggleText:$('advancedToggleText'),advancedPanel:$('advancedPanel'),
       suggestedMode:$('suggestedMode'),sumPerItem:$('sumPerItem'),sumMargin:$('sumMargin'),sumBreakEven:$('sumBreakEven'),profitGuardrail:$('profitGuardrail'),outPerItem:$('outPerItem'),outBreakEven:$('outBreakEven'),outMargin:$('outMargin'),profitWarning:$('profitWarning'),financeReadyView:$('financeReadyView'),copyFinanceBtn:$('copyFinanceBtn'),
       quoteNumber:$('quoteNumber'),quoteDate:$('quoteDate'),validThrough:$('validThrough'),turnaround:$('turnaround'),presetSelect:$('presetSelect'),depositPercent:$('depositPercent'),customerNotes:$('customerNotes'),assumptions:$('assumptions'),
-      filamentCount:$('filamentCount'),filament1Cost:$('filament1Cost'),filament1Used:$('filament1Used'),filament2Cost:$('filament2Cost'),filament2Used:$('filament2Used'),filament3Cost:$('filament3Cost'),filament3Used:$('filament3Used'),filament4Cost:$('filament4Cost'),filament4Used:$('filament4Used'),simplePackaging:$('simplePackaging'),simpleShipping:$('simpleShipping'),simpleHardware:$('simpleHardware'),designLabor:$('designLabor'),postLabor:$('postLabor'),machineHours:$('machineHours'),spoolCost:$('spoolCost'),spoolWeight:$('spoolWeight'),gramsPerUnit:$('gramsPerUnit'),printHours:$('printHours'),machineRate:$('machineRate'),designHours:$('designHours'),designRate:$('designRate'),postHours:$('postHours'),postRate:$('postRate'),marketplacePercent:$('marketplacePercent'),helperSummary:$('helperSummary'),simpleSummary:$('simpleSummary'),applyHelpersBtn:$('applyHelpersBtn'),
+      filamentCount:$('filamentCount'),filament1Cost:$('filament1Cost'),filament1Used:$('filament1Used'),filament2Cost:$('filament2Cost'),filament2Used:$('filament2Used'),filament3Cost:$('filament3Cost'),filament3Used:$('filament3Used'),filament4Cost:$('filament4Cost'),filament4Used:$('filament4Used'),simplePackaging:$('simplePackaging'),simpleShipping:$('simpleShipping'),simpleHardware:$('simpleHardware'),designLabor:$('designLabor'),postLabor:$('postLabor'),machineHours:$('machineHours'),machineRate:$('machineRate'),marketplacePercent:$('marketplacePercent'),simpleSummary:$('simpleSummary'),applyHelpersBtn:$('applyHelpersBtn'),
       batchName:$('batchName'),batchSku:$('batchSku'),batchUnits:$('batchUnits'),batchColors:$('batchColors'),batchRollWeight:$('batchRollWeight'),batchPriceTarget:$('batchPriceTarget'),batchFilament1Cost:$('batchFilament1Cost'),batchFilament1Used:$('batchFilament1Used'),batchFilament2Cost:$('batchFilament2Cost'),batchFilament2Used:$('batchFilament2Used'),batchFilament3Cost:$('batchFilament3Cost'),batchFilament3Used:$('batchFilament3Used'),batchFilament4Cost:$('batchFilament4Cost'),batchFilament4Used:$('batchFilament4Used'),batchPackaging:$('batchPackaging'),batchLabor:$('batchLabor'),batchOther:$('batchOther'),batchOverhead:$('batchOverhead'),batchSold:$('batchSold'),batchLocation:$('batchLocation'),applyBatchBtn:$('applyBatchBtn'),inventoryReadyView:$('inventoryReadyView'),batchUnitCost:$('batchUnitCost'),batchTotalCost:$('batchTotalCost'),batchUnitsOut:$('batchUnitsOut'),batchUnsoldValue:$('batchUnsoldValue'),batchSummary:$('batchSummary'),materialUnitCost:$('materialUnitCost'),activePreset:$('activePreset'),
       quoteTitle:$('quoteTitle'),customerName:$('customerName'),qty:$('qty'),unitsPerItem:$('unitsPerItem'),quoteNotes:$('quoteNotes'),
       directItems:$('directItems'),overheadItems:$('overheadItems'),addDirectBtn:$('addDirectBtn'),addOverheadBtn:$('addOverheadBtn'),
@@ -378,17 +379,22 @@
       const simpleCount=Math.max(1,Math.min(4,num(els.filamentCount.value)||1));
       const simpleWeight=Math.max(1,num(els.spoolWeight.value)||1000);
       const simpleMaterials=[1,2,3,4].slice(0,simpleCount).map(i=>(num(els[`filament${i}Used`].value)/simpleWeight)*num(els[`filament${i}Cost`].value));
-      const simpleMaterialTotal=simpleMaterials.reduce((a,b)=>a+b,0);
-      const simpleDesignTotal=num(els.designLabor.value);
-      const simplePrintTotal=num(els.machineHours.value)*num(els.machineRate.value);
-      const simplePostTotal=num(els.postLabor.value);
-      const qty=Math.max(1,num(els.qty.value)||1),unitsPerItem=Math.max(1,num(els.unitsPerItem.value)||1),units=qty*unitsPerItem;
-      const materialPerUnit=(num(els.gramsPerUnit.value)/Math.max(1,num(els.spoolWeight.value)||1))*num(els.spoolCost.value);
-      const materialTotal=materialPerUnit*units || simpleMaterialTotal;
-      const designTotal=num(els.designHours.value)*num(els.designRate.value) || simpleDesignTotal;
-      const printTotal=num(els.printHours.value)*num(els.machineRate.value) || simplePrintTotal;
-      const postTotal=num(els.postHours.value)*num(els.postRate.value) || simplePostTotal;
-      return {units,materialPerUnit:units?materialTotal/units:0,materialTotal,designTotal,printTotal,postTotal,simpleMaterialTotal,simpleDesignTotal,simplePrintTotal,simplePostTotal,simplePackaging:num(els.simplePackaging.value),simpleShipping:num(els.simpleShipping.value),simpleHardware:num(els.simpleHardware.value),simpleCount};
+      const materialTotal=simpleMaterials.reduce((a,b)=>a+b,0);
+      const designTotal=num(els.designLabor.value);
+      const printTotal=num(els.machineHours.value)*num(els.machineRate.value);
+      const postTotal=num(els.postLabor.value);
+      const qty=Math.max(1,num(els.qty.value)||1);
+      return {
+        materialPerUnit:qty?materialTotal/qty:0,
+        materialTotal,
+        designTotal,
+        printTotal,
+        postTotal,
+        simplePackaging:num(els.simplePackaging.value),
+        simpleShipping:num(els.simpleShipping.value),
+        simpleHardware:num(els.simpleHardware.value),
+        simpleCount
+      };
     }
 
     function applyHelperValues(){
@@ -592,10 +598,10 @@
       const p=PRESETS[name]||PRESETS.custom;
       if(p.profit!=null) els.profitValue.value=p.profit;
       if(p.deposit!=null) els.depositPercent.value=p.deposit;
-      if(p.designRate!=null){els.designRate.value=p.designRate;els.designLabor.value=p.designRate;}
-      if(p.postRate!=null){els.postRate.value=p.postRate;els.postLabor.value=p.postRate;}
+      if(p.designRate!=null) els.designLabor.value=p.designRate;
+      if(p.postRate!=null) els.postLabor.value=p.postRate;
       if(p.machineRate!=null) els.machineRate.value=p.machineRate;
-      if(p.grams!=null){els.gramsPerUnit.value=p.grams;els.filament1Used.value=p.grams;}
+      if(p.grams!=null) els.filament1Used.value=p.grams;
       const direct=[...els.directItems.children],over=[...els.overheadItems.children];
       if(direct[1]&&p.packaging!=null) direct[1].querySelector('.item-amount').value=p.packaging;
       if(over[1]&&p.machine!=null) over[1].querySelector('.item-amount').value=p.machine;
@@ -611,7 +617,7 @@
     }
 
     function snapshotQuote(){
-      const snap={quoteNumber:els.quoteNumber.value||`Q-${Date.now()}`,quoteDate:els.quoteDate.value,validThrough:els.validThrough.value,turnaround:els.turnaround.value,quoteTitle:els.quoteTitle.value,customerName:els.customerName.value,qty:els.qty.value,unitsPerItem:els.unitsPerItem.value,presetSelect:els.presetSelect.value,depositPercent:els.depositPercent.value,quoteStatus:els.quoteStatus.value,quoteNotes:els.quoteNotes.value,customerNotes:els.customerNotes.value,assumptions:els.assumptions.value,suggestedMode:els.suggestedMode.value,profitMode:els.profitMode.value,profitValue:els.profitValue.value,discount:els.discount.value,salesTax:els.salesTax.value,spoolCost:els.spoolCost.value,spoolWeight:els.spoolWeight.value,gramsPerUnit:els.gramsPerUnit.value,printHours:els.printHours.value,machineRate:els.machineRate.value,designHours:els.designHours.value,designRate:els.designRate.value,postHours:els.postHours.value,postRate:els.postRate.value,marketplacePercent:els.marketplacePercent.value,batchName:els.batchName.value,batchSku:els.batchSku.value,batchUnits:els.batchUnits.value,batchColors:els.batchColors.value,batchRollWeight:els.batchRollWeight.value,batchPriceTarget:els.batchPriceTarget.value,batchFilament1Cost:els.batchFilament1Cost.value,batchFilament1Used:els.batchFilament1Used.value,batchFilament2Cost:els.batchFilament2Cost.value,batchFilament2Used:els.batchFilament2Used.value,batchFilament3Cost:els.batchFilament3Cost.value,batchFilament3Used:els.batchFilament3Used.value,batchFilament4Cost:els.batchFilament4Cost.value,batchFilament4Used:els.batchFilament4Used.value,batchMaterials:els.batchMaterials.value,batchPackaging:els.batchPackaging.value,batchLabor:els.batchLabor.value,batchOther:els.batchOther.value,batchOverhead:els.batchOverhead.value,batchSold:els.batchSold.value,batchLocation:els.batchLocation.value,directItems:getRowsData(els.directItems),overheadItems:getRowsData(els.overheadItems),savedAt:new Date().toISOString(),finalQuote:els.outFinal.textContent};
+      const snap={quoteNumber:els.quoteNumber.value||`Q-${Date.now()}`,quoteDate:els.quoteDate.value,validThrough:els.validThrough.value,turnaround:els.turnaround.value,quoteTitle:els.quoteTitle.value,customerName:els.customerName.value,qty:els.qty.value,unitsPerItem:els.unitsPerItem.value,presetSelect:els.presetSelect.value,depositPercent:els.depositPercent.value,quoteStatus:els.quoteStatus.value,quoteNotes:els.quoteNotes.value,customerNotes:els.customerNotes.value,assumptions:els.assumptions.value,suggestedMode:els.suggestedMode.value,profitMode:els.profitMode.value,profitValue:els.profitValue.value,discount:els.discount.value,salesTax:els.salesTax.value,spoolWeight:els.spoolWeight.value,machineRate:els.machineRate.value,marketplacePercent:els.marketplacePercent.value,filamentCount:els.filamentCount.value,filament1Cost:els.filament1Cost.value,filament1Used:els.filament1Used.value,filament2Cost:els.filament2Cost.value,filament2Used:els.filament2Used.value,filament3Cost:els.filament3Cost.value,filament3Used:els.filament3Used.value,filament4Cost:els.filament4Cost.value,filament4Used:els.filament4Used.value,simplePackaging:els.simplePackaging.value,simpleShipping:els.simpleShipping.value,simpleHardware:els.simpleHardware.value,designLabor:els.designLabor.value,postLabor:els.postLabor.value,machineHours:els.machineHours.value,batchName:els.batchName.value,batchSku:els.batchSku.value,batchUnits:els.batchUnits.value,batchColors:els.batchColors.value,batchRollWeight:els.batchRollWeight.value,batchPriceTarget:els.batchPriceTarget.value,batchFilament1Cost:els.batchFilament1Cost.value,batchFilament1Used:els.batchFilament1Used.value,batchFilament2Cost:els.batchFilament2Cost.value,batchFilament2Used:els.batchFilament2Used.value,batchFilament3Cost:els.batchFilament3Cost.value,batchFilament3Used:els.batchFilament3Used.value,batchFilament4Cost:els.batchFilament4Cost.value,batchFilament4Used:els.batchFilament4Used.value,batchMaterials:els.batchMaterials.value,batchPackaging:els.batchPackaging.value,batchLabor:els.batchLabor.value,batchOther:els.batchOther.value,batchOverhead:els.batchOverhead.value,batchSold:els.batchSold.value,batchLocation:els.batchLocation.value,directItems:getRowsData(els.directItems),overheadItems:getRowsData(els.overheadItems),savedAt:new Date().toISOString(),finalQuote:els.outFinal.textContent};
       return snap;
     }
 
@@ -639,7 +645,7 @@
       els.quoteDate.value=today(); els.validThrough.value=addDays(today(),14);
       els.qty.value=1; els.unitsPerItem.value=1; els.presetSelect.value='custom'; els.depositPercent.value=50;
       els.profitMode.value='percent'; els.profitValue.value=30; els.discount.value=0; els.salesTax.value=0;
-      ['filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','spoolCost','gramsPerUnit','printHours','machineRate','designHours','designRate','postHours','postRate','marketplacePercent','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchMaterials','batchPackaging','batchLabor','batchOther','batchOverhead','batchPriceTarget'].forEach(k=>els[k].value=0);
+      ['filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','machineRate','marketplacePercent','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchPriceTarget'].forEach(k=>els[k].value=0);
       els.filamentCount.value=1;
       els.spoolWeight.value=1000; els.batchRollWeight.value=1000; els.batchColors.value=1; els.batchUnits.value=1; els.batchSold.value=0; els.batchSku.value=''; els.batchLocation.value='';
       els.directItems.innerHTML=''; els.overheadItems.innerHTML='';
@@ -674,13 +680,14 @@
       render();
     }
 
-    ['quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','salesTax','depositPercent','presetSelect','suggestedMode','filamentCount','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','spoolCost','spoolWeight','gramsPerUnit','printHours','machineRate','designHours','designRate','postHours','postRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchMaterials','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation'].forEach(id=>els[id].addEventListener('input',render));
+    ['quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','salesTax','depositPercent','presetSelect','suggestedMode','filamentCount','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designLabor','postLabor','machineHours','spoolWeight','machineRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation'].forEach(id=>els[id]?.addEventListener('input',render));
     els.presetSelect.onchange=()=>setPreset(els.presetSelect.value);
     els.advancedToggle.onclick=()=>{const hidden=els.advancedPanel.classList.toggle('hidden');els.advancedToggleText.textContent=hidden?'Show details':'Hide details';};
     els.addDirectBtn.onclick=()=>addItem(els.directItems,'Direct Cost',{label:'New direct cost'});
     els.addOverheadBtn.onclick=()=>addItem(els.overheadItems,'Overhead Cost',{label:'New overhead cost'});
     if(els.applyHelpersBtn) els.applyHelpersBtn.onclick=applyHelperValues;
     els.saveQuoteBtn.onclick=saveQuote;
+    els.generateQuoteBtn.onclick=render;
     els.copySummaryBtn.onclick=copySummary;
     els.loadQuoteBtn.onclick=loadQuote;
     els.deleteQuoteBtn.onclick=deleteQuote;
