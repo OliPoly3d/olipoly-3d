@@ -5,398 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Financial Tracker Pro</title>
   <style>
-    :root {
-      --bg:#08101f; --bg2:#0d1730; --panel:rgba(12,19,40,.88); --panel-2:rgba(17,26,52,.92);
-      --line:rgba(126,144,255,.18); --text:#eef4ff; --muted:#a8b5db; --accent:#7e7bff;
-      --accent2:#2ee6c4; --accent3:#ff77c8; --danger:#ff6e91; --success:#4fe0a3;
-      --warning:#ffc364; --radius:24px; --radius-sm:16px; --shadow:0 18px 50px rgba(0,0,0,.32);
-    }
-
-    *{box-sizing:border-box} html{scroll-behavior:smooth}
-    body{
-      margin:0; min-height:100vh; font-family:Inter,Arial,sans-serif; color:var(--text);
-      background:
-        radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),
-        radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),
-        radial-gradient(circle at bottom right,rgba(255,119,200,.12),transparent 22%),
-        linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%);
-    }
-
-    .glow{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0}
-    .glow::before,.glow::after{
-      content:""; position:absolute; border-radius:999px; filter:blur(80px); opacity:.28;
-      animation:drift 15s ease-in-out infinite alternate;
-    }
-    .glow::before{width:280px; height:280px; background:rgba(126,123,255,.9); left:4%; top:8%}
-    .glow::after{width:260px; height:260px; background:rgba(255,119,200,.8); right:4%; bottom:8%; animation-duration:19s}
-    @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(25px,-12px,0) scale(1.08)}}
-
-    .wrap{position:relative; z-index:1; width:min(1180px,calc(100% - 28px)); margin:0 auto; padding:24px 0 56px}
-    .topbar{
-      position:sticky; top:14px; z-index:20; display:flex; align-items:center; justify-content:space-between;
-      gap:14px; margin-bottom:22px; padding:14px 18px; border:1px solid var(--line); border-radius:999px;
-      background:rgba(8,14,30,.72); backdrop-filter:blur(14px); box-shadow:var(--shadow);
-    }
-
-    .brand,.actions,.button-row,.mini-actions,.filters{display:flex; flex-wrap:wrap; gap:10px}
-    .brand{align-items:center; min-width:0; gap:12px}
-    .actions,.button-row{justify-content:flex-end}
-    .mini-actions{gap:8px}
-    .filters{margin:6px 0 14px}
-
-    .brand-icon{
-      width:42px; height:42px; flex:0 0 auto; display:grid; place-items:center; font-size:20px;
-      border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2));
-      box-shadow:0 0 26px rgba(126,123,255,.28);
-    }
-    .brand-copy h1,.login-card h2,.panel h3,.table-card h3,.hero h2,.hero p,.login-card p,.sub,.footer-note{margin:0}
-    .brand-copy h1{font-size:clamp(1rem,2vw,1.18rem); font-weight:800; letter-spacing:.02em}
-    .brand-copy p{margin:3px 0 0; color:var(--muted); font-size:.9rem}
-
-    .hero,.panel,.summary-card,.login-card,.table-card,.card{
-      border:1px solid var(--line); background:var(--panel); backdrop-filter:blur(14px); box-shadow:var(--shadow);
-    }
-    .hero{
-      display:grid; grid-template-columns:1.15fr .85fr; gap:20px; align-items:center;
-      margin-bottom:22px; padding:28px; border-radius:30px;
-    }
-    .hero h2{margin-bottom:10px; font-size:clamp(1.9rem,4vw,3rem); line-height:1.03}
-    .hero p,.login-card p,.sub,.hero-note span{color:var(--muted); line-height:1.65}
-    .hero p{max-width:740px}
-    .hero-note{
-      padding:18px; border-radius:22px; border:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
-    }
-    .hero-note strong,.summary-card span,.summary-card strong,.summary-card small,.month-card strong,.month-card div{display:block}
-    .hero-note strong{margin-bottom:8px; font-size:1rem}
-    .hero-note span{font-size:.94rem}
-
-    .btn,.btn-ghost,.btn-danger{
-      border:none; border-radius:999px; padding:12px 16px; font:inherit; font-weight:800; cursor:pointer;
-      transition:transform .18s ease,opacity .18s ease,box-shadow .18s ease,border-color .18s ease;
-    }
-    .btn:hover,.btn-ghost:hover,.btn-danger:hover{transform:translateY(-1px)}
-    .btn{color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px rgba(102,112,255,.25)}
-    .btn-ghost{color:var(--text); background:rgba(255,255,255,.05); border:1px solid var(--line)}
-    .btn-danger{color:#fff; background:linear-gradient(135deg,#f45f85,#ffa46a); box-shadow:0 10px 26px rgba(244,95,133,.23)}
-    .mini-actions button{padding:9px 12px; font-size:.82rem}
-    .hidden{display:none !important}
-
-    .login-wrap{min-height:calc(100vh - 120px); display:grid; place-items:center}
-    .login-card{width:min(560px,100%); padding:30px; border-radius:28px; background:var(--panel-2)}
-    .login-card h2{margin-bottom:8px; font-size:clamp(1.6rem,4vw,2.3rem)}
-    .login-card p,.sub{margin-bottom:18px}
-    .setup-box,.stat-note,.empty-state,.message,.month-card{
-      padding:14px 16px; border-radius:18px; font-size:.92rem; line-height:1.6;
-    }
-    .setup-box{margin-top:18px; border:1px solid rgba(255,195,100,.22); background:rgba(255,195,100,.09); color:#ffe2af; line-height:1.55}
-
-    .summary-grid,.grid,.form-grid,.monthly-grid{display:grid; gap:14px}
-    .summary-grid{grid-template-columns:repeat(5,minmax(0,1fr)); margin-bottom:22px}
-    .grid{grid-template-columns:1fr 1fr; gap:22px; margin-bottom:22px}
-    .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .monthly-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px}
-    .full{grid-column:1 / -1} .triple{grid-column:span 1}
-    .panel,.table-card{padding:22px; border-radius:26px}
-    .summary-card{padding:18px; border-radius:22px}
-
-    .summary-card span{margin-bottom:8px; color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.08em}
-    .summary-card strong{font-size:clamp(1.22rem,2.8vw,1.9rem); line-height:1.08}
-    .summary-card small{margin-top:8px; color:var(--muted); font-size:.84rem; line-height:1.45}
-
-    label{display:block; margin-bottom:6px; color:var(--muted); font-size:.88rem; font-weight:700; letter-spacing:.01em}
-    input,select,textarea{
-      width:100%; padding:12px 14px; border-radius:16px; outline:none; font:inherit; color:var(--text);
-      background:rgba(255,255,255,.05); border:1px solid rgba(151,179,255,.18);
-    }
-    input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62); box-shadow:0 0 0 4px rgba(126,123,255,.12)}
-    textarea{min-height:96px; resize:vertical}
-    .filters input,.filters select{min-width:160px}
-
-    .stat-note,.empty-state{color:var(--muted); background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.08)}
-    .message{margin-top:14px; color:#cffff0; background:rgba(79,224,163,.1); border:1px solid rgba(79,224,163,.18)}
-    .month-card{padding:14px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07)}
-    .month-card strong{margin-bottom:8px}
-    .month-card div{color:var(--muted); font-size:.9rem; line-height:1.55}
-
-    table{width:100%; margin-top:8px; border-collapse:collapse}
-    th,td{padding:12px 10px; border-bottom:1px solid rgba(255,255,255,.07); text-align:left; vertical-align:top; font-size:.93rem}
-    th{color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:.08em}
-
-    .type-pill{
-      display:inline-flex; align-items:center; padding:6px 10px; border-radius:999px;
-      font-size:.76rem; font-weight:800; letter-spacing:.04em;
-    }
-    .type-income{color:#c9fff0; background:rgba(79,224,163,.13); border:1px solid rgba(79,224,163,.2)}
-    .type-expense{color:#ffd7e1; background:rgba(255,110,145,.12); border:1px solid rgba(255,110,145,.2)}
-    .footer-note{margin-top:18px; color:var(--muted); text-align:center; font-size:.84rem}
-
-    @media (max-width:1020px){
-      .hero,.grid,.summary-grid{grid-template-columns:1fr}
-      .monthly-grid{grid-template-columns:1fr 1fr}
-      .topbar{flex-direction:column; align-items:flex-start; border-radius:24px}
-      .actions{width:100%; justify-content:stretch}
-      .actions button{flex:1 1 auto}
-    }
-
-    @media (max-width:720px){
-      .wrap{width:min(100% - 16px,1180px); padding-top:14px}
-      .hero,.panel,.table-card,.summary-card,.login-card{border-radius:22px}
-      .hero,.panel,.table-card,.login-card{padding:18px}
-      .form-grid,.monthly-grid{grid-template-columns:1fr}
-      th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}
-    }
+    :root{--bg:#08101f;--bg2:#0d1730;--panel:rgba(12,19,40,.88);--panel-2:rgba(17,26,52,.92);--line:rgba(126,144,255,.18);--text:#eef4ff;--muted:#a8b5db;--accent:#7e7bff;--accent2:#2ee6c4;--danger:#ff6e91;--shadow:0 18px 50px rgba(0,0,0,.32)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),radial-gradient(circle at bottom right,rgba(255,119,200,.12),transparent 22%),linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%)}
+    .glow{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}.glow:before,.glow:after{content:"";position:absolute;border-radius:999px;filter:blur(80px);opacity:.28;animation:drift 15s ease-in-out infinite alternate}.glow:before{width:280px;height:280px;background:rgba(126,123,255,.9);left:4%;top:8%}.glow:after{width:260px;height:260px;background:rgba(255,119,200,.8);right:4%;bottom:8%;animation-duration:19s}@keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(25px,-12px,0) scale(1.08)}}
+    .wrap{position:relative;z-index:1;width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 56px}.topbar{position:sticky;top:14px;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;padding:14px 18px;border:1px solid var(--line);border-radius:999px;background:rgba(8,14,30,.72);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+    .brand,.actions,.button-row,.mini-actions,.filters{display:flex;flex-wrap:wrap;gap:10px}.brand{align-items:center;min-width:0;gap:12px}.actions,.button-row{justify-content:flex-end}.mini-actions{gap:8px}.filters{margin:6px 0 14px}.brand-icon{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;font-size:20px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28)}
+    .brand-copy h1,.login-card h2,.panel h3,.table-card h3,.hero h2,.hero p,.login-card p,.sub,.footer-note{margin:0}.brand-copy h1{font-size:clamp(1rem,2vw,1.18rem);font-weight:800;letter-spacing:.02em}.brand-copy p{margin:3px 0 0;color:var(--muted);font-size:.9rem}
+    .hero,.panel,.summary-card,.login-card,.table-card{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow)}.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:center;margin-bottom:22px;padding:28px;border-radius:30px}.hero h2{margin-bottom:10px;font-size:clamp(1.9rem,4vw,3rem);line-height:1.03}.hero p,.login-card p,.sub,.hero-note span{color:var(--muted);line-height:1.65}.hero p{max-width:740px}.hero-note{padding:18px;border-radius:22px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03))}.hero-note strong,.summary-card span,.summary-card strong,.summary-card small,.month-card strong,.month-card div{display:block}.hero-note strong{margin-bottom:8px;font-size:1rem}.hero-note span{font-size:.94rem}
+    .btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer;transition:transform .18s ease,opacity .18s ease,box-shadow .18s ease,border-color .18s ease}.btn:hover,.btn-ghost:hover,.btn-danger:hover{transform:translateY(-1px)}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a);box-shadow:0 10px 26px rgba(244,95,133,.23)}.mini-actions button{padding:9px 12px;font-size:.82rem}.hidden{display:none!important}
+    .login-wrap{min-height:calc(100vh - 120px);display:grid;place-items:center}.login-card{width:min(560px,100%);padding:30px;border-radius:28px;background:var(--panel-2)}.login-card h2{margin-bottom:8px;font-size:clamp(1.6rem,4vw,2.3rem)}.login-card p,.sub{margin-bottom:18px}.setup-box,.stat-note,.empty-state,.message,.month-card{padding:14px 16px;border-radius:18px;font-size:.92rem;line-height:1.6}.setup-box{margin-top:18px;border:1px solid rgba(255,195,100,.22);background:rgba(255,195,100,.09);color:#ffe2af;line-height:1.55}
+    .summary-grid,.grid,.form-grid,.monthly-grid{display:grid;gap:14px}.summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.grid{grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.monthly-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}.full{grid-column:1 / -1}.panel,.table-card{padding:22px;border-radius:26px}.summary-card{padding:18px;border-radius:22px}
+    .summary-card span{margin-bottom:8px;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}.summary-card strong{font-size:clamp(1.1rem,2.6vw,1.7rem);line-height:1.08}.summary-card small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700;letter-spacing:.01em}input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;outline:none;font:inherit;color:var(--text);background:rgba(255,255,255,.05);border:1px solid rgba(151,179,255,.18)}input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)}textarea{min-height:96px;resize:vertical}.filters input,.filters select{min-width:160px}
+    .stat-note,.empty-state{color:var(--muted);background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08)}.message{margin-top:14px;color:#cffff0;background:rgba(79,224,163,.1);border:1px solid rgba(79,224,163,.18)}.month-card{padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.month-card strong{margin-bottom:8px}.month-card div{color:var(--muted);font-size:.9rem;line-height:1.55}
+    table{width:100%;margin-top:8px;border-collapse:collapse}th,td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top;font-size:.93rem}th{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}.type-pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.76rem;font-weight:800;letter-spacing:.04em}.type-income{color:#c9fff0;background:rgba(79,224,163,.13);border:1px solid rgba(79,224,163,.2)}.type-expense{color:#ffd7e1;background:rgba(255,110,145,.12);border:1px solid rgba(255,110,145,.2)}.footer-note{margin-top:18px;color:var(--muted);text-align:center;font-size:.84rem}
+    @media (max-width:1020px){.hero,.grid,.summary-grid{grid-template-columns:1fr}.monthly-grid{grid-template-columns:1fr 1fr}.topbar{flex-direction:column;align-items:flex-start;border-radius:24px}.actions{width:100%;justify-content:stretch}.actions button{flex:1 1 auto}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.hero,.panel,.table-card,.summary-card,.login-card{border-radius:22px}.hero,.panel,.table-card,.login-card{padding:18px}.form-grid,.monthly-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="glow"></div>
-
   <div class="wrap">
     <div class="topbar">
-      <div class="brand">
-        <div class="brand-icon">📊</div>
-        <div class="brand-copy">
-          <h1>OliPoly 3D Financial Tracker Pro</h1>
-          <p>Real login + online storage with Supabase</p>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn-ghost hidden" id="refreshBtn" type="button">Refresh Data</button>
-        <button class="btn-ghost hidden" id="exportBtn" type="button">Export CSV</button>
-        <button class="btn-ghost hidden" id="taxExportBtn" type="button">Export Tax Report</button>
-        <button class="btn-danger hidden" id="logoutBtn" type="button">Log Out</button>
-      </div>
+      <div class="brand"><div class="brand-icon">📊</div><div class="brand-copy"><h1>OliPoly 3D Financial Tracker Pro</h1><p>Tax-inclusive sale support + online storage with Supabase</p></div></div>
+      <div class="actions"><button class="btn-ghost hidden" id="refreshBtn" type="button">Refresh Data</button><button class="btn-ghost hidden" id="exportBtn" type="button">Export CSV</button><button class="btn-ghost hidden" id="taxExportBtn" type="button">Export Tax Report</button><button class="btn-danger hidden" id="logoutBtn" type="button">Log Out</button></div>
     </div>
 
     <section id="loginSection" class="login-wrap">
       <div class="login-card">
         <h2>Sign in to your private tracker</h2>
         <p>This version uses <strong>Supabase</strong> for a real login and cloud-stored data, so your entries can be accessed across devices instead of living only in one browser.</p>
-
-        <div class="form-grid">
-          <div class="full">
-            <label for="emailInput">Email</label>
-            <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email" />
-          </div>
-          <div class="full">
-            <label for="passwordInput">Password</label>
-            <input id="passwordInput" type="password" placeholder="Enter password" autocomplete="current-password" />
-          </div>
-        </div>
-
-        <div class="button-row" style="margin-top:16px; justify-content:flex-start;">
-          <button class="btn" id="loginBtn" type="button">Log In</button>
-          <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
-        </div>
-
+        <div class="form-grid"><div class="full"><label for="emailInput">Email</label><input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email"></div><div class="full"><label for="passwordInput">Password</label><input id="passwordInput" type="password" placeholder="Enter password" autocomplete="current-password"></div></div>
+        <div class="button-row" style="margin-top:16px;justify-content:flex-start;"><button class="btn" id="loginBtn" type="button">Log In</button><button class="btn-ghost" id="signupBtn" type="button">Create Account</button></div>
         <div class="setup-box hidden" id="authMessage"></div>
       </div>
     </section>
 
     <section id="appSection" class="hidden">
-      <div class="hero">
-        <div>
-          <h2>Track sales, real costs, shipping, and monthly profit.</h2>
-          <p>Log income and expenses for your OliPoly business, separate shipping charged to customers from shipping you paid out, edit entries anytime, and keep your numbers synced online through your account.</p>
-        </div>
-        <div class="hero-note">
-          <strong>Best use for your workflow</strong>
-          <span>Add each customer payment as income, track filament or materials separately, add shipping charged to the customer as revenue, add shipping cost as an expense, and use notes for order number, customer name, pickup, or shipping details.</span>
-        </div>
-      </div>
+      <div class="hero"><div><h2>Track sales, tax collected, real costs, shipping, and monthly profit.</h2><p>Income entries can now treat your amount as tax-inclusive. The tracker will back sales tax out automatically so only pre-tax revenue feeds your revenue totals.</p></div><div class="hero-note"><strong>Best use for your workflow</strong><span>For a tax-inclusive customer total, enter the full paid amount, turn on tax-inclusive mode, and enter the tax rate. The page will auto-calculate net revenue and sales tax collected for that sale.</span></div></div>
 
       <div class="summary-grid">
-        <div class="summary-card">
-          <span>Product Revenue</span>
-          <strong id="productRevenue">$0.00</strong>
-          <small>Base sales amount, excluding shipping charged.</small>
-        </div>
-        <div class="summary-card">
-          <span>Shipping Revenue</span>
-          <strong id="shippingRevenue">$0.00</strong>
-          <small>Shipping amounts charged to customers.</small>
-        </div>
-        <div class="summary-card">
-          <span>Total Costs</span>
-          <strong id="totalCosts">$0.00</strong>
-          <small>Base expenses plus your shipping paid out.</small>
-        </div>
-        <div class="summary-card">
-          <span>Net Profit</span>
-          <strong id="netProfit">$0.00</strong>
-          <small>Total revenue minus all visible costs.</small>
-        </div>
-        <div class="summary-card">
-          <span>Entries</span>
-          <strong id="entryCount">0</strong>
-          <small>Total records shown by your current filters.</small>
-        </div>
+        <div class="summary-card"><span>Product Revenue</span><strong id="productRevenue">$0.00</strong><small>Pre-tax product revenue only.</small></div>
+        <div class="summary-card"><span>Shipping Revenue</span><strong id="shippingRevenue">$0.00</strong><small>Pre-tax shipping revenue only.</small></div>
+        <div class="summary-card"><span>Sales Tax Collected</span><strong id="salesTaxCollectedTotal">$0.00</strong><small>Tracked separately from revenue.</small></div>
+        <div class="summary-card"><span>Total Costs</span><strong id="totalCosts">$0.00</strong><small>Base expenses plus shipping paid and direct costs.</small></div>
+        <div class="summary-card"><span>Net Profit</span><strong id="netProfit">$0.00</strong><small>Revenue minus visible costs, excluding tax collected.</small></div>
+        <div class="summary-card"><span>Entries</span><strong id="entryCount">0</strong><small>Total records shown by your current filters.</small></div>
       </div>
 
       <div class="grid">
         <section class="panel">
           <h3 id="formHeading">Add Financial Entry</h3>
           <p class="sub">Use income for customer payments and expense for materials, shipping labels, packaging, event fees, machine maintenance, and other business costs.</p>
-
           <form id="entryForm">
             <div class="form-grid">
-              <div>
-                <label for="entryType">Entry Type</label>
-                <select id="entryType" required>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
-              </div>
-              <div>
-                <label for="entryDate">Date</label>
-                <input id="entryDate" type="date" required />
-              </div>
-              <div>
-                <label for="entryCategory">Category</label>
-                <select id="entryCategory" required>
-                  <option value="Sale">Sale</option>
-                  <option value="Material">Material</option>
-                  <option value="Shipping">Shipping</option>
-                  <option value="Packaging">Packaging</option>
-                  <option value="Marketplace Fee">Marketplace Fee</option>
-                  <option value="Machine Maintenance">Machine Maintenance</option>
-                  <option value="Event Booth">Event Booth</option>
-                  <option value="Supplies">Supplies</option>
-                  <option value="Custom">Custom</option>
-                </select>
-              </div>
-              <div>
-                <label for="taxCategory">Tax Category</label>
-                <select id="taxCategory">
-                  <option value="auto">Auto from category</option>
-                  <option value="income_sales">Sales Income</option>
-                  <option value="income_shipping">Shipping Income</option>
-                  <option value="materials">Materials</option>
-                  <option value="packaging">Packaging</option>
-                  <option value="shipping_out">Shipping Purchased</option>
-                  <option value="marketplace_fees">Marketplace Fees</option>
-                  <option value="equipment_maintenance">Equipment & Maintenance</option>
-                  <option value="event_fees">Event & Booth Fees</option>
-                  <option value="supplies">Supplies</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label for="entryAmount">Base Amount</label>
-                <input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
-              </div>
-              <div>
-                <label for="shippingCharged">Shipping Charged to Customer</label>
-                <input id="shippingCharged" type="number" min="0" step="0.01" placeholder="0.00" />
-              </div>
-              <div>
-                <label for="shippingCost">Shipping Cost You Paid</label>
-                <input id="shippingCost" type="number" min="0" step="0.01" placeholder="0.00" />
-              </div>
-              <div>
-                <label for="materialCost">Material Cost \(for COGS\)</label>
-                <input id="materialCost" type="number" min="0" step="0.01" placeholder="0.00" />
-              </div>
-              <div>
-                <label for="packagingCost">Packaging Cost \(for COGS\)</label>
-                <input id="packagingCost" type="number" min="0" step="0.01" placeholder="0.00" />
-              </div>
-              <div>
-                <label for="laborCost">Labor Cost \(optional\)</label>
-                <input id="laborCost" type="number" min="0" step="0.01" placeholder="0.00" />
-              </div>
-              <div>
-                <label for="otherDirectCost">Other Direct Cost</label>
-                <input id="otherDirectCost" type="number" min="0" step="0.01" placeholder="0.00" />
-              </div>
-              <div class="full">
-                <label for="entryTitle">Title</label>
-                <input id="entryTitle" type="text" maxlength="120" placeholder="Example: Beach toy order / PETG filament / Craft show booth fee" required />
-              </div>
-              <div class="full">
-                <label for="entryNotes">Notes</label>
-                <textarea id="entryNotes" maxlength="500" placeholder="Optional details: order number, customer name, shipping vs pickup, color/material, vendor, etc."></textarea>
-              </div>
+              <div><label for="entryType">Entry Type</label><select id="entryType" required><option value="income">Income</option><option value="expense">Expense</option></select></div>
+              <div><label for="entryDate">Date</label><input id="entryDate" type="date" required></div>
+              <div><label for="entryCategory">Category</label><select id="entryCategory" required><option value="Sale">Sale</option><option value="Material">Material</option><option value="Shipping">Shipping</option><option value="Packaging">Packaging</option><option value="Marketplace Fee">Marketplace Fee</option><option value="Machine Maintenance">Machine Maintenance</option><option value="Event Booth">Event Booth</option><option value="Supplies">Supplies</option><option value="Custom">Custom</option></select></div>
+              <div><label for="taxCategory">Tax Category</label><select id="taxCategory"><option value="auto">Auto from category</option><option value="income_sales">Sales Income</option><option value="income_shipping">Shipping Income</option><option value="materials">Materials</option><option value="packaging">Packaging</option><option value="shipping_out">Shipping Purchased</option><option value="marketplace_fees">Marketplace Fees</option><option value="equipment_maintenance">Equipment & Maintenance</option><option value="event_fees">Event & Booth Fees</option><option value="supplies">Supplies</option><option value="other">Other</option></select></div>
+              <div><label for="entryAmount">Amount Entered</label><input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required></div>
+              <div><label for="shippingCharged">Shipping Charged to Customer</label><input id="shippingCharged" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div><label for="taxIncluded">Amount Includes Sales Tax?</label><select id="taxIncluded"><option value="no">No</option><option value="yes">Yes</option></select></div>
+              <div><label for="salesTaxRate">Sales Tax Rate %</label><input id="salesTaxRate" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div><label for="salesTaxCollected">Sales Tax Collected</label><input id="salesTaxCollected" type="number" step="0.01" readonly></div>
+              <div><label for="netRevenuePreview">Net Revenue Preview</label><input id="netRevenuePreview" type="number" step="0.01" readonly></div>
+              <div><label for="shippingCost">Shipping Cost You Paid</label><input id="shippingCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div><label for="materialCost">Material Cost (for COGS)</label><input id="materialCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div><label for="packagingCost">Packaging Cost (for COGS)</label><input id="packagingCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div><label for="laborCost">Labor Cost (optional)</label><input id="laborCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div><label for="otherDirectCost">Other Direct Cost</label><input id="otherDirectCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div class="full"><label for="entryTitle">Title</label><input id="entryTitle" type="text" maxlength="120" placeholder="Example: Beach toy order / PETG filament / Craft show booth fee" required></div>
+              <div class="full"><label for="entryNotes">Notes</label><textarea id="entryNotes" maxlength="500" placeholder="Optional details: order number, customer name, shipping vs pickup, color/material, vendor, etc."></textarea></div>
             </div>
-
-            <div class="button-row" style="margin-top:16px; justify-content:flex-start;">
-              <button class="btn" id="saveBtn" type="submit">Save Entry</button>
-              <button class="btn-ghost" id="cancelEditBtn" type="button">Cancel Edit</button>
-            </div>
+            <div class="message" id="entryTypeHint" style="margin-top:16px;"></div>
+            <div class="button-row" style="margin-top:16px;justify-content:flex-start;"><button class="btn" id="saveBtn" type="submit">Save Entry</button><button class="btn-ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button></div>
           </form>
-
           <div class="message hidden" id="formMessage"></div>
         </section>
 
         <section class="panel">
           <h3>Monthly Profit Summary</h3>
-          <p class="sub">This rolls up each month’s visible entries so you can quickly see revenue, COGS, costs, and profit trends.</p>
+          <p class="sub">This rolls up each month’s visible entries so you can quickly see revenue, tax collected, COGS, costs, and profit trends.</p>
           <div id="monthlySummary" class="stat-note">No monthly data yet. Add entries to start building your summary.</div>
           <div class="monthly-grid" id="monthlyGrid"></div>
-
           <h3 style="margin-top:18px;">Tax Report</h3>
           <p class="sub">Use this to review year totals by tax bucket before export.</p>
-          <div class="filters" style="margin-top:0;">
-            <input id="taxYearFilter" type="number" min="2020" max="2100" step="1" placeholder="Year" />
-            <button class="btn-ghost" id="runTaxReportBtn" type="button">Run Tax Report</button>
-          </div>
+          <div class="filters" style="margin-top:0;"><input id="taxYearFilter" type="number" min="2020" max="2100" step="1" placeholder="Year"><button class="btn-ghost" id="runTaxReportBtn" type="button">Run Tax Report</button></div>
           <div id="taxReportWrap" class="stat-note">No tax report generated yet.</div>
         </section>
       </div>
 
       <section class="table-card">
         <h3>Transactions</h3>
-        <div class="filters">
-          <select id="typeFilter">
-            <option value="all">All Types</option>
-            <option value="income">Income Only</option>
-            <option value="expense">Expense Only</option>
-          </select>
-          <input id="monthFilter" type="month" />
-          <input id="searchFilter" type="text" placeholder="Search title, category, or notes" />
-          <button class="btn-ghost" id="clearFiltersBtn" type="button">Clear Filters</button>
-        </div>
+        <div class="filters"><select id="typeFilter"><option value="all">All Types</option><option value="income">Income Only</option><option value="expense">Expense Only</option></select><input id="monthFilter" type="month"><input id="searchFilter" type="text" placeholder="Search title, category, or notes"><button class="btn-ghost" id="clearFiltersBtn" type="button">Clear Filters</button></div>
         <div id="tableWrap"></div>
       </section>
-
-            <p class="footer-note">Private OliPoly 3D tracker powered by Supabase login and cloud storage.</p>
+      <p class="footer-note">Private OliPoly 3D tracker powered by Supabase login and cloud storage.</p>
     </section>
   </div>
 
   <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co',SUPABASE_ANON_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y',$=id=>document.getElementById(id),num=v=>+v||0,money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v)),todayISO=()=>new Date().toISOString().slice(0,10),currentYear=()=>new Date().getFullYear(),csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`,escapeHtml=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-const els=['loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn','emailInput','passwordInput','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes','productRevenue','shippingRevenue','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid','tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap'].reduce((a,id)=>(a[id]=$(id),a),{});
-let supabase,currentUser=null,entries=[],editingId=null;const BASE_CATEGORIES=['Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance','Event Booth','Supplies'],toggles=['logoutBtn','refreshBtn','exportBtn','taxExportBtn'];
-const setMsg=(t,e=0)=>{els.formMessage.textContent=t;els.formMessage.classList.remove('hidden');Object.assign(els.formMessage.style,{background:e?'rgba(255,110,145,.1)':'rgba(79,224,163,.1)',borderColor:e?'rgba(255,110,145,.22)':'rgba(79,224,163,.18)',color:e?'#ffd7e1':'#cffff0'})},hideMsg=()=>els.formMessage.classList.add('hidden'),setAuthMsg=(t,e=0)=>{els.authMessage.textContent=t;els.authMessage.classList.remove('hidden');Object.assign(els.authMessage.style,{background:e?'rgba(255,110,145,.1)':'rgba(255,195,100,.09)',borderColor:e?'rgba(255,110,145,.22)':'rgba(255,195,100,.22)',color:e?'#ffd7e1':'#ffe2af'})},hideAuthMsg=()=>els.authMessage.classList.add('hidden'),defaultTax=(type,cat)=>type==='income'?(cat==='Shipping'?'income_shipping':'income_sales'):({Material:'materials',Packaging:'packaging',Shipping:'shipping_out','Marketplace Fee':'marketplace_fees','Machine Maintenance':'equipment_maintenance','Event Booth':'event_fees',Supplies:'supplies'})[cat]||'other',directCost=e=>num(e.material_cost)+num(e.packaging_cost)+num(e.labor_cost)+num(e.other_direct_cost),visibleCost=e=>(e.type==='expense'?num(e.amount):0)+num(e.shipping_cost)+directCost(e);
-function resetForm(){editingId=null;els.entryForm.reset();els.entryType.value='income';els.entryDate.value=todayISO();els.entryCategory.value='Sale';els.taxCategory.value='auto';['shippingCharged','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost'].forEach(k=>els[k].value='');els.formHeading.textContent='Add Financial Entry';els.saveBtn.textContent='Save Entry';els.cancelEditBtn.classList.add('hidden');hideMsg()}
-function setUI(on){els.loginSection.classList.toggle('hidden',on);els.appSection.classList.toggle('hidden',!on);toggles.forEach(k=>els[k].classList.toggle('hidden',!on))}
-const filtered=()=>[...entries].filter(e=>{if(els.typeFilter.value!=='all'&&e.type!==els.typeFilter.value)return 0;if(els.monthFilter.value&&!e.entry_date.startsWith(els.monthFilter.value))return 0;if(els.searchFilter.value){const h=`${e.title} ${e.category} ${e.notes||''}`.toLowerCase();if(!h.includes(els.searchFilter.value.trim().toLowerCase()))return 0}return 1}).sort((a,b)=>new Date(b.entry_date)-new Date(a.entry_date));
-function updateSummary(list){let pr=0,sr=0,tc=0;list.forEach(e=>{if(e.type==='income'){pr+=num(e.amount);sr+=num(e.shipping_charged)}tc+=visibleCost(e)});els.productRevenue.textContent=money(pr);els.shippingRevenue.textContent=money(sr);els.totalCosts.textContent=money(tc);els.netProfit.textContent=money(pr+sr-tc);els.entryCount.textContent=list.length}
-function renderMonthly(list){if(!list.length){els.monthlySummary.textContent='No monthly data yet. Add entries to start building your summary.';els.monthlyGrid.innerHTML='';return}const m={};list.forEach(e=>{const k=e.entry_date.slice(0,7);m[k]??={r:0,c:0,o:0};if(e.type==='income'){m[k].r+=num(e.amount)+num(e.shipping_charged);m[k].c+=directCost(e);m[k].o+=num(e.shipping_cost)}else m[k].o+=num(e.amount)+num(e.shipping_cost)});els.monthlySummary.textContent='Latest visible months are summarized below.';els.monthlyGrid.innerHTML=Object.entries(m).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6).map(([k,v])=>`<div class="month-card"><strong>${k}</strong><div>Revenue: ${money(v.r)}</div><div>COGS: ${money(v.c)}</div><div>Other Costs: ${money(v.o)}</div><div>Profit: ${money(v.r-v.c-v.o)}</div></div>`).join('\n')}
-function renderTable(list){if(!list.length){els.tableWrap.innerHTML='<div class="empty-state">No entries match your current filters.</div>';return}els.tableWrap.innerHTML=`<table><thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Category</th><th>Base</th><th>Ship In</th><th>Ship Out</th><th>COGS</th><th>Actions</th></tr></thead><tbody>${list.map(e=>`<tr><td>${e.entry_date}</td><td><span class="type-pill ${e.type==='income'?'type-income':'type-expense'}">${e.type}</span></td><td><strong>${escapeHtml(e.title)}</strong>${e.notes?`<div style="margin-top:6px;color:var(--muted);font-size:.86rem;line-height:1.5;">${escapeHtml(e.notes)}</div>`:''}</td><td>${escapeHtml(e.category)}</td><td>${money(e.amount)}</td><td>${money(e.shipping_charged)}</td><td>${money(e.shipping_cost)}</td><td>${money(directCost(e))}</td><td><div class="mini-actions"><button class="btn-ghost" type="button" data-edit="${e.id}">Edit</button><button class="btn-danger" type="button" data-delete="${e.id}">Delete</button></div></td></tr>`).join('')}</tbody></table>`;els.tableWrap.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>startEdit(b.dataset.edit));els.tableWrap.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteEntry(b.dataset.delete))}
-function taxBuckets(year){const out={income_sales:0,income_shipping:0,materials:0,packaging:0,shipping_out:0,marketplace_fees:0,equipment_maintenance:0,event_fees:0,supplies:0,other:0};entries.filter(e=>!year||e.entry_date.startsWith(String(year))).forEach(e=>{if(e.type==='income'){out.income_sales+=num(e.amount);out.income_shipping+=num(e.shipping_charged);out.materials+=num(e.material_cost);out.packaging+=num(e.packaging_cost);out.other+=num(e.labor_cost)+num(e.other_direct_cost);out.shipping_out+=num(e.shipping_cost)}else{const k=e.tax_category||defaultTax(e.type,e.category);out[k]=(out[k]||0)+num(e.amount)+num(e.shipping_cost)}});return out}
-function renderTaxReport(){const year=els.taxYearFilter.value||currentYear();els.taxYearFilter.value=year;const r=taxBuckets(year),expense=r.materials+r.packaging+r.shipping_out+r.marketplace_fees+r.equipment_maintenance+r.event_fees+r.supplies+r.other;els.taxReportWrap.innerHTML=`<div><strong>Tax year:</strong> ${year}</div><div style="margin-top:10px;line-height:1.7;"><div>Sales income: ${money(r.income_sales)}</div><div>Shipping income: ${money(r.income_shipping)}</div><div>Materials: ${money(r.materials)}</div><div>Packaging: ${money(r.packaging)}</div><div>Shipping purchased: ${money(r.shipping_out)}</div><div>Marketplace fees: ${money(r.marketplace_fees)}</div><div>Equipment & maintenance: ${money(r.equipment_maintenance)}</div><div>Event & booth fees: ${money(r.event_fees)}</div><div>Supplies: ${money(r.supplies)}</div><div>Other: ${money(r.other)}</div><div style="margin-top:8px;"><strong>Total deductible buckets:</strong> ${money(expense)}</div><div><strong>Net after listed costs:</strong> ${money(r.income_sales+r.income_shipping-expense)}</div></div>`}
-function renderAll(){const list=filtered();updateSummary(list);renderMonthly(list);renderTable(list);renderTaxReport()}
-function downloadCSV(name,rows){
-  const csv=rows.map(r=>r.map(csvCell).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download=name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-const exportCSV=()=>entries.length?downloadCSV(`olipoly-financial-export-${todayISO()}.csv`,[['Date','Type','Category','Tax Category','Title','Base Amount','Shipping Charged','Shipping Cost','Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Notes'],...entries.map(e=>[e.entry_date,e.type,e.category,e.tax_category||defaultTax(e.type,e.category),e.title,num(e.amount).toFixed(2),num(e.shipping_charged).toFixed(2),num(e.shipping_cost).toFixed(2),num(e.material_cost).toFixed(2),num(e.packaging_cost).toFixed(2),num(e.labor_cost).toFixed(2),num(e.other_direct_cost).toFixed(2),e.notes||''])]):alert('There are no entries to export yet.');
-function exportTaxReport(){const year=els.taxYearFilter.value||currentYear(),r=taxBuckets(year);downloadCSV(`olipoly-tax-report-${year}.csv`,[['Tax Year','Bucket','Amount'],[year,'Sales Income',num(r.income_sales).toFixed(2)],[year,'Shipping Income',num(r.income_shipping).toFixed(2)],[year,'Materials',num(r.materials).toFixed(2)],[year,'Packaging',num(r.packaging).toFixed(2)],[year,'Shipping Purchased',num(r.shipping_out).toFixed(2)],[year,'Marketplace Fees',num(r.marketplace_fees).toFixed(2)],[year,'Equipment & Maintenance',num(r.equipment_maintenance).toFixed(2)],[year,'Event & Booth Fees',num(r.event_fees).toFixed(2)],[year,'Supplies',num(r.supplies).toFixed(2)],[year,'Other',num(r.other).toFixed(2)]])}
-async function fetchEntries(){if(!supabase||!currentUser)return;const {data,error}=await supabase.from('financial_entries').select('*').eq('user_id',currentUser.id).order('entry_date',{ascending:false}).order('created_at',{ascending:false});if(error)return setAuthMsg(`Could not load entries: ${error.message}`,1);hideAuthMsg();entries=data||[];renderAll()}
-function startEdit(id){const e=entries.find(x=>x.id===id);if(!e)return;editingId=id;els.formHeading.textContent='Edit Financial Entry';els.saveBtn.textContent='Update Entry';els.cancelEditBtn.classList.remove('hidden');[['entryType','type'],['entryDate','entry_date'],['taxCategory','tax_category'],['entryAmount','amount'],['shippingCharged','shipping_charged'],['shippingCost','shipping_cost'],['materialCost','material_cost'],['packagingCost','packaging_cost'],['laborCost','labor_cost'],['otherDirectCost','other_direct_cost'],['entryTitle','title'],['entryNotes','notes']].forEach(([k,p])=>els[k].value=e[p]||'');els.entryCategory.value=BASE_CATEGORIES.includes(e.category)?e.category:'Custom';els.taxCategory.value=e.tax_category||'auto';window.scrollTo({top:0,behavior:'smooth'})}
-async function deleteEntry(id){if(!confirm('Delete this entry?'))return;const {error}=await supabase.from('financial_entries').delete().eq('id',id).eq('user_id',currentUser.id);if(error)return setMsg(`Delete failed: ${error.message}`,1);setMsg('Entry deleted.');if(editingId===id)resetForm();await fetchEntries()}
-async function saveEntry(e){e.preventDefault();hideMsg();let category=els.entryCategory.value;if(category==='Custom'){category=prompt('Enter custom category name:')?.trim();if(!category)return setMsg('Custom category is required.',1)}const payload={user_id:currentUser.id,type:els.entryType.value,entry_date:els.entryDate.value,category,tax_category:els.taxCategory.value==='auto'?defaultTax(els.entryType.value,category):els.taxCategory.value,title:els.entryTitle.value.trim(),notes:els.entryNotes.value.trim(),amount:num(els.entryAmount.value),shipping_charged:num(els.shippingCharged.value),shipping_cost:num(els.shippingCost.value),material_cost:num(els.materialCost.value),packaging_cost:num(els.packagingCost.value),labor_cost:num(els.laborCost.value),other_direct_cost:num(els.otherDirectCost.value),updated_at:new Date().toISOString()},r=editingId?await supabase.from('financial_entries').update(payload).eq('id',editingId).eq('user_id',currentUser.id):await supabase.from('financial_entries').insert(payload);if(r.error)return setMsg(`Save failed: ${r.error.message}`,1);setMsg(editingId?'Entry updated.':'Entry saved.');resetForm();await fetchEntries()}
-async function login(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter your email and password.',1);setAuthMsg('Signing in...');const {error}=await supabase.auth.signInWithPassword({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Login failed: ${error.message}`,1);hideAuthMsg()}
-async function signup(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter an email and password to create your account.',1);setAuthMsg('Creating account...');const {error}=await supabase.auth.signUp({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Signup failed: ${error.message}`,1);setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.')}
-async function logout(){await supabase.auth.signOut();currentUser=null;setUI(0);entries=[];resetForm();renderAll();setAuthMsg('Logged out.')}
-async function init(){hideAuthMsg();els.entryDate.value=todayISO();els.taxYearFilter.value=currentYear();els.cancelEditBtn.classList.add('hidden');if(SUPABASE_URL.includes('PASTE_')||SUPABASE_ANON_KEY.includes('PASTE_'))return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.',1);supabase=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);const {data:{session}}=await supabase.auth.getSession();currentUser=session?.user||null;setUI(!!currentUser);renderTaxReport();if(currentUser)await fetchEntries();supabase.auth.onAuthStateChange(async(_,s)=>{currentUser=s?.user||null;setUI(!!currentUser);if(currentUser){hideAuthMsg();await fetchEntries()}else{entries=[];renderAll()}})}
-els.loginBtn.onclick=login;els.signupBtn.onclick=signup;els.logoutBtn.onclick=logout;els.refreshBtn.onclick=fetchEntries;els.exportBtn.onclick=exportCSV;els.taxExportBtn.onclick=exportTaxReport;els.runTaxReportBtn.onclick=renderTaxReport;els.entryForm.onsubmit=saveEntry;els.cancelEditBtn.onclick=resetForm;els.clearFiltersBtn.onclick=()=>{els.typeFilter.value='all';els.monthFilter.value='';els.searchFilter.value='';renderAll()};[els.typeFilter,els.monthFilter,els.searchFilter,els.taxYearFilter].forEach(el=>el.oninput=el.onchange=renderAll);els.passwordInput.onkeydown=e=>e.key==='Enter'&&login();init();
-</script>
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co',SUPABASE_ANON_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+    const $=id=>document.getElementById(id),num=v=>+v||0,money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v)),todayISO=()=>new Date().toISOString().slice(0,10),currentYear=()=>new Date().getFullYear(),csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`,escapeHtml=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    const ids=['loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn','emailInput','passwordInput','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryTypeHint','entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','salesTaxRate','salesTaxCollected','netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes','productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid','tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap'];
+    const els=ids.reduce((a,id)=>(a[id]=$(id),a),{});const BASE_CATEGORIES=['Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance','Event Booth','Supplies'];let supabase,currentUser=null,entries=[],editingId=null;
+
+    const setPanel=(el,text,isError=false,palette='green')=>{el.textContent=text;el.classList.remove('hidden');const themes={green:['rgba(79,224,163,.1)','rgba(79,224,163,.18)','#cffff0'],amber:['rgba(255,195,100,.09)','rgba(255,195,100,.22)','#ffe2af'],red:['rgba(255,110,145,.1)','rgba(255,110,145,.22)','#ffd7e1']};const [bg,border,color]=isError?themes.red:themes[palette];Object.assign(el.style,{background:bg,borderColor:border,color})};
+    const hide=el=>el.classList.add('hidden');const setMsg=(t,e=false)=>setPanel(els.formMessage,t,e,'green');const setAuthMsg=(t,e=false)=>setPanel(els.authMessage,t,e,'amber');
+    const defaultTax=(type,cat)=>type==='income'?(cat==='Shipping'?'income_shipping':'income_sales'):({Material:'materials',Packaging:'packaging',Shipping:'shipping_out','Marketplace Fee':'marketplace_fees','Machine Maintenance':'equipment_maintenance','Event Booth':'event_fees',Supplies:'supplies'})[cat]||'other';
+    const directCost=e=>num(e.material_cost)+num(e.packaging_cost)+num(e.labor_cost)+num(e.other_direct_cost);
+    const visibleCost=e=>(e.type==='expense'?num(e.amount):0)+num(e.shipping_cost)+directCost(e);
+
+    function computeTaxExclusive(total,rate){if(!rate)return{tax:0,net:total};const net=+(total/(1+rate/100)).toFixed(2);return{tax:+(total-net).toFixed(2),net};}
+    function updateTaxPreview(){const total=num(els.entryAmount.value),rate=num(els.salesTaxRate.value);if(els.entryType.value!=='income'){els.salesTaxCollected.value='';els.netRevenuePreview.value='';return}if(els.taxIncluded.value==='yes'){const {tax,net}=computeTaxExclusive(total,rate);els.salesTaxCollected.value=tax?tax.toFixed(2):'';els.netRevenuePreview.value=net?net.toFixed(2):'';}else{els.salesTaxCollected.value='';els.netRevenuePreview.value=total?total.toFixed(2):'';}}
+    function updateEntryTypeHint(){if(els.entryType.value==='income') setPanel(els.entryTypeHint,'Income entry: if Amount Includes Sales Tax = Yes, the tracker automatically backs tax out of the entered total and counts only the pre-tax amount as revenue. Shipping Charged stays separate. Use Expense instead for bulk materials, fees, maintenance, booth fees, and general supplies.',false,'amber'); else setPanel(els.entryTypeHint,'Expense entry: use this for bulk materials, marketplace fees, machine maintenance, event booths, supplies, and other overhead. Expense entries do not create revenue.',false,'amber'); updateTaxPreview();}
+    function resetForm(){editingId=null;els.entryForm.reset();els.entryType.value='income';els.entryDate.value=todayISO();els.entryCategory.value='Sale';els.taxCategory.value='auto';els.taxIncluded.value='no';['shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost'].forEach(k=>els[k].value='');els.formHeading.textContent='Add Financial Entry';els.saveBtn.textContent='Save Entry';els.cancelEditBtn.classList.add('hidden');hide(els.formMessage);updateEntryTypeHint();}
+    function setUI(on){els.loginSection.classList.toggle('hidden',on);els.appSection.classList.toggle('hidden',!on);['logoutBtn','refreshBtn','exportBtn','taxExportBtn'].forEach(k=>els[k].classList.toggle('hidden',!on));}
+    function filteredEntries(){const search=els.searchFilter.value.trim().toLowerCase();return [...entries].filter(e=>{if(els.typeFilter.value!=='all'&&e.type!==els.typeFilter.value)return false;if(els.monthFilter.value&&!e.entry_date.startsWith(els.monthFilter.value))return false;if(search&&!`${e.title} ${e.category} ${e.notes||''}`.toLowerCase().includes(search))return false;return true}).sort((a,b)=>new Date(b.entry_date)-new Date(a.entry_date));}
+
+    function updateSummary(list){let pr=0,sr=0,st=0,tc=0;list.forEach(e=>{if(e.type==='income'){pr+=num(e.amount);sr+=num(e.shipping_charged);st+=num(e.sales_tax_collected)}tc+=visibleCost(e)});els.productRevenue.textContent=money(pr);els.shippingRevenue.textContent=money(sr);els.salesTaxCollectedTotal.textContent=money(st);els.totalCosts.textContent=money(tc);els.netProfit.textContent=money(pr+sr-tc);els.entryCount.textContent=list.length;}
+    function renderMonthly(list){if(!list.length){els.monthlySummary.textContent='No monthly data yet. Add entries to start building your summary.';els.monthlyGrid.innerHTML='';return}const m={};list.forEach(e=>{const k=e.entry_date.slice(0,7);m[k]??={r:0,t:0,c:0,o:0};if(e.type==='income'){m[k].r+=num(e.amount)+num(e.shipping_charged);m[k].t+=num(e.sales_tax_collected);m[k].c+=directCost(e);m[k].o+=num(e.shipping_cost)}else m[k].o+=num(e.amount)+num(e.shipping_cost)});els.monthlySummary.textContent='Latest visible months are summarized below.';els.monthlyGrid.innerHTML=Object.entries(m).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6).map(([k,v])=>`<div class="month-card"><strong>${k}</strong><div>Revenue: ${money(v.r)}</div><div>Tax Collected: ${money(v.t)}</div><div>COGS: ${money(v.c)}</div><div>Other Costs: ${money(v.o)}</div><div>Profit: ${money(v.r-v.c-v.o)}</div></div>`).join('');}
+    function renderTable(list){if(!list.length){els.tableWrap.innerHTML='<div class="empty-state">No entries match your current filters.</div>';return}els.tableWrap.innerHTML=`<table><thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Category</th><th>Revenue</th><th>Tax</th><th>Ship In</th><th>Ship Out</th><th>COGS</th><th>Actions</th></tr></thead><tbody>${list.map(e=>`<tr><td>${e.entry_date}</td><td><span class="type-pill ${e.type==='income'?'type-income':'type-expense'}">${e.type}</span></td><td><strong>${escapeHtml(e.title)}</strong>${e.notes?`<div style="margin-top:6px;color:var(--muted);font-size:.86rem;line-height:1.5;">${escapeHtml(e.notes)}</div>`:''}</td><td>${escapeHtml(e.category)}</td><td>${money(e.amount)}</td><td>${money(e.sales_tax_collected)}</td><td>${money(e.shipping_charged)}</td><td>${money(e.shipping_cost)}</td><td>${money(directCost(e))}</td><td><div class="mini-actions"><button class="btn-ghost" type="button" data-edit="${e.id}">Edit</button><button class="btn-danger" type="button" data-delete="${e.id}">Delete</button></div></td></tr>`).join('')}</tbody></table>`;els.tableWrap.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>startEdit(b.dataset.edit));els.tableWrap.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteEntry(b.dataset.delete));}
+    function taxBuckets(year){const out={income_sales:0,income_shipping:0,sales_tax_collected:0,materials:0,packaging:0,shipping_out:0,marketplace_fees:0,equipment_maintenance:0,event_fees:0,supplies:0,other:0};entries.filter(e=>!year||e.entry_date.startsWith(String(year))).forEach(e=>{if(e.type==='income'){out.income_sales+=num(e.amount);out.income_shipping+=num(e.shipping_charged);out.sales_tax_collected+=num(e.sales_tax_collected);out.materials+=num(e.material_cost);out.packaging+=num(e.packaging_cost);out.other+=num(e.labor_cost)+num(e.other_direct_cost);out.shipping_out+=num(e.shipping_cost)}else{const k=e.tax_category||defaultTax(e.type,e.category);out[k]=(out[k]||0)+num(e.amount)+num(e.shipping_cost)}});return out;}
+    function renderTaxReport(){const year=els.taxYearFilter.value||currentYear();els.taxYearFilter.value=year;const r=taxBuckets(year),expense=r.materials+r.packaging+r.shipping_out+r.marketplace_fees+r.equipment_maintenance+r.event_fees+r.supplies+r.other;els.taxReportWrap.innerHTML=`<div><strong>Tax year:</strong> ${year}</div><div style="margin-top:10px;line-height:1.7;"><div>Sales income: ${money(r.income_sales)}</div><div>Shipping income: ${money(r.income_shipping)}</div><div>Sales tax collected: ${money(r.sales_tax_collected)}</div><div>Materials: ${money(r.materials)}</div><div>Packaging: ${money(r.packaging)}</div><div>Shipping purchased: ${money(r.shipping_out)}</div><div>Marketplace fees: ${money(r.marketplace_fees)}</div><div>Equipment & maintenance: ${money(r.equipment_maintenance)}</div><div>Event & booth fees: ${money(r.event_fees)}</div><div>Supplies: ${money(r.supplies)}</div><div>Other: ${money(r.other)}</div><div style="margin-top:8px;"><strong>Total deductible buckets:</strong> ${money(expense)}</div><div><strong>Net after listed costs:</strong> ${money(r.income_sales+r.income_shipping-expense)}</div></div>`;}
+    function renderAll(){const list=filteredEntries();updateSummary(list);renderMonthly(list);renderTable(list);renderTaxReport();}
+    function downloadCSV(name,rows){const csv=rows.map(r=>r.map(csvCell).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+    const exportCSV=()=>entries.length?downloadCSV(`olipoly-financial-export-${todayISO()}.csv`,[['Date','Type','Category','Tax Category','Revenue Amount','Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost','Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Title','Notes'],...entries.map(e=>[e.entry_date,e.type,e.category,e.tax_category||defaultTax(e.type,e.category),num(e.amount).toFixed(2),num(e.sales_tax_collected).toFixed(2),num(e.shipping_charged).toFixed(2),e.tax_included||'no',num(e.sales_tax_rate).toFixed(2),num(e.shipping_cost).toFixed(2),num(e.material_cost).toFixed(2),num(e.packaging_cost).toFixed(2),num(e.labor_cost).toFixed(2),num(e.other_direct_cost).toFixed(2),e.title,e.notes||''])]):alert('There are no entries to export yet.');
+    function exportTaxReport(){const year=els.taxYearFilter.value||currentYear(),r=taxBuckets(year);downloadCSV(`olipoly-tax-report-${year}.csv`,[['Tax Year','Bucket','Amount'],[year,'Sales Income',num(r.income_sales).toFixed(2)],[year,'Shipping Income',num(r.income_shipping).toFixed(2)],[year,'Sales Tax Collected',num(r.sales_tax_collected).toFixed(2)],[year,'Materials',num(r.materials).toFixed(2)],[year,'Packaging',num(r.packaging).toFixed(2)],[year,'Shipping Purchased',num(r.shipping_out).toFixed(2)],[year,'Marketplace Fees',num(r.marketplace_fees).toFixed(2)],[year,'Equipment & Maintenance',num(r.equipment_maintenance).toFixed(2)],[year,'Event & Booth Fees',num(r.event_fees).toFixed(2)],[year,'Supplies',num(r.supplies).toFixed(2)],[year,'Other',num(r.other).toFixed(2)]]);}
+
+    async function fetchEntries(){if(!supabase||!currentUser)return;const {data,error}=await supabase.from('financial_entries').select('*').eq('user_id',currentUser.id).order('entry_date',{ascending:false}).order('created_at',{ascending:false});if(error)return setAuthMsg(`Could not load entries: ${error.message}`,true);hide(els.authMessage);entries=data||[];renderAll();}
+    function startEdit(id){const e=entries.find(x=>x.id===id);if(!e)return;editingId=id;els.formHeading.textContent='Edit Financial Entry';els.saveBtn.textContent='Update Entry';els.cancelEditBtn.classList.remove('hidden');[['entryType','type'],['entryDate','entry_date'],['entryAmount','amount'],['shippingCharged','shipping_charged'],['taxIncluded','tax_included'],['salesTaxRate','sales_tax_rate'],['salesTaxCollected','sales_tax_collected'],['netRevenuePreview','amount'],['shippingCost','shipping_cost'],['materialCost','material_cost'],['packagingCost','packaging_cost'],['laborCost','labor_cost'],['otherDirectCost','other_direct_cost'],['entryTitle','title'],['entryNotes','notes']].forEach(([k,p])=>els[k].value=(e[p]??'') );els.entryCategory.value=BASE_CATEGORIES.includes(e.category)?e.category:'Custom';els.taxCategory.value=e.tax_category||'auto';updateEntryTypeHint();updateTaxPreview();window.scrollTo({top:0,behavior:'smooth'});}
+    async function deleteEntry(id){if(!confirm('Delete this entry?'))return;const {error}=await supabase.from('financial_entries').delete().eq('id',id).eq('user_id',currentUser.id);if(error)return setMsg(`Delete failed: ${error.message}`,true);setMsg('Entry deleted.');if(editingId===id)resetForm();await fetchEntries();}
+    async function saveEntry(e){e.preventDefault();hide(els.formMessage);updateEntryTypeHint();let category=els.entryCategory.value;if(category==='Custom'){category=prompt('Enter custom category name:')?.trim();if(!category)return setMsg('Custom category is required.',true);}const isIncome=els.entryType.value==='income';const saleCosts=num(els.shippingCost.value)+num(els.materialCost.value)+num(els.packagingCost.value)+num(els.laborCost.value)+num(els.otherDirectCost.value);const suspiciousExpense=/material|filament|spool|fee|maintenance|booth|supplies/i.test(`${els.entryTitle.value} ${category}`);if(!isIncome&&saleCosts>0&&num(els.entryAmount.value)===0)return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Base Amount.',true);if(isIncome&&suspiciousExpense&&num(els.shippingCharged.value)===0&&saleCosts===0)return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.',true);let amount=num(els.entryAmount.value),salesTaxCollected=0;if(isIncome&&els.taxIncluded.value==='yes'){if(num(els.salesTaxRate.value)<=0)return setMsg('Enter a sales tax rate when tax-inclusive mode is on.',true);const x=computeTaxExclusive(amount,num(els.salesTaxRate.value));salesTaxCollected=x.tax;amount=x.net;}const payload={user_id:currentUser.id,type:els.entryType.value,entry_date:els.entryDate.value,category,tax_category:els.taxCategory.value==='auto'?defaultTax(els.entryType.value,category):els.taxCategory.value,title:els.entryTitle.value.trim(),notes:els.entryNotes.value.trim(),amount,shipping_charged:num(els.shippingCharged.value),tax_included:els.taxIncluded.value,sales_tax_rate:num(els.salesTaxRate.value),sales_tax_collected:salesTaxCollected,shipping_cost:num(els.shippingCost.value),material_cost:num(els.materialCost.value),packaging_cost:num(els.packagingCost.value),labor_cost:num(els.laborCost.value),other_direct_cost:num(els.otherDirectCost.value),updated_at:new Date().toISOString()};const r=editingId?await supabase.from('financial_entries').update(payload).eq('id',editingId).eq('user_id',currentUser.id):await supabase.from('financial_entries').insert(payload);if(r.error)return setMsg(`Save failed: ${r.error.message}`,true);setMsg(editingId?'Entry updated.':'Entry saved.');resetForm();await fetchEntries();}
+    async function login(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter your email and password.',true);setAuthMsg('Signing in...');const {error}=await supabase.auth.signInWithPassword({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Login failed: ${error.message}`,true);hide(els.authMessage);}async function signup(){if(!els.emailInput.value||!els.passwordInput.value)return setAuthMsg('Enter an email and password to create your account.',true);setAuthMsg('Creating account...');const {error}=await supabase.auth.signUp({email:els.emailInput.value.trim(),password:els.passwordInput.value});if(error)return setAuthMsg(`Signup failed: ${error.message}`,true);setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');}async function logout(){await supabase.auth.signOut();currentUser=null;setUI(false);entries=[];resetForm();renderAll();setAuthMsg('Logged out.');}
+    async function init(){hide(els.authMessage);els.entryDate.value=todayISO();els.taxYearFilter.value=currentYear();if(SUPABASE_URL.includes('PASTE_')||SUPABASE_ANON_KEY.includes('PASTE_'))return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.',true);updateEntryTypeHint();supabase=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);const {data:{session}}=await supabase.auth.getSession();currentUser=session?.user||null;setUI(!!currentUser);renderTaxReport();if(currentUser)await fetchEntries();supabase.auth.onAuthStateChange(async(_,s)=>{currentUser=s?.user||null;setUI(!!currentUser);if(currentUser){hide(els.authMessage);await fetchEntries();}else{entries=[];renderAll();}});}
+    [els.entryType,els.entryAmount,els.taxIncluded,els.salesTaxRate].forEach(el=>el.oninput=el.onchange=()=>{updateEntryTypeHint();updateTaxPreview();});
+    els.loginBtn.onclick=login;els.signupBtn.onclick=signup;els.logoutBtn.onclick=logout;els.refreshBtn.onclick=fetchEntries;els.exportBtn.onclick=exportCSV;els.taxExportBtn.onclick=exportTaxReport;els.runTaxReportBtn.onclick=renderTaxReport;els.entryForm.onsubmit=saveEntry;els.cancelEditBtn.onclick=resetForm;els.clearFiltersBtn.onclick=()=>{els.typeFilter.value='all';els.monthFilter.value='';els.searchFilter.value='';renderAll();};[els.typeFilter,els.monthFilter,els.searchFilter,els.taxYearFilter].forEach(el=>el.oninput=el.onchange=renderAll);els.passwordInput.onkeydown=e=>e.key==='Enter'&&login();init();
+  </script>
 </body>
 </html>
