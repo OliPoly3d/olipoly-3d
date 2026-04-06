@@ -345,8 +345,7 @@
         `Shipping Cost You Paid: ${shippingCost.toFixed(2)}`,
         `Customer Total Paid: ${finalQuote.toFixed(2)}`,
         `Notes: ${notes}`
-      ].join('
-');
+      ].join('\n');
     }
 
     function summaryText(finalQuote,direct,overhead,profit,deposit,balance){
@@ -438,9 +437,7 @@
     function deleteQuote(){const id=els.savedQuotesSelect.value;if(!id)return;writeHistory(readHistory().filter(q=>q.quoteNumber!==id));els.savedQuotesSelect.value='';}
 
     async function copySummary(){
-      const text=els.quoteSummary.textContent + '
-
-' + els.customerQuoteView.innerText;
+      const text=els.quoteSummary.textContent + '\n\n' + els.customerQuoteView.innerText;
       try{
         await navigator.clipboard.writeText(text);
         els.copySummaryBtn.textContent='Copied';
