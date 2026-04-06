@@ -31,6 +31,9 @@
     .note,.empty{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}
     .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
     .advanced-wrap{margin-top:18px}.advanced-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;font-weight:800}.advanced-toggle small{color:var(--muted);font-weight:600}.advanced-panel.hidden{display:none}
+    .confidence-ok{color:#c9fff0}.confidence-warn{color:#ffe6a8}.confidence-risk{color:#ffd0da}
+    body.ready-send .internal-only{display:none!important}
+    body.ready-send .customer-priority{border-color:rgba(46,230,196,.28);box-shadow:0 0 0 1px rgba(46,230,196,.08),var(--shadow)}
     .pdf-sheet{display:none}
     .pdf-shell{max-width:900px;margin:0 auto;padding:28px;background:linear-gradient(180deg,#08101f 0%,#0d1730 100%);color:#eef4ff}
     .pdf-card{border:1px solid rgba(126,144,255,.18);border-radius:28px;background:rgba(12,19,40,.96);box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden}
@@ -59,6 +62,7 @@
         <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
         <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
         <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
+        <button class="btn-ghost" id="readySendBtn" type="button">Ready to Send: Off</button>
         <button class="btn" id="customerPdfBtn" type="button">Generate Customer PDF</button>
         <button class="btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
         <button class="btn-danger" id="resetBtn" type="button">Reset</button>
@@ -70,7 +74,7 @@
         <h2>Quote each order with a clear internal cost breakdown and customer-ready output.</h2>
         <p>Use this page to estimate pricing before you make the order. It separates direct costs like filament, packaging, shipping, and hardware from overhead like machine wear, design time, marketplace fees, and profit margin.</p>
       </section>
-      <section class="card quote-box">
+      <section class="card quote-box customer-priority">
         <h3>How to think about it</h3>
         <p class="sub">Direct costs are tied to the order. Overhead covers the business. Margin is what you want left after both.</p>
         <div class="note">A good starting workflow: pick a preset, enter material, packaging, shipping, any hardware, design/print time, and your target margin. Then review the customer quote view before sending.</div>
@@ -82,6 +86,7 @@
       <div class="summary"><span>Margin %</span><strong id="sumMargin">0.0%</strong></div>
       <div class="summary"><span>Break-Even</span><strong id="sumBreakEven">$0.00</strong></div>
       <div class="summary"><span>Profit Guardrail</span><strong id="profitGuardrail">OK</strong></div>
+      <div class="summary"><span>Quote Confidence</span><strong id="quoteConfidence">Ready</strong></div>
     </div>
 
     <div class="summary-grid">
@@ -93,7 +98,7 @@
       <div class="summary"><span>Final Quote</span><strong id="sumQuote">$0.00</strong></div>
     </div>
 
-    <section class="card" style="margin-bottom:22px;">
+    <section class="card internal-only" style="margin-bottom:22px;">
       <h3>Quote History</h3>
       <p class="sub">Save quotes in this browser, reload them later, and update their status as they move from pending to accepted or rejected.</p>
       <div class="form-grid">
@@ -113,7 +118,7 @@
     </div>
 
     <div class="grid">
-      <section class="card">
+      <section class="card customer-priority">
         <h3>Order Details</h3>
         <p class="sub">These fields help you price internally and present the quote externally.</p>
         <div class="form-grid">
@@ -125,10 +130,12 @@
           <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Optional" /></div>
           <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
           <div><label for="unitsPerItem">Print Units Per Item</label><input id="unitsPerItem" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="orderType">Order Type</label><select id="orderType"><option value="custom">Custom Order</option><option value="repeat">Repeat Order</option><option value="craft_show">Craft Show / Pre-Made</option><option value="business_bulk">Business / Bulk Order</option></select></div>
           <div><label for="presetSelect">Preset</label><select id="presetSelect"><option value="custom">Custom</option><option value="small_print">Small Print</option><option value="medium_print">Medium Print</option><option value="custom_job">Custom Job</option><option value="bagg_accessory">Bogg Accessory</option><option value="beach_toy">Beach Toy</option><option value="name_sign">Name Sign</option></select></div>
           <div><label for="depositPercent">Deposit %</label><input id="depositPercent" type="number" min="0" max="100" step="0.01" value="50" /></div>
+          <div><label for="shippingMode">Shipping Mode</label><select id="shippingMode"><option value="pickup">Local Pickup</option><option value="delivery">Local Delivery</option><option value="ship_estimated">Shipped Order (Estimated Shipping)</option><option value="ship_customer_label">Customer-Provided Label</option></select></div>
           <div><label for="quoteStatus">Quote Status</label><select id="quoteStatus"><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select></div>
-          <div class="full"><label for="quoteNotes">Internal Notes</label><textarea id="quoteNotes" placeholder="Color, size, turnaround, special hardware, shipping notes, custom design details, etc."></textarea></div>
+          <div class="full internal-only"><label for="quoteNotes">Internal Notes</label><textarea id="quoteNotes" placeholder="Color, size, turnaround, special hardware, shipping notes, custom design details, etc."></textarea></div>
           <div class="full"><label for="customerNotes">Customer-Facing Notes</label><textarea id="customerNotes" placeholder="What the quote includes, material/color notes, pickup/shipping expectations, etc."></textarea></div>
           <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions" placeholder="Example: quote includes one design proof, standard color only, hardware as listed, shipping estimate subject to final address."></textarea></div>
         </div>
@@ -160,7 +167,7 @@
           <div class="full"><div class="btn-row"><button class="btn" id="generateQuoteBtn" type="button">Generate Quote</button></div></div>
         </div>
 
-        <div class="advanced-wrap">
+        <div class="advanced-wrap internal-only">
           <button class="advanced-toggle" id="advancedToggle" type="button">
             <span>Advanced Cost Breakdown</span>
             <small id="advancedToggleText">Show details</small>
@@ -180,6 +187,7 @@
       </section>
 
       <section class="card quote-box">
+        <div class="internal-only">
         <h3>Craft Show / Pre-Made Batch Inputs</h3>
         <p class="sub">Use this simplified section for pre-made inventory, craft shows, and future inventory tracking. It is designed so the same fields can feed a dedicated inventory page later.</p>
         <div class="form-grid">
@@ -207,6 +215,8 @@
         <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="applyBatchBtn" type="button">Apply Batch Inputs</button></div>
         <div class="note" style="margin-top:16px;" id="batchSummary">No batch estimate yet.</div>
         <div class="note" style="margin-top:12px;" id="inventoryReadyView">No inventory-ready output yet.</div>
+
+        </div>
 
         <h3 style="margin-top:20px;">Pricing Output</h3>
         <p class="sub">Choose how you want to add profit.</p>
@@ -239,7 +249,7 @@
           <div class="calc-row total"><span>Final customer total</span><strong id="outFinal">$0.00</strong></div>
         </div>
 
-        <div class="note" style="margin-top:18px;">
+        <div class="note internal-only" style="margin-top:18px;">
           <strong style="display:block;margin-bottom:6px;">Recommended use</strong>
           For one-off custom work, include your design time and machine wear in overhead. For repeat prints, keep overhead lean and use a consistent margin so pricing stays predictable.
         </div>
@@ -247,11 +257,13 @@
         <div class="note" style="margin-top:18px;" id="quoteSummary">No quote summary yet.</div>
         <div class="note" style="margin-top:18px;" id="profitWarning">No pricing warnings.</div>
 
+        <div class="internal-only">
         <h3 style="margin-top:20px;">Finance Integration</h3>
         <p class="sub">Use this to turn an accepted quote into a ready-to-copy finance tracker entry.</p>
         <div class="note" id="financeReadyView">No finance-ready entry yet.</div>
         <div class="btn-row" style="margin-top:12px;">
           <button class="btn-ghost" id="copyFinanceBtn" type="button">Copy Finance Entry</button>
+        </div>
         </div>
 
         <h3 style="margin-top:20px;">Customer Quote View</h3>
@@ -306,7 +318,16 @@
         <div class="pdf-footer">
           <div class="pdf-note" id="pdfCustomerNotes">No customer-facing notes added yet.</div>
           <div class="pdf-note" id="pdfAssumptions" style="margin-top:14px;">No exclusions or assumptions added yet.</div>
+          <div class="pdf-note" id="pdfChecklist" style="margin-top:14px;">
+            <strong>Order Checklist</strong><br>
+            ☐ Quote approved<br>
+            ☐ Deposit received (if required)<br>
+            ☐ Files/design confirmed<br>
+            ☐ Colors/materials confirmed<br>
+            ☐ Shipping/pickup method confirmed
+          </div>
         </div>
+      </div>
       </div>
     </div>
   </section>
@@ -338,6 +359,10 @@
     };
 
     const els = {
+      orderType: $('orderType'),
+      quoteConfidence: $('quoteConfidence'),
+      readySendBtn: $('readySendBtn'),
+      shippingMode: $('shippingMode'),
       demoBtn: $('demoBtn'), saveQuoteBtn: $('saveQuoteBtn'), copySummaryBtn: $('copySummaryBtn'), customerPdfBtn: $('customerPdfBtn'), printBtn: $('printBtn'), resetBtn: $('resetBtn'),
       quoteNumber: $('quoteNumber'), quoteDate: $('quoteDate'), validThrough: $('validThrough'), turnaround: $('turnaround'), quoteTitle: $('quoteTitle'), customerName: $('customerName'), qty: $('qty'), unitsPerItem: $('unitsPerItem'), presetSelect: $('presetSelect'), depositPercent: $('depositPercent'), quoteStatus: $('quoteStatus'), quoteNotes: $('quoteNotes'), customerNotes: $('customerNotes'), assumptions: $('assumptions'),
       filamentCount: $('filamentCount'), spoolWeight: $('spoolWeight'), filament1Cost: $('filament1Cost'), filament1Used: $('filament1Used'), filament2Cost: $('filament2Cost'), filament2Used: $('filament2Used'), filament3Cost: $('filament3Cost'), filament3Used: $('filament3Used'), filament4Cost: $('filament4Cost'), filament4Used: $('filament4Used'), simplePackaging: $('simplePackaging'), simpleShipping: $('simpleShipping'), simpleHardware: $('simpleHardware'), designHours: $('designHours'), designRate: $('designRate'), postHours: $('postHours'), postRate: $('postRate'), machineHours: $('machineHours'), machineRate: $('machineRate'), marketplacePercent: $('marketplacePercent'), simpleSummary: $('simpleSummary'), generateQuoteBtn: $('generateQuoteBtn'),
@@ -353,6 +378,69 @@
     };
 
     const STORAGE_KEY = 'olipoly_quote_history_v2';
+    function applyOrderType(){
+      const t = els.orderType?.value || 'custom';
+      const isCraft = t === 'craft_show';
+      const isBulk = t === 'business_bulk';
+      const isRepeat = t === 'repeat';
+      if (els.customerName) els.customerName.placeholder = isBulk ? 'Business / buyer name' : 'Optional';
+      if (els.turnaround) els.turnaround.placeholder = isCraft ? 'Example: Ready for event date / in stock' : isBulk ? 'Example: staged delivery / production window' : 'Example: 5–7 business days';
+      if (els.depositPercent) {
+        if (isCraft) els.depositPercent.value = 0;
+        else if (isRepeat) els.depositPercent.value = 25;
+        else if (isBulk) els.depositPercent.value = 50;
+        else if (!num(els.depositPercent.value)) els.depositPercent.value = 50;
+      }
+      if (els.shippingMode && isCraft && els.shippingMode.value === 'ship_estimated') els.shippingMode.value = 'pickup';
+      if (els.quoteStatus && isCraft && els.quoteStatus.value === 'pending') els.quoteStatus.value = 'accepted';
+      if (els.customerNotes && !els.customerNotes.value.trim()) {
+        els.customerNotes.value = isCraft
+          ? 'Pre-made inventory item prepared for sale. Pricing reflects finished stock on hand unless otherwise noted.'
+          : isBulk
+          ? 'Quote prepared for a business / multi-unit order. Final schedule and delivery details can be confirmed at approval.'
+          : isRepeat
+          ? 'Quote prepared from a prior or repeat-style order with current materials and labor assumptions.'
+          : 'Custom 3D printed item quoted from the specifications discussed.';
+      }
+      if (els.assumptions && (!els.assumptions.value.trim() || els.assumptions.value === defaultAssumptions())) {
+        els.assumptions.value = defaultAssumptions();
+      }
+      if (els.profitValue) {
+        if (isCraft && els.profitMode.value === 'percent' && num(els.profitValue.value) < 35) els.profitValue.value = 35;
+        if (isBulk && els.profitMode.value === 'percent' && num(els.profitValue.value) < 25) els.profitValue.value = 25;
+      }
+      applyShippingMode();
+    }
+
+    function toggleReadySend(){
+      document.body.classList.toggle('ready-send');
+      const on = document.body.classList.contains('ready-send');
+      els.readySendBtn.textContent = `Ready to Send: ${on ? 'On' : 'Off'}`;
+      if (on) {
+        if (!els.customerNotes.value.trim()) els.customerNotes.value = 'Custom 3D printed item quoted from the specifications discussed.';
+        if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
+      }
+    }
+
+    function applyShippingMode(){
+      const mode = els.shippingMode?.value || 'pickup';
+      if (mode === 'pickup') {
+        if (!num(els.simpleShipping.value)) els.simpleShipping.value = 0;
+      } else if (mode === 'ship_customer_label') {
+        els.simpleShipping.value = 0;
+      }
+      const shippingText = mode === 'pickup'
+        ? 'Local pickup is assumed unless otherwise noted.'
+        : mode === 'delivery'
+        ? 'Local delivery pricing is assumed based on the current delivery estimate.'
+        : mode === 'ship_customer_label'
+        ? 'Customer-provided shipping label is assumed; no outbound shipping charge is included in this quote.'
+        : 'Shipping is estimated and may adjust if final packaging size, weight, or destination changes.';
+      if (els.customerNotes && !els.customerNotes.value.includes('pickup') && !els.customerNotes.value.includes('Shipping')) {
+        els.customerNotes.value = `${els.customerNotes.value.trim()} ${shippingText}`.trim();
+      }
+    }
+
     function applyTaxPreset(){
       const map={portage:7.25,summit:6.75,cuyahoga:8.00,franklin:7.50,custom:null,out_of_state:0};
       const val=map[els.taxPreset?.value];
@@ -360,7 +448,19 @@
     }
 
     function defaultAssumptions(){
-      return 'Quote includes one proof/review round, standard finishing unless noted, and the materials and colors listed in this quote. Final color appearance may vary slightly by filament brand and print settings. Shipping, if applicable, is estimated and may adjust if final packaging size or destination changes. Custom orders begin after quote approval and any required deposit.';
+      const t = els.orderType?.value || 'custom';
+      const ship = els.shippingMode?.value || 'pickup';
+      const shippingLine = ship === 'pickup'
+        ? 'Local pickup is assumed unless otherwise noted.'
+        : ship === 'delivery'
+        ? 'Local delivery pricing is estimated from the current delivery assumption and may adjust if destination changes.'
+        : ship === 'ship_customer_label'
+        ? 'Customer-provided shipping label is assumed and outbound shipping cost is not included in this quote.'
+        : 'Shipping, if applicable, is estimated and may adjust if final packaging size, weight, or destination changes.';
+      if (t === 'craft_show') return `Pricing is for pre-made inventory or event stock currently available or planned for a batch run. Final color appearance may vary slightly by filament brand and print settings. Quantities available may change as inventory sells. ${shippingLine}`;
+      if (t === 'business_bulk') return `Quote is based on the listed quantity, materials, and expected production approach. Final schedule, delivery timing, and any packaging or labeling requirements should be confirmed at approval. Material color and finish may vary slightly by filament brand and production batch. ${shippingLine}`;
+      if (t === 'repeat') return `Quote is based on a prior or repeat-style item using current material, labor, and machine assumptions. Minor variation in color, finish, or packaging may occur depending on current stock and print settings. ${shippingLine}`;
+      return `Quote includes one proof/review round, standard finishing unless noted, and the materials and colors listed in this quote. Final color appearance may vary slightly by filament brand and print settings. ${shippingLine} Custom orders begin after quote approval and any required deposit.`;
     }
 
     const PRESETS = {
@@ -485,6 +585,18 @@
       els.pdfBalance.textContent = money(balance);
       els.pdfCustomerNotes.textContent = els.customerNotes.value.trim() || 'No customer-facing notes added yet.';
       els.pdfAssumptions.textContent = els.assumptions.value.trim() || 'No exclusions or assumptions added yet.';
+
+      // Dynamic checklist tweaks
+      const checklist = [];
+      checklist.push('☐ Quote approved');
+      if (num(els.depositPercent.value) > 0) checklist.push('☐ Deposit received');
+      checklist.push('☐ Files/design confirmed');
+      checklist.push('☐ Colors/materials confirmed');
+      checklist.push(els.shippingMode.value === 'pickup' ? '☐ Pickup arranged' : '☐ Shipping method confirmed');
+
+      const checklistHtml = `<strong>Order Checklist</strong><br>${checklist.join('<br>')}`;
+      const el = document.getElementById('pdfChecklist');
+      if (el) el.innerHTML = checklistHtml;
     }
 
     function renderBatch() {
@@ -518,7 +630,11 @@
       const taxRate = num(els.salesTax.value) / 100;
       const finalRaw = beforeTaxRaw * (1 + taxRate);
       const roundingStep = num(els.roundingMode?.value);
-      const finalQuote = roundingStep > 0 ? Math.round(finalRaw / roundingStep) * roundingStep : finalRaw;
+      let finalQuote = roundingStep > 0 ? Math.round(finalRaw / roundingStep) * roundingStep : finalRaw;
+
+      const minTotal = (Math.max(1, num(els.qty.value) || 1) === 1) ? 20 : 30;
+      if (finalQuote < minTotal) finalQuote = minTotal;
+
       const beforeTax = taxRate > 0 ? finalQuote / (1 + taxRate) : finalQuote;
       const tax = finalQuote - beforeTax;
       const roundingGain = finalQuote - finalRaw;
@@ -540,6 +656,42 @@
       els.activePreset.textContent = PRESETS[els.presetSelect.value]?.name || 'Custom';
       els.quoteSummary.textContent = `${els.quoteTitle.value.trim() || 'Untitled quote'}${els.customerName.value ? ` for ${els.customerName.value}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(actualProfit)} actual profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
       els.profitWarning.textContent = actualProfit < 5 || marginPct < 25 ? `Warning: profit is ${money(actualProfit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price.` : 'No pricing warnings.';
+
+      const issues = [];
+      if (materialTotal <= 0) issues.push('No material entered');
+      if (machineTotal <= 0) issues.push('No machine time entered');
+      if (designTotal <= 0 && postTotal <= 0 && qty === 1) issues.push('No labor entered');
+      if (els.shippingMode.value === 'ship_estimated' && num(els.simpleShipping.value) <= 0) issues.push('Shipping estimate missing');
+      if (!els.quoteTitle.value.trim()) issues.push('Missing quote title');
+      if (!els.turnaround.value.trim()) issues.push('Missing turnaround');
+      let confidenceText = 'Ready';
+      let confidenceClass = 'confidence-ok';
+      if (issues.length >= 3 || actualProfit < 0 || marginPct < 15) {
+        confidenceText = 'Risky Quote';
+        confidenceClass = 'confidence-risk';
+      } else if (issues.length > 0 || actualProfit < 5 || marginPct < 25) {
+        confidenceText = 'Missing Inputs';
+        confidenceClass = 'confidence-warn';
+      }
+      els.quoteConfidence.textContent = confidenceText;
+      els.quoteConfidence.className = confidenceClass;
+      if (issues.length) {
+        els.profitWarning.textContent = `${els.profitWarning.textContent === 'No pricing warnings.' ? '' : els.profitWarning.textContent + ' '}Check: ${issues.join(', ')}.`.trim();
+      }
+
+      els.customerQuoteView.innerHTML = [
+        `<div style="margin-bottom:12px;"><strong>${els.quoteTitle.value.trim() || 'Quote'}</strong></div>`,
+        `<div style="margin-bottom:12px;">${els.quoteNumber.value ? `Quote #: ${els.quoteNumber.value}<br>` : ''}${els.quoteDate.value ? `Date: ${els.quoteDate.value}<br>` : ''}${els.validThrough.value ? `Valid Through: ${els.validThrough.value}<br>` : ''}${els.turnaround.value ? `Turnaround: ${els.turnaround.value}` : ''}</div>`,
+        `<div style="margin-bottom:12px;">${els.customerName.value ? `Customer: ${els.customerName.value}<br>` : ''}Quantity: ${qty}</div>`,
+        `<div style="margin-bottom:12px;">Subtotal: ${money(beforeTax)}${num(els.salesTax.value) ? `<br>Sales tax: ${money(tax)}` : ''}<br><strong>Total quote: ${money(finalQuote)}</strong></div>`,
+        `<div style="margin-bottom:12px;">Deposit due: ${money(deposit)}<br>Balance due: ${money(balance)}</div>`,
+        `<div style="margin-bottom:12px;">${els.customerNotes.value.trim() || 'No customer-facing notes added yet.'}</div>`,
+        `<div style="margin-bottom:12px;">${els.assumptions.value.trim() || 'No exclusions or assumptions added yet.'}</div>`
+      ].join('');
+      fillCustomerPdf(finalQuote, beforeTax, tax, deposit, balance, perItem);
+      els.financeReadyView.textContent = financeEntryText(finalQuote, beforeTax, tax);
+      renderBatch();
+    }
       els.customerQuoteView.innerHTML = [
         `<div style="margin-bottom:12px;"><strong>${els.quoteTitle.value.trim() || 'Quote'}</strong></div>`,
         `<div style="margin-bottom:12px;">${els.quoteNumber.value ? `Quote #: ${els.quoteNumber.value}<br>` : ''}${els.quoteDate.value ? `Date: ${els.quoteDate.value}<br>` : ''}${els.validThrough.value ? `Valid Through: ${els.validThrough.value}<br>` : ''}${els.turnaround.value ? `Turnaround: ${els.turnaround.value}` : ''}</div>`,
@@ -641,6 +793,10 @@
       if (!id) return;
       const q = readHistory().find(x => x.quoteNumber === id);
       if (!q) return;
+      if (q.quoteStatus === 'accepted') {
+        const proceed = window.confirm('This quote is marked accepted. Editing it may change the price after it was sent or approved. Continue loading it for editing?');
+        if (!proceed) return;
+      }
       Object.entries(q).forEach(([k, v]) => { if (els[k] && typeof v !== 'object') els[k].value = v; });
       els.directItems.innerHTML = '';
       els.overheadItems.innerHTML = '';
@@ -684,6 +840,8 @@ ${els.customerQuoteView.innerText}`;
 
     function resetPage() {
       ['quoteNumber','quoteTitle','customerName','quoteNotes','customerNotes','assumptions','batchName','batchSku','batchLocation','turnaround'].forEach(k => els[k].value = '');
+      els.orderType.value = 'custom';
+      els.shippingMode.value = 'pickup';
       els.quoteStatus.value = 'pending';
       els.quoteDate.value = today();
       els.validThrough.value = addDays(today(), 14);
@@ -707,8 +865,9 @@ ${els.customerQuoteView.innerText}`;
       els.batchSold.value = 0;
       els.directItems.innerHTML = '';
       els.overheadItems.innerHTML = '';
+      applyOrderType();
       applyTaxPreset();
-    seedDefaults();
+      seedDefaults();
       refreshHistoryUI();
     }
 
@@ -729,6 +888,8 @@ ${els.customerQuoteView.innerText}`;
     function loadDemo() {
       resetPage();
       els.quoteNumber.value = 'Q-1042';
+      els.orderType.value = 'custom';
+      els.shippingMode.value = 'ship_estimated';
       els.quoteTitle.value = 'Custom beach toy order';
       els.customerName.value = 'Sample Customer';
       els.turnaround.value = '5–7 business days';
@@ -754,13 +915,15 @@ ${els.customerQuoteView.innerText}`;
       render();
     }
 
-    const renderIds = ['quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','taxPreset','salesTax','roundingMode','depositPercent','presetSelect','suggestedMode','filamentCount','spoolWeight','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designHours','designRate','postHours','postRate','machineHours','machineRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation'];
+    const renderIds = ['orderType','shippingMode','quoteNumber','quoteDate','validThrough','turnaround','quoteTitle','customerName','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','taxPreset','salesTax','roundingMode','depositPercent','presetSelect','suggestedMode','filamentCount','spoolWeight','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designHours','designRate','postHours','postRate','machineHours','machineRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation'];
     renderIds.forEach(id => {
       if (!els[id]) return;
       els[id].addEventListener('input', render);
       els[id].addEventListener('change', render);
     });
     els.presetSelect.onchange = () => setPreset(els.presetSelect.value);
+    els.orderType.onchange = () => { applyOrderType(); render(); };
+    els.shippingMode.onchange = () => { applyShippingMode(); render(); };
     els.taxPreset.onchange = () => { applyTaxPreset(); render(); };
     els.roundingMode.onchange = render;
     els.advancedToggle.onclick = () => {
@@ -781,6 +944,7 @@ ${els.customerQuoteView.innerText}`;
     els.customerPdfBtn.onclick = generateCustomerPdf;
     els.printBtn.onclick = () => window.print();
     els.resetBtn.onclick = resetPage;
+    els.readySendBtn.onclick = () => { toggleReadySend(); render(); };
 
     seedDefaults();
     refreshHistoryUI();
