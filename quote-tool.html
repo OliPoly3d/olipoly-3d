@@ -259,6 +259,12 @@
 
         <div class="internal-only">
         <h3 style="margin-top:20px;">Finance Integration</h3>
+        <div class="note" style="margin-bottom:10px;">
+          <strong>Recommended Categories</strong><br>
+          Income: Sale<br>
+          Expenses: Materials, Supplies, Equipment, Admin / Setup, Software / Subscriptions, Shipping Expense, Fees<br>
+          Notes: LLC, vendor license, domain, and setup costs → use "Admin / Setup"
+        </div>
         <p class="sub">Use this to turn an accepted quote into a ready-to-copy finance tracker entry.</p>
         <div class="note" id="financeReadyView">No finance-ready entry yet.</div>
         <div class="btn-row" style="margin-top:12px;">
@@ -678,19 +684,6 @@
       if (issues.length) {
         els.profitWarning.textContent = `${els.profitWarning.textContent === 'No pricing warnings.' ? '' : els.profitWarning.textContent + ' '}Check: ${issues.join(', ')}.`.trim();
       }
-
-      els.customerQuoteView.innerHTML = [
-        `<div style="margin-bottom:12px;"><strong>${els.quoteTitle.value.trim() || 'Quote'}</strong></div>`,
-        `<div style="margin-bottom:12px;">${els.quoteNumber.value ? `Quote #: ${els.quoteNumber.value}<br>` : ''}${els.quoteDate.value ? `Date: ${els.quoteDate.value}<br>` : ''}${els.validThrough.value ? `Valid Through: ${els.validThrough.value}<br>` : ''}${els.turnaround.value ? `Turnaround: ${els.turnaround.value}` : ''}</div>`,
-        `<div style="margin-bottom:12px;">${els.customerName.value ? `Customer: ${els.customerName.value}<br>` : ''}Quantity: ${qty}</div>`,
-        `<div style="margin-bottom:12px;">Subtotal: ${money(beforeTax)}${num(els.salesTax.value) ? `<br>Sales tax: ${money(tax)}` : ''}<br><strong>Total quote: ${money(finalQuote)}</strong></div>`,
-        `<div style="margin-bottom:12px;">Deposit due: ${money(deposit)}<br>Balance due: ${money(balance)}</div>`,
-        `<div style="margin-bottom:12px;">${els.customerNotes.value.trim() || 'No customer-facing notes added yet.'}</div>`,
-        `<div style="margin-bottom:12px;">${els.assumptions.value.trim() || 'No exclusions or assumptions added yet.'}</div>`
-      ].join('');
-      fillCustomerPdf(finalQuote, beforeTax, tax, deposit, balance, perItem);
-      els.financeReadyView.textContent = financeEntryText(finalQuote, beforeTax, tax);
-      renderBatch();
     }
       els.customerQuoteView.innerHTML = [
         `<div style="margin-bottom:12px;"><strong>${els.quoteTitle.value.trim() || 'Quote'}</strong></div>`,
