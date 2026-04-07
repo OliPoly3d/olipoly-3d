@@ -217,26 +217,98 @@ function renderTable(list) {
 }
 
 function taxBuckets(year) {
-  const out = { income_sales:0, income_shipping:0, sales_tax_collected:0, materials:0, packaging:0, shipping_out:0, marketplace_fees:0, equipment_maintenance:0, event_fees:0, supplies:0, other:0 };
-  entries.filter(e => !year || e.entry_date.startsWith(String(year))).forEach(e => {
-    if (e.type === 'income') {
-      out.income_sales += num(e.amount);
-      out.income_shipping += num(e.shipping_charged);
-      out.sales_tax_collected += num(e.sales_tax_collected);
-    } else {
-      const k = e.tax_category || defaultTax(e.type, e.category);
-      out[k] = (out[k] || 0) + num(e.amount) + num(e.shipping_cost);
-    }
-  });
+  const out = {
+    income_sales: 0,
+    income_shipping: 0,
+    sales_tax_collected: 0,
+    materials: 0,
+    packaging: 0,
+    shipping_out: 0,
+    marketplace_fees: 0,
+    equipment_maintenance: 0,
+    event_fees: 0,
+    supplies: 0,
+    other: 0
+  };
+
+  entries
+    .filter(e => !year || e.entry_date.startsWith(String(year)))
+    .forEach(e => {
+      if (e.type === 'income') {
+        out.income_sales += num(e.amount);
+        out.income_shipping += num(e.shipping_charged);
+        out.sales_tax_collected += num(e.sales_tax_collected);
+      } else {
+        const k = e.tax_category || defaultTax(e.type, e.category);
+        out[k] = (out[k] || 0) + num(e.amount) + num(e.shipping_cost);
+      }
+    });
+
   return out;
+}
+
+function scheduleCMap(year) {
+  const r = taxBuckets(year);
+
+  const grossReceipts = r.income_sales + r.income_shipping;
+  const line10 = r.marketplace_fees;
+  const line13 = r.equipment_maintenance;
+  const line20b = r.event_fees;
+  const line21 = 0;
+  const line22 = r.materials + r.packaging + r.supplies;
+  const line27a = r.shipping_out + r.other;
+  const totalExpenses = line10 + line13 + line20b + line21 + line22 + line27a;
+  const netProfit = grossReceipts - totalExpenses;
+
+  return {
+    grossReceipts,
+    salesTaxCollected: r.sales_tax_collected,
+    line10,
+    line13,
+    line20b,
+    line21,
+    line22,
+    line27a,
+    otherBreakdown: {
+      shipping_out: r.shipping_out,
+      admin_software_other: r.other
+    },
+    totalExpenses,
+    netProfit
+  };
 }
 
 function renderTaxReport() {
   const year = els.taxYearFilter.value || currentYear();
-  const r = taxBuckets(year);
-  const expense = r.materials + r.packaging + r.shipping_out + r.marketplace_fees + r.equipment_maintenance + r.event_fees + r.supplies + r.other;
   els.taxYearFilter.value = year;
-  els.taxReportWrap.innerHTML = `<div><strong>Tax year:</strong> ${year}</div><div style="margin-top:10px;line-height:1.7;"><div>Sales income: ${money(r.income_sales)}</div><div>Shipping income: ${money(r.income_shipping)}</div><div>Sales tax collected: ${money(r.sales_tax_collected)}</div><div>Materials: ${money(r.materials)}</div><div>Packaging: ${money(r.packaging)}</div><div>Shipping purchased: ${money(r.shipping_out)}</div><div>Marketplace fees: ${money(r.marketplace_fees)}</div><div>Equipment & maintenance: ${money(r.equipment_maintenance)}</div><div>Event & booth fees: ${money(r.event_fees)}</div><div>Supplies: ${money(r.supplies)}</div><div>Other: ${money(r.other)}</div><div style="margin-top:8px;"><strong>Total deductible buckets:</strong> ${money(expense)}</div><div><strong>Net after listed costs:</strong> ${money(r.income_sales + r.income_shipping - expense)}</div><div style="margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.55;">Tax report uses expense entries for deductions. Per-sale material, packaging, labor, and other direct cost fields stay for pricing/profit visibility only and are not deducted again here.</div></div>`;
+
+  const s = scheduleCMap(year);
+
+  els.taxReportWrap.innerHTML = `
+    <div><strong>Tax year:</strong> ${year}</div>
+    <div style="margin-top:10px;line-height:1.7;">
+      <div><strong>Schedule C Line 1 – Gross receipts:</strong> ${money(s.grossReceipts)}</div>
+      <div><strong>Sales tax collected (tracked separately, not income):</strong> ${money(s.salesTaxCollected)}</div>
+
+      <div style="margin-top:10px;"><strong>Schedule C expense lines</strong></div>
+      <div>Line 10 – Commissions & fees: ${money(s.line10)}</div>
+      <div>Line 13 – Depreciation / equipment bucket: ${money(s.line13)}</div>
+      <div>Line 20b – Rent / booth fees: ${money(s.line20b)}</div>
+      <div>Line 21 – Repairs & maintenance: ${money(s.line21)}</div>
+      <div>Line 22 – Supplies: ${money(s.line22)}</div>
+      <div>Line 27a – Other expenses: ${money(s.line27a)}</div>
+
+      <div style="margin-left:14px;color:var(--muted);">• Shipping / postage: ${money(s.otherBreakdown.shipping_out)}</div>
+      <div style="margin-left:14px;color:var(--muted);">• Admin / setup / software / other: ${money(s.otherBreakdown.admin_software_other)}</div>
+
+      <div style="margin-top:8px;"><strong>Total Schedule C expenses:</strong> ${money(s.totalExpenses)}</div>
+      <div><strong>Estimated net profit:</strong> ${money(s.netProfit)}</div>
+
+      <div style="margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.55;">
+        This report groups your tracker into Schedule C style lines. Per-sale material, packaging, labor, and other direct cost fields stay available for pricing/profit visibility only and are not deducted again here.
+      </div>
+    </div>
+  `;
 }
 
 function renderAll() {
@@ -271,20 +343,22 @@ function exportCSV() {
 
 function exportTaxReport() {
   const year = els.taxYearFilter.value || currentYear();
-  const r = taxBuckets(year);
-  downloadCSV(`olipoly-tax-report-${year}.csv`, [
-    ['Tax Year','Bucket','Amount','Note'],
-    [year,'Sales Income',num(r.income_sales).toFixed(2),'Revenue only'],
-    [year,'Shipping Income',num(r.income_shipping).toFixed(2),'Revenue only'],
-    [year,'Sales Tax Collected',num(r.sales_tax_collected).toFixed(2),'Tracked separately from revenue'],
-    [year,'Materials',num(r.materials).toFixed(2),'Expense entries only'],
-    [year,'Packaging',num(r.packaging).toFixed(2),'Expense entries only'],
-    [year,'Shipping Purchased',num(r.shipping_out).toFixed(2),'Expense entries only'],
-    [year,'Marketplace Fees',num(r.marketplace_fees).toFixed(2),'Expense entries only'],
-    [year,'Equipment & Maintenance',num(r.equipment_maintenance).toFixed(2),'Expense entries only'],
-    [year,'Event & Booth Fees',num(r.event_fees).toFixed(2),'Expense entries only'],
-    [year,'Supplies',num(r.supplies).toFixed(2),'Expense entries only'],
-    [year,'Other',num(r.other).toFixed(2),'Expense entries only']
+  const s = scheduleCMap(year);
+
+  downloadCSV(`olipoly-schedule-c-${year}.csv`, [
+    ['Tax Year','Schedule C Line','Description','Amount','Notes'],
+    [year,'Line 1','Gross receipts',num(s.grossReceipts).toFixed(2),'Sales + shipping income, excluding sales tax collected'],
+    [year,'Not income','Sales tax collected',num(s.salesTaxCollected).toFixed(2),'Tracked separately from revenue'],
+    [year,'Line 10','Commissions and fees',num(s.line10).toFixed(2),'Fees / marketplace fees'],
+    [year,'Line 13','Depreciation / equipment bucket',num(s.line13).toFixed(2),'Equipment bucket from tracker'],
+    [year,'Line 20b','Rent / booth fees',num(s.line20b).toFixed(2),'Event booth fees'],
+    [year,'Line 21','Repairs and maintenance',num(s.line21).toFixed(2),'Currently not separately grouped'],
+    [year,'Line 22','Supplies',num(s.line22).toFixed(2),'Materials + packaging + supplies'],
+    [year,'Line 27a','Other expenses',num(s.line27a).toFixed(2),'Shipping + admin/setup + software/subscriptions + other'],
+    [year,'Line 27a detail','Shipping / postage',num(s.otherBreakdown.shipping_out).toFixed(2),'Detail for Other expenses'],
+    [year,'Line 27a detail','Admin / setup / software / other',num(s.otherBreakdown.admin_software_other).toFixed(2),'Detail for Other expenses'],
+    [year,'Calculated','Total expenses',num(s.totalExpenses).toFixed(2),'Sum of grouped Schedule C expense lines'],
+    [year,'Calculated','Estimated net profit',num(s.netProfit).toFixed(2),'Gross receipts minus grouped expenses']
   ]);
 }
 
@@ -488,7 +562,7 @@ els.refreshBtn.onclick = fetchEntries;
 els.exportBtn.onclick = exportCSV;
 els.taxExportBtn.onclick = exportTaxReport;
 els.runTaxReportBtn.onclick = renderTaxReport;
-els.saveBtn.onclick = saveEntry;
+els.saveBtn.onclick = () => els.entryForm.requestSubmit();
 els.entryForm.onsubmit = saveEntry;
 els.cancelEditBtn.onclick = resetForm;
 els.clearFiltersBtn.onclick = () => {
