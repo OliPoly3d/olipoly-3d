@@ -1,35 +1,20 @@
-<!-- FULL SUPABASE ORDERS ADMIN (MINIMAL CLEAN VERSION TO START) -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OliPoly Orders Admin</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
-body {
-  font-family: Inter, sans-serif;
-  padding: 20px;
-}
-button {
-  padding: 10px 16px;
-  margin: 6px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  background: linear-gradient(135deg,#de6fb8,#9d7cff);
-  color: white;
-}
-input {
-  padding: 10px;
-  margin: 6px;
-}
+  body{font-family:Inter,sans-serif;padding:20px}
+  button{
+    padding:10px 16px;margin:6px;border-radius:999px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#de6fb8,#9d7cff);color:white
+  }
+  input{padding:10px;margin:6px}
+  #msg{margin:12px 6px;padding:10px 12px;border-radius:12px;background:#f4f4f4;white-space:pre-wrap}
 </style>
 </head>
-
 <body>
 
 <h2>Orders Admin (Supabase)</h2>
@@ -37,64 +22,133 @@ input {
 <div>
   <input id="email" placeholder="email">
   <input id="password" placeholder="password" type="password">
-  <button onclick="login()">Login</button>
-  <button onclick="signup()">Signup</button>
+  <button id="loginBtn" type="button">Login</button>
+  <button id="signupBtn" type="button">Signup</button>
 </div>
 
 <hr>
 
-<button onclick="createOrder()">Create Test Order</button>
-<button onclick="loadOrders()">Load Orders</button>
+<button id="createOrderBtn" type="button">Create Test Order</button>
+<button id="loadOrdersBtn" type="button">Load Orders</button>
 
+<div id="msg">Ready.</div>
 <pre id="output"></pre>
 
 <script>
-const supabase = window.supabase.createClient(
-  "https://alffoktlwhpfothieude.supabase.co",
-  "sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y"
-);
+  const msg = document.getElementById('msg');
+  const output = document.getElementById('output');
+  const emailEl = document.getElementById('email');
+  const passwordEl = document.getElementById('password');
 
-async function login() {
-  await supabase.auth.signInWithPassword({
-    email: document.getElementById('email').value,
-    password: document.getElementById('password').value
-  });
-  alert("Logged in");
-}
-
-async function signup() {
-  await supabase.auth.signUp({
-    email: document.getElementById('email').value,
-    password: document.getElementById('password').value
-  });
-  alert("Account created");
-}
-
-async function createOrder() {
-  const user = (await supabase.auth.getUser()).data.user;
-
-  if (!user) {
-    alert("Login first");
-    return;
+  function showMsg(text) {
+    msg.textContent = text;
+    console.log(text);
   }
 
-  await supabase.from('orders').insert({
-    user_id: user.id,
-    order_number: "OP-" + Math.floor(Math.random()*10000),
-    order_title: "Test Order",
-    order_total: 25,
-    status: "quote_sent",
-    payment_status: "unpaid"
-  });
+  if (!window.supabase) {
+    showMsg('Supabase library failed to load from CDN.');
+    throw new Error('Supabase library failed to load');
+  }
 
-  alert("Order created");
-}
+  const supabase = window.supabase.createClient(
+    'https://alffoktlwhpfothieude.supabase.co',
+    'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y'
+  );
 
-async function loadOrders() {
-  const { data } = await supabase.from('orders').select('*');
-  document.getElementById('output').textContent =
-    JSON.stringify(data, null, 2);
-}
+  async function login() {
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+
+    showMsg('Logging in...');
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      showMsg('Login failed: ' + error.message);
+      console.error(error);
+      return;
+    }
+
+    showMsg('Logged in.');
+  }
+
+  async function signup() {
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+
+    showMsg('Creating account...');
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+
+    if (error) {
+      showMsg('Signup failed: ' + error.message);
+      console.error(error);
+      return;
+    }
+
+    if (data?.user && !data?.session) {
+      showMsg('Account created. Check your email to confirm, then log in.');
+      return;
+    }
+
+    showMsg('Account created and signed in.');
+  }
+
+  async function createOrder() {
+    showMsg('Creating test order...');
+
+    const { data: userResult, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      showMsg('Could not get current user: ' + userError.message);
+      console.error(userError);
+      return;
+    }
+
+    const user = userResult.user;
+    if (!user) {
+      showMsg('Login first.');
+      return;
+    }
+
+    const { error } = await supabase.from('orders').insert({
+      user_id: user.id,
+      order_number: 'OP-' + Math.floor(Math.random() * 10000),
+      order_title: 'Test Order',
+      order_total: 25,
+      status: 'quote_sent',
+      payment_status: 'unpaid'
+    });
+
+    if (error) {
+      showMsg('Create order failed: ' + error.message);
+      console.error(error);
+      return;
+    }
+
+    showMsg('Order created.');
+  }
+
+  async function loadOrders() {
+    showMsg('Loading orders...');
+
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+
+    if (error) {
+      showMsg('Load failed: ' + error.message);
+      console.error(error);
+      return;
+    }
+
+    output.textContent = JSON.stringify(data, null, 2);
+    showMsg('Orders loaded.');
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', login);
+  document.getElementById('signupBtn').addEventListener('click', signup);
+  document.getElementById('createOrderBtn').addEventListener('click', createOrder);
+  document.getElementById('loadOrdersBtn').addEventListener('click', loadOrders);
+
+  showMsg('Page loaded. Supabase client created.');
 </script>
 
 </body>
