@@ -49,14 +49,14 @@ const password = document.getElementById('password');
 
 function show(m){ msg.textContent=m; console.log(m); }
 
-const supabase = window.supabase.createClient(
+const sb = window.supabase.createClient(
   'https://alffoktlwhpfothieude.supabase.co',
   'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y'
 );
 
 async function signup(){
   show('Creating account...');
-  const {data,error}=await supabase.auth.signUp({
+  const {data,error}=await sb.auth.signUp({
     email:email.value.trim(),password:password.value
   });
   if(error) return show('Error: '+error.message);
@@ -66,7 +66,7 @@ async function signup(){
 
 async function login(){
   show('Logging in...');
-  const {error}=await supabase.auth.signInWithPassword({
+  const {error}=await sb.auth.signInWithPassword({
     email:email.value.trim(),password:password.value
   });
   if(error) return show('Error: '+error.message);
@@ -74,10 +74,10 @@ async function login(){
 }
 
 async function createOrder(){
-  const {data:userData}=await supabase.auth.getUser();
+  const {data:userData}=await sb.auth.getUser();
   if(!userData.user) return show('Login first');
 
-  const {error}=await supabase.from('orders').insert({
+  const {error}=await sb.from('orders').insert({
     user_id:userData.user.id,
     order_number:'OP-'+Math.floor(Math.random()*10000),
     order_title:'Test Order',
@@ -91,7 +91,7 @@ async function createOrder(){
 }
 
 async function loadOrders(){
-  const {data,error}=await supabase.from('orders').select('*');
+  const {data,error}=await sb.from('orders').select('*');
   if(error) return show('Error: '+error.message);
   output.textContent=JSON.stringify(data,null,2);
   show('Loaded');
