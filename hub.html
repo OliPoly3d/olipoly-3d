@@ -371,7 +371,7 @@
     <section class="card" style="margin-bottom:18px;">
       <div class="section-title">
         <h3>Daily money snapshot</h3>
-        <p>Quick local scoreboard for today and this month.</p>
+        <p>Quick local scoreboard for today and this month. If finance sync is active, those values override the manual fields below.</p>
       </div>
       <div class="money-grid">
         <div class="metric-card">
@@ -437,7 +437,7 @@
       <section class="card">
         <div class="section-title">
           <h3>Sales tax and filing panel</h3>
-          <p>Local quick reference for monthly filing prep.</p>
+          <p>Local quick reference for monthly filing prep. If finance sync is active, tax values are pulled from finance instead.</p>
         </div>
         <div class="input-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
           <input class="tax-input" id="taxCollectedInput" type="number" min="0" step="0.01" placeholder="Tax collected this month" />
@@ -826,6 +826,7 @@
     const TAX_KEY = 'olipoly_hub_tax_v1';
     const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
     const EVENT_KEY = 'olipoly_hub_event_v1';
+    const FINANCE_SUMMARY_KEY = 'olipoly_finance_dashboard_summary_v1';
 
     const templates = {
       orderReceived: `Thanks for your order request. I received it and will review the details shortly. If needed, I will follow up with any questions and next steps. You can track your order here: https://olipoly3d.github.io/olipoly-3d/track.html`,
@@ -949,6 +950,15 @@
       showToast('Health check finished');
     }
 
+    function getFinanceSummary() {
+      try {
+        const summary = JSON.parse(localStorage.getItem(FINANCE_SUMMARY_KEY) || 'null');
+        return summary && typeof summary === 'object' ? summary : null;
+      } catch {
+        return null;
+      }
+    }
+
     function loadMoney() {
       const data = JSON.parse(localStorage.getItem(MONEY_KEY) || '{}');
       document.getElementById('moneyTodayRevenue').value = data.todayRevenue ?? '';
@@ -956,19 +966,42 @@
       document.getElementById('moneyMonthExpenses').value = data.monthExpenses ?? '';
       document.getElementById('moneyMonthProfit').value = data.monthProfit ?? '';
       renderMoney();
-      document.getElementById('moneyStatus').textContent = data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet';
+      const finance = getFinanceSummary();
+      document.getElementById('moneyStatus').textContent =
+        finance && finance.enabled
+          ? (finance.savedAt ? `Auto-synced from finance ${finance.savedAt}` : 'Auto-synced from finance')
+          : (data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet');
     }
 
-    function renderMoney() {
+    function getManualMoneyValues() {
       const todayRevenue = Number(document.getElementById('moneyTodayRevenue').value) || 0;
       const monthRevenue = Number(document.getElementById('moneyMonthRevenue').value) || 0;
       const monthExpenses = Number(document.getElementById('moneyMonthExpenses').value) || 0;
-      const manualProfit = document.getElementById('moneyMonthProfit').value;
-      const profit = manualProfit !== '' ? Number(manualProfit) || 0 : (monthRevenue - monthExpenses);
-      document.getElementById('moneyTodayRevenueDisplay').textContent = money(todayRevenue);
-      document.getElementById('moneyMonthRevenueDisplay').textContent = money(monthRevenue);
-      document.getElementById('moneyMonthExpensesDisplay').textContent = money(monthExpenses);
-      document.getElementById('moneyProfitDisplay').textContent = money(profit);
+      const manualProfitRaw = document.getElementById('moneyMonthProfit').value;
+      const monthProfit = manualProfitRaw !== '' ? Number(manualProfitRaw) || 0 : (monthRevenue - monthExpenses);
+      return { todayRevenue, monthRevenue, monthExpenses, monthProfit };
+    }
+
+    function getEffectiveMoneyValues() {
+      const finance = getFinanceSummary();
+      if (finance && finance.enabled) {
+        return {
+          source: 'finance',
+          todayRevenue: Number(finance.todayRevenue) || 0,
+          monthRevenue: Number(finance.monthRevenue) || 0,
+          monthExpenses: Number(finance.monthExpenses) || 0,
+          monthProfit: Number(finance.monthProfit) || 0
+        };
+      }
+      return { source: 'manual', ...getManualMoneyValues() };
+    }
+
+    function renderMoney() {
+      const data = getEffectiveMoneyValues();
+      document.getElementById('moneyTodayRevenueDisplay').textContent = money(data.todayRevenue);
+      document.getElementById('moneyMonthRevenueDisplay').textContent = money(data.monthRevenue);
+      document.getElementById('moneyMonthExpensesDisplay').textContent = money(data.monthExpenses);
+      document.getElementById('moneyProfitDisplay').textContent = money(data.monthProfit);
     }
 
     function saveMoney() {
@@ -993,7 +1026,21 @@
       showToast('Money snapshot reset');
     }
 
+    function syncTaxFromFinance() {
+      const finance = getFinanceSummary();
+      if (!finance || !finance.enabled) return;
+      document.getElementById('taxCollectedDisplay').textContent = money(Number(finance.taxCollected) || 0);
+      document.getElementById('taxRateDisplay').textContent = `${Number(finance.taxRate) || 0}%`;
+      document.getElementById('taxDueDisplay').textContent = finance.taxDueDate || '—';
+      document.getElementById('taxStatus').textContent = finance.savedAt ? `Auto-synced from finance ${finance.savedAt}` : 'Auto-synced from finance';
+    }
+
     function loadTax() {
+      const finance = getFinanceSummary();
+      if (finance && finance.enabled) {
+        renderTax();
+        return;
+      }
       const data = JSON.parse(localStorage.getItem(TAX_KEY) || '{}');
       document.getElementById('taxCollectedInput').value = data.collected ?? '';
       document.getElementById('taxRateInput').value = data.rate ?? '';
@@ -1003,6 +1050,11 @@
     }
 
     function renderTax() {
+      const finance = getFinanceSummary();
+      if (finance && finance.enabled) {
+        syncTaxFromFinance();
+        return;
+      }
       const collected = Number(document.getElementById('taxCollectedInput').value) || 0;
       const rate = Number(document.getElementById('taxRateInput').value) || 0;
       const dueDate = document.getElementById('taxDueDateInput').value || '—';
@@ -1025,9 +1077,17 @@
     }
 
     function copyTaxLines() {
-      const collected = Number(document.getElementById('taxCollectedInput').value) || 0;
-      const rate = document.getElementById('taxRateInput').value || '0';
-      const dueDate = document.getElementById('taxDueDateInput').value || '[due date]';
+      const finance = getFinanceSummary();
+      const collected = finance && finance.enabled
+        ? (Number(finance.taxCollected) || 0)
+        : (Number(document.getElementById('taxCollectedInput').value) || 0);
+      const rate = finance && finance.enabled
+        ? (Number(finance.taxRate) || 0)
+        : (document.getElementById('taxRateInput').value || '0');
+      const dueDate = finance && finance.enabled
+        ? (finance.taxDueDate || '[due date]')
+        : (document.getElementById('taxDueDateInput').value || '[due date]');
+
       const message = `Ohio sales tax filing prep
 - Tax collected this month: ${money(collected)}
 - Tax rate saved here: ${rate}%
@@ -1155,6 +1215,13 @@
     });
     document.getElementById('copyEventSiteBtn').addEventListener('click', () => copyText('https://olipoly3d.github.io/olipoly-3d/'));
     document.querySelectorAll('[data-event-check]').forEach(box => box.addEventListener('change', () => saveEventMode()));
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === FINANCE_SUMMARY_KEY) {
+        renderMoney();
+        renderTax();
+      }
+    });
 
     loadNotes();
     resetDots();
