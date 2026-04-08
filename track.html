@@ -1,72 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Track Order</title>
-
-<style>
-body{font-family:Inter,sans-serif;padding:20px;background:#fff;color:#333}
-.card{background:#fafafa;padding:20px;border-radius:16px}
-button{padding:10px 16px;border-radius:999px;border:none;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:white}
-.note{margin-top:12px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Track Order</title>
+  <style>
+    :root{
+      --bg:#fff7fb;
+      --panel:rgba(255,255,255,.9);
+      --line:rgba(220,160,205,.32);
+      --text:#4a3550;
+      --muted:#866a86;
+      --accent:#d86bb3;
+      --accent2:#9b7bff;
+      --shadow:0 18px 45px rgba(189,132,176,.18);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;font-family:'Inter','Poppins',system-ui,-apple-system,sans-serif;color:var(--text);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(216,107,179,.18), transparent 30%),
+        radial-gradient(circle at 88% 6%, rgba(155,123,255,.16), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(255,216,236,.55), transparent 35%),
+        linear-gradient(180deg,#fffafd 0%,#fff5fb 45%,#fff8fc 100%);
+    }
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 18px;background:rgba(255,250,253,.92);position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:16px}
+    .printer-mark{width:58px;height:58px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(246,238,251,.95));border:1px solid rgba(155,123,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 6px 16px rgba(155,123,255,.12);position:relative;overflow:hidden}
+    .printer-mark::before{content:"";position:absolute;left:6px;right:6px;top:5px;height:6px;border-radius:999px;background:linear-gradient(90deg, rgba(155,123,255,.55), rgba(216,107,179,.45))}
+    .printer-mark svg{width:40px;height:40px;display:block}.printer-mark .frame{stroke:#8f79dd;stroke-width:2.2;fill:none}.printer-mark .rail{stroke:#b89ef4;stroke-width:2.2}.printer-mark .head{fill:url(#headGrad);animation:printHeadMove 2.8s ease-in-out infinite alternate}.printer-mark .beam{stroke:#e286be;stroke-width:2;stroke-linecap:round;animation:printGlow 1.6s ease-in-out infinite alternate}.printer-mark .plate{fill:#f3eefb;stroke:#b9a3ee;stroke-width:1.6}
+    @keyframes printHeadMove{from{transform:translateY(-1px)}to{transform:translateY(3px)}} @keyframes printGlow{from{opacity:.4}to{opacity:1}}
+    .brand-copy{display:flex;flex-direction:column;gap:3px}.brand-wordmark{font-family:Georgia,'Times New Roman',serif;font-size:clamp(2rem,3.2vw,2.45rem);font-weight:700;line-height:.95;letter-spacing:-.03em;color:#221f22}.brand-wordmark .poly{background:linear-gradient(135deg,#de6fb8,#9d7cff);-webkit-background-clip:text;background-clip:text;color:transparent}.brand-tag{font-size:1.02rem;color:#9b8b9a;letter-spacing:.02em;white-space:nowrap}
+    .btn,.btn-ghost{border:none;border-radius:999px;padding:14px 22px;font:inherit;font-weight:700;letter-spacing:.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .25s cubic-bezier(.4,0,.2,1);text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25)}
+    .btn:hover,.btn-ghost:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(222,111,184,.32)} .btn:active,.btn-ghost:active{transform:translateY(0);box-shadow:0 6px 14px rgba(222,111,184,.25)}
+    .wrap{width:min(1100px,calc(100% - 40px));margin:0 auto;padding:28px 0 64px}
+    .card,.mini{padding:28px;border-radius:30px;background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,251,.95));border:1px solid var(--line);box-shadow:var(--shadow)}
+    .card h3{font-size:1.2rem;font-weight:800;margin:0 0 8px}.sub{line-height:1.7;font-size:1.02rem;color:var(--muted);margin:0 0 14px}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(216,107,179,.18);background:rgba(255,255,255,.82);color:var(--text);font:inherit;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)} input:focus{border-color:rgba(155,123,255,.42);box-shadow:0 0 0 4px rgba(216,107,179,.10)}
+    .search-row{display:grid;grid-template-columns:1fr auto;gap:16px;margin-top:10px}.note{border-radius:18px;padding:14px 16px;background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,245,251,.88));border:1px dashed rgba(216,107,179,.2);color:var(--muted);line-height:1.6}
+    .info-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin:0 0 18px}.mini{padding:16px;border-radius:20px;background:linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,244,250,.9));border:1px solid rgba(216,107,179,.14)} .mini span,.mini strong{display:block}.mini span{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+    .status-pill,.payment-pill{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;font-size:.78rem;font-weight:800;letter-spacing:.04em;border:1px solid transparent}.s-quote_sent,.s-awaiting_approval,.s-awaiting_deposit,.p-unpaid,.p-deposit_due{background:rgba(255,211,154,.28);border-color:rgba(213,163,90,.28);color:#936a30}.s-in_design,.s-in_production,.s-post_processing{background:rgba(155,123,255,.15);border-color:rgba(155,123,255,.24);color:#6e56bf}.s-ready_for_pickup,.s-shipped,.s-completed,.p-deposit_paid,.p-paid{background:rgba(122,175,157,.16);border-color:rgba(122,175,157,.25);color:#4f816f}.p-refunded{background:rgba(217,109,143,.14);border-color:rgba(217,109,143,.24);color:#b34f72}
+    .progress{display:grid;gap:14px;margin:18px 0 10px}.timeline{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:start}.timeline::before{content:"";position:absolute;left:6%;right:6%;top:18px;height:4px;border-radius:999px;background:linear-gradient(90deg, rgba(216,107,179,.12), rgba(155,123,255,.12));z-index:0}.timeline-fill{position:absolute;left:6%;top:18px;height:4px;width:0%;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:width .35s ease;z-index:1}.step{position:relative;z-index:2;display:grid;justify-items:center;gap:10px;padding:0 8px;background:none;border:none;text-align:center;color:var(--muted);font-size:.84rem;line-height:1.35}.step-dot{width:18px;height:18px;border-radius:999px;background:#fff;border:3px solid rgba(216,107,179,.22);box-shadow:0 0 0 6px rgba(255,255,255,.45);transition:all .25s ease}.step-label{max-width:120px}.step.active{color:#6b4f74}.step.active .step-dot{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:rgba(216,107,179,.14);box-shadow:0 0 0 6px rgba(255,240,248,.85), 0 0 18px rgba(216,107,179,.18)}
+    .detail{display:grid;gap:12px}.detail .note strong{display:block;margin-bottom:6px;color:#5f4468}.hidden{display:none!important}.footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    @media (max-width:900px){.info-grid,.timeline{grid-template-columns:1fr 1fr}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.info-grid,.timeline,.search-row{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}}
+  </style>
 </head>
-
 <body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="printer-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="headGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#de6fb8"/><stop offset="100%" stop-color="#9d7cff"/></linearGradient></defs>
+          <path class="frame" d="M14 18H50V50H14V18Z"/><path class="rail" d="M20 24H44"/><path class="rail" d="M32 24V34"/><rect class="head" x="27" y="22" width="10" height="12" rx="4"/><path class="beam" d="M32 34V40"/><rect class="plate" x="21" y="40" width="22" height="5" rx="2.5"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <div class="brand-wordmark">Oli<span class="poly">Poly</span> 3D</div>
+        <div class="brand-tag">Creative 3D printing • Custom builds • Prototypes</div>
+      </div>
+    </div>
+    <a class="btn-ghost" href="index.html">Back to Home</a>
+  </div>
 
-<h2>Track Your Order</h2>
+  <div class="wrap">
+    <section class="card" style="margin-bottom:28px;">
+      <h3>Find Your Order</h3>
+      <p class="sub">Enter your order number to see the latest public status from OliPoly 3D.</p>
+      <div class="search-row">
+        <div><label for="orderLookup">Order Number</label><input id="orderLookup" placeholder="Example: OP-1001" /></div>
+        <div style="display:flex;align-items:end;gap:10px;"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
+      </div>
+      <div class="note" id="lookupMessage" style="margin-top:14px;">Enter your order number to see the current status.</div>
+    </section>
 
-<div class="card">
-<input id="orderInput" placeholder="Order #">
-<button onclick="lookup()">Track</button>
-<div id="msg" class="note"></div>
+    <section class="card hidden" id="resultCard">
+      <div class="info-grid">
+        <div class="mini"><span>Order Number</span><strong id="viewOrderNumber">—</strong></div>
+        <div class="mini"><span>Project</span><strong id="viewProject">—</strong></div>
+        <div class="mini"><span>Status</span><strong id="viewStatus">—</strong></div>
+        <div class="mini"><span>Payment</span><strong id="viewPayment">—</strong></div>
+      </div>
 
-<div id="result" style="display:none;">
-<h3 id="title"></h3>
-<p id="status"></p>
-<p id="next"></p>
-<p id="ship"></p>
-<p id="track"></p>
-<a id="pay" target="_blank">Payment Link</a>
-</div>
-</div>
+      <div class="progress">
+        <div class="timeline">
+          <div class="timeline-fill" id="timelineFill"></div>
+          <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label">Approved</div></div>
+          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label">Deposit</div></div>
+          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label">Production</div></div>
+          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label">Finishing</div></div>
+          <div class="step" data-step="5"><div class="step-dot"></div><div class="step-label">Ready / Shipped</div></div>
+        </div>
+      </div>
 
-<script>
-const URL='https://alffoktlwhpfothieude.supabase.co';
-const KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+      <div class="detail">
+        <div class="note"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
+        <div class="note"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
+        <div class="note"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
+        <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
+        <div class="note hidden" id="paymentWrap"><strong>Payment Link</strong><a id="paymentLink" href="#" target="_blank" rel="noopener" style="color:#b2558c;word-break:break-all;font-weight:700;">Open payment link</a></div>
+      </div>
+    </section>
+    <p class="footer">This public tracking page reads customer-safe fields from <code>order_tracking_public</code>.</p>
+  </div>
 
-async function lookup(){
+  <script>
+    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
-  const id=orderInput.value;
+    const $ = id => document.getElementById(id);
+    const els = {
+      orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
+      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'),
+      viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'),
+      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paymentWrap:$('paymentWrap'), paymentLink:$('paymentLink'),
+      timelineFill:$('timelineFill')
+    };
 
-  const res=await fetch(
-    URL + `/rest/v1/order_tracking_public?order_number=eq.${encodeURIComponent(id)}&limit=1`,
-    {headers:{apikey:KEY}}
-  );
+    function setMessage(text,isError=false){
+      els.lookupMessage.textContent=text;
+      els.lookupMessage.style.borderColor=isError?'rgba(255,110,145,.22)':'rgba(216,107,179,.2)';
+      els.lookupMessage.style.background=isError?'rgba(255,110,145,.08)':'linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,245,251,.88))';
+      els.lookupMessage.style.color=isError?'#b34f72':'#866a86';
+    }
 
-  const data=await res.json();
+    async function api(path){
+      const res=await fetch(`${SUPABASE_URL}${path}`,{
+        headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'}
+      });
+      const data=await res.json().catch(()=>null);
+      return {data,error:!res.ok?data:null};
+    }
 
-  if(!data.length){
-    msg.innerText="Order not found";
-    result.style.display="none";
-    return;
-  }
+    function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v]||v;}
+    function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
+    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_for_pickup:5,shipped:5,completed:5})[status]||1;}
 
-  const o=data[0];
+    function renderOrder(o){
+      els.resultCard.classList.remove('hidden');
+      els.viewOrderNumber.textContent=o.order_number||'—';
+      els.viewProject.textContent=o.order_title||'—';
+      els.viewStatus.innerHTML=`<span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>`;
+      els.viewPayment.innerHTML=`<span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>`;
+      els.viewPublicStatus.textContent=o.public_status_text||'No public update yet.';
+      els.viewNextStep.textContent=o.public_next_step||'No next step listed yet.';
+      els.viewFulfillment.textContent=o.shipping_or_pickup_note||'No pickup or shipping note yet.';
 
-  result.style.display="block";
-  title.innerText=o.order_title;
-  status.innerText=o.status;
-  next.innerText=o.public_next_step || "";
-  ship.innerText=o.shipping_or_pickup_note || "";
-  track.innerText=o.tracking_number || "";
+      const step=progressStep(o.status);
+      els.timelineFill.style.width=`${(step-1)*25}%`;
+      document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active',Number(s.dataset.step)<=step));
 
-  if(o.payment_link){
-    pay.href=o.payment_link;
-    pay.innerText="Pay Here";
-  }
-}
-</script>
+      if(o.tracking_number){
+        els.trackingWrap.classList.remove('hidden');
+        els.viewTracking.textContent=o.tracking_number;
+      } else {
+        els.trackingWrap.classList.add('hidden');
+      }
 
+      if(o.payment_link){
+        els.paymentWrap.classList.remove('hidden');
+        els.paymentLink.href=o.payment_link;
+      } else {
+        els.paymentWrap.classList.add('hidden');
+      }
+
+      setMessage(`Showing the latest public update for ${o.order_number}.`);
+    }
+
+    async function lookup(){
+      const id=els.orderLookup.value.trim();
+      if(!id) return setMessage('Enter an order number first.',true);
+
+      const safeId=encodeURIComponent(id);
+      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link&order_number=eq.${safeId}&limit=1`;
+      const {data,error}=await api(path);
+
+      if(error){
+        els.resultCard.classList.add('hidden');
+        return setMessage(error.message||'Could not load order right now.',true);
+      }
+      if(!data||!data.length){
+        els.resultCard.classList.add('hidden');
+        return setMessage('We could not find that order number yet. Double-check it and try again.',true);
+      }
+      renderOrder(data[0]);
+    }
+
+    els.lookupBtn.onclick=lookup;
+    els.orderLookup.addEventListener('keydown',e=>{ if(e.key==='Enter') lookup(); });
+  </script>
 </body>
 </html>
