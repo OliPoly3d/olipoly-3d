@@ -1,115 +1,472 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OliPoly Orders Admin</title>
-
-<style>
-body{font-family:Inter,sans-serif;padding:20px;background:#0b1020;color:#fff}
-.card{background:#121833;padding:20px;border-radius:16px;margin-bottom:20px}
-input,select,textarea{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:none}
-button{padding:10px 14px;margin:6px;border-radius:999px;border:none;cursor:pointer;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:white}
-.note{white-space:pre-wrap;background:#1a2145;padding:12px;border-radius:12px;margin-top:10px}
-</style>
-</head>
-
-<body>
-
-<h2>Orders Admin</h2>
-
-<div class="card">
-<input id="email" placeholder="email">
-<input id="password" type="password" placeholder="password">
-<button onclick="login()">Login</button>
-<button onclick="signup()">Create Account</button>
-<div id="authMsg"></div>
-</div>
-
-<div class="card">
-<input id="orderNumber" placeholder="Order #">
-<input id="orderTitle" placeholder="Project">
-<select id="status">
-<option value="quote_sent">Quote Sent</option>
-<option value="awaiting_deposit">Awaiting Deposit</option>
-<option value="in_production">In Production</option>
-<option value="completed">Completed</option>
-</select>
-
-<textarea id="publicStatusText" placeholder="Public status"></textarea>
-<textarea id="publicNextStep" placeholder="Next step"></textarea>
-<textarea id="shippingNote" placeholder="Pickup / shipping"></textarea>
-<input id="tracking" placeholder="Tracking #">
-<input id="paymentLink" placeholder="Payment link">
-
-<button onclick="save()">Save Order</button>
-<button onclick="loadOrders()">Load Orders</button>
-
-<pre id="output"></pre>
-</div>
-
-<script>
-const URL='https://alffoktlwhpfothieude.supabase.co';
-const KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-
-let token=null;
-
-async function api(path,opt={}){
-  const res=await fetch(URL+path,{
-    ...opt,
-    headers:{
-      apikey:KEY,
-      'Content-Type':'application/json',
-      ...(token?{Authorization:`Bearer ${token}`}:{})
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Orders Admin</title>
+  <style>
+    :root{
+      --bg:#08101f; --panel:rgba(12,19,40,.88); --panel2:rgba(17,26,52,.92); --line:rgba(126,144,255,.18);
+      --text:#eef4ff; --muted:#a8b5db; --accent:#7e7bff; --accent2:#2ee6c4; --danger:#ff6e91; --warn:#ffc964; --ok:#6ef0b2;
+      --shadow:0 18px 50px rgba(0,0,0,.32);
     }
-  });
-  return await res.json();
-}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);background:
+      radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),
+      radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),
+      linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%)}
+    .wrap{width:min(1280px,calc(100% - 28px));margin:0 auto;padding:24px 0 56px}
+    .topbar,.card,.summary,.order-row{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;border-radius:999px;margin-bottom:22px;position:sticky;top:14px;z-index:5;background:rgba(8,14,30,.72)}
+    .brand{display:flex;align-items:center;gap:12px}.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
+    .brand h1,.brand p,.hero h2,.hero p,.card h3,.sub,.summary h3,.summary p{margin:0}.brand h1{font-size:clamp(1rem,2vw,1.18rem)}.brand p,.sub,.hero p,.muted{color:var(--muted)}
+    .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
+    .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
+    .summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.summary span,.summary strong,.summary small{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.12rem,2.7vw,1.8rem)}.summary small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
+    .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .8fr .8fr .8fr auto;align-items:end}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit;outline:none}
+    select option{background:#0a1225;color:#eef4ff} input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)} textarea{min-height:90px;resize:vertical}
+    .note,.empty,.message{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}.message{display:none}
+    .status-pill,.payment-pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.76rem;font-weight:800;letter-spacing:.04em;border:1px solid transparent}
+    .s-quote_sent,.s-awaiting_approval,.s-awaiting_deposit{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
+    .s-in_design,.s-in_production,.s-post_processing{background:rgba(126,123,255,.12);border-color:rgba(126,123,255,.24);color:#d9d8ff}
+    .s-ready_for_pickup,.s-shipped,.s-completed{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
+    .p-unpaid,.p-deposit_due{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
+    .p-deposit_paid,.p-paid{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
+    .p-refunded{background:rgba(255,110,145,.12);border-color:rgba(255,110,145,.24);color:#ffd8e3}
+    .list{display:grid;gap:12px;max-height:950px;overflow:auto;padding-right:4px}.order-row{padding:16px;border-radius:22px;cursor:pointer}.order-row.active{border-color:rgba(46,230,196,.35);box-shadow:0 0 0 1px rgba(46,230,196,.08),var(--shadow)}
+    .order-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}.order-head strong{font-size:1rem}.order-meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 10px}.order-row p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.55}
+    .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    @media (max-width:1140px){.grid,.hero,.summary-grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><div class="icon">📦</div><div><h1>OliPoly 3D Orders Admin</h1><p>Internal dashboard for status, notes, payment, and customer tracking updates.</p></div></div>
+      <div class="btn-row">
+        <button class="btn-ghost" id="refreshBtn" type="button">Refresh</button>
+        <button class="btn-ghost" id="loginBtn" type="button">Log In</button>
+        <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
+        <button class="btn-danger hidden" id="logoutBtn" type="button">Log Out</button>
+        <button class="btn" id="newBtn" type="button">New Order</button>
+      </div>
+    </div>
 
-async function signup(){
-  const r=await api('/auth/v1/signup',{method:'POST',body:JSON.stringify({
-    email:email.value,password:password.value
-  })});
-  authMsg.innerText="Check email or login";
-}
+    <div class="hero">
+      <section class="card">
+        <h2>Manage all orders from one internal dashboard.</h2>
+        <p>Use this page to create and update orders, add internal notes, record payment progress, and store the public tracking fields your customer-facing tracking page will read.</p>
+      </section>
+      <section class="card">
+        <h3>Customer-facing fields</h3>
+        <p class="sub">These are the only fields the public tracker should show: public status text, public next step, pickup or shipping note, tracking number, payment link, status, payment status, order title, and order number.</p>
+        <div class="note">Internal Notes stay private. Status options below intentionally match the tracker statuses exactly.</div>
+      </section>
+    </div>
 
-async function login(){
-  const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({
-    email:email.value,password:password.value
-  })});
-  token=r.access_token;
-  authMsg.innerText="Logged in";
-}
+    <div class="card" style="margin-bottom:22px;">
+      <h3>Sign in</h3>
+      <div class="form-grid">
+        <div><label for="emailInput">Email</label><input id="emailInput" type="email" placeholder="you@example.com" /></div>
+        <div><label for="passwordInput">Password</label><input id="passwordInput" type="password" placeholder="Password" /></div>
+      </div>
+      <div class="message" id="authMessage"></div>
+    </div>
 
-async function save(){
+    <div class="summary-grid">
+      <div class="summary"><span>Orders Loaded</span><strong id="sumOrders">0</strong><small>All loaded records.</small></div>
+      <div class="summary"><span>Open Orders</span><strong id="sumOpen">0</strong><small>Not completed yet.</small></div>
+      <div class="summary"><span>Completed</span><strong id="sumCompleted">0</strong><small>Finished orders.</small></div>
+      <div class="summary"><span>Total Value</span><strong id="sumValue">$0.00</strong><small>All order totals combined.</small></div>
+      <div class="summary"><span>Deposit Due</span><strong id="sumDepositDue">0</strong><small>Needs payment follow-up.</small></div>
+      <div class="summary"><span>In Production</span><strong id="sumInProduction">0</strong><small>Actively being made.</small></div>
+    </div>
 
-  const payload={
-    order_number:orderNumber.value,
-    order_title:orderTitle.value,
-    status:status.value,
-    payment_status:"unpaid",
-    public_status_text:publicStatusText.value,
-    public_next_step:publicNextStep.value,
-    shipping_or_pickup_note:shippingNote.value,
-    tracking_number:tracking.value,
-    payment_link:paymentLink.value
-  };
+    <div class="card" style="margin-bottom:22px;">
+      <h3>Find Orders</h3>
+      <div class="filters">
+        <div><label for="searchInput">Search</label><input id="searchInput" placeholder="Order #, customer, title, email" /></div>
+        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
+        <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
+        <div><label for="sortBy">Sort</label><select id="sortBy"><option value="newest">Newest</option><option value="customer">Customer A–Z</option><option value="total_desc">Highest Total</option></select></div>
+        <div><label>&nbsp;</label><button class="btn-ghost" id="clearFiltersBtn" type="button">Clear</button></div>
+      </div>
+    </div>
 
-  await api('/rest/v1/orders',{method:'POST',body:JSON.stringify(payload)});
+    <div class="grid">
+      <section class="card">
+        <h3>Order List</h3>
+        <p class="sub">Select an order to view or update it.</p>
+        <div class="list" id="orderList"></div>
+      </section>
 
-  await api('/rest/v1/order_tracking_public?on_conflict=order_number',{
-    method:'POST',
-    body:JSON.stringify(payload)
-  });
+      <section class="card">
+        <h3 id="detailTitle">Order Details</h3>
+        <div class="form-grid">
+          <div><label for="orderNumber">Order Number</label><input id="orderNumber" /></div>
+          <div><label for="orderDate">Order Date</label><input id="orderDate" type="date" /></div>
+          <div><label for="customerName">Customer Name</label><input id="customerName" /></div>
+          <div><label for="customerEmail">Customer Email</label><input id="customerEmail" type="email" /></div>
+          <div class="full"><label for="orderTitle">Project / Item</label><input id="orderTitle" /></div>
+          <div><label for="quantity">Quantity</label><input id="quantity" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
+          <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
+          <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
+          <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
+          <div class="full"><label for="paymentLink">Payment / Invoice Link</label><input id="paymentLink" /></div>
+          <div class="full"><label for="internalNotes">Internal Notes</label><textarea id="internalNotes"></textarea></div>
+          <div class="full"><label for="publicStatusText">Public Status Text</label><textarea id="publicStatusText"></textarea></div>
+          <div class="full"><label for="publicNextStep">Public Next Step</label><textarea id="publicNextStep"></textarea></div>
+          <div class="full"><label for="shippingOrPickupNote">Pickup / Shipping Note</label><textarea id="shippingOrPickupNote"></textarea></div>
+        </div>
+        <div class="btn-row" style="margin-top:14px;">
+          <button class="btn" id="saveBtn" type="button">Save Order</button>
+          <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
+        </div>
+        <div class="message" id="formMessage"></div>
+        <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
+      </section>
+    </div>
 
-  alert("Saved");
-}
+    <p class="footer">This page saves private order data to <code>orders</code> and customer-safe tracking data to <code>order_tracking_public</code>.</p>
+  </div>
 
-async function loadOrders(){
-  const data=await api('/rest/v1/orders?select=*');
-  output.textContent=JSON.stringify(data,null,2);
-}
-</script>
+  <script>
+    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
+    let accessToken = localStorage.getItem('sb_token') || null;
+    let currentUser = null;
+    let orders = [];
+    let activeId = null;
+
+    const $ = id => document.getElementById(id);
+    const num = v => Number(v) || 0;
+    const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
+    const today = () => new Date().toISOString().slice(0,10);
+
+    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v] || v;
+    const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v] || v;
+
+    function setMsg(el,text,isError=false){
+      el.style.display='block';
+      el.textContent=text;
+      el.style.borderColor=isError?'rgba(255,110,145,.22)':'rgba(79,224,163,.18)';
+      el.style.background=isError?'rgba(255,110,145,.1)':'rgba(79,224,163,.1)';
+      el.style.color=isError?'#ffd7e1':'#cffff0';
+    }
+    function clearMsg(el){ el.style.display='none'; el.textContent=''; }
+
+    async function api(path, options={}){
+      const headers = {
+        apikey: SUPABASE_KEY,
+        'Content-Type':'application/json',
+        ...(accessToken ? {Authorization:`Bearer ${accessToken}`} : {}),
+        ...(options.headers || {})
+      };
+      const res = await fetch(`${SUPABASE_URL}${path}`,{...options,headers});
+      const data = await res.json().catch(()=>null);
+      return { ok: res.ok, data, error: !res.ok ? data : null };
+    }
+
+    async function getCurrentUser(){
+      if(!accessToken) return null;
+      const {data,error} = await api('/auth/v1/user');
+      if(error || !data){ currentUser = null; return null; }
+      currentUser = data;
+      return data;
+    }
+
+    function snapshotForm(){
+      return {
+        user_id: currentUser?.id,
+        order_number: $('orderNumber').value.trim() || `OP-${Date.now().toString().slice(-5)}`,
+        order_date: $('orderDate').value || today(),
+        customer_name: $('customerName').value.trim() || null,
+        customer_email: $('customerEmail').value.trim() || null,
+        order_title: $('orderTitle').value.trim(),
+        quantity: num($('quantity').value) || 1,
+        order_total: num($('orderTotal').value),
+        deposit_amount: num($('depositAmount').value),
+        balance_amount: num($('balanceAmount').value),
+        status: $('status').value,
+        payment_status: $('paymentStatus').value,
+        fulfillment: $('fulfillment').value,
+        tracking_number: $('trackingNumber').value.trim() || null,
+        payment_link: $('paymentLink').value.trim() || null,
+        internal_notes: $('internalNotes').value.trim() || null,
+        public_status_text: $('publicStatusText').value.trim() || null,
+        public_next_step: $('publicNextStep').value.trim() || null,
+        shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null
+      };
+    }
+
+    function publicTrackingPayload(payload) {
+      return {
+        order_number: payload.order_number,
+        user_id: payload.user_id,
+        order_title: payload.order_title || null,
+        status: payload.status,
+        payment_status: payload.payment_status,
+        public_status_text: payload.public_status_text || null,
+        public_next_step: payload.public_next_step || null,
+        shipping_or_pickup_note: payload.shipping_or_pickup_note || null,
+        tracking_number: payload.tracking_number || null,
+        payment_link: payload.payment_link || null
+      };
+    }
+
+    function resetForm(){
+      activeId = null;
+      $('detailTitle').textContent = 'Order Details';
+      ['orderNumber','customerName','customerEmail','orderTitle','trackingNumber','paymentLink','internalNotes','publicStatusText','publicNextStep','shippingOrPickupNote'].forEach(id => $(id).value='');
+      $('orderDate').value = today();
+      $('quantity').value = 1;
+      $('orderTotal').value = 0;
+      $('depositAmount').value = 0;
+      $('balanceAmount').value = 0;
+      $('status').value = 'quote_sent';
+      $('paymentStatus').value = 'unpaid';
+      $('fulfillment').value = 'pickup';
+      $('publicPreview').textContent = 'No public preview yet.';
+      clearMsg($('formMessage'));
+    }
+
+    function loadIntoForm(o){
+      activeId = o.id;
+      $('detailTitle').textContent = `Order Details — ${o.order_number}`;
+      $('orderNumber').value = o.order_number || '';
+      $('orderDate').value = o.order_date || today();
+      $('customerName').value = o.customer_name || '';
+      $('customerEmail').value = o.customer_email || '';
+      $('orderTitle').value = o.order_title || '';
+      $('quantity').value = o.quantity ?? 1;
+      $('orderTotal').value = o.order_total ?? 0;
+      $('depositAmount').value = o.deposit_amount ?? 0;
+      $('balanceAmount').value = o.balance_amount ?? 0;
+      $('status').value = o.status || 'quote_sent';
+      $('paymentStatus').value = o.payment_status || 'unpaid';
+      $('fulfillment').value = o.fulfillment || 'pickup';
+      $('trackingNumber').value = o.tracking_number || '';
+      $('paymentLink').value = o.payment_link || '';
+      $('internalNotes').value = o.internal_notes || '';
+      $('publicStatusText').value = o.public_status_text || '';
+      $('publicNextStep').value = o.public_next_step || '';
+      $('shippingOrPickupNote').value = o.shipping_or_pickup_note || '';
+      updatePreview();
+    }
+
+    function updatePreview(){
+      $('balanceAmount').value = Math.max(0, num($('orderTotal').value) - num($('depositAmount').value)).toFixed(2);
+      const lines = [
+        `Order #: ${$('orderNumber').value || 'N/A'}`,
+        `Status: ${statusLabel($('status').value)}`,
+        $('publicStatusText').value || 'No public status yet.',
+        $('publicNextStep').value ? `Next step: ${$('publicNextStep').value}` : '',
+        $('shippingOrPickupNote').value || '',
+        $('trackingNumber').value ? `Tracking: ${$('trackingNumber').value}` : '',
+        $('paymentLink').value ? `Payment link: ${$('paymentLink').value}` : ''
+      ].filter(Boolean);
+      $('publicPreview').textContent = lines.join('\n');
+    }
+
+    function filteredOrders(){
+      const q = $('searchInput').value.trim().toLowerCase();
+      let list = [...orders];
+      if (q) list = list.filter(o => `${o.order_number || ''} ${o.customer_name || ''} ${o.customer_email || ''} ${o.order_title || ''}`.toLowerCase().includes(q));
+      if ($('statusFilter').value !== 'all') list = list.filter(o => o.status === $('statusFilter').value);
+      if ($('paymentFilter').value !== 'all') list = list.filter(o => o.payment_status === $('paymentFilter').value);
+      if ($('sortBy').value === 'customer') list.sort((a,b) => String(a.customer_name || '').localeCompare(String(b.customer_name || '')));
+      else if ($('sortBy').value === 'total_desc') list.sort((a,b) => num(b.order_total) - num(a.order_total));
+      else list.sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+      return list;
+    }
+
+    function renderSummary(){
+      $('sumOrders').textContent = orders.length;
+      $('sumOpen').textContent = orders.filter(o => o.status !== 'completed').length;
+      $('sumCompleted').textContent = orders.filter(o => o.status === 'completed').length;
+      $('sumValue').textContent = money(orders.reduce((s,o)=>s+num(o.order_total),0));
+      $('sumDepositDue').textContent = orders.filter(o => o.payment_status === 'deposit_due').length;
+      $('sumInProduction').textContent = orders.filter(o => ['in_design','in_production','post_processing'].includes(o.status)).length;
+    }
+
+    function renderList(){
+      const list = filteredOrders();
+      renderSummary();
+      if(!list.length){ $('orderList').innerHTML = '<div class="empty">No orders yet.</div>'; return; }
+      $('orderList').innerHTML = list.map(o => `
+        <div class="order-row ${o.id===activeId?'active':''}" data-id="${o.id}">
+          <div class="order-head"><div><strong>${o.order_number || 'No #'}</strong><p>${o.order_title || 'Untitled order'}</p></div><div>${money(o.order_total || 0)}</div></div>
+          <div class="order-meta"><span class="status-pill s-${o.status}">${statusLabel(o.status)}</span><span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span></div>
+          <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
+        </div>
+      `).join('');
+      [...document.querySelectorAll('.order-row')].forEach(row => {
+        row.onclick = () => {
+          const found = orders.find(o => o.id === row.dataset.id);
+          if(found) loadIntoForm(found);
+          renderList();
+        };
+      });
+    }
+
+    async function signup(){
+      const email = $('emailInput').value.trim();
+      const password = $('passwordInput').value;
+      if(!email || !password) return setMsg($('authMessage'),'Enter email and password.',true);
+      setMsg($('authMessage'),'Creating account...');
+      const {data,error} = await api('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password})});
+      if(error) return setMsg($('authMessage'),error.error_description || error.message || 'Signup failed',true);
+      if(data?.session?.access_token){
+        accessToken = data.session.access_token;
+        localStorage.setItem('sb_token', accessToken);
+        await getCurrentUser();
+      }
+      setMsg($('authMessage'), data?.session ? 'Account created and signed in.' : 'Check email to confirm account.');
+    }
+
+    async function login(){
+      const email = $('emailInput').value.trim();
+      const password = $('passwordInput').value;
+      if(!email || !password) return setMsg($('authMessage'),'Enter email and password.',true);
+      setMsg($('authMessage'),'Signing in...');
+      const {data,error} = await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
+      if(error) return setMsg($('authMessage'),error.error_description || error.message || 'Login failed',true);
+      accessToken = data.access_token;
+      localStorage.setItem('sb_token', accessToken);
+      await getCurrentUser();
+      setMsg($('authMessage'),`Logged in as ${currentUser?.email || email}`);
+      await fetchOrders();
+      $('logoutBtn').classList.remove('hidden');
+      $('loginBtn').classList.add('hidden');
+      $('signupBtn').classList.add('hidden');
+    }
+
+    async function logout(){
+      accessToken = null;
+      currentUser = null;
+      orders = [];
+      activeId = null;
+      localStorage.removeItem('sb_token');
+      resetForm();
+      renderList();
+      setMsg($('authMessage'),'Logged out');
+      $('logoutBtn').classList.add('hidden');
+      $('loginBtn').classList.remove('hidden');
+      $('signupBtn').classList.remove('hidden');
+    }
+
+    async function fetchOrders(){
+      await getCurrentUser();
+      if(!currentUser) return setMsg($('authMessage'),'Login first',true);
+      const {data,error} = await api('/rest/v1/orders?select=*&order=updated_at.desc');
+      if(error) return setMsg($('authMessage'), error.message || 'Load failed', true);
+      orders = data || [];
+      renderList();
+      setMsg($('authMessage'),`Loaded ${orders.length} orders.`);
+    }
+
+    async function saveOrder(){
+      await getCurrentUser();
+      if(!currentUser) return setMsg($('formMessage'),'Login first',true);
+
+      const payload = snapshotForm();
+      if(!payload.order_title) return setMsg($('formMessage'),'Project / item is required.',true);
+
+      const currentRow = activeId ? orders.find(o => o.id === activeId) : null;
+      const oldOrderNumber = currentRow?.order_number || null;
+
+      let res;
+      if(activeId){
+        res = await api(`/rest/v1/orders?id=eq.${activeId}`,{
+          method:'PATCH',
+          headers:{Prefer:'return=representation'},
+          body:JSON.stringify(payload)
+        });
+      } else {
+        res = await api('/rest/v1/orders',{
+          method:'POST',
+          headers:{Prefer:'return=representation'},
+          body:JSON.stringify(payload)
+        });
+      }
+
+      if(res.error) return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true);
+
+      if(oldOrderNumber && oldOrderNumber !== payload.order_number){
+        await api(`/rest/v1/order_tracking_public?order_number=eq.${encodeURIComponent(oldOrderNumber)}`, { method:'DELETE' });
+      }
+
+      const publicRes = await api('/rest/v1/order_tracking_public?on_conflict=order_number', {
+        method:'POST',
+        headers:{ Prefer:'resolution=merge-duplicates,return=representation' },
+        body:JSON.stringify(publicTrackingPayload(payload))
+      });
+
+      if(publicRes.error) return setMsg($('formMessage'), publicRes.error.message || JSON.stringify(publicRes.error) || 'Saved order, but public tracking update failed.', true);
+
+      setMsg($('formMessage'),'Saved');
+      await fetchOrders();
+      const saved = orders.find(o => o.order_number === payload.order_number) || (res.data && res.data[0]);
+      if(saved) loadIntoForm(saved);
+    }
+
+    async function deleteOrder(){
+      if(!activeId) return setMsg($('formMessage'),'Select an order first.',true);
+
+      const currentRow = orders.find(o => o.id === activeId);
+      const orderNumber = currentRow?.order_number;
+
+      const {error} = await api(`/rest/v1/orders?id=eq.${activeId}`,{method:'DELETE'});
+      if(error) return setMsg($('formMessage'), error.message || 'Delete failed', true);
+
+      if(orderNumber){
+        await api(`/rest/v1/order_tracking_public?order_number=eq.${encodeURIComponent(orderNumber)}`, { method:'DELETE' });
+      }
+
+      resetForm();
+      await fetchOrders();
+      setMsg($('formMessage'),'Deleted');
+    }
+
+    $('signupBtn').onclick = signup;
+    $('loginBtn').onclick = login;
+    $('logoutBtn').onclick = logout;
+    $('refreshBtn').onclick = fetchOrders;
+    $('newBtn').onclick = resetForm;
+    $('saveBtn').onclick = saveOrder;
+    $('deleteBtn').onclick = deleteOrder;
+    $('clearFiltersBtn').onclick = () => {
+      $('searchInput').value = '';
+      $('statusFilter').value = 'all';
+      $('paymentFilter').value = 'all';
+      $('sortBy').value = 'newest';
+      renderList();
+    };
+    $('searchInput').addEventListener('input', renderList);
+    $('statusFilter').addEventListener('input', renderList);
+    $('paymentFilter').addEventListener('input', renderList);
+    $('sortBy').addEventListener('input', renderList);
+    ['orderNumber','orderTotal','depositAmount','status','publicStatusText','publicNextStep','shippingOrPickupNote','trackingNumber','paymentLink'].forEach(id => $(id).addEventListener('input', updatePreview));
+
+    resetForm();
+    renderList();
+    $('logoutBtn').classList.add('hidden');
+    if(accessToken) getCurrentUser().then(u => {
+      if(u){
+        setMsg($('authMessage'), `Logged in as ${u.email}`);
+        $('logoutBtn').classList.remove('hidden');
+        $('loginBtn').classList.add('hidden');
+        $('signupBtn').classList.add('hidden');
+        fetchOrders();
+      }
+    });
+  </script>
 </body>
 </html>
