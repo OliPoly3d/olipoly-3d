@@ -8,14 +8,26 @@
     :root{
       --bg:#fff8fc;
       --panel:rgba(255,255,255,.9);
+      --panel-strong:rgba(255,255,255,.95);
       --line:rgba(221,159,204,.28);
       --text:#3f3146;
       --muted:#816c88;
       --accent:#de6fb8;
       --accent2:#9d7cff;
       --shadow:0 20px 44px rgba(189,132,176,.16);
+      --ok:#4caf50;
+      --warn:#f0b429;
+      --bad:#e45a7a;
+      --unknown:#b8a7be;
+      --radius-xl:28px;
+      --radius-lg:24px;
+      --radius-md:18px;
+      --radius-sm:14px;
+      --topbar-h:84px;
     }
+
     *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     body{
       margin:0;
       min-height:100vh;
@@ -26,110 +38,273 @@
         radial-gradient(circle at 88% 8%, rgba(157,124,255,.14), transparent 24%),
         linear-gradient(180deg,#fffafd 0%,#fff5fb 46%,#fff8fc 100%);
     }
-    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 56px}
-    .topbar,.card,.hero-card,.link-card{
+
+    a{color:inherit}
+    button{font:inherit}
+    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 110px}
+
+    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
       backdrop-filter:blur(12px);
     }
+
     .topbar{
       display:flex;justify-content:space-between;align-items:center;gap:18px;
       padding:14px 18px;border-radius:999px;margin-bottom:22px;
-      position:sticky;top:14px;z-index:5;background:rgba(255,252,254,.82);
+      position:sticky;top:14px;z-index:20;background:rgba(255,252,254,.84);
     }
-    .brand{display:flex;align-items:center;gap:14px}
-    .icon{
-      width:48px;height:48px;border-radius:16px;display:grid;place-items:center;
+
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}
+    .logo-wrap{
+      width:52px;height:52px;border-radius:18px;display:grid;place-items:center;overflow:hidden;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
-      color:#fff;font-size:22px;font-weight:800;
-      box-shadow:0 0 26px rgba(222,111,184,.24);
+      box-shadow:0 0 26px rgba(222,111,184,.24);flex:0 0 auto;
     }
-    .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p{margin:0}
+    .logo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+    .icon-fallback{
+      color:#fff;font-size:22px;font-weight:800;letter-spacing:.04em;
+    }
+
+    .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
+    .link-card h4,.link-card p,.mini-card h4,.mini-card p{margin:0}
     .brand h1{font-size:1.12rem}
-    .brand p,.section-title p,.muted{color:var(--muted)}
-    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:22px}
-    .hero-card,.card{padding:24px;border-radius:28px}
+    .brand p,.section-title p,.muted,.helper{color:var(--muted)}
+
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-bottom:18px}
+    .hero-card,.card,.notes-card,.status-card{padding:24px;border-radius:var(--radius-xl)}
     .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
     .hero-card p{line-height:1.7}
-    .pill-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+
+    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions{display:flex;flex-wrap:wrap;gap:10px}
+    .pill-row{margin-top:16px}
     .pill{
       display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
       background:rgba(255,255,255,.78);border:1px solid rgba(221,159,204,.26);
       color:var(--muted);font-size:.88rem;font-weight:700;
     }
-    .btn{
+
+    .btn,.ghost,.copy-btn,.tiny-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
-      border:none;border-radius:999px;padding:13px 18px;font:inherit;font-weight:800;
-      color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+      cursor:pointer;
+    }
+    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
+
+    .btn{
+      border:none;padding:13px 18px;color:#fff;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 10px 24px rgba(222,111,184,.22);
     }
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .ghost,.copy-btn,.tiny-btn{
+      border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--text);
+    }
+    .ghost{padding:11px 14px}
+    .copy-btn{padding:10px 14px}
+    .tiny-btn{padding:8px 11px;font-size:.85rem}
+
+    .quick-actions{padding:18px 20px;border-radius:var(--radius-xl);margin-bottom:18px}
+    .quick-grid{margin-top:12px}
+
+    .dashboard-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-bottom:18px}
+    .status-grid{gap:12px;margin-top:14px}
+    .status-pill{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:999px;
+      background:rgba(255,255,255,.76);border:1px solid var(--line);
+      min-width:220px;
+    }
+    .status-dot{
+      width:11px;height:11px;border-radius:50%;background:var(--unknown);flex:0 0 auto;
+      box-shadow:0 0 0 4px rgba(184,167,190,.12);
+    }
+    .status-dot.ok{background:var(--ok);box-shadow:0 0 0 4px rgba(76,175,80,.12)}
+    .status-dot.warn{background:var(--warn);box-shadow:0 0 0 4px rgba(240,180,41,.14)}
+    .status-dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.13)}
+
+    .notes-card textarea{
+      width:100%;min-height:168px;resize:vertical;border-radius:20px;border:1px solid var(--line);
+      padding:16px;background:rgba(255,255,255,.78);color:var(--text);outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .notes-card textarea:focus{border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)}
+
     .section-title{margin-bottom:12px}
-    .link-card{padding:20px;border-radius:24px;border:1px solid var(--line)}
-    .link-card h4,.link-card p{margin:0}
-    .link-card h4{font-size:1.04rem;margin-bottom:8px}
-    .link-card p{color:var(--muted);line-height:1.6;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .link-card{
+      padding:20px;border-radius:var(--radius-lg);border:1px solid var(--line);
+      display:flex;flex-direction:column;gap:10px;min-height:100%;
+    }
+    .link-card h4{font-size:1.04rem}
+    .link-card p{color:var(--muted);line-height:1.6}
     .url{
-      display:block;
-      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-      font-size:.84rem;
-      color:#6d5f90;
-      background:rgba(157,124,255,.08);
-      border:1px solid rgba(157,124,255,.14);
-      padding:10px 12px;border-radius:14px;
-      margin-bottom:14px;
-      overflow-wrap:anywhere;
+      display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
+      color:#6d5f90;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);
+      padding:10px 12px;border-radius:14px;overflow-wrap:anywhere;
     }
-    .actions{display:flex;flex-wrap:wrap;gap:10px}
-    .ghost{
-      display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
-      border-radius:999px;padding:11px 14px;font-weight:800;color:var(--text);
-      background:rgba(255,255,255,.68);border:1px solid var(--line);
+    .actions{margin-top:auto}
+    .inline-actions{align-items:center}
+
+    .manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .mini-card{
+      padding:16px;border-radius:20px;background:rgba(255,255,255,.72);border:1px solid var(--line);
     }
+    .mini-card h4{font-size:.98rem;margin-bottom:6px}
+    .mini-card p{color:var(--muted);line-height:1.55;font-size:.94rem}
+    code.inline{
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(157,124,255,.08);
+      border:1px solid rgba(157,124,255,.12);padding:2px 7px;border-radius:999px;color:#6d5f90;
+    }
+
+    details.card{overflow:hidden}
+    details > summary{
+      list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;
+    }
+    details > summary::-webkit-details-marker{display:none}
+    .summary-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:700}
+    .caret{
+      width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
+      background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);transition:transform .2s ease;
+    }
+    details[open] .caret{transform:rotate(180deg)}
+    .details-body{padding-top:16px}
+
     .note{
       margin-top:22px;padding:18px;border-radius:22px;background:rgba(255,255,255,.72);
       border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.65;
     }
-    @media (max-width:900px){.hero,.grid{grid-template-columns:1fr}}
+
+    .mobile-dock{
+      position:fixed;left:12px;right:12px;bottom:12px;z-index:30;display:none;gap:10px;
+      padding:10px;border-radius:24px;background:rgba(255,252,254,.88);backdrop-filter:blur(12px);
+      border:1px solid var(--line);box-shadow:var(--shadow);
+    }
+    .mobile-dock a{flex:1;min-width:0;padding:12px 10px;font-size:.9rem}
+
+    .toast{
+      position:fixed;right:16px;bottom:16px;z-index:40;max-width:min(360px,calc(100% - 32px));
+      background:rgba(61,49,70,.96);color:#fff;padding:12px 14px;border-radius:16px;
+      box-shadow:0 16px 36px rgba(44,31,52,.24);opacity:0;pointer-events:none;transform:translateY(12px);
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{opacity:1;transform:translateY(0)}
+
+    @media (max-width:1000px){
+      .hero,.dashboard-grid,.grid,.manifest-grid{grid-template-columns:1fr}
+    }
+
+    @media (max-width:900px){
+      .topbar{border-radius:28px;align-items:flex-start;flex-direction:column}
+      .topbar .btn{width:100%}
+      .wrap{padding-bottom:108px}
+      .mobile-dock{display:flex}
+    }
+
+    @media (max-width:640px){
+      .wrap{width:min(100% - 18px,1120px)}
+      .hero-card,.card,.notes-card,.status-card,.quick-actions{padding:18px}
+      .status-pill{min-width:100%}
+      .actions,.inline-actions,.tiny-actions{gap:8px}
+      .btn,.ghost,.copy-btn{width:100%}
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar">
+    <header class="topbar">
       <div class="brand">
-        <div class="icon">3D</div>
+        <div class="logo-wrap" aria-hidden="true">
+          <img src="images/logo-preview.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+          <div class="icon-fallback" style="display:none; width:100%; height:100%; place-items:center;">3D</div>
+        </div>
         <div>
           <h1>OliPoly 3D Site Hub</h1>
-          <p>Quick links for your public pages, tools, forms, GitHub, and Supabase.</p>
+          <p>Quick links, health checks, reminders, repo pages, and admin tools.</p>
         </div>
       </div>
-      <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
-    </div>
+      <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
+    </header>
 
-    <div class="hero">
+    <section class="hero">
       <section class="hero-card">
         <h2>One landing page for every OliPoly destination.</h2>
-        <p>Use this as your internal bookmark page so you can jump straight to the website, order tracker, admin dashboard, quote tool, finance tool, forms, GitHub repository, and Supabase project.</p>
+        <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, forms, GitHub, and Supabase without hunting for links.</p>
         <div class="pill-row">
           <span class="pill">Main site</span>
           <span class="pill">Order tracking</span>
           <span class="pill">Orders admin</span>
           <span class="pill">Quote tool</span>
           <span class="pill">Finance tool</span>
+          <span class="pill">Quick checks</span>
+          <span class="pill">Notes</span>
         </div>
       </section>
 
       <section class="card">
         <div class="section-title">
           <h3>Recommended use</h3>
-          <p>Keep this page pinned on mobile and desktop. It gives you one clean place to navigate your whole workflow.</p>
+          <p>Keep this page pinned on mobile and desktop for one clean place to navigate your workflow.</p>
         </div>
         <div class="note" style="margin-top:0;">
-          Public pages should stay on GitHub Pages. Admin and tools can still live there too if they work on the device you are using.
+          Public pages stay easy to reach, while internal tools are grouped more safely below in their own sections. Admin links open in a new tab so this hub stays available.
         </div>
       </section>
-    </div>
+    </section>
+
+    <section class="quick-actions">
+      <div class="section-title">
+        <h3>Quick actions</h3>
+        <p>Your most-used destinations, all in one row.</p>
+      </div>
+      <div class="quick-grid">
+        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main Site</a>
+        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Orders Admin</a>
+        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance Tool</a>
+        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Quote Tool</a>
+        <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Supabase</a>
+        <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">GitHub Repo</a>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <section class="status-card">
+        <div class="section-title">
+          <h3>Quick health check</h3>
+          <p>Colored dots show whether a page appears reachable right now.</p>
+        </div>
+        <div class="tiny-actions">
+          <button class="tiny-btn" id="runHealthCheckBtn" type="button">Run health check</button>
+          <button class="tiny-btn" id="resetHealthCheckBtn" type="button">Reset dots</button>
+          <span class="helper" id="healthStamp">Not checked yet</span>
+        </div>
+        <div class="status-grid" id="healthGrid">
+          <div class="status-pill"><span class="status-dot" data-health-dot="main"></span><strong>Main site</strong></div>
+          <div class="status-pill"><span class="status-dot" data-health-dot="tracker"></span><strong>Tracker</strong></div>
+          <div class="status-pill"><span class="status-dot" data-health-dot="admin"></span><strong>Orders admin</strong></div>
+          <div class="status-pill"><span class="status-dot" data-health-dot="finance"></span><strong>Finance</strong></div>
+          <div class="status-pill"><span class="status-dot" data-health-dot="quote"></span><strong>Quote tool</strong></div>
+        </div>
+        <p class="helper" style="margin:14px 0 0;">Green = reachable, red = failed check, gray = not checked.</p>
+      </section>
+
+      <section class="notes-card">
+        <div class="section-title">
+          <h3>Today’s reminders</h3>
+          <p>This saves in your browser on this device.</p>
+        </div>
+        <textarea id="hubNotes" placeholder="Examples:
+- Update upcoming events on main site
+- Check new Formspree submissions
+- Reconcile finance entries
+- Push latest repo changes"></textarea>
+        <div class="inline-actions" style="margin-top:12px;">
+          <button class="tiny-btn" id="saveNotesBtn" type="button">Save notes</button>
+          <button class="tiny-btn" id="clearNotesBtn" type="button">Clear notes</button>
+          <span class="helper" id="notesStatus">Nothing saved yet</span>
+        </div>
+      </section>
+    </section>
 
     <section class="card" style="margin-bottom:18px;">
       <div class="section-title">
@@ -142,7 +317,8 @@
           <p>Your public storefront homepage.</p>
           <span class="url">https://olipoly3d.github.io/olipoly-3d/index.html</span>
           <div class="actions">
-            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Page</a>
+            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Page</a>
+            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/index.html">Copy URL</button>
           </div>
         </div>
 
@@ -151,7 +327,8 @@
           <p>Customer-facing order status lookup page.</p>
           <span class="url">https://olipoly3d.github.io/olipoly-3d/track.html</span>
           <div class="actions">
-            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/track.html">Open Page</a>
+            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/track.html">Open Page</a>
+            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/track.html">Copy URL</button>
           </div>
         </div>
 
@@ -160,25 +337,28 @@
           <p>Internal dashboard for creating and updating orders.</p>
           <span class="url">https://olipoly3d.github.io/olipoly-3d/orders-admin.html</span>
           <div class="actions">
-            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open Page</a>
+            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open Page</a>
+            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Copy URL</button>
           </div>
         </div>
 
         <div class="link-card">
           <h4>Finance Tool</h4>
-          <p>Finance tracker / business records page.</p>
+          <p>Finance tracker and business records page.</p>
           <span class="url">https://olipoly3d.github.io/olipoly-3d/finance-pro.html</span>
           <div class="actions">
-            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open Page</a>
+            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open Page</a>
+            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Copy URL</button>
           </div>
         </div>
 
         <div class="link-card">
           <h4>Quote Tool</h4>
-          <p>Quote builder page, if hosted in your repo under its own HTML file.</p>
+          <p>Quote builder page, if hosted in your repo under this filename.</p>
           <span class="url">https://olipoly3d.github.io/olipoly-3d/quote-tool.html</span>
           <div class="actions">
-            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open Page</a>
+            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open Page</a>
+            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Copy URL</button>
           </div>
         </div>
 
@@ -187,7 +367,8 @@
           <p>Main GitHub Pages root for quick checks.</p>
           <span class="url">https://olipoly3d.github.io/olipoly-3d/</span>
           <div class="actions">
-            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a>
+            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a>
+            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/">Copy URL</button>
           </div>
         </div>
       </div>
@@ -195,8 +376,8 @@
 
     <section class="card" style="margin-bottom:18px;">
       <div class="section-title">
-        <h3>Forms, tools, and admin services</h3>
-        <p>External services you are using with the site.</p>
+        <h3>Forms and services</h3>
+        <p>External services tied to your site workflow.</p>
       </div>
       <div class="grid">
         <div class="link-card">
@@ -204,68 +385,259 @@
           <p>Your current form endpoint for contact submissions.</p>
           <span class="url">https://formspree.io/f/xojplkjw</span>
           <div class="actions">
-            <a class="btn" href="https://formspree.io/f/xojplkjw">Open Formspree</a>
+            <a class="btn ext" href="https://formspree.io/f/xojplkjw">Open Formspree</a>
+            <button class="copy-btn" type="button" data-copy="https://formspree.io/f/xojplkjw">Copy URL</button>
           </div>
         </div>
 
         <div class="link-card">
           <h4>Tally Form</h4>
-          <p>Your upload form link if you still want to use it.</p>
+          <p>Your upload form link if you still use it.</p>
           <span class="url">https://tally.so/r/gDZY6N</span>
           <div class="actions">
-            <a class="btn" href="https://tally.so/r/gDZY6N">Open Tally Form</a>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Supabase Project</h4>
-          <p>Your database, auth, and table management dashboard.</p>
-          <span class="url">https://supabase.com/dashboard/project/alffoktlwhpfothieude</span>
-          <div class="actions">
-            <a class="btn" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Open Supabase</a>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Supabase API URL</h4>
-          <p>Your project API base URL.</p>
-          <span class="url">https://alffoktlwhpfothieude.supabase.co</span>
-          <div class="actions">
-            <a class="ghost" href="https://alffoktlwhpfothieude.supabase.co">Open URL</a>
+            <a class="btn ext" href="https://tally.so/r/gDZY6N">Open Tally Form</a>
+            <button class="copy-btn" type="button" data-copy="https://tally.so/r/gDZY6N">Copy URL</button>
           </div>
         </div>
       </div>
     </section>
 
+    <section class="card" style="margin-bottom:18px;">
+      <div class="section-title">
+        <h3>Repo page filenames</h3>
+        <p>A quick maintenance list so mismatched filenames are easier to catch.</p>
+      </div>
+      <div class="manifest-grid">
+        <div class="mini-card"><h4>Main storefront</h4><p><code class="inline">index.html</code></p></div>
+        <div class="mini-card"><h4>Hub page</h4><p><code class="inline">hub.html</code></p></div>
+        <div class="mini-card"><h4>Order tracker</h4><p><code class="inline">track.html</code></p></div>
+        <div class="mini-card"><h4>Orders admin</h4><p><code class="inline">orders-admin.html</code></p></div>
+        <div class="mini-card"><h4>Finance tool</h4><p><code class="inline">finance-pro.html</code></p></div>
+        <div class="mini-card"><h4>Quote tool</h4><p><code class="inline">quote-tool.html</code> <span class="muted">(verify if renamed)</span></p></div>
+      </div>
+    </section>
+
+    <details class="card" style="margin-bottom:18px;">
+      <summary>
+        <div class="section-title" style="margin:0;">
+          <h3>Admin and developer tools</h3>
+          <p>Useful internal links grouped separately from public pages.</p>
+        </div>
+        <div class="summary-right">
+          <span>Collapse / expand</span>
+          <span class="caret">⌄</span>
+        </div>
+      </summary>
+      <div class="details-body">
+        <div class="grid">
+          <div class="link-card">
+            <h4>Supabase Project</h4>
+            <p>Your database, auth, and table management dashboard.</p>
+            <span class="url">https://supabase.com/dashboard/project/alffoktlwhpfothieude</span>
+            <div class="actions">
+              <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Open Supabase</a>
+              <button class="copy-btn" type="button" data-copy="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Copy URL</button>
+            </div>
+          </div>
+
+          <div class="link-card">
+            <h4>Supabase API URL</h4>
+            <p>Your project API base URL.</p>
+            <span class="url">https://alffoktlwhpfothieude.supabase.co</span>
+            <div class="actions">
+              <a class="ghost ext" href="https://alffoktlwhpfothieude.supabase.co">Open URL</a>
+              <button class="copy-btn" type="button" data-copy="https://alffoktlwhpfothieude.supabase.co">Copy URL</button>
+            </div>
+          </div>
+
+          <div class="link-card">
+            <h4>GitHub Repository</h4>
+            <p>Your code repository for the OliPoly site and tools.</p>
+            <span class="url">https://github.com/olipoly3d/olipoly-3d</span>
+            <div class="actions">
+              <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">Open Repo</a>
+              <button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d">Copy URL</button>
+            </div>
+          </div>
+
+          <div class="link-card">
+            <h4>GitHub Pages Settings</h4>
+            <p>Quick access to repository Pages settings.</p>
+            <span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span>
+            <div class="actions">
+              <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a>
+              <button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/settings/pages">Copy URL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
     <section class="card">
       <div class="section-title">
-        <h3>GitHub</h3>
-        <p>Repository and Pages management links.</p>
+        <h3>Maintenance links</h3>
+        <p>Useful for deployments, quick checks, and future admin additions.</p>
       </div>
       <div class="grid">
         <div class="link-card">
-          <h4>GitHub Repository</h4>
-          <p>Your code repository for the OliPoly site and tools.</p>
-          <span class="url">https://github.com/olipoly3d/olipoly-3d</span>
+          <h4>GitHub Actions / Deployments</h4>
+          <p>Helpful when a GitHub Pages update did not go live as expected.</p>
+          <span class="url">https://github.com/olipoly3d/olipoly-3d/actions</span>
           <div class="actions">
-            <a class="btn" href="https://github.com/olipoly3d/olipoly-3d">Open Repo</a>
+            <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/actions">Open Actions</a>
+            <button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/actions">Copy URL</button>
           </div>
         </div>
 
         <div class="link-card">
-          <h4>GitHub Pages Settings</h4>
-          <p>Quick access to the Pages settings for the repository.</p>
-          <span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span>
+          <h4>Future add-on spot</h4>
+          <p>Use this card later for Stripe, domain/DNS, email admin, or another dashboard you add.</p>
+          <span class="url">Replace this URL later if needed</span>
           <div class="actions">
-            <a class="btn" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a>
+            <button class="ghost" type="button" disabled>Reserved slot</button>
           </div>
         </div>
       </div>
     </section>
 
     <div class="note">
-      If any filename in your repo is different, just change the matching URL in this file. The most likely one to verify is the quote tool page filename, since that depends on what you saved it as in GitHub.
+      Safe update notes: external links open in a new tab, copy actions do not modify data, notes only save to local browser storage, and the health check only attempts lightweight reachability checks. If your quote tool filename is different in GitHub, update that one URL in this file.
     </div>
   </div>
+
+  <nav class="mobile-dock" aria-label="Quick mobile actions">
+    <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main</a>
+    <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Admin</a>
+    <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance</a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const NOTES_KEY = 'olipoly_hub_notes_v1';
+
+    const healthTargets = {
+      main: 'https://olipoly3d.github.io/olipoly-3d/index.html',
+      tracker: 'https://olipoly3d.github.io/olipoly-3d/track.html',
+      admin: 'https://olipoly3d.github.io/olipoly-3d/orders-admin.html',
+      finance: 'https://olipoly3d.github.io/olipoly-3d/finance-pro.html',
+      quote: 'https://olipoly3d.github.io/olipoly-3d/quote-tool.html'
+    };
+
+    const toast = document.getElementById('toast');
+    const notesEl = document.getElementById('hubNotes');
+    const notesStatus = document.getElementById('notesStatus');
+    const healthStamp = document.getElementById('healthStamp');
+
+    document.querySelectorAll('a.ext').forEach(a => {
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const area = document.createElement('textarea');
+          area.value = text;
+          area.setAttribute('readonly', '');
+          area.style.position = 'absolute';
+          area.style.left = '-9999px';
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand('copy');
+          area.remove();
+        }
+        showToast('Copied to clipboard');
+      } catch {
+        showToast('Copy failed on this browser');
+      }
+    }
+
+    document.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => copyText(btn.dataset.copy || ''));
+    });
+
+    function loadNotes() {
+      const saved = localStorage.getItem(NOTES_KEY) || '';
+      notesEl.value = saved;
+      notesStatus.textContent = saved ? 'Loaded saved notes' : 'Nothing saved yet';
+    }
+
+    function saveNotes() {
+      localStorage.setItem(NOTES_KEY, notesEl.value);
+      notesStatus.textContent = 'Saved to this browser';
+      showToast('Notes saved');
+    }
+
+    function clearNotes() {
+      notesEl.value = '';
+      localStorage.removeItem(NOTES_KEY);
+      notesStatus.textContent = 'Notes cleared';
+      showToast('Notes cleared');
+    }
+
+    async function checkUrl(url, timeoutMs = 5000) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        await fetch(url, {
+          method: 'HEAD',
+          mode: 'no-cors',
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        return true;
+      } catch {
+        clearTimeout(timeout);
+        return false;
+      }
+    }
+
+    function setDot(name, state) {
+      const dot = document.querySelector(`[data-health-dot="${name}"]`);
+      if (!dot) return;
+      dot.classList.remove('ok', 'warn', 'bad');
+      if (state === 'ok') dot.classList.add('ok');
+      else if (state === 'warn') dot.classList.add('warn');
+      else if (state === 'bad') dot.classList.add('bad');
+    }
+
+    function resetDots() {
+      Object.keys(healthTargets).forEach(name => setDot(name, 'unknown'));
+      healthStamp.textContent = 'Not checked yet';
+    }
+
+    async function runHealthCheck() {
+      healthStamp.textContent = 'Checking...';
+      Object.keys(healthTargets).forEach(name => setDot(name, 'warn'));
+
+      for (const [name, url] of Object.entries(healthTargets)) {
+        const ok = await checkUrl(url);
+        setDot(name, ok ? 'ok' : 'bad');
+      }
+
+      const stamp = new Date().toLocaleString();
+      healthStamp.textContent = `Last checked: ${stamp}`;
+      showToast('Health check finished');
+    }
+
+    document.getElementById('saveNotesBtn').addEventListener('click', saveNotes);
+    document.getElementById('clearNotesBtn').addEventListener('click', clearNotes);
+    document.getElementById('runHealthCheckBtn').addEventListener('click', runHealthCheck);
+    document.getElementById('resetHealthCheckBtn').addEventListener('click', resetDots);
+
+    loadNotes();
+    resetDots();
+  </script>
 </body>
 </html>
