@@ -23,7 +23,8 @@
       --radius-lg:24px;
       --radius-md:18px;
       --radius-sm:14px;
-      --topbar-h:84px;
+      --soft-accent:rgba(157,124,255,.08);
+      --soft-accent-line:rgba(157,124,255,.14);
     }
 
     *{box-sizing:border-box}
@@ -40,10 +41,10 @@
     }
 
     a{color:inherit}
-    button{font:inherit}
+    button,input,textarea,select{font:inherit}
     .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 110px}
 
-    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card{
+    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card,.toggle-card{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
@@ -63,21 +64,25 @@
       box-shadow:0 0 26px rgba(222,111,184,.24);flex:0 0 auto;
     }
     .logo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
-    .icon-fallback{
-      color:#fff;font-size:22px;font-weight:800;letter-spacing:.04em;
-    }
+    .icon-fallback{color:#fff;font-size:22px;font-weight:800;letter-spacing:.04em}
 
     .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
-    .link-card h4,.link-card p,.mini-card h4,.mini-card p{margin:0}
+    .link-card h4,.link-card p,.mini-card h4,.mini-card p,.template-card h4,.template-card p,
+    .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p,.toggle-card h4,.toggle-card p{margin:0}
     .brand h1{font-size:1.12rem}
-    .brand p,.section-title p,.muted,.helper{color:var(--muted)}
+    .brand p,.section-title p,.muted,.helper,.fine{color:var(--muted)}
 
-    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-bottom:18px}
-    .hero-card,.card,.notes-card,.status-card{padding:24px;border-radius:var(--radius-xl)}
+    .hero,.dashboard-grid,.two-col,.three-col,.four-col{display:grid;gap:18px}
+    .hero{grid-template-columns:1.2fr .8fr;margin-bottom:18px}
+    .dashboard-grid,.two-col{grid-template-columns:1fr 1fr;margin-bottom:18px}
+    .three-col{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
+    .four-col{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
+
+    .hero-card,.card,.notes-card,.status-card,.quick-actions{padding:24px;border-radius:var(--radius-xl)}
     .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
     .hero-card p{line-height:1.7}
 
-    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions{display:flex;flex-wrap:wrap;gap:10px}
+    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.stack-actions,.field-row,.toggle-row{display:flex;flex-wrap:wrap;gap:10px}
     .pill-row{margin-top:16px}
     .pill{
       display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
@@ -85,29 +90,29 @@
       color:var(--muted);font-size:.88rem;font-weight:700;
     }
 
-    .btn,.ghost,.copy-btn,.tiny-btn{
+    .btn,.ghost,.copy-btn,.tiny-btn,.chip-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
       border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
       cursor:pointer;
     }
-    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
+    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover,.chip-btn:hover{transform:translateY(-1px)}
 
     .btn{
       border:none;padding:13px 18px;color:#fff;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 10px 24px rgba(222,111,184,.22);
     }
-    .ghost,.copy-btn,.tiny-btn{
+    .ghost,.copy-btn,.tiny-btn,.chip-btn{
       border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--text);
     }
     .ghost{padding:11px 14px}
     .copy-btn{padding:10px 14px}
     .tiny-btn{padding:8px 11px;font-size:.85rem}
+    .chip-btn{padding:9px 12px;font-size:.88rem}
 
     .quick-actions{padding:18px 20px;border-radius:var(--radius-xl);margin-bottom:18px}
     .quick-grid{margin-top:12px}
 
-    .dashboard-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-bottom:18px}
     .status-grid{gap:12px;margin-top:14px}
     .status-pill{
       display:flex;align-items:center;gap:10px;
@@ -123,21 +128,24 @@
     .status-dot.warn{background:var(--warn);box-shadow:0 0 0 4px rgba(240,180,41,.14)}
     .status-dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.13)}
 
-    .notes-card textarea{
-      width:100%;min-height:168px;resize:vertical;border-radius:20px;border:1px solid var(--line);
-      padding:16px;background:rgba(255,255,255,.78);color:var(--text);outline:none;
+    .notes-card textarea,.template-box textarea,.full-input,.money-input,.small-input,.tax-input,.reminder-input{
+      width:100%;border-radius:18px;border:1px solid var(--line);padding:13px 14px;
+      background:rgba(255,255,255,.78);color:var(--text);outline:none;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
     }
-    .notes-card textarea:focus{border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)}
+    .notes-card textarea{min-height:168px;resize:vertical}
+    .notes-card textarea:focus,.template-box textarea:focus,.full-input:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus{
+      border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)
+    }
 
     .section-title{margin-bottom:12px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .link-card{
-      padding:20px;border-radius:var(--radius-lg);border:1px solid var(--line);
-      display:flex;flex-direction:column;gap:10px;min-height:100%;
+    .link-card,.mini-card,.template-card,.metric-card,.workflow-card,.toggle-card{
+      padding:20px;border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:100%;
     }
-    .link-card h4{font-size:1.04rem}
-    .link-card p{color:var(--muted);line-height:1.6}
+    .link-card{border:1px solid var(--line)}
+    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4,.toggle-card h4{font-size:1.04rem}
+    .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p,.toggle-card p{color:var(--muted);line-height:1.6}
     .url{
       display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
       color:#6d5f90;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);
@@ -145,17 +153,67 @@
     }
     .actions{margin-top:auto}
     .inline-actions{align-items:center}
+    .stack-actions{align-items:stretch}
+    .field-row{align-items:center}
+
+    .metric-card{
+      background:rgba(255,255,255,.78);
+      border:1px solid var(--line);
+    }
+    .metric-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .metric-value{font-size:1.7rem;font-weight:900;line-height:1.05}
+    .metric-label{font-size:.92rem;color:var(--muted);font-weight:700}
+
+    .money-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+    .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+
+    .workflow-grid,.template-grid,.asset-grid,.test-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .workflow-card,.template-card,.toggle-card,.mini-card{
+      background:rgba(255,255,255,.76);border:1px solid var(--line);
+    }
 
     .manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .mini-card{
-      padding:16px;border-radius:20px;background:rgba(255,255,255,.72);border:1px solid var(--line);
-    }
-    .mini-card h4{font-size:.98rem;margin-bottom:6px}
-    .mini-card p{color:var(--muted);line-height:1.55;font-size:.94rem}
     code.inline{
       font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(157,124,255,.08);
       border:1px solid rgba(157,124,255,.12);padding:2px 7px;border-radius:999px;color:#6d5f90;
     }
+
+    .summary-box,.template-box,.event-panel{
+      padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid var(--line);
+    }
+    .summary-value{font-weight:900;font-size:1.2rem}
+    .summary-sub{font-size:.88rem;color:var(--muted)}
+
+    .checklist{display:grid;gap:10px;margin-top:10px}
+    .check-item{
+      display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;
+      background:rgba(255,255,255,.72);border:1px solid var(--line);
+    }
+    .check-item input{accent-color:var(--accent)}
+
+    .reminder-list{display:grid;gap:10px;margin-top:12px}
+    .reminder-item{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.74);border:1px solid var(--line);
+    }
+    .badge{
+      display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;
+      font-size:.78rem;font-weight:900;border:1px solid var(--line);background:#fff;
+    }
+    .badge.overdue{color:#b33857;background:rgba(228,90,122,.09)}
+    .badge.thisweek{color:#946200;background:rgba(240,180,41,.11)}
+    .badge.upcoming{color:#5e4ba2;background:rgba(157,124,255,.11)}
+
+    .switch{
+      position:relative;width:62px;height:34px;border-radius:999px;border:1px solid var(--line);
+      background:rgba(184,167,190,.35);cursor:pointer;transition:background .2s ease;
+    }
+    .switch::after{
+      content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;
+      background:#fff;box-shadow:0 4px 12px rgba(63,49,70,.16);transition:transform .2s ease;
+    }
+    .switch.on{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+    .switch.on::after{transform:translateX(28px)}
 
     details.card{overflow:hidden}
     details > summary{
@@ -190,8 +248,10 @@
     }
     .toast.show{opacity:1;transform:translateY(0)}
 
+    .hidden{display:none !important}
+
     @media (max-width:1000px){
-      .hero,.dashboard-grid,.grid,.manifest-grid{grid-template-columns:1fr}
+      .hero,.dashboard-grid,.grid,.manifest-grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr 1fr}
     }
 
     @media (max-width:900px){
@@ -199,13 +259,14 @@
       .topbar .btn{width:100%}
       .wrap{padding-bottom:108px}
       .mobile-dock{display:flex}
+      .hero,.dashboard-grid,.grid,.manifest-grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr}
     }
 
     @media (max-width:640px){
       .wrap{width:min(100% - 18px,1120px)}
       .hero-card,.card,.notes-card,.status-card,.quick-actions{padding:18px}
       .status-pill{min-width:100%}
-      .actions,.inline-actions,.tiny-actions{gap:8px}
+      .actions,.inline-actions,.tiny-actions,.stack-actions{gap:8px}
       .btn,.ghost,.copy-btn{width:100%}
     }
   </style>
@@ -220,7 +281,7 @@
         </div>
         <div>
           <h1>OliPoly 3D Site Hub</h1>
-          <p>Quick links, health checks, reminders, repo pages, and admin tools.</p>
+          <p>Quick links, business snapshots, reminders, assets, and admin tools.</p>
         </div>
       </div>
       <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
@@ -229,15 +290,16 @@
     <section class="hero">
       <section class="hero-card">
         <h2>One landing page for every OliPoly destination.</h2>
-        <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, forms, GitHub, and Supabase without hunting for links.</p>
+        <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, forms, GitHub, Supabase, and daily operating shortcuts without hunting for links.</p>
         <div class="pill-row">
-          <span class="pill">Main site</span>
-          <span class="pill">Order tracking</span>
-          <span class="pill">Orders admin</span>
-          <span class="pill">Quote tool</span>
-          <span class="pill">Finance tool</span>
-          <span class="pill">Quick checks</span>
-          <span class="pill">Notes</span>
+          <span class="pill">Money snapshot</span>
+          <span class="pill">Workflow shortcuts</span>
+          <span class="pill">Sales tax</span>
+          <span class="pill">Reminders</span>
+          <span class="pill">Assets</span>
+          <span class="pill">Testing tools</span>
+          <span class="pill">Templates</span>
+          <span class="pill">Event mode</span>
         </div>
       </section>
 
@@ -247,7 +309,7 @@
           <p>Keep this page pinned on mobile and desktop for one clean place to navigate your workflow.</p>
         </div>
         <div class="note" style="margin-top:0;">
-          Public pages stay easy to reach, while internal tools are grouped more safely below in their own sections. Admin links open in a new tab so this hub stays available.
+          Safe additions in this version are browser-only: copy buttons only copy text, notes and snapshots save locally on this device, and the new workflow helpers do not change any live site data.
         </div>
       </section>
     </section>
@@ -304,6 +366,251 @@
           <span class="helper" id="notesStatus">Nothing saved yet</span>
         </div>
       </section>
+    </section>
+
+    <section class="card" style="margin-bottom:18px;">
+      <div class="section-title">
+        <h3>Daily money snapshot</h3>
+        <p>Quick local scoreboard for today and this month.</p>
+      </div>
+      <div class="money-grid">
+        <div class="metric-card">
+          <div class="metric-top"><div><h4>Today revenue</h4><p>Local quick-entry value</p></div><span class="badge upcoming">Today</span></div>
+          <div class="metric-value" id="moneyTodayRevenueDisplay">$0.00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-top"><div><h4>Month revenue</h4><p>Use as a fast scoreboard</p></div><span class="badge upcoming">Month</span></div>
+          <div class="metric-value" id="moneyMonthRevenueDisplay">$0.00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-top"><div><h4>Month expenses</h4><p>Quick operating total</p></div><span class="badge thisweek">Costs</span></div>
+          <div class="metric-value" id="moneyMonthExpensesDisplay">$0.00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-top"><div><h4>Estimated profit</h4><p>Revenue minus expenses</p></div><span class="badge overdue">Result</span></div>
+          <div class="metric-value" id="moneyProfitDisplay">$0.00</div>
+        </div>
+      </div>
+      <div class="input-grid">
+        <input class="money-input" id="moneyTodayRevenue" type="number" min="0" step="0.01" placeholder="Today revenue" />
+        <input class="money-input" id="moneyMonthRevenue" type="number" min="0" step="0.01" placeholder="Month revenue" />
+        <input class="money-input" id="moneyMonthExpenses" type="number" min="0" step="0.01" placeholder="Month expenses" />
+        <input class="money-input" id="moneyMonthProfit" type="number" min="0" step="0.01" placeholder="Optional manual profit override" />
+      </div>
+      <div class="inline-actions" style="margin-top:12px;">
+        <button class="tiny-btn" id="saveMoneyBtn" type="button">Save snapshot</button>
+        <button class="tiny-btn" id="resetMoneyBtn" type="button">Reset snapshot</button>
+        <span class="helper" id="moneyStatus">Not saved yet</span>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <section class="card">
+        <div class="section-title">
+          <h3>Order workflow shortcuts</h3>
+          <p>Fast actions for your common order flow.</p>
+        </div>
+        <div class="workflow-grid">
+          <div class="workflow-card">
+            <h4>Create new order</h4>
+            <p>Jump straight to the orders admin page.</p>
+            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open Admin</a></div>
+          </div>
+          <div class="workflow-card">
+            <h4>Build quote</h4>
+            <p>Go straight to the quote tool.</p>
+            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open Quote Tool</a></div>
+          </div>
+          <div class="workflow-card">
+            <h4>Copy tracker link</h4>
+            <p>Fast copy for customer messages.</p>
+            <div class="actions"><button class="copy-btn" type="button" data-copy="Track your order here: https://olipoly3d.github.io/olipoly-3d/track.html">Copy tracker message</button></div>
+          </div>
+          <div class="workflow-card">
+            <h4>Open finance</h4>
+            <p>Enter revenue, expenses, or tax data.</p>
+            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open Finance</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3>Sales tax and filing panel</h3>
+          <p>Local quick reference for monthly filing prep.</p>
+        </div>
+        <div class="input-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+          <input class="tax-input" id="taxCollectedInput" type="number" min="0" step="0.01" placeholder="Tax collected this month" />
+          <input class="tax-input" id="taxRateInput" type="number" min="0" step="0.001" placeholder="Tax rate %" />
+          <input class="tax-input" id="taxDueDateInput" type="date" />
+        </div>
+        <div class="three-col" style="margin-top:12px; margin-bottom:0;">
+          <div class="summary-box"><div class="summary-value" id="taxCollectedDisplay">$0.00</div><div class="summary-sub">Current month tax collected</div></div>
+          <div class="summary-box"><div class="summary-value" id="taxDueDisplay">—</div><div class="summary-sub">Filing due date</div></div>
+          <div class="summary-box"><div class="summary-value" id="taxRateDisplay">0%</div><div class="summary-sub">Saved tax rate</div></div>
+        </div>
+        <div class="inline-actions" style="margin-top:12px;">
+          <button class="tiny-btn" id="saveTaxBtn" type="button">Save tax info</button>
+          <button class="tiny-btn" id="copyTaxLinesBtn" type="button">Copy filing prep note</button>
+          <span class="helper" id="taxStatus">Not saved yet</span>
+        </div>
+      </section>
+    </section>
+
+    <section class="two-col">
+      <section class="card">
+        <div class="section-title">
+          <h3>Smart reminders</h3>
+          <p>Simple local reminders grouped by urgency.</p>
+        </div>
+        <div class="field-row">
+          <input class="reminder-input" id="reminderTextInput" type="text" placeholder="Add a reminder" />
+          <select class="small-input" id="reminderTypeInput" style="max-width:180px;">
+            <option value="overdue">Overdue</option>
+            <option value="thisweek">Due this week</option>
+            <option value="upcoming">Upcoming</option>
+          </select>
+          <button class="tiny-btn" id="addReminderBtn" type="button">Add reminder</button>
+        </div>
+        <div class="reminder-list" id="reminderList"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3>Customer message templates</h3>
+          <p>Fast copy helpers for common replies.</p>
+        </div>
+        <div class="template-grid">
+          <div class="template-card">
+            <h4>Order received</h4>
+            <p>Simple confirmation with next steps.</p>
+            <div class="actions"><button class="copy-btn" type="button" data-template="orderReceived">Copy message</button></div>
+          </div>
+          <div class="template-card">
+            <h4>Ready for pickup</h4>
+            <p>Use when an order is complete.</p>
+            <div class="actions"><button class="copy-btn" type="button" data-template="readyPickup">Copy message</button></div>
+          </div>
+          <div class="template-card">
+            <h4>Payment link</h4>
+            <p>Placeholder wording for sending payment.</p>
+            <div class="actions"><button class="copy-btn" type="button" data-template="paymentLink">Copy message</button></div>
+          </div>
+          <div class="template-card">
+            <h4>Delay update</h4>
+            <p>Use when timing changes.</p>
+            <div class="actions"><button class="copy-btn" type="button" data-template="delayUpdate">Copy message</button></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="two-col">
+      <section class="card">
+        <div class="section-title">
+          <h3>File and asset quick access</h3>
+          <p>Fast links to common branding and site assets.</p>
+        </div>
+        <div class="asset-grid">
+          <div class="mini-card">
+            <h4>Logo preview in images</h4>
+            <p>Primary logo-preview path used across the site.</p>
+            <span class="url">https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png</span>
+            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Copy URL</button></div>
+          </div>
+          <div class="mini-card">
+            <h4>Logo preview at root</h4>
+            <p>Useful if you keep a backup copy at the repo root.</p>
+            <span class="url">https://olipoly3d.github.io/olipoly-3d/logo-preview.png</span>
+            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Copy URL</button></div>
+          </div>
+          <div class="mini-card">
+            <h4>Repo images folder</h4>
+            <p>Open the images folder in GitHub for quick file checks.</p>
+            <span class="url">https://github.com/olipoly3d/olipoly-3d/tree/main/images</span>
+            <div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Open Folder</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Copy URL</button></div>
+          </div>
+          <div class="mini-card">
+            <h4>Public site root</h4>
+            <p>Useful for quick live-file testing.</p>
+            <span class="url">https://olipoly3d.github.io/olipoly-3d/</span>
+            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/">Copy URL</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3>Testing tools panel</h3>
+          <p>Helpful for previews, speed checks, and mobile layout testing.</p>
+        </div>
+        <div class="test-grid">
+          <div class="mini-card">
+            <h4>Facebook Sharing Debugger</h4>
+            <p>Refresh and test social preview images.</p>
+            <span class="url">https://developers.facebook.com/tools/debug/</span>
+            <div class="actions"><a class="btn ext" href="https://developers.facebook.com/tools/debug/">Open Tool</a></div>
+          </div>
+          <div class="mini-card">
+            <h4>PageSpeed Insights</h4>
+            <p>Check performance and mobile issues.</p>
+            <span class="url">https://pagespeed.web.dev/</span>
+            <div class="actions"><a class="btn ext" href="https://pagespeed.web.dev/">Open Tool</a></div>
+          </div>
+          <div class="mini-card">
+            <h4>Responsive Design Mode</h4>
+            <p>Quick reminder: use browser dev tools device toolbar.</p>
+            <div class="actions"><button class="copy-btn" type="button" data-copy="Open your browser DevTools, then toggle the device toolbar to preview mobile and tablet layouts.">Copy reminder</button></div>
+          </div>
+          <div class="mini-card">
+            <h4>GitHub Actions</h4>
+            <p>Check if a deploy failed or is still processing.</p>
+            <span class="url">https://github.com/olipoly3d/olipoly-3d/actions</span>
+            <div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/actions">Open Actions</a></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="card" style="margin-bottom:18px;">
+      <div class="section-title">
+        <h3>Event mode</h3>
+        <p>Turn on a quick craft-show helper view without affecting the rest of the site.</p>
+      </div>
+      <div class="toggle-row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <h4 style="margin:0 0 4px;">Event mode toggle</h4>
+          <p class="muted" style="margin:0;">Shows your event helper panel and saves on this device only.</p>
+        </div>
+        <button class="switch" id="eventModeSwitch" type="button" aria-pressed="false" aria-label="Toggle event mode"></button>
+      </div>
+      <div class="event-panel hidden" id="eventModePanel">
+        <div class="four-col" style="margin-bottom:12px;">
+          <div class="toggle-card"><h4>Fast pricing</h4><p>Add your show pricing notes below.</p></div>
+          <div class="toggle-card"><h4>Quick QR access</h4><p>Keep your site or payment links handy.</p></div>
+          <div class="toggle-card"><h4>Order intake</h4><p>Jump to forms or admin tools faster.</p></div>
+          <div class="toggle-card"><h4>Show reminders</h4><p>Use the checklist for setup and teardown.</p></div>
+        </div>
+        <div class="two-col" style="margin-bottom:0;">
+          <div class="template-box">
+            <strong>Event pricing notes</strong>
+            <textarea id="eventNotes" style="margin-top:10px; min-height:120px; resize:vertical;" placeholder="Examples:
+- Small fidgets: $5
+- Medium prints: $12-$20
+- Custom orders: quote on request"></textarea>
+            <div class="inline-actions" style="margin-top:10px;"><button class="tiny-btn" id="saveEventNotesBtn" type="button">Save event notes</button><button class="tiny-btn" id="copyEventSiteBtn" type="button">Copy site link</button><span class="helper" id="eventNotesStatus">Not saved yet</span></div>
+          </div>
+          <div class="template-box">
+            <strong>Event checklist</strong>
+            <div class="checklist">
+              <label class="check-item"><input type="checkbox" data-event-check="table" /> Table setup ready</label>
+              <label class="check-item"><input type="checkbox" data-event-check="qr" /> QR code visible</label>
+              <label class="check-item"><input type="checkbox" data-event-check="samples" /> Sample prints stocked</label>
+              <label class="check-item"><input type="checkbox" data-event-check="payments" /> Payment method ready</label>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="card" style="margin-bottom:18px;">
@@ -501,7 +808,7 @@
     </section>
 
     <div class="note">
-      Safe update notes: external links open in a new tab, copy actions do not modify data, notes only save to local browser storage, and the health check only attempts lightweight reachability checks. If your quote tool filename is different in GitHub, update that one URL in this file.
+      Safe update notes: all new sections are additive and browser-local. No live site pages, orders, database tables, or finance records are edited from this hub. Existing links and sections remain in place.
     </div>
   </div>
 
@@ -514,7 +821,18 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const NOTES_KEY = 'olipoly_hub_notes_v1';
+    const NOTES_KEY = 'olipoly_hub_notes_v2';
+    const MONEY_KEY = 'olipoly_hub_money_v1';
+    const TAX_KEY = 'olipoly_hub_tax_v1';
+    const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
+    const EVENT_KEY = 'olipoly_hub_event_v1';
+
+    const templates = {
+      orderReceived: `Thanks for your order request. I received it and will review the details shortly. If needed, I will follow up with any questions and next steps. You can track your order here: https://olipoly3d.github.io/olipoly-3d/track.html`,
+      readyPickup: `Your order is ready. Please reply when you would like to arrange pickup or delivery details. Thank you again for your order.`,
+      paymentLink: `Here is your payment link for this order: [insert payment link]. Once payment is received, I will continue with the next step on your order.`,
+      delayUpdate: `Quick update on your order: I need a little more time than originally expected. Thank you for your patience. I will keep you updated as I make progress.`
+    };
 
     const healthTargets = {
       main: 'https://olipoly3d.github.io/olipoly-3d/index.html',
@@ -539,6 +857,10 @@
       toast.classList.add('show');
       clearTimeout(showToast._timer);
       showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function money(n) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(n) || 0);
     }
 
     async function copyText(text) {
@@ -566,6 +888,10 @@
       btn.addEventListener('click', () => copyText(btn.dataset.copy || ''));
     });
 
+    document.querySelectorAll('[data-template]').forEach(btn => {
+      btn.addEventListener('click', () => copyText(templates[btn.dataset.template] || ''));
+    });
+
     function loadNotes() {
       const saved = localStorage.getItem(NOTES_KEY) || '';
       notesEl.value = saved;
@@ -589,12 +915,7 @@
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        await fetch(url, {
-          method: 'HEAD',
-          mode: 'no-cors',
-          cache: 'no-store',
-          signal: controller.signal
-        });
+        await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: controller.signal });
         clearTimeout(timeout);
         return true;
       } catch {
@@ -620,15 +941,188 @@
     async function runHealthCheck() {
       healthStamp.textContent = 'Checking...';
       Object.keys(healthTargets).forEach(name => setDot(name, 'warn'));
-
       for (const [name, url] of Object.entries(healthTargets)) {
         const ok = await checkUrl(url);
         setDot(name, ok ? 'ok' : 'bad');
       }
-
-      const stamp = new Date().toLocaleString();
-      healthStamp.textContent = `Last checked: ${stamp}`;
+      healthStamp.textContent = `Last checked: ${new Date().toLocaleString()}`;
       showToast('Health check finished');
+    }
+
+    function loadMoney() {
+      const data = JSON.parse(localStorage.getItem(MONEY_KEY) || '{}');
+      document.getElementById('moneyTodayRevenue').value = data.todayRevenue ?? '';
+      document.getElementById('moneyMonthRevenue').value = data.monthRevenue ?? '';
+      document.getElementById('moneyMonthExpenses').value = data.monthExpenses ?? '';
+      document.getElementById('moneyMonthProfit').value = data.monthProfit ?? '';
+      renderMoney();
+      document.getElementById('moneyStatus').textContent = data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet';
+    }
+
+    function renderMoney() {
+      const todayRevenue = Number(document.getElementById('moneyTodayRevenue').value) || 0;
+      const monthRevenue = Number(document.getElementById('moneyMonthRevenue').value) || 0;
+      const monthExpenses = Number(document.getElementById('moneyMonthExpenses').value) || 0;
+      const manualProfit = document.getElementById('moneyMonthProfit').value;
+      const profit = manualProfit !== '' ? Number(manualProfit) || 0 : (monthRevenue - monthExpenses);
+      document.getElementById('moneyTodayRevenueDisplay').textContent = money(todayRevenue);
+      document.getElementById('moneyMonthRevenueDisplay').textContent = money(monthRevenue);
+      document.getElementById('moneyMonthExpensesDisplay').textContent = money(monthExpenses);
+      document.getElementById('moneyProfitDisplay').textContent = money(profit);
+    }
+
+    function saveMoney() {
+      const payload = {
+        todayRevenue: document.getElementById('moneyTodayRevenue').value,
+        monthRevenue: document.getElementById('moneyMonthRevenue').value,
+        monthExpenses: document.getElementById('moneyMonthExpenses').value,
+        monthProfit: document.getElementById('moneyMonthProfit').value,
+        savedAt: new Date().toLocaleString()
+      };
+      localStorage.setItem(MONEY_KEY, JSON.stringify(payload));
+      renderMoney();
+      document.getElementById('moneyStatus').textContent = `Saved ${payload.savedAt}`;
+      showToast('Money snapshot saved');
+    }
+
+    function resetMoney() {
+      ['moneyTodayRevenue','moneyMonthRevenue','moneyMonthExpenses','moneyMonthProfit'].forEach(id => document.getElementById(id).value = '');
+      localStorage.removeItem(MONEY_KEY);
+      renderMoney();
+      document.getElementById('moneyStatus').textContent = 'Snapshot reset';
+      showToast('Money snapshot reset');
+    }
+
+    function loadTax() {
+      const data = JSON.parse(localStorage.getItem(TAX_KEY) || '{}');
+      document.getElementById('taxCollectedInput').value = data.collected ?? '';
+      document.getElementById('taxRateInput').value = data.rate ?? '';
+      document.getElementById('taxDueDateInput').value = data.dueDate ?? '';
+      renderTax();
+      document.getElementById('taxStatus').textContent = data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet';
+    }
+
+    function renderTax() {
+      const collected = Number(document.getElementById('taxCollectedInput').value) || 0;
+      const rate = Number(document.getElementById('taxRateInput').value) || 0;
+      const dueDate = document.getElementById('taxDueDateInput').value || '—';
+      document.getElementById('taxCollectedDisplay').textContent = money(collected);
+      document.getElementById('taxRateDisplay').textContent = `${rate}%`;
+      document.getElementById('taxDueDisplay').textContent = dueDate === '—' ? '—' : dueDate;
+    }
+
+    function saveTax() {
+      const payload = {
+        collected: document.getElementById('taxCollectedInput').value,
+        rate: document.getElementById('taxRateInput').value,
+        dueDate: document.getElementById('taxDueDateInput').value,
+        savedAt: new Date().toLocaleString()
+      };
+      localStorage.setItem(TAX_KEY, JSON.stringify(payload));
+      renderTax();
+      document.getElementById('taxStatus').textContent = `Saved ${payload.savedAt}`;
+      showToast('Tax info saved');
+    }
+
+    function copyTaxLines() {
+      const collected = Number(document.getElementById('taxCollectedInput').value) || 0;
+      const rate = document.getElementById('taxRateInput').value || '0';
+      const dueDate = document.getElementById('taxDueDateInput').value || '[due date]';
+      const message = `Ohio sales tax filing prep
+- Tax collected this month: ${money(collected)}
+- Tax rate saved here: ${rate}%
+- Filing due date: ${dueDate}
+- Pull exact line-by-line figures from finance-pro.html before submitting.`;
+      copyText(message);
+    }
+
+    function loadReminders() {
+      const items = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+      renderReminders(items);
+    }
+
+    function saveReminders(items) {
+      localStorage.setItem(REMINDERS_KEY, JSON.stringify(items));
+    }
+
+    function renderReminders(items) {
+      const list = document.getElementById('reminderList');
+      list.innerHTML = '';
+      if (!items.length) {
+        list.innerHTML = '<div class="mini-card"><h4>No reminders yet</h4><p>Add items above for overdue, this week, or upcoming tasks.</p></div>';
+        return;
+      }
+      items.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'reminder-item';
+        row.innerHTML = `<div><strong>${item.text}</strong></div><div class="inline-actions"><span class="badge ${item.type}">${item.type === 'thisweek' ? 'Due this week' : item.type === 'overdue' ? 'Overdue' : 'Upcoming'}</span><button class="tiny-btn" type="button" data-reminder-remove="${index}">Done</button></div>`;
+        list.appendChild(row);
+      });
+      list.querySelectorAll('[data-reminder-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const next = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+          next.splice(Number(btn.dataset.reminderRemove), 1);
+          saveReminders(next);
+          renderReminders(next);
+          showToast('Reminder removed');
+        });
+      });
+    }
+
+    function addReminder() {
+      const textInput = document.getElementById('reminderTextInput');
+      const typeInput = document.getElementById('reminderTypeInput');
+      const text = textInput.value.trim();
+      if (!text) return showToast('Enter a reminder first');
+      const items = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+      items.push({ text, type: typeInput.value });
+      saveReminders(items);
+      renderReminders(items);
+      textInput.value = '';
+      showToast('Reminder added');
+    }
+
+    function loadEventMode() {
+      const data = JSON.parse(localStorage.getItem(EVENT_KEY) || '{}');
+      const isOn = !!data.enabled;
+      const switchEl = document.getElementById('eventModeSwitch');
+      const panel = document.getElementById('eventModePanel');
+      switchEl.classList.toggle('on', isOn);
+      switchEl.setAttribute('aria-pressed', String(isOn));
+      panel.classList.toggle('hidden', !isOn);
+      document.getElementById('eventNotes').value = data.notes || '';
+      document.getElementById('eventNotesStatus').textContent = data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet';
+      ['table','qr','samples','payments'].forEach(key => {
+        const box = document.querySelector(`[data-event-check="${key}"]`);
+        if (box) box.checked = !!data[key];
+      });
+    }
+
+    function saveEventMode(extra = {}) {
+      const switchEl = document.getElementById('eventModeSwitch');
+      const payload = {
+        enabled: switchEl.classList.contains('on'),
+        notes: document.getElementById('eventNotes').value,
+        table: document.querySelector('[data-event-check="table"]').checked,
+        qr: document.querySelector('[data-event-check="qr"]').checked,
+        samples: document.querySelector('[data-event-check="samples"]').checked,
+        payments: document.querySelector('[data-event-check="payments"]').checked,
+        savedAt: new Date().toLocaleString(),
+        ...extra
+      };
+      localStorage.setItem(EVENT_KEY, JSON.stringify(payload));
+      document.getElementById('eventNotesStatus').textContent = `Saved ${payload.savedAt}`;
+    }
+
+    function toggleEventMode() {
+      const switchEl = document.getElementById('eventModeSwitch');
+      const panel = document.getElementById('eventModePanel');
+      const next = !switchEl.classList.contains('on');
+      switchEl.classList.toggle('on', next);
+      switchEl.setAttribute('aria-pressed', String(next));
+      panel.classList.toggle('hidden', !next);
+      saveEventMode({ enabled: next });
+      showToast(next ? 'Event mode on' : 'Event mode off');
     }
 
     document.getElementById('saveNotesBtn').addEventListener('click', saveNotes);
@@ -636,8 +1130,38 @@
     document.getElementById('runHealthCheckBtn').addEventListener('click', runHealthCheck);
     document.getElementById('resetHealthCheckBtn').addEventListener('click', resetDots);
 
+    ['moneyTodayRevenue','moneyMonthRevenue','moneyMonthExpenses','moneyMonthProfit'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderMoney);
+    });
+    document.getElementById('saveMoneyBtn').addEventListener('click', saveMoney);
+    document.getElementById('resetMoneyBtn').addEventListener('click', resetMoney);
+
+    ['taxCollectedInput','taxRateInput','taxDueDateInput'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderTax);
+      document.getElementById(id).addEventListener('change', renderTax);
+    });
+    document.getElementById('saveTaxBtn').addEventListener('click', saveTax);
+    document.getElementById('copyTaxLinesBtn').addEventListener('click', copyTaxLines);
+
+    document.getElementById('addReminderBtn').addEventListener('click', addReminder);
+    document.getElementById('reminderTextInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addReminder();
+    });
+
+    document.getElementById('eventModeSwitch').addEventListener('click', toggleEventMode);
+    document.getElementById('saveEventNotesBtn').addEventListener('click', () => {
+      saveEventMode();
+      showToast('Event notes saved');
+    });
+    document.getElementById('copyEventSiteBtn').addEventListener('click', () => copyText('https://olipoly3d.github.io/olipoly-3d/'));
+    document.querySelectorAll('[data-event-check]').forEach(box => box.addEventListener('change', () => saveEventMode()));
+
     loadNotes();
     resetDots();
+    loadMoney();
+    loadTax();
+    loadReminders();
+    loadEventMode();
   </script>
 </body>
 </html>
