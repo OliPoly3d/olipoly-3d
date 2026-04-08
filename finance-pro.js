@@ -3,6 +3,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
+const HUB_FINANCE_SUMMARY_KEY = 'olipoly_finance_dashboard_summary_v1';
+
 const $ = id => document.getElementById(id);
 const num = v => Number(v) || 0;
 const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num(v));
@@ -389,6 +391,52 @@ function renderTaxReport() {
   `;
 }
 
+function getHubFinanceSummary() {
+  const month = currentMonth();
+  const today = todayISO();
+  const monthEntries = entries.filter(e => (e.entry_date || '').startsWith(month));
+  const todayEntries = monthEntries.filter(e => e.entry_date === today);
+
+  const revenueOf = list => list.reduce((sum, e) => {
+    if (e.type !== 'income') return sum;
+    return sum + num(e.amount) + num(e.shipping_charged);
+  }, 0);
+
+  const expenseOf = list => list.reduce((sum, e) => sum + visibleCost(e), 0);
+
+  const taxCollected = monthEntries.reduce((sum, e) => {
+    if (e.type !== 'income') return sum;
+    return sum + num(e.sales_tax_collected);
+  }, 0);
+
+  const latestRateEntry = [...monthEntries]
+    .filter(e => e.type === 'income' && num(e.sales_tax_rate) > 0)
+    .sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date))[0];
+
+  const monthRevenue = revenueOf(monthEntries);
+  const monthExpenses = expenseOf(monthEntries);
+
+  return {
+    enabled: true,
+    todayRevenue: +revenueOf(todayEntries).toFixed(2),
+    monthRevenue: +monthRevenue.toFixed(2),
+    monthExpenses: +monthExpenses.toFixed(2),
+    monthProfit: +(monthRevenue - monthExpenses).toFixed(2),
+    taxCollected: +taxCollected.toFixed(2),
+    taxRate: latestRateEntry ? num(latestRateEntry.sales_tax_rate) : 0,
+    taxDueDate: standardOhioDueDate(month),
+    savedAt: new Date().toLocaleString()
+  };
+}
+
+function syncHubFinanceSummary() {
+  try {
+    localStorage.setItem(HUB_FINANCE_SUMMARY_KEY, JSON.stringify(getHubFinanceSummary()));
+  } catch (err) {
+    console.warn('Hub finance sync failed:', err);
+  }
+}
+
 function renderAll() {
   const list = filteredEntries();
   updateSummary(list);
@@ -396,6 +444,7 @@ function renderAll() {
   renderTable(list);
   renderTaxReport();
   if (els.monthlyTaxMonth.value) renderMonthlyTaxReport();
+  syncHubFinanceSummary();
 }
 
 function downloadCSV(name, rows) {
