@@ -1,168 +1,24 @@
-// =========================
-// CORE HELPERS
-// =========================
 const $ = id => document.getElementById(id);
 const num = v => Number(v) || 0;
-const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
-const today = () => new Date().toISOString().slice(0,10);
-
-// =========================
-// SUPABASE CONFIG
-// =========================
-const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-
-function getSbToken(){ return localStorage.getItem('sb_token') || null; }
-
-async function sbApi(path, options={}){
- const token = getSbToken();
-
- const res = await fetch(`${SUPABASE_URL}${path}`,{
-   ...options,
-   headers:{
-     apikey: SUPABASE_KEY,
-     'Content-Type':'application/json',
-     ...(token ? {Authorization:`Bearer ${token}`} : {}),
-     ...(options.headers||{})
-   }
- });
-
- const data = await res.json().catch(()=>null);
- return {ok:res.ok,data,error:!res.ok?data:null};
-}
-
-async function getCurrentUser(){
- const token = getSbToken();
- if(!token) return null;
-
- const {data} = await sbApi('/auth/v1/user');
- return data;
-}
-
-// =========================
-// ELEMENTS
-// =========================
-const els = {
- quoteNumber:$('quoteNumber'),
- quoteDate:$('quoteDate'),
- quoteTitle:$('quoteTitle'),
- customerName:$('customerName'),
- qty:$('qty'),
- quoteStatus:$('quoteStatus'),
- shippingMode:$('shippingMode'),
- outFinal:$('outFinal'),
- outDeposit:$('outDeposit'),
- outBalance:$('outBalance'),
- quoteNotes:$('quoteNotes'),
- assumptions:$('assumptions'),
- saveQuoteBtn:$('saveQuoteBtn')
+const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num(v));
+const today = () => new Date().toISOString().slice(0, 10);
+const addDays = (dateStr, days) => {
+  const d = new Date(dateStr || today());
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 };
 
-// =========================
-// ORDER BUILDERS
-// =========================
-function moneyTextToNumber(text){
- return Number(String(text||'').replace(/[^0-9.-]/g,''))||0;
-}
-
-function fulfillmentMap(mode){
- if(mode==='pickup') return 'pickup';
- if(mode==='delivery') return 'delivery';
- return 'shipping';
-}
-
-function buildOrder(userId){
- const total = moneyTextToNumber(els.outFinal.textContent);
- const deposit = moneyTextToNumber(els.outDeposit.textContent);
- const balance = moneyTextToNumber(els.outBalance.textContent);
-
- return {
-   user_id:userId,
-   order_number:els.quoteNumber.value.trim(),
-   order_date:els.quoteDate.value || today(),
-   customer_name:els.customerName.value.trim()||null,
-   order_title:els.quoteTitle.value.trim()||'Quoted Project',
-   quantity:num(els.qty.value)||1,
-   order_total:total,
-   deposit_amount:deposit,
-   balance_amount:balance,
-   status: deposit>0 ? 'awaiting_deposit':'in_design',
-   payment_status: deposit>0 ? 'deposit_due':'unpaid',
-   fulfillment:fulfillmentMap(els.shippingMode.value),
-   internal_notes:`Created from quote ${els.quoteNumber.value}`,
-   public_status_text:'Your order has been created.',
-   public_next_step: deposit>0
-     ? 'Submit deposit to begin.'
-     : 'We are preparing your order.'
- };
-}
-
-// =========================
-// SYNC FUNCTION
-// =========================
-async function syncToSupabase(){
- if(els.quoteStatus.value!=='accepted') return;
-
- const user = await getCurrentUser();
- if(!user) throw new Error('Login to orders-admin first');
-
- const order = buildOrder(user.id);
-
- const orderRes = await sbApi('/rest/v1/orders?on_conflict=order_number',{
-   method:'POST',
-   headers:{Prefer:'resolution=merge-duplicates'},
-   body:JSON.stringify(order)
- });
-
- if(orderRes.error) throw new Error(orderRes.error.message);
-
- const publicRes = await sbApi('/rest/v1/order_tracking_public?on_conflict=order_number',{
-   method:'POST',
-   headers:{Prefer:'resolution=merge-duplicates'},
-   body:JSON.stringify({
-     order_number:order.order_number,
-     user_id:order.user_id,
-     order_title:order.order_title,
-     status:order.status,
-     payment_status:order.payment_status,
-     public_status_text:order.public_status_text,
-     public_next_step:order.public_next_step
-   })
- });
-
- if(publicRes.error) throw new Error(publicRes.error.message);
-}
-
-// =========================
-// SAVE QUOTE
-// =========================
-async function saveQuote(){
-
- try{
-   if(els.quoteStatus.value==='accepted'){
-     await syncToSupabase();
-     els.saveQuoteBtn.textContent='Saved + Synced';
-   } else {
-     els.saveQuoteBtn.textContent='Saved';
-   }
- }catch(err){
-   console.error(err);
-   alert(err.message);
-   els.saveQuoteBtn.textContent='Saved / Sync Error';
- }
-
- setTimeout(()=>{
-   els.saveQuoteBtn.textContent='Save Quote';
- },1500);
-}
-
-// =========================
-// EVENTS
-// =========================
-els.saveQuoteBtn.onclick = saveQuote;
-
-els.quoteStatus.addEventListener('change',()=>{
- if(els.quoteStatus.value==='accepted'){
-   alert('Saving this will create an order automatically.');
- }
-});
+const els = {
+  orderType: $('orderType'), shippingMode: $('shippingMode'), readySendBtn: $('readySendBtn'),
+  demoBtn: $('demoBtn'), saveQuoteBtn: $('saveQuoteBtn'), copySummaryBtn: $('copySummaryBtn'), customerPdfBtn: $('customerPdfBtn'), printBtn: $('printBtn'), resetBtn: $('resetBtn'),
+  quoteNumber: $('quoteNumber'), quoteDate: $('quoteDate'), validThrough: $('validThrough'), turnaround: $('turnaround'), quoteTitle: $('quoteTitle'), customerName: $('customerName'), qty: $('qty'), unitsPerItem: $('unitsPerItem'), presetSelect: $('presetSelect'), depositPercent: $('depositPercent'), quoteStatus: $('quoteStatus'), quoteNotes: $('quoteNotes'), customerNotes: $('customerNotes'), assumptions: $('assumptions'),
+  filamentCount: $('filamentCount'), spoolWeight: $('spoolWeight'), filament1Cost: $('filament1Cost'), filament1Used: $('filament1Used'), filament2Cost: $('filament2Cost'), filament2Used: $('filament2Used'), filament3Cost: $('filament3Cost'), filament3Used: $('filament3Used'), filament4Cost: $('filament4Cost'), filament4Used: $('filament4Used'), simplePackaging: $('simplePackaging'), simpleShipping: $('simpleShipping'), simpleHardware: $('simpleHardware'), designHours: $('designHours'), designRate: $('designRate'), postHours: $('postHours'), postRate: $('postRate'), machineHours: $('machineHours'), machineRate: $('machineRate'), marketplacePercent: $('marketplacePercent'), simpleSummary: $('simpleSummary'), generateQuoteBtn: $('generateQuoteBtn'),
+  advancedToggle: $('advancedToggle'), advancedToggleText: $('advancedToggleText'), advancedPanel: $('advancedPanel'), directItems: $('directItems'), overheadItems: $('overheadItems'), addDirectBtn: $('addDirectBtn'), addOverheadBtn: $('addOverheadBtn'), applyHelpersBtn: $('applyHelpersBtn'), tpl: $('lineItemTemplate'),
+  batchName: $('batchName'), batchSku: $('batchSku'), batchUnits: $('batchUnits'), batchColors: $('batchColors'), batchRollWeight: $('batchRollWeight'), batchPriceTarget: $('batchPriceTarget'), batchFilament1Cost: $('batchFilament1Cost'), batchFilament1Used: $('batchFilament1Used'), batchFilament2Cost: $('batchFilament2Cost'), batchFilament2Used: $('batchFilament2Used'), batchFilament3Cost: $('batchFilament3Cost'), batchFilament3Used: $('batchFilament3Used'), batchFilament4Cost: $('batchFilament4Cost'), batchFilament4Used: $('batchFilament4Used'), batchPackaging: $('batchPackaging'), batchLabor: $('batchLabor'), batchOther: $('batchOther'), batchOverhead: $('batchOverhead'), batchSold: $('batchSold'), batchLocation: $('batchLocation'), applyBatchBtn: $('applyBatchBtn'),
+  profitMode: $('profitMode'), suggestedMode: $('suggestedMode'), profitValue: $('profitValue'), discount: $('discount'), taxPreset: $('taxPreset'), salesTax: $('salesTax'), roundingMode: $('roundingMode'),
+  sumPerItem: $('sumPerItem'), sumMargin: $('sumMargin'), sumBreakEven: $('sumBreakEven'), profitGuardrail: $('profitGuardrail'), quoteConfidence: $('quoteConfidence'), sumDirect: $('sumDirect'), sumOverhead: $('sumOverhead'), sumProfit: $('sumProfit'), sumDeposit: $('sumDeposit'), sumBalance: $('sumBalance'), sumQuote: $('sumQuote'),
+  outDirect: $('outDirect'), outOverhead: $('outOverhead'), outBase: $('outBase'), outProfit: $('outProfit'), outPerItem: $('outPerItem'), outBreakEven: $('outBreakEven'), outMargin: $('outMargin'), outPreDiscount: $('outPreDiscount'), outDiscount: $('outDiscount'), outBeforeTax: $('outBeforeTax'), outRoundedBeforeTax: $('outRoundedBeforeTax'), outRoundingGain: $('outRoundingGain'), outTax: $('outTax'), outDeposit: $('outDeposit'), outBalance: $('outBalance'), outFinal: $('outFinal'),
+  quoteSummary: $('quoteSummary'), profitWarning: $('profitWarning'), financeReadyView: $('financeReadyView'), copyFinanceBtn: $('copyFinanceBtn'), customerQuoteView: $('customerQuoteView'),
+  batchUnitCost: $('batchUnitCost'), batchTotalCost: $('batchTotalCost'), batchUnitsOut: $('batchUnitsOut'), batchUnsoldValue: $('batchUnsoldValue'), materialUnitCost: $('materialUnitCost'), activePreset: $('activePreset'), batchSummary: $('batchSummary'), inventoryReadyView: $('inventoryReadyView'),
+  savedQuotesSelect: $('savedQuotesSelect'), loadQuoteBtn: $('loadQuoteBtn'), deleteQuoteBtn: $('deleteQuoteBtn'), historySummary: $('historySummary'),
+  pdfTitle: $('pdfTitle'), pdfSubtitle: $('pdfSubtitle'), pdfQuoteNumber: $('pdfQuoteNumber'), pdfQuoteDate: $('pdfQuoteDate'), pdfValidThrough: $('pdfValidThrough'), pdfTurnaround: $('pdfTurnaround'), pdfStatus: $('pdfStatus'), pdfCustomerName: $('pdfCustomerName'), pdfQty: $('pdfQty'), pdfPerItem: $('pdfPerItem'), pdfProject: $('pdfProject'), pdfSubtotal: $('pdfSubtotal'), pdfTax: $('pdf
