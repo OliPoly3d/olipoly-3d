@@ -12,317 +12,170 @@
     }
     *{box-sizing:border-box}
     body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#060b16,#08101f)}
-    .wrap{width:min(1100px,calc(100% - 28px));margin:auto;padding:24px}
+    .wrap{width:min(1200px,calc(100% - 28px));margin:auto;padding:24px}
     .card{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow);padding:20px;border-radius:22px;margin-bottom:20px}
     .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px}
-    .brand{display:flex;align-items:center;gap:12px}.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
-    .brand h1,.brand p{margin:0}.brand h1{font-size:1.1rem}.brand p{color:var(--muted)}
-    .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2))}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
-    .grid,.form-grid,.summary-grid{display:grid;gap:18px}.grid{grid-template-columns:360px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .brand{display:flex;align-items:center;gap:12px}
+    .icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
+    .brand h1,.brand p{margin:0}
+    .brand h1{font-size:1.1rem}
+    .brand p{color:var(--muted)}
+
+    .btn-row{display:flex;flex-wrap:wrap;gap:10px}
+    .btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}
+    .btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+    .btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}
+    .btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
+
+    .grid,.form-grid,.summary-grid,.filters{display:grid;gap:18px}
+    .grid{grid-template-columns:360px 1fr}
+    .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .full{grid-column:1/-1}
+    .summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .filters{grid-template-columns:1.2fr .8fr .8fr auto}
+
     label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700}
-    input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit;outline:none}
-    textarea{min-height:90px;resize:vertical}
-    .message,.note{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}.message{display:none;margin-top:12px}
-    .list{display:grid;gap:12px;max-height:700px;overflow:auto}.order-row{padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer}.order-row.active{border-color:rgba(46,230,196,.35)}
-    .mini{padding:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)} .mini span,.mini strong{display:block}.mini span{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
-    @media (max-width:900px){.grid,.summary-grid,.form-grid{grid-template-columns:1fr}}
+    input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit}
+    textarea{min-height:90px}
+
+    .message,.note{border-radius:18px;padding:14px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted)}
+    .message{display:none;margin-top:12px}
+
+    .list{display:grid;gap:12px;max-height:700px;overflow:auto}
+    .order-row{padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer}
+    .order-row.active{border-color:rgba(46,230,196,.35)}
+
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.7rem;margin-top:6px;margin-right:4px}
+    .s-quote_sent{background:#ffd27a33;color:#ffd27a}
+    .s-in_production{background:#7e7bff33;color:#7e7bff}
+    .s-completed{background:#2ee6c433;color:#2ee6c4}
+
+    @media (max-width:900px){.grid,.summary-grid,.form-grid,.filters{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
+
     <div class="card topbar">
-      <div class="brand"><div class="icon">📦</div><div><h1>OliPoly 3D Orders Admin</h1><p>No-CDN Supabase version</p></div></div>
+      <div class="brand">
+        <div class="icon">📦</div>
+        <div>
+          <h1>OliPoly Orders Admin</h1>
+          <p>Supabase connected dashboard</p>
+        </div>
+      </div>
       <div class="btn-row">
-        <button class="btn-ghost" id="refreshBtn" type="button">Refresh</button>
-        <button class="btn-danger" id="logoutBtn" type="button">Log Out</button>
+        <button class="btn-ghost" id="refreshBtn">Refresh</button>
+        <button class="btn-danger" id="logoutBtn">Logout</button>
       </div>
     </div>
 
     <div class="card">
-      <h3>Sign in</h3>
       <div class="form-grid">
-        <div><label for="emailInput">Email</label><input id="emailInput" type="email" placeholder="you@example.com" /></div>
-        <div><label for="passwordInput">Password</label><input id="passwordInput" type="password" placeholder="Password" /></div>
+        <input id="emailInput" placeholder="Email">
+        <input id="passwordInput" type="password" placeholder="Password">
       </div>
-      <div class="btn-row" style="margin-top:10px;">
-        <button class="btn-ghost" id="loginBtn" type="button">Log In</button>
-        <button class="btn" id="signupBtn" type="button">Create Account</button>
+      <div class="btn-row">
+        <button class="btn-ghost" id="loginBtn">Login</button>
+        <button class="btn" id="signupBtn">Create Account</button>
       </div>
       <div class="message" id="authMessage"></div>
     </div>
 
+    <div class="card">
+      <div class="filters">
+        <input id="searchInput" placeholder="Search">
+        <select id="statusFilter"><option value="all">All Status</option><option value="quote_sent">Quote</option><option value="in_production">Production</option><option value="completed">Completed</option></select>
+        <select id="sortBy"><option value="new">Newest</option><option value="customer">Customer</option></select>
+        <button id="clearFiltersBtn" class="btn-ghost">Clear</button>
+      </div>
+    </div>
+
     <div class="summary-grid">
-      <div class="mini"><span>Orders Loaded</span><strong id="sumOrders">0</strong></div>
-      <div class="mini"><span>Open Orders</span><strong id="sumOpen">0</strong></div>
-      <div class="mini"><span>Completed</span><strong id="sumCompleted">0</strong></div>
-      <div class="mini"><span>Total Value</span><strong id="sumValue">$0.00</strong></div>
+      <div class="card"><b id="sumOrders">0</b><br>Total Orders</div>
+      <div class="card"><b id="sumOpen">0</b><br>Open</div>
+      <div class="card"><b id="sumCompleted">0</b><br>Completed</div>
+      <div class="card"><b id="sumValue">$0</b><br>Total Value</div>
     </div>
 
     <div class="grid">
-      <section class="card">
-        <div class="btn-row" style="margin-bottom:12px;"><button class="btn" id="newBtn" type="button">New Order</button><button class="btn-ghost" id="loadBtn" type="button">Load Orders</button></div>
-        <div class="list" id="orderList"></div>
-      </section>
 
-      <section class="card">
-        <h3 id="detailTitle">Order Details</h3>
-        <div class="form-grid">
-          <div><label for="orderNumber">Order Number</label><input id="orderNumber" /></div>
-          <div><label for="orderDate">Order Date</label><input id="orderDate" type="date" /></div>
-          <div><label for="customerName">Customer Name</label><input id="customerName" /></div>
-          <div><label for="customerEmail">Customer Email</label><input id="customerEmail" type="email" /></div>
-          <div class="full"><label for="orderTitle">Project / Item</label><input id="orderTitle" /></div>
-          <div><label for="quantity">Quantity</label><input id="quantity" type="number" min="1" step="1" value="1" /></div>
-          <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
-          <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
-          <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
-          <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
-          <div class="full"><label for="paymentLink">Payment / Invoice Link</label><input id="paymentLink" /></div>
-          <div class="full"><label for="internalNotes">Internal Notes</label><textarea id="internalNotes"></textarea></div>
-          <div class="full"><label for="publicStatusText">Public Status Text</label><textarea id="publicStatusText"></textarea></div>
-          <div class="full"><label for="publicNextStep">Public Next Step</label><textarea id="publicNextStep"></textarea></div>
-          <div class="full"><label for="shippingOrPickupNote">Pickup / Shipping Note</label><textarea id="shippingOrPickupNote"></textarea></div>
+      <div class="card">
+        <div class="btn-row">
+          <button class="btn" id="newBtn">New</button>
+          <button class="btn-ghost" id="loadBtn">Load</button>
         </div>
-        <div class="btn-row" style="margin-top:14px;"><button class="btn" id="saveBtn" type="button">Save Order</button><button class="btn-danger" id="deleteBtn" type="button">Delete Order</button></div>
-        <div class="message" id="formMessage"></div>
-        <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
-      </section>
+        <div id="orderList" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h3 id="detailTitle">Order</h3>
+        <div class="form-grid">
+          <input id="orderNumber" placeholder="Order #">
+          <input id="orderDate" type="date">
+          <input id="customerName" placeholder="Customer">
+          <input id="customerEmail" placeholder="Email">
+          <input id="orderTitle" class="full" placeholder="Item">
+          <input id="orderTotal" type="number" placeholder="Total">
+          <textarea id="publicStatusText" class="full" placeholder="Public status"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="saveBtn">Save</button>
+          <button class="btn-danger" id="deleteBtn">Delete</button>
+        </div>
+        <div id="formMessage" class="message"></div>
+        <div id="publicPreview" class="note">Preview</div>
+      </div>
+
     </div>
+
   </div>
 
-  <script>
-    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+<script>
+const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co';
+const KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+let token=localStorage.getItem('sb_token');
+let orders=[];let activeId=null;
 
-    let accessToken = localStorage.getItem('sb_token') || null;
-    let currentUser = null;
-    let orders = [];
-    let activeId = null;
+async function api(path,opt={}){
+  const res=await fetch(SUPABASE_URL+path,{
+    ...opt,
+    headers:{apikey:KEY,'Content-Type':'application/json',Authorization:token?`Bearer ${token}`:'' ,...(opt.headers||{})}
+  });
+  return await res.json();
+}
 
-    const $ = id => document.getElementById(id);
-    const num = v => Number(v) || 0;
-    const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
-    const today = () => new Date().toISOString().slice(0,10);
+function render(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  let list=orders.filter(o=>!q||JSON.stringify(o).toLowerCase().includes(q));
+  document.getElementById('sumOrders').textContent=list.length;
+  document.getElementById('sumCompleted').textContent=list.filter(o=>o.status==='completed').length;
+  document.getElementById('sumOpen').textContent=list.filter(o=>o.status!=='completed').length;
+  document.getElementById('sumValue').textContent='$'+list.reduce((s,o)=>s+(o.order_total||0),0);
+  document.getElementById('orderList').innerHTML=list.map(o=>`<div class="order-row" data-id="${o.id}">
+  ${o.order_number}<br>${o.order_title}<br>
+  <span class="pill s-${o.status}">${o.status}</span></div>`).join('');
+  document.querySelectorAll('.order-row').forEach(e=>e.onclick=()=>load(e.dataset.id));
+}
 
-    function setMsg(el,text,isError=false){
-      el.style.display='block';
-      el.textContent=text;
-      el.style.borderColor=isError?'rgba(255,110,145,.22)':'rgba(79,224,163,.18)';
-      el.style.background=isError?'rgba(255,110,145,.1)':'rgba(79,224,163,.1)';
-      el.style.color=isError?'#ffd7e1':'#cffff0';
-    }
-    function clearMsg(el){ el.style.display='none'; el.textContent=''; }
+function load(id){
+  const o=orders.find(x=>x.id===id);
+  activeId=id;
+  Object.keys(o).forEach(k=>{if(document.getElementById(k))document.getElementById(k).value=o[k]||''});
+}
 
-    async function api(path, options={}){
-      const headers = {
-        apikey: SUPABASE_KEY,
-        'Content-Type':'application/json',
-        ...(accessToken ? {Authorization:`Bearer ${accessToken}`} : {})
-      };
-      const res = await fetch(`${SUPABASE_URL}${path}`,{...options,headers});
-      const data = await res.json().catch(()=>null);
-      return {data,error:!res.ok ? data : null};
-    }
+async function save(){
+  const data={order_number:orderNumber.value,order_title:orderTitle.value,order_total:+orderTotal.value};
+  if(activeId) await api(`/rest/v1/orders?id=eq.${activeId}`,{method:'PATCH',body:JSON.stringify(data)});
+  else await api('/rest/v1/orders',{method:'POST',body:JSON.stringify(data)});
+  await loadOrders();
+}
 
-    async function getCurrentUser(){
-      if(!accessToken) return null;
-      const {data,error} = await api('/auth/v1/user');
-      if(error || !data){ currentUser = null; return null; }
-      currentUser = data;
-      return data;
-    }
+async function loadOrders(){orders=await api('/rest/v1/orders?select=*');render();}
 
-    function snapshotForm(){
-      return {
-        user_id: currentUser?.id,
-        order_number: $('orderNumber').value.trim() || `OP-${Date.now().toString().slice(-5)}`,
-        order_date: $('orderDate').value || today(),
-        customer_name: $('customerName').value.trim() || null,
-        customer_email: $('customerEmail').value.trim() || null,
-        order_title: $('orderTitle').value.trim(),
-        quantity: num($('quantity').value) || 1,
-        order_total: num($('orderTotal').value),
-        deposit_amount: num($('depositAmount').value),
-        balance_amount: num($('balanceAmount').value),
-        status: $('status').value,
-        payment_status: $('paymentStatus').value,
-        fulfillment: $('fulfillment').value,
-        tracking_number: $('trackingNumber').value.trim() || null,
-        payment_link: $('paymentLink').value.trim() || null,
-        internal_notes: $('internalNotes').value.trim() || null,
-        public_status_text: $('publicStatusText').value.trim() || null,
-        public_next_step: $('publicNextStep').value.trim() || null,
-        shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null
-      };
-    }
-
-    function resetForm(){
-      activeId = null;
-      $('detailTitle').textContent = 'Order Details';
-      ['orderNumber','customerName','customerEmail','orderTitle','trackingNumber','paymentLink','internalNotes','publicStatusText','publicNextStep','shippingOrPickupNote'].forEach(id => $(id).value='');
-      $('orderDate').value = today();
-      $('quantity').value = 1;
-      $('orderTotal').value = 0;
-      $('depositAmount').value = 0;
-      $('balanceAmount').value = 0;
-      $('status').value = 'quote_sent';
-      $('paymentStatus').value = 'unpaid';
-      $('fulfillment').value = 'pickup';
-      $('publicPreview').textContent = 'No public preview yet.';
-      clearMsg($('formMessage'));
-    }
-
-    function loadIntoForm(o){
-      activeId = o.id;
-      $('detailTitle').textContent = `Order Details — ${o.order_number}`;
-      $('orderNumber').value = o.order_number || '';
-      $('orderDate').value = o.order_date || today();
-      $('customerName').value = o.customer_name || '';
-      $('customerEmail').value = o.customer_email || '';
-      $('orderTitle').value = o.order_title || '';
-      $('quantity').value = o.quantity ?? 1;
-      $('orderTotal').value = o.order_total ?? 0;
-      $('depositAmount').value = o.deposit_amount ?? 0;
-      $('balanceAmount').value = o.balance_amount ?? 0;
-      $('status').value = o.status || 'quote_sent';
-      $('paymentStatus').value = o.payment_status || 'unpaid';
-      $('fulfillment').value = o.fulfillment || 'pickup';
-      $('trackingNumber').value = o.tracking_number || '';
-      $('paymentLink').value = o.payment_link || '';
-      $('internalNotes').value = o.internal_notes || '';
-      $('publicStatusText').value = o.public_status_text || '';
-      $('publicNextStep').value = o.public_next_step || '';
-      $('shippingOrPickupNote').value = o.shipping_or_pickup_note || '';
-      updatePreview();
-    }
-
-    function updatePreview(){
-      $('balanceAmount').value = Math.max(0, num($('orderTotal').value) - num($('depositAmount').value)).toFixed(2);
-      const lines = [
-        `Order #: ${$('orderNumber').value || 'N/A'}`,
-        `Status: ${$('status').value}`,
-        $('publicStatusText').value || 'No public status yet.',
-        $('publicNextStep').value ? `Next step: ${$('publicNextStep').value}` : '',
-        $('shippingOrPickupNote').value || ''
-      ].filter(Boolean);
-      $('publicPreview').textContent = lines.join('\n');
-    }
-
-    function renderSummary(){
-      $('sumOrders').textContent = orders.length;
-      $('sumOpen').textContent = orders.filter(o => o.status !== 'completed').length;
-      $('sumCompleted').textContent = orders.filter(o => o.status === 'completed').length;
-      $('sumValue').textContent = money(orders.reduce((s,o)=>s+num(o.order_total),0));
-    }
-
-    function renderList(){
-      renderSummary();
-      if(!orders.length){ $('orderList').innerHTML = '<div class="note">No orders yet.</div>'; return; }
-      $('orderList').innerHTML = orders.map(o => `
-        <div class="order-row ${o.id===activeId?'active':''}" data-id="${o.id}">
-          <strong>${o.order_number || 'No #'}</strong><br>
-          <span>${o.order_title || 'Untitled order'}</span><br>
-          <span style="color:var(--muted)">${o.customer_name || 'No customer'} • ${money(o.order_total || 0)}</span>
-        </div>
-      `).join('');
-      [...document.querySelectorAll('.order-row')].forEach(row => {
-        row.onclick = () => {
-          const found = orders.find(o => o.id === row.dataset.id);
-          if(found) loadIntoForm(found);
-          renderList();
-        };
-      });
-    }
-
-    async function signup(){
-      const email = $('emailInput').value.trim();
-      const password = $('passwordInput').value;
-      setMsg($('authMessage'),'Creating account...');
-      const {data,error} = await api('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password})});
-      if(error) return setMsg($('authMessage'),error.error_description || error.message || 'Signup failed',true);
-      if(data?.session?.access_token){
-        accessToken = data.session.access_token;
-        localStorage.setItem('sb_token', accessToken);
-        await getCurrentUser();
-      }
-      setMsg($('authMessage'), data?.session ? 'Account created and signed in.' : 'Check email to confirm account.');
-    }
-
-    async function login(){
-      const email = $('emailInput').value.trim();
-      const password = $('passwordInput').value;
-      setMsg($('authMessage'),'Signing in...');
-      const {data,error} = await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
-      if(error) return setMsg($('authMessage'),error.error_description || error.message || 'Login failed',true);
-      accessToken = data.access_token;
-      localStorage.setItem('sb_token', accessToken);
-      await getCurrentUser();
-      setMsg($('authMessage'),'Logged in');
-      await fetchOrders();
-    }
-
-    async function logout(){
-      accessToken = null;
-      currentUser = null;
-      orders = [];
-      activeId = null;
-      localStorage.removeItem('sb_token');
-      resetForm();
-      renderList();
-      setMsg($('authMessage'),'Logged out');
-    }
-
-    async function fetchOrders(){
-      await getCurrentUser();
-      if(!currentUser) return setMsg($('authMessage'),'Login first',true);
-      const {data,error} = await api('/rest/v1/orders?select=*&order=updated_at.desc');
-      if(error) return setMsg($('authMessage'), error.message || 'Load failed', true);
-      orders = data || [];
-      renderList();
-    }
-
-    async function saveOrder(){
-      await getCurrentUser();
-      if(!currentUser) return setMsg($('formMessage'),'Login first',true);
-      const payload = snapshotForm();
-      if(!payload.order_title) return setMsg($('formMessage'),'Project / item is required.',true);
-      let res;
-      if(activeId){
-        res = await api(`/rest/v1/orders?id=eq.${activeId}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
-      } else {
-        res = await api('/rest/v1/orders',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
-      }
-      if(res.error) return setMsg($('formMessage'), res.error.message || 'Save failed', true);
-      setMsg($('formMessage'),'Saved');
-      await fetchOrders();
-      if(res.data && res.data[0]) loadIntoForm(res.data[0]);
-    }
-
-    async function deleteOrder(){
-      if(!activeId) return;
-      const {error} = await api(`/rest/v1/orders?id=eq.${activeId}`,{method:'DELETE'});
-      if(error) return setMsg($('formMessage'), error.message || 'Delete failed', true);
-      resetForm();
-      await fetchOrders();
-      setMsg($('formMessage'),'Deleted');
-    }
-
-    $('signupBtn').onclick = signup;
-    $('loginBtn').onclick = login;
-    $('logoutBtn').onclick = logout;
-    $('refreshBtn').onclick = fetchOrders;
-    $('newBtn').onclick = resetForm;
-    $('loadBtn').onclick = fetchOrders;
-    $('saveBtn').onclick = saveOrder;
-    $('deleteBtn').onclick = deleteOrder;
-    ['orderNumber','orderTotal','depositAmount','status','publicStatusText','publicNextStep','shippingOrPickupNote'].forEach(id => $(id).addEventListener('input', updatePreview));
-
-    resetForm();
-    renderList();
-    if(accessToken) getCurrentUser().then(u => { if(u){ setMsg($('authMessage'), `Logged in as ${u.email}`); fetchOrders(); } });
-  </script>
+loginBtn.onclick=async()=>{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:emailInput.value,password:passwordInput.value})});token=r.access_token;localStorage.setItem('sb_token',token);loadOrders();}
+signupBtn.onclick=()=>api('/auth/v1/signup',{method:'POST',body:JSON.stringify({email:emailInput.value,password:passwordInput.value})});
+saveBtn.onclick=save;loadBtn.onclick=loadOrders;newBtn.onclick=()=>activeId=null;
+</script>
 </body>
 </html>
