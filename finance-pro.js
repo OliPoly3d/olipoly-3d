@@ -8,8 +8,19 @@ const num = v => Number(v) || 0;
 const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num(v));
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const currentYear = () => new Date().getFullYear();
+const currentMonth = () => new Date().toISOString().slice(0, 7);
 const csvCell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
 const escapeHtml = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+const monthLabel = ym => {
+  if (!ym) return '';
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
+const standardOhioDueDate = ym => {
+  if (!ym) return '';
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m, 23).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+};
 
 const ids = [
   'startupTotal','loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn',
@@ -18,7 +29,7 @@ const ids = [
   'netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes',
   'productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid',
   'tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap',
-  'capexWrap','capexToggle'
+  'capexWrap','capexToggle','monthlyTaxMonth','monthlyTaxReportBtn','monthlyTaxOutput'
 ];
 const els = Object.fromEntries(ids.map(id => [id, $(id)]));
 
@@ -278,6 +289,73 @@ function scheduleCMap(year) {
   };
 }
 
+function monthlyOhioUST(month) {
+  const base = {
+    grossSales: 0,
+    exemptSales: 0,
+    clerksOfCourt: 0,
+    taxLiability: 0
+  };
+
+  entries
+    .filter(e => e.type === 'income' && e.entry_date.startsWith(month))
+    .forEach(e => {
+      base.grossSales += num(e.amount) + num(e.shipping_charged);
+      base.taxLiability += num(e.sales_tax_collected);
+    });
+
+  const netTaxableSales = Math.max(0, +(base.grossSales - base.exemptSales).toFixed(2));
+  const reportableTaxableSales = Math.max(0, +(netTaxableSales - base.clerksOfCourt).toFixed(2));
+  const timelyDiscount = +(base.taxLiability * 0.0075).toFixed(2);
+  const additionalCharge = 0;
+  const interestOwed = 0;
+  const netTaxDue = +(base.taxLiability - timelyDiscount + additionalCharge + interestOwed).toFixed(2);
+
+  return {
+    month,
+    grossSales: +base.grossSales.toFixed(2),
+    exemptSales: +base.exemptSales.toFixed(2),
+    netTaxableSales,
+    clerksOfCourt: +base.clerksOfCourt.toFixed(2),
+    reportableTaxableSales,
+    taxLiability: +base.taxLiability.toFixed(2),
+    timelyDiscount,
+    additionalCharge,
+    interestOwed,
+    netTaxDue
+  };
+}
+
+function renderMonthlyTaxReport() {
+  const month = els.monthlyTaxMonth.value;
+  if (!month) {
+    els.monthlyTaxOutput.textContent = 'Select a month first.';
+    return;
+  }
+
+  const r = monthlyOhioUST(month);
+
+  els.monthlyTaxOutput.innerHTML = `
+    <div><strong>Filing month:</strong> ${escapeHtml(monthLabel(month))}</div>
+    <div><strong>Standard Ohio due date:</strong> ${escapeHtml(standardOhioDueDate(month))}</div>
+    <div class="filing-grid">
+      <div class="filing-line"><strong>Line 1 – Gross sales</strong>${money(r.grossSales)}<span>Sales + shipping charged, excluding sales tax collected.</span></div>
+      <div class="filing-line"><strong>Line 2 – Exempt sales</strong>${money(r.exemptSales)}<span>Defaulted to zero. Adjust manually if you had exempt or marketplace-facilitated sales.</span></div>
+      <div class="filing-line"><strong>Line 3 – Net taxable sales</strong>${money(r.netTaxableSales)}<span>Line 1 minus Line 2.</span></div>
+      <div class="filing-line"><strong>Line 4 – Clerks of courts</strong>${money(r.clerksOfCourt)}<span>Defaulted to zero for your business.</span></div>
+      <div class="filing-line"><strong>Line 5 – Reportable taxable sales</strong>${money(r.reportableTaxableSales)}<span>Line 3 minus Line 4.</span></div>
+      <div class="filing-line"><strong>Line 6 – Tax liability</strong>${money(r.taxLiability)}<span>Based on sales tax collected in the tracker.</span></div>
+      <div class="filing-line"><strong>Line 7 – Discount</strong>${money(r.timelyDiscount)}<span>0.75% of Line 6 for an on-time filed and paid return.</span></div>
+      <div class="filing-line"><strong>Line 8a – Additional charge</strong>${money(r.additionalCharge)}<span>Leave at zero for an on-time return.</span></div>
+      <div class="filing-line"><strong>Line 8b – Interest owed</strong>${money(r.interestOwed)}<span>Leave at zero here; Ohio bills interest separately if needed.</span></div>
+      <div class="filing-line"><strong>Line 9 – Net tax due</strong>${money(r.netTaxDue)}<span>Line 6 minus Line 7 plus Lines 8a and 8b.</span></div>
+    </div>
+    <div class="note">
+      Copy these values into OH|TAX eServices for the selected month. This assumes standard taxable retail sales with no exempt sales, marketplace-facilitated deductions, or clerks-of-court transactions.
+    </div>
+  `;
+}
+
 function renderTaxReport() {
   const year = els.taxYearFilter.value || currentYear();
   els.taxYearFilter.value = year;
@@ -317,6 +395,7 @@ function renderAll() {
   renderMonthly(list);
   renderTable(list);
   renderTaxReport();
+  if (els.monthlyTaxMonth.value) renderMonthlyTaxReport();
 }
 
 function downloadCSV(name, rows) {
@@ -526,6 +605,7 @@ async function init() {
   hide(els.authMessage);
   els.entryDate.value = todayISO();
   els.taxYearFilter.value = currentYear();
+  els.monthlyTaxMonth.value = currentMonth();
   if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
     return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.', true);
   }
@@ -535,6 +615,7 @@ async function init() {
   currentUser = session?.user || null;
   setUI(!!currentUser);
   renderTaxReport();
+  renderMonthlyTaxReport();
   if (currentUser) await fetchEntries();
   supabase.auth.onAuthStateChange(async (_, s) => {
     currentUser = s?.user || null;
@@ -562,6 +643,8 @@ els.refreshBtn.onclick = fetchEntries;
 els.exportBtn.onclick = exportCSV;
 els.taxExportBtn.onclick = exportTaxReport;
 els.runTaxReportBtn.onclick = renderTaxReport;
+els.monthlyTaxReportBtn.onclick = renderMonthlyTaxReport;
+els.monthlyTaxMonth.oninput = renderMonthlyTaxReport;
 els.saveBtn.onclick = () => els.entryForm.requestSubmit();
 els.entryForm.onsubmit = saveEntry;
 els.cancelEditBtn.onclick = resetForm;
