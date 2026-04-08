@@ -977,8 +977,8 @@
       const todayRevenue = Number(document.getElementById('moneyTodayRevenue').value) || 0;
       const monthRevenue = Number(document.getElementById('moneyMonthRevenue').value) || 0;
       const monthExpenses = Number(document.getElementById('moneyMonthExpenses').value) || 0;
-      const manualProfitRaw = document.getElementById('moneyMonthProfit').value;
-      const monthProfit = manualProfitRaw !== '' ? Number(manualProfitRaw) || 0 : (monthRevenue - monthExpenses);
+      const manualProfit = document.getElementById('moneyMonthProfit').value;
+      const monthProfit = manualProfit !== '' ? Number(manualProfit) || 0 : (monthRevenue - monthExpenses);
       return { todayRevenue, monthRevenue, monthExpenses, monthProfit };
     }
 
@@ -1218,8 +1218,8 @@
 
     window.addEventListener('storage', (e) => {
       if (e.key === FINANCE_SUMMARY_KEY) {
-        renderMoney();
-        renderTax();
+        loadMoney();
+        loadTax();
       }
     });
 
