@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Site Hub</title>
+  <style>
+    :root{
+      --bg:#fff8fc;
+      --panel:rgba(255,255,255,.9);
+      --line:rgba(221,159,204,.28);
+      --text:#3f3146;
+      --muted:#816c88;
+      --accent:#de6fb8;
+      --accent2:#9d7cff;
+      --shadow:0 20px 44px rgba(189,132,176,.16);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter,system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 8% 10%, rgba(222,111,184,.16), transparent 28%),
+        radial-gradient(circle at 88% 8%, rgba(157,124,255,.14), transparent 24%),
+        linear-gradient(180deg,#fffafd 0%,#fff5fb 46%,#fff8fc 100%);
+    }
+    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 56px}
+    .topbar,.card,.hero-card,.link-card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;gap:18px;
+      padding:14px 18px;border-radius:999px;margin-bottom:22px;
+      position:sticky;top:14px;z-index:5;background:rgba(255,252,254,.82);
+    }
+    .brand{display:flex;align-items:center;gap:14px}
+    .icon{
+      width:48px;height:48px;border-radius:16px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff;font-size:22px;font-weight:800;
+      box-shadow:0 0 26px rgba(222,111,184,.24);
+    }
+    .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p{margin:0}
+    .brand h1{font-size:1.12rem}
+    .brand p,.section-title p,.muted{color:var(--muted)}
+    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:22px}
+    .hero-card,.card{padding:24px;border-radius:28px}
+    .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
+    .hero-card p{line-height:1.7}
+    .pill-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+    .pill{
+      display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
+      background:rgba(255,255,255,.78);border:1px solid rgba(221,159,204,.26);
+      color:var(--muted);font-size:.88rem;font-weight:700;
+    }
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
+      border:none;border-radius:999px;padding:13px 18px;font:inherit;font-weight:800;
+      color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 10px 24px rgba(222,111,184,.22);
+    }
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .section-title{margin-bottom:12px}
+    .link-card{padding:20px;border-radius:24px;border:1px solid var(--line)}
+    .link-card h4,.link-card p{margin:0}
+    .link-card h4{font-size:1.04rem;margin-bottom:8px}
+    .link-card p{color:var(--muted);line-height:1.6;margin-bottom:14px}
+    .url{
+      display:block;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-size:.84rem;
+      color:#6d5f90;
+      background:rgba(157,124,255,.08);
+      border:1px solid rgba(157,124,255,.14);
+      padding:10px 12px;border-radius:14px;
+      margin-bottom:14px;
+      overflow-wrap:anywhere;
+    }
+    .actions{display:flex;flex-wrap:wrap;gap:10px}
+    .ghost{
+      display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
+      border-radius:999px;padding:11px 14px;font-weight:800;color:var(--text);
+      background:rgba(255,255,255,.68);border:1px solid var(--line);
+    }
+    .note{
+      margin-top:22px;padding:18px;border-radius:22px;background:rgba(255,255,255,.72);
+      border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.65;
+    }
+    @media (max-width:900px){.hero,.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="icon">3D</div>
+        <div>
+          <h1>OliPoly 3D Site Hub</h1>
+          <p>Quick links for your public pages, tools, forms, GitHub, and Supabase.</p>
+        </div>
+      </div>
+      <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
+    </div>
+
+    <div class="hero">
+      <section class="hero-card">
+        <h2>One landing page for every OliPoly destination.</h2>
+        <p>Use this as your internal bookmark page so you can jump straight to the website, order tracker, admin dashboard, quote tool, finance tool, forms, GitHub repository, and Supabase project.</p>
+        <div class="pill-row">
+          <span class="pill">Main site</span>
+          <span class="pill">Order tracking</span>
+          <span class="pill">Orders admin</span>
+          <span class="pill">Quote tool</span>
+          <span class="pill">Finance tool</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h3>Recommended use</h3>
+          <p>Keep this page pinned on mobile and desktop. It gives you one clean place to navigate your whole workflow.</p>
+        </div>
+        <div class="note" style="margin-top:0;">
+          Public pages should stay on GitHub Pages. Admin and tools can still live there too if they work on the device you are using.
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-bottom:18px;">
+      <div class="section-title">
+        <h3>GitHub Pages</h3>
+        <p>Public and hosted pages in your repository.</p>
+      </div>
+      <div class="grid">
+        <div class="link-card">
+          <h4>Main Website</h4>
+          <p>Your public storefront homepage.</p>
+          <span class="url">https://olipoly3d.github.io/olipoly-3d/index.html</span>
+          <div class="actions">
+            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Page</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Order Tracker</h4>
+          <p>Customer-facing order status lookup page.</p>
+          <span class="url">https://olipoly3d.github.io/olipoly-3d/track.html</span>
+          <div class="actions">
+            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/track.html">Open Page</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Orders Admin</h4>
+          <p>Internal dashboard for creating and updating orders.</p>
+          <span class="url">https://olipoly3d.github.io/olipoly-3d/orders-admin.html</span>
+          <div class="actions">
+            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open Page</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Finance Tool</h4>
+          <p>Finance tracker / business records page.</p>
+          <span class="url">https://olipoly3d.github.io/olipoly-3d/finance-pro.html</span>
+          <div class="actions">
+            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open Page</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Quote Tool</h4>
+          <p>Quote builder page, if hosted in your repo under its own HTML file.</p>
+          <span class="url">https://olipoly3d.github.io/olipoly-3d/quote-tool.html</span>
+          <div class="actions">
+            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open Page</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Repository Root</h4>
+          <p>Main GitHub Pages root for quick checks.</p>
+          <span class="url">https://olipoly3d.github.io/olipoly-3d/</span>
+          <div class="actions">
+            <a class="btn" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:18px;">
+      <div class="section-title">
+        <h3>Forms, tools, and admin services</h3>
+        <p>External services you are using with the site.</p>
+      </div>
+      <div class="grid">
+        <div class="link-card">
+          <h4>Formspree Endpoint</h4>
+          <p>Your current form endpoint for contact submissions.</p>
+          <span class="url">https://formspree.io/f/xojplkjw</span>
+          <div class="actions">
+            <a class="btn" href="https://formspree.io/f/xojplkjw">Open Formspree</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Tally Form</h4>
+          <p>Your upload form link if you still want to use it.</p>
+          <span class="url">https://tally.so/r/gDZY6N</span>
+          <div class="actions">
+            <a class="btn" href="https://tally.so/r/gDZY6N">Open Tally Form</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Supabase Project</h4>
+          <p>Your database, auth, and table management dashboard.</p>
+          <span class="url">https://supabase.com/dashboard/project/alffoktlwhpfothieude</span>
+          <div class="actions">
+            <a class="btn" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Open Supabase</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>Supabase API URL</h4>
+          <p>Your project API base URL.</p>
+          <span class="url">https://alffoktlwhpfothieude.supabase.co</span>
+          <div class="actions">
+            <a class="ghost" href="https://alffoktlwhpfothieude.supabase.co">Open URL</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h3>GitHub</h3>
+        <p>Repository and Pages management links.</p>
+      </div>
+      <div class="grid">
+        <div class="link-card">
+          <h4>GitHub Repository</h4>
+          <p>Your code repository for the OliPoly site and tools.</p>
+          <span class="url">https://github.com/olipoly3d/olipoly-3d</span>
+          <div class="actions">
+            <a class="btn" href="https://github.com/olipoly3d/olipoly-3d">Open Repo</a>
+          </div>
+        </div>
+
+        <div class="link-card">
+          <h4>GitHub Pages Settings</h4>
+          <p>Quick access to the Pages settings for the repository.</p>
+          <span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span>
+          <div class="actions">
+            <a class="btn" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="note">
+      If any filename in your repo is different, just change the matching URL in this file. The most likely one to verify is the quote tool page filename, since that depends on what you saved it as in GitHub.
+    </div>
+  </div>
+</body>
+</html>
