@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Material Tracker</title>
+  <style>
+    :root{
+      --bg:#fff8fc;
+      --panel:rgba(255,255,255,.9);
+      --line:rgba(221,159,204,.28);
+      --text:#3f3146;
+      --muted:#816c88;
+      --accent:#de6fb8;
+      --accent2:#9d7cff;
+      --shadow:0 20px 44px rgba(189,132,176,.16);
+      --ok:#4caf50;
+      --warn:#f0b429;
+      --bad:#e45a7a;
+      --radius-xl:28px;
+      --radius-lg:22px;
+      --radius-md:16px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter,system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 8% 10%, rgba(222,111,184,.16), transparent 28%),
+        radial-gradient(circle at 88% 8%, rgba(157,124,255,.14), transparent 24%),
+        linear-gradient(180deg,#fffafd 0%,#fff5fb 46%,#fff8fc 100%);
+    }
+
+    a{color:inherit}
+    button,input,select,textarea{font:inherit}
+    .wrap{width:min(1180px,calc(100% - 26px));margin:0 auto;padding:24px 0 90px}
+
+    .topbar,.card,.stat-card,.row-card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;gap:16px;
+      padding:14px 18px;border-radius:999px;margin-bottom:20px;
+      position:sticky;top:14px;z-index:20;background:rgba(255,252,254,.86);
+    }
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}
+    .logo{
+      width:50px;height:50px;border-radius:18px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 0 26px rgba(222,111,184,.24);color:#fff;font-weight:900;
+    }
+    .brand h1,.brand p,.section-title h2,.section-title p,.stat-card h3,.stat-card p,.row-card h4,.row-card p{margin:0}
+    .brand h1{font-size:1.1rem}
+    .brand p,.section-title p,.muted,.helper{color:var(--muted)}
+
+    .btn,.ghost,.tiny-btn{
+      display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;
+      border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease;
+    }
+    .btn:hover,.ghost:hover,.tiny-btn:hover{transform:translateY(-1px)}
+    .btn{
+      border:none;padding:12px 18px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 10px 24px rgba(222,111,184,.22);
+    }
+    .ghost,.tiny-btn{
+      border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--text);
+    }
+    .ghost{padding:11px 14px}
+    .tiny-btn{padding:8px 11px;font-size:.86rem}
+
+    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:18px}
+    .card{padding:22px;border-radius:var(--radius-xl)}
+    .hero h2{font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.02;margin:0 0 10px}
+    .hero p{line-height:1.7;margin:0}
+    .pill-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+    .pill{padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(221,159,204,.26);color:var(--muted);font-size:.88rem;font-weight:700}
+
+    .stats-grid,.split-grid,.list-grid{display:grid;gap:18px}
+    .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
+    .split-grid{grid-template-columns:1.05fr .95fr;margin-bottom:18px}
+    .list-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+    .stat-card{padding:18px;border-radius:var(--radius-lg)}
+    .stat-value{font-size:1.8rem;font-weight:900;line-height:1.05;margin-top:6px}
+    .stat-sub{font-size:.9rem;color:var(--muted);margin-top:6px}
+
+    .section-title{margin-bottom:12px}
+    .field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .field-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .field-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .full-span{grid-column:1 / -1}
+    label{display:grid;gap:6px;font-weight:700}
+    input,select,textarea{
+      width:100%;border-radius:16px;border:1px solid var(--line);padding:12px 14px;background:rgba(255,255,255,.78);
+      color:var(--text);outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    textarea{min-height:92px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)}
+
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+    .status{font-size:.92rem;color:var(--muted)}
+
+    .table-wrap{overflow:auto;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.76)}
+    table{width:100%;border-collapse:collapse;min-width:980px}
+    th,td{padding:14px 12px;border-bottom:1px solid rgba(221,159,204,.22);text-align:left;vertical-align:top}
+    th{font-size:.84rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:rgba(255,255,255,.88)}
+    tr:last-child td{border-bottom:none}
+
+    .chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;font-size:.78rem;font-weight:900;border:1px solid var(--line);background:#fff}
+    .chip.low{color:#b33857;background:rgba(228,90,122,.09)}
+    .chip.mid{color:#946200;background:rgba(240,180,41,.11)}
+    .chip.good{color:#2e7d32;background:rgba(76,175,80,.1)}
+
+    .swatch{width:14px;height:14px;border-radius:50%;border:1px solid rgba(63,49,70,.18);display:inline-block;margin-right:8px;vertical-align:middle}
+    .mini-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .row-card{padding:18px;border-radius:var(--radius-lg)}
+    .empty{padding:20px;border-radius:18px;border:1px dashed rgba(221,159,204,.35);color:var(--muted);background:rgba(255,255,255,.7)}
+    .toast{
+      position:fixed;right:16px;bottom:16px;z-index:40;max-width:min(360px,calc(100% - 32px));
+      background:rgba(61,49,70,.96);color:#fff;padding:12px 14px;border-radius:16px;
+      box-shadow:0 16px 36px rgba(44,31,52,.24);opacity:0;pointer-events:none;transform:translateY(12px);
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{opacity:1;transform:translateY(0)}
+
+    @media (max-width:1020px){
+      .hero,.split-grid,.stats-grid,.list-grid,.field-grid.three,.field-grid.four{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:820px){
+      .topbar{flex-direction:column;align-items:flex-start;border-radius:26px}
+      .topbar .btn,.topbar .ghost{width:100%}
+      .hero,.split-grid,.stats-grid,.list-grid,.field-grid,.field-grid.three,.field-grid.four{grid-template-columns:1fr}
+      .wrap{width:min(100% - 18px,1180px)}
+      .card{padding:18px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">3D</div>
+        <div>
+          <h1>OliPoly 3D Material Tracker</h1>
+          <p>Private stock tracker for filament colors, materials, and grams remaining.</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="ghost" href="hub.html">Open Hub</a>
+        <a class="btn" href="index.html">Main Site</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <section class="card">
+        <h2>Track what filament you actually have on hand.</h2>
+        <p>Use this page to keep a simple running list of colors, material types, brand, and approximate grams remaining so quoting, event prep, and reorder decisions are faster.</p>
+        <div class="pill-row">
+          <span class="pill">PLA / PETG / TPU</span>
+          <span class="pill">Color inventory</span>
+          <span class="pill">Low stock alerts</span>
+          <span class="pill">Browser-local only</span>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-title">
+          <h2 style="font-size:1.2rem;line-height:1.2;">How to use</h2>
+          <p>Keep it lightweight so it stays useful.</p>
+        </div>
+        <div class="empty" style="padding:16px;">
+          Add each spool once, then update grams remaining whenever you finish a job or open a new roll. Low stock is highlighted automatically based on the threshold you set.
+        </div>
+      </section>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <h3>Total spools</h3>
+        <div class="stat-value" id="totalSpools">0</div>
+        <div class="stat-sub">All tracked rolls</div>
+      </div>
+      <div class="stat-card">
+        <h3>Total grams left</h3>
+        <div class="stat-value" id="totalGrams">0g</div>
+        <div class="stat-sub">Approximate material on hand</div>
+      </div>
+      <div class="stat-card">
+        <h3>Low stock</h3>
+        <div class="stat-value" id="lowStockCount">0</div>
+        <div class="stat-sub">At or below threshold</div>
+      </div>
+      <div class="stat-card">
+        <h3>Materials</h3>
+        <div class="stat-value" id="materialTypes">0</div>
+        <div class="stat-sub">Unique material types</div>
+      </div>
+    </section>
+
+    <section class="split-grid">
+      <section class="card">
+        <div class="section-title">
+          <h2 style="font-size:1.2rem;line-height:1.2;">Add or edit spool</h2>
+          <p>This saves in your browser on this device.</p>
+        </div>
+        <form id="spoolForm">
+          <div class="field-grid three">
+            <label>
+              Material
+              <select id="materialType" required>
+                <option value="PLA">PLA</option>
+                <option value="PLA+">PLA+</option>
+                <option value="PETG">PETG</option>
+                <option value="TPU">TPU</option>
+                <option value="ABS">ABS</option>
+                <option value="ASA">ASA</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label>
+              Color name
+              <input id="colorName" type="text" placeholder="Black" required />
+            </label>
+            <label>
+              Color swatch
+              <input id="colorHex" type="color" value="#222222" />
+            </label>
+          </div>
+
+          <div class="field-grid four" style="margin-top:12px;">
+            <label>
+              Brand
+              <input id="brand" type="text" placeholder="Bambu / eSUN / Hatchbox" />
+            </label>
+            <label>
+              Finish
+              <input id="finish" type="text" placeholder="Matte / Silk / Glitter" />
+            </label>
+            <label>
+              Spool size (g)
+              <input id="spoolSize" type="number" min="0" step="1" placeholder="1000" />
+            </label>
+            <label>
+              Grams remaining
+              <input id="gramsRemaining" type="number" min="0" step="1" placeholder="850" required />
+            </label>
+          </div>
+
+          <div class="field-grid three" style="margin-top:12px;">
+            <label>
+              Low stock threshold (g)
+              <input id="lowThreshold" type="number" min="0" step="1" placeholder="150" value="150" />
+            </label>
+            <label>
+              Cost per spool ($)
+              <input id="spoolCost" type="number" min="0" step="0.01" placeholder="24.99" />
+            </label>
+            <label>
+              Storage location
+              <input id="location" type="text" placeholder="Shelf A / Drawer 2 / AMS" />
+            </label>
+          </div>
+
+          <label class="full-span" style="margin-top:12px;display:grid;gap:6px;">
+            Notes
+            <textarea id="notes" placeholder="Examples: good for customer favorite color, opened recently, almost empty, event stock, etc."></textarea>
+          </label>
+
+          <div class="toolbar">
+            <button class="btn" type="submit" id="saveBtn">Save Spool</button>
+            <button class="ghost" type="button" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
+            <span class="status" id="formStatus">Ready</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2 style="font-size:1.2rem;line-height:1.2;">Filters and quick tools</h2>
+          <p>Use this to narrow what you have available.</p>
+        </div>
+        <div class="field-grid two">
+          <label>
+            Filter material
+            <select id="filterMaterial">
+              <option value="all">All materials</option>
+              <option value="PLA">PLA</option>
+              <option value="PLA+">PLA+</option>
+              <option value="PETG">PETG</option>
+              <option value="TPU">TPU</option>
+              <option value="ABS">ABS</option>
+              <option value="ASA">ASA</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>
+            Stock status
+            <select id="filterStock">
+              <option value="all">All stock</option>
+              <option value="low">Low stock only</option>
+              <option value="good">Above threshold only</option>
+            </select>
+          </label>
+        </div>
+        <div class="field-grid two" style="margin-top:12px;">
+          <label>
+            Search
+            <input id="searchInput" type="text" placeholder="Search color, brand, finish, location..." />
+          </label>
+          <label>
+            Quick subtract used grams
+            <input id="quickUseGrams" type="number" min="0" step="1" placeholder="50" />
+          </label>
+        </div>
+        <div class="toolbar">
+          <button class="tiny-btn" type="button" id="clearFiltersBtn">Clear filters</button>
+          <button class="tiny-btn" type="button" id="exportBtn">Export CSV</button>
+          <button class="tiny-btn" type="button" id="seedBtn">Add demo rows</button>
+          <button class="tiny-btn" type="button" id="clearAllBtn">Clear all</button>
+        </div>
+        <div class="empty" style="margin-top:14px;">
+          Tip: click <strong>Use grams</strong> beside a row after a print finishes to quickly reduce remaining stock.
+        </div>
+      </section>
+    </section>
+
+    <section class="card" style="margin-bottom:18px;">
+      <div class="section-title">
+        <h2 style="font-size:1.2rem;line-height:1.2;">Inventory list</h2>
+        <p>Sorted by lowest stock first so problem spools stay visible.</p>
+      </div>
+      <div class="table-wrap" id="tableWrap"></div>
+    </section>
+
+    <section class="list-grid">
+      <section class="card">
+        <div class="section-title">
+          <h2 style="font-size:1.2rem;line-height:1.2;">Low stock summary</h2>
+          <p>Spools that may need reorder attention.</p>
+        </div>
+        <div id="lowStockList"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2 style="font-size:1.2rem;line-height:1.2;">Available by material</h2>
+          <p>Quick grams on hand by type.</p>
+        </div>
+        <div id="materialSummaryList"></div>
+      </section>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'olipoly_material_tracker_v1';
+    const $ = id => document.getElementById(id);
+    const toast = $('toast');
+
+    let rows = [];
+    let editingId = null;
+
+    const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(v) || 0);
+    const grams = v => `${Math.round(Number(v) || 0)}g`;
+    const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function saveRows() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+    }
+
+    function loadRows() {
+      try {
+        rows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch {
+        rows = [];
+      }
+    }
+
+    function getStatus(row) {
+      const remain = Number(row.gramsRemaining) || 0;
+      const threshold = Number(row.lowThreshold) || 0;
+      if (remain <= threshold) return 'low';
+      if (remain <= threshold + 150) return 'mid';
+      return 'good';
+    }
+
+    function statusLabel(status) {
+      return status === 'low' ? 'Low stock' : status === 'mid' ? 'Watch soon' : 'In stock';
+    }
+
+    function formData() {
+      return {
+        materialType: $('materialType').value,
+        colorName: $('colorName').value.trim(),
+        colorHex: $('colorHex').value,
+        brand: $('brand').value.trim(),
+        finish: $('finish').value.trim(),
+        spoolSize: Number($('spoolSize').value) || 0,
+        gramsRemaining: Number($('gramsRemaining').value) || 0,
+        lowThreshold: Number($('lowThreshold').value) || 0,
+        spoolCost: Number($('spoolCost').value) || 0,
+        location: $('location').value.trim(),
+        notes: $('notes').value.trim()
+      };
+    }
+
+    function resetForm() {
+      editingId = null;
+      $('spoolForm').reset();
+      $('materialType').value = 'PLA';
+      $('colorHex').value = '#222222';
+      $('lowThreshold').value = '150';
+      $('saveBtn').textContent = 'Save Spool';
+      $('cancelEditBtn').style.display = 'none';
+      $('formStatus').textContent = 'Ready';
+    }
+
+    function startEdit(id) {
+      const row = rows.find(r => r.id === id);
+      if (!row) return;
+      editingId = id;
+      $('materialType').value = row.materialType || 'PLA';
+      $('colorName').value = row.colorName || '';
+      $('colorHex').value = row.colorHex || '#222222';
+      $('brand').value = row.brand || '';
+      $('finish').value = row.finish || '';
+      $('spoolSize').value = row.spoolSize || '';
+      $('gramsRemaining').value = row.gramsRemaining || '';
+      $('lowThreshold').value = row.lowThreshold || '';
+      $('spoolCost').value = row.spoolCost || '';
+      $('location').value = row.location || '';
+      $('notes').value = row.notes || '';
+      $('saveBtn').textContent = 'Update Spool';
+      $('cancelEditBtn').style.display = 'inline-flex';
+      $('formStatus').textContent = 'Editing spool';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function removeRow(id) {
+      if (!confirm('Delete this spool from the tracker?')) return;
+      rows = rows.filter(r => r.id !== id);
+      saveRows();
+      if (editingId === id) resetForm();
+      renderAll();
+      showToast('Spool deleted');
+    }
+
+    function useGrams(id) {
+      const use = Number($('quickUseGrams').value) || 0;
+      if (use <= 0) return showToast('Enter grams to subtract first');
+      const row = rows.find(r => r.id === id);
+      if (!row) return;
+      row.gramsRemaining = Math.max(0, (Number(row.gramsRemaining) || 0) - use);
+      row.updatedAt = new Date().toISOString();
+      saveRows();
+      renderAll();
+      showToast('Stock updated');
+    }
+
+    function filteredRows() {
+      const material = $('filterMaterial').value;
+      const stock = $('filterStock').value;
+      const search = $('searchInput').value.trim().toLowerCase();
+
+      return [...rows]
+        .filter(row => {
+          const status = getStatus(row);
+          if (material !== 'all' && row.materialType !== material) return false;
+          if (stock === 'low' && status !== 'low') return false;
+          if (stock === 'good' && status === 'low') return false;
+          if (search) {
+            const blob = `${row.materialType} ${row.colorName} ${row.brand} ${row.finish} ${row.location} ${row.notes}`.toLowerCase();
+            if (!blob.includes(search)) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          const statusOrder = { low: 0, mid: 1, good: 2 };
+          const s = statusOrder[getStatus(a)] - statusOrder[getStatus(b)];
+          if (s !== 0) return s;
+          return (Number(a.gramsRemaining) || 0) - (Number(b.gramsRemaining) || 0);
+        });
+    }
+
+    function renderStats() {
+      const totalSpools = rows.length;
+      const totalGrams = rows.reduce((sum, row) => sum + (Number(row.gramsRemaining) || 0), 0);
+      const lowStock = rows.filter(r => getStatus(r) === 'low').length;
+      const materials = new Set(rows.map(r => r.materialType).filter(Boolean)).size;
+
+      $('totalSpools').textContent = totalSpools;
+      $('totalGrams').textContent = grams(totalGrams);
+      $('lowStockCount').textContent = lowStock;
+      $('materialTypes').textContent = materials;
+    }
+
+    function renderTable() {
+      const list = filteredRows();
+      if (!list.length) {
+        $('tableWrap').innerHTML = '<div class="empty" style="margin:14px;">No spools match your current filters.</div>';
+        return;
+      }
+
+      $('tableWrap').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Color</th>
+              <th>Brand / Finish</th>
+              <th>Remaining</th>
+              <th>Threshold</th>
+              <th>Cost</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(row => {
+              const status = getStatus(row);
+              return `
+                <tr>
+                  <td><strong>${row.materialType || ''}</strong></td>
+                  <td><span class="swatch" style="background:${row.colorHex || '#222'}"></span><strong>${row.colorName || ''}</strong>${row.notes ? `<div class="helper" style="margin-top:6px;font-size:.86rem;line-height:1.5;">${escapeHtml(row.notes)}</div>` : ''}</td>
+                  <td>${escapeHtml(row.brand || '—')}<div class="helper" style="margin-top:4px;">${escapeHtml(row.finish || '—')}</div></td>
+                  <td><strong>${grams(row.gramsRemaining)}</strong>${row.spoolSize ? `<div class="helper" style="margin-top:4px;">of ${grams(row.spoolSize)}</div>` : ''}</td>
+                  <td>${grams(row.lowThreshold)}</td>
+                  <td>${row.spoolCost ? money(row.spoolCost) : '—'}</td>
+                  <td>${escapeHtml(row.location || '—')}</td>
+                  <td><span class="chip ${status}">${statusLabel(status)}</span></td>
+                  <td>
+                    <div class="mini-actions">
+                      <button class="tiny-btn" type="button" data-use="${row.id}">Use grams</button>
+                      <button class="tiny-btn" type="button" data-edit="${row.id}">Edit</button>
+                      <button class="tiny-btn" type="button" data-delete="${row.id}">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      document.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => startEdit(btn.dataset.edit)));
+      document.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => removeRow(btn.dataset.delete)));
+      document.querySelectorAll('[data-use]').forEach(btn => btn.addEventListener('click', () => useGrams(btn.dataset.use)));
+    }
+
+    function renderLowStock() {
+      const list = rows.filter(r => getStatus(r) === 'low').sort((a,b) => (a.gramsRemaining||0) - (b.gramsRemaining||0));
+      const target = $('lowStockList');
+      if (!list.length) {
+        target.innerHTML = '<div class="empty">No low stock spools right now.</div>';
+        return;
+      }
+      target.innerHTML = list.map(row => `
+        <div class="row-card" style="margin-bottom:12px;">
+          <h4><span class="swatch" style="background:${row.colorHex || '#222'}"></span>${escapeHtml(row.colorName)} • ${escapeHtml(row.materialType)}</h4>
+          <p>${escapeHtml(row.brand || 'No brand listed')} • ${grams(row.gramsRemaining)} left • threshold ${grams(row.lowThreshold)}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderMaterialSummary() {
+      const buckets = {};
+      rows.forEach(row => {
+        const key = row.materialType || 'Other';
+        buckets[key] ??= { grams: 0, count: 0 };
+        buckets[key].grams += Number(row.gramsRemaining) || 0;
+        buckets[key].count += 1;
+      });
+
+      const target = $('materialSummaryList');
+      const items = Object.entries(buckets).sort((a,b) => b[1].grams - a[1].grams);
+      if (!items.length) {
+        target.innerHTML = '<div class="empty">No material summary yet.</div>';
+        return;
+      }
+      target.innerHTML = items.map(([name, info]) => `
+        <div class="row-card" style="margin-bottom:12px;">
+          <h4>${escapeHtml(name)}</h4>
+          <p>${info.count} spool${info.count === 1 ? '' : 's'} • ${grams(info.grams)} on hand</p>
+        </div>
+      `).join('');
+    }
+
+    function renderAll() {
+      renderStats();
+      renderTable();
+      renderLowStock();
+      renderMaterialSummary();
+    }
+
+    function exportCSV() {
+      if (!rows.length) return showToast('Nothing to export yet');
+      const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const data = [
+        ['Material','Color','Color Hex','Brand','Finish','Spool Size (g)','Grams Remaining','Low Stock Threshold (g)','Cost per Spool','Location','Notes'],
+        ...rows.map(r => [r.materialType, r.colorName, r.colorHex, r.brand, r.finish, r.spoolSize, r.gramsRemaining, r.lowThreshold, r.spoolCost, r.location, r.notes])
+      ].map(row => row.map(esc).join(',')).join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([data], { type:'text/csv;charset=utf-8;' }));
+      a.download = 'olipoly-material-tracker.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function seedRows() {
+      if (rows.length && !confirm('Demo rows will be added to your current list. Continue?')) return;
+      rows.push(
+        { id: uid(), materialType:'PLA', colorName:'Black', colorHex:'#1e1e1e', brand:'Bambu', finish:'Matte', spoolSize:1000, gramsRemaining:320, lowThreshold:150, spoolCost:24.99, location:'Shelf A', notes:'Best all-purpose color', updatedAt:new Date().toISOString() },
+        { id: uid(), materialType:'PLA', colorName:'White', colorHex:'#f2f2f2', brand:'eSUN', finish:'Matte', spoolSize:1000, gramsRemaining:820, lowThreshold:150, spoolCost:19.99, location:'Shelf A', notes:'Good for prototypes', updatedAt:new Date().toISOString() },
+        { id: uid(), materialType:'PETG', colorName:'Orange', colorHex:'#f5841f', brand:'Overture', finish:'Gloss', spoolSize:1000, gramsRemaining:90, lowThreshold:150, spoolCost:22.99, location:'AMS', notes:'Low stock example', updatedAt:new Date().toISOString() }
+      );
+      saveRows();
+      renderAll();
+      showToast('Demo rows added');
+    }
+
+    function clearAll() {
+      if (!confirm('Clear all tracked spools from this device?')) return;
+      rows = [];
+      saveRows();
+      resetForm();
+      renderAll();
+      showToast('All rows cleared');
+    }
+
+    function escapeHtml(text) {
+      return String(text || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+    }
+
+    $('spoolForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const data = formData();
+      if (!data.colorName) return showToast('Enter a color name');
+      if (data.gramsRemaining < 0) return showToast('Grams remaining must be 0 or more');
+
+      if (editingId) {
+        const row = rows.find(r => r.id === editingId);
+        Object.assign(row, data, { updatedAt: new Date().toISOString() });
+        $('formStatus').textContent = 'Spool updated';
+        showToast('Spool updated');
+      } else {
+        rows.push({ id: uid(), ...data, updatedAt: new Date().toISOString() });
+        $('formStatus').textContent = 'Spool saved';
+        showToast('Spool saved');
+      }
+
+      saveRows();
+      resetForm();
+      renderAll();
+    });
+
+    $('cancelEditBtn').addEventListener('click', resetForm);
+    $('clearFiltersBtn').addEventListener('click', () => {
+      $('filterMaterial').value = 'all';
+      $('filterStock').value = 'all';
+      $('searchInput').value = '';
+      $('quickUseGrams').value = '';
+      renderAll();
+    });
+    $('exportBtn').addEventListener('click', exportCSV);
+    $('seedBtn').addEventListener('click', seedRows);
+    $('clearAllBtn').addEventListener('click', clearAll);
+    ['filterMaterial','filterStock','searchInput'].forEach(id => $(id).addEventListener('input', renderAll));
+
+    loadRows();
+    resetForm();
+    renderAll();
+  </script>
+</body>
+</html>
