@@ -70,6 +70,7 @@ const els = {
   marketplacePercent: $('marketplacePercent'),
   simpleSummary: $('simpleSummary'),
   generateQuoteBtn: $('generateQuoteBtn'),
+  missingInputsNotice: $('missingInputsNotice'),
 
   advancedToggle: $('advancedToggle'),
   advancedToggleText: $('advancedToggleText'),
@@ -285,6 +286,24 @@ function clearMissingHighlights() {
   document.querySelectorAll('.field-missing').forEach(el => el.classList.remove('field-missing'));
 }
 
+function getMissingIssues() {
+  const issues = [];
+  const materialTotal = simpleMaterialTotal();
+  const machineTotal = num(els.machineHours.value) * num(els.machineRate.value);
+  const designTotal = num(els.designHours.value) * num(els.designRate.value);
+  const postTotal = num(els.postHours.value) * num(els.postRate.value);
+  const qty = Math.max(1, num(els.qty.value) || 1);
+
+  if (materialTotal <= 0) issues.push('No material entered');
+  if (machineTotal <= 0) issues.push('No machine time entered');
+  if (designTotal <= 0 && postTotal <= 0 && qty === 1) issues.push('No labor entered');
+  if (els.shippingMode.value === 'ship_estimated' && num(els.simpleShipping.value) <= 0) issues.push('Shipping estimate missing');
+  if (!els.quoteTitle.value.trim()) issues.push('Missing quote title');
+  if (!els.turnaround.value.trim()) issues.push('Missing turnaround');
+
+  return issues;
+}
+
 function applyMissingHighlights(issues) {
   clearMissingHighlights();
   if (!issues.length) return;
@@ -303,6 +322,27 @@ function applyMissingHighlights(issues) {
       if (els[id]) els[id].classList.add('field-missing');
     });
   });
+}
+
+function showMissingInputsNotice(issues) {
+  if (!els.missingInputsNotice) return;
+
+  if (!issues.length) {
+    els.missingInputsNotice.classList.add('hidden');
+    els.missingInputsNotice.innerHTML = '';
+    return;
+  }
+
+  els.missingInputsNotice.classList.remove('hidden');
+  els.missingInputsNotice.innerHTML = `
+    <strong style="display:block;margin-bottom:6px;">Missing inputs to review:</strong>
+    ${issues.map(x => `• ${x}`).join('<br>')}
+  `;
+}
+
+function alertMissingInputsIfNeeded(issues) {
+  if (!issues.length) return;
+  alert(`Quote still has missing inputs:\n\n- ${issues.join('\n- ')}`);
 }
 
 function buildAcceptedQuoteOrderPayload(userId) {
@@ -871,15 +911,9 @@ function render() {
       ? `Warning: profit is ${money(actualProfit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price.`
       : 'No pricing warnings.';
 
-  const issues = [];
-  if (materialTotal <= 0) issues.push('No material entered');
-  if (machineTotal <= 0) issues.push('No machine time entered');
-  if (designTotal <= 0 && postTotal <= 0 && qty === 1) issues.push('No labor entered');
-  if (els.shippingMode.value === 'ship_estimated' && num(els.simpleShipping.value) <= 0) issues.push('Shipping estimate missing');
-  if (!els.quoteTitle.value.trim()) issues.push('Missing quote title');
-  if (!els.turnaround.value.trim()) issues.push('Missing turnaround');
-
+  const issues = getMissingIssues();
   applyMissingHighlights(issues);
+  showMissingInputsNotice(issues);
 
   let confidenceText = 'Ready';
   let confidenceClass = 'confidence-ok';
@@ -1265,6 +1299,7 @@ async function resetPage() {
   els.overheadItems.innerHTML = '';
 
   clearMissingHighlights();
+  showMissingInputsNotice([]);
   applyOrderType();
   applyTaxPreset();
   refreshHistoryUI();
@@ -1447,7 +1482,14 @@ els.applyHelpersBtn.onclick = () => {
 };
 
 els.applyBatchBtn.onclick = renderBatch;
-els.generateQuoteBtn.onclick = render;
+
+els.generateQuoteBtn.onclick = () => {
+  render();
+  const issues = getMissingIssues();
+  showMissingInputsNotice(issues);
+  if (issues.length) alertMissingInputsIfNeeded(issues);
+};
+
 els.demoBtn.onclick = () => loadDemo();
 els.saveQuoteBtn.onclick = () => saveQuote();
 els.copySummaryBtn.onclick = copySummary;
