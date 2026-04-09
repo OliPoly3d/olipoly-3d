@@ -286,6 +286,17 @@ function clearMissingHighlights() {
   document.querySelectorAll('.field-missing').forEach(el => el.classList.remove('field-missing'));
 }
 
+function simpleMaterialTotal() {
+  const count = Math.max(1, Math.min(4, num(els.filamentCount.value) || 1));
+  const weight = Math.max(1, num(els.spoolWeight.value) || 1000);
+  let total = 0;
+
+  for (let i = 1; i <= count; i++) {
+    total += (num(els[`filament${i}Used`].value) / weight) * num(els[`filament${i}Cost`].value);
+  }
+  return total;
+}
+
 function getMissingIssues() {
   const issues = [];
   const materialTotal = simpleMaterialTotal();
@@ -595,17 +606,6 @@ function addItem(target, title, data = {}) {
   };
 
   target.appendChild(node);
-}
-
-function simpleMaterialTotal() {
-  const count = Math.max(1, Math.min(4, num(els.filamentCount.value) || 1));
-  const weight = Math.max(1, num(els.spoolWeight.value) || 1000);
-  let total = 0;
-
-  for (let i = 1; i <= count; i++) {
-    total += (num(els[`filament${i}Used`].value) / weight) * num(els[`filament${i}Cost`].value);
-  }
-  return total;
 }
 
 function applySimpleInputs() {
