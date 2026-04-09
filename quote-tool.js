@@ -244,6 +244,67 @@ function quoteShippingModeToFulfillment(mode) {
   return 'shipping';
 }
 
+function padQuoteNumber(n) {
+  return String(n).padStart(6, '0');
+}
+
+function formatQuoteNumber(n) {
+  return `Q-${padQuoteNumber(n)}`;
+}
+
+function formatInvoiceNumber(n) {
+  return `INV-${padQuoteNumber(n)}`;
+}
+
+async function fetchNextServerNumber() {
+  const res = await sbApi('/rest/v1/rpc/next_quote_invoice_number', {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+
+  if (res.error || res.data == null) {
+    throw new Error(res.error?.message || 'Could not get next document number from Supabase.');
+  }
+
+  return Number(res.data);
+}
+
+async function ensureDocumentNumbers(force = false) {
+  const needQuote = force || !els.quoteNumber.value.trim();
+  const needInvoice = force || !els.invoiceNumber.value.trim();
+
+  if (!needQuote && !needInvoice) return;
+
+  const nextNum = await fetchNextServerNumber();
+
+  if (needQuote) els.quoteNumber.value = formatQuoteNumber(nextNum);
+  if (needInvoice) els.invoiceNumber.value = formatInvoiceNumber(nextNum);
+}
+
+function clearMissingHighlights() {
+  document.querySelectorAll('.field-missing').forEach(el => el.classList.remove('field-missing'));
+}
+
+function applyMissingHighlights(issues) {
+  clearMissingHighlights();
+  if (!issues.length) return;
+
+  const map = {
+    'Missing quote title': ['quoteTitle'],
+    'Missing turnaround': ['turnaround'],
+    'No material entered': ['filament1Used'],
+    'No machine time entered': ['machineHours'],
+    'No labor entered': ['designHours', 'postHours'],
+    'Shipping estimate missing': ['simpleShipping']
+  };
+
+  issues.forEach(issue => {
+    (map[issue] || []).forEach(id => {
+      if (els[id]) els[id].classList.add('field-missing');
+    });
+  });
+}
+
 function buildAcceptedQuoteOrderPayload(userId) {
   const total = textMoneyToNumber(els.outFinal.textContent);
   const deposit = textMoneyToNumber(els.outDeposit.textContent);
@@ -395,9 +456,6 @@ function applyProfessionalMode() {
     : 'Standard mode is best for regular customer quotes. Turn on Professional / Bulk Client Mode when you want a more formal quote PDF and company-style invoice.';
 
   if (on) {
-    if (!els.invoiceNumber.value.trim() && els.quoteNumber.value.trim()) {
-      els.invoiceNumber.value = els.quoteNumber.value.trim().replace(/^Q/i, 'INV');
-    }
     if (!els.companyName.value.trim() && els.customerName.value.trim()) {
       els.companyName.value = els.customerName.value.trim();
     }
@@ -821,6 +879,8 @@ function render() {
   if (!els.quoteTitle.value.trim()) issues.push('Missing quote title');
   if (!els.turnaround.value.trim()) issues.push('Missing turnaround');
 
+  applyMissingHighlights(issues);
+
   let confidenceText = 'Ready';
   let confidenceClass = 'confidence-ok';
 
@@ -888,7 +948,7 @@ function getRowsData(container) {
 
 function snapshotQuote() {
   return {
-    quoteNumber: els.quoteNumber.value || `Q-${Date.now()}`,
+    quoteNumber: els.quoteNumber.value,
     invoiceNumber: els.invoiceNumber.value,
     quoteDate: els.quoteDate.value,
     invoiceDate: els.invoiceDate.value,
@@ -1000,7 +1060,6 @@ function refreshHistoryUI() {
 
 async function saveQuote() {
   const snap = snapshotQuote();
-  els.quoteNumber.value = snap.quoteNumber;
 
   const list = readHistory();
   const idx = list.findIndex(q => q.quoteNumber === snap.quoteNumber);
@@ -1052,6 +1111,7 @@ function loadQuote() {
   (q.directItems || []).forEach(item => addItem(els.directItems, 'Direct Cost', item));
   (q.overheadItems || []).forEach(item => addItem(els.overheadItems, 'Overhead Cost', item));
 
+  clearMissingHighlights();
   render();
 }
 
@@ -1114,35 +1174,31 @@ function generateInvoicePdf() {
   window.print();
 }
 
-function seedDefaults() {
-  addItem(els.directItems, 'Direct Cost', { label: 'Filament / Material', amount: 0 });
-  addItem(els.directItems, 'Direct Cost', { label: 'Packaging', amount: 0 });
-  addItem(els.directItems, 'Direct Cost', { label: 'Shipping', amount: 0 });
-  addItem(els.directItems, 'Direct Cost', { label: 'Hardware / Inserts / Magnets', amount: 0 });
-
-  addItem(els.overheadItems, 'Overhead Cost', { label: 'Design Labor', amount: 0 });
-  addItem(els.overheadItems, 'Overhead Cost', { label: 'Machine Time', amount: 0 });
-  addItem(els.overheadItems, 'Overhead Cost', { label: 'Post-Process Labor', amount: 0 });
-
-  els.quoteDate.value = today();
-  els.invoiceDate.value = today();
-  els.validThrough.value = addDays(today(), 14);
-  els.paymentDueDate.value = addDays(today(), 14);
-
-  if (!els.quoteNumber.value.trim()) {
-    els.quoteNumber.value = `Q-${new Date().getTime().toString().slice(-6)}`;
-  }
-  if (!els.invoiceNumber.value.trim()) {
-    els.invoiceNumber.value = els.quoteNumber.value.replace(/^Q/i, 'INV');
-  }
-  if (!els.assumptions.value.trim()) {
-    els.assumptions.value = defaultAssumptions();
+async function seedDefaults() {
+  if (!els.directItems.children.length) {
+    addItem(els.directItems, 'Direct Cost', { label: 'Filament / Material', amount: 0 });
+    addItem(els.directItems, 'Direct Cost', { label: 'Packaging', amount: 0 });
+    addItem(els.directItems, 'Direct Cost', { label: 'Shipping', amount: 0 });
+    addItem(els.directItems, 'Direct Cost', { label: 'Hardware / Inserts / Magnets', amount: 0 });
   }
 
+  if (!els.overheadItems.children.length) {
+    addItem(els.overheadItems, 'Overhead Cost', { label: 'Design Labor', amount: 0 });
+    addItem(els.overheadItems, 'Overhead Cost', { label: 'Machine Time', amount: 0 });
+    addItem(els.overheadItems, 'Overhead Cost', { label: 'Post-Process Labor', amount: 0 });
+  }
+
+  if (!els.quoteDate.value) els.quoteDate.value = today();
+  if (!els.invoiceDate.value) els.invoiceDate.value = today();
+  if (!els.validThrough.value) els.validThrough.value = addDays(today(), 14);
+  if (!els.paymentDueDate.value) els.paymentDueDate.value = addDays(today(), 14);
+  if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
+
+  await ensureDocumentNumbers();
   render();
 }
 
-function resetPage() {
+async function resetPage() {
   [
     'quoteNumber',
     'invoiceNumber',
@@ -1187,37 +1243,14 @@ function resetPage() {
   els.paymentTerms.value = 'deposit_to_start';
 
   [
-    'filament1Cost',
-    'filament1Used',
-    'filament2Cost',
-    'filament2Used',
-    'filament3Cost',
-    'filament3Used',
-    'filament4Cost',
-    'filament4Used',
-    'simplePackaging',
-    'simpleShipping',
-    'simpleHardware',
-    'designHours',
-    'designRate',
-    'postHours',
-    'postRate',
-    'machineHours',
-    'machineRate',
-    'marketplacePercent',
-    'batchFilament1Cost',
-    'batchFilament1Used',
-    'batchFilament2Cost',
-    'batchFilament2Used',
-    'batchFilament3Cost',
-    'batchFilament3Used',
-    'batchFilament4Cost',
-    'batchFilament4Used',
-    'batchPackaging',
-    'batchLabor',
-    'batchOther',
-    'batchOverhead',
-    'batchPriceTarget'
+    'filament1Cost', 'filament1Used', 'filament2Cost', 'filament2Used',
+    'filament3Cost', 'filament3Used', 'filament4Cost', 'filament4Used',
+    'simplePackaging', 'simpleShipping', 'simpleHardware',
+    'designHours', 'designRate', 'postHours', 'postRate',
+    'machineHours', 'machineRate', 'marketplacePercent',
+    'batchFilament1Cost', 'batchFilament1Used', 'batchFilament2Cost', 'batchFilament2Used',
+    'batchFilament3Cost', 'batchFilament3Used', 'batchFilament4Cost', 'batchFilament4Used',
+    'batchPackaging', 'batchLabor', 'batchOther', 'batchOverhead', 'batchPriceTarget'
   ].forEach(k => {
     els[k].value = 0;
   });
@@ -1231,17 +1264,19 @@ function resetPage() {
   els.directItems.innerHTML = '';
   els.overheadItems.innerHTML = '';
 
+  clearMissingHighlights();
   applyOrderType();
   applyTaxPreset();
-  seedDefaults();
   refreshHistoryUI();
+  await ensureDocumentNumbers(true);
+  await seedDefaults();
 }
 
-function loadDemo() {
-  resetPage();
+async function loadDemo() {
+  await resetPage();
 
-  els.quoteNumber.value = 'Q-1042';
-  els.invoiceNumber.value = 'INV-1042';
+  els.quoteNumber.value = 'Q-001042';
+  els.invoiceNumber.value = 'INV-001042';
   els.professionalMode.value = 'on';
   els.invoiceType.value = 'deposit';
   els.orderType.value = 'business_bulk';
@@ -1362,22 +1397,27 @@ renderIds.forEach(id => {
 });
 
 els.presetSelect.onchange = () => setPreset(els.presetSelect.value);
+
 els.orderType.onchange = () => {
   applyOrderType();
   render();
 };
+
 els.shippingMode.onchange = () => {
   applyShippingMode();
   render();
 };
+
 els.taxPreset.onchange = () => {
   applyTaxPreset();
   render();
 };
+
 els.professionalMode.onchange = () => {
   applyProfessionalMode();
   render();
 };
+
 els.invoiceType.onchange = render;
 
 els.quoteStatus.addEventListener('change', () => {
@@ -1408,8 +1448,8 @@ els.applyHelpersBtn.onclick = () => {
 
 els.applyBatchBtn.onclick = renderBatch;
 els.generateQuoteBtn.onclick = render;
-els.demoBtn.onclick = loadDemo;
-els.saveQuoteBtn.onclick = saveQuote;
+els.demoBtn.onclick = () => loadDemo();
+els.saveQuoteBtn.onclick = () => saveQuote();
 els.copySummaryBtn.onclick = copySummary;
 els.copyFinanceBtn.onclick = copyFinance;
 els.loadQuoteBtn.onclick = loadQuote;
@@ -1417,11 +1457,20 @@ els.deleteQuoteBtn.onclick = deleteQuote;
 els.customerPdfBtn.onclick = generateCustomerPdf;
 els.invoicePdfBtn.onclick = generateInvoicePdf;
 els.printBtn.onclick = () => window.print();
-els.resetBtn.onclick = resetPage;
+els.resetBtn.onclick = () => resetPage();
 els.readySendBtn.onclick = () => {
   toggleReadySend();
   render();
 };
 
-seedDefaults();
-refreshHistoryUI();
+(async () => {
+  try {
+    await seedDefaults();
+    refreshHistoryUI();
+  } catch (err) {
+    console.error(err);
+    alert('Quote tool loaded, but automatic quote/invoice numbering could not be fetched from Supabase. Check your Supabase SQL function and permissions.');
+    refreshHistoryUI();
+    render();
+  }
+})();
