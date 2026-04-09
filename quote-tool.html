@@ -193,25 +193,26 @@
           <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
           <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
           <div><label for="filament1Cost">Filament 1 Roll Cost</label><input id="filament1Cost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="filament1Used">Filament 1 Grams Used</label><input id="filament1Used" data-required="material" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament1Used">Total Filament 1 Grams Used</label><input id="filament1Used" data-required="material" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament2Cost">Filament 2 Roll Cost</label><input id="filament2Cost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="filament2Used">Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament2Used">Total Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament3Cost">Filament 3 Roll Cost</label><input id="filament3Cost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="filament3Used">Filament 3 Grams Used</label><input id="filament3Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament3Used">Total Filament 3 Grams Used</label><input id="filament3Used" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament4Cost">Filament 4 Roll Cost</label><input id="filament4Cost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="filament4Used">Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="simplePackaging">Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="simpleShipping">Shipping</label><input id="simpleShipping" data-required="shipping" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament4Used">Total Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simplePackaging">Total Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleShipping">Total Shipping</label><input id="simpleShipping" data-required="shipping" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="simpleHardware">Hardware / Inserts / Magnets</label><input id="simpleHardware" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="designHours">Design Hours</label><input id="designHours" data-required="labor" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="designHours">Total Design Hours</label><input id="designHours" data-required="labor" type="number" min="0" step="0.1" value="0" /></div>
           <div><label for="designRate">Design Cost / Hour</label><input id="designRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="postHours">Post-Process Hours</label><input id="postHours" data-required="labor" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="postHours">Total Post-Process Hours</label><input id="postHours" data-required="labor" type="number" min="0" step="0.1" value="0" /></div>
           <div><label for="postRate">Post-Process Cost / Hour</label><input id="postRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="machineHours">Machine Time (Hours)</label><input id="machineHours" data-required="machine" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="machineHours">Total Machine Time (Hours)</label><input id="machineHours" data-required="machine" type="number" min="0" step="0.1" value="0" /></div>
           <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="marketplacePercent">Marketplace / Payment Fee %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
           <div class="full"><div class="note" id="simpleSummary">Enter your simple quote inputs to auto-populate the quote.</div></div>
           <div class="full"><div class="btn-row"><button class="btn" id="generateQuoteBtn" type="button">Generate Quote</button></div></div>
+          <div class="full"><div class="note hidden" id="missingInputsNotice"></div></div>
         </div>
 
         <div class="advanced-wrap internal-only">
