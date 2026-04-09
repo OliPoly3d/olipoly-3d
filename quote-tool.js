@@ -206,6 +206,23 @@ const PRESETS = {
   name_sign: { name: 'Name Sign', profit: 55, deposit: 60, packaging: 3, grams: 180, designLabor: 40, machineRate: 2 }
 };
 
+function forceNormalScreenView() {
+  if (els.pdfSheet) {
+    els.pdfSheet.style.display = 'none';
+    els.pdfSheet.style.visibility = 'hidden';
+    els.pdfSheet.style.opacity = '0';
+    els.pdfSheet.style.pointerEvents = 'none';
+    els.pdfSheet.setAttribute('aria-hidden', 'true');
+  }
+
+  const wrap = document.querySelector('.wrap');
+  if (wrap) {
+    wrap.style.display = 'block';
+    wrap.style.visibility = 'visible';
+    wrap.style.opacity = '1';
+  }
+}
+
 function getSbToken() {
   return localStorage.getItem('sb_token') || null;
 }
@@ -724,7 +741,17 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   const isInvoice = mode === 'invoice';
   const professional = els.professionalMode.value === 'on';
 
-  els.pdfCard.classList.toggle('professional-look', professional);
+  if (els.pdfSheet) {
+    els.pdfSheet.style.display = '';
+    els.pdfSheet.style.visibility = '';
+    els.pdfSheet.style.opacity = '';
+    els.pdfSheet.style.pointerEvents = '';
+    els.pdfSheet.setAttribute('aria-hidden', 'false');
+  }
+
+  els.pdfCard.classList.remove('standard-look', 'professional-look');
+  els.pdfCard.classList.add(professional ? 'professional-look' : 'standard-look');
+
   els.pdfDocType.textContent = isInvoice ? 'Invoice' : professional ? 'Professional Quote' : 'Quote';
   els.pdfBrandSub.textContent = isInvoice ? 'Invoice and payment document' : professional ? 'Professional business quote' : 'Custom 3D printing quote';
 
@@ -799,6 +826,7 @@ function renderBatch() {
 }
 
 function render() {
+  forceNormalScreenView();
   applySimpleInputs();
   applyProfessionalMode();
 
@@ -923,6 +951,8 @@ function render() {
   fillPdf('quote', finalQuote, beforeTax, tax, deposit, balance, perItem);
   els.financeReadyView.textContent = financeEntryText(finalQuote, beforeTax, tax);
   renderBatch();
+
+  forceNormalScreenView();
 }
 
 function setPreset(name) {
@@ -1144,7 +1174,13 @@ function generateCustomerPdf() {
     textMoneyToNumber(els.outBalance.textContent),
     textMoneyToNumber(els.outPerItem.textContent)
   );
+
   window.print();
+
+  setTimeout(() => {
+    forceNormalScreenView();
+    render();
+  }, 700);
 }
 
 function generateInvoicePdf() {
@@ -1158,7 +1194,13 @@ function generateInvoicePdf() {
     textMoneyToNumber(els.outBalance.textContent),
     textMoneyToNumber(els.outPerItem.textContent)
   );
+
   window.print();
+
+  setTimeout(() => {
+    forceNormalScreenView();
+    render();
+  }, 700);
 }
 
 async function seedDefaults() {
@@ -1241,6 +1283,7 @@ async function resetPage() {
   refreshHistoryUI();
   await ensureDocumentNumbers(true);
   await seedDefaults();
+  forceNormalScreenView();
 }
 
 async function loadDemo() {
@@ -1282,6 +1325,7 @@ async function loadDemo() {
   els.postRate.value = 20;
 
   render();
+  forceNormalScreenView();
 }
 
 const renderIds = [
@@ -1360,14 +1404,24 @@ els.printBtn.onclick = () => window.print();
 els.resetBtn.onclick = () => resetPage();
 els.readySendBtn.onclick = () => { toggleReadySend(); render(); };
 
+window.addEventListener('pageshow', forceNormalScreenView);
+window.addEventListener('focus', forceNormalScreenView);
+window.addEventListener('afterprint', () => {
+  forceNormalScreenView();
+  render();
+});
+
 (async () => {
   try {
+    forceNormalScreenView();
     await seedDefaults();
     refreshHistoryUI();
+    forceNormalScreenView();
   } catch (err) {
     console.error(err);
     alert('Quote tool loaded, but startup hit an error. Check the browser console for the exact message.');
     refreshHistoryUI();
     render();
+    forceNormalScreenView();
   }
 })();
