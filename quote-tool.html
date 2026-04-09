@@ -42,11 +42,118 @@
     .pdf-brand h2,.pdf-brand p,.pdf-hero h1,.pdf-hero p{margin:0}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#a8b5db}.pdf-hero h1{font-size:2rem;line-height:1.04;margin-bottom:10px}.pdf-grid,.pdf-totals{display:grid;gap:14px}.pdf-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:24px 30px}.pdf-panel{padding:18px;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
     .pdf-line{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.pdf-line:last-child{border-bottom:none}.pdf-line strong{font-size:1rem}.pdf-totals{padding:0 30px 24px}.pdf-total-card{padding:18px;border-radius:22px;background:linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08));border:1px solid rgba(126,144,255,.18)}.pdf-total-card .pdf-line{border-color:rgba(255,255,255,.12)}
     .pdf-footer{padding:0 30px 30px}.pdf-note{padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);line-height:1.65;color:#d9e3ff}
-    @media print{body{background:#fff;color:#111}.wrap{display:none!important}.pdf-sheet{display:block!important}.pdf-shell{padding:0;max-width:none;background:#fff;color:#111}.pdf-card,.pdf-panel,.pdf-total-card,.pdf-note{box-shadow:none;background:#fff!important;color:#111!important;border:1px solid #d9deea}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#4a5568!important}.pdf-hero{background:#fff!important;padding-bottom:18px}.pdf-icon{box-shadow:none}.pdf-grid{grid-template-columns:1fr 1fr}}
-    @media (max-width:720px){.pdf-grid{grid-template-columns:1fr}}
-    @media (max-width:1020px){.hero,.grid,.summary-grid{grid-template-columns:1fr}}
-    @media (max-width:720px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.topbar{border-radius:24px}.hero>.card,.summary,.card{padding:18px;border-radius:22px}.form-grid{grid-template-columns:1fr}.line-head{align-items:flex-start;flex-direction:column}}
-  </style>
+   @media print{
+  @page{
+    size:auto;
+    margin:0.35in;
+  }
+
+  body{
+    background:#fff;
+    color:#111;
+    font-size:11px;
+    line-height:1.25;
+  }
+
+  .wrap{
+    display:none!important;
+  }
+
+  .pdf-sheet{
+    display:block!important;
+  }
+
+  .pdf-shell{
+    padding:0;
+    max-width:none;
+    background:#fff;
+    color:#111;
+  }
+
+  .pdf-card,
+  .pdf-panel,
+  .pdf-total-card,
+  .pdf-note{
+    box-shadow:none;
+    background:#fff!important;
+    color:#111!important;
+    border:1px solid #d9deea;
+  }
+
+  .pdf-brand p,
+  .pdf-hero p,
+  .pdf-line small{
+    color:#4a5568!important;
+  }
+
+  .pdf-hero{
+    background:#fff!important;
+    padding:14px 18px 10px!important;
+  }
+
+  .pdf-icon{
+    box-shadow:none;
+    transform:scale(.85);
+  }
+
+  .pdf-brand{
+    margin-bottom:10px;
+  }
+
+  .pdf-brand h2{
+    font-size:1rem;
+  }
+
+  .pdf-hero h1{
+    font-size:1.35rem;
+    margin-bottom:4px;
+  }
+
+  .pdf-grid{
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    padding:14px 18px;
+  }
+
+  .pdf-panel{
+    padding:12px;
+    border-radius:16px;
+  }
+
+  .pdf-line{
+    padding:5px 0;
+  }
+
+  .pdf-line strong{
+    font-size:.92rem;
+  }
+
+  .pdf-totals{
+    padding:0 18px 14px;
+    gap:10px;
+  }
+
+  .pdf-total-card{
+    padding:12px;
+    border-radius:16px;
+  }
+
+  .pdf-footer{
+    padding:0 18px 18px;
+  }
+
+  .pdf-note{
+    padding:12px;
+    border-radius:16px;
+    line-height:1.35;
+    font-size:.9rem;
+  }
+
+  #pdfChecklist{
+    font-size:.88rem;
+    line-height:1.25;
+  }
+}  </style>
 </head>
 <body>
   <div class="wrap">
