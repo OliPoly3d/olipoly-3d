@@ -252,6 +252,14 @@ function formatInvoiceNumber(n) {
   return `INV-${padQuoteNumber(n)}`;
 }
 
+const readHistory = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
 function nextLocalFallbackNumber() {
   const list = readHistory();
   const nums = list
@@ -363,99 +371,6 @@ function alertMissingInputsIfNeeded(issues) {
   alert(`Quote still has missing inputs:\n\n- ${issues.join('\n- ')}`);
 }
 
-function buildAcceptedQuoteOrderPayload(userId) {
-  const total = textMoneyToNumber(els.outFinal.textContent);
-  const deposit = textMoneyToNumber(els.outDeposit.textContent);
-  const balance = textMoneyToNumber(els.outBalance.textContent);
-  const depositRequired = deposit > 0;
-
-  return {
-    user_id: userId,
-    order_number: els.quoteNumber.value.trim(),
-    order_date: els.quoteDate.value || today(),
-    customer_name: (els.companyName.value || els.customerName.value).trim() || null,
-    customer_email: els.customerEmail.value.trim() || null,
-    order_title: els.quoteTitle.value.trim() || 'Quoted Project',
-    quantity: Math.max(1, num(els.qty.value) || 1),
-    order_total: total,
-    deposit_amount: deposit,
-    balance_amount: balance,
-    status: depositRequired ? 'awaiting_deposit' : 'in_design',
-    payment_status: depositRequired ? 'deposit_due' : 'unpaid',
-    fulfillment: quoteShippingModeToFulfillment(els.shippingMode.value || 'pickup'),
-    tracking_number: null,
-    payment_link: null,
-    internal_notes: [
-      `Created automatically from accepted quote ${els.quoteNumber.value.trim() || ''}`.trim(),
-      els.quoteNotes.value.trim(),
-      els.assumptions.value.trim(),
-      els.poNumber.value.trim() ? `PO #: ${els.poNumber.value.trim()}` : '',
-      els.invoiceNumber.value.trim() ? `Invoice #: ${els.invoiceNumber.value.trim()}` : ''
-    ].filter(Boolean).join('\n\n'),
-    public_status_text: 'Your quote has been accepted and your order has been created.',
-    public_next_step: depositRequired
-      ? 'Next step: submit your deposit so production can begin.'
-      : 'Next step: we are preparing your order for production.',
-    shipping_or_pickup_note:
-      els.shippingMode.value === 'pickup'
-        ? 'Pickup details will be shared as your order progresses.'
-        : els.shippingMode.value === 'delivery'
-          ? 'Delivery details will be shared as your order progresses.'
-          : 'Shipping details and tracking will be added once available.'
-  };
-}
-
-function buildAcceptedQuotePublicTrackingPayload(orderPayload) {
-  return {
-    order_number: orderPayload.order_number,
-    user_id: orderPayload.user_id,
-    order_title: orderPayload.order_title || null,
-    status: orderPayload.status,
-    payment_status: orderPayload.payment_status,
-    public_status_text: orderPayload.public_status_text || null,
-    public_next_step: orderPayload.public_next_step || null,
-    shipping_or_pickup_note: orderPayload.shipping_or_pickup_note || null,
-    tracking_number: orderPayload.tracking_number || null,
-    payment_link: orderPayload.payment_link || null
-  };
-}
-
-async function syncAcceptedQuoteToOrders() {
-  if (els.quoteStatus.value !== 'accepted') return;
-
-  const quoteNumber = els.quoteNumber.value.trim();
-  const quoteTitle = els.quoteTitle.value.trim();
-  if (!quoteNumber) throw new Error('Quote number is required before creating an order.');
-  if (!quoteTitle) throw new Error('Quote title is required before creating an order.');
-
-  const user = await getCurrentSbUser();
-  if (!user) throw new Error('You must be logged into orders-admin.html in this same browser first.');
-
-  const orderPayload = buildAcceptedQuoteOrderPayload(user.id);
-
-  const orderRes = await sbApi('/rest/v1/orders?on_conflict=order_number', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(orderPayload)
-  });
-
-  if (orderRes.error) {
-    throw new Error(orderRes.error.message || JSON.stringify(orderRes.error) || 'Could not create or update the order.');
-  }
-
-  const publicRes = await sbApi('/rest/v1/order_tracking_public?on_conflict=order_number', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(buildAcceptedQuotePublicTrackingPayload(orderPayload))
-  });
-
-  if (publicRes.error) {
-    throw new Error(publicRes.error.message || JSON.stringify(publicRes.error) || 'Order saved, but public tracking sync failed.');
-  }
-
-  return { order: orderRes.data, public: publicRes.data };
-}
-
 function defaultAssumptions() {
   const t = els.orderType.value || 'custom';
   const ship = els.shippingMode.value || 'pickup';
@@ -469,15 +384,9 @@ function defaultAssumptions() {
           ? 'Customer-provided shipping label is assumed and outbound shipping cost is not included in this quote.'
           : 'Shipping, if applicable, is estimated and may adjust if final packaging size, weight, or destination changes.';
 
-  if (t === 'craft_show') {
-    return `Pricing is for pre-made inventory or event stock currently available or planned for a batch run. Final color appearance may vary slightly by filament brand and print settings. Quantities available may change as inventory sells. ${shippingLine}`;
-  }
-  if (t === 'business_bulk') {
-    return `Quote is based on the listed quantity, materials, and expected production approach. Final schedule, delivery timing, and any packaging or labeling requirements should be confirmed at approval. Material color and finish may vary slightly by filament brand and production batch. ${shippingLine}`;
-  }
-  if (t === 'repeat') {
-    return `Quote is based on a prior or repeat-style item using current material, labor, and machine assumptions. Minor variation in color, finish, or packaging may occur depending on current stock and print settings. ${shippingLine}`;
-  }
+  if (t === 'craft_show') return `Pricing is for pre-made inventory or event stock currently available or planned for a batch run. Final color appearance may vary slightly by filament brand and print settings. Quantities available may change as inventory sells. ${shippingLine}`;
+  if (t === 'business_bulk') return `Quote is based on the listed quantity, materials, and expected production approach. Final schedule, delivery timing, and any packaging or labeling requirements should be confirmed at approval. Material color and finish may vary slightly by filament brand and production batch. ${shippingLine}`;
+  if (t === 'repeat') return `Quote is based on a prior or repeat-style item using current material, labor, and machine assumptions. Minor variation in color, finish, or packaging may occur depending on current stock and print settings. ${shippingLine}`;
   return `Quote includes one proof/review round, standard finishing unless noted, and the materials and colors listed in this quote. Final color appearance may vary slightly by filament brand and print settings. ${shippingLine} Custom orders begin after quote approval and any required deposit.`;
 }
 
@@ -511,15 +420,9 @@ function applyProfessionalMode() {
     : 'Standard mode is best for regular customer quotes. Turn on Professional / Bulk Client Mode when you want a more formal quote PDF and company-style invoice.';
 
   if (on) {
-    if (!els.companyName.value.trim() && els.customerName.value.trim()) {
-      els.companyName.value = els.customerName.value.trim();
-    }
-    if (!els.customerNotes.value.trim()) {
-      els.customerNotes.value = 'Quote prepared for a business or multi-unit order based on the specifications discussed.';
-    }
-    if (!els.invoiceNotes.value.trim()) {
-      els.invoiceNotes.value = 'Please reference the invoice number with payment or internal approval.';
-    }
+    if (!els.companyName.value.trim() && els.customerName.value.trim()) els.companyName.value = els.customerName.value.trim();
+    if (!els.customerNotes.value.trim()) els.customerNotes.value = 'Quote prepared for a business or multi-unit order based on the specifications discussed.';
+    if (!els.invoiceNotes.value.trim()) els.invoiceNotes.value = 'Please reference the invoice number with payment or internal approval.';
   }
 }
 
@@ -530,7 +433,6 @@ function applyOrderType() {
   const isRepeat = t === 'repeat';
 
   els.customerName.placeholder = isBulk ? 'Buyer / requestor name' : 'Optional';
-
   if (isBulk) els.professionalMode.value = 'on';
 
   if (isCraft) els.depositPercent.value = 0;
@@ -552,7 +454,6 @@ function applyOrderType() {
   }
 
   if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
-
   if (isCraft && els.profitMode.value === 'percent' && num(els.profitValue.value) < 35) els.profitValue.value = 35;
   if (isBulk && els.profitMode.value === 'percent' && num(els.profitValue.value) < 25) els.profitValue.value = 25;
 
@@ -586,6 +487,23 @@ function toggleReadySend() {
 
 const rowValue = row => num(row.querySelector('.item-amount').value);
 const totalOf = container => [...container.children].reduce((sum, row) => sum + rowValue(row), 0);
+
+function addItem(target, title, data = {}) {
+  const node = els.tpl.content.firstElementChild.cloneNode(true);
+  node.querySelector('.line-title').textContent = title;
+  node.querySelector('.item-label').value = data.label || '';
+  node.querySelector('.item-type').value = data.type || 'per_order';
+  node.querySelector('.item-amount').value = data.amount ?? 0;
+  node.querySelector('.item-note').value = data.note || '';
+
+  node.querySelectorAll('input,select').forEach(el => el.addEventListener('input', render));
+  node.querySelector('.removeBtn').onclick = () => {
+    node.remove();
+    render();
+  };
+
+  target.appendChild(node);
+}
 
 function applySimpleInputs() {
   const labels = [...els.directItems.children];
@@ -637,6 +555,36 @@ function suggestedProfitPercent() {
   if (aggressive) pct += 10;
 
   return Math.max(20, pct);
+}
+
+function batchValues() {
+  const colors = Math.max(1, Math.min(4, num(els.batchColors.value) || 1));
+  const weight = Math.max(1, num(els.batchRollWeight.value) || 1000);
+  let material = 0;
+
+  for (let i = 1; i <= colors; i++) {
+    material += (num(els[`batchFilament${i}Used`].value) / weight) * num(els[`batchFilament${i}Cost`].value);
+  }
+
+  const units = Math.max(1, num(els.batchUnits.value) || 1);
+  const total = material + num(els.batchPackaging.value) + num(els.batchLabor.value) + num(els.batchOther.value) + num(els.batchOverhead.value);
+  const sold = Math.min(units, Math.max(0, num(els.batchSold.value) || 0));
+  const unit = total / units;
+  const unsold = units - sold;
+  const target = num(els.batchPriceTarget.value);
+
+  return {
+    units,
+    total,
+    unit,
+    sold,
+    unsold,
+    unsoldValue: unsold * unit,
+    soldCost: sold * unit,
+    target,
+    revenue: sold * target,
+    profit: sold * target - sold * unit
+  };
 }
 
 function financeEntryText(finalQuote, beforeTax, tax) {
@@ -988,14 +936,6 @@ function snapshotQuote() {
   };
 }
 
-const readHistory = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-};
-
 const writeHistory = list => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   refreshHistoryUI();
@@ -1329,7 +1269,7 @@ els.readySendBtn.onclick = () => { toggleReadySend(); render(); };
     refreshHistoryUI();
   } catch (err) {
     console.error(err);
-    alert('Quote tool loaded, but automatic quote/invoice numbering could not be fetched from Supabase. Check your Supabase SQL function and permissions.');
+    alert('Quote tool loaded, but startup hit an error. Check the browser console for the exact message.');
     refreshHistoryUI();
     render();
   }
