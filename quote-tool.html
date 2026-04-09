@@ -31,6 +31,8 @@
     .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
     .advanced-wrap{margin-top:18px}.advanced-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;font-weight:800}.advanced-toggle small{color:var(--muted);font-weight:600}.advanced-panel.hidden,.hidden{display:none}
     .confidence-ok{color:#c9fff0}.confidence-warn{color:#ffe6a8}.confidence-risk{color:#ffd0da}
+    .field-missing{border-color:rgba(255,110,145,.72)!important;box-shadow:0 0 0 4px rgba(255,110,145,.12)!important;background:rgba(255,110,145,.07)!important}
+    .missing-note{display:block;margin-top:6px;font-size:.78rem;color:#ffd0da}
     body.ready-send .internal-only{display:none!important}
     body.ready-send .customer-priority{border-color:rgba(46,230,196,.28);box-shadow:0 0 0 1px rgba(46,230,196,.08),var(--shadow)}
     .mode-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}.mode-card{padding:16px 18px;border-radius:22px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)}.mode-card strong{display:block;margin-bottom:4px}
@@ -158,20 +160,20 @@
         <h3>Order Details</h3>
         <p class="sub">These fields help you price internally and present the quote externally.</p>
         <div class="form-grid">
-          <div><label for="quoteNumber">Quote Number</label><input id="quoteNumber" placeholder="Example: Q-1042" /></div>
-          <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="Example: INV-1042" /></div>
+          <div><label for="quoteNumber">Quote Number</label><input id="quoteNumber" data-required="quoteNumber" placeholder="Q-000001" /></div>
+          <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" data-required="invoiceNumber" placeholder="INV-000001" /></div>
           <div><label for="quoteDate">Quote Date</label><input id="quoteDate" type="date" /></div>
           <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
           <div><label for="validThrough">Valid Through</label><input id="validThrough" type="date" /></div>
           <div><label for="paymentDueDate">Payment Due Date</label><input id="paymentDueDate" type="date" /></div>
-          <div><label for="turnaround">Turnaround</label><input id="turnaround" placeholder="Example: 5–7 business days" /></div>
+          <div><label for="turnaround">Turnaround</label><input id="turnaround" data-required="turnaround" placeholder="Example: 5–7 business days" /></div>
           <div><label for="companyName">Company / Client Name</label><input id="companyName" placeholder="Optional for retail, useful for business orders" /></div>
           <div><label for="contactName">Contact Person</label><input id="contactName" placeholder="Optional" /></div>
           <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Optional" /></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="Optional" /></div>
           <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Optional" /></div>
-          <div><label for="quoteTitle">Quote Title</label><input id="quoteTitle" placeholder="Example: Beach toy set, custom name sign, Bogg bag accessory" /></div>
-          <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="quoteTitle">Quote Title</label><input id="quoteTitle" data-required="quoteTitle" placeholder="Example: Beach toy set, custom name sign, Bogg bag accessory" /></div>
+          <div><label for="qty">Quantity</label><input id="qty" data-required="qty" type="number" min="1" step="1" value="1" /></div>
           <div><label for="unitsPerItem">Print Units Per Item</label><input id="unitsPerItem" type="number" min="1" step="1" value="1" /></div>
           <div><label for="orderType">Order Type</label><select id="orderType"><option value="custom">Custom Order</option><option value="repeat">Repeat Order</option><option value="craft_show">Craft Show / Pre-Made</option><option value="business_bulk">Business / Bulk Order</option></select></div>
           <div><label for="presetSelect">Preset</label><select id="presetSelect"><option value="custom">Custom</option><option value="small_print">Small Print</option><option value="medium_print">Medium Print</option><option value="custom_job">Custom Job</option><option value="bagg_accessory">Bogg Accessory</option><option value="beach_toy">Beach Toy</option><option value="name_sign">Name Sign</option></select></div>
@@ -191,7 +193,7 @@
           <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
           <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
           <div><label for="filament1Cost">Filament 1 Roll Cost</label><input id="filament1Cost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="filament1Used">Filament 1 Grams Used</label><input id="filament1Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament1Used">Filament 1 Grams Used</label><input id="filament1Used" data-required="material" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament2Cost">Filament 2 Roll Cost</label><input id="filament2Cost" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament2Used">Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament3Cost">Filament 3 Roll Cost</label><input id="filament3Cost" type="number" min="0" step="0.01" value="0" /></div>
@@ -199,13 +201,13 @@
           <div><label for="filament4Cost">Filament 4 Roll Cost</label><input id="filament4Cost" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="filament4Used">Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="simplePackaging">Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="simpleShipping">Shipping</label><input id="simpleShipping" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleShipping">Shipping</label><input id="simpleShipping" data-required="shipping" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="simpleHardware">Hardware / Inserts / Magnets</label><input id="simpleHardware" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="designHours">Design Hours</label><input id="designHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="designHours">Design Hours</label><input id="designHours" data-required="labor" type="number" min="0" step="0.1" value="0" /></div>
           <div><label for="designRate">Design Cost / Hour</label><input id="designRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="postHours">Post-Process Hours</label><input id="postHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="postHours">Post-Process Hours</label><input id="postHours" data-required="labor" type="number" min="0" step="0.1" value="0" /></div>
           <div><label for="postRate">Post-Process Cost / Hour</label><input id="postRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="machineHours">Machine Time (Hours)</label><input id="machineHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="machineHours">Machine Time (Hours)</label><input id="machineHours" data-required="machine" type="number" min="0" step="0.1" value="0" /></div>
           <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="marketplacePercent">Marketplace / Payment Fee %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
           <div class="full"><div class="note" id="simpleSummary">Enter your simple quote inputs to auto-populate the quote.</div></div>
