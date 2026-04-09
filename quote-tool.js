@@ -260,6 +260,11 @@ const readHistory = () => {
   }
 };
 
+const writeHistory = list => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  refreshHistoryUI();
+};
+
 function nextLocalFallbackNumber() {
   const list = readHistory();
   const nums = list
@@ -274,11 +279,9 @@ async function fetchNextServerNumber() {
       method: 'POST',
       body: JSON.stringify({})
     });
-
     if (res.error || res.data == null) {
       throw new Error(res.error?.message || 'RPC failed');
     }
-
     return Number(res.data);
   } catch (err) {
     console.error('Supabase counter failed, using local fallback:', err);
@@ -369,6 +372,99 @@ function showMissingInputsNotice(issues) {
 function alertMissingInputsIfNeeded(issues) {
   if (!issues.length) return;
   alert(`Quote still has missing inputs:\n\n- ${issues.join('\n- ')}`);
+}
+
+function buildAcceptedQuoteOrderPayload(userId) {
+  const total = textMoneyToNumber(els.outFinal.textContent);
+  const deposit = textMoneyToNumber(els.outDeposit.textContent);
+  const balance = textMoneyToNumber(els.outBalance.textContent);
+  const depositRequired = deposit > 0;
+
+  return {
+    user_id: userId,
+    order_number: els.quoteNumber.value.trim(),
+    order_date: els.quoteDate.value || today(),
+    customer_name: (els.companyName.value || els.customerName.value).trim() || null,
+    customer_email: els.customerEmail.value.trim() || null,
+    order_title: els.quoteTitle.value.trim() || 'Quoted Project',
+    quantity: Math.max(1, num(els.qty.value) || 1),
+    order_total: total,
+    deposit_amount: deposit,
+    balance_amount: balance,
+    status: depositRequired ? 'awaiting_deposit' : 'in_design',
+    payment_status: depositRequired ? 'deposit_due' : 'unpaid',
+    fulfillment: quoteShippingModeToFulfillment(els.shippingMode.value || 'pickup'),
+    tracking_number: null,
+    payment_link: null,
+    internal_notes: [
+      `Created automatically from accepted quote ${els.quoteNumber.value.trim() || ''}`.trim(),
+      els.quoteNotes.value.trim(),
+      els.assumptions.value.trim(),
+      els.poNumber.value.trim() ? `PO #: ${els.poNumber.value.trim()}` : '',
+      els.invoiceNumber.value.trim() ? `Invoice #: ${els.invoiceNumber.value.trim()}` : ''
+    ].filter(Boolean).join('\n\n'),
+    public_status_text: 'Your quote has been accepted and your order has been created.',
+    public_next_step: depositRequired
+      ? 'Next step: submit your deposit so production can begin.'
+      : 'Next step: we are preparing your order for production.',
+    shipping_or_pickup_note:
+      els.shippingMode.value === 'pickup'
+        ? 'Pickup details will be shared as your order progresses.'
+        : els.shippingMode.value === 'delivery'
+          ? 'Delivery details will be shared as your order progresses.'
+          : 'Shipping details and tracking will be added once available.'
+  };
+}
+
+function buildAcceptedQuotePublicTrackingPayload(orderPayload) {
+  return {
+    order_number: orderPayload.order_number,
+    user_id: orderPayload.user_id,
+    order_title: orderPayload.order_title || null,
+    status: orderPayload.status,
+    payment_status: orderPayload.payment_status,
+    public_status_text: orderPayload.public_status_text || null,
+    public_next_step: orderPayload.public_next_step || null,
+    shipping_or_pickup_note: orderPayload.shipping_or_pickup_note || null,
+    tracking_number: orderPayload.tracking_number || null,
+    payment_link: orderPayload.payment_link || null
+  };
+}
+
+async function syncAcceptedQuoteToOrders() {
+  if (els.quoteStatus.value !== 'accepted') return;
+
+  const quoteNumber = els.quoteNumber.value.trim();
+  const quoteTitle = els.quoteTitle.value.trim();
+  if (!quoteNumber) throw new Error('Quote number is required before creating an order.');
+  if (!quoteTitle) throw new Error('Quote title is required before creating an order.');
+
+  const user = await getCurrentSbUser();
+  if (!user) throw new Error('You must be logged into orders-admin.html in this same browser first.');
+
+  const orderPayload = buildAcceptedQuoteOrderPayload(user.id);
+
+  const orderRes = await sbApi('/rest/v1/orders?on_conflict=order_number', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(orderPayload)
+  });
+
+  if (orderRes.error) {
+    throw new Error(orderRes.error.message || JSON.stringify(orderRes.error) || 'Could not create or update the order.');
+  }
+
+  const publicRes = await sbApi('/rest/v1/order_tracking_public?on_conflict=order_number', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(buildAcceptedQuotePublicTrackingPayload(orderPayload))
+  });
+
+  if (publicRes.error) {
+    throw new Error(publicRes.error.message || JSON.stringify(publicRes.error) || 'Order saved, but public tracking sync failed.');
+  }
+
+  return { order: orderRes.data, public: publicRes.data };
 }
 
 function defaultAssumptions() {
@@ -781,11 +877,6 @@ function render() {
 
   els.quoteSummary.textContent = `${els.quoteTitle.value.trim() || 'Untitled quote'}${documentClientName() !== '—' ? ` for ${documentClientName()}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(actualProfit)} actual profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
 
-  els.profitWarning.textContent =
-    actualProfit < 5 || marginPct < 25
-      ? `Warning: profit is ${money(actualProfit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price.`
-      : 'No pricing warnings.';
-
   const issues = getMissingIssues();
   applyMissingHighlights(issues);
   showMissingInputsNotice(issues);
@@ -793,11 +884,14 @@ function render() {
   let confidenceText = 'Ready';
   let confidenceClass = 'confidence-ok';
 
-  if (issues.length >= 3 || actualProfit < 0 || marginPct < 15) {
+  if (issues.length > 0) {
+    confidenceText = 'Missing Inputs';
+    confidenceClass = 'confidence-warn';
+  } else if (actualProfit < 0 || marginPct < 15) {
     confidenceText = 'Risky Quote';
     confidenceClass = 'confidence-risk';
-  } else if (issues.length > 0 || actualProfit < 5 || marginPct < 25) {
-    confidenceText = 'Missing Inputs';
+  } else if (actualProfit < 5 || marginPct < 25) {
+    confidenceText = 'Low Margin';
     confidenceClass = 'confidence-warn';
   }
 
@@ -805,7 +899,15 @@ function render() {
   els.quoteConfidence.className = confidenceClass;
 
   if (issues.length) {
-    els.profitWarning.textContent = `${els.profitWarning.textContent === 'No pricing warnings.' ? '' : els.profitWarning.textContent + ' '}Check: ${issues.join(', ')}.`.trim();
+    els.profitWarning.textContent = `Check: ${issues.join(', ')}.`;
+  } else if (actualProfit < 0) {
+    els.profitWarning.textContent = `Risky quote: profit is ${money(actualProfit)} and margin is ${marginPct.toFixed(1)}%. This quote is below break-even.`;
+  } else if (marginPct < 15) {
+    els.profitWarning.textContent = `Risky quote: margin is only ${marginPct.toFixed(1)}%. Consider raising the price substantially.`;
+  } else if (actualProfit < 5 || marginPct < 25) {
+    els.profitWarning.textContent = `Low margin: profit is ${money(actualProfit)} and margin is ${marginPct.toFixed(1)}%. Consider increasing price before sending.`;
+  } else {
+    els.profitWarning.textContent = 'Quote looks ready to send.';
   }
 
   els.customerQuoteView.innerHTML = [
@@ -935,11 +1037,6 @@ function snapshotQuote() {
     savedAt: new Date().toISOString()
   };
 }
-
-const writeHistory = list => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  refreshHistoryUI();
-};
 
 function refreshHistoryUI() {
   const list = readHistory().sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
