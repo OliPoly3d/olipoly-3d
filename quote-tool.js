@@ -488,7 +488,8 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   checklist.push('☐ Files/design confirmed');
   checklist.push('☐ Colors/materials confirmed');
   checklist.push(els.shippingMode.value === 'pickup' ? '☐ Pickup arranged' : '☐ Shipping method confirmed');
-  $('pdfChecklist').innerHTML = `<strong>Order Checklist</strong><br>${checklist.join('<br>')}`;
+  const pdfChecklist = $('pdfChecklist');
+  if (pdfChecklist) pdfChecklist.innerHTML = `<strong>Order Checklist</strong><br>${checklist.join('<br>')}`;
 }
 function renderBatch() {
   const b = batchValues();
@@ -704,34 +705,36 @@ async function loadDemo() {
 }
 const renderIds = ['orderType','shippingMode','quoteNumber','invoiceNumber','quoteDate','invoiceDate','validThrough','paymentDueDate','turnaround','quoteTitle','customerName','customerEmail','companyName','contactName','poNumber','qty','unitsPerItem','quoteNotes','customerNotes','assumptions','quoteStatus','profitMode','profitValue','discount','taxPreset','salesTax','roundingMode','depositPercent','presetSelect','suggestedMode','filamentCount','spoolWeight','filament1Cost','filament1Used','filament2Cost','filament2Used','filament3Cost','filament3Used','filament4Cost','filament4Used','simplePackaging','simpleShipping','simpleHardware','designHours','designRate','postHours','postRate','machineHours','machineRate','marketplacePercent','batchName','batchSku','batchUnits','batchColors','batchRollWeight','batchPriceTarget','batchFilament1Cost','batchFilament1Used','batchFilament2Cost','batchFilament2Used','batchFilament3Cost','batchFilament3Used','batchFilament4Cost','batchFilament4Used','batchPackaging','batchLabor','batchOther','batchOverhead','batchSold','batchLocation','professionalMode','invoiceType','paymentTerms','invoiceNotes'];
 renderIds.forEach(id => { if (!els[id]) return; els[id].addEventListener('input', render); els[id].addEventListener('change', render); });
-els.presetSelect.onchange = () => setPreset(els.presetSelect.value);
-els.orderType.onchange = () => { applyOrderType(); render(); };
-els.shippingMode.onchange = () => { applyShippingMode(); render(); };
-els.taxPreset.onchange = () => { applyTaxPreset(); render(); };
-els.professionalMode.onchange = () => { applyProfessionalMode(); render(); };
-els.invoiceType.onchange = render;
-els.quoteStatus.addEventListener('change', () => { if (els.quoteStatus.value === 'accepted') alert('When you click Save Quote, this accepted quote will also create or update an order and public tracker entry.'); });
-els.advancedToggle.onclick = () => { const hidden = els.advancedPanel.classList.toggle('hidden'); els.advancedToggleText.textContent = hidden ? 'Show details' : 'Hide details'; };
-els.addDirectBtn.onclick = () => { addItem(els.directItems, 'Direct Cost', { label: 'New direct cost', amount: 0 }); render(); };
-els.addOverheadBtn.onclick = () => { addItem(els.overheadItems, 'Overhead Cost', { label: 'New overhead cost', amount: 0 }); render(); };
-els.applyHelpersBtn.onclick = () => { applySimpleInputs(); render(); };
-els.applyBatchBtn.onclick = renderBatch;
-els.generateQuoteBtn.onclick = () => { const issues = getMissingIssues(); render(); showMissingInputsNotice(issues); if (issues.length) alertMissingInputsIfNeeded(issues); };
-els.demoBtn.onclick = () => loadDemo();
-els.saveQuoteBtn.onclick = () => saveQuote();
-els.copySummaryBtn.onclick = copySummary;
-els.copyFinanceBtn.onclick = copyFinance;
-els.loadQuoteBtn.onclick = loadQuote;
-els.deleteQuoteBtn.onclick = deleteQuote;
-els.customerPdfBtn.onclick = generateCustomerPdf;
-els.invoicePdfBtn.onclick = generateInvoicePdf;
-els.printBtn.onclick = () => window.print();
-els.resetBtn.onclick = () => resetPage();
-els.readySendBtn.onclick = () => { toggleReadySend(); render(); };
+const bind = (el, event, fn) => { if (el) el.addEventListener(event, fn); };
+const click = (el, fn) => { if (el) el.onclick = fn; };
+if (els.presetSelect) els.presetSelect.onchange = () => setPreset(els.presetSelect.value);
+if (els.orderType) els.orderType.onchange = () => { applyOrderType(); render(); };
+if (els.shippingMode) els.shippingMode.onchange = () => { applyShippingMode(); render(); };
+if (els.taxPreset) els.taxPreset.onchange = () => { applyTaxPreset(); render(); };
+if (els.professionalMode) els.professionalMode.onchange = () => { applyProfessionalMode(); render(); };
+if (els.invoiceType) els.invoiceType.onchange = render;
+bind(els.quoteStatus, 'change', () => { if (els.quoteStatus.value === 'accepted') alert('When you click Save Quote, this accepted quote will also create or update an order and public tracker entry.'); });
+click(els.advancedToggle, () => { const hidden = els.advancedPanel.classList.toggle('hidden'); els.advancedToggleText.textContent = hidden ? 'Show details' : 'Hide details'; });
+click(els.addDirectBtn, () => { addItem(els.directItems, 'Direct Cost', { label: 'New direct cost', amount: 0 }); render(); });
+click(els.addOverheadBtn, () => { addItem(els.overheadItems, 'Overhead Cost', { label: 'New overhead cost', amount: 0 }); render(); });
+click(els.applyHelpersBtn, () => { applySimpleInputs(); render(); });
+click(els.applyBatchBtn, renderBatch);
+click(els.generateQuoteBtn, () => { const issues = getMissingIssues(); render(); showMissingInputsNotice(issues); if (issues.length) alertMissingInputsIfNeeded(issues); });
+click(els.demoBtn, () => loadDemo());
+click(els.saveQuoteBtn, () => saveQuote());
+click(els.copySummaryBtn, copySummary);
+click(els.copyFinanceBtn, copyFinance);
+click(els.loadQuoteBtn, loadQuote);
+click(els.deleteQuoteBtn, deleteQuote);
+click(els.customerPdfBtn, generateCustomerPdf);
+click(els.invoicePdfBtn, generateInvoicePdf);
+click(els.printBtn, () => window.print());
+click(els.resetBtn, () => resetPage());
+click(els.readySendBtn, () => { toggleReadySend(); render(); });
 window.addEventListener('pageshow', forceNormalScreenView);
 window.addEventListener('focus', forceNormalScreenView);
 window.addEventListener('afterprint', () => { forceNormalScreenView(); render(); });
-(async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     forceNormalScreenView();
     await seedDefaults();
@@ -744,4 +747,4 @@ window.addEventListener('afterprint', () => { forceNormalScreenView(); render();
     render();
     forceNormalScreenView();
   }
-})();
+});
