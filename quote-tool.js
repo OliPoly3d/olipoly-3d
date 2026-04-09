@@ -193,7 +193,6 @@ const els = {
 };
 
 const STORAGE_KEY = 'olipoly_quote_history_v3';
-
 const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
@@ -220,11 +219,7 @@ async function sbApi(path, options = {}) {
     ...(options.headers || {})
   };
 
-  const res = await fetch(`${SUPABASE_URL}${path}`, {
-    ...options,
-    headers
-  });
-
+  const res = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
   const data = await res.json().catch(() => null);
   return { ok: res.ok, data, error: !res.ok ? data : null };
 }
@@ -257,27 +252,38 @@ function formatInvoiceNumber(n) {
   return `INV-${padQuoteNumber(n)}`;
 }
 
+function nextLocalFallbackNumber() {
+  const list = readHistory();
+  const nums = list
+    .map(q => Number(String(q.quoteNumber || '').replace(/[^\d]/g, '')))
+    .filter(n => Number.isFinite(n) && n > 0);
+  return nums.length ? Math.max(...nums) + 1 : 1;
+}
+
 async function fetchNextServerNumber() {
-  const res = await sbApi('/rest/v1/rpc/next_quote_invoice_number', {
-    method: 'POST',
-    body: JSON.stringify({})
-  });
+  try {
+    const res = await sbApi('/rest/v1/rpc/next_quote_invoice_number', {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
 
-  if (res.error || res.data == null) {
-    throw new Error(res.error?.message || 'Could not get next document number from Supabase.');
+    if (res.error || res.data == null) {
+      throw new Error(res.error?.message || 'RPC failed');
+    }
+
+    return Number(res.data);
+  } catch (err) {
+    console.error('Supabase counter failed, using local fallback:', err);
+    return nextLocalFallbackNumber();
   }
-
-  return Number(res.data);
 }
 
 async function ensureDocumentNumbers(force = false) {
   const needQuote = force || !els.quoteNumber.value.trim();
   const needInvoice = force || !els.invoiceNumber.value.trim();
-
   if (!needQuote && !needInvoice) return;
 
   const nextNum = await fetchNextServerNumber();
-
   if (needQuote) els.quoteNumber.value = formatQuoteNumber(nextNum);
   if (needInvoice) els.invoiceNumber.value = formatInvoiceNumber(nextNum);
 }
@@ -290,7 +296,6 @@ function simpleMaterialTotal() {
   const count = Math.max(1, Math.min(4, num(els.filamentCount.value) || 1));
   const weight = Math.max(1, num(els.spoolWeight.value) || 1000);
   let total = 0;
-
   for (let i = 1; i <= count; i++) {
     total += (num(els[`filament${i}Used`].value) / weight) * num(els[`filament${i}Cost`].value);
   }
@@ -340,11 +345,13 @@ function showMissingInputsNotice(issues) {
 
   if (!issues.length) {
     els.missingInputsNotice.classList.add('hidden');
+    els.missingInputsNotice.style.display = 'none';
     els.missingInputsNotice.innerHTML = '';
     return;
   }
 
   els.missingInputsNotice.classList.remove('hidden');
+  els.missingInputsNotice.style.display = 'block';
   els.missingInputsNotice.innerHTML = `
     <strong style="display:block;margin-bottom:6px;">Missing inputs to review:</strong>
     ${issues.map(x => `• ${x}`).join('<br>')}
@@ -418,14 +425,11 @@ async function syncAcceptedQuoteToOrders() {
 
   const quoteNumber = els.quoteNumber.value.trim();
   const quoteTitle = els.quoteTitle.value.trim();
-
   if (!quoteNumber) throw new Error('Quote number is required before creating an order.');
   if (!quoteTitle) throw new Error('Quote title is required before creating an order.');
 
   const user = await getCurrentSbUser();
-  if (!user) {
-    throw new Error('You must be logged into orders-admin.html in this same browser first.');
-  }
+  if (!user) throw new Error('You must be logged into orders-admin.html in this same browser first.');
 
   const orderPayload = buildAcceptedQuoteOrderPayload(user.id);
 
@@ -549,12 +553,8 @@ function applyOrderType() {
 
   if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
 
-  if (isCraft && els.profitMode.value === 'percent' && num(els.profitValue.value) < 35) {
-    els.profitValue.value = 35;
-  }
-  if (isBulk && els.profitMode.value === 'percent' && num(els.profitValue.value) < 25) {
-    els.profitValue.value = 25;
-  }
+  if (isCraft && els.profitMode.value === 'percent' && num(els.profitValue.value) < 35) els.profitValue.value = 35;
+  if (isBulk && els.profitMode.value === 'percent' && num(els.profitValue.value) < 25) els.profitValue.value = 25;
 
   applyProfessionalMode();
   applyShippingMode();
@@ -579,34 +579,13 @@ function toggleReadySend() {
   els.readySendBtn.textContent = `Ready to Send: ${on ? 'On' : 'Off'}`;
 
   if (on) {
-    if (!els.customerNotes.value.trim()) {
-      els.customerNotes.value = 'Custom 3D printed item quoted from the specifications discussed.';
-    }
-    if (!els.assumptions.value.trim()) {
-      els.assumptions.value = defaultAssumptions();
-    }
+    if (!els.customerNotes.value.trim()) els.customerNotes.value = 'Custom 3D printed item quoted from the specifications discussed.';
+    if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
   }
 }
 
 const rowValue = row => num(row.querySelector('.item-amount').value);
 const totalOf = container => [...container.children].reduce((sum, row) => sum + rowValue(row), 0);
-
-function addItem(target, title, data = {}) {
-  const node = els.tpl.content.firstElementChild.cloneNode(true);
-  node.querySelector('.line-title').textContent = title;
-  node.querySelector('.item-label').value = data.label || '';
-  node.querySelector('.item-type').value = data.type || 'per_order';
-  node.querySelector('.item-amount').value = data.amount ?? 0;
-  node.querySelector('.item-note').value = data.note || '';
-
-  node.querySelectorAll('input,select').forEach(el => el.addEventListener('input', render));
-  node.querySelector('.removeBtn').onclick = () => {
-    node.remove();
-    render();
-  };
-
-  target.appendChild(node);
-}
 
 function applySimpleInputs() {
   const labels = [...els.directItems.children];
@@ -660,36 +639,6 @@ function suggestedProfitPercent() {
   return Math.max(20, pct);
 }
 
-function batchValues() {
-  const colors = Math.max(1, Math.min(4, num(els.batchColors.value) || 1));
-  const weight = Math.max(1, num(els.batchRollWeight.value) || 1000);
-  let material = 0;
-
-  for (let i = 1; i <= colors; i++) {
-    material += (num(els[`batchFilament${i}Used`].value) / weight) * num(els[`batchFilament${i}Cost`].value);
-  }
-
-  const units = Math.max(1, num(els.batchUnits.value) || 1);
-  const total = material + num(els.batchPackaging.value) + num(els.batchLabor.value) + num(els.batchOther.value) + num(els.batchOverhead.value);
-  const sold = Math.min(units, Math.max(0, num(els.batchSold.value) || 0));
-  const unit = total / units;
-  const unsold = units - sold;
-  const target = num(els.batchPriceTarget.value);
-
-  return {
-    units,
-    total,
-    unit,
-    sold,
-    unsold,
-    unsoldValue: unsold * unit,
-    soldCost: sold * unit,
-    target,
-    revenue: sold * target,
-    profit: sold * target - sold * unit
-  };
-}
-
 function financeEntryText(finalQuote, beforeTax, tax) {
   const rows = [...els.directItems.children];
   const byName = key => {
@@ -733,27 +682,19 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
 
   els.pdfCard.classList.toggle('professional-look', professional);
   els.pdfDocType.textContent = isInvoice ? 'Invoice' : professional ? 'Professional Quote' : 'Quote';
-  els.pdfBrandSub.textContent = isInvoice
-    ? 'Invoice and payment document'
-    : professional
-      ? 'Professional business quote'
-      : 'Custom 3D printing quote';
+  els.pdfBrandSub.textContent = isInvoice ? 'Invoice and payment document' : professional ? 'Professional business quote' : 'Custom 3D printing quote';
 
   els.pdfTitle.textContent = isInvoice
     ? (professional ? 'Professional Invoice' : 'Invoice')
     : (professional ? 'Professional Quote' : (els.quoteTitle.value.trim() || 'Customer Quote'));
 
   els.pdfSubtitle.textContent = isInvoice
-    ? (
-        els.invoiceType.value === 'deposit'
-          ? 'Deposit request for approved work.'
-          : els.invoiceType.value === 'final'
-            ? 'Final balance invoice for completed or approved work.'
-            : 'Full invoice for the quoted order.'
-      )
-    : (professional
-        ? 'Formal quote prepared for review and approval.'
-        : (els.customerNotes.value.trim() || 'A polished customer-ready quote for your order.'));
+    ? (els.invoiceType.value === 'deposit'
+      ? 'Deposit request for approved work.'
+      : els.invoiceType.value === 'final'
+        ? 'Final balance invoice for completed or approved work.'
+        : 'Full invoice for the quoted order.')
+    : (professional ? 'Formal quote prepared for review and approval.' : (els.customerNotes.value.trim() || 'A polished customer-ready quote for your order.'));
 
   els.pdfQuoteNumber.textContent = els.quoteNumber.value || '—';
   els.pdfInvoiceNumber.textContent = els.invoiceNumber.value || '—';
@@ -782,8 +723,8 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
 
   els.pdfAssumptions.textContent = isInvoice
     ? (professional
-        ? `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}${els.poNumber.value.trim() ? ` | PO #: ${els.poNumber.value.trim()}` : ''}`
-        : `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}`)
+      ? `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}${els.poNumber.value.trim() ? ` | PO #: ${els.poNumber.value.trim()}` : ''}`
+      : `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}`)
     : (els.assumptions.value.trim() || 'No exclusions or assumptions added yet.');
 
   els.pdfInvoiceTerms.innerHTML =
@@ -800,23 +741,17 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   checklist.push('☐ Files/design confirmed');
   checklist.push('☐ Colors/materials confirmed');
   checklist.push(els.shippingMode.value === 'pickup' ? '☐ Pickup arranged' : '☐ Shipping method confirmed');
-
   $('pdfChecklist').innerHTML = `<strong>Order Checklist</strong><br>${checklist.join('<br>')}`;
 }
 
 function renderBatch() {
   const b = batchValues();
-
   els.batchUnitCost.textContent = money(b.unit);
   els.batchTotalCost.textContent = money(b.total);
   els.batchUnitsOut.textContent = String(b.units);
   els.batchUnsoldValue.textContent = money(b.unsoldValue);
-
-  els.batchSummary.textContent =
-    `${els.batchName.value.trim() || 'This batch'}: ${b.units} total units at ${money(b.unit)} each. If you sell ${b.sold}, estimated COGS is ${money(b.soldCost)} and remaining unsold inventory value is ${money(b.unsoldValue)} across ${b.unsold} unit${b.unsold === 1 ? '' : 's'}.`;
-
-  els.inventoryReadyView.textContent =
-    `Inventory-ready output → Product: ${els.batchName.value || 'N/A'} | SKU: ${els.batchSku.value || 'N/A'} | Units made: ${b.units} | Unit cost: ${b.unit.toFixed(2)} | Units sold: ${b.sold} | Unsold units: ${b.unsold} | Unsold value: ${b.unsoldValue.toFixed(2)} | Target sell price each: ${b.target.toFixed(2)} | Estimated sold revenue: ${b.revenue.toFixed(2)} | Estimated sold profit: ${b.profit.toFixed(2)} | Location: ${els.batchLocation.value || 'N/A'}`;
+  els.batchSummary.textContent = `${els.batchName.value.trim() || 'This batch'}: ${b.units} total units at ${money(b.unit)} each. If you sell ${b.sold}, estimated COGS is ${money(b.soldCost)} and remaining unsold inventory value is ${money(b.unsoldValue)} across ${b.unsold} unit${b.unsold === 1 ? '' : 's'}.`;
+  els.inventoryReadyView.textContent = `Inventory-ready output → Product: ${els.batchName.value || 'N/A'} | SKU: ${els.batchSku.value || 'N/A'} | Units made: ${b.units} | Unit cost: ${b.unit.toFixed(2)} | Units sold: ${b.sold} | Unsold units: ${b.unsold} | Unsold value: ${b.unsoldValue.toFixed(2)} | Target sell price each: ${b.target.toFixed(2)} | Estimated sold revenue: ${b.revenue.toFixed(2)} | Estimated sold profit: ${b.profit.toFixed(2)} | Location: ${els.batchLocation.value || 'N/A'}`;
 }
 
 function render() {
@@ -829,23 +764,17 @@ function render() {
   const postTotal = num(els.postHours.value) * num(els.postRate.value);
 
   els.materialUnitCost.textContent = money(materialTotal / Math.max(1, num(els.qty.value) || 1));
-  els.simpleSummary.textContent =
-    `Simple inputs: ${money(materialTotal)} material, ${money(els.simplePackaging.value)} packaging, ${money(els.simpleShipping.value)} shipping, ${money(els.simpleHardware.value)} hardware, ${money(designTotal)} design labor, ${money(machineTotal)} machine time, ${money(postTotal)} post-process labor.`;
+  els.simpleSummary.textContent = `Simple inputs: ${money(materialTotal)} material, ${money(els.simplePackaging.value)} packaging, ${money(els.simpleShipping.value)} shipping, ${money(els.simpleHardware.value)} hardware, ${money(designTotal)} design labor, ${money(machineTotal)} machine time, ${money(postTotal)} post-process labor.`;
 
   const suggested = suggestedProfitPercent();
-  if (suggested != null && els.profitMode.value === 'percent') {
-    els.profitValue.value = suggested;
-  }
+  if (suggested != null && els.profitMode.value === 'percent') els.profitValue.value = suggested;
 
   const direct = totalOf(els.directItems);
   let overhead = totalOf(els.overheadItems);
   overhead += (direct + overhead) * (num(els.marketplacePercent.value) / 100);
 
   const base = direct + overhead;
-  const profit = els.profitMode.value === 'flat'
-    ? num(els.profitValue.value)
-    : base * (num(els.profitValue.value) / 100);
-
+  const profit = els.profitMode.value === 'flat' ? num(els.profitValue.value) : base * (num(els.profitValue.value) / 100);
   const preDiscount = base + profit;
   const discount = Math.min(num(els.discount.value), preDiscount);
   const beforeTaxRaw = Math.max(0, preDiscount - discount);
@@ -854,7 +783,6 @@ function render() {
   const roundingStep = num(els.roundingMode.value);
 
   let finalQuote = roundingStep > 0 ? Math.round(finalRaw / roundingStep) * roundingStep : finalRaw;
-
   const minTotal = (Math.max(1, num(els.qty.value) || 1) === 1) ? 20 : 30;
   if (finalQuote < minTotal) finalQuote = minTotal;
 
@@ -903,8 +831,7 @@ function render() {
   els.profitGuardrail.textContent = (actualProfit < 5 || marginPct < 25) ? 'Warning' : 'OK';
   els.activePreset.textContent = PRESETS[els.presetSelect.value]?.name || 'Custom';
 
-  els.quoteSummary.textContent =
-    `${els.quoteTitle.value.trim() || 'Untitled quote'}${documentClientName() !== '—' ? ` for ${documentClientName()}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(actualProfit)} actual profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
+  els.quoteSummary.textContent = `${els.quoteTitle.value.trim() || 'Untitled quote'}${documentClientName() !== '—' ? ` for ${documentClientName()}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(actualProfit)} actual profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
 
   els.profitWarning.textContent =
     actualProfit < 5 || marginPct < 25
@@ -930,8 +857,7 @@ function render() {
   els.quoteConfidence.className = confidenceClass;
 
   if (issues.length) {
-    els.profitWarning.textContent =
-      `${els.profitWarning.textContent === 'No pricing warnings.' ? '' : els.profitWarning.textContent + ' '}Check: ${issues.join(', ')}.`.trim();
+    els.profitWarning.textContent = `${els.profitWarning.textContent === 'No pricing warnings.' ? '' : els.profitWarning.textContent + ' '}Check: ${issues.join(', ')}.`.trim();
   }
 
   els.customerQuoteView.innerHTML = [
@@ -1083,9 +1009,7 @@ function refreshHistoryUI() {
     '<option value="">Select a saved quote</option>' +
     list.map(q => `<option value="${q.quoteNumber}">${q.quoteNumber} — ${q.quoteTitle || 'Untitled'} (${q.quoteStatus})</option>`).join('');
 
-  if (list.some(q => q.quoteNumber === current)) {
-    els.savedQuotesSelect.value = current;
-  }
+  if (list.some(q => q.quoteNumber === current)) els.savedQuotesSelect.value = current;
 
   els.historySummary.textContent = list.length
     ? `${list.length} saved quote${list.length === 1 ? '' : 's'} in this browser. Latest: ${list[0].quoteNumber} — ${list[0].quoteTitle || 'Untitled'} (${list[0].quoteStatus}).`
@@ -1094,7 +1018,6 @@ function refreshHistoryUI() {
 
 async function saveQuote() {
   const snap = snapshotQuote();
-
   const list = readHistory();
   const idx = list.findIndex(q => q.quoteNumber === snap.quoteNumber);
   if (idx >= 0) list[idx] = snap;
@@ -1128,10 +1051,7 @@ function loadQuote() {
   const q = readHistory().find(x => x.quoteNumber === id);
   if (!q) return;
 
-  if (
-    q.quoteStatus === 'accepted' &&
-    !window.confirm('This quote is marked accepted. Editing it may change the price after it was sent or approved. Continue loading it for editing?')
-  ) {
+  if (q.quoteStatus === 'accepted' && !window.confirm('This quote is marked accepted. Editing it may change the price after it was sent or approved. Continue loading it for editing?')) {
     return;
   }
 
@@ -1160,9 +1080,7 @@ async function copySummary() {
   try {
     await navigator.clipboard.writeText(`${els.quoteSummary.textContent}\n\n${els.customerQuoteView.innerText}`);
     els.copySummaryBtn.textContent = 'Copied';
-    setTimeout(() => {
-      els.copySummaryBtn.textContent = 'Copy Summary';
-    }, 1200);
+    setTimeout(() => { els.copySummaryBtn.textContent = 'Copy Summary'; }, 1200);
   } catch {
     alert('Could not copy summary.');
   }
@@ -1172,9 +1090,7 @@ async function copyFinance() {
   try {
     await navigator.clipboard.writeText(els.financeReadyView.textContent);
     els.copyFinanceBtn.textContent = 'Copied';
-    setTimeout(() => {
-      els.copyFinanceBtn.textContent = 'Copy Finance Entry';
-    }, 1200);
+    setTimeout(() => { els.copyFinanceBtn.textContent = 'Copy Finance Entry'; }, 1200);
   } catch {
     alert('Could not copy finance entry.');
   }
@@ -1234,25 +1150,10 @@ async function seedDefaults() {
 
 async function resetPage() {
   [
-    'quoteNumber',
-    'invoiceNumber',
-    'quoteTitle',
-    'customerName',
-    'customerEmail',
-    'companyName',
-    'contactName',
-    'poNumber',
-    'quoteNotes',
-    'customerNotes',
-    'assumptions',
-    'invoiceNotes',
-    'batchName',
-    'batchSku',
-    'batchLocation',
-    'turnaround'
-  ].forEach(k => {
-    els[k].value = '';
-  });
+    'quoteNumber', 'invoiceNumber', 'quoteTitle', 'customerName', 'customerEmail',
+    'companyName', 'contactName', 'poNumber', 'quoteNotes', 'customerNotes',
+    'assumptions', 'invoiceNotes', 'batchName', 'batchSku', 'batchLocation', 'turnaround'
+  ].forEach(k => { els[k].value = ''; });
 
   els.orderType.value = 'custom';
   els.shippingMode.value = 'pickup';
@@ -1285,9 +1186,7 @@ async function resetPage() {
     'batchFilament1Cost', 'batchFilament1Used', 'batchFilament2Cost', 'batchFilament2Used',
     'batchFilament3Cost', 'batchFilament3Used', 'batchFilament4Cost', 'batchFilament4Used',
     'batchPackaging', 'batchLabor', 'batchOther', 'batchOverhead', 'batchPriceTarget'
-  ].forEach(k => {
-    els[k].value = 0;
-  });
+  ].forEach(k => { els[k].value = 0; });
 
   els.filamentCount.value = 1;
   els.spoolWeight.value = 1000;
@@ -1349,80 +1248,19 @@ async function loadDemo() {
 }
 
 const renderIds = [
-  'orderType',
-  'shippingMode',
-  'quoteNumber',
-  'invoiceNumber',
-  'quoteDate',
-  'invoiceDate',
-  'validThrough',
-  'paymentDueDate',
-  'turnaround',
-  'quoteTitle',
-  'customerName',
-  'customerEmail',
-  'companyName',
-  'contactName',
-  'poNumber',
-  'qty',
-  'unitsPerItem',
-  'quoteNotes',
-  'customerNotes',
-  'assumptions',
-  'quoteStatus',
-  'profitMode',
-  'profitValue',
-  'discount',
-  'taxPreset',
-  'salesTax',
-  'roundingMode',
-  'depositPercent',
-  'presetSelect',
-  'suggestedMode',
-  'filamentCount',
-  'spoolWeight',
-  'filament1Cost',
-  'filament1Used',
-  'filament2Cost',
-  'filament2Used',
-  'filament3Cost',
-  'filament3Used',
-  'filament4Cost',
-  'filament4Used',
-  'simplePackaging',
-  'simpleShipping',
-  'simpleHardware',
-  'designHours',
-  'designRate',
-  'postHours',
-  'postRate',
-  'machineHours',
-  'machineRate',
-  'marketplacePercent',
-  'batchName',
-  'batchSku',
-  'batchUnits',
-  'batchColors',
-  'batchRollWeight',
-  'batchPriceTarget',
-  'batchFilament1Cost',
-  'batchFilament1Used',
-  'batchFilament2Cost',
-  'batchFilament2Used',
-  'batchFilament3Cost',
-  'batchFilament3Used',
-  'batchFilament4Cost',
-  'batchFilament4Used',
-  'batchPackaging',
-  'batchLabor',
-  'batchOther',
-  'batchOverhead',
-  'batchSold',
-  'batchLocation',
-  'professionalMode',
-  'invoiceType',
-  'paymentTerms',
-  'invoiceNotes'
+  'orderType', 'shippingMode', 'quoteNumber', 'invoiceNumber', 'quoteDate', 'invoiceDate',
+  'validThrough', 'paymentDueDate', 'turnaround', 'quoteTitle', 'customerName', 'customerEmail',
+  'companyName', 'contactName', 'poNumber', 'qty', 'unitsPerItem', 'quoteNotes', 'customerNotes',
+  'assumptions', 'quoteStatus', 'profitMode', 'profitValue', 'discount', 'taxPreset', 'salesTax',
+  'roundingMode', 'depositPercent', 'presetSelect', 'suggestedMode', 'filamentCount', 'spoolWeight',
+  'filament1Cost', 'filament1Used', 'filament2Cost', 'filament2Used', 'filament3Cost', 'filament3Used',
+  'filament4Cost', 'filament4Used', 'simplePackaging', 'simpleShipping', 'simpleHardware',
+  'designHours', 'designRate', 'postHours', 'postRate', 'machineHours', 'machineRate',
+  'marketplacePercent', 'batchName', 'batchSku', 'batchUnits', 'batchColors', 'batchRollWeight',
+  'batchPriceTarget', 'batchFilament1Cost', 'batchFilament1Used', 'batchFilament2Cost', 'batchFilament2Used',
+  'batchFilament3Cost', 'batchFilament3Used', 'batchFilament4Cost', 'batchFilament4Used',
+  'batchPackaging', 'batchLabor', 'batchOther', 'batchOverhead', 'batchSold', 'batchLocation',
+  'professionalMode', 'invoiceType', 'paymentTerms', 'invoiceNotes'
 ];
 
 renderIds.forEach(id => {
@@ -1432,27 +1270,10 @@ renderIds.forEach(id => {
 });
 
 els.presetSelect.onchange = () => setPreset(els.presetSelect.value);
-
-els.orderType.onchange = () => {
-  applyOrderType();
-  render();
-};
-
-els.shippingMode.onchange = () => {
-  applyShippingMode();
-  render();
-};
-
-els.taxPreset.onchange = () => {
-  applyTaxPreset();
-  render();
-};
-
-els.professionalMode.onchange = () => {
-  applyProfessionalMode();
-  render();
-};
-
+els.orderType.onchange = () => { applyOrderType(); render(); };
+els.shippingMode.onchange = () => { applyShippingMode(); render(); };
+els.taxPreset.onchange = () => { applyTaxPreset(); render(); };
+els.professionalMode.onchange = () => { applyProfessionalMode(); render(); };
 els.invoiceType.onchange = render;
 
 els.quoteStatus.addEventListener('change', () => {
@@ -1484,8 +1305,8 @@ els.applyHelpersBtn.onclick = () => {
 els.applyBatchBtn.onclick = renderBatch;
 
 els.generateQuoteBtn.onclick = () => {
-  render();
   const issues = getMissingIssues();
+  render();
   showMissingInputsNotice(issues);
   if (issues.length) alertMissingInputsIfNeeded(issues);
 };
@@ -1500,10 +1321,7 @@ els.customerPdfBtn.onclick = generateCustomerPdf;
 els.invoicePdfBtn.onclick = generateInvoicePdf;
 els.printBtn.onclick = () => window.print();
 els.resetBtn.onclick = () => resetPage();
-els.readySendBtn.onclick = () => {
-  toggleReadySend();
-  render();
-};
+els.readySendBtn.onclick = () => { toggleReadySend(); render(); };
 
 (async () => {
   try {
