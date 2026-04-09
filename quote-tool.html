@@ -2,24 +2,374 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Quote Tool</title>
-
-  <!-- KEEP YOUR EXISTING STYLES -->
-  <!-- (Paste your full <style> block here exactly as before) -->
-
+  <style>
+    :root{
+      --bg:#08101f; --panel:rgba(12,19,40,.88); --panel2:rgba(17,26,52,.92); --line:rgba(126,144,255,.18);
+      --text:#eef4ff; --muted:#a8b5db; --accent:#7e7bff; --accent2:#2ee6c4; --danger:#ff6e91; --shadow:0 18px 50px rgba(0,0,0,.32);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);background:
+      radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),
+      radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),
+      linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%)}
+    .wrap{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 56px;position:relative;z-index:1}
+    .topbar,.card,.summary,.line-item{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;border-radius:999px;margin-bottom:22px;position:sticky;top:14px;z-index:5;background:rgba(8,14,30,.72)}
+    .brand{display:flex;align-items:center;gap:12px}.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
+    .brand h1,.brand p,.hero h2,.hero p,.card h3,.sub,.summary h3,.summary p{margin:0}.brand h1{font-size:clamp(1rem,2vw,1.18rem)}.brand p,.sub,.hero p,.hint,.muted{color:var(--muted)}
+    .hero,.grid,.summary-grid,.split{display:grid;gap:18px}.hero{grid-template-columns:1.15fr .85fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
+    .grid{grid-template-columns:1.15fr .85fr}.summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:22px}.summary strong,.summary span{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.2rem,2.8vw,1.9rem)}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1 / -1}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit;outline:none}
+    select option,select optgroup{background:#0a1225;color:#eef4ff} input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)} textarea{min-height:92px;resize:vertical}
+    .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
+    .line-items{display:grid;gap:12px;margin-top:12px}.line-item{padding:14px;border-radius:20px}.line-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.line-head strong{font-size:.95rem}
+    .quote-box{background:var(--panel2)} .calc-row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)} .calc-row:last-child{border-bottom:none}.calc-row strong{font-size:1rem}.total{font-size:1.12rem}
+    .note,.empty,.pill-panel{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}
+    .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    .advanced-wrap{margin-top:18px}.advanced-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;font-weight:800}.advanced-toggle small{color:var(--muted);font-weight:600}.advanced-panel.hidden,.hidden{display:none}
+    .confidence-ok{color:#c9fff0}.confidence-warn{color:#ffe6a8}.confidence-risk{color:#ffd0da}
+    body.ready-send .internal-only{display:none!important}
+    body.ready-send .customer-priority{border-color:rgba(46,230,196,.28);box-shadow:0 0 0 1px rgba(46,230,196,.08),var(--shadow)}
+    .mode-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}.mode-card{padding:16px 18px;border-radius:22px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)}.mode-card strong{display:block;margin-bottom:4px}
+    .pdf-sheet{display:none}.pdf-shell{max-width:900px;margin:0 auto;padding:28px;background:linear-gradient(180deg,#08101f 0%,#0d1730 100%);color:#eef4ff}.pdf-card{border:1px solid rgba(126,144,255,.18);border-radius:28px;background:rgba(12,19,40,.96);box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden}
+    .pdf-hero{padding:28px 30px;background:radial-gradient(circle at top left,rgba(126,123,255,.24),transparent 40%),radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 35%),linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08))}
+    .pdf-brand{display:flex;align-items:center;gap:14px;margin-bottom:18px}.pdf-icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:24px}
+    .pdf-brand h2,.pdf-brand p,.pdf-hero h1,.pdf-hero p{margin:0}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#a8b5db}.pdf-hero h1{font-size:2rem;line-height:1.04;margin-bottom:10px}.pdf-grid,.pdf-totals{display:grid;gap:14px}.pdf-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:24px 30px}.pdf-panel{padding:18px;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+    .pdf-line{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.pdf-line:last-child{border-bottom:none}.pdf-line strong{font-size:1rem}.pdf-totals{padding:0 30px 24px}.pdf-total-card{padding:18px;border-radius:22px;background:linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08));border:1px solid rgba(126,144,255,.18)}.pdf-total-card .pdf-line{border-color:rgba(255,255,255,.12)}
+    .pdf-footer{padding:0 30px 30px}.pdf-note{padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);line-height:1.65;color:#d9e3ff}
+    .doc-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;font-size:.78rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);margin-bottom:10px}
+    .professional-look .pdf-card{border-color:rgba(255,255,255,.14);background:#0f172d}.professional-look .pdf-hero{background:linear-gradient(135deg,#111a33,#172347)}.professional-look .pdf-icon{background:linear-gradient(135deg,#3b4b7d,#2e6f85);box-shadow:none}
+    @media print{
+      @page{size:auto;margin:0.35in}
+      body{background:#fff;color:#111;font-size:11px;line-height:1.25}
+      .wrap{display:none!important}
+      .pdf-sheet{display:block!important}
+      .pdf-shell{padding:0;max-width:none;background:#fff;color:#111}
+      .pdf-card,.pdf-panel,.pdf-total-card,.pdf-note{box-shadow:none;background:#fff!important;color:#111!important;border:1px solid #d9deea}
+      .pdf-brand p,.pdf-hero p,.pdf-line small{color:#4a5568!important}
+      .pdf-hero{background:#fff!important;padding:14px 18px 10px!important}
+      .pdf-icon{box-shadow:none;transform:scale(.85)}
+      .pdf-brand{margin-bottom:10px}.pdf-brand h2{font-size:1rem}.pdf-hero h1{font-size:1.35rem;margin-bottom:4px}
+      .pdf-grid{grid-template-columns:1fr 1fr;gap:10px;padding:14px 18px}.pdf-panel{padding:12px;border-radius:16px}.pdf-line{padding:5px 0}.pdf-line strong{font-size:.92rem}
+      .pdf-totals{padding:0 18px 14px;gap:10px}.pdf-total-card{padding:12px;border-radius:16px}.pdf-footer{padding:0 18px 18px}.pdf-note{padding:12px;border-radius:16px;line-height:1.35;font-size:.9rem}#pdfChecklist{font-size:.88rem;line-height:1.25}
+    }
+    @media (max-width:1020px){.hero,.grid,.summary-grid,.mode-row{grid-template-columns:1fr}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.topbar{border-radius:24px}.hero>.card,.summary,.card{padding:18px;border-radius:22px}.form-grid,.pdf-grid{grid-template-columns:1fr}.line-head{align-items:flex-start;flex-direction:column}}
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="icon">🧮</div>
+        <div>
+          <h1>OliPoly 3D Quote Tool</h1>
+          <p>Build quotes with direct costs, overhead, presets, margins, deposits, and customer-ready output.</p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
+        <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
+        <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
+        <button class="btn-ghost" id="readySendBtn" type="button">Ready to Send: Off</button>
+        <button class="btn" id="customerPdfBtn" type="button">Generate Quote PDF</button>
+        <button class="btn-ghost" id="invoicePdfBtn" type="button">Generate Invoice PDF</button>
+        <button class="btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
+        <button class="btn-danger" id="resetBtn" type="button">Reset</button>
+      </div>
+    </div>
 
-  <!-- KEEP YOUR EXISTING HTML CONTENT -->
-  <!-- (Everything inside <body> from the canvas stays the same) -->
+    <div class="mode-row">
+      <div class="mode-card">
+        <strong>Document Mode</strong>
+        <div class="sub">Standard quotes for regular customers or polished company-ready paperwork for professional/bulk orders.</div>
+      </div>
+      <div class="mode-card">
+        <label for="professionalMode">Professional / Bulk Client Mode</label>
+        <select id="professionalMode">
+          <option value="off">Off — Standard Customer Style</option>
+          <option value="on">On — Professional Company Style</option>
+        </select>
+      </div>
+      <div class="mode-card">
+        <label for="invoiceType">Invoice Type</label>
+        <select id="invoiceType">
+          <option value="deposit">Deposit Invoice</option>
+          <option value="final">Final Balance Invoice</option>
+          <option value="full">Full / Custom Invoice</option>
+        </select>
+      </div>
+    </div>
 
+    <div class="hero">
+      <section class="card">
+        <h2>Quote each order with a clear internal cost breakdown and customer-ready output.</h2>
+        <p>Use this page to estimate pricing before you make the order. It separates direct costs like filament, packaging, shipping, and hardware from overhead like machine wear, design time, marketplace fees, and profit margin.</p>
+      </section>
+      <section class="card quote-box customer-priority">
+        <h3>How to think about it</h3>
+        <p class="sub">Direct costs are tied to the order. Overhead covers the business. Margin is what you want left after both.</p>
+        <div class="note" id="modeHint">Standard mode is best for regular customer quotes. Turn on Professional / Bulk Client Mode when you want a more formal quote PDF and company-style invoice.</div>
+      </section>
+    </div>
 
-  <!-- IMPORTANT: LOAD JS FILE -->
-    </template>
+    <div class="summary-grid">
+      <div class="summary"><span>Price Per Item</span><strong id="sumPerItem">$0.00</strong></div>
+      <div class="summary"><span>Margin %</span><strong id="sumMargin">0.0%</strong></div>
+      <div class="summary"><span>Break-Even</span><strong id="sumBreakEven">$0.00</strong></div>
+      <div class="summary"><span>Profit Guardrail</span><strong id="profitGuardrail">OK</strong></div>
+      <div class="summary"><span>Quote Confidence</span><strong id="quoteConfidence">Ready</strong></div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary"><span>Direct Costs</span><strong id="sumDirect">$0.00</strong></div>
+      <div class="summary"><span>Overhead</span><strong id="sumOverhead">$0.00</strong></div>
+      <div class="summary"><span>Target Profit</span><strong id="sumProfit">$0.00</strong></div>
+      <div class="summary"><span>Deposit Due</span><strong id="sumDeposit">$0.00</strong></div>
+      <div class="summary"><span>Balance Due</span><strong id="sumBalance">$0.00</strong></div>
+      <div class="summary"><span>Final Quote</span><strong id="sumQuote">$0.00</strong></div>
+    </div>
+
+    <section class="card internal-only" style="margin-bottom:22px;">
+      <h3>Quote History</h3>
+      <p class="sub">Save quotes in this browser, reload them later, and update their status as they move from pending to accepted or rejected.</p>
+      <div class="form-grid">
+        <div><label for="savedQuotesSelect">Saved Quotes</label><select id="savedQuotesSelect"><option value="">Select a saved quote</option></select></div>
+        <div><label>&nbsp;</label><div class="btn-row"><button class="btn-ghost" id="loadQuoteBtn" type="button">Load Selected</button><button class="btn-danger" id="deleteQuoteBtn" type="button">Delete Selected</button></div></div>
+      </div>
+      <div class="note" id="historySummary">No saved quotes yet.</div>
+    </section>
+
+    <div class="summary-grid" style="margin-top:-4px;">
+      <div class="summary"><span>Batch Cost / Unit</span><strong id="batchUnitCost">$0.00</strong></div>
+      <div class="summary"><span>Batch Total Cost</span><strong id="batchTotalCost">$0.00</strong></div>
+      <div class="summary"><span>Units in Batch</span><strong id="batchUnitsOut">0</strong></div>
+      <div class="summary"><span>Unsold Value</span><strong id="batchUnsoldValue">$0.00</strong></div>
+      <div class="summary"><span>Material / Print Unit</span><strong id="materialUnitCost">$0.00</strong></div>
+      <div class="summary"><span>Preset</span><strong id="activePreset">Custom</strong></div>
+    </div>
+
+    <div class="grid">
+      <section class="card customer-priority">
+        <h3>Order Details</h3>
+        <p class="sub">These fields help you price internally and present the quote externally.</p>
+        <div class="form-grid">
+          <div><label for="quoteNumber">Quote Number</label><input id="quoteNumber" placeholder="Example: Q-1042" /></div>
+          <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="Example: INV-1042" /></div>
+          <div><label for="quoteDate">Quote Date</label><input id="quoteDate" type="date" /></div>
+          <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
+          <div><label for="validThrough">Valid Through</label><input id="validThrough" type="date" /></div>
+          <div><label for="paymentDueDate">Payment Due Date</label><input id="paymentDueDate" type="date" /></div>
+          <div><label for="turnaround">Turnaround</label><input id="turnaround" placeholder="Example: 5–7 business days" /></div>
+          <div><label for="companyName">Company / Client Name</label><input id="companyName" placeholder="Optional for retail, useful for business orders" /></div>
+          <div><label for="contactName">Contact Person</label><input id="contactName" placeholder="Optional" /></div>
+          <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Optional" /></div>
+          <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="Optional" /></div>
+          <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Optional" /></div>
+          <div><label for="quoteTitle">Quote Title</label><input id="quoteTitle" placeholder="Example: Beach toy set, custom name sign, Bogg bag accessory" /></div>
+          <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="unitsPerItem">Print Units Per Item</label><input id="unitsPerItem" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="orderType">Order Type</label><select id="orderType"><option value="custom">Custom Order</option><option value="repeat">Repeat Order</option><option value="craft_show">Craft Show / Pre-Made</option><option value="business_bulk">Business / Bulk Order</option></select></div>
+          <div><label for="presetSelect">Preset</label><select id="presetSelect"><option value="custom">Custom</option><option value="small_print">Small Print</option><option value="medium_print">Medium Print</option><option value="custom_job">Custom Job</option><option value="bagg_accessory">Bogg Accessory</option><option value="beach_toy">Beach Toy</option><option value="name_sign">Name Sign</option></select></div>
+          <div><label for="depositPercent">Deposit %</label><input id="depositPercent" type="number" min="0" max="100" step="0.01" value="50" /></div>
+          <div><label for="shippingMode">Shipping Mode</label><select id="shippingMode"><option value="pickup">Local Pickup</option><option value="delivery">Local Delivery</option><option value="ship_estimated">Shipped Order (Estimated Shipping)</option><option value="ship_customer_label">Customer-Provided Label</option></select></div>
+          <div><label for="quoteStatus">Quote Status</label><select id="quoteStatus"><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select></div>
+          <div><label for="paymentTerms">Payment Terms</label><select id="paymentTerms"><option value="due_on_receipt">Due on Receipt</option><option value="deposit_to_start">Deposit Required to Start</option><option value="due_on_completion">Due on Completion</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option></select></div>
+          <div class="full internal-only"><label for="quoteNotes">Internal Notes</label><textarea id="quoteNotes" placeholder="Color, size, turnaround, special hardware, shipping notes, custom design details, etc."></textarea></div>
+          <div class="full"><label for="customerNotes">Customer-Facing Notes</label><textarea id="customerNotes" placeholder="What the quote includes, material/color notes, pickup/shipping expectations, etc."></textarea></div>
+          <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions" placeholder="Example: quote includes one design proof, standard color only, hardware as listed, shipping estimate subject to final address."></textarea></div>
+          <div class="full professional-only"><label for="invoiceNotes">Invoice Notes</label><textarea id="invoiceNotes" placeholder="Payment instructions, remittance notes, reference wording, or company-facing invoice notes."></textarea></div>
+        </div>
+
+        <h3 style="margin-top:20px;">Simple Quote Inputs</h3>
+        <p class="sub">For a fast quote, enter up to 4 filament colors or materials, then add design labor, post-process labor, machine hours, and machine cost per hour.</p>
+        <div class="form-grid">
+          <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
+          <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
+          <div><label for="filament1Cost">Filament 1 Roll Cost</label><input id="filament1Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament1Used">Filament 1 Grams Used</label><input id="filament1Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament2Cost">Filament 2 Roll Cost</label><input id="filament2Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament2Used">Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament3Cost">Filament 3 Roll Cost</label><input id="filament3Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament3Used">Filament 3 Grams Used</label><input id="filament3Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament4Cost">Filament 4 Roll Cost</label><input id="filament4Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament4Used">Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simplePackaging">Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleShipping">Shipping</label><input id="simpleShipping" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleHardware">Hardware / Inserts / Magnets</label><input id="simpleHardware" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="designHours">Design Hours</label><input id="designHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="designRate">Design Cost / Hour</label><input id="designRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="postHours">Post-Process Hours</label><input id="postHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="postRate">Post-Process Cost / Hour</label><input id="postRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="machineHours">Machine Time (Hours)</label><input id="machineHours" type="number" min="0" step="0.1" value="0" /></div>
+          <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="marketplacePercent">Marketplace / Payment Fee %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
+          <div class="full"><div class="note" id="simpleSummary">Enter your simple quote inputs to auto-populate the quote.</div></div>
+          <div class="full"><div class="btn-row"><button class="btn" id="generateQuoteBtn" type="button">Generate Quote</button></div></div>
+        </div>
+
+        <div class="advanced-wrap internal-only">
+          <button class="advanced-toggle" id="advancedToggle" type="button"><span>Advanced Cost Breakdown</span><small id="advancedToggleText">Show details</small></button>
+          <div class="advanced-panel hidden" id="advancedPanel">
+            <h3 style="margin-top:20px;">Direct Cost Breakdown</h3>
+            <p class="sub">These are per-order costs that would not exist if the order did not happen.</p>
+            <div class="line-items" id="directItems"></div>
+            <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="addDirectBtn" type="button">Add Direct Cost</button><button class="btn-ghost" id="applyHelpersBtn" type="button">Apply Helper Values</button></div>
+            <h3 style="margin-top:20px;">Overhead / Business Cost Allocation</h3>
+            <p class="sub">These are costs you choose to allocate into the quote for time, wear, fees, and business overhead.</p>
+            <div class="line-items" id="overheadItems"></div>
+            <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="addOverheadBtn" type="button">Add Overhead Cost</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card quote-box">
+        <div class="internal-only">
+          <h3>Craft Show / Pre-Made Batch Inputs</h3>
+          <p class="sub">Use this simplified section for pre-made inventory, craft shows, and future inventory tracking.</p>
+          <div class="form-grid">
+            <div><label for="batchName">Product / Batch Name</label><input id="batchName" placeholder="Example: Mini fidgets, beach toys, bag hooks" /></div>
+            <div><label for="batchSku">SKU / Batch Code</label><input id="batchSku" placeholder="Example: FIDG-MINI-001" /></div>
+            <div><label for="batchUnits">Units Made</label><input id="batchUnits" type="number" min="1" step="1" value="1" /></div>
+            <div><label for="batchColors">Colors / Filaments Used</label><input id="batchColors" type="number" min="1" max="4" step="1" value="1" /></div>
+            <div><label for="batchRollWeight">Roll Weight (g)</label><input id="batchRollWeight" type="number" min="1" step="1" value="1000" /></div>
+            <div><label for="batchPriceTarget">Target Sell Price Each</label><input id="batchPriceTarget" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament1Cost">Filament 1 Roll Cost</label><input id="batchFilament1Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament1Used">Filament 1 Grams Used</label><input id="batchFilament1Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament2Cost">Filament 2 Roll Cost</label><input id="batchFilament2Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament2Used">Filament 2 Grams Used</label><input id="batchFilament2Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament3Cost">Filament 3 Roll Cost</label><input id="batchFilament3Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament3Used">Filament 3 Grams Used</label><input id="batchFilament3Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament4Cost">Filament 4 Roll Cost</label><input id="batchFilament4Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament4Used">Filament 4 Grams Used</label><input id="batchFilament4Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchPackaging">Packaging Total</label><input id="batchPackaging" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchLabor">Labor Total</label><input id="batchLabor" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchOther">Other Direct Total</label><input id="batchOther" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchOverhead">Allocated Overhead Total</label><input id="batchOverhead" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchSold">Units Sold</label><input id="batchSold" type="number" min="0" step="1" value="0" /></div>
+            <div><label for="batchLocation">Show / Location</label><input id="batchLocation" placeholder="Example: Craft show, booth, store shelf" /></div>
+          </div>
+          <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="applyBatchBtn" type="button">Apply Batch Inputs</button></div>
+          <div class="note" style="margin-top:16px;" id="batchSummary">No batch estimate yet.</div>
+          <div class="note" style="margin-top:12px;" id="inventoryReadyView">No inventory-ready output yet.</div>
+        </div>
+
+        <h3 style="margin-top:20px;">Pricing Output</h3>
+        <p class="sub">Choose how you want to add profit.</p>
+        <div class="form-grid">
+          <div><label for="profitMode">Profit Method</label><select id="profitMode"><option value="percent">Percent Margin on Costs</option><option value="flat">Flat Profit Amount</option></select></div>
+          <div><label for="suggestedMode">Suggested Pricing</label><select id="suggestedMode"><option value="off">Off</option><option value="simple">Simple Recommended</option><option value="aggressive">Higher Margin</option></select></div>
+          <div><label for="profitValue">Profit Value</label><input id="profitValue" type="number" min="0" step="0.01" value="30" /></div>
+          <div><label for="discount">Discount</label><input id="discount" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="taxPreset">Sales Tax Preset</label><select id="taxPreset"><option value="portage">Local Pickup / Portage County (7.25%)</option><option value="summit">Summit County (6.75%)</option><option value="cuyahoga">Cuyahoga County (8.00%)</option><option value="franklin">Franklin County (7.50%)</option><option value="custom">Custom Rate</option><option value="out_of_state">Out of State / No Ohio Tax (0%)</option></select></div>
+          <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="7.25" /></div>
+          <div><label for="roundingMode">Smart Rounding</label><select id="roundingMode"><option value="none">No Rounding</option><option value="1">Nearest $1</option><option value="5">Nearest $5</option><option value="10">Nearest $10</option></select></div>
+        </div>
+
+        <div style="margin-top:18px;">
+          <div class="calc-row"><span>Direct costs</span><strong id="outDirect">$0.00</strong></div>
+          <div class="calc-row"><span>Overhead allocation</span><strong id="outOverhead">$0.00</strong></div>
+          <div class="calc-row"><span>Subtotal before profit</span><strong id="outBase">$0.00</strong></div>
+          <div class="calc-row"><span>Target profit</span><strong id="outProfit">$0.00</strong></div>
+          <div class="calc-row"><span>Price per item</span><strong id="outPerItem">$0.00</strong></div>
+          <div class="calc-row"><span>Break-even</span><strong id="outBreakEven">$0.00</strong></div>
+          <div class="calc-row"><span>Margin %</span><strong id="outMargin">0.0%</strong></div>
+          <div class="calc-row"><span>Price before discount</span><strong id="outPreDiscount">$0.00</strong></div>
+          <div class="calc-row"><span>Discount</span><strong id="outDiscount">-$0.00</strong></div>
+          <div class="calc-row"><span>Quoted price before tax</span><strong id="outBeforeTax">$0.00</strong></div>
+          <div class="calc-row"><span>Rounded price before tax</span><strong id="outRoundedBeforeTax">$0.00</strong></div>
+          <div class="calc-row"><span>Extra profit from rounding</span><strong id="outRoundingGain">$0.00</strong></div>
+          <div class="calc-row"><span>Sales tax</span><strong id="outTax">$0.00</strong></div>
+          <div class="calc-row"><span>Deposit due</span><strong id="outDeposit">$0.00</strong></div>
+          <div class="calc-row"><span>Balance due</span><strong id="outBalance">$0.00</strong></div>
+          <div class="calc-row total"><span>Final customer total</span><strong id="outFinal">$0.00</strong></div>
+        </div>
+
+        <div class="note internal-only" style="margin-top:18px;"><strong style="display:block;margin-bottom:6px;">Recommended use</strong>For one-off custom work, include your design time and machine wear in overhead. For repeat prints, keep overhead lean and use a consistent margin so pricing stays predictable.</div>
+        <div class="note" style="margin-top:18px;" id="quoteSummary">No quote summary yet.</div>
+        <div class="note" style="margin-top:18px;" id="profitWarning">No pricing warnings.</div>
+
+        <div class="internal-only">
+          <h3 style="margin-top:20px;">Finance Integration</h3>
+          <div class="note" style="margin-bottom:10px;"><strong>Recommended Categories</strong><br>Income: Sale<br>Expenses: Materials, Supplies, Equipment, Admin / Setup, Software / Subscriptions, Shipping Expense, Fees<br>Notes: LLC, vendor license, domain, and setup costs → use "Admin / Setup"</div>
+          <p class="sub">Use this to turn an accepted quote into a ready-to-copy finance tracker entry.</p>
+          <div class="note" id="financeReadyView">No finance-ready entry yet.</div>
+          <div class="btn-row" style="margin-top:12px;"><button class="btn-ghost" id="copyFinanceBtn" type="button">Copy Finance Entry</button></div>
+        </div>
+
+        <h3 style="margin-top:20px;">Customer Quote View</h3>
+        <p class="sub">This section is formatted to share or print without exposing internal cost details.</p>
+        <div class="note" id="customerQuoteView">No customer quote yet.</div>
+      </section>
+    </div>
+
+    <p class="footer">Standalone quote helper for internal use. Accepted quotes still save and sync into orders the same way.</p>
+  </div>
+
+  <section class="pdf-sheet" id="pdfSheet" aria-hidden="true">
+    <div class="pdf-shell">
+      <div class="pdf-card" id="pdfCard">
+        <div class="pdf-hero">
+          <div class="doc-chip" id="pdfDocType">Quote</div>
+          <div class="pdf-brand"><div class="pdf-icon">✨</div><div><h2>OliPoly 3D</h2><p id="pdfBrandSub">Custom 3D printing quote</p></div></div>
+          <h1 id="pdfTitle">Customer Quote</h1>
+          <p id="pdfSubtitle">A polished customer-ready quote for your order.</p>
+        </div>
+        <div class="pdf-grid">
+          <div class="pdf-panel">
+            <div class="pdf-line"><span>Quote Number</span><strong id="pdfQuoteNumber">—</strong></div>
+            <div class="pdf-line invoice-only hidden"><span>Invoice Number</span><strong id="pdfInvoiceNumber">—</strong></div>
+            <div class="pdf-line"><span>Date</span><strong id="pdfQuoteDate">—</strong></div>
+            <div class="pdf-line quote-only"><span>Valid Through</span><strong id="pdfValidThrough">—</strong></div>
+            <div class="pdf-line invoice-only hidden"><span>Payment Due</span><strong id="pdfPaymentDueDate">—</strong></div>
+            <div class="pdf-line quote-only"><span>Turnaround</span><strong id="pdfTurnaround">—</strong></div>
+            <div class="pdf-line"><span>Status</span><strong id="pdfStatus">Pending</strong></div>
+          </div>
+          <div class="pdf-panel">
+            <div class="pdf-line"><span>Client</span><strong id="pdfCustomerName">—</strong></div>
+            <div class="pdf-line professional-row hidden"><span>Company</span><strong id="pdfCompanyName">—</strong></div>
+            <div class="pdf-line professional-row hidden"><span>Contact</span><strong id="pdfContactName">—</strong></div>
+            <div class="pdf-line professional-row hidden"><span>PO Number</span><strong id="pdfPoNumber">—</strong></div>
+            <div class="pdf-line"><span>Quantity</span><strong id="pdfQty">1</strong></div>
+            <div class="pdf-line quote-only"><span>Price Per Item</span><strong id="pdfPerItem">$0.00</strong></div>
+            <div class="pdf-line"><span>Project</span><strong id="pdfProject">—</strong></div>
+          </div>
+        </div>
+        <div class="pdf-totals">
+          <div class="pdf-total-card">
+            <div class="pdf-line"><span>Subtotal</span><strong id="pdfSubtotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfTax">$0.00</strong></div>
+            <div class="pdf-line quote-only"><span>Total Quote</span><strong id="pdfTotal">$0.00</strong></div>
+            <div class="pdf-line quote-only"><span>Deposit Due</span><strong id="pdfDeposit">$0.00</strong></div>
+            <div class="pdf-line quote-only"><span>Balance Due</span><strong id="pdfBalance">$0.00</strong></div>
+            <div class="pdf-line invoice-only hidden"><span>Invoice Amount</span><strong id="pdfInvoiceAmount">$0.00</strong></div>
+          </div>
+        </div>
+        <div class="pdf-footer">
+          <div class="pdf-note" id="pdfCustomerNotes">No customer-facing notes added yet.</div>
+          <div class="pdf-note" id="pdfAssumptions" style="margin-top:14px;">No exclusions or assumptions added yet.</div>
+          <div class="pdf-note quote-only" id="pdfChecklist" style="margin-top:14px;"><strong>Order Checklist</strong><br>☐ Quote approved<br>☐ Deposit received (if required)<br>☐ Files/design confirmed<br>☐ Colors/materials confirmed<br>☐ Shipping/pickup method confirmed</div>
+          <div class="pdf-note invoice-only hidden" id="pdfInvoiceTerms" style="margin-top:14px;">Payment terms and invoice notes will appear here.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <template id="lineItemTemplate">
+    <div class="line-item">
+      <div class="line-head"><strong class="line-title">Cost Item</strong><button class="btn-danger removeBtn" type="button">Remove</button></div>
+      <div class="form-grid">
+        <div><label>Label</label><input class="item-label" placeholder="Example: Filament, box, shipping label, design time" /></div>
+        <div><label>Cost Type</label><select class="item-type"><option value="per_order">Per Order</option><option value="per_item">Per Item</option><option value="per_unit">Per Print Unit</option></select></div>
+        <div><label>Amount</label><input class="item-amount" type="number" min="0" step="0.01" value="0" /></div>
+        <div><label>Notes</label><input class="item-note" placeholder="Optional" /></div>
+      </div>
+    </div>
+  </template>
 
   <script src="quote-tool.js"></script>
-</body>
-</html>
 </body>
 </html>
