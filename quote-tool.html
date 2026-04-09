@@ -310,7 +310,7 @@
       </section>
     </div>
 
-    <div class="footer">OliPoly 3D quote tool — use Quote-tool JS with this HTML only.</div>
+    <div class="footer">OliPoly 3D quote tool — use newnew.js with this HTML only.</div>
   </div>
 
   <template id="lineItemTemplate">
@@ -389,29 +389,7 @@
       </div>
     </div>
   </section>
-<script>
-  window.addEventListener('error', function (e) {
-    document.body.innerHTML = `
-      <div style="padding:16px;font-family:Arial,sans-serif;background:#111;color:#fff;min-height:100vh;">
-        <h2 style="margin-top:0;">Quote Tool Error</h2>
-        <p><strong>Message:</strong> ${e.message || 'Unknown error'}</p>
-        <p><strong>File:</strong> ${e.filename || 'Unknown file'}</p>
-        <p><strong>Line:</strong> ${e.lineno || '?'}</p>
-        <p><strong>Column:</strong> ${e.colno || '?'}</p>
-      </div>
-    `;
-  });
 
-  window.addEventListener('unhandledrejection', function (e) {
-    document.body.innerHTML = `
-      <div style="padding:16px;font-family:Arial,sans-serif;background:#111;color:#fff;min-height:100vh;">
-        <h2 style="margin-top:0;">Quote Tool Promise Error</h2>
-        <p><strong>Reason:</strong> ${e.reason && e.reason.message ? e.reason.message : String(e.reason)}</p>
-      </div>
-    `;
-  });
-</script>
-<script src="quote-tool.js"></script>
   <script src="quote-tool.js"></script>
 </body>
 </html>
