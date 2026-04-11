@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Printer Maintenance</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(16, 24, 48, 0.78);
+      --panel-2: rgba(22, 32, 62, 0.85);
+      --line: rgba(255,255,255,0.12);
+      --text: #eef4ff;
+      --muted: #a9b7d3;
+      --accent: #72e7ff;
+      --accent-2: #c38bff;
+      --good: #7ef29a;
+      --warn: #ffd166;
+      --bad: #ff7b9f;
+      --shadow: 0 20px 40px rgba(0,0,0,.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(114,231,255,.16), transparent 28%),
+        radial-gradient(circle at top right, rgba(195,139,255,.18), transparent 30%),
+        linear-gradient(180deg, #09101d 0%, #10172b 100%);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(1240px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+
+    .hero,
+    .card,
+    .topbar {
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(114,231,255,.28), rgba(195,139,255,.28));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 0 30px rgba(114,231,255,.12), 0 0 22px rgba(114,231,255,.18);
+      display: grid;
+      place-items: center;
+      font-size: .8rem;
+    }
+
+    .top-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .top-links a,
+    .top-links button,
+    .banner button,
+    button,
+    .button-like,
+    select,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .top-links a,
+    .top-links button,
+    button,
+    .button-like {
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-weight: 700;
+      transition: .18s ease;
+      text-decoration: none;
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -120px -120px auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(114,231,255,.18), transparent 65%);
+      pointer-events: none;
+    }
+
+    .banner {
+      display: none;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255,123,159,.12), rgba(255,209,102,.1));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+    }
+
+    .banner.show { display: flex; }
+
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+    }
+
+    .sub {
+      color: var(--muted);
+      max-width: 900px;
+      line-height: 1.6;
+      font-size: 1rem;
+      margin: 8px 0 0;
+    }
+
+    .hero-actions,
+    .inline-actions,
+    .footer-actions,
+    .quick-preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .primary {
+      color: #061019;
+      background: linear-gradient(135deg, var(--accent), #a5f1ff);
+      box-shadow: 0 10px 24px rgba(114,231,255,.25);
+    }
+
+    .secondary {
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .danger {
+      color: #fff0f4;
+      background: rgba(255,123,159,.15);
+      border: 1px solid rgba(255,123,159,.28);
+    }
+
+    button:hover,
+    .top-links a:hover,
+    .top-links button:hover { transform: translateY(-1px); }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 20px;
+    }
+
+    .metric { padding: 18px; }
+    .metric .label {
+      color: var(--muted);
+      font-size: .9rem;
+      margin-bottom: 8px;
+    }
+
+    .metric .value {
+      font-size: clamp(1.6rem, 2.2vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -.03em;
+    }
+
+    .metric small { color: var(--muted); display: block; margin-top: 6px; }
+
+    .layout {
+      grid-template-columns: 320px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .card { padding: 20px; }
+    .sidebar { position: sticky; top: 16px; }
+    .section + .section { margin-top: 18px; }
+
+    .field,
+    .mini-field { display: grid; gap: 7px; margin-bottom: 12px; }
+
+    label {
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 13px;
+      outline: none;
+    }
+
+    textarea { min-height: 84px; resize: vertical; }
+
+    .printer-list,
+    .todo-list,
+    .recommend-list,
+    .preset-list,
+    .log-list,
+    .issue-list,
+    .quick-preset-list,
+    .issue-bank-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .printer-item,
+    .todo-row,
+    .log-row,
+    .preset-row,
+    .recommend-row,
+    .issue-row,
+    .quick-preset-card,
+    .issue-bank-row {
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      border-radius: 18px;
+      padding: 14px;
+      transition: .18s ease;
+    }
+
+    .printer-item { cursor: pointer; }
+
+    .printer-item.active {
+      border-color: rgba(114,231,255,.45);
+      box-shadow: inset 0 0 0 1px rgba(114,231,255,.25), 0 0 0 1px rgba(114,231,255,.08);
+      background: linear-gradient(180deg, rgba(114,231,255,.08), rgba(255,255,255,.04));
+    }
+
+    .printer-item-title,
+    .todo-top,
+    .log-top,
+    .preset-top,
+    .issue-top,
+    .issue-bank-top {
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .muted { color: var(--muted); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .pill.status-good { color: var(--good); }
+    .pill.status-warn { color: var(--warn); }
+    .pill.status-bad { color: var(--bad); }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, rgba(114,231,255,.18), rgba(195,139,255,.18));
+      border-color: rgba(114,231,255,.34);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-grid,
+    .quick-preset-list,
+    .issue-bank-list {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .settings-box,
+    .todo-box,
+    .log-box,
+    .preset-box,
+    .recommend-box,
+    .issue-box,
+    .quick-box {
+      background: var(--panel-2);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .settings-box h3,
+    .todo-box h3,
+    .log-box h3,
+    .preset-box h3,
+    .recommend-box h3,
+    .issue-box h3,
+    .quick-box h3 {
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .row-2,
+    .row-3 {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .tiny { font-size: .86rem; color: var(--muted); line-height: 1.55; }
+    .help { font-size: .84rem; color: var(--muted); line-height: 1.55; margin-top: 8px; }
+
+    .empty-state {
+      text-align: center;
+      border: 1px dashed rgba(255,255,255,.15);
+      border-radius: 18px;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    .settings-summary,
+    .issue-summary {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+
+    .summary-chip {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.07);
+      font-size: .92rem;
+    }
+
+    .recommend-row strong,
+    .issue-bank-row strong,
+    .quick-preset-card strong { display: block; margin-bottom: 5px; }
+
+    .top-note {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 209, 102, .08);
+      border: 1px solid rgba(255, 209, 102, .18);
+      color: #ffe6a7;
+      line-height: 1.55;
+    }
+
+    .issue-severity-high { color: var(--bad); }
+    .issue-severity-medium { color: var(--warn); }
+    .issue-severity-low { color: var(--good); }
+
+    @media (max-width: 1040px) {
+      .summary-grid,
+      .layout,
+      .panel-grid,
+      .settings-grid,
+      .row-2,
+      .row-3,
+      .settings-summary,
+      .quick-preset-list,
+      .issue-bank-list,
+      .issue-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar { position: static; }
+      .topbar,
+      .banner { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">OP3D</div>
+        <div>
+          <div>OliPoly 3D</div>
+          <div class="tiny">Printer maintenance & setup hub</div>
+        </div>
+      </div>
+      <div class="top-links">
+        <a class="secondary" href="index.html">Main site</a>
+        <a class="secondary" href="hub.html">Command Center</a>
+        <a class="secondary" href="quote-tool.html">Quote tool</a>
+        <a class="secondary" href="track.html">Track order</a>
+      </div>
+    </div>
+
+    <div class="banner" id="dueBanner">
+      <div>
+        <strong id="dueBannerTitle">PM reminder</strong>
+        <div class="tiny" id="dueBannerText">You have maintenance items due.</div>
+      </div>
+      <div class="inline-actions" style="margin-top:0;">
+        <button class="primary" id="jumpToMaintenanceBtn">Open PM tracker</button>
+        <button class="secondary" id="dismissBannerBtn">Dismiss</button>
+      </div>
+    </div>
+
+    <section class="hero">
+      <span class="pill">OliPoly 3D · printer PM, presets, and issue tracking</span>
+      <h1>Known-good machine setups and preventative maintenance in one shop page.</h1>
+      <p class="sub">Track each P1S and P2S separately, save plate and material presets, log print issues when they show up, and surface due maintenance before print quality drifts.</p>
+      <div class="hero-actions">
+        <button class="primary" id="addPrinterBtn">Add printer</button>
+        <button class="secondary" id="exportBtn">Export backup</button>
+        <label class="button-like secondary" for="importFile" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;cursor:pointer;">Import backup</label>
+        <input id="importFile" type="file" accept="application/json" hidden />
+      </div>
+      <div class="top-note">
+        Start with the official Bambu plate and material profile, then save only the adjustments that repeatedly prove better on that exact machine. This page is meant to capture stable shop reality, not one-off experiments.
+      </div>
+    </section>
+
+    <section class="grid summary-grid" id="summaryGrid"></section>
+
+    <section class="grid layout">
+      <aside class="grid sidebar">
+        <div class="card">
+          <div class="section">
+            <h2>Your printers</h2>
+            <p class="tiny">Each machine stores its own current setup, quick presets, PM dates, and issue history.</p>
+          </div>
+          <div class="printer-list" id="printerList"></div>
+          <div class="inline-actions">
+            <button class="primary" id="addPrinterBtn2">Add printer</button>
+            <button class="secondary" id="duplicateBtn">Duplicate selected</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Suggested PM rhythm</h2>
+          <div class="printer-list" id="pmGuidance"></div>
+        </div>
+      </aside>
+
+      <main class="card">
+        <div id="emptyState" class="empty-state" style="display:none;">
+          Add your first printer to start tracking machine-specific settings and maintenance.
+        </div>
+
+        <div id="mainContent" style="display:none;">
+          <div class="tabs">
+            <button class="tab active" data-tab="overview">Overview</button>
+            <button class="tab" data-tab="settings">Current setup</button>
+            <button class="tab" data-tab="presets">Presets</button>
+            <button class="tab" data-tab="maintenance">PM tracker</button>
+            <button class="tab" data-tab="issues">Issue log</button>
+            <button class="tab" data-tab="log">History</button>
+          </div>
+
+          <div class="panel active" id="panel-overview"></div>
+          <div class="panel" id="panel-settings"></div>
+          <div class="panel" id="panel-presets"></div>
+          <div class="panel" id="panel-maintenance"></div>
+          <div class="panel" id="panel-issues"></div>
+          <div class="panel" id="panel-log"></div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'olipoly-printer-maintenance-v2';
+    const today = () => new Date().toISOString().slice(0, 10);
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const daysBetween = (a, b = today()) => {
+      if (!a) return null;
+      const one = new Date(a + 'T00:00:00');
+      const two = new Date(b + 'T00:00:00');
+      return Math.floor((two - one) / 86400000);
+    };
+    const fmtDate = v => v ? new Date(v + 'T00:00:00').toLocaleDateString() : '—';
+
+    const PM_TASKS = [
+      { key: 'cleanPlate', name: 'Wash / clean build plate', everyDays: 7, details: 'More often if adhesion drops, fingerprints build up, or you switch materials.' },
+      { key: 'cleanNozzleWiper', name: 'Inspect nozzle / wiper / purge area', everyDays: 14, details: 'Clear blobs and hardened purge debris before they affect first layers.' },
+      { key: 'cleanRods', name: 'Clean guide rods / shafts', everyDays: 30, details: 'Important if dust, fuzz, or residue starts collecting.' },
+      { key: 'lubeAxes', name: 'Lubricate rails / shafts as applicable', everyDays: 90, details: 'Use the proper lubricant for the machine and motion parts.' },
+      { key: 'greaseLeadScrews', name: 'Check and grease Z lead screws', everyDays: 90, details: 'Do it sooner if motion sounds dry or Z travel feels rough.' },
+      { key: 'beltCheck', name: 'Check belts / tension / debris', everyDays: 60, details: 'Look for residue, fray, dust, or drift in print quality.' },
+      { key: 'extruderCheck', name: 'Inspect extruder and filament path', everyDays: 60, details: 'Helpful after abrasive, dusty, flexible, or high-temp materials.' },
+      { key: 'fullCal', name: 'Run full calibration cycle', everyDays: 30, details: 'Also after nozzle swaps, mechanical work, or first-layer changes.' }
+    ];
+
+    const RECOMMENDATIONS = [
+      { title: 'Save what actually repeats', text: 'Keep the stock Bambu profile as the baseline. Save machine tweaks only after they work more than once on the same printer.' },
+      { title: 'Track first-layer behavior by machine', text: 'Two printers of the same model can still prefer slightly different first-layer behavior, plate handling, or Z notes.' },
+      { title: 'Separate material notes from machine notes', text: 'Flow and first-layer preferences can change with material family and brand, even before you account for printer-specific quirks.' },
+      { title: 'Use issue logging as your trigger', text: 'When adhesion, surface quality, or motion changes, add an issue entry and check whether PM is due instead of guessing.' }
+    ];
+
+    const QUICK_PRESETS = [
+      {
+        key: 'plaTextured',
+        name: 'PLA · Textured PEI',
+        model: 'All',
+        plate: 'Textured PEI',
+        material: 'PLA',
+        filamentBrand: 'Generic / mixed',
+        flowRatio: '1.00',
+        flowDynamics: '',
+        firstLayerHeight: '0.20',
+        layerHeight: '0.20',
+        bedTemp: '55',
+        nozzleTemp: '220',
+        firstLayerSpeed: '50',
+        auxFan: 'Auto / default',
+        chamberFan: 'Auto / default',
+        zNote: 'Good baseline for standard PLA on textured PEI.'
+      },
+      {
+        key: 'petgTextured',
+        name: 'PETG · Textured PEI',
+        model: 'All',
+        plate: 'Textured PEI',
+        material: 'PETG',
+        filamentBrand: 'Generic / mixed',
+        flowRatio: '1.00',
+        flowDynamics: '',
+        firstLayerHeight: '0.20',
+        layerHeight: '0.20',
+        bedTemp: '70',
+        nozzleTemp: '255',
+        firstLayerSpeed: '35',
+        auxFan: 'Auto / default',
+        chamberFan: 'Auto / default',
+        zNote: 'Watch for excess stick and stringing. Fine-tune by brand.'
+      },
+      {
+        key: 'plaMatteTextured',
+        name: 'PLA Matte · Textured PEI',
+        model: 'All',
+        plate: 'Textured PEI',
+        material: 'PLA Matte',
+        filamentBrand: 'Generic / mixed',
+        flowRatio: '1.00',
+        flowDynamics: '',
+        firstLayerHeight: '0.20',
+        layerHeight: '0.20',
+        bedTemp: '55',
+        nozzleTemp: '220',
+        firstLayerSpeed: '45',
+        auxFan: 'Auto / default',
+        chamberFan: 'Auto / default',
+        zNote: 'Matte PLA often benefits from close first-layer attention and clean plate prep.'
+      }
+    ];
+
+    const ISSUE_BANK = [
+      { title: 'First layer not sticking', notes: 'Check plate cleanliness, correct plate selection, first-layer squish, and material/bed temp pairing.' },
+      { title: 'Top layer hazy or streaky', notes: 'Review flow, top-surface speed, cooling, and whether the nozzle or plate needs cleaning.' },
+      { title: 'Gaps between wall and infill', notes: 'Check flow, overlap settings, material dryness, and whether the chosen preset is too aggressive.' },
+      { title: 'Rough motion or new noise', notes: 'Inspect rods, rails, lead screws, belts, and purge/nozzle area before quality gets worse.' },
+      { title: 'Stringing or blobs increased', notes: 'Review nozzle cleanliness, material dryness, temperature, purge area, and extruder path.' },
+      { title: 'Surface inconsistency between printers', notes: 'Compare saved presets by machine. Don’t assume matching models want identical settings.' }
+    ];
+
+    const DEFAULT_PRINTERS = [makePrinter('P1S #1', 'P1S'), makePrinter('P2S #1', 'P2S')];
+
+    function makePrinter(name = 'New Printer', model = 'P1S') {
+      return {
+        id: uid(),
+        name,
+        model,
+        serial: '',
+        nozzle: '0.4 mm',
+        nozzleMaterial: 'Stainless / stock',
+        ams: 'Yes',
+        plate: 'Textured PEI',
+        material: 'PLA',
+        filamentBrand: 'Generic / mixed',
+        flowRatio: '1.00',
+        flowDynamics: '',
+        firstLayerHeight: '0.20',
+        layerHeight: '0.20',
+        bedTemp: '55',
+        nozzleTemp: '220',
+        firstLayerSpeed: '50',
+        auxFan: 'Auto / default',
+        chamberFan: 'Auto / default',
+        zNote: '',
+        notes: '',
+        tasks: Object.fromEntries(PM_TASKS.map(t => [t.key, { lastDone: '', note: '' }])),
+        presets: [
+          {
+            id: uid(),
+            name: `${model} · Textured PEI · PLA`,
+            plate: 'Textured PEI',
+            material: 'PLA',
+            filamentBrand: 'Generic / mixed',
+            flowRatio: '1.00',
+            flowDynamics: '',
+            firstLayerHeight: '0.20',
+            layerHeight: '0.20',
+            bedTemp: '55',
+            nozzleTemp: '220',
+            firstLayerSpeed: '50',
+            auxFan: 'Auto / default',
+            chamberFan: 'Auto / default',
+            notes: 'Safe baseline preset.'
+          }
+        ],
+        issues: [],
+        log: []
+      };
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { selectedId: DEFAULT_PRINTERS[0].id, printers: DEFAULT_PRINTERS, bannerDismissedOn: '' };
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed.printers)) throw new Error('bad data');
+        parsed.bannerDismissedOn ||= '';
+        parsed.printers = parsed.printers.map(normalizePrinter);
+        return parsed;
+      } catch {
+        return { selectedId: DEFAULT_PRINTERS[0].id, printers: DEFAULT_PRINTERS, bannerDismissedOn: '' };
+      }
+    }
+
+    function normalizePrinter(printer) {
+      const fresh = makePrinter(printer.name || 'Printer', printer.model || 'P1S');
+      return {
+        ...fresh,
+        ...printer,
+        tasks: { ...fresh.tasks, ...(printer.tasks || {}) },
+        presets: Array.isArray(printer.presets) ? printer.presets : fresh.presets,
+        issues: Array.isArray(printer.issues) ? printer.issues : [],
+        log: Array.isArray(printer.log) ? printer.log : []
+      };
+    }
+
+    let state = loadState();
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      render();
+    }
+
+    function getSelectedPrinter() {
+      return state.printers.find(p => p.id === state.selectedId) || state.printers[0] || null;
+    }
+
+    function upsertPrinterField(key, value) {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      printer[key] = value;
+      saveState();
+    }
+
+    function dueStatus(taskData, everyDays) {
+      const age = daysBetween(taskData.lastDone);
+      if (age === null) return { label: 'Not logged yet', cls: 'status-bad', dueIn: null };
+      if (age >= everyDays) return { label: `Due now · ${age}d since last PM`, cls: 'status-bad', dueIn: 0 };
+      if (age >= everyDays - 10) return { label: `Due soon · ${everyDays - age}d left`, cls: 'status-warn', dueIn: everyDays - age };
+      return { label: `Good · ${everyDays - age}d left`, cls: 'status-good', dueIn: everyDays - age };
+    }
+
+    function countDue(printer) {
+      return PM_TASKS.filter(t => dueStatus(printer.tasks[t.key], t.everyDays).cls !== 'status-good').length;
+    }
+
+    function countOverdue(printer) {
+      return PM_TASKS.filter(t => dueStatus(printer.tasks[t.key], t.everyDays).cls === 'status-bad').length;
+    }
+
+    function addLog(printer, type, title, note = '') {
+      printer.log.unshift({ id: uid(), date: today(), type, title, note });
+      printer.log = printer.log.slice(0, 150);
+    }
+
+    function totalIssueCount() {
+      return state.printers.reduce((sum, p) => sum + p.issues.length, 0);
+    }
+
+    function renderSummary() {
+      const total = state.printers.length;
+      const totalDue = state.printers.reduce((sum, p) => sum + countDue(p), 0);
+      const overdue = state.printers.reduce((sum, p) => sum + countOverdue(p), 0);
+      const totalPresets = state.printers.reduce((sum, p) => sum + p.presets.length, 0);
+      const issues = totalIssueCount();
+
+      document.getElementById('summaryGrid').innerHTML = `
+        <div class="card metric"><div class="label">Printers tracked</div><div class="value">${total}</div><small>P1S and P2S stored separately</small></div>
+        <div class="card metric"><div class="label">Items needing attention</div><div class="value">${totalDue}</div><small>Due soon + overdue across all machines</small></div>
+        <div class="card metric"><div class="label">Saved presets</div><div class="value">${totalPresets}</div><small>Reusable known-good setups</small></div>
+        <div class="card metric"><div class="label">Logged issues</div><div class="value">${issues}</div><small>Quality signals worth tracking</small></div>
+      `;
+    }
+
+    function renderPrinterList() {
+      const root = document.getElementById('printerList');
+      root.innerHTML = '';
+      state.printers.forEach(printer => {
+        const due = countDue(printer);
+        const issues = printer.issues.length;
+        const el = document.createElement('button');
+        el.className = `printer-item ${printer.id === state.selectedId ? 'active' : ''}`;
+        el.innerHTML = `
+          <div class="printer-item-title">
+            <span>${printer.name}</span>
+            <span class="pill">${printer.model}</span>
+          </div>
+          <div class="tiny" style="margin-top:8px;">${printer.plate || 'No plate set'} · ${printer.material || 'No material set'}</div>
+          <div class="tiny" style="margin-top:6px;">${due ? `${due} due / soon` : 'Nothing due soon'} · ${issues} issue log${issues === 1 ? '' : 's'}</div>
+        `;
+        el.onclick = () => { state.selectedId = printer.id; saveState(); };
+        root.appendChild(el);
+      });
+    }
+
+    function renderGuidance() {
+      const root = document.getElementById('pmGuidance');
+      root.innerHTML = PM_TASKS.map(task => `
+        <div class="printer-item">
+          <div style="font-weight:800;">${task.name}</div>
+          <div class="tiny">About every ${task.everyDays} days · ${task.details}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderBanner() {
+      const banner = document.getElementById('dueBanner');
+      const overduePrinters = state.printers.filter(p => countOverdue(p) > 0);
+      if (!overduePrinters.length || state.bannerDismissedOn === today()) {
+        banner.classList.remove('show');
+        return;
+      }
+      const totalOverdue = overduePrinters.reduce((sum, p) => sum + countOverdue(p), 0);
+      document.getElementById('dueBannerTitle').textContent = `${totalOverdue} overdue PM item${totalOverdue === 1 ? '' : 's'} detected`;
+      document.getElementById('dueBannerText').textContent = overduePrinters.map(p => `${p.name}: ${countOverdue(p)}`).join(' · ');
+      banner.classList.add('show');
+    }
+
+    function renderOverview(printer) {
+      const dueRows = PM_TASKS.map(task => {
+        const status = dueStatus(printer.tasks[task.key], task.everyDays);
+        return `
+          <div class="todo-row">
+            <div class="todo-top">
+              <div>${task.name}</div>
+              <span class="pill ${status.cls}">${status.label}</span>
+            </div>
+            <div class="tiny">Last done: ${fmtDate(printer.tasks[task.key].lastDone)} · ${task.details}</div>
+            <div class="inline-actions">
+              <button class="primary" onclick="markTaskDone('${task.key}')">Mark done today</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const recentIssues = printer.issues.slice(0, 3).map(issue => `
+        <div class="issue-row">
+          <div class="issue-top">
+            <div>${issue.title}</div>
+            <span class="pill issue-severity-${issue.severity}">${issue.severity}</span>
+          </div>
+          <div class="tiny">${fmtDate(issue.date)} · ${issue.notes || 'No note saved.'}</div>
+        </div>
+      `).join('') || '<div class="empty-state">No issues logged for this printer.</div>';
+
+      document.getElementById('panel-overview').innerHTML = `
+        <div class="panel-grid">
+          <div class="settings-box">
+            <h3>${printer.name}</h3>
+            <div class="settings-summary">
+              <div class="summary-chip"><strong>Model</strong><br>${printer.model}</div>
+              <div class="summary-chip"><strong>Plate</strong><br>${printer.plate || '—'}</div>
+              <div class="summary-chip"><strong>Material</strong><br>${printer.material || '—'}</div>
+              <div class="summary-chip"><strong>Nozzle</strong><br>${printer.nozzle || '—'}</div>
+              <div class="summary-chip"><strong>Flow ratio</strong><br>${printer.flowRatio || '—'}</div>
+              <div class="summary-chip"><strong>1st layer</strong><br>${printer.firstLayerHeight || '—'} mm</div>
+              <div class="summary-chip"><strong>1st layer speed</strong><br>${printer.firstLayerSpeed || '—'} mm/s</div>
+              <div class="summary-chip"><strong>Issue logs</strong><br>${printer.issues.length}</div>
+            </div>
+            <div class="help">Use this as your current known-good snapshot for the machine sitting on your bench.</div>
+          </div>
+
+          <div class="recommend-box">
+            <h3>Recommendations</h3>
+            <div class="recommend-list">
+              ${RECOMMENDATIONS.map(r => `<div class="recommend-row"><strong>${r.title}</strong><span class="tiny">${r.text}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-box" style="margin-top:14px;">
+          <h3>Quick apply known-good baselines</h3>
+          <div class="quick-preset-list">
+            ${QUICK_PRESETS.map(preset => `
+              <div class="quick-preset-card">
+                <strong>${preset.name}</strong>
+                <div class="tiny">Plate ${preset.plate} · Nozzle ${preset.nozzleTemp}°C · Bed ${preset.bedTemp}°C · 1st layer ${preset.firstLayerHeight} mm</div>
+                <div class="quick-preset-row">
+                  <button class="primary" onclick="applyQuickPreset('${preset.key}')">Apply now</button>
+                  <button class="secondary" onclick="saveQuickPreset('${preset.key}')">Save as preset</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="panel-grid" style="margin-top:14px;">
+          <div class="todo-box">
+            <h3>What this printer needs next</h3>
+            <div class="todo-list">${dueRows}</div>
+          </div>
+          <div class="issue-box">
+            <h3>Recent issue notes</h3>
+            <div class="issue-list">${recentIssues}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSettings(printer) {
+      document.getElementById('panel-settings').innerHTML = `
+        <div class="settings-box">
+          <h3>Current setup for ${printer.name}</h3>
+          <div class="settings-grid">
+            ${field('Printer name', 'name', printer.name)}
+            ${selectField('Model', 'model', printer.model, ['P1S', 'P2S'])}
+            ${field('Serial / nickname', 'serial', printer.serial)}
+            ${selectField('AMS', 'ams', printer.ams, ['Yes', 'No'])}
+            ${selectField('Nozzle size', 'nozzle', printer.nozzle, ['0.2 mm', '0.4 mm', '0.6 mm', '0.8 mm'])}
+            ${field('Nozzle material', 'nozzleMaterial', printer.nozzleMaterial)}
+            ${selectField('Active plate', 'plate', printer.plate, ['Textured PEI', 'Smooth PEI / High Temp', 'Cool / SuperTack', 'Engineering / specialty'])}
+            ${selectField('Material family', 'material', printer.material, ['PLA', 'PLA Matte', 'PETG', 'ABS', 'ASA', 'TPU', 'PC', 'PA', 'Other'])}
+            ${field('Filament brand / profile', 'filamentBrand', printer.filamentBrand)}
+            ${field('Flow ratio', 'flowRatio', printer.flowRatio, 'e.g. 1.00')}
+            ${field('Flow dynamics / PA note', 'flowDynamics', printer.flowDynamics, 'manual value or note')}
+            ${field('First layer height (mm)', 'firstLayerHeight', printer.firstLayerHeight)}
+            ${field('Main layer height (mm)', 'layerHeight', printer.layerHeight)}
+            ${field('Bed temp (°C)', 'bedTemp', printer.bedTemp)}
+            ${field('Nozzle temp (°C)', 'nozzleTemp', printer.nozzleTemp)}
+            ${field('First layer speed (mm/s)', 'firstLayerSpeed', printer.firstLayerSpeed)}
+            ${field('Aux fan', 'auxFan', printer.auxFan)}
+            ${field('Chamber fan', 'chamberFan', printer.chamberFan)}
+          </div>
+          <div class="row-2" style="margin-top:12px;">
+            <div class="field">
+              <label>Z / first-layer note</label>
+              <textarea data-key="zNote" placeholder="Example: this machine likes slightly more squish on textured PEI with matte PLA.">${escapeHtml(printer.zNote || '')}</textarea>
+            </div>
+            <div class="field">
+              <label>General machine notes</label>
+              <textarea data-key="notes" placeholder="Noise, quirks, preferred profiles, issues to watch.">${escapeHtml(printer.notes || '')}</textarea>
+            </div>
+          </div>
+          <div class="inline-actions">
+            <button class="primary" id="saveAsPresetBtn">Save current setup as preset</button>
+            <button class="danger" id="deletePrinterBtn">Delete this printer</button>
+          </div>
+          <div class="help">Recommended workflow: use a quick baseline, test it, then save only stable machine-specific values as named presets.</div>
+        </div>
+      `;
+
+      bindInputs();
+      document.getElementById('saveAsPresetBtn').onclick = saveCurrentAsPreset;
+      document.getElementById('deletePrinterBtn').onclick = deleteSelectedPrinter;
+    }
+
+    function renderPresets(printer) {
+      document.getElementById('panel-presets').innerHTML = `
+        <div class="quick-box" style="margin-bottom:14px;">
+          <h3>Quick apply baselines</h3>
+          <div class="quick-preset-list">
+            ${QUICK_PRESETS.map(preset => `
+              <div class="quick-preset-card">
+                <strong>${preset.name}</strong>
+                <div class="tiny">${preset.plate} · ${preset.material} · nozzle ${preset.nozzleTemp}°C · bed ${preset.bedTemp}°C</div>
+                <div class="quick-preset-row">
+                  <button class="primary" onclick="applyQuickPreset('${preset.key}')">Apply now</button>
+                  <button class="secondary" onclick="saveQuickPreset('${preset.key}')">Save as preset</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="preset-box">
+          <h3>Saved presets for ${printer.name}</h3>
+          <div class="preset-list">
+            ${printer.presets.length ? printer.presets.map(preset => `
+              <div class="preset-row">
+                <div class="preset-top">
+                  <div>${preset.name}</div>
+                  <span class="pill">${preset.plate} · ${preset.material}</span>
+                </div>
+                <div class="tiny">Flow ${preset.flowRatio || '—'} · 1st layer ${preset.firstLayerHeight || '—'} mm · Bed ${preset.bedTemp || '—'}°C · Nozzle ${preset.nozzleTemp || '—'}°C</div>
+                <div class="tiny">${preset.notes || 'No notes saved.'}</div>
+                <div class="inline-actions">
+                  <button class="primary" onclick="applyPreset('${preset.id}')">Apply preset</button>
+                  <button class="secondary" onclick="renamePreset('${preset.id}')">Rename</button>
+                  <button class="secondary" onclick="deletePreset('${preset.id}')">Delete</button>
+                </div>
+              </div>
+            `).join('') : '<div class="empty-state">No presets saved yet.</div>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMaintenance(printer) {
+      document.getElementById('panel-maintenance').innerHTML = `
+        <div class="todo-box">
+          <h3>PM tracker for ${printer.name}</h3>
+          <div class="todo-list">
+            ${PM_TASKS.map(task => {
+              const item = printer.tasks[task.key];
+              const status = dueStatus(item, task.everyDays);
+              return `
+                <div class="todo-row">
+                  <div class="todo-top">
+                    <div>${task.name}</div>
+                    <span class="pill ${status.cls}">${status.label}</span>
+                  </div>
+                  <div class="row-3">
+                    <div class="mini-field">
+                      <label>Last done</label>
+                      <input type="date" value="${item.lastDone || ''}" onchange="setTaskDate('${task.key}', this.value)" />
+                    </div>
+                    <div class="mini-field" style="grid-column: span 2;">
+                      <label>Note</label>
+                      <input value="${escapeAttr(item.note || '')}" placeholder="What was done, what you noticed" onchange="setTaskNote('${task.key}', this.value)" />
+                    </div>
+                  </div>
+                  <div class="tiny">Every ${task.everyDays} days · ${task.details}</div>
+                  <div class="inline-actions">
+                    <button class="primary" onclick="markTaskDone('${task.key}')">Mark done today</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderIssues(printer) {
+      const issueRows = printer.issues.length ? printer.issues.map(issue => `
+        <div class="issue-row">
+          <div class="issue-top">
+            <div>${issue.title}</div>
+            <span class="pill issue-severity-${issue.severity}">${issue.severity}</span>
+          </div>
+          <div class="tiny">${fmtDate(issue.date)} · ${issue.notes || 'No note saved.'}</div>
+          <div class="inline-actions">
+            <button class="secondary" onclick="deleteIssue('${issue.id}')">Delete issue</button>
+          </div>
+        </div>
+      `).join('') : '<div class="empty-state">No issues logged yet for this printer.</div>';
+
+      document.getElementById('panel-issues').innerHTML = `
+        <div class="panel-grid">
+          <div class="issue-box">
+            <h3>Log a print issue</h3>
+            <div class="row-2">
+              <div class="field">
+                <label>Issue title</label>
+                <input id="issueTitle" placeholder="Example: first layer lifting at front edge" />
+              </div>
+              <div class="field">
+                <label>Severity</label>
+                <select id="issueSeverity">
+                  <option value="low">low</option>
+                  <option value="medium" selected>medium</option>
+                  <option value="high">high</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Notes</label>
+              <textarea id="issueNotes" placeholder="What happened, what plate/material was active, what you checked, and whether PM might be involved."></textarea>
+            </div>
+            <div class="inline-actions">
+              <button class="primary" id="addIssueBtn">Save issue log</button>
+            </div>
+            <div class="help">Use issue logs as real-world reminders. They are often the clue that a machine wants cleaning, recalibration, or a better saved preset.</div>
+          </div>
+
+          <div class="issue-box">
+            <h3>Common issue prompts</h3>
+            <div class="issue-bank-list">
+              ${ISSUE_BANK.map((item, idx) => `
+                <div class="issue-bank-row">
+                  <div class="issue-bank-top">
+                    <div>${item.title}</div>
+                    <button class="secondary" onclick="prefillIssue(${idx})">Use</button>
+                  </div>
+                  <div class="tiny">${item.notes}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="issue-box" style="margin-top:14px;">
+          <h3>Issue history for ${printer.name}</h3>
+          <div class="issue-list">${issueRows}</div>
+        </div>
+      `;
+
+      document.getElementById('addIssueBtn').onclick = addIssue;
+    }
+
+    function renderLog(printer) {
+      document.getElementById('panel-log').innerHTML = `
+        <div class="log-box">
+          <h3>Maintenance and setup history</h3>
+          <div class="log-list">
+            ${printer.log.length ? printer.log.map(entry => `
+              <div class="log-row">
+                <div class="log-top">
+                  <div>${entry.title}</div>
+                  <span class="pill">${entry.type}</span>
+                </div>
+                <div class="tiny">${fmtDate(entry.date)}</div>
+                <div class="tiny">${entry.note || 'No note saved.'}</div>
+              </div>
+            `).join('') : '<div class="empty-state">No history yet. PM, preset, and issue actions will appear here.</div>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function field(label, key, value = '', placeholder = '') {
+      return `
+        <div class="field">
+          <label>${label}</label>
+          <input data-key="${key}" value="${escapeAttr(value || '')}" placeholder="${escapeAttr(placeholder)}" />
+        </div>
+      `;
+    }
+
+    function selectField(label, key, value, options) {
+      return `
+        <div class="field">
+          <label>${label}</label>
+          <select data-key="${key}">
+            ${options.map(opt => `<option ${opt === value ? 'selected' : ''}>${opt}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    }
+
+    function bindInputs() {
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const handler = () => upsertPrinterField(el.dataset.key, el.value);
+        el.addEventListener('change', handler);
+        if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.addEventListener('blur', handler);
+      });
+    }
+
+    function escapeAttr(v) {
+      return String(v || '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+
+    function escapeHtml(v) {
+      return String(v || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+
+    function addPrinter() {
+      const model = prompt('Printer model? Enter P1S or P2S', 'P1S');
+      if (!model) return;
+      const cleanModel = ['P1S', 'P2S'].includes(model.toUpperCase()) ? model.toUpperCase() : 'P1S';
+      const name = prompt('Printer name?', `${cleanModel} #${state.printers.filter(p => p.model === cleanModel).length + 1}`);
+      const printer = makePrinter(name || `${cleanModel} #${state.printers.length + 1}`, cleanModel);
+      state.printers.push(printer);
+      state.selectedId = printer.id;
+      saveState();
+    }
+
+    function duplicateSelected() {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      const copy = JSON.parse(JSON.stringify(printer));
+      copy.id = uid();
+      copy.name = `${printer.name} Copy`;
+      copy.log.unshift({ id: uid(), date: today(), type: 'system', title: 'Duplicated from existing machine', note: '' });
+      state.printers.push(copy);
+      state.selectedId = copy.id;
+      saveState();
+    }
+
+    function deleteSelectedPrinter() {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      if (!confirm(`Delete ${printer.name}?`)) return;
+      state.printers = state.printers.filter(p => p.id !== printer.id);
+      state.selectedId = state.printers[0]?.id || '';
+      saveState();
+    }
+
+    function saveCurrentAsPreset() {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      const name = prompt('Preset name?', `${printer.model} · ${printer.plate} · ${printer.material}`);
+      if (!name) return;
+      printer.presets.unshift({
+        id: uid(),
+        name,
+        plate: printer.plate,
+        material: printer.material,
+        filamentBrand: printer.filamentBrand,
+        flowRatio: printer.flowRatio,
+        flowDynamics: printer.flowDynamics,
+        firstLayerHeight: printer.firstLayerHeight,
+        layerHeight: printer.layerHeight,
+        bedTemp: printer.bedTemp,
+        nozzleTemp: printer.nozzleTemp,
+        firstLayerSpeed: printer.firstLayerSpeed,
+        auxFan: printer.auxFan,
+        chamberFan: printer.chamberFan,
+        notes: printer.zNote || printer.notes || ''
+      });
+      addLog(printer, 'preset', `Saved preset: ${name}`);
+      saveState();
+    }
+
+    function applyPreset(id) {
+      const printer = getSelectedPrinter();
+      const preset = printer?.presets.find(p => p.id === id);
+      if (!printer || !preset) return;
+      Object.assign(printer, {
+        plate: preset.plate,
+        material: preset.material,
+        filamentBrand: preset.filamentBrand,
+        flowRatio: preset.flowRatio,
+        flowDynamics: preset.flowDynamics,
+        firstLayerHeight: preset.firstLayerHeight,
+        layerHeight: preset.layerHeight,
+        bedTemp: preset.bedTemp,
+        nozzleTemp: preset.nozzleTemp,
+        firstLayerSpeed: preset.firstLayerSpeed,
+        auxFan: preset.auxFan || printer.auxFan,
+        chamberFan: preset.chamberFan || printer.chamberFan,
+        zNote: preset.notes || printer.zNote
+      });
+      addLog(printer, 'preset', `Applied preset: ${preset.name}`);
+      saveState();
+    }
+
+    function getQuickPreset(key) {
+      return QUICK_PRESETS.find(p => p.key === key);
+    }
+
+    function applyQuickPreset(key) {
+      const printer = getSelectedPrinter();
+      const preset = getQuickPreset(key);
+      if (!printer || !preset) return;
+      Object.assign(printer, {
+        plate: preset.plate,
+        material: preset.material,
+        filamentBrand: preset.filamentBrand,
+        flowRatio: preset.flowRatio,
+        flowDynamics: preset.flowDynamics,
+        firstLayerHeight: preset.firstLayerHeight,
+        layerHeight: preset.layerHeight,
+        bedTemp: preset.bedTemp,
+        nozzleTemp: preset.nozzleTemp,
+        firstLayerSpeed: preset.firstLayerSpeed,
+        auxFan: preset.auxFan,
+        chamberFan: preset.chamberFan,
+        zNote: preset.zNote
+      });
+      addLog(printer, 'quick preset', `Applied quick baseline: ${preset.name}`);
+      saveState();
+    }
+
+    function saveQuickPreset(key) {
+      const printer = getSelectedPrinter();
+      const preset = getQuickPreset(key);
+      if (!printer || !preset) return;
+      const name = prompt('Save quick preset as?', `${printer.model} · ${preset.name}`);
+      if (!name) return;
+      printer.presets.unshift({ id: uid(), ...preset, name, notes: preset.zNote || '' });
+      addLog(printer, 'preset', `Saved quick baseline as preset: ${name}`);
+      saveState();
+    }
+
+    function renamePreset(id) {
+      const printer = getSelectedPrinter();
+      const preset = printer?.presets.find(p => p.id === id);
+      if (!preset) return;
+      const name = prompt('New preset name?', preset.name);
+      if (!name) return;
+      preset.name = name;
+      saveState();
+    }
+
+    function deletePreset(id) {
+      const printer = getSelectedPrinter();
+      const preset = printer?.presets.find(p => p.id === id);
+      if (!preset) return;
+      if (!confirm(`Delete preset "${preset.name}"?`)) return;
+      printer.presets = printer.presets.filter(p => p.id !== id);
+      saveState();
+    }
+
+    function setTaskDate(key, value) {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      printer.tasks[key].lastDone = value;
+      addLog(printer, 'maintenance', `${PM_TASKS.find(t => t.key === key)?.name || 'PM item'} updated`, printer.tasks[key].note || '');
+      saveState();
+    }
+
+    function setTaskNote(key, value) {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      printer.tasks[key].note = value;
+      saveState();
+    }
+
+    function markTaskDone(key) {
+      const printer = getSelectedPrinter();
+      if (!printer) return;
+      printer.tasks[key].lastDone = today();
+      addLog(printer, 'maintenance', `${PM_TASKS.find(t => t.key === key)?.name || 'PM item'} completed`, printer.tasks[key].note || 'Marked done today');
+      saveState();
+    }
+
+    function prefillIssue(index) {
+      const item = ISSUE_BANK[index];
+      if (!item) return;
+      const title = document.getElementById('issueTitle');
+      const notes = document.getElementById('issueNotes');
+      if (title) title.value = item.title;
+      if (notes) notes.value = item.notes;
+    }
+
+    function addIssue() {
+      const printer = getSelectedPrinter();
+      const title = document.getElementById('issueTitle')?.value.trim();
+      const severity = document.getElementById('issueSeverity')?.value || 'medium';
+      const notes = document.getElementById('issueNotes')?.value.trim() || '';
+      if (!printer || !title) {
+        alert('Add an issue title first.');
+        return;
+      }
+      printer.issues.unshift({ id: uid(), date: today(), title, severity, notes });
+      addLog(printer, 'issue', `Issue logged: ${title}`, notes);
+      saveState();
+    }
+
+    function deleteIssue(id) {
+      const printer = getSelectedPrinter();
+      const issue = printer?.issues.find(i => i.id === id);
+      if (!printer || !issue) return;
+      if (!confirm(`Delete issue "${issue.title}"?`)) return;
+      printer.issues = printer.issues.filter(i => i.id !== id);
+      addLog(printer, 'issue', `Issue removed: ${issue.title}`);
+      saveState();
+    }
+
+    function exportBackup() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'olipoly-printer-maintenance-backup.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importBackup(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed.printers)) throw new Error('Invalid backup');
+          state = { ...parsed, bannerDismissedOn: '' };
+          state.printers = state.printers.map(normalizePrinter);
+          saveState();
+        } catch {
+          alert('That backup file could not be imported.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function openTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`));
+    }
+
+    function render() {
+      renderSummary();
+      renderPrinterList();
+      renderGuidance();
+      renderBanner();
+
+      const printer = getSelectedPrinter();
+      const empty = !printer;
+      document.getElementById('emptyState').style.display = empty ? 'block' : 'none';
+      document.getElementById('mainContent').style.display = empty ? 'none' : 'block';
+      if (empty) return;
+
+      renderOverview(printer);
+      renderSettings(printer);
+      renderPresets(printer);
+      renderMaintenance(printer);
+      renderIssues(printer);
+      renderLog(printer);
+    }
+
+    document.addEventListener('click', e => {
+      const tab = e.target.closest('.tab');
+      if (tab) openTab(tab.dataset.tab);
+    });
+
+    document.getElementById('addPrinterBtn').onclick = addPrinter;
+    document.getElementById('addPrinterBtn2').onclick = addPrinter;
+    document.getElementById('duplicateBtn').onclick = duplicateSelected;
+    document.getElementById('exportBtn').onclick = exportBackup;
+    document.getElementById('importFile').addEventListener('change', e => importBackup(e.target.files[0]));
+    document.getElementById('jumpToMaintenanceBtn').onclick = () => openTab('maintenance');
+    document.getElementById('dismissBannerBtn').onclick = () => {
+      state.bannerDismissedOn = today();
+      saveState();
+    };
+
+    window.applyPreset = applyPreset;
+    window.renamePreset = renamePreset;
+    window.deletePreset = deletePreset;
+    window.setTaskDate = setTaskDate;
+    window.setTaskNote = setTaskNote;
+    window.markTaskDone = markTaskDone;
+    window.applyQuickPreset = applyQuickPreset;
+    window.saveQuickPreset = saveQuickPreset;
+    window.prefillIssue = prefillIssue;
+    window.deleteIssue = deleteIssue;
+
+    render();
+  </script>
+</body>
+</html>
