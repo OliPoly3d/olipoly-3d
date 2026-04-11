@@ -776,12 +776,12 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
 
 function renderBatch() {
   const b = batchValues();
-  els.batchUnitCost.textContent = money(b.unit);
-  els.batchTotalCost.textContent = money(b.total);
-  els.batchUnitsOut.textContent = String(b.units);
-  els.batchUnsoldValue.textContent = money(b.unsoldValue);
-  els.batchSummary.textContent = `${els.batchName.value.trim() || 'This batch'}: ${b.units} total units at ${money(b.unit)} each. If you sell ${b.sold}, estimated COGS is ${money(b.soldCost)} and remaining unsold inventory value is ${money(b.unsoldValue)} across ${b.unsold} unit${b.unsold === 1 ? '' : 's'}.`;
-  els.inventoryReadyView.textContent = `Inventory-ready output → Product: ${els.batchName.value || 'N/A'} | SKU: ${els.batchSku.value || 'N/A'} | Units made: ${b.units} | Unit cost: ${b.unit.toFixed(2)} | Units sold: ${b.sold} | Unsold units: ${b.unsold} | Unsold value: ${b.unsoldValue.toFixed(2)} | Target sell price each: ${b.target.toFixed(2)} | Estimated sold revenue: ${b.revenue.toFixed(2)} | Estimated sold profit: ${b.profit.toFixed(2)} | Location: ${els.batchLocation.value || 'N/A'}`;
+  if (els.batchUnitCost) els.batchUnitCost.textContent = money(b.unit);
+  if (els.batchTotalCost) els.batchTotalCost.textContent = money(b.total);
+  if (els.batchUnitsOut) els.batchUnitsOut.textContent = String(b.units);
+  if (els.batchUnsoldValue) els.batchUnsoldValue.textContent = money(b.unsoldValue);
+  if (els.batchSummary) els.batchSummary.textContent = `${els.batchName.value.trim() || 'This batch'}: ${b.units} total units at ${money(b.unit)} each. If you sell ${b.sold}, estimated COGS is ${money(b.soldCost)} and remaining unsold inventory value is ${money(b.unsoldValue)} across ${b.unsold} unit${b.unsold === 1 ? '' : 's'}.`;
+  if (els.inventoryReadyView) els.inventoryReadyView.textContent = `Inventory-ready output → Product: ${els.batchName.value || 'N/A'} | SKU: ${els.batchSku.value || 'N/A'} | Units made: ${b.units} | Unit cost: ${b.unit.toFixed(2)} | Units sold: ${b.sold} | Unsold units: ${b.unsold} | Unsold value: ${b.unsoldValue.toFixed(2)} | Target sell price each: ${b.target.toFixed(2)} | Estimated sold revenue: ${b.revenue.toFixed(2)} | Estimated sold profit: ${b.profit.toFixed(2)} | Location: ${els.batchLocation.value || 'N/A'}`;
 }
 
 function render() {
@@ -794,7 +794,9 @@ function render() {
   const designTotal = num(els.designHours.value) * num(els.designRate.value);
   const postTotal = num(els.postHours.value) * num(els.postRate.value);
 
-  els.materialUnitCost.textContent = money(materialTotal / Math.max(1, num(els.qty.value) || 1));
+  if (els.materialUnitCost) {
+    els.materialUnitCost.textContent = money(materialTotal / Math.max(1, num(els.qty.value) || 1));
+  }
   els.simpleSummary.textContent = `Simple inputs: ${money(materialTotal)} material, ${money(els.simplePackaging.value)} packaging, ${money(els.simpleShipping.value)} shipping, ${money(els.simpleHardware.value)} hardware, ${money(designTotal)} design labor, ${money(machineTotal)} machine time, ${money(postTotal)} post-process labor.`;
 
   const suggested = suggestedProfitPercent();
