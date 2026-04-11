@@ -23,8 +23,6 @@
       --radius-lg:24px;
       --radius-md:18px;
       --radius-sm:14px;
-      --soft-accent:rgba(157,124,255,.08);
-      --soft-accent-line:rgba(157,124,255,.14);
     }
 
     *{box-sizing:border-box}
@@ -44,7 +42,7 @@
     button,input,textarea,select{font:inherit}
     .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 110px}
 
-    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card,.toggle-card{
+    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
@@ -68,7 +66,7 @@
 
     .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
     .link-card h4,.link-card p,.mini-card h4,.mini-card p,.template-card h4,.template-card p,
-    .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p,.toggle-card h4,.toggle-card p{margin:0}
+    .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p{margin:0}
     .brand h1{font-size:1.12rem}
     .brand p,.section-title p,.muted,.helper,.fine{color:var(--muted)}
 
@@ -82,7 +80,7 @@
     .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
     .hero-card p{line-height:1.7}
 
-    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.stack-actions,.field-row,.toggle-row{display:flex;flex-wrap:wrap;gap:10px}
+    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row{display:flex;flex-wrap:wrap;gap:10px}
     .pill-row{margin-top:16px}
     .pill{
       display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
@@ -90,25 +88,24 @@
       color:var(--muted);font-size:.88rem;font-weight:700;
     }
 
-    .btn,.ghost,.copy-btn,.tiny-btn,.chip-btn{
+    .btn,.ghost,.copy-btn,.tiny-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
       border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
       cursor:pointer;
     }
-    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover,.chip-btn:hover{transform:translateY(-1px)}
+    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
 
     .btn{
       border:none;padding:13px 18px;color:#fff;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 10px 24px rgba(222,111,184,.22);
     }
-    .ghost,.copy-btn,.tiny-btn,.chip-btn{
+    .ghost,.copy-btn,.tiny-btn{
       border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--text);
     }
     .ghost{padding:11px 14px}
     .copy-btn{padding:10px 14px}
     .tiny-btn{padding:8px 11px;font-size:.85rem}
-    .chip-btn{padding:9px 12px;font-size:.88rem}
 
     .quick-actions{padding:18px 20px;border-radius:var(--radius-xl);margin-bottom:18px}
     .quick-grid{margin-top:12px}
@@ -128,24 +125,24 @@
     .status-dot.warn{background:var(--warn);box-shadow:0 0 0 4px rgba(240,180,41,.14)}
     .status-dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.13)}
 
-    .notes-card textarea,.template-box textarea,.full-input,.money-input,.small-input,.tax-input,.reminder-input{
+    .notes-card textarea,.money-input,.small-input,.tax-input,.reminder-input{
       width:100%;border-radius:18px;border:1px solid var(--line);padding:13px 14px;
       background:rgba(255,255,255,.78);color:var(--text);outline:none;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
     }
     .notes-card textarea{min-height:168px;resize:vertical}
-    .notes-card textarea:focus,.template-box textarea:focus,.full-input:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus{
+    .notes-card textarea:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus{
       border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)
     }
 
     .section-title{margin-bottom:12px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .link-card,.mini-card,.template-card,.metric-card,.workflow-card,.toggle-card{
+    .link-card,.mini-card,.template-card,.metric-card,.workflow-card{
       padding:20px;border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:100%;
     }
     .link-card{border:1px solid var(--line)}
-    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4,.toggle-card h4{font-size:1.04rem}
-    .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p,.toggle-card p{color:var(--muted);line-height:1.6}
+    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4{font-size:1.04rem}
+    .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p{color:var(--muted);line-height:1.6}
     .url{
       display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
       color:#6d5f90;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);
@@ -153,43 +150,21 @@
     }
     .actions{margin-top:auto}
     .inline-actions{align-items:center}
-    .stack-actions{align-items:stretch}
     .field-row{align-items:center}
 
-    .metric-card{
-      background:rgba(255,255,255,.78);
-      border:1px solid var(--line);
-    }
+    .metric-card{background:rgba(255,255,255,.78);border:1px solid var(--line)}
     .metric-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
     .metric-value{font-size:1.7rem;font-weight:900;line-height:1.05}
-    .metric-label{font-size:.92rem;color:var(--muted);font-weight:700}
 
     .money-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
     .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-
     .workflow-grid,.template-grid,.asset-grid,.test-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .workflow-card,.template-card,.toggle-card,.mini-card{
-      background:rgba(255,255,255,.76);border:1px solid var(--line);
-    }
 
-    .manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    code.inline{
-      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(157,124,255,.08);
-      border:1px solid rgba(157,124,255,.12);padding:2px 7px;border-radius:999px;color:#6d5f90;
-    }
-
-    .summary-box,.template-box,.event-panel{
+    .summary-box{
       padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid var(--line);
     }
     .summary-value{font-weight:900;font-size:1.2rem}
     .summary-sub{font-size:.88rem;color:var(--muted)}
-
-    .checklist{display:grid;gap:10px;margin-top:10px}
-    .check-item{
-      display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;
-      background:rgba(255,255,255,.72);border:1px solid var(--line);
-    }
-    .check-item input{accent-color:var(--accent)}
 
     .reminder-list{display:grid;gap:10px;margin-top:12px}
     .reminder-item{
@@ -203,30 +178,6 @@
     .badge.overdue{color:#b33857;background:rgba(228,90,122,.09)}
     .badge.thisweek{color:#946200;background:rgba(240,180,41,.11)}
     .badge.upcoming{color:#5e4ba2;background:rgba(157,124,255,.11)}
-
-    .switch{
-      position:relative;width:62px;height:34px;border-radius:999px;border:1px solid var(--line);
-      background:rgba(184,167,190,.35);cursor:pointer;transition:background .2s ease;
-    }
-    .switch::after{
-      content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;
-      background:#fff;box-shadow:0 4px 12px rgba(63,49,70,.16);transition:transform .2s ease;
-    }
-    .switch.on{background:linear-gradient(135deg,var(--accent),var(--accent2))}
-    .switch.on::after{transform:translateX(28px)}
-
-    details.card{overflow:hidden}
-    details > summary{
-      list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;
-    }
-    details > summary::-webkit-details-marker{display:none}
-    .summary-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:700}
-    .caret{
-      width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
-      background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);transition:transform .2s ease;
-    }
-    details[open] .caret{transform:rotate(180deg)}
-    .details-body{padding-top:16px}
 
     .note{
       margin-top:22px;padding:18px;border-radius:22px;background:rgba(255,255,255,.72);
@@ -248,10 +199,8 @@
     }
     .toast.show{opacity:1;transform:translateY(0)}
 
-    .hidden{display:none !important}
-
     @media (max-width:1000px){
-      .hero,.dashboard-grid,.grid,.manifest-grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr 1fr}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr 1fr}
     }
 
     @media (max-width:900px){
@@ -259,14 +208,14 @@
       .topbar .btn{width:100%}
       .wrap{padding-bottom:108px}
       .mobile-dock{display:flex}
-      .hero,.dashboard-grid,.grid,.manifest-grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr}
     }
 
     @media (max-width:640px){
       .wrap{width:min(100% - 18px,1120px)}
       .hero-card,.card,.notes-card,.status-card,.quick-actions{padding:18px}
       .status-pill{min-width:100%}
-      .actions,.inline-actions,.tiny-actions,.stack-actions{gap:8px}
+      .actions,.inline-actions,.tiny-actions{gap:8px}
       .btn,.ghost,.copy-btn{width:100%}
     }
   </style>
@@ -290,7 +239,7 @@
     <section class="hero">
       <section class="hero-card">
         <h2>One landing page for every OliPoly destination.</h2>
-        <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, forms, GitHub, Supabase, and daily operating shortcuts without hunting for links.</p>
+        <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, printer maintenance page, forms, GitHub, Supabase, and daily operating shortcuts without hunting for links.</p>
         <div class="pill-row">
           <span class="pill">Money snapshot</span>
           <span class="pill">Workflow shortcuts</span>
@@ -299,7 +248,7 @@
           <span class="pill">Assets</span>
           <span class="pill">Testing tools</span>
           <span class="pill">Templates</span>
-          <span class="pill">Event mode</span>
+          <span class="pill">Printer PM</span>
         </div>
       </section>
 
@@ -309,7 +258,7 @@
           <p>Keep this page pinned on mobile and desktop for one clean place to navigate your workflow.</p>
         </div>
         <div class="note" style="margin-top:0;">
-          Safe additions in this version are browser-only: copy buttons only copy text, notes and snapshots save locally on this device, and the new workflow helpers do not change any live site data.
+          Safe additions in this version are browser-only: copy buttons only copy text, notes and snapshots save locally on this device, and the workflow helpers do not change any live site data.
         </div>
       </section>
     </section>
@@ -324,9 +273,8 @@
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Orders Admin</a>
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance Tool</a>
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Quote Tool</a>
-        
+        <a class="btn" href="PM.html">Printer PM</a>
         <a class="btn" href="materials.html">Materials</a>
-        
         <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Supabase</a>
         <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">GitHub Repo</a>
       </div>
@@ -349,6 +297,7 @@
           <div class="status-pill"><span class="status-dot" data-health-dot="admin"></span><strong>Orders admin</strong></div>
           <div class="status-pill"><span class="status-dot" data-health-dot="finance"></span><strong>Finance</strong></div>
           <div class="status-pill"><span class="status-dot" data-health-dot="quote"></span><strong>Quote tool</strong></div>
+          <div class="status-pill"><span class="status-dot" data-health-dot="pm"></span><strong>Printer PM</strong></div>
         </div>
         <p class="helper" style="margin:14px 0 0;">Green = reachable, red = failed check, gray = not checked.</p>
       </section>
@@ -362,7 +311,8 @@
 - Update upcoming events on main site
 - Check new Formspree submissions
 - Reconcile finance entries
-- Push latest repo changes"></textarea>
+- Push latest repo changes
+- Clean P1S and P2S maintenance notes"></textarea>
         <div class="inline-actions" style="margin-top:12px;">
           <button class="tiny-btn" id="saveNotesBtn" type="button">Save notes</button>
           <button class="tiny-btn" id="clearNotesBtn" type="button">Clear notes</button>
@@ -374,25 +324,13 @@
     <section class="card" style="margin-bottom:18px;">
       <div class="section-title">
         <h3>Daily money snapshot</h3>
-        <p>Quick local scoreboard for today and this month. If finance sync is active, those values override the manual fields below.</p>
+        <p>Quick local scoreboard for today and this month.</p>
       </div>
       <div class="money-grid">
-        <div class="metric-card">
-          <div class="metric-top"><div><h4>Today revenue</h4><p>Local quick-entry value</p></div><span class="badge upcoming">Today</span></div>
-          <div class="metric-value" id="moneyTodayRevenueDisplay">$0.00</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-top"><div><h4>Month revenue</h4><p>Use as a fast scoreboard</p></div><span class="badge upcoming">Month</span></div>
-          <div class="metric-value" id="moneyMonthRevenueDisplay">$0.00</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-top"><div><h4>Month expenses</h4><p>Quick operating total</p></div><span class="badge thisweek">Costs</span></div>
-          <div class="metric-value" id="moneyMonthExpensesDisplay">$0.00</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-top"><div><h4>Estimated profit</h4><p>Revenue minus expenses</p></div><span class="badge overdue">Result</span></div>
-          <div class="metric-value" id="moneyProfitDisplay">$0.00</div>
-        </div>
+        <div class="metric-card"><div class="metric-top"><div><h4>Today revenue</h4><p>Local quick-entry value</p></div><span class="badge upcoming">Today</span></div><div class="metric-value" id="moneyTodayRevenueDisplay">$0.00</div></div>
+        <div class="metric-card"><div class="metric-top"><div><h4>Month revenue</h4><p>Use as a fast scoreboard</p></div><span class="badge upcoming">Month</span></div><div class="metric-value" id="moneyMonthRevenueDisplay">$0.00</div></div>
+        <div class="metric-card"><div class="metric-top"><div><h4>Month expenses</h4><p>Quick operating total</p></div><span class="badge thisweek">Costs</span></div><div class="metric-value" id="moneyMonthExpensesDisplay">$0.00</div></div>
+        <div class="metric-card"><div class="metric-top"><div><h4>Estimated profit</h4><p>Revenue minus expenses</p></div><span class="badge overdue">Result</span></div><div class="metric-value" id="moneyProfitDisplay">$0.00</div></div>
       </div>
       <div class="input-grid">
         <input class="money-input" id="moneyTodayRevenue" type="number" min="0" step="0.01" placeholder="Today revenue" />
@@ -425,6 +363,11 @@
             <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open Quote Tool</a></div>
           </div>
           <div class="workflow-card">
+            <h4>Printer maintenance</h4>
+            <p>Track PM, presets, and machine-specific setup for each printer.</p>
+            <div class="actions"><a class="btn" href="PM.html">Open PM</a></div>
+          </div>
+          <div class="workflow-card">
             <h4>Copy tracker link</h4>
             <p>Fast copy for customer messages.</p>
             <div class="actions"><button class="copy-btn" type="button" data-copy="Track your order here: https://olipoly3d.github.io/olipoly-3d/track.html">Copy tracker message</button></div>
@@ -434,13 +377,18 @@
             <p>Enter revenue, expenses, or tax data.</p>
             <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open Finance</a></div>
           </div>
+          <div class="workflow-card">
+            <h4>Open materials</h4>
+            <p>Jump to your materials page or reference tool.</p>
+            <div class="actions"><a class="btn" href="materials.html">Open Materials</a></div>
+          </div>
         </div>
       </section>
 
       <section class="card">
         <div class="section-title">
           <h3>Sales tax and filing panel</h3>
-          <p>Local quick reference for monthly filing prep. If finance sync is active, tax values are pulled from finance instead.</p>
+          <p>Local quick reference for monthly filing prep.</p>
         </div>
         <div class="input-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
           <input class="tax-input" id="taxCollectedInput" type="number" min="0" step="0.01" placeholder="Tax collected this month" />
@@ -484,26 +432,10 @@
           <p>Fast copy helpers for common replies.</p>
         </div>
         <div class="template-grid">
-          <div class="template-card">
-            <h4>Order received</h4>
-            <p>Simple confirmation with next steps.</p>
-            <div class="actions"><button class="copy-btn" type="button" data-template="orderReceived">Copy message</button></div>
-          </div>
-          <div class="template-card">
-            <h4>Ready for pickup</h4>
-            <p>Use when an order is complete.</p>
-            <div class="actions"><button class="copy-btn" type="button" data-template="readyPickup">Copy message</button></div>
-          </div>
-          <div class="template-card">
-            <h4>Payment link</h4>
-            <p>Placeholder wording for sending payment.</p>
-            <div class="actions"><button class="copy-btn" type="button" data-template="paymentLink">Copy message</button></div>
-          </div>
-          <div class="template-card">
-            <h4>Delay update</h4>
-            <p>Use when timing changes.</p>
-            <div class="actions"><button class="copy-btn" type="button" data-template="delayUpdate">Copy message</button></div>
-          </div>
+          <div class="template-card"><h4>Order received</h4><p>Simple confirmation with next steps.</p><div class="actions"><button class="copy-btn" type="button" data-template="orderReceived">Copy message</button></div></div>
+          <div class="template-card"><h4>Ready for pickup</h4><p>Use when an order is complete.</p><div class="actions"><button class="copy-btn" type="button" data-template="readyPickup">Copy message</button></div></div>
+          <div class="template-card"><h4>Payment link</h4><p>Placeholder wording for sending payment.</p><div class="actions"><button class="copy-btn" type="button" data-template="paymentLink">Copy message</button></div></div>
+          <div class="template-card"><h4>Delay update</h4><p>Use when timing changes.</p><div class="actions"><button class="copy-btn" type="button" data-template="delayUpdate">Copy message</button></div></div>
         </div>
       </section>
     </section>
@@ -515,30 +447,10 @@
           <p>Fast links to common branding and site assets.</p>
         </div>
         <div class="asset-grid">
-          <div class="mini-card">
-            <h4>Logo preview in images</h4>
-            <p>Primary logo-preview path used across the site.</p>
-            <span class="url">https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png</span>
-            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Copy URL</button></div>
-          </div>
-          <div class="mini-card">
-            <h4>Logo preview at root</h4>
-            <p>Useful if you keep a backup copy at the repo root.</p>
-            <span class="url">https://olipoly3d.github.io/olipoly-3d/logo-preview.png</span>
-            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Copy URL</button></div>
-          </div>
-          <div class="mini-card">
-            <h4>Repo images folder</h4>
-            <p>Open the images folder in GitHub for quick file checks.</p>
-            <span class="url">https://github.com/olipoly3d/olipoly-3d/tree/main/images</span>
-            <div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Open Folder</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Copy URL</button></div>
-          </div>
-          <div class="mini-card">
-            <h4>Public site root</h4>
-            <p>Useful for quick live-file testing.</p>
-            <span class="url">https://olipoly3d.github.io/olipoly-3d/</span>
-            <div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/">Copy URL</button></div>
-          </div>
+          <div class="mini-card"><h4>Logo preview in images</h4><p>Primary logo-preview path used across the site.</p><span class="url">https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png</span><div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Copy URL</button></div></div>
+          <div class="mini-card"><h4>Logo preview at root</h4><p>Useful if you keep a backup copy at the repo root.</p><span class="url">https://olipoly3d.github.io/olipoly-3d/logo-preview.png</span><div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Copy URL</button></div></div>
+          <div class="mini-card"><h4>Repo images folder</h4><p>Open the images folder in GitHub for quick file checks.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/tree/main/images</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Open Folder</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Copy URL</button></div></div>
+          <div class="mini-card"><h4>Public site root</h4><p>Useful for quick live-file testing.</p><span class="url">https://olipoly3d.github.io/olipoly-3d/</span><div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/">Copy URL</button></div></div>
         </div>
       </section>
 
@@ -548,240 +460,13 @@
           <p>Helpful for previews, speed checks, and mobile layout testing.</p>
         </div>
         <div class="test-grid">
-          <div class="mini-card">
-            <h4>Facebook Sharing Debugger</h4>
-            <p>Refresh and test social preview images.</p>
-            <span class="url">https://developers.facebook.com/tools/debug/</span>
-            <div class="actions"><a class="btn ext" href="https://developers.facebook.com/tools/debug/">Open Tool</a></div>
-          </div>
-          <div class="mini-card">
-            <h4>PageSpeed Insights</h4>
-            <p>Check performance and mobile issues.</p>
-            <span class="url">https://pagespeed.web.dev/</span>
-            <div class="actions"><a class="btn ext" href="https://pagespeed.web.dev/">Open Tool</a></div>
-          </div>
-          <div class="mini-card">
-            <h4>Responsive Design Mode</h4>
-            <p>Quick reminder: use browser dev tools device toolbar.</p>
-            <div class="actions"><button class="copy-btn" type="button" data-copy="Open your browser DevTools, then toggle the device toolbar to preview mobile and tablet layouts.">Copy reminder</button></div>
-          </div>
-          <div class="mini-card">
-            <h4>GitHub Actions</h4>
-            <p>Check if a deploy failed or is still processing.</p>
-            <span class="url">https://github.com/olipoly3d/olipoly-3d/actions</span>
-            <div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/actions">Open Actions</a></div>
-          </div>
+          <div class="mini-card"><h4>Facebook Sharing Debugger</h4><p>Refresh and test social preview images.</p><span class="url">https://developers.facebook.com/tools/debug/</span><div class="actions"><a class="btn ext" href="https://developers.facebook.com/tools/debug/">Open Tool</a></div></div>
+          <div class="mini-card"><h4>PageSpeed Insights</h4><p>Run quick performance and mobile checks.</p><span class="url">https://pagespeed.web.dev/</span><div class="actions"><a class="btn ext" href="https://pagespeed.web.dev/">Open Tool</a></div></div>
+          <div class="mini-card"><h4>GitHub Pages settings</h4><p>Open Pages settings for deployment checks.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/settings/pages">Copy URL</button></div></div>
+          <div class="mini-card"><h4>GitHub Actions / Deployments</h4><p>Helpful when a GitHub Pages update did not go live as expected.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/actions</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/actions">Open Actions</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/actions">Copy URL</button></div></div>
         </div>
       </section>
     </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title">
-        <h3>Event mode</h3>
-        <p>Turn on a quick craft-show helper view without affecting the rest of the site.</p>
-      </div>
-      <div class="toggle-row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>
-          <h4 style="margin:0 0 4px;">Event mode toggle</h4>
-          <p class="muted" style="margin:0;">Shows your event helper panel and saves on this device only.</p>
-        </div>
-        <button class="switch" id="eventModeSwitch" type="button" aria-pressed="false" aria-label="Toggle event mode"></button>
-      </div>
-      <div class="event-panel hidden" id="eventModePanel">
-        <div class="four-col" style="margin-bottom:12px;">
-          <div class="toggle-card"><h4>Fast pricing</h4><p>Add your show pricing notes below.</p></div>
-          <div class="toggle-card"><h4>Quick QR access</h4><p>Keep your site or payment links handy.</p></div>
-          <div class="toggle-card"><h4>Order intake</h4><p>Jump to forms or admin tools faster.</p></div>
-          <div class="toggle-card"><h4>Show reminders</h4><p>Use the checklist for setup and teardown.</p></div>
-        </div>
-        <div class="two-col" style="margin-bottom:0;">
-          <div class="template-box">
-            <strong>Event pricing notes</strong>
-            <textarea id="eventNotes" style="margin-top:10px; min-height:120px; resize:vertical;" placeholder="Examples:
-- Small fidgets: $5
-- Medium prints: $12-$20
-- Custom orders: quote on request"></textarea>
-            <div class="inline-actions" style="margin-top:10px;"><button class="tiny-btn" id="saveEventNotesBtn" type="button">Save event notes</button><button class="tiny-btn" id="copyEventSiteBtn" type="button">Copy site link</button><span class="helper" id="eventNotesStatus">Not saved yet</span></div>
-          </div>
-          <div class="template-box">
-            <strong>Event checklist</strong>
-            <div class="checklist">
-              <label class="check-item"><input type="checkbox" data-event-check="table" /> Table setup ready</label>
-              <label class="check-item"><input type="checkbox" data-event-check="qr" /> QR code visible</label>
-              <label class="check-item"><input type="checkbox" data-event-check="samples" /> Sample prints stocked</label>
-              <label class="check-item"><input type="checkbox" data-event-check="payments" /> Payment method ready</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title">
-        <h3>GitHub Pages</h3>
-        <p>Public and hosted pages in your repository.</p>
-      </div>
-      <div class="grid">
-        <div class="link-card">
-          <h4>Main Website</h4>
-          <p>Your public storefront homepage.</p>
-          <span class="url">https://olipoly3d.github.io/olipoly-3d/index.html</span>
-          <div class="actions">
-            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Page</a>
-            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/index.html">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Order Tracker</h4>
-          <p>Customer-facing order status lookup page.</p>
-          <span class="url">https://olipoly3d.github.io/olipoly-3d/track.html</span>
-          <div class="actions">
-            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/track.html">Open Page</a>
-            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/track.html">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Orders Admin</h4>
-          <p>Internal dashboard for creating and updating orders.</p>
-          <span class="url">https://olipoly3d.github.io/olipoly-3d/orders-admin.html</span>
-          <div class="actions">
-            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open Page</a>
-            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Finance Tool</h4>
-          <p>Finance tracker and business records page.</p>
-          <span class="url">https://olipoly3d.github.io/olipoly-3d/finance-pro.html</span>
-          <div class="actions">
-            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open Page</a>
-            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Quote Tool</h4>
-          <p>Quote builder page, if hosted in your repo under this filename.</p>
-          <span class="url">https://olipoly3d.github.io/olipoly-3d/quote-tool.html</span>
-          <div class="actions">
-            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open Page</a>
-            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Repository Root</h4>
-          <p>Main GitHub Pages root for quick checks.</p>
-          <span class="url">https://olipoly3d.github.io/olipoly-3d/</span>
-          <div class="actions">
-            <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a>
-            <button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/">Copy URL</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title">
-        <h3>Forms and services</h3>
-        <p>External services tied to your site workflow.</p>
-      </div>
-      <div class="grid">
-        <div class="link-card">
-          <h4>Formspree Endpoint</h4>
-          <p>Your current form endpoint for contact submissions.</p>
-          <span class="url">https://formspree.io/f/xojplkjw</span>
-          <div class="actions">
-            <a class="btn ext" href="https://formspree.io/f/xojplkjw">Open Formspree</a>
-            <button class="copy-btn" type="button" data-copy="https://formspree.io/f/xojplkjw">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Tally Form</h4>
-          <p>Your upload form link if you still use it.</p>
-          <span class="url">https://tally.so/r/gDZY6N</span>
-          <div class="actions">
-            <a class="btn ext" href="https://tally.so/r/gDZY6N">Open Tally Form</a>
-            <button class="copy-btn" type="button" data-copy="https://tally.so/r/gDZY6N">Copy URL</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title">
-        <h3>Repo page filenames</h3>
-        <p>A quick maintenance list so mismatched filenames are easier to catch.</p>
-      </div>
-      <div class="manifest-grid">
-        <div class="mini-card"><h4>Main storefront</h4><p><code class="inline">index.html</code></p></div>
-        <div class="mini-card"><h4>Hub page</h4><p><code class="inline">hub.html</code></p></div>
-        <div class="mini-card"><h4>Order tracker</h4><p><code class="inline">track.html</code></p></div>
-        <div class="mini-card"><h4>Orders admin</h4><p><code class="inline">orders-admin.html</code></p></div>
-        <div class="mini-card"><h4>Finance tool</h4><p><code class="inline">finance-pro.html</code></p></div>
-        <div class="mini-card"><h4>Quote tool</h4><p><code class="inline">quote-tool.html</code> <span class="muted">(verify if renamed)</span></p></div>
-      </div>
-    </section>
-
-    <details class="card" style="margin-bottom:18px;">
-      <summary>
-        <div class="section-title" style="margin:0;">
-          <h3>Admin and developer tools</h3>
-          <p>Useful internal links grouped separately from public pages.</p>
-        </div>
-        <div class="summary-right">
-          <span>Collapse / expand</span>
-          <span class="caret">⌄</span>
-        </div>
-      </summary>
-      <div class="details-body">
-        <div class="grid">
-          <div class="link-card">
-            <h4>Supabase Project</h4>
-            <p>Your database, auth, and table management dashboard.</p>
-            <span class="url">https://supabase.com/dashboard/project/alffoktlwhpfothieude</span>
-            <div class="actions">
-              <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Open Supabase</a>
-              <button class="copy-btn" type="button" data-copy="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Copy URL</button>
-            </div>
-          </div>
-
-          <div class="link-card">
-            <h4>Supabase API URL</h4>
-            <p>Your project API base URL.</p>
-            <span class="url">https://alffoktlwhpfothieude.supabase.co</span>
-            <div class="actions">
-              <a class="ghost ext" href="https://alffoktlwhpfothieude.supabase.co">Open URL</a>
-              <button class="copy-btn" type="button" data-copy="https://alffoktlwhpfothieude.supabase.co">Copy URL</button>
-            </div>
-          </div>
-
-          <div class="link-card">
-            <h4>GitHub Repository</h4>
-            <p>Your code repository for the OliPoly site and tools.</p>
-            <span class="url">https://github.com/olipoly3d/olipoly-3d</span>
-            <div class="actions">
-              <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">Open Repo</a>
-              <button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d">Copy URL</button>
-            </div>
-          </div>
-
-          <div class="link-card">
-            <h4>GitHub Pages Settings</h4>
-            <p>Quick access to repository Pages settings.</p>
-            <span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span>
-            <div class="actions">
-              <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a>
-              <button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/settings/pages">Copy URL</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
 
     <section class="card">
       <div class="section-title">
@@ -789,29 +474,13 @@
         <p>Useful for deployments, quick checks, and future admin additions.</p>
       </div>
       <div class="grid">
-        <div class="link-card">
-          <h4>GitHub Actions / Deployments</h4>
-          <p>Helpful when a GitHub Pages update did not go live as expected.</p>
-          <span class="url">https://github.com/olipoly3d/olipoly-3d/actions</span>
-          <div class="actions">
-            <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/actions">Open Actions</a>
-            <button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/actions">Copy URL</button>
-          </div>
-        </div>
-
-        <div class="link-card">
-          <h4>Future add-on spot</h4>
-          <p>Use this card later for Stripe, domain/DNS, email admin, or another dashboard you add.</p>
-          <span class="url">Replace this URL later if needed</span>
-          <div class="actions">
-            <button class="ghost" type="button" disabled>Reserved slot</button>
-          </div>
-        </div>
+        <div class="link-card"><h4>Printer maintenance page</h4><p>Your new PM dashboard for machine presets, issue logs, and preventative maintenance.</p><span class="url">PM.html</span><div class="actions"><a class="btn" href="PM.html">Open PM</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/PM.html">Copy live URL</button></div></div>
+        <div class="link-card"><h4>Future add-on spot</h4><p>Use this card later for Stripe, domain/DNS, email admin, or another dashboard you add.</p><span class="url">Replace this URL later if needed</span><div class="actions"><button class="ghost" type="button" disabled>Reserved slot</button></div></div>
       </div>
     </section>
 
     <div class="note">
-      Safe update notes: all new sections are additive and browser-local. No live site pages, orders, database tables, or finance records are edited from this hub. Existing links and sections remain in place.
+      Safe update notes: all sections are browser-local helpers and link outs. No live site pages, orders, database tables, or finance records are edited from this hub. The PM additions are direct links only.
     </div>
   </div>
 
@@ -819,6 +488,7 @@
     <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main</a>
     <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Admin</a>
     <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance</a>
+    <a class="btn" href="PM.html">PM</a>
   </nav>
 
   <div class="toast" id="toast"></div>
@@ -828,8 +498,6 @@
     const MONEY_KEY = 'olipoly_hub_money_v1';
     const TAX_KEY = 'olipoly_hub_tax_v1';
     const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
-    const EVENT_KEY = 'olipoly_hub_event_v1';
-    const FINANCE_SUMMARY_KEY = 'olipoly_finance_dashboard_summary_v1';
 
     const templates = {
       orderReceived: `Thanks for your order request. I received it and will review the details shortly. If needed, I will follow up with any questions and next steps. You can track your order here: https://olipoly3d.github.io/olipoly-3d/track.html`,
@@ -843,7 +511,8 @@
       tracker: 'https://olipoly3d.github.io/olipoly-3d/track.html',
       admin: 'https://olipoly3d.github.io/olipoly-3d/orders-admin.html',
       finance: 'https://olipoly3d.github.io/olipoly-3d/finance-pro.html',
-      quote: 'https://olipoly3d.github.io/olipoly-3d/quote-tool.html'
+      quote: 'https://olipoly3d.github.io/olipoly-3d/quote-tool.html',
+      pm: 'https://olipoly3d.github.io/olipoly-3d/PM.html'
     };
 
     const toast = document.getElementById('toast');
@@ -884,17 +553,15 @@
         }
         showToast('Copied to clipboard');
       } catch {
-        showToast('Copy failed on this browser');
+        showToast('Copy failed');
       }
     }
 
-    document.querySelectorAll('[data-copy]').forEach(btn => {
-      btn.addEventListener('click', () => copyText(btn.dataset.copy || ''));
-    });
-
-    document.querySelectorAll('[data-template]').forEach(btn => {
-      btn.addEventListener('click', () => copyText(templates[btn.dataset.template] || ''));
-    });
+    function saveNotes() {
+      localStorage.setItem(NOTES_KEY, notesEl.value || '');
+      notesStatus.textContent = `Saved ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+      showToast('Notes saved');
+    }
 
     function loadNotes() {
       const saved = localStorage.getItem(NOTES_KEY) || '';
@@ -902,336 +569,174 @@
       notesStatus.textContent = saved ? 'Loaded saved notes' : 'Nothing saved yet';
     }
 
-    function saveNotes() {
-      localStorage.setItem(NOTES_KEY, notesEl.value);
-      notesStatus.textContent = 'Saved to this browser';
-      showToast('Notes saved');
-    }
-
     function clearNotes() {
       notesEl.value = '';
       localStorage.removeItem(NOTES_KEY);
-      notesStatus.textContent = 'Notes cleared';
+      notesStatus.textContent = 'Cleared';
       showToast('Notes cleared');
     }
 
-    async function checkUrl(url, timeoutMs = 5000) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: controller.signal });
-        clearTimeout(timeout);
-        return true;
-      } catch {
-        clearTimeout(timeout);
-        return false;
-      }
-    }
-
-    function setDot(name, state) {
-      const dot = document.querySelector(`[data-health-dot="${name}"]`);
-      if (!dot) return;
-      dot.classList.remove('ok', 'warn', 'bad');
-      if (state === 'ok') dot.classList.add('ok');
-      else if (state === 'warn') dot.classList.add('warn');
-      else if (state === 'bad') dot.classList.add('bad');
-    }
-
-    function resetDots() {
-      Object.keys(healthTargets).forEach(name => setDot(name, 'unknown'));
-      healthStamp.textContent = 'Not checked yet';
-    }
-
-    async function runHealthCheck() {
-      healthStamp.textContent = 'Checking...';
-      Object.keys(healthTargets).forEach(name => setDot(name, 'warn'));
-      for (const [name, url] of Object.entries(healthTargets)) {
-        const ok = await checkUrl(url);
-        setDot(name, ok ? 'ok' : 'bad');
-      }
-      healthStamp.textContent = `Last checked: ${new Date().toLocaleString()}`;
-      showToast('Health check finished');
-    }
-
-    function getFinanceSummary() {
-      try {
-        const summary = JSON.parse(localStorage.getItem(FINANCE_SUMMARY_KEY) || 'null');
-        return summary && typeof summary === 'object' ? summary : null;
-      } catch {
-        return null;
-      }
+    function saveMoney() {
+      const data = {
+        todayRevenue: document.getElementById('moneyTodayRevenue').value || 0,
+        monthRevenue: document.getElementById('moneyMonthRevenue').value || 0,
+        monthExpenses: document.getElementById('moneyMonthExpenses').value || 0,
+        monthProfit: document.getElementById('moneyMonthProfit').value || 0
+      };
+      localStorage.setItem(MONEY_KEY, JSON.stringify(data));
+      renderMoney();
+      document.getElementById('moneyStatus').textContent = 'Saved';
+      showToast('Money snapshot saved');
     }
 
     function loadMoney() {
       const data = JSON.parse(localStorage.getItem(MONEY_KEY) || '{}');
-      document.getElementById('moneyTodayRevenue').value = data.todayRevenue ?? '';
-      document.getElementById('moneyMonthRevenue').value = data.monthRevenue ?? '';
-      document.getElementById('moneyMonthExpenses').value = data.monthExpenses ?? '';
-      document.getElementById('moneyMonthProfit').value = data.monthProfit ?? '';
+      document.getElementById('moneyTodayRevenue').value = data.todayRevenue || '';
+      document.getElementById('moneyMonthRevenue').value = data.monthRevenue || '';
+      document.getElementById('moneyMonthExpenses').value = data.monthExpenses || '';
+      document.getElementById('moneyMonthProfit').value = data.monthProfit || '';
       renderMoney();
-      const finance = getFinanceSummary();
-      document.getElementById('moneyStatus').textContent =
-        finance && finance.enabled
-          ? (finance.savedAt ? `Auto-synced from finance ${finance.savedAt}` : 'Auto-synced from finance')
-          : (data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet');
-    }
-
-    function getManualMoneyValues() {
-      const todayRevenue = Number(document.getElementById('moneyTodayRevenue').value) || 0;
-      const monthRevenue = Number(document.getElementById('moneyMonthRevenue').value) || 0;
-      const monthExpenses = Number(document.getElementById('moneyMonthExpenses').value) || 0;
-      const manualProfit = document.getElementById('moneyMonthProfit').value;
-      const monthProfit = manualProfit !== '' ? Number(manualProfit) || 0 : (monthRevenue - monthExpenses);
-      return { todayRevenue, monthRevenue, monthExpenses, monthProfit };
-    }
-
-    function getEffectiveMoneyValues() {
-      const finance = getFinanceSummary();
-      if (finance && finance.enabled) {
-        return {
-          source: 'finance',
-          todayRevenue: Number(finance.todayRevenue) || 0,
-          monthRevenue: Number(finance.monthRevenue) || 0,
-          monthExpenses: Number(finance.monthExpenses) || 0,
-          monthProfit: Number(finance.monthProfit) || 0
-        };
-      }
-      return { source: 'manual', ...getManualMoneyValues() };
     }
 
     function renderMoney() {
-      const data = getEffectiveMoneyValues();
-      document.getElementById('moneyTodayRevenueDisplay').textContent = money(data.todayRevenue);
-      document.getElementById('moneyMonthRevenueDisplay').textContent = money(data.monthRevenue);
-      document.getElementById('moneyMonthExpensesDisplay').textContent = money(data.monthExpenses);
-      document.getElementById('moneyProfitDisplay').textContent = money(data.monthProfit);
-    }
-
-    function saveMoney() {
-      const payload = {
-        todayRevenue: document.getElementById('moneyTodayRevenue').value,
-        monthRevenue: document.getElementById('moneyMonthRevenue').value,
-        monthExpenses: document.getElementById('moneyMonthExpenses').value,
-        monthProfit: document.getElementById('moneyMonthProfit').value,
-        savedAt: new Date().toLocaleString()
-      };
-      localStorage.setItem(MONEY_KEY, JSON.stringify(payload));
-      renderMoney();
-      document.getElementById('moneyStatus').textContent = `Saved ${payload.savedAt}`;
-      showToast('Money snapshot saved');
+      const todayRevenue = Number(document.getElementById('moneyTodayRevenue').value || 0);
+      const monthRevenue = Number(document.getElementById('moneyMonthRevenue').value || 0);
+      const monthExpenses = Number(document.getElementById('moneyMonthExpenses').value || 0);
+      const monthProfitInput = Number(document.getElementById('moneyMonthProfit').value || 0);
+      const monthProfit = monthProfitInput || (monthRevenue - monthExpenses);
+      document.getElementById('moneyTodayRevenueDisplay').textContent = money(todayRevenue);
+      document.getElementById('moneyMonthRevenueDisplay').textContent = money(monthRevenue);
+      document.getElementById('moneyMonthExpensesDisplay').textContent = money(monthExpenses);
+      document.getElementById('moneyProfitDisplay').textContent = money(monthProfit);
     }
 
     function resetMoney() {
-      ['moneyTodayRevenue','moneyMonthRevenue','moneyMonthExpenses','moneyMonthProfit'].forEach(id => document.getElementById(id).value = '');
       localStorage.removeItem(MONEY_KEY);
+      ['moneyTodayRevenue','moneyMonthRevenue','moneyMonthExpenses','moneyMonthProfit'].forEach(id => document.getElementById(id).value = '');
       renderMoney();
-      document.getElementById('moneyStatus').textContent = 'Snapshot reset';
+      document.getElementById('moneyStatus').textContent = 'Reset';
       showToast('Money snapshot reset');
     }
 
-    function syncTaxFromFinance() {
-      const finance = getFinanceSummary();
-      if (!finance || !finance.enabled) return;
-      document.getElementById('taxCollectedDisplay').textContent = money(Number(finance.taxCollected) || 0);
-      document.getElementById('taxRateDisplay').textContent = `${Number(finance.taxRate) || 0}%`;
-      document.getElementById('taxDueDisplay').textContent = finance.taxDueDate || '—';
-      document.getElementById('taxStatus').textContent = finance.savedAt ? `Auto-synced from finance ${finance.savedAt}` : 'Auto-synced from finance';
-    }
-
-    function loadTax() {
-      const finance = getFinanceSummary();
-      if (finance && finance.enabled) {
-        renderTax();
-        return;
-      }
-      const data = JSON.parse(localStorage.getItem(TAX_KEY) || '{}');
-      document.getElementById('taxCollectedInput').value = data.collected ?? '';
-      document.getElementById('taxRateInput').value = data.rate ?? '';
-      document.getElementById('taxDueDateInput').value = data.dueDate ?? '';
-      renderTax();
-      document.getElementById('taxStatus').textContent = data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet';
-    }
-
-    function renderTax() {
-      const finance = getFinanceSummary();
-      if (finance && finance.enabled) {
-        syncTaxFromFinance();
-        return;
-      }
-      const collected = Number(document.getElementById('taxCollectedInput').value) || 0;
-      const rate = Number(document.getElementById('taxRateInput').value) || 0;
-      const dueDate = document.getElementById('taxDueDateInput').value || '—';
-      document.getElementById('taxCollectedDisplay').textContent = money(collected);
-      document.getElementById('taxRateDisplay').textContent = `${rate}%`;
-      document.getElementById('taxDueDisplay').textContent = dueDate === '—' ? '—' : dueDate;
-    }
-
     function saveTax() {
-      const payload = {
-        collected: document.getElementById('taxCollectedInput').value,
-        rate: document.getElementById('taxRateInput').value,
-        dueDate: document.getElementById('taxDueDateInput').value,
-        savedAt: new Date().toLocaleString()
+      const data = {
+        collected: document.getElementById('taxCollectedInput').value || 0,
+        rate: document.getElementById('taxRateInput').value || 0,
+        dueDate: document.getElementById('taxDueDateInput').value || ''
       };
-      localStorage.setItem(TAX_KEY, JSON.stringify(payload));
+      localStorage.setItem(TAX_KEY, JSON.stringify(data));
       renderTax();
-      document.getElementById('taxStatus').textContent = `Saved ${payload.savedAt}`;
+      document.getElementById('taxStatus').textContent = 'Saved';
       showToast('Tax info saved');
     }
 
-    function copyTaxLines() {
-      const finance = getFinanceSummary();
-      const collected = finance && finance.enabled
-        ? (Number(finance.taxCollected) || 0)
-        : (Number(document.getElementById('taxCollectedInput').value) || 0);
-      const rate = finance && finance.enabled
-        ? (Number(finance.taxRate) || 0)
-        : (document.getElementById('taxRateInput').value || '0');
-      const dueDate = finance && finance.enabled
-        ? (finance.taxDueDate || '[due date]')
-        : (document.getElementById('taxDueDateInput').value || '[due date]');
+    function loadTax() {
+      const data = JSON.parse(localStorage.getItem(TAX_KEY) || '{}');
+      document.getElementById('taxCollectedInput').value = data.collected || '';
+      document.getElementById('taxRateInput').value = data.rate || '';
+      document.getElementById('taxDueDateInput').value = data.dueDate || '';
+      renderTax();
+    }
 
-      const message = `Ohio sales tax filing prep
-- Tax collected this month: ${money(collected)}
-- Tax rate saved here: ${rate}%
-- Filing due date: ${dueDate}
-- Pull exact line-by-line figures from finance-pro.html before submitting.`;
-      copyText(message);
+    function renderTax() {
+      const collected = Number(document.getElementById('taxCollectedInput').value || 0);
+      const rate = Number(document.getElementById('taxRateInput').value || 0);
+      const dueDate = document.getElementById('taxDueDateInput').value || '';
+      document.getElementById('taxCollectedDisplay').textContent = money(collected);
+      document.getElementById('taxRateDisplay').textContent = `${rate || 0}%`;
+      document.getElementById('taxDueDisplay').textContent = dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString() : '—';
+    }
+
+    function copyTaxLines() {
+      const collected = Number(document.getElementById('taxCollectedInput').value || 0);
+      const rate = document.getElementById('taxRateInput').value || '0';
+      const dueDate = document.getElementById('taxDueDateInput').value || 'not set';
+      copyText(`Monthly sales tax prep\nTax collected: ${money(collected)}\nSaved tax rate: ${rate}%\nDue date: ${dueDate}`);
     }
 
     function loadReminders() {
-      const items = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
-      renderReminders(items);
+      const reminders = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+      renderReminders(reminders);
     }
 
-    function saveReminders(items) {
-      localStorage.setItem(REMINDERS_KEY, JSON.stringify(items));
+    function saveReminders(reminders) {
+      localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders));
+      renderReminders(reminders);
     }
 
-    function renderReminders(items) {
+    function renderReminders(reminders) {
       const list = document.getElementById('reminderList');
-      list.innerHTML = '';
-      if (!items.length) {
-        list.innerHTML = '<div class="mini-card"><h4>No reminders yet</h4><p>Add items above for overdue, this week, or upcoming tasks.</p></div>';
-        return;
-      }
-      items.forEach((item, index) => {
-        const row = document.createElement('div');
-        row.className = 'reminder-item';
-        row.innerHTML = `<div><strong>${item.text}</strong></div><div class="inline-actions"><span class="badge ${item.type}">${item.type === 'thisweek' ? 'Due this week' : item.type === 'overdue' ? 'Overdue' : 'Upcoming'}</span><button class="tiny-btn" type="button" data-reminder-remove="${index}">Done</button></div>`;
-        list.appendChild(row);
-      });
-      list.querySelectorAll('[data-reminder-remove]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const next = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
-          next.splice(Number(btn.dataset.reminderRemove), 1);
-          saveReminders(next);
-          renderReminders(next);
-          showToast('Reminder removed');
-        });
-      });
+      list.innerHTML = reminders.length ? reminders.map((r, i) => `
+        <div class="reminder-item">
+          <div>
+            <div style="font-weight:800;">${r.text}</div>
+            <div class="helper">Saved locally</div>
+          </div>
+          <div class="inline-actions" style="margin-top:0;">
+            <span class="badge ${r.type}">${r.type}</span>
+            <button class="tiny-btn" type="button" onclick="removeReminder(${i})">Delete</button>
+          </div>
+        </div>
+      `).join('') : '<div class="helper">No reminders saved yet.</div>';
     }
 
     function addReminder() {
-      const textInput = document.getElementById('reminderTextInput');
-      const typeInput = document.getElementById('reminderTypeInput');
-      const text = textInput.value.trim();
-      if (!text) return showToast('Enter a reminder first');
-      const items = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
-      items.push({ text, type: typeInput.value });
-      saveReminders(items);
-      renderReminders(items);
-      textInput.value = '';
+      const text = document.getElementById('reminderTextInput').value.trim();
+      const type = document.getElementById('reminderTypeInput').value;
+      if (!text) return showToast('Add reminder text first');
+      const reminders = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+      reminders.unshift({ text, type });
+      saveReminders(reminders);
+      document.getElementById('reminderTextInput').value = '';
       showToast('Reminder added');
     }
 
-    function loadEventMode() {
-      const data = JSON.parse(localStorage.getItem(EVENT_KEY) || '{}');
-      const isOn = !!data.enabled;
-      const switchEl = document.getElementById('eventModeSwitch');
-      const panel = document.getElementById('eventModePanel');
-      switchEl.classList.toggle('on', isOn);
-      switchEl.setAttribute('aria-pressed', String(isOn));
-      panel.classList.toggle('hidden', !isOn);
-      document.getElementById('eventNotes').value = data.notes || '';
-      document.getElementById('eventNotesStatus').textContent = data.savedAt ? `Saved ${data.savedAt}` : 'Not saved yet';
-      ['table','qr','samples','payments'].forEach(key => {
-        const box = document.querySelector(`[data-event-check="${key}"]`);
-        if (box) box.checked = !!data[key];
-      });
+    function removeReminder(index) {
+      const reminders = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
+      reminders.splice(index, 1);
+      saveReminders(reminders);
+      showToast('Reminder removed');
     }
 
-    function saveEventMode(extra = {}) {
-      const switchEl = document.getElementById('eventModeSwitch');
-      const payload = {
-        enabled: switchEl.classList.contains('on'),
-        notes: document.getElementById('eventNotes').value,
-        table: document.querySelector('[data-event-check="table"]').checked,
-        qr: document.querySelector('[data-event-check="qr"]').checked,
-        samples: document.querySelector('[data-event-check="samples"]').checked,
-        payments: document.querySelector('[data-event-check="payments"]').checked,
-        savedAt: new Date().toLocaleString(),
-        ...extra
-      };
-      localStorage.setItem(EVENT_KEY, JSON.stringify(payload));
-      document.getElementById('eventNotesStatus').textContent = `Saved ${payload.savedAt}`;
+    async function runHealthCheck() {
+      healthStamp.textContent = 'Checking...';
+      for (const [key, url] of Object.entries(healthTargets)) {
+        const dot = document.querySelector(`[data-health-dot="${key}"]`);
+        dot.className = 'status-dot';
+        try {
+          await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+          dot.classList.add('ok');
+        } catch {
+          dot.classList.add('bad');
+        }
+      }
+      healthStamp.textContent = `Last checked ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+      showToast('Health check finished');
     }
 
-    function toggleEventMode() {
-      const switchEl = document.getElementById('eventModeSwitch');
-      const panel = document.getElementById('eventModePanel');
-      const next = !switchEl.classList.contains('on');
-      switchEl.classList.toggle('on', next);
-      switchEl.setAttribute('aria-pressed', String(next));
-      panel.classList.toggle('hidden', !next);
-      saveEventMode({ enabled: next });
-      showToast(next ? 'Event mode on' : 'Event mode off');
+    function resetHealthCheck() {
+      document.querySelectorAll('[data-health-dot]').forEach(dot => dot.className = 'status-dot');
+      healthStamp.textContent = 'Not checked yet';
+      showToast('Health dots reset');
     }
 
+    document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => copyText(btn.dataset.copy)));
+    document.querySelectorAll('[data-template]').forEach(btn => btn.addEventListener('click', () => copyText(templates[btn.dataset.template] || '')));
     document.getElementById('saveNotesBtn').addEventListener('click', saveNotes);
     document.getElementById('clearNotesBtn').addEventListener('click', clearNotes);
-    document.getElementById('runHealthCheckBtn').addEventListener('click', runHealthCheck);
-    document.getElementById('resetHealthCheckBtn').addEventListener('click', resetDots);
-
-    ['moneyTodayRevenue','moneyMonthRevenue','moneyMonthExpenses','moneyMonthProfit'].forEach(id => {
-      document.getElementById(id).addEventListener('input', renderMoney);
-    });
     document.getElementById('saveMoneyBtn').addEventListener('click', saveMoney);
     document.getElementById('resetMoneyBtn').addEventListener('click', resetMoney);
-
-    ['taxCollectedInput','taxRateInput','taxDueDateInput'].forEach(id => {
-      document.getElementById(id).addEventListener('input', renderTax);
-      document.getElementById(id).addEventListener('change', renderTax);
-    });
     document.getElementById('saveTaxBtn').addEventListener('click', saveTax);
     document.getElementById('copyTaxLinesBtn').addEventListener('click', copyTaxLines);
-
     document.getElementById('addReminderBtn').addEventListener('click', addReminder);
-    document.getElementById('reminderTextInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') addReminder();
-    });
-
-    document.getElementById('eventModeSwitch').addEventListener('click', toggleEventMode);
-    document.getElementById('saveEventNotesBtn').addEventListener('click', () => {
-      saveEventMode();
-      showToast('Event notes saved');
-    });
-    document.getElementById('copyEventSiteBtn').addEventListener('click', () => copyText('https://olipoly3d.github.io/olipoly-3d/'));
-    document.querySelectorAll('[data-event-check]').forEach(box => box.addEventListener('change', () => saveEventMode()));
-
-    window.addEventListener('storage', (e) => {
-      if (e.key === FINANCE_SUMMARY_KEY) {
-        loadMoney();
-        loadTax();
-      }
-    });
+    document.getElementById('runHealthCheckBtn').addEventListener('click', runHealthCheck);
+    document.getElementById('resetHealthCheckBtn').addEventListener('click', resetHealthCheck);
 
     loadNotes();
-    resetDots();
     loadMoney();
     loadTax();
     loadReminders();
-    loadEventMode();
+    window.removeReminder = removeReminder;
   </script>
 </body>
 </html>
