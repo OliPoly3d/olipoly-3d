@@ -46,7 +46,7 @@
     button{min-height:var(--tap)}
     .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:20px 0 120px}
 
-    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card,.workflow-shell,.stage-card,.manifest-card,.summary-box{
+    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card,.workflow-shell,.stage-card,.manifest-card,.summary-box,.workflow-orders-pane,.workflow-details-pane,.workflow-stage-pane{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
@@ -71,24 +71,27 @@
     .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
     .link-card h4,.link-card p,.mini-card h4,.mini-card p,.template-card h4,.template-card p,
     .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p,.stage-card h4,.stage-card p,
-    .manifest-card h4,.manifest-card p{margin:0}
-    .brand h1{font-size:1.12rem}
-    .brand p,.section-title p,.muted,.helper,.fine,.label-hint,.summary-sub{color:var(--muted)}
+    .manifest-card h4,.manifest-card p,.workflow-orders-pane h4,.workflow-details-pane h4,.workflow-stage-pane h4{
+      margin:0
+    }
 
-    .hero,.dashboard-grid,.two-col,.three-col,.four-col,.workflow-layout{display:grid;gap:18px}
+    .brand h1{font-size:1.12rem}
+    .brand p,.section-title p,.muted,.helper,.fine,.label-hint,.summary-sub,.wf-order-meta{color:var(--muted)}
+
+    .hero,.dashboard-grid,.two-col,.three-col,.four-col{display:grid;gap:18px}
     .hero{grid-template-columns:1.1fr .9fr;margin-bottom:18px}
     .dashboard-grid,.two-col{grid-template-columns:1fr 1fr;margin-bottom:18px}
     .three-col{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
     .four-col{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
-    .workflow-layout{grid-template-columns:1.05fr 1.2fr .9fr;margin-bottom:18px}
 
     .hero-card,.card,.notes-card,.status-card,.quick-actions,.workflow-shell{padding:24px;border-radius:var(--radius-xl)}
     .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
     .hero-card p{line-height:1.7}
 
-    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row,.stack-actions,.form-grid,.manifest-grid,.stage-actions,.quick-copy-grid{
+    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row,.stack-actions,.form-grid,.stage-actions,.quick-copy-grid,.workflow-toolbar,.wf-order-badges{
       display:flex;flex-wrap:wrap;gap:10px
     }
+
     .pill-row{margin-top:16px}
     .pill{
       display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
@@ -99,9 +102,7 @@
     .btn,.ghost,.copy-btn,.tiny-btn,.step-btn,.step-nav-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
       border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
-      cursor:pointer;
-      min-height:var(--tap);
-      padding:12px 16px;
+      cursor:pointer;min-height:var(--tap);padding:12px 16px;
     }
     .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover,.step-btn:hover,.step-nav-btn:hover{transform:translateY(-1px)}
 
@@ -144,8 +145,7 @@
     textarea,.money-input,.small-input,.tax-input,.reminder-input,.wf-input,.wf-select{
       width:100%;border-radius:18px;border:1px solid var(--line);padding:13px 14px;
       background:rgba(255,255,255,.82);color:var(--text);outline:none;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
-      min-height:48px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);min-height:48px;
     }
     textarea{resize:vertical}
     .notes-card textarea{min-height:168px}
@@ -161,11 +161,13 @@
     }
     .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4,.stage-card h4,.manifest-card h4{font-size:1.04rem}
     .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p,.stage-card p,.manifest-card p{color:var(--muted);line-height:1.6}
+
     .url{
       display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
       color:#6d5f90;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);
       padding:10px 12px;border-radius:14px;overflow-wrap:anywhere;
     }
+
     .actions{margin-top:auto}
     .inline-actions{align-items:center}
     .field-row{align-items:center}
@@ -176,9 +178,10 @@
 
     .money-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
     .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-    .workflow-grid,.template-grid,.asset-grid,.test-grid,.manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .workflow-grid,.template-grid,.asset-grid,.test-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .form-grid .full{grid-column:1 / -1}
+
     .label{display:grid;gap:6px;font-weight:700;font-size:.94rem}
 
     .summary-box{
@@ -191,6 +194,7 @@
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.74);border:1px solid var(--line);
     }
+
     .badge{
       display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;
       font-size:.78rem;font-weight:900;border:1px solid var(--line);background:#fff;
@@ -206,40 +210,102 @@
     }
 
     .workflow-shell{background:var(--panel-strong)}
-    .step-strip{
-      display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:12px;
+    .workflow-toolbar{
+      align-items:center;
+      margin:0 0 14px;
     }
+
+    .workflow-manager{
+      display:grid;
+      grid-template-columns:300px minmax(0,1.2fr) minmax(320px,.95fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .workflow-orders-pane,
+    .workflow-details-pane,
+    .workflow-stage-pane{
+      border-radius:24px;
+      padding:18px;
+      min-width:0;
+      background:rgba(255,255,255,.78);
+    }
+
+    .wf-order-list{display:grid;gap:10px}
+
+    .wf-order-item{
+      display:grid;
+      gap:6px;
+      padding:12px 14px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.82);
+      cursor:pointer;
+      transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+      text-align:left;
+    }
+    .wf-order-item:hover{transform:translateY(-1px)}
+    .wf-order-item.active{
+      border-color:rgba(157,124,255,.42);
+      box-shadow:0 0 0 4px rgba(157,124,255,.08);
+      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,245,251,.94));
+    }
+
+    .wf-order-top{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:flex-start;
+    }
+
+    .wf-order-name{
+      font-weight:900;
+      line-height:1.2;
+    }
+
     .workflow-summary{
-      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
     }
+
+    .compact-summary{margin-top:14px}
+
     .workflow-stage-title{
       display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;
     }
+
+    .step-strip{
+      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px;
+    }
+
     .stage-body{display:grid;gap:14px}
     .stage-checks{display:grid;gap:10px}
     .stage-check{
       display:flex;gap:10px;align-items:flex-start;
       padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.75);border:1px solid var(--line);
+      line-height:1.5;
     }
     .stage-check input{margin-top:4px}
-    .stage-actions{margin-top:2px}
-    .sticky-stage-actions{
-      position:sticky;bottom:84px;z-index:8;
-      padding:12px;border-radius:20px;background:rgba(255,252,254,.92);
-      border:1px solid var(--line);backdrop-filter:blur(10px);
+    .stage-check span{display:block;font-size:.96rem}
+
+    .readable-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
     }
-    .quick-copy-grid{display:grid;grid-template-columns:1fr;gap:10px}
-    .manifest-list{display:grid;gap:10px}
-    .manifest-item{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-      padding:12px;border-radius:16px;background:rgba(255,255,255,.76);border:1px solid var(--line);
+
+    .quick-copy-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
     }
-    .manifest-item strong{display:block}
-    .manifest-tag{
-      flex:0 0 auto;
-      border-radius:999px;padding:6px 10px;border:1px solid var(--line);background:#fff;font-size:.76rem;font-weight:900;
+
+    .workflow-stage-pane .copy-btn{
+      justify-content:flex-start;
+      text-align:left;
     }
-    .hidden{display:none !important}
 
     .mobile-dock{
       position:fixed;left:12px;right:12px;bottom:12px;z-index:40;display:none;gap:10px;
@@ -257,13 +323,13 @@
     .toast.show{opacity:1;transform:translateY(0)}
 
     @media (max-width:1100px){
-      .workflow-layout{grid-template-columns:1fr 1fr}
-      .workflow-layout > :last-child{grid-column:1 / -1}
-      .step-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .workflow-manager{grid-template-columns:1fr}
     }
 
     @media (max-width:1000px){
-      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.manifest-grid,.workflow-summary{grid-template-columns:1fr 1fr}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.workflow-summary{
+        grid-template-columns:1fr 1fr
+      }
     }
 
     @media (max-width:900px){
@@ -271,10 +337,21 @@
       .topbar .btn{width:100%}
       .wrap{padding-bottom:118px}
       .mobile-dock{display:flex}
-      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.manifest-grid,.workflow-layout,.workflow-summary{grid-template-columns:1fr}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.workflow-summary{
+        grid-template-columns:1fr
+      }
       .form-grid{grid-template-columns:1fr}
       .step-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .sticky-stage-actions{bottom:92px}
+    }
+
+    @media (max-width:700px){
+      .workflow-toolbar{align-items:stretch}
+      .workflow-toolbar > *{width:100%}
+      .readable-actions{grid-template-columns:1fr}
+      .workflow-orders-pane,
+      .workflow-details-pane,
+      .workflow-stage-pane{padding:16px}
+      .wf-order-top{flex-direction:column;align-items:flex-start}
     }
 
     @media (max-width:640px){
@@ -289,7 +366,6 @@
       .brand p{font-size:.9rem}
       .mobile-dock{gap:8px;padding:8px}
       .mobile-dock a,.mobile-dock button{font-size:.84rem;padding:10px 6px}
-      .sticky-stage-actions{padding:10px;border-radius:18px}
     }
   </style>
 </head>
@@ -355,14 +431,32 @@
 
     <section class="workflow-shell">
       <div class="section-title">
-        <h3>Click-through order workflow</h3>
-        <p>Run every inquiry through one step-by-step process, regardless of whether it came from Messenger, text, website form, email, or in person.</p>
+        <h3>Order workflow manager</h3>
+        <p>Save multiple incoming orders and move each one through the same clean process.</p>
       </div>
 
-      <div class="workflow-layout">
-        <section class="manifest-card">
-          <h4>Order intake</h4>
-          <p>Start here when a new request comes in.</p>
+      <div class="workflow-toolbar">
+        <button class="btn" id="wfNewOrderBtn" type="button">New order</button>
+        <button class="tiny-btn" id="wfSaveBtn" type="button">Save current order</button>
+        <button class="tiny-btn" id="wfDuplicateBtn" type="button">Duplicate order</button>
+        <button class="tiny-btn" id="wfDeleteBtn" type="button">Delete order</button>
+        <span class="helper" id="wfSaveStatus">No order saved yet</span>
+      </div>
+
+      <div class="workflow-manager">
+        <section class="workflow-orders-pane">
+          <div class="section-title" style="margin-bottom:10px;">
+            <h4>Saved orders</h4>
+            <p>Tap any saved order to load it.</p>
+          </div>
+          <div id="wfOrderList" class="wf-order-list"></div>
+        </section>
+
+        <section class="workflow-details-pane">
+          <div class="section-title" style="margin-bottom:10px;">
+            <h4>Order details</h4>
+            <p>Main info for the currently selected order.</p>
+          </div>
 
           <div class="form-grid">
             <label class="label">
@@ -418,11 +512,6 @@
               </select>
             </label>
 
-            <label class="label full">
-              Customer details / specs
-              <textarea class="wf-textarea" id="wfSpecs" placeholder="What they want, size, color, material, deadline notes, link/file reference, special requests"></textarea>
-            </label>
-
             <label class="label">
               Quote total
               <input class="wf-input" id="wfQuoteTotal" type="number" min="0" step="0.01" placeholder="0.00" />
@@ -434,38 +523,37 @@
             </label>
 
             <label class="label full">
+              Customer details / specs
+              <textarea class="wf-textarea" id="wfSpecs" placeholder="What they want, size, color, material, deadline notes, link/file reference, special requests"></textarea>
+            </label>
+
+            <label class="label full">
               Internal notes
               <textarea class="wf-textarea" id="wfInternalNotes" placeholder="Machine notes, design time, test print notes, follow-up items, file locations"></textarea>
             </label>
           </div>
 
-          <div class="inline-actions" style="margin-top:14px;">
-            <button class="tiny-btn" id="wfSaveBtn" type="button">Save workflow</button>
-            <button class="tiny-btn" id="wfResetBtn" type="button">Reset workflow</button>
-            <span class="helper" id="wfSaveStatus">Nothing saved yet</span>
-          </div>
-
-          <div class="workflow-summary">
+          <div class="workflow-summary compact-summary">
             <div class="summary-box">
               <div class="summary-value" id="wfSummaryStage">Intake</div>
               <div class="summary-sub">Current stage</div>
             </div>
             <div class="summary-box">
-              <div class="summary-value" id="wfSummaryProgress">1 / 8</div>
-              <div class="summary-sub">Progress</div>
+              <div class="summary-value" id="wfSummaryPayment">Unpaid</div>
+              <div class="summary-sub">Payment</div>
             </div>
             <div class="summary-box">
               <div class="summary-value" id="wfSummaryWaiting">—</div>
               <div class="summary-sub">Waiting on</div>
             </div>
             <div class="summary-box">
-              <div class="summary-value" id="wfSummaryPayment">Unpaid</div>
-              <div class="summary-sub">Payment status</div>
+              <div class="summary-value" id="wfSummaryProgress">1 / 8</div>
+              <div class="summary-sub">Progress</div>
             </div>
           </div>
         </section>
 
-        <section class="stage-card">
+        <section class="workflow-stage-pane">
           <div class="workflow-stage-title">
             <div>
               <h4 id="stageTitle">1. Intake</h4>
@@ -493,65 +581,25 @@
               <div class="summary-sub">Suggested next action</div>
             </div>
 
-            <div class="sticky-stage-actions">
-              <div class="stage-actions">
-                <button class="step-nav-btn" id="wfPrevBtn" type="button">Previous step</button>
-                <button class="btn" id="wfNextBtn" type="button">Next step</button>
-                <button class="tiny-btn" id="wfMarkWaitingBtn" type="button">Mark waiting on customer</button>
-                <button class="tiny-btn" id="wfMarkPaidBtn" type="button">Toggle paid</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="manifest-card">
-          <h4>Quick message helpers</h4>
-          <p>These pull from the workflow fields above so you can copy a usable reply faster.</p>
-
-          <div class="quick-copy-grid">
-            <button class="copy-btn" type="button" id="copyNeedInfoBtn">Copy request-for-info message</button>
-            <button class="copy-btn" type="button" id="copyQuoteBtn">Copy quote message</button>
-            <button class="copy-btn" type="button" id="copyApprovalBtn">Copy approval message</button>
-            <button class="copy-btn" type="button" id="copyPaymentBtn">Copy payment message</button>
-            <button class="copy-btn" type="button" id="copyReadyBtn">Copy ready-for-pickup message</button>
-            <button class="copy-btn" type="button" id="copyFollowupBtn">Copy follow-up message</button>
-          </div>
-
-          <div class="note" style="margin-top:14px;">
-            Tip: use this as the bridge between incoming messages and your other tools. Inquiry starts here, then jump out to Quote Tool, Orders Admin, Finance, and tracking.
-          </div>
-
-          <div class="manifest-list" style="margin-top:14px;">
-            <div class="manifest-item">
-              <div>
-                <strong>Open quote tool</strong>
-                <div class="helper">Build or revise pricing details.</div>
-              </div>
-              <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open</a>
+            <div class="readable-actions">
+              <button class="step-nav-btn" id="wfPrevBtn" type="button">Previous</button>
+              <button class="btn" id="wfNextBtn" type="button">Next</button>
+              <button class="tiny-btn" id="wfMarkWaitingBtn" type="button">Mark waiting</button>
+              <button class="tiny-btn" id="wfMarkPaidBtn" type="button">Toggle paid</button>
             </div>
 
-            <div class="manifest-item">
-              <div>
-                <strong>Open orders admin</strong>
-                <div class="helper">Log or update the official order record.</div>
-              </div>
-              <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open</a>
+            <div class="section-title" style="margin:8px 0 0;">
+              <h4>Quick message helpers</h4>
+              <p>Copy based on the current order.</p>
             </div>
 
-            <div class="manifest-item">
-              <div>
-                <strong>Copy tracker link</strong>
-                <div class="helper">Send customer tracking page link.</div>
-              </div>
-              <button class="copy-btn" type="button" data-copy="Track your order here: https://olipoly3d.github.io/olipoly-3d/track.html">Copy</button>
-            </div>
-
-            <div class="manifest-item">
-              <div>
-                <strong>Open finance tool</strong>
-                <div class="helper">Record payment or expense details.</div>
-              </div>
-              <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open</a>
+            <div class="quick-copy-grid">
+              <button class="copy-btn" type="button" id="copyNeedInfoBtn">Copy request-for-info</button>
+              <button class="copy-btn" type="button" id="copyQuoteBtn">Copy quote message</button>
+              <button class="copy-btn" type="button" id="copyApprovalBtn">Copy approval message</button>
+              <button class="copy-btn" type="button" id="copyPaymentBtn">Copy payment message</button>
+              <button class="copy-btn" type="button" id="copyReadyBtn">Copy ready message</button>
+              <button class="copy-btn" type="button" id="copyFollowupBtn">Copy follow-up</button>
             </div>
           </div>
         </section>
@@ -777,7 +825,7 @@
     const MONEY_KEY = 'olipoly_hub_money_v1';
     const TAX_KEY = 'olipoly_hub_tax_v1';
     const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
-    const WORKFLOW_KEY = 'olipoly_hub_order_workflow_v1';
+    const WORKFLOW_KEY = 'olipoly_hub_order_workflow_multi_v1';
 
     const templates = {
       orderReceived: `Thanks for your order request. I received it and will review the details shortly. If needed, I will follow up with any questions and next steps. You can track your order here: https://olipoly3d.github.io/olipoly-3d/track.html`,
@@ -931,13 +979,17 @@
       prevBtn: document.getElementById('wfPrevBtn'),
       nextBtn: document.getElementById('wfNextBtn'),
       markWaitingBtn: document.getElementById('wfMarkWaitingBtn'),
-      markPaidBtn: document.getElementById('wfMarkPaidBtn')
+      markPaidBtn: document.getElementById('wfMarkPaidBtn'),
+      orderList: document.getElementById('wfOrderList'),
+      newBtn: document.getElementById('wfNewOrderBtn'),
+      saveBtn: document.getElementById('wfSaveBtn'),
+      duplicateBtn: document.getElementById('wfDuplicateBtn'),
+      deleteBtn: document.getElementById('wfDeleteBtn')
     };
 
-    const workflowState = {
-      stage: 0,
-      waitingOnCustomer: false,
-      paid: false
+    const workflowStore = {
+      activeId: null,
+      orders: []
     };
 
     document.querySelectorAll('a.ext').forEach(a => {
@@ -1176,152 +1228,293 @@ Reminder: confirm gross sales, taxable sales, and tax collected in finance recor
       showToast('Health dots reset');
     };
 
-    function getWorkflowData(){
-      const stored = loadLocal(WORKFLOW_KEY, {});
+    function uid(){
+      return `order_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    }
+
+    function blankOrder(){
       return {
-        customer: safeText(wf.customer.value || stored.customer),
-        source: safeText(wf.source.value || stored.source || 'facebook messenger'),
-        project: safeText(wf.project.value || stored.project),
-        qty: safeText(wf.qty.value || stored.qty),
-        dueDate: safeText(wf.dueDate.value || stored.dueDate),
-        delivery: safeText(wf.delivery.value || stored.delivery),
-        type: safeText(wf.type.value || stored.type || 'existing'),
-        specs: safeText(wf.specs.value || stored.specs),
-        quoteTotal: safeText(wf.quoteTotal.value || stored.quoteTotal),
-        paymentLink: safeText(wf.paymentLink.value || stored.paymentLink),
-        internalNotes: safeText(wf.internalNotes.value || stored.internalNotes),
-        stage: workflowState.stage,
-        waitingOnCustomer: workflowState.waitingOnCustomer,
-        paid: workflowState.paid
+        id: uid(),
+        customer: '',
+        source: 'facebook messenger',
+        project: '',
+        qty: '',
+        dueDate: '',
+        delivery: '',
+        type: 'existing',
+        specs: '',
+        quoteTotal: '',
+        paymentLink: '',
+        internalNotes: '',
+        stage: 0,
+        waitingOnCustomer: false,
+        paid: false,
+        updatedAt: new Date().toISOString()
       };
     }
 
-    function saveWorkflow(){
-      saveLocal(WORKFLOW_KEY, getWorkflowData());
-      wf.saveStatus.textContent = `Saved ${todayStamp()}`;
-      updateWorkflowSummary();
-      showToast('Workflow saved');
-    }
-
-    function loadWorkflow(){
-      const data = loadLocal(WORKFLOW_KEY, null);
-      if (!data) {
-        updateStageUI();
-        updateWorkflowSummary();
-        return;
+    function loadWorkflowStore(){
+      const saved = loadLocal(WORKFLOW_KEY, null);
+      if (saved && Array.isArray(saved.orders) && saved.orders.length){
+        workflowStore.orders = saved.orders;
+        workflowStore.activeId = saved.activeId || saved.orders[0].id;
+      } else {
+        const first = blankOrder();
+        workflowStore.orders = [first];
+        workflowStore.activeId = first.id;
+        persistWorkflowStore();
       }
-      wf.customer.value = data.customer || '';
-      wf.source.value = data.source || 'facebook messenger';
-      wf.project.value = data.project || '';
-      wf.qty.value = data.qty || '';
-      wf.dueDate.value = data.dueDate || '';
-      wf.delivery.value = data.delivery || '';
-      wf.type.value = data.type || 'existing';
-      wf.specs.value = data.specs || '';
-      wf.quoteTotal.value = data.quoteTotal || '';
-      wf.paymentLink.value = data.paymentLink || '';
-      wf.internalNotes.value = data.internalNotes || '';
-      workflowState.stage = Number(data.stage) || 0;
-      workflowState.waitingOnCustomer = !!data.waitingOnCustomer;
-      workflowState.paid = !!data.paid;
-      wf.saveStatus.textContent = 'Loaded saved workflow';
+      renderOrderList();
+      loadActiveOrderIntoForm();
       updateStageUI();
       updateWorkflowSummary();
     }
 
-    function resetWorkflow(){
-      localStorage.removeItem(WORKFLOW_KEY);
-      wf.customer.value = '';
-      wf.source.value = 'facebook messenger';
-      wf.project.value = '';
-      wf.qty.value = '';
-      wf.dueDate.value = '';
-      wf.delivery.value = '';
-      wf.type.value = 'existing';
-      wf.specs.value = '';
-      wf.quoteTotal.value = '';
-      wf.paymentLink.value = '';
-      wf.internalNotes.value = '';
-      workflowState.stage = 0;
-      workflowState.waitingOnCustomer = false;
-      workflowState.paid = false;
-      wf.saveStatus.textContent = 'Workflow reset';
+    function persistWorkflowStore(){
+      saveLocal(WORKFLOW_KEY, workflowStore);
+    }
+
+    function getActiveOrder(){
+      return workflowStore.orders.find(o => o.id === workflowStore.activeId) || workflowStore.orders[0];
+    }
+
+    function collectFormIntoActiveOrder(){
+      const order = getActiveOrder();
+      if (!order) return null;
+      order.customer = safeText(wf.customer.value);
+      order.source = safeText(wf.source.value) || 'facebook messenger';
+      order.project = safeText(wf.project.value);
+      order.qty = safeText(wf.qty.value);
+      order.dueDate = safeText(wf.dueDate.value);
+      order.delivery = safeText(wf.delivery.value);
+      order.type = safeText(wf.type.value) || 'existing';
+      order.specs = safeText(wf.specs.value);
+      order.quoteTotal = safeText(wf.quoteTotal.value);
+      order.paymentLink = safeText(wf.paymentLink.value);
+      order.internalNotes = safeText(wf.internalNotes.value);
+      order.updatedAt = new Date().toISOString();
+      return order;
+    }
+
+    function loadActiveOrderIntoForm(){
+      const order = getActiveOrder();
+      if (!order) return;
+      wf.customer.value = order.customer || '';
+      wf.source.value = order.source || 'facebook messenger';
+      wf.project.value = order.project || '';
+      wf.qty.value = order.qty || '';
+      wf.dueDate.value = order.dueDate || '';
+      wf.delivery.value = order.delivery || '';
+      wf.type.value = order.type || 'existing';
+      wf.specs.value = order.specs || '';
+      wf.quoteTotal.value = order.quoteTotal || '';
+      wf.paymentLink.value = order.paymentLink || '';
+      wf.internalNotes.value = order.internalNotes || '';
+    }
+
+    function renderOrderList(){
+      wf.orderList.innerHTML = '';
+      workflowStore.orders
+        .slice()
+        .sort((a,b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+        .forEach(order => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = `wf-order-item${order.id === workflowStore.activeId ? ' active' : ''}`;
+          const name = order.customer || 'Unnamed customer';
+          const project = order.project || 'Untitled order';
+          const stageName = workflowStages[order.stage || 0].title.replace(/^\d+\.\s*/, '');
+          item.innerHTML = `
+            <div class="wf-order-top">
+              <div>
+                <div class="wf-order-name">${name}</div>
+                <div class="wf-order-meta">${project}</div>
+              </div>
+              <span class="badge ${order.paid ? 'good' : 'upcoming'}">${order.paid ? 'Paid' : 'Unpaid'}</span>
+            </div>
+            <div class="wf-order-meta">
+              ${order.source || 'source unknown'} · ${order.qty || 'qty ?'} · ${order.dueDate || 'no due date'}
+            </div>
+            <div class="wf-order-badges">
+              <span class="badge upcoming">${stageName}</span>
+              ${order.waitingOnCustomer ? '<span class="badge overdue">Waiting</span>' : ''}
+              ${order.delivery ? `<span class="badge thisweek">${order.delivery}</span>` : ''}
+            </div>
+          `;
+          item.onclick = () => {
+            collectFormIntoActiveOrder();
+            workflowStore.activeId = order.id;
+            persistWorkflowStore();
+            renderOrderList();
+            loadActiveOrderIntoForm();
+            updateStageUI();
+            updateWorkflowSummary();
+            wf.saveStatus.textContent = `Loaded ${name}`;
+          };
+          wf.orderList.appendChild(item);
+        });
+    }
+
+    function saveActiveOrder(){
+      const order = collectFormIntoActiveOrder();
+      if (!order) return;
+      persistWorkflowStore();
+      renderOrderList();
+      updateWorkflowSummary();
+      wf.saveStatus.textContent = `Saved ${todayStamp()}`;
+      showToast('Order saved');
+    }
+
+    function createNewOrder(){
+      collectFormIntoActiveOrder();
+      const order = blankOrder();
+      workflowStore.orders.unshift(order);
+      workflowStore.activeId = order.id;
+      persistWorkflowStore();
+      renderOrderList();
+      loadActiveOrderIntoForm();
       updateStageUI();
       updateWorkflowSummary();
-      showToast('Workflow reset');
+      wf.saveStatus.textContent = 'New order ready';
+      showToast('New order created');
+    }
+
+    function duplicateActiveOrder(){
+      const current = collectFormIntoActiveOrder();
+      if (!current) return;
+      const clone = {
+        ...current,
+        id: uid(),
+        customer: current.customer ? `${current.customer} copy` : 'Copied order',
+        updatedAt: new Date().toISOString()
+      };
+      workflowStore.orders.unshift(clone);
+      workflowStore.activeId = clone.id;
+      persistWorkflowStore();
+      renderOrderList();
+      loadActiveOrderIntoForm();
+      updateStageUI();
+      updateWorkflowSummary();
+      wf.saveStatus.textContent = 'Order duplicated';
+      showToast('Order duplicated');
+    }
+
+    function deleteActiveOrder(){
+      if (workflowStore.orders.length === 1){
+        workflowStore.orders[0] = blankOrder();
+        workflowStore.activeId = workflowStore.orders[0].id;
+      } else {
+        const idx = workflowStore.orders.findIndex(o => o.id === workflowStore.activeId);
+        workflowStore.orders.splice(idx, 1);
+        workflowStore.activeId = workflowStore.orders[0].id;
+      }
+      persistWorkflowStore();
+      renderOrderList();
+      loadActiveOrderIntoForm();
+      updateStageUI();
+      updateWorkflowSummary();
+      wf.saveStatus.textContent = 'Order deleted';
+      showToast('Order deleted');
     }
 
     function updateWorkflowSummary(){
-      const stage = workflowStages[workflowState.stage];
+      const order = collectFormIntoActiveOrder() || getActiveOrder();
+      const stage = workflowStages[order.stage || 0];
       wf.summaryStage.textContent = stage.title.replace(/^\d+\.\s*/, '');
-      wf.summaryProgress.textContent = `${workflowState.stage + 1} / ${workflowStages.length}`;
-      wf.summaryWaiting.textContent = workflowState.waitingOnCustomer ? 'Customer' : '—';
-      wf.summaryPayment.textContent = workflowState.paid ? 'Paid' : 'Unpaid';
+      wf.summaryProgress.textContent = `${(order.stage || 0) + 1} / ${workflowStages.length}`;
+      wf.summaryWaiting.textContent = order.waitingOnCustomer ? 'Customer' : '—';
+      wf.summaryPayment.textContent = order.paid ? 'Paid' : 'Unpaid';
     }
 
     function updateStageUI(){
-      const stage = workflowStages[workflowState.stage];
+      const order = getActiveOrder();
+      if (!order) return;
+      const stageIndex = Number(order.stage) || 0;
+      const stage = workflowStages[stageIndex];
+
       wf.stageTitle.textContent = stage.title;
       wf.stageIntro.textContent = stage.intro;
       wf.stageBadge.textContent = stage.badge;
-      wf.stageNextAction.textContent = workflowState.waitingOnCustomer ? 'Waiting on customer response or action.' : stage.next;
+      wf.stageNextAction.textContent = order.waitingOnCustomer ? 'Waiting on customer response or action.' : stage.next;
       wf.stageChecks.innerHTML = '';
 
-      stage.checks.forEach((text, i) => {
+      stage.checks.forEach((text) => {
         const row = document.createElement('label');
         row.className = 'stage-check';
         row.innerHTML = `
-          <input type="checkbox" data-stage-check="${workflowState.stage}-${i}">
+          <input type="checkbox">
           <span>${text}</span>
         `;
         wf.stageChecks.appendChild(row);
       });
 
-      wf.stepButtons.forEach((btn, i) => btn.classList.toggle('active', i === workflowState.stage));
-      wf.prevBtn.disabled = workflowState.stage === 0;
-      wf.nextBtn.textContent = workflowState.stage === workflowStages.length - 1 ? 'Stay on final step' : 'Next step';
-      wf.markWaitingBtn.textContent = workflowState.waitingOnCustomer ? 'Clear waiting flag' : 'Mark waiting on customer';
-      wf.markPaidBtn.textContent = workflowState.paid ? 'Mark unpaid' : 'Mark paid';
+      wf.stepButtons.forEach((btn, i) => btn.classList.toggle('active', i === stageIndex));
+      wf.prevBtn.disabled = stageIndex === 0;
+      wf.nextBtn.textContent = stageIndex === workflowStages.length - 1 ? 'Stay on final step' : 'Next';
+      wf.markWaitingBtn.textContent = order.waitingOnCustomer ? 'Clear waiting' : 'Mark waiting';
+      wf.markPaidBtn.textContent = order.paid ? 'Mark unpaid' : 'Mark paid';
+      updateWorkflowSummary();
+    }
+
+    function setStage(stage){
+      const order = collectFormIntoActiveOrder();
+      if (!order) return;
+      order.stage = Math.max(0, Math.min(workflowStages.length - 1, stage));
+      order.updatedAt = new Date().toISOString();
+      persistWorkflowStore();
+      renderOrderList();
+      updateStageUI();
       updateWorkflowSummary();
     }
 
     function moveStage(dir){
-      workflowState.stage = Math.max(0, Math.min(workflowStages.length - 1, workflowState.stage + dir));
-      updateStageUI();
-      saveWorkflow();
+      const order = collectFormIntoActiveOrder();
+      if (!order) return;
+      setStage((Number(order.stage) || 0) + dir);
     }
 
     wf.stepButtons.forEach(btn => {
-      btn.onclick = () => {
-        workflowState.stage = Number(btn.dataset.stage);
-        updateStageUI();
-        saveWorkflow();
-      };
+      btn.onclick = () => setStage(Number(btn.dataset.stage));
     });
 
     wf.prevBtn.onclick = () => moveStage(-1);
     wf.nextBtn.onclick = () => {
-      if (workflowState.stage < workflowStages.length - 1){
+      const order = getActiveOrder();
+      if ((order.stage || 0) < workflowStages.length - 1){
         moveStage(1);
       } else {
         showToast('Already on final step');
       }
     };
+
     wf.markWaitingBtn.onclick = () => {
-      workflowState.waitingOnCustomer = !workflowState.waitingOnCustomer;
+      const order = collectFormIntoActiveOrder();
+      if (!order) return;
+      order.waitingOnCustomer = !order.waitingOnCustomer;
+      order.updatedAt = new Date().toISOString();
+      persistWorkflowStore();
+      renderOrderList();
       updateStageUI();
-      saveWorkflow();
-      showToast(workflowState.waitingOnCustomer ? 'Marked waiting on customer' : 'Waiting flag cleared');
-    };
-    wf.markPaidBtn.onclick = () => {
-      workflowState.paid = !workflowState.paid;
-      updateStageUI();
-      saveWorkflow();
-      showToast(workflowState.paid ? 'Marked paid' : 'Marked unpaid');
+      wf.saveStatus.textContent = order.waitingOnCustomer ? 'Marked waiting on customer' : 'Waiting cleared';
+      showToast(order.waitingOnCustomer ? 'Marked waiting on customer' : 'Waiting cleared');
     };
 
-    document.getElementById('wfSaveBtn').onclick = saveWorkflow;
-    document.getElementById('wfResetBtn').onclick = resetWorkflow;
+    wf.markPaidBtn.onclick = () => {
+      const order = collectFormIntoActiveOrder();
+      if (!order) return;
+      order.paid = !order.paid;
+      order.updatedAt = new Date().toISOString();
+      persistWorkflowStore();
+      renderOrderList();
+      updateStageUI();
+      wf.saveStatus.textContent = order.paid ? 'Marked paid' : 'Marked unpaid';
+      showToast(order.paid ? 'Marked paid' : 'Marked unpaid');
+    };
+
+    wf.newBtn.onclick = createNewOrder;
+    wf.saveBtn.onclick = saveActiveOrder;
+    wf.duplicateBtn.onclick = duplicateActiveOrder;
+    wf.deleteBtn.onclick = deleteActiveOrder;
 
     [
       wf.customer,wf.source,wf.project,wf.qty,wf.dueDate,wf.delivery,wf.type,wf.specs,wf.quoteTotal,wf.paymentLink,wf.internalNotes
@@ -1330,25 +1523,33 @@ Reminder: confirm gross sales, taxable sales, and tax collected in finance recor
       el.addEventListener('change', updateWorkflowSummary);
     });
 
+    function activeOrder(){
+      return collectFormIntoActiveOrder() || getActiveOrder() || blankOrder();
+    }
+
     function fallbackName(){
-      return safeText(wf.customer.value) || 'there';
+      return safeText(activeOrder().customer) || 'there';
     }
 
     function projectName(){
-      return safeText(wf.project.value) || 'your project';
+      return safeText(activeOrder().project) || 'your project';
     }
 
     function quoteAmountText(){
-      const v = safeText(wf.quoteTotal.value);
+      const v = safeText(activeOrder().quoteTotal);
       return v ? money(v) : '[quote total]';
     }
 
     function dueDateText(){
-      return safeText(wf.dueDate.value) || '[due date]';
+      return safeText(activeOrder().dueDate) || '[due date]';
     }
 
     function deliveryText(){
-      return safeText(wf.delivery.value) || 'pickup / delivery details';
+      return safeText(activeOrder().delivery) || 'pickup / delivery details';
+    }
+
+    function paymentLinkText(){
+      return safeText(activeOrder().paymentLink) || '[insert payment link]';
     }
 
     function buildNeedInfoMessage(){
@@ -1357,7 +1558,7 @@ Reminder: confirm gross sales, taxable sales, and tax collected in finance recor
 
     function buildQuoteMessage(){
       return `Here is your quote for ${projectName()}:
-Quantity: ${safeText(wf.qty.value) || '[qty]'}
+Quantity: ${safeText(activeOrder().qty) || '[qty]'}
 Total: ${quoteAmountText()}
 Delivery: ${deliveryText()}
 Estimated completion: ${dueDateText()}
@@ -1370,9 +1571,8 @@ If everything looks good, reply with "approved" and I will move to the next step
     }
 
     function buildPaymentMessage(){
-      const link = safeText(wf.paymentLink.value) || '[insert payment link]';
       return `Perfect — your order for ${projectName()} is ready for payment.
-Payment link: ${link}
+Payment link: ${paymentLinkText()}
 
 Once payment is received, I will confirm the order and continue with the next step.`;
     }
@@ -1396,7 +1596,7 @@ Once payment is received, I will confirm the order and continue with the next st
     loadMoney();
     loadTax();
     renderReminders();
-    loadWorkflow();
+    loadWorkflowStore();
   </script>
 </body>
 </html>
