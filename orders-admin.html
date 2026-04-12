@@ -341,7 +341,6 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('paymentStatus').value = o.payment_status || 'unpaid';
       $('fulfillment').value = o.fulfillment || 'pickup';
       $('trackingNumber').value = o.tracking_number || '';
-      $('paymentLink').value = o.payment_link || '';
       if ($('paymentLinkStripe')) $('paymentLinkStripe').value = o.payment_link_stripe || o.payment_link || '';
 if ($('paymentLinkPaypal')) $('paymentLinkPaypal').value = o.payment_link_paypal || '';
 if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo || '';
@@ -366,7 +365,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         $('publicNextStep').value ? `Next step: ${$('publicNextStep').value}` : '',
         $('shippingOrPickupNote').value || '',
         $('trackingNumber').value ? `Tracking: ${$('trackingNumber').value}` : '',
-        $('paymentLink').value ? `Stripe invoice URL saved` : ''
+        $('paymentLinkStripe')?.value ? `Stripe invoice URL saved` : ''
       ].filter(Boolean);
       $('publicPreview').textContent = lines.join('\n');
     }
@@ -602,7 +601,7 @@ $('openVenmoBtn')?.onclick = () => {
   setValue('customerName', data.customer);
   setValue('orderTitle', data.project);
   setValue('quantity', data.qty);
-  setValue('paymentLink', data.paymentLink);
+  setValue('paymentLinkStripe', data.paymentLink);
 
   // Optional defaults if blank
   setValue('status', document.getElementById('status')?.value || 'quote_sent');
