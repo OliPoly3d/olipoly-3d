@@ -540,20 +540,26 @@ if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
 if ($('newBtn')) $('newBtn').onclick = resetForm;
 if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
 if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
-    $('openStripeBtn')?.onclick = () => {
-  const url = $('paymentLinkStripe')?.value;
-  if(url) window.open(url, '_blank');
-};
+    if ($('openStripeBtn')) {
+  $('openStripeBtn').onclick = () => {
+    const url = $('paymentLinkStripe')?.value;
+    if (url) window.open(url, '_blank');
+  };
+}
 
-$('openPaypalBtn')?.onclick = () => {
-  const url = $('paymentLinkPaypal')?.value;
-  if(url) window.open(url, '_blank');
-};
+if ($('openPaypalBtn')) {
+  $('openPaypalBtn').onclick = () => {
+    const url = $('paymentLinkPaypal')?.value;
+    if (url) window.open(url, '_blank');
+  };
+}
 
-$('openVenmoBtn')?.onclick = () => {
-  const url = $('paymentLinkVenmo')?.value;
-  if(url) window.open(url, '_blank');
-};
+if ($('openVenmoBtn')) {
+  $('openVenmoBtn').onclick = () => {
+    const url = $('paymentLinkVenmo')?.value;
+    if (url) window.open(url, '_blank');
+  };
+}
     $('clearFiltersBtn').onclick = () => {
       $('searchInput').value = '';
       $('statusFilter').value = 'all';
@@ -622,15 +628,7 @@ $('openVenmoBtn')?.onclick = () => {
   localStorage.removeItem('olipoly_transfer');
   alert('Order loaded from Hub. Review it, then click Save Order.');
 });
-    // ===== BUTTON WIRING =====
-document.addEventListener('DOMContentLoaded', () => {
-  $('loginBtn')?.addEventListener('click', login);
-  $('signupBtn')?.addEventListener('click', signup);
-  $('logoutBtn')?.addEventListener('click', logout);
-  $('refreshBtn')?.addEventListener('click', fetchOrders);
-  $('newBtn')?.addEventListener('click', resetForm);
-  $('saveBtn')?.addEventListener('click', saveOrder);
-});
+    
   </script>
 </body>
 </html>
