@@ -122,24 +122,30 @@
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
           <div class="full">
-            <label for="paymentLink">Stripe Invoice URL</label>
-            <div class="inline-row">
-              <label class="label">Stripe (Card / Apple Pay)</label>
-<input id="paymentLinkStripe" type="url" placeholder="https://invoice.stripe.com/..." />
+  <label>Payment Links</label>
+  <div class="form-grid">
+    <div class="full">
+      <label for="paymentLinkStripe">Stripe (Card / Apple Pay)</label>
+      <input id="paymentLinkStripe" type="url" placeholder="https://invoice.stripe.com/..." />
+    </div>
 
-<label class="label">PayPal</label>
-<input id="paymentLinkPaypal" type="url" placeholder="https://paypal.me/..." />
+    <div>
+      <label for="paymentLinkPaypal">PayPal</label>
+      <input id="paymentLinkPaypal" type="url" placeholder="https://www.paypal.com/ncp/payment/..." />
+    </div>
 
-<label class="label">Venmo</label>
-<input id="paymentLinkVenmo" type="url" placeholder="https://venmo.com/..." />
+    <div>
+      <label for="paymentLinkVenmo">Venmo</label>
+      <input id="paymentLinkVenmo" type="url" placeholder="https://www.venmo.com/u/..." />
+    </div>
 
-<div style="display:flex; gap:8px; margin-top:8px;">
-  <button class="btn-ghost" id="openStripeBtn" type="button">Open Stripe</button>
-  <button class="btn-ghost" id="openPaypalBtn" type="button">Open PayPal</button>
-  <button class="btn-ghost" id="openVenmoBtn" type="button">Open Venmo</button>
+    <div class="full" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn-ghost" id="openStripeBtn" type="button">Open Stripe</button>
+      <button class="btn-ghost" id="openPaypalBtn" type="button">Open PayPal</button>
+      <button class="btn-ghost" id="openVenmoBtn" type="button">Open Venmo</button>
+    </div>
+  </div>
 </div>
-            </div>
-          </div>
           <div><label for="stripeInvoiceId">Stripe Invoice ID (optional)</label><input id="stripeInvoiceId" placeholder="inv_..." /></div>
           <div><label for="paidDate">Paid Date</label><input id="paidDate" type="date" /></div>
           <div class="full"><label for="internalNotes">Internal Notes</label><textarea id="internalNotes"></textarea></div>
@@ -216,7 +222,7 @@
     }
 
     function normalizePaymentStatus(){
-      const hasLink = $('paymentLink').value.trim();
+      const hasLink = $('paymentLinkStripe')?.value.trim() || $('paymentLinkPaypal')?.value.trim() || $('paymentLinkVenmo')?.value.trim() || '';
       const deposit = num($('depositAmount').value);
       const total = num($('orderTotal').value);
       const balance = Math.max(0, total - deposit);
@@ -244,7 +250,10 @@
         payment_status: $('paymentStatus').value,
         fulfillment: $('fulfillment').value,
         tracking_number: $('trackingNumber').value.trim() || null,
-        payment_link: $('paymentLink').value.trim() || null,
+        payment_link: $('paymentLinkStripe')?.value.trim() || null,
+payment_link_stripe: $('paymentLinkStripe')?.value.trim() || null,
+payment_link_paypal: $('paymentLinkPaypal')?.value.trim() || null,
+payment_link_venmo: $('paymentLinkVenmo')?.value.trim() || null,
         stripe_invoice_id: $('stripeInvoiceId').value.trim() || null,
         paid_date: $('paidDate').value || null,
         internal_notes: $('internalNotes').value.trim() || null,
