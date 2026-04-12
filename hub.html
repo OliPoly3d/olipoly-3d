@@ -346,6 +346,7 @@
         <button class="tiny-btn" id="wfSaveBtn" type="button">Save current order</button>
         <button class="tiny-btn" id="wfDuplicateBtn" type="button">Duplicate order</button>
         <button class="tiny-btn" id="wfDeleteBtn" type="button">Delete order</button>
+        <button id="sendToOrdersBtn">Send to Orders</button>
         <span class="helper" id="wfSaveStatus">No order saved yet</span>
       </div>
 
@@ -837,6 +838,26 @@ window.addEventListener('DOMContentLoaded',()=>{
   $('wfPrevBtn')?.onclick=wfPrev;
   $('wfMarkPaidBtn')?.onclick=wfPaid;
   $('wfNewOrderBtn')?.onclick=wfNew;
+});
+  document.getElementById("sendToOrdersBtn")?.addEventListener("click", () => {
+
+  const o = wfActive();
+
+  if (!o) {
+    alert("No order selected");
+    return;
+  }
+
+  const data = {
+    customer: o.customer,
+    project: o.project,
+    qty: o.qty,
+    paymentLink: o.paymentLink
+  };
+
+  localStorage.setItem("olipoly_transfer", JSON.stringify(data));
+
+  alert("Order sent! Now open Orders Admin");
 });
 </script>
 </body>
