@@ -101,7 +101,10 @@ function quoteShippingModeToFulfillment(mode) {
 const padQuoteNumber = (n) => String(n).padStart(6, '0');
 const formatQuoteNumber = (n) => `Q-${padQuoteNumber(n)}`;
 const formatInvoiceNumber = (n) => `INV-${padQuoteNumber(n)}`;
-
+function previewOrderNumberFromQuote(qNum) {
+  if (!qNum) return '—';
+  return String(qNum).replace(/^Q-/, 'OP-');
+}
 const readHistory = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
   catch { return []; }
