@@ -840,10 +840,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-  $('wfNextBtn')?.onclick = wfNext;
-  $('wfPrevBtn')?.onclick = wfPrev;
-  $('wfMarkPaidBtn')?.onclick = wfPaid;
-  $('wfNewOrderBtn')?.onclick = wfNew;
+if ($('wfNextBtn')) $('wfNextBtn').onclick = wfNext;
+if ($('wfPrevBtn')) $('wfPrevBtn').onclick = wfPrev;
+if ($('wfMarkPaidBtn')) $('wfMarkPaidBtn').onclick = wfPaid;
+if ($('wfNewOrderBtn')) $('wfNewOrderBtn').onclick = wfNew;
 
   // ✅ FIXED: now inside DOM load
   $('sendToOrdersBtn')?.addEventListener("click", () => {
