@@ -540,7 +540,7 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   } else {
     const futureOrderNumber = previewOrderNumberFromQuote(els.quoteNumber.value);
     toggleHidden(els.pdfTrackingInfo, false);
-    els.pdfTrackingInfo.innerHTML = `<strong>Order Tracking</strong><br>If this quote is accepted, your order will be assigned Order Number <strong>${futureOrderNumber}</strong>. You can track your order status anytime on the OliPoly 3D tracking page using that exact order number.`;
+    els.pdfTrackingInfo.innerHTML = `<strong>Order Tracking</strong><br>Once this quote is accepted, it will be assigned Order Number <strong>${futureOrderNumber}</strong>. You can track your order anytime on the OliPoly 3D tracking page using that exact order number.`;
   }
 }
 
