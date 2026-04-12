@@ -622,6 +622,15 @@ $('openVenmoBtn')?.onclick = () => {
   localStorage.removeItem('olipoly_transfer');
   alert('Order loaded from Hub. Review it, then click Save Order.');
 });
+    // ===== BUTTON WIRING =====
+document.addEventListener('DOMContentLoaded', () => {
+  $('loginBtn')?.addEventListener('click', login);
+  $('signupBtn')?.addEventListener('click', signup);
+  $('logoutBtn')?.addEventListener('click', logout);
+  $('refreshBtn')?.addEventListener('click', fetchOrders);
+  $('newBtn')?.addEventListener('click', resetForm);
+  $('saveBtn')?.addEventListener('click', saveOrder);
+});
   </script>
 </body>
 </html>
