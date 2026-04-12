@@ -826,49 +826,95 @@ function wfNext(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.stage=Mat
 function wfPrev(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.stage=Math.max(0,o.stage-1); wfWrite(s); wfRender();}
 function wfPaid(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.paid=!o.paid; wfWrite(s); wfRender();}
 function wfNew(){ wfSave(); const s=wfEnsure(); const o=wfNewOrder(); s.orders.unshift(o); s.activeId=o.id; wfWrite(s); wfRender();}
+function wfSaveCurrent(){
+  wfSave();
+  showToast('Order saved');
+}
 
-window.addEventListener('DOMContentLoaded',()=>{
-  wfEnsure(); 
+function wfDuplicate(){
+  wfSave();
+  const s = wfEnsure();
+  const o = wfActive();
+  if (!o) return;
+
+  const copy = {
+    ...o,
+    id: 'wf_' + Date.now(),
+    project: (o.project || 'Order') + ' copy'
+  };
+
+  s.orders.unshift(copy);
+  s.activeId = copy.id;
+  wfWrite(s);
+  wfRender();
+  showToast('Order duplicated');
+}
+
+function wfDelete(){
+  const s = wfEnsure();
+
+  s.orders = s.orders.filter(o => o.id !== s.activeId);
+
+  if (!s.orders.length) {
+    const fresh = wfNewOrder();
+    s.orders = [fresh];
+    s.activeId = fresh.id;
+  } else {
+    s.activeId = s.orders[0].id;
+  }
+
+  wfWrite(s);
+  wfRender();
+  showToast('Order deleted');
+}
+window.addEventListener('DOMContentLoaded', () => {
+  wfEnsure();
   wfRender();
 
-['wfCustomer','wfProject','wfQty','wfPaymentLink'].forEach(id => {
-  const el = $(id);
-  if (el) {
-    el.addEventListener('input', wfSave);
-    el.addEventListener('change', wfSave);
-    el.addEventListener('blur', wfSave);
-  }
-});
+  const wfIds = ['wfCustomer','wfProject','wfQty','wfPaymentLink'];
 
-if ($('wfNextBtn')) $('wfNextBtn').onclick = wfNext;
-if ($('wfPrevBtn')) $('wfPrevBtn').onclick = wfPrev;
-if ($('wfMarkPaidBtn')) $('wfMarkPaidBtn').onclick = wfPaid;
-if ($('wfNewOrderBtn')) $('wfNewOrderBtn').onclick = wfNew;
-
-  // ✅ FIXED: now inside DOM load
-  $('sendToOrdersBtn')?.addEventListener("click", () => {
-
-    const o = wfActive();
-
-    if (!o) {
-      alert("No order selected");
-      return;
-    }
-
-    const data = {
-      customer: o.customer,
-      project: o.project,
-      qty: o.qty,
-      paymentLink: o.paymentLink
-    };
-
-    localStorage.setItem("olipoly_transfer", JSON.stringify(data));
-
-    alert("Order sent! Now open Orders Admin");
+  document.addEventListener('input', (e) => {
+    if (wfIds.includes(e.target?.id)) wfSave();
   });
 
-});
+  document.addEventListener('change', (e) => {
+    if (wfIds.includes(e.target?.id)) wfSave();
+  });
 
+  document.addEventListener('blur', (e) => {
+    if (wfIds.includes(e.target?.id)) wfSave();
+  }, true);
+
+  if ($('wfNextBtn')) $('wfNextBtn').onclick = wfNext;
+  if ($('wfPrevBtn')) $('wfPrevBtn').onclick = wfPrev;
+  if ($('wfMarkPaidBtn')) $('wfMarkPaidBtn').onclick = wfPaid;
+  if ($('wfNewOrderBtn')) $('wfNewOrderBtn').onclick = wfNew;
+
+  if ($('wfSaveBtn')) $('wfSaveBtn').onclick = wfSaveCurrent;
+  if ($('wfDuplicateBtn')) $('wfDuplicateBtn').onclick = wfDuplicate;
+  if ($('wfDeleteBtn')) $('wfDeleteBtn').onclick = wfDelete;
+
+  if ($('sendToOrdersBtn')) {
+    $('sendToOrdersBtn').onclick = () => {
+      const o = wfActive();
+
+      if (!o) {
+        alert('No order selected');
+        return;
+      }
+
+      const data = {
+        customer: o.customer,
+        project: o.project,
+        qty: o.qty,
+        paymentLink: o.paymentLink
+      };
+
+      localStorage.setItem('olipoly_transfer', JSON.stringify(data));
+      alert('Order sent! Now open Orders Admin');
+    };
+  }
+});
 </script>
 </body>
 </html>
