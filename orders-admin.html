@@ -21,12 +21,13 @@
     .brand{display:flex;align-items:center;gap:12px}.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
     .brand h1,.brand p,.hero h2,.hero p,.card h3,.sub,.summary h3,.summary p{margin:0}.brand h1{font-size:clamp(1rem,2vw,1.18rem)}.brand p,.sub,.hero p,.muted{color:var(--muted)}
     .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
-    .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
+    .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid,.inline-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
     .summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.summary span,.summary strong,.summary small{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.12rem,2.7vw,1.8rem)}.summary small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
     .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .8fr .8fr .8fr auto;align-items:end}
     label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit;outline:none}
     select option{background:#0a1225;color:#eef4ff} input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)} textarea{min-height:90px;resize:vertical}
-    .note,.empty,.message{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}.message{display:none}
+    .note,.empty,.message,.stripe-note{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}.message{display:none}
+    .stripe-note{border-style:solid;background:rgba(126,123,255,.07);border-color:rgba(126,123,255,.18)}
     .status-pill,.payment-pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.76rem;font-weight:800;letter-spacing:.04em;border:1px solid transparent}
     .s-quote_sent,.s-awaiting_approval,.s-awaiting_deposit{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
     .s-in_design,.s-in_production,.s-post_processing{background:rgba(126,123,255,.12);border-color:rgba(126,123,255,.24);color:#d9d8ff}
@@ -36,9 +37,11 @@
     .p-refunded{background:rgba(255,110,145,.12);border-color:rgba(255,110,145,.24);color:#ffd8e3}
     .list{display:grid;gap:12px;max-height:950px;overflow:auto;padding-right:4px}.order-row{padding:16px;border-radius:22px;cursor:pointer}.order-row.active{border-color:rgba(46,230,196,.35);box-shadow:0 0 0 1px rgba(46,230,196,.08),var(--shadow)}
     .order-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}.order-head strong{font-size:1rem}.order-meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 10px}.order-row p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.55}
+    .inline-actions{display:flex;gap:10px;align-items:end}.inline-actions .btn-ghost{white-space:nowrap}
     .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    .hidden{display:none!important}
     @media (max-width:1140px){.grid,.hero,.summary-grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}
-    @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters{grid-template-columns:1fr}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters,.inline-grid{grid-template-columns:1fr}.inline-actions{flex-direction:column;align-items:stretch}.inline-actions .btn-ghost{width:100%}}
   </style>
 </head>
 <body>
@@ -60,9 +63,9 @@
         <p>Use this page to create and update orders, add internal notes, record payment progress, and store the public tracking fields your customer-facing tracking page will read.</p>
       </section>
       <section class="card">
-        <h3>Customer-facing fields</h3>
-        <p class="sub">These are the only fields the public tracker should show: public status text, public next step, pickup or shipping note, tracking number, payment link, status, payment status, order title, and order number.</p>
-        <div class="note">Internal Notes stay private. Status options below intentionally match the tracker statuses exactly.</div>
+        <h3>Stripe invoice workflow</h3>
+        <p class="sub">Create one Stripe invoice per order, copy the hosted invoice URL, paste it below, and save. The public tracker will use that saved invoice URL for the customer payment button.</p>
+        <div class="stripe-note">Recommended flow: create order → create Stripe invoice → copy hosted invoice URL → paste Stripe Invoice URL → set payment status → save order.</div>
       </section>
     </div>
 
@@ -118,7 +121,14 @@
           <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
-          <div class="full"><label for="paymentLink">Payment / Invoice Link</label><input id="paymentLink" /></div>
+          <div class="full">
+            <label for="paymentLink">Stripe Invoice URL</label>
+            <div class="inline-actions">
+              <input id="paymentLink" type="url" placeholder="https://invoice.stripe.com/..." />
+              <button class="btn-ghost" id="openInvoiceBtn" type="button">Open Invoice</button>
+            </div>
+          </div>
+          <div class="full"><label for="stripeInvoiceId">Stripe Invoice ID (optional)</label><input id="stripeInvoiceId" placeholder="inv_..." /></div>
           <div class="full"><label for="internalNotes">Internal Notes</label><textarea id="internalNotes"></textarea></div>
           <div class="full"><label for="publicStatusText">Public Status Text</label><textarea id="publicStatusText"></textarea></div>
           <div class="full"><label for="publicNextStep">Public Next Step</label><textarea id="publicNextStep"></textarea></div>
@@ -182,6 +192,22 @@
       return data;
     }
 
+    function autoBalance(){
+      $('balanceAmount').value = Math.max(0, num($('orderTotal').value) - num($('depositAmount').value)).toFixed(2);
+    }
+
+    function normalizePaymentStatus(){
+      const hasLink = $('paymentLink').value.trim();
+      const deposit = num($('depositAmount').value);
+      const total = num($('orderTotal').value);
+      const balance = Math.max(0, total - deposit);
+
+      if(!hasLink && $('paymentStatus').value === 'deposit_due') $('paymentStatus').value = 'unpaid';
+      if(hasLink && $('paymentStatus').value === 'unpaid') $('paymentStatus').value = deposit > 0 ? 'deposit_due' : 'unpaid';
+      if($('paymentStatus').value === 'deposit_paid' && balance <= 0) $('paymentStatus').value = 'paid';
+      if($('paymentStatus').value === 'paid') $('balanceAmount').value = '0.00';
+    }
+
     function snapshotForm(){
       return {
         user_id: currentUser?.id,
@@ -199,6 +225,7 @@
         fulfillment: $('fulfillment').value,
         tracking_number: $('trackingNumber').value.trim() || null,
         payment_link: $('paymentLink').value.trim() || null,
+        stripe_invoice_id: $('stripeInvoiceId').value.trim() || null,
         internal_notes: $('internalNotes').value.trim() || null,
         public_status_text: $('publicStatusText').value.trim() || null,
         public_next_step: $('publicNextStep').value.trim() || null,
@@ -224,7 +251,7 @@
     function resetForm(){
       activeId = null;
       $('detailTitle').textContent = 'Order Details';
-      ['orderNumber','customerName','customerEmail','orderTitle','trackingNumber','paymentLink','internalNotes','publicStatusText','publicNextStep','shippingOrPickupNote'].forEach(id => $(id).value='');
+      ['orderNumber','customerName','customerEmail','orderTitle','trackingNumber','paymentLink','stripeInvoiceId','internalNotes','publicStatusText','publicNextStep','shippingOrPickupNote'].forEach(id => $(id).value='');
       $('orderDate').value = today();
       $('quantity').value = 1;
       $('orderTotal').value = 0;
@@ -254,6 +281,7 @@
       $('fulfillment').value = o.fulfillment || 'pickup';
       $('trackingNumber').value = o.tracking_number || '';
       $('paymentLink').value = o.payment_link || '';
+      $('stripeInvoiceId').value = o.stripe_invoice_id || '';
       $('internalNotes').value = o.internal_notes || '';
       $('publicStatusText').value = o.public_status_text || '';
       $('publicNextStep').value = o.public_next_step || '';
@@ -262,15 +290,17 @@
     }
 
     function updatePreview(){
-      $('balanceAmount').value = Math.max(0, num($('orderTotal').value) - num($('depositAmount').value)).toFixed(2);
+      autoBalance();
+      normalizePaymentStatus();
       const lines = [
         `Order #: ${$('orderNumber').value || 'N/A'}`,
         `Status: ${statusLabel($('status').value)}`,
+        `Payment: ${paymentLabel($('paymentStatus').value)}`,
         $('publicStatusText').value || 'No public status yet.',
         $('publicNextStep').value ? `Next step: ${$('publicNextStep').value}` : '',
         $('shippingOrPickupNote').value || '',
         $('trackingNumber').value ? `Tracking: ${$('trackingNumber').value}` : '',
-        $('paymentLink').value ? `Payment link: ${$('paymentLink').value}` : ''
+        $('paymentLink').value ? `Stripe invoice URL saved` : ''
       ].filter(Boolean);
       $('publicPreview').textContent = lines.join('\n');
     }
@@ -376,6 +406,8 @@
       await getCurrentUser();
       if(!currentUser) return setMsg($('formMessage'),'Login first',true);
 
+      autoBalance();
+      normalizePaymentStatus();
       const payload = snapshotForm();
       if(!payload.order_title) return setMsg($('formMessage'),'Project / item is required.',true);
 
@@ -442,6 +474,11 @@
     $('newBtn').onclick = resetForm;
     $('saveBtn').onclick = saveOrder;
     $('deleteBtn').onclick = deleteOrder;
+    $('openInvoiceBtn').onclick = () => {
+      const url = $('paymentLink').value.trim();
+      if(!url) return setMsg($('formMessage'),'Add a Stripe invoice URL first.',true);
+      window.open(url, '_blank', 'noopener');
+    };
     $('clearFiltersBtn').onclick = () => {
       $('searchInput').value = '';
       $('statusFilter').value = 'all';
@@ -453,7 +490,7 @@
     $('statusFilter').addEventListener('input', renderList);
     $('paymentFilter').addEventListener('input', renderList);
     $('sortBy').addEventListener('input', renderList);
-    ['orderNumber','orderTotal','depositAmount','status','publicStatusText','publicNextStep','shippingOrPickupNote','trackingNumber','paymentLink'].forEach(id => $(id).addEventListener('input', updatePreview));
+    ['orderNumber','orderTotal','depositAmount','paymentStatus','status','publicStatusText','publicNextStep','shippingOrPickupNote','trackingNumber','paymentLink'].forEach(id => $(id).addEventListener('input', updatePreview));
 
     resetForm();
     renderList();
