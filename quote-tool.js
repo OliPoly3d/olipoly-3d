@@ -21,7 +21,7 @@ const ids = [
   'outDirect','outOverhead','outBase','outProfit','outPerItem','outBreakEven','outMargin','outPreDiscount','outDiscount','outBeforeTax','outRoundedBeforeTax','outRoundingGain','outTax','outDeposit','outBalance','outFinal',
   'quoteSummary','profitWarning','financeReadyView','copyFinanceBtn','customerQuoteView','batchUnitCost','batchTotalCost','batchUnitsOut','batchUnsoldValue','materialUnitCost','activePreset','batchSummary','inventoryReadyView',
   'savedQuotesSelect','loadQuoteBtn','deleteQuoteBtn','historySummary',
-  'pdfSheet','pdfCard','pdfDocType','pdfBrandSub','pdfTitle','pdfSubtitle','pdfQuoteNumber','pdfOrderPreview','pdfInvoiceNumber','pdfQuoteDate','pdfValidThrough','pdfPaymentDueDate','pdfTurnaround','pdfStatus','pdfCustomerName','pdfCompanyName','pdfContactName','pdfPoNumber','pdfQty','pdfPerItem','pdfProject','pdfCustomerNotes','pdfAssumptions','pdfInvoiceTerms','pdfTrackingInfo','pdfQuoteTerms','pdfChecklist'
+  'pdfSheet','pdfCard','pdfDocType','pdfBrandSub','pdfTitle','pdfSubtitle','pdfQuoteNumber','pdfOrderPreview','pdfOrderPreview','pdfInvoiceNumber','pdfQuoteDate','pdfValidThrough','pdfPaymentDueDate','pdfTurnaround','pdfStatus','pdfCustomerName','pdfCompanyName','pdfContactName','pdfPoNumber','pdfQty','pdfPerItem','pdfProject','pdfCustomerNotes','pdfAssumptions','pdfInvoiceTerms','pdfTrackingInfo','pdfQuoteTerms','pdfChecklist'
 ];
 
 const els = Object.fromEntries(ids.map((id) => [id === 'lineItemTemplate' ? 'tpl' : id, $(id)]));
