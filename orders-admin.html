@@ -576,15 +576,23 @@ if ($('openVenmoBtn')) {
     resetForm();
     renderList();
     $('logoutBtn').classList.add('hidden');
-    if(accessToken) getCurrentUser().then(u => {
-      if(u){
-        setMsg($('authMessage'), `Logged in as ${u.email}`);
-        $('logoutBtn').classList.remove('hidden');
-        $('loginBtn').classList.add('hidden');
-        $('signupBtn').classList.add('hidden');
-        fetchOrders();
-      }
-    });
+    if (accessToken) {
+  getCurrentUser().then(u => {
+    if (u) {
+      setMsg($('authMessage'), `Logged in as ${u.email}`);
+      $('logoutBtn').classList.remove('hidden');
+      $('loginBtn').classList.add('hidden');
+      $('signupBtn').classList.add('hidden');
+      fetchOrders();
+    } else {
+      localStorage.removeItem('sb_token');
+      accessToken = null;
+      $('logoutBtn').classList.add('hidden');
+      $('loginBtn').classList.remove('hidden');
+      $('signupBtn').classList.remove('hidden');
+    }
+  });
+}
     window.addEventListener('DOMContentLoaded', () => {
   const raw = localStorage.getItem('olipoly_transfer');
   if (!raw) return;
