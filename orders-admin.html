@@ -175,6 +175,14 @@
     let activeId = null;
 
     const $ = id => document.getElementById(id);
+    document.addEventListener('DOMContentLoaded', () => {
+  $('loginBtn')?.addEventListener('click', login);
+  $('signupBtn')?.addEventListener('click', signup);
+  $('logoutBtn')?.addEventListener('click', logout);
+  $('refreshBtn')?.addEventListener('click', fetchOrders);
+  $('newBtn')?.addEventListener('click', resetForm);
+  $('saveBtn')?.addEventListener('click', saveOrder);
+});
     const num = v => Number(v) || 0;
     const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
     const today = () => new Date().toISOString().slice(0,10);
