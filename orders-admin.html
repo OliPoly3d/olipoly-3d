@@ -124,8 +124,20 @@
           <div class="full">
             <label for="paymentLink">Stripe Invoice URL</label>
             <div class="inline-row">
-              <input id="paymentLink" type="url" placeholder="https://invoice.stripe.com/..." />
-              <button class="btn-ghost" id="openInvoiceBtn" type="button">Open Invoice</button>
+              <label class="label">Stripe (Card / Apple Pay)</label>
+<input id="paymentLinkStripe" type="url" placeholder="https://invoice.stripe.com/..." />
+
+<label class="label">PayPal</label>
+<input id="paymentLinkPaypal" type="url" placeholder="https://paypal.me/..." />
+
+<label class="label">Venmo</label>
+<input id="paymentLinkVenmo" type="url" placeholder="https://venmo.com/..." />
+
+<div style="display:flex; gap:8px; margin-top:8px;">
+  <button class="btn-ghost" id="openStripeBtn" type="button">Open Stripe</button>
+  <button class="btn-ghost" id="openPaypalBtn" type="button">Open PayPal</button>
+  <button class="btn-ghost" id="openVenmoBtn" type="button">Open Venmo</button>
+</div>
             </div>
           </div>
           <div><label for="stripeInvoiceId">Stripe Invoice ID (optional)</label><input id="stripeInvoiceId" placeholder="inv_..." /></div>
