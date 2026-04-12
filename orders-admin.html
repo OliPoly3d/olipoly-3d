@@ -250,7 +250,7 @@
         internal_notes: $('internalNotes').value.trim() || null,
         public_status_text: $('publicStatusText').value.trim() || null,
         public_next_step: $('publicNextStep').value.trim() || null,
-        shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null
+        shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
         payment_link_stripe: $('paymentLinkStripe')?.value.trim() || '',
         payment_link_paypal: $('paymentLinkPaypal')?.value.trim() || '',
         payment_link_venmo: $('paymentLinkVenmo')?.value.trim() || '',
@@ -276,7 +276,24 @@
     function resetForm(){
       activeId = null;
       $('detailTitle').textContent = 'Order Details';
-      ['orderNumber','customerName','customerEmail','orderTitle','trackingNumber','paymentLink','stripeInvoiceId','internalNotes','publicStatusText','publicNextStep','shippingOrPickupNote'].forEach(id => $(id).value='');
+      [
+  'orderNumber',
+  'customerName',
+  'customerEmail',
+  'orderTitle',
+  'trackingNumber',
+  'paymentLink',
+  'paymentLinkStripe',
+  'paymentLinkPaypal',
+  'paymentLinkVenmo',
+  'stripeInvoiceId',
+  'internalNotes',
+  'publicStatusText',
+  'publicNextStep',
+  'shippingOrPickupNote'
+].forEach(id => {
+  if ($(id)) $(id).value = '';
+});
       $('orderDate').value = today();
       $('quantity').value = 1;
       $('orderTotal').value = 0;
@@ -307,6 +324,9 @@
       $('fulfillment').value = o.fulfillment || 'pickup';
       $('trackingNumber').value = o.tracking_number || '';
       $('paymentLink').value = o.payment_link || '';
+      if ($('paymentLinkStripe')) $('paymentLinkStripe').value = o.payment_link_stripe || o.payment_link || '';
+if ($('paymentLinkPaypal')) $('paymentLinkPaypal').value = o.payment_link_paypal || '';
+if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo || '';
       $('stripeInvoiceId').value = o.stripe_invoice_id || '';
       $('paidDate').value = o.paid_date || '';
       $('internalNotes').value = o.internal_notes || '';
