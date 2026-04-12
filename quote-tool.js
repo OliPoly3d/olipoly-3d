@@ -545,14 +545,15 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
 }
 
   if (els.pdfQuoteTerms) {
-    if (isInvoice) {
-      toggleHidden(els.pdfQuoteTerms, true);
-      els.pdfQuoteTerms.innerHTML = '';
-    } else {
-      toggleHidden(els.pdfQuoteTerms, false);
-      els.pdfQuoteTerms.innerHTML = `<strong>Payment Terms</strong><br>${quotePaymentTermsText()}`;
-    }
+  if (isInvoice) {
+    toggleHidden(els.pdfQuoteTerms, true);
+    els.pdfQuoteTerms.innerHTML = '';
+  } else {
+    const futureOrderNumber = previewOrderNumberFromQuote(els.quoteNumber.value);
+    toggleHidden(els.pdfQuoteTerms, false);
+    els.pdfQuoteTerms.innerHTML = `<strong>Payment Terms</strong><br>${quotePaymentTermsText()}<br><br>If accepted, this quote will convert to order number <strong>${futureOrderNumber}</strong>.`;
   }
+}
 
   if (els.pdfInvoiceTerms) {
     els.pdfInvoiceTerms.innerHTML = `<strong>Payment Terms</strong><br>${paymentTermsText()}`
