@@ -107,6 +107,7 @@
         <div class="note"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
         <div class="note"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
         <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
+        <div class="note hidden" id="paidDateWrap"><strong>Paid</strong><span id="viewPaidDate">—</span></div>
         <div class="payment-card hidden" id="paymentWrap">
           <div class="payment-head">
             <strong>Payment</strong>
@@ -129,7 +130,7 @@
       orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
       viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'),
       viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'),
-      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paymentWrap:$('paymentWrap'),
+      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paidDateWrap:$('paidDateWrap'), viewPaidDate:$('viewPaidDate'), paymentWrap:$('paymentWrap'),
       timelineFill:$('timelineFill'), paymentBtn:$('paymentBtn'), paymentBadge:$('paymentBadge'), paymentMessage:$('paymentMessage')
     };
 
@@ -141,9 +142,7 @@
     }
 
     async function api(path){
-      const res=await fetch(`${SUPABASE_URL}${path}`,{
-        headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'}
-      });
+      const res=await fetch(`${SUPABASE_URL}${path}`,{headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'}});
       const data=await res.json().catch(()=>null);
       return {data,error:!res.ok?data:null};
     }
@@ -152,22 +151,38 @@
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
     function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_for_pickup:5,shipped:5,completed:5})[status]||1;}
 
+    function formatPaidDate(dateStr){
+      if(!dateStr) return '';
+      const d = new Date(`${dateStr}T00:00:00`);
+      if(Number.isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    }
+
     function renderPayment(o){
-      if(!o.payment_link){
+      const status = o.payment_status || 'unpaid';
+      const link = o.payment_link || '';
+
+      els.paymentBadge.textContent = paymentLabel(status);
+      els.paymentBadge.className = `payment-badge ${status}`;
+
+      if(o.paid_date){
+        els.paidDateWrap.classList.remove('hidden');
+        els.viewPaidDate.textContent = formatPaidDate(o.paid_date);
+      } else {
+        els.paidDateWrap.classList.add('hidden');
+      }
+
+      if(!link){
         els.paymentWrap.classList.add('hidden');
         return;
       }
 
       els.paymentWrap.classList.remove('hidden');
-
-      const status = o.payment_status || 'unpaid';
-      els.paymentBadge.textContent = paymentLabel(status);
-      els.paymentBadge.className = `payment-badge ${status}`;
-      els.paymentBtn.href = o.payment_link;
+      els.paymentBtn.href = link;
       els.paymentBtn.style.display = 'inline-flex';
 
       if(status === 'paid'){
-        els.paymentMessage.textContent = 'This order has been paid in full.';
+        els.paymentMessage.textContent = o.paid_date ? `This order was paid in full on ${formatPaidDate(o.paid_date)}.` : 'This order has been paid in full.';
         els.paymentBtn.style.display = 'none';
       } else if(status === 'deposit_paid'){
         els.paymentMessage.textContent = 'A remaining balance may still be due.';
@@ -214,7 +229,7 @@
       if(!id) return setMessage('Enter an order number first.',true);
 
       const safeId=encodeURIComponent(id);
-      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link&order_number=eq.${safeId}&limit=1`;
+      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link,paid_date&order_number=eq.${safeId}&limit=1`;
       const {data,error}=await api(path);
 
       if(error){
