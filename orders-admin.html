@@ -204,12 +204,19 @@
     }
 
     async function getCurrentUser(){
-      if(!accessToken) return null;
-      const {data,error} = await api('/auth/v1/user');
-      if(error || !data){ currentUser = null; return null; }
-      currentUser = data;
-      return data;
-    }
+  if (!accessToken) return null;
+  const { data, error } = await api('/auth/v1/user');
+
+  if (error || !data) {
+    currentUser = null;
+    accessToken = null;
+    localStorage.removeItem('sb_token');
+    return null;
+  }
+
+  currentUser = data;
+  return data;
+}
 
     function autoBalance(){
       $('balanceAmount').value = Math.max(0, num($('orderTotal').value) - num($('depositAmount').value)).toFixed(2);
