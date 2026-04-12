@@ -864,26 +864,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   });
 
 });
-  document.getElementById("sendToOrdersBtn")?.addEventListener("click", () => {
 
-  const o = wfActive();
-
-  if (!o) {
-    alert("No order selected");
-    return;
-  }
-
-  const data = {
-    customer: o.customer,
-    project: o.project,
-    qty: o.qty,
-    paymentLink: o.paymentLink
-  };
-
-  localStorage.setItem("olipoly_transfer", JSON.stringify(data));
-
-  alert("Order sent! Now open Orders Admin");
-});
 </script>
 </body>
 </html>
