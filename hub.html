@@ -832,9 +832,13 @@ window.addEventListener('DOMContentLoaded',()=>{
   wfRender();
 
   ['wfCustomer','wfProject','wfQty','wfPaymentLink'].forEach(id=>{
-    const el=$(id);
-    if(el) el.addEventListener('input',wfSave);
-  });
+  const el=$(id);
+  if(el){
+    el.addEventListener('input', wfSave);
+    el.addEventListener('change', wfSave);
+    el.addEventListener('blur', wfSave);
+  }
+});
 
   $('wfNextBtn')?.onclick = wfNext;
   $('wfPrevBtn')?.onclick = wfPrev;
