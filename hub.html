@@ -8,12 +8,14 @@
     :root{
       --bg:#fff8fc;
       --panel:rgba(255,255,255,.9);
-      --panel-strong:rgba(255,255,255,.95);
+      --panel-strong:rgba(255,255,255,.96);
       --line:rgba(221,159,204,.28);
+      --line-strong:rgba(221,159,204,.42);
       --text:#3f3146;
       --muted:#816c88;
       --accent:#de6fb8;
       --accent2:#9d7cff;
+      --accent-soft:rgba(222,111,184,.1);
       --shadow:0 20px 44px rgba(189,132,176,.16);
       --ok:#4caf50;
       --warn:#f0b429;
@@ -23,6 +25,7 @@
       --radius-lg:24px;
       --radius-md:18px;
       --radius-sm:14px;
+      --tap:46px;
     }
 
     *{box-sizing:border-box}
@@ -40,9 +43,10 @@
 
     a{color:inherit}
     button,input,textarea,select{font:inherit}
-    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 110px}
+    button{min-height:var(--tap)}
+    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:20px 0 120px}
 
-    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card{
+    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card,.workflow-shell,.stage-card,.manifest-card,.summary-box{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
@@ -51,8 +55,8 @@
 
     .topbar{
       display:flex;justify-content:space-between;align-items:center;gap:18px;
-      padding:14px 18px;border-radius:999px;margin-bottom:22px;
-      position:sticky;top:14px;z-index:20;background:rgba(255,252,254,.84);
+      padding:14px 18px;border-radius:999px;margin-bottom:18px;
+      position:sticky;top:12px;z-index:30;background:rgba(255,252,254,.88);
     }
 
     .brand{display:flex;align-items:center;gap:14px;min-width:0}
@@ -66,21 +70,25 @@
 
     .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
     .link-card h4,.link-card p,.mini-card h4,.mini-card p,.template-card h4,.template-card p,
-    .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p{margin:0}
+    .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p,.stage-card h4,.stage-card p,
+    .manifest-card h4,.manifest-card p{margin:0}
     .brand h1{font-size:1.12rem}
-    .brand p,.section-title p,.muted,.helper,.fine{color:var(--muted)}
+    .brand p,.section-title p,.muted,.helper,.fine,.label-hint,.summary-sub{color:var(--muted)}
 
-    .hero,.dashboard-grid,.two-col,.three-col,.four-col{display:grid;gap:18px}
-    .hero{grid-template-columns:1.2fr .8fr;margin-bottom:18px}
+    .hero,.dashboard-grid,.two-col,.three-col,.four-col,.workflow-layout{display:grid;gap:18px}
+    .hero{grid-template-columns:1.1fr .9fr;margin-bottom:18px}
     .dashboard-grid,.two-col{grid-template-columns:1fr 1fr;margin-bottom:18px}
     .three-col{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
     .four-col{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
+    .workflow-layout{grid-template-columns:1.05fr 1.2fr .9fr;margin-bottom:18px}
 
-    .hero-card,.card,.notes-card,.status-card,.quick-actions{padding:24px;border-radius:var(--radius-xl)}
+    .hero-card,.card,.notes-card,.status-card,.quick-actions,.workflow-shell{padding:24px;border-radius:var(--radius-xl)}
     .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
     .hero-card p{line-height:1.7}
 
-    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row{display:flex;flex-wrap:wrap;gap:10px}
+    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row,.stack-actions,.form-grid,.manifest-grid,.stage-actions,.quick-copy-grid{
+      display:flex;flex-wrap:wrap;gap:10px
+    }
     .pill-row{margin-top:16px}
     .pill{
       display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
@@ -88,27 +96,35 @@
       color:var(--muted);font-size:.88rem;font-weight:700;
     }
 
-    .btn,.ghost,.copy-btn,.tiny-btn{
+    .btn,.ghost,.copy-btn,.tiny-btn,.step-btn,.step-nav-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
-      border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+      border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
       cursor:pointer;
+      min-height:var(--tap);
+      padding:12px 16px;
     }
-    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
+    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover,.step-btn:hover,.step-nav-btn:hover{transform:translateY(-1px)}
 
     .btn{
-      border:none;padding:13px 18px;color:#fff;
+      border:none;color:#fff;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 10px 24px rgba(222,111,184,.22);
     }
-    .ghost,.copy-btn,.tiny-btn{
-      border:1px solid var(--line);background:rgba(255,255,255,.72);color:var(--text);
+    .ghost,.copy-btn,.tiny-btn,.step-btn,.step-nav-btn{
+      border:1px solid var(--line);background:rgba(255,255,255,.76);color:var(--text);
     }
     .ghost{padding:11px 14px}
     .copy-btn{padding:10px 14px}
-    .tiny-btn{padding:8px 11px;font-size:.85rem}
+    .tiny-btn{padding:10px 12px;font-size:.86rem;min-height:42px}
+    .step-btn.active{
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff;border-color:transparent;
+      box-shadow:0 10px 24px rgba(222,111,184,.2);
+    }
 
     .quick-actions{padding:18px 20px;border-radius:var(--radius-xl);margin-bottom:18px}
     .quick-grid{margin-top:12px}
+    .quick-grid > *{flex:1 1 170px}
 
     .status-grid{gap:12px;margin-top:14px}
     .status-pill{
@@ -125,24 +141,26 @@
     .status-dot.warn{background:var(--warn);box-shadow:0 0 0 4px rgba(240,180,41,.14)}
     .status-dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.13)}
 
-    .notes-card textarea,.money-input,.small-input,.tax-input,.reminder-input{
+    textarea,.money-input,.small-input,.tax-input,.reminder-input,.wf-input,.wf-select{
       width:100%;border-radius:18px;border:1px solid var(--line);padding:13px 14px;
-      background:rgba(255,255,255,.78);color:var(--text);outline:none;
+      background:rgba(255,255,255,.82);color:var(--text);outline:none;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+      min-height:48px;
     }
-    .notes-card textarea{min-height:168px;resize:vertical}
-    .notes-card textarea:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus{
+    textarea{resize:vertical}
+    .notes-card textarea{min-height:168px}
+    .wf-textarea{min-height:110px}
+    textarea:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus,.wf-input:focus,.wf-select:focus{
       border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)
     }
 
     .section-title{margin-bottom:12px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .link-card,.mini-card,.template-card,.metric-card,.workflow-card{
+    .link-card,.mini-card,.template-card,.metric-card,.workflow-card,.stage-card,.manifest-card{
       padding:20px;border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:100%;
     }
-    .link-card{border:1px solid var(--line)}
-    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4{font-size:1.04rem}
-    .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p{color:var(--muted);line-height:1.6}
+    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4,.stage-card h4,.manifest-card h4{font-size:1.04rem}
+    .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p,.stage-card p,.manifest-card p{color:var(--muted);line-height:1.6}
     .url{
       display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
       color:#6d5f90;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);
@@ -152,19 +170,21 @@
     .inline-actions{align-items:center}
     .field-row{align-items:center}
 
-    .metric-card{background:rgba(255,255,255,.78);border:1px solid var(--line)}
+    .metric-card{background:rgba(255,255,255,.78)}
     .metric-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
     .metric-value{font-size:1.7rem;font-weight:900;line-height:1.05}
 
     .money-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
     .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-    .workflow-grid,.template-grid,.asset-grid,.test-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .workflow-grid,.template-grid,.asset-grid,.test-grid,.manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .form-grid .full{grid-column:1 / -1}
+    .label{display:grid;gap:6px;font-weight:700;font-size:.94rem}
 
     .summary-box{
-      padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid var(--line);
+      padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.78);
     }
     .summary-value{font-weight:900;font-size:1.2rem}
-    .summary-sub{font-size:.88rem;color:var(--muted)}
 
     .reminder-list{display:grid;gap:10px;margin-top:12px}
     .reminder-item{
@@ -178,45 +198,98 @@
     .badge.overdue{color:#b33857;background:rgba(228,90,122,.09)}
     .badge.thisweek{color:#946200;background:rgba(240,180,41,.11)}
     .badge.upcoming{color:#5e4ba2;background:rgba(157,124,255,.11)}
+    .badge.good{color:#2f7a39;background:rgba(76,175,80,.11)}
 
     .note{
       margin-top:22px;padding:18px;border-radius:22px;background:rgba(255,255,255,.72);
       border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.65;
     }
 
+    .workflow-shell{background:var(--panel-strong)}
+    .step-strip{
+      display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:12px;
+    }
+    .workflow-summary{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px;
+    }
+    .workflow-stage-title{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;
+    }
+    .stage-body{display:grid;gap:14px}
+    .stage-checks{display:grid;gap:10px}
+    .stage-check{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.75);border:1px solid var(--line);
+    }
+    .stage-check input{margin-top:4px}
+    .stage-actions{margin-top:2px}
+    .sticky-stage-actions{
+      position:sticky;bottom:84px;z-index:8;
+      padding:12px;border-radius:20px;background:rgba(255,252,254,.92);
+      border:1px solid var(--line);backdrop-filter:blur(10px);
+    }
+    .quick-copy-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    .manifest-list{display:grid;gap:10px}
+    .manifest-item{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+      padding:12px;border-radius:16px;background:rgba(255,255,255,.76);border:1px solid var(--line);
+    }
+    .manifest-item strong{display:block}
+    .manifest-tag{
+      flex:0 0 auto;
+      border-radius:999px;padding:6px 10px;border:1px solid var(--line);background:#fff;font-size:.76rem;font-weight:900;
+    }
+    .hidden{display:none !important}
+
     .mobile-dock{
-      position:fixed;left:12px;right:12px;bottom:12px;z-index:30;display:none;gap:10px;
-      padding:10px;border-radius:24px;background:rgba(255,252,254,.88);backdrop-filter:blur(12px);
+      position:fixed;left:12px;right:12px;bottom:12px;z-index:40;display:none;gap:10px;
+      padding:10px;border-radius:24px;background:rgba(255,252,254,.9);backdrop-filter:blur(12px);
       border:1px solid var(--line);box-shadow:var(--shadow);
     }
-    .mobile-dock a{flex:1;min-width:0;padding:12px 10px;font-size:.9rem}
+    .mobile-dock a,.mobile-dock button{flex:1;min-width:0;padding:12px 8px;font-size:.9rem}
 
     .toast{
-      position:fixed;right:16px;bottom:16px;z-index:40;max-width:min(360px,calc(100% - 32px));
+      position:fixed;right:16px;bottom:16px;z-index:50;max-width:min(360px,calc(100% - 32px));
       background:rgba(61,49,70,.96);color:#fff;padding:12px 14px;border-radius:16px;
       box-shadow:0 16px 36px rgba(44,31,52,.24);opacity:0;pointer-events:none;transform:translateY(12px);
       transition:opacity .18s ease, transform .18s ease;
     }
     .toast.show{opacity:1;transform:translateY(0)}
 
+    @media (max-width:1100px){
+      .workflow-layout{grid-template-columns:1fr 1fr}
+      .workflow-layout > :last-child{grid-column:1 / -1}
+      .step-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+    }
+
     @media (max-width:1000px){
-      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr 1fr}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.manifest-grid,.workflow-summary{grid-template-columns:1fr 1fr}
     }
 
     @media (max-width:900px){
       .topbar{border-radius:28px;align-items:flex-start;flex-direction:column}
       .topbar .btn{width:100%}
-      .wrap{padding-bottom:108px}
+      .wrap{padding-bottom:118px}
       .mobile-dock{display:flex}
-      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col{grid-template-columns:1fr}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.manifest-grid,.workflow-layout,.workflow-summary{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .step-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .sticky-stage-actions{bottom:92px}
     }
 
     @media (max-width:640px){
-      .wrap{width:min(100% - 18px,1120px)}
-      .hero-card,.card,.notes-card,.status-card,.quick-actions{padding:18px}
+      .wrap{width:min(100% - 16px,1120px);padding-top:14px}
+      .hero-card,.card,.notes-card,.status-card,.quick-actions,.workflow-shell{padding:18px}
       .status-pill{min-width:100%}
-      .actions,.inline-actions,.tiny-actions{gap:8px}
-      .btn,.ghost,.copy-btn{width:100%}
+      .actions,.inline-actions,.tiny-actions,.stack-actions,.stage-actions,.field-row{gap:8px}
+      .btn,.ghost,.copy-btn,.tiny-btn,.step-nav-btn{width:100%}
+      .step-strip{grid-template-columns:1fr}
+      .topbar{top:8px}
+      .brand h1{font-size:1.02rem}
+      .brand p{font-size:.9rem}
+      .mobile-dock{gap:8px;padding:8px}
+      .mobile-dock a,.mobile-dock button{font-size:.84rem;padding:10px 6px}
+      .sticky-stage-actions{padding:10px;border-radius:18px}
     }
   </style>
 </head>
@@ -230,7 +303,7 @@
         </div>
         <div>
           <h1>OliPoly 3D Site Hub</h1>
-          <p>Quick links, business snapshots, reminders, assets, and admin tools.</p>
+          <p>Quick links, workflow control, snapshots, reminders, assets, and admin tools.</p>
         </div>
       </div>
       <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
@@ -241,8 +314,8 @@
         <h2>One landing page for every OliPoly destination.</h2>
         <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, printer maintenance page, forms, GitHub, Supabase, and daily operating shortcuts without hunting for links.</p>
         <div class="pill-row">
+          <span class="pill">Order workflow</span>
           <span class="pill">Money snapshot</span>
-          <span class="pill">Workflow shortcuts</span>
           <span class="pill">Sales tax</span>
           <span class="pill">Reminders</span>
           <span class="pill">Assets</span>
@@ -258,7 +331,7 @@
           <p>Keep this page pinned on mobile and desktop for one clean place to navigate your workflow.</p>
         </div>
         <div class="note" style="margin-top:0;">
-          Safe additions in this version are browser-only: copy buttons only copy text, notes and snapshots save locally on this device, and the workflow helpers do not change any live site data.
+          Safe additions in this version are browser-only: copy buttons only copy text, notes and workflow progress save locally on this device, and the workflow helpers do not change any live site data.
         </div>
       </section>
     </section>
@@ -277,6 +350,211 @@
         <a class="btn" href="materials.html">Materials</a>
         <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Supabase</a>
         <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">GitHub Repo</a>
+      </div>
+    </section>
+
+    <section class="workflow-shell">
+      <div class="section-title">
+        <h3>Click-through order workflow</h3>
+        <p>Run every inquiry through one step-by-step process, regardless of whether it came from Messenger, text, website form, email, or in person.</p>
+      </div>
+
+      <div class="workflow-layout">
+        <section class="manifest-card">
+          <h4>Order intake</h4>
+          <p>Start here when a new request comes in.</p>
+
+          <div class="form-grid">
+            <label class="label">
+              Customer / company
+              <input class="wf-input" id="wfCustomer" type="text" placeholder="Customer name" />
+            </label>
+
+            <label class="label">
+              Source
+              <select class="wf-select" id="wfSource">
+                <option value="facebook messenger">Facebook Messenger</option>
+                <option value="text">Text</option>
+                <option value="website form">Website form</option>
+                <option value="email">Email</option>
+                <option value="in person">In person</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+
+            <label class="label full">
+              Item / project
+              <input class="wf-input" id="wfProject" type="text" placeholder="Project or item name" />
+            </label>
+
+            <label class="label">
+              Quantity
+              <input class="wf-input" id="wfQty" type="number" min="1" step="1" placeholder="Qty" />
+            </label>
+
+            <label class="label">
+              Due date
+              <input class="wf-input" id="wfDueDate" type="date" />
+            </label>
+
+            <label class="label">
+              Delivery method
+              <select class="wf-select" id="wfDelivery">
+                <option value="">Choose one</option>
+                <option value="pickup">Pickup</option>
+                <option value="delivery">Local delivery</option>
+                <option value="shipping">Shipping</option>
+                <option value="unknown">Not confirmed yet</option>
+              </select>
+            </label>
+
+            <label class="label">
+              Order type
+              <select class="wf-select" id="wfType">
+                <option value="existing">Existing item</option>
+                <option value="minor custom">Minor custom</option>
+                <option value="full custom">Full custom</option>
+                <option value="bulk">Business / bulk</option>
+              </select>
+            </label>
+
+            <label class="label full">
+              Customer details / specs
+              <textarea class="wf-textarea" id="wfSpecs" placeholder="What they want, size, color, material, deadline notes, link/file reference, special requests"></textarea>
+            </label>
+
+            <label class="label">
+              Quote total
+              <input class="wf-input" id="wfQuoteTotal" type="number" min="0" step="0.01" placeholder="0.00" />
+            </label>
+
+            <label class="label">
+              Payment link
+              <input class="wf-input" id="wfPaymentLink" type="text" placeholder="Paste Stripe or invoice link" />
+            </label>
+
+            <label class="label full">
+              Internal notes
+              <textarea class="wf-textarea" id="wfInternalNotes" placeholder="Machine notes, design time, test print notes, follow-up items, file locations"></textarea>
+            </label>
+          </div>
+
+          <div class="inline-actions" style="margin-top:14px;">
+            <button class="tiny-btn" id="wfSaveBtn" type="button">Save workflow</button>
+            <button class="tiny-btn" id="wfResetBtn" type="button">Reset workflow</button>
+            <span class="helper" id="wfSaveStatus">Nothing saved yet</span>
+          </div>
+
+          <div class="workflow-summary">
+            <div class="summary-box">
+              <div class="summary-value" id="wfSummaryStage">Intake</div>
+              <div class="summary-sub">Current stage</div>
+            </div>
+            <div class="summary-box">
+              <div class="summary-value" id="wfSummaryProgress">1 / 8</div>
+              <div class="summary-sub">Progress</div>
+            </div>
+            <div class="summary-box">
+              <div class="summary-value" id="wfSummaryWaiting">—</div>
+              <div class="summary-sub">Waiting on</div>
+            </div>
+            <div class="summary-box">
+              <div class="summary-value" id="wfSummaryPayment">Unpaid</div>
+              <div class="summary-sub">Payment status</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="stage-card">
+          <div class="workflow-stage-title">
+            <div>
+              <h4 id="stageTitle">1. Intake</h4>
+              <p id="stageIntro">Confirm enough information exists to move into pricing and planning.</p>
+            </div>
+            <span class="badge upcoming" id="stageBadge">Stage 1 of 8</span>
+          </div>
+
+          <div class="step-strip" id="wfStepStrip">
+            <button class="step-btn active" type="button" data-stage="0">1 Intake</button>
+            <button class="step-btn" type="button" data-stage="1">2 Review</button>
+            <button class="step-btn" type="button" data-stage="2">3 Quote</button>
+            <button class="step-btn" type="button" data-stage="3">4 Approval</button>
+            <button class="step-btn" type="button" data-stage="4">5 Payment</button>
+            <button class="step-btn" type="button" data-stage="5">6 Production</button>
+            <button class="step-btn" type="button" data-stage="6">7 Delivery</button>
+            <button class="step-btn" type="button" data-stage="7">8 Complete</button>
+          </div>
+
+          <div class="stage-body">
+            <div class="stage-checks" id="stageChecks"></div>
+
+            <div class="summary-box">
+              <div class="summary-value" id="stageNextAction">Collect missing intake details.</div>
+              <div class="summary-sub">Suggested next action</div>
+            </div>
+
+            <div class="sticky-stage-actions">
+              <div class="stage-actions">
+                <button class="step-nav-btn" id="wfPrevBtn" type="button">Previous step</button>
+                <button class="btn" id="wfNextBtn" type="button">Next step</button>
+                <button class="tiny-btn" id="wfMarkWaitingBtn" type="button">Mark waiting on customer</button>
+                <button class="tiny-btn" id="wfMarkPaidBtn" type="button">Toggle paid</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="manifest-card">
+          <h4>Quick message helpers</h4>
+          <p>These pull from the workflow fields above so you can copy a usable reply faster.</p>
+
+          <div class="quick-copy-grid">
+            <button class="copy-btn" type="button" id="copyNeedInfoBtn">Copy request-for-info message</button>
+            <button class="copy-btn" type="button" id="copyQuoteBtn">Copy quote message</button>
+            <button class="copy-btn" type="button" id="copyApprovalBtn">Copy approval message</button>
+            <button class="copy-btn" type="button" id="copyPaymentBtn">Copy payment message</button>
+            <button class="copy-btn" type="button" id="copyReadyBtn">Copy ready-for-pickup message</button>
+            <button class="copy-btn" type="button" id="copyFollowupBtn">Copy follow-up message</button>
+          </div>
+
+          <div class="note" style="margin-top:14px;">
+            Tip: use this as the bridge between incoming messages and your other tools. Inquiry starts here, then jump out to Quote Tool, Orders Admin, Finance, and tracking.
+          </div>
+
+          <div class="manifest-list" style="margin-top:14px;">
+            <div class="manifest-item">
+              <div>
+                <strong>Open quote tool</strong>
+                <div class="helper">Build or revise pricing details.</div>
+              </div>
+              <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Open</a>
+            </div>
+
+            <div class="manifest-item">
+              <div>
+                <strong>Open orders admin</strong>
+                <div class="helper">Log or update the official order record.</div>
+              </div>
+              <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Open</a>
+            </div>
+
+            <div class="manifest-item">
+              <div>
+                <strong>Copy tracker link</strong>
+                <div class="helper">Send customer tracking page link.</div>
+              </div>
+              <button class="copy-btn" type="button" data-copy="Track your order here: https://olipoly3d.github.io/olipoly-3d/track.html">Copy</button>
+            </div>
+
+            <div class="manifest-item">
+              <div>
+                <strong>Open finance tool</strong>
+                <div class="helper">Record payment or expense details.</div>
+              </div>
+              <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Open</a>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -474,13 +752,13 @@
         <p>Useful for deployments, quick checks, and future admin additions.</p>
       </div>
       <div class="grid">
-        <div class="link-card"><h4>Printer maintenance page</h4><p>Your new PM dashboard for machine presets, issue logs, and preventative maintenance.</p><span class="url">PM.html</span><div class="actions"><a class="btn" href="pm.html">Open PM</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/PM.html">Copy live URL</button></div></div>
+        <div class="link-card"><h4>Printer maintenance page</h4><p>Your PM dashboard for machine presets, issue logs, and preventative maintenance.</p><span class="url">pm.html</span><div class="actions"><a class="btn" href="pm.html">Open PM</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/pm.html">Copy live URL</button></div></div>
         <div class="link-card"><h4>Future add-on spot</h4><p>Use this card later for Stripe, domain/DNS, email admin, or another dashboard you add.</p><span class="url">Replace this URL later if needed</span><div class="actions"><button class="ghost" type="button" disabled>Reserved slot</button></div></div>
       </div>
     </section>
 
     <div class="note">
-      Safe update notes: all sections are browser-local helpers and link outs. No live site pages, orders, database tables, or finance records are edited from this hub. The PM additions are direct links only.
+      Safe update notes: all sections are browser-local helpers and link outs. No live site pages, orders, database tables, or finance records are edited from this hub. The built-in order workflow is a guided local checklist and message helper.
     </div>
   </div>
 
@@ -488,6 +766,7 @@
     <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main</a>
     <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Admin</a>
     <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance</a>
+    <a class="btn" href="#stageTitle">Workflow</a>
     <a class="btn" href="pm.html">PM</a>
   </nav>
 
@@ -498,6 +777,7 @@
     const MONEY_KEY = 'olipoly_hub_money_v1';
     const TAX_KEY = 'olipoly_hub_tax_v1';
     const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
+    const WORKFLOW_KEY = 'olipoly_hub_order_workflow_v1';
 
     const templates = {
       orderReceived: `Thanks for your order request. I received it and will review the details shortly. If needed, I will follow up with any questions and next steps. You can track your order here: https://olipoly3d.github.io/olipoly-3d/track.html`,
@@ -512,231 +792,611 @@
       admin: 'https://olipoly3d.github.io/olipoly-3d/orders-admin.html',
       finance: 'https://olipoly3d.github.io/olipoly-3d/finance-pro.html',
       quote: 'https://olipoly3d.github.io/olipoly-3d/quote-tool.html',
-      pm: 'https://olipoly3d.github.io/olipoly-3d/PM.html'
+      pm: 'https://olipoly3d.github.io/olipoly-3d/pm.html'
     };
+
+    const workflowStages = [
+      {
+        title: '1. Intake',
+        intro: 'Confirm enough information exists to move into pricing and planning.',
+        badge: 'Stage 1 of 8',
+        next: 'Collect missing intake details.',
+        checks: [
+          'Customer name or business name captured',
+          'Item / project description captured',
+          'Quantity confirmed',
+          'Need-by date or urgency captured',
+          'Pickup / delivery / shipping preference known',
+          'Reference photo, sketch, link, or notes requested if needed'
+        ]
+      },
+      {
+        title: '2. Review',
+        intro: 'Decide whether the job is practical and what type of order it is.',
+        badge: 'Stage 2 of 8',
+        next: 'Confirm feasibility and order type.',
+        checks: [
+          'Classified as existing item, minor custom, full custom, or bulk',
+          'Printable on available machine(s)',
+          'Material and color availability checked',
+          'Timeline looks realistic',
+          'Design/test print needs identified'
+        ]
+      },
+      {
+        title: '3. Quote',
+        intro: 'Prepare the pricing, turnaround, and scope details.',
+        badge: 'Stage 3 of 8',
+        next: 'Build and send the quote.',
+        checks: [
+          'Quote total entered',
+          'Design fee considered if custom',
+          'Shipping / pickup assumptions considered',
+          'Turnaround time prepared',
+          'Customer-facing quote message sent or ready to send'
+        ]
+      },
+      {
+        title: '4. Approval',
+        intro: 'Get a clear yes before production begins.',
+        badge: 'Stage 4 of 8',
+        next: 'Obtain written approval.',
+        checks: [
+          'Customer reviewed quote',
+          'Specs and quantity are locked',
+          'Customer approved in writing',
+          'Any revision changes captured before moving on'
+        ]
+      },
+      {
+        title: '5. Payment',
+        intro: 'Collect deposit or payment before production according to your policy.',
+        badge: 'Stage 5 of 8',
+        next: 'Send payment link and confirm payment.',
+        checks: [
+          'Payment link entered or invoice prepared',
+          'Payment request sent',
+          'Payment status confirmed',
+          'If unpaid, workflow is marked as waiting on customer'
+        ]
+      },
+      {
+        title: '6. Production',
+        intro: 'Complete design, test print, production, and finishing.',
+        badge: 'Stage 6 of 8',
+        next: 'Move job through production.',
+        checks: [
+          'Design work complete or not needed',
+          'Test print done if needed',
+          'Production started',
+          'Finishing / cleanup complete',
+          'Packaging complete if needed'
+        ]
+      },
+      {
+        title: '7. Delivery',
+        intro: 'Arrange pickup, delivery, or shipping and send final customer update.',
+        badge: 'Stage 7 of 8',
+        next: 'Prepare final delivery message.',
+        checks: [
+          'Ready-for-pickup or shipped message prepared',
+          'Pickup details or address confirmed',
+          'Tracking number available if shipped',
+          'Customer has final handoff information'
+        ]
+      },
+      {
+        title: '8. Complete',
+        intro: 'Close the loop and make sure records are finished.',
+        badge: 'Stage 8 of 8',
+        next: 'Mark complete and follow up.',
+        checks: [
+          'Order marked complete in your main system',
+          'Revenue recorded in finance tool',
+          'Useful files/settings saved for repeat orders',
+          'Customer follow-up or review request sent if desired'
+        ]
+      }
+    ];
 
     const toast = document.getElementById('toast');
     const notesEl = document.getElementById('hubNotes');
     const notesStatus = document.getElementById('notesStatus');
     const healthStamp = document.getElementById('healthStamp');
+    const reminderList = document.getElementById('reminderList');
+
+    const wf = {
+      customer: document.getElementById('wfCustomer'),
+      source: document.getElementById('wfSource'),
+      project: document.getElementById('wfProject'),
+      qty: document.getElementById('wfQty'),
+      dueDate: document.getElementById('wfDueDate'),
+      delivery: document.getElementById('wfDelivery'),
+      type: document.getElementById('wfType'),
+      specs: document.getElementById('wfSpecs'),
+      quoteTotal: document.getElementById('wfQuoteTotal'),
+      paymentLink: document.getElementById('wfPaymentLink'),
+      internalNotes: document.getElementById('wfInternalNotes'),
+      saveStatus: document.getElementById('wfSaveStatus'),
+      summaryStage: document.getElementById('wfSummaryStage'),
+      summaryProgress: document.getElementById('wfSummaryProgress'),
+      summaryWaiting: document.getElementById('wfSummaryWaiting'),
+      summaryPayment: document.getElementById('wfSummaryPayment'),
+      stageTitle: document.getElementById('stageTitle'),
+      stageIntro: document.getElementById('stageIntro'),
+      stageBadge: document.getElementById('stageBadge'),
+      stageChecks: document.getElementById('stageChecks'),
+      stageNextAction: document.getElementById('stageNextAction'),
+      stepButtons: [...document.querySelectorAll('[data-stage]')],
+      prevBtn: document.getElementById('wfPrevBtn'),
+      nextBtn: document.getElementById('wfNextBtn'),
+      markWaitingBtn: document.getElementById('wfMarkWaitingBtn'),
+      markPaidBtn: document.getElementById('wfMarkPaidBtn')
+    };
+
+    const workflowState = {
+      stage: 0,
+      waitingOnCustomer: false,
+      paid: false
+    };
 
     document.querySelectorAll('a.ext').forEach(a => {
       a.setAttribute('target', '_blank');
       a.setAttribute('rel', 'noopener noreferrer');
     });
 
-    function showToast(message) {
+    function showToast(message){
+      if (!toast) return;
       toast.textContent = message;
       toast.classList.add('show');
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2100);
     }
 
-    function money(n) {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(n) || 0);
+    function money(v){
+      return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v) || 0);
     }
 
-    async function copyText(text) {
-      try {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(text);
-        } else {
-          const area = document.createElement('textarea');
-          area.value = text;
-          area.setAttribute('readonly', '');
-          area.style.position = 'absolute';
-          area.style.left = '-9999px';
-          document.body.appendChild(area);
-          area.select();
-          document.execCommand('copy');
-          area.remove();
-        }
-        showToast('Copied to clipboard');
-      } catch {
-        showToast('Copy failed');
+    function safeText(v){
+      return (v || '').toString().trim();
+    }
+
+    function todayStamp(){
+      return new Date().toLocaleString();
+    }
+
+    function saveLocal(key, value){
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function loadLocal(key, fallback){
+      try{
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      }catch{
+        return fallback;
       }
     }
 
-    function saveNotes() {
+    function copyText(text, label='Copied to clipboard'){
+      navigator.clipboard.writeText(text).then(() => showToast(label)).catch(() => showToast('Copy failed'));
+    }
+
+    document.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => copyText(btn.dataset.copy || ''));
+    });
+
+    document.querySelectorAll('[data-template]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.template;
+        copyText(templates[key] || '', 'Template copied');
+      });
+    });
+
+    function saveNotes(){
       localStorage.setItem(NOTES_KEY, notesEl.value || '');
-      notesStatus.textContent = `Saved ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+      notesStatus.textContent = `Saved ${todayStamp()}`;
       showToast('Notes saved');
     }
 
-    function loadNotes() {
-      const saved = localStorage.getItem(NOTES_KEY) || '';
-      notesEl.value = saved;
-      notesStatus.textContent = saved ? 'Loaded saved notes' : 'Nothing saved yet';
+    function loadNotes(){
+      notesEl.value = localStorage.getItem(NOTES_KEY) || '';
+      notesStatus.textContent = notesEl.value ? 'Loaded saved notes' : 'Nothing saved yet';
     }
 
-    function clearNotes() {
+    document.getElementById('saveNotesBtn').onclick = saveNotes;
+    document.getElementById('clearNotesBtn').onclick = () => {
       notesEl.value = '';
       localStorage.removeItem(NOTES_KEY);
       notesStatus.textContent = 'Cleared';
       showToast('Notes cleared');
-    }
+    };
 
-    function saveMoney() {
-      const data = {
-        todayRevenue: document.getElementById('moneyTodayRevenue').value || 0,
-        monthRevenue: document.getElementById('moneyMonthRevenue').value || 0,
-        monthExpenses: document.getElementById('moneyMonthExpenses').value || 0,
-        monthProfit: document.getElementById('moneyMonthProfit').value || 0
-      };
-      localStorage.setItem(MONEY_KEY, JSON.stringify(data));
-      renderMoney();
-      document.getElementById('moneyStatus').textContent = 'Saved';
-      showToast('Money snapshot saved');
-    }
+    function updateMoneyDisplays(data){
+      const todayRevenue = Number(data.todayRevenue) || 0;
+      const monthRevenue = Number(data.monthRevenue) || 0;
+      const monthExpenses = Number(data.monthExpenses) || 0;
+      const manualProfit = data.monthProfit === '' || data.monthProfit == null ? null : Number(data.monthProfit);
+      const profit = Number.isFinite(manualProfit) ? manualProfit : (monthRevenue - monthExpenses);
 
-    function loadMoney() {
-      const data = JSON.parse(localStorage.getItem(MONEY_KEY) || '{}');
-      document.getElementById('moneyTodayRevenue').value = data.todayRevenue || '';
-      document.getElementById('moneyMonthRevenue').value = data.monthRevenue || '';
-      document.getElementById('moneyMonthExpenses').value = data.monthExpenses || '';
-      document.getElementById('moneyMonthProfit').value = data.monthProfit || '';
-      renderMoney();
-    }
-
-    function renderMoney() {
-      const todayRevenue = Number(document.getElementById('moneyTodayRevenue').value || 0);
-      const monthRevenue = Number(document.getElementById('moneyMonthRevenue').value || 0);
-      const monthExpenses = Number(document.getElementById('moneyMonthExpenses').value || 0);
-      const monthProfitInput = Number(document.getElementById('moneyMonthProfit').value || 0);
-      const monthProfit = monthProfitInput || (monthRevenue - monthExpenses);
       document.getElementById('moneyTodayRevenueDisplay').textContent = money(todayRevenue);
       document.getElementById('moneyMonthRevenueDisplay').textContent = money(monthRevenue);
       document.getElementById('moneyMonthExpensesDisplay').textContent = money(monthExpenses);
-      document.getElementById('moneyProfitDisplay').textContent = money(monthProfit);
+      document.getElementById('moneyProfitDisplay').textContent = money(profit);
     }
 
-    function resetMoney() {
-      localStorage.removeItem(MONEY_KEY);
-      ['moneyTodayRevenue','moneyMonthRevenue','moneyMonthExpenses','moneyMonthProfit'].forEach(id => document.getElementById(id).value = '');
-      renderMoney();
+    function loadMoney(){
+      const data = loadLocal(MONEY_KEY, {
+        todayRevenue:'',
+        monthRevenue:'',
+        monthExpenses:'',
+        monthProfit:''
+      });
+
+      document.getElementById('moneyTodayRevenue').value = data.todayRevenue;
+      document.getElementById('moneyMonthRevenue').value = data.monthRevenue;
+      document.getElementById('moneyMonthExpenses').value = data.monthExpenses;
+      document.getElementById('moneyMonthProfit').value = data.monthProfit;
+      updateMoneyDisplays(data);
+      document.getElementById('moneyStatus').textContent = data.todayRevenue || data.monthRevenue || data.monthExpenses || data.monthProfit !== '' ? 'Loaded saved snapshot' : 'Not saved yet';
+    }
+
+    document.getElementById('saveMoneyBtn').onclick = () => {
+      const data = {
+        todayRevenue: document.getElementById('moneyTodayRevenue').value,
+        monthRevenue: document.getElementById('moneyMonthRevenue').value,
+        monthExpenses: document.getElementById('moneyMonthExpenses').value,
+        monthProfit: document.getElementById('moneyMonthProfit').value
+      };
+      saveLocal(MONEY_KEY, data);
+      updateMoneyDisplays(data);
+      document.getElementById('moneyStatus').textContent = `Saved ${todayStamp()}`;
+      showToast('Money snapshot saved');
+    };
+
+    document.getElementById('resetMoneyBtn').onclick = () => {
+      const empty = { todayRevenue:'', monthRevenue:'', monthExpenses:'', monthProfit:'' };
+      saveLocal(MONEY_KEY, empty);
+      loadMoney();
       document.getElementById('moneyStatus').textContent = 'Reset';
       showToast('Money snapshot reset');
+    };
+
+    function updateTaxDisplays(data){
+      document.getElementById('taxCollectedDisplay').textContent = money(data.taxCollected);
+      document.getElementById('taxDueDisplay').textContent = data.taxDueDate || '—';
+      document.getElementById('taxRateDisplay').textContent = `${Number(data.taxRate || 0)}%`;
     }
 
-    function saveTax() {
+    function loadTax(){
+      const data = loadLocal(TAX_KEY, {
+        taxCollected:'',
+        taxRate:'',
+        taxDueDate:''
+      });
+      document.getElementById('taxCollectedInput').value = data.taxCollected;
+      document.getElementById('taxRateInput').value = data.taxRate;
+      document.getElementById('taxDueDateInput').value = data.taxDueDate;
+      updateTaxDisplays(data);
+      document.getElementById('taxStatus').textContent = data.taxCollected || data.taxRate || data.taxDueDate ? 'Loaded saved tax info' : 'Not saved yet';
+    }
+
+    document.getElementById('saveTaxBtn').onclick = () => {
       const data = {
-        collected: document.getElementById('taxCollectedInput').value || 0,
-        rate: document.getElementById('taxRateInput').value || 0,
-        dueDate: document.getElementById('taxDueDateInput').value || ''
+        taxCollected: document.getElementById('taxCollectedInput').value,
+        taxRate: document.getElementById('taxRateInput').value,
+        taxDueDate: document.getElementById('taxDueDateInput').value
       };
-      localStorage.setItem(TAX_KEY, JSON.stringify(data));
-      renderTax();
-      document.getElementById('taxStatus').textContent = 'Saved';
+      saveLocal(TAX_KEY, data);
+      updateTaxDisplays(data);
+      document.getElementById('taxStatus').textContent = `Saved ${todayStamp()}`;
       showToast('Tax info saved');
-    }
+    };
 
-    function loadTax() {
-      const data = JSON.parse(localStorage.getItem(TAX_KEY) || '{}');
-      document.getElementById('taxCollectedInput').value = data.collected || '';
-      document.getElementById('taxRateInput').value = data.rate || '';
-      document.getElementById('taxDueDateInput').value = data.dueDate || '';
-      renderTax();
-    }
+    document.getElementById('copyTaxLinesBtn').onclick = () => {
+      const collected = safeText(document.getElementById('taxCollectedInput').value) || '0.00';
+      const rate = safeText(document.getElementById('taxRateInput').value) || '0';
+      const due = safeText(document.getElementById('taxDueDateInput').value) || '[enter due date]';
+      const text = `Ohio filing prep
+Tax collected this month: $${collected}
+Tax rate: ${rate}%
+Filing due date: ${due}
+Reminder: confirm gross sales, taxable sales, and tax collected in finance records before submitting in OH tax eServices.`;
+      copyText(text, 'Filing prep note copied');
+    };
 
-    function renderTax() {
-      const collected = Number(document.getElementById('taxCollectedInput').value || 0);
-      const rate = Number(document.getElementById('taxRateInput').value || 0);
-      const dueDate = document.getElementById('taxDueDateInput').value || '';
-      document.getElementById('taxCollectedDisplay').textContent = money(collected);
-      document.getElementById('taxRateDisplay').textContent = `${rate || 0}%`;
-      document.getElementById('taxDueDisplay').textContent = dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString() : '—';
-    }
-
-    function copyTaxLines() {
-      const collected = Number(document.getElementById('taxCollectedInput').value || 0);
-      const rate = document.getElementById('taxRateInput').value || '0';
-      const dueDate = document.getElementById('taxDueDateInput').value || 'not set';
-      copyText(`Monthly sales tax prep\nTax collected: ${money(collected)}\nSaved tax rate: ${rate}%\nDue date: ${dueDate}`);
-    }
-
-    function loadReminders() {
-      const reminders = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
-      renderReminders(reminders);
-    }
-
-    function saveReminders(reminders) {
-      localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders));
-      renderReminders(reminders);
-    }
-
-    function renderReminders(reminders) {
-      const list = document.getElementById('reminderList');
-      list.innerHTML = reminders.length ? reminders.map((r, i) => `
-        <div class="reminder-item">
+    function renderReminders(){
+      const items = loadLocal(REMINDERS_KEY, []);
+      reminderList.innerHTML = '';
+      if (!items.length){
+        reminderList.innerHTML = '<div class="helper">No reminders saved yet.</div>';
+        return;
+      }
+      items.forEach((item, i) => {
+        const row = document.createElement('div');
+        row.className = 'reminder-item';
+        row.innerHTML = `
           <div>
-            <div style="font-weight:800;">${r.text}</div>
-            <div class="helper">Saved locally</div>
+            <strong>${item.text}</strong>
           </div>
-          <div class="inline-actions" style="margin-top:0;">
-            <span class="badge ${r.type}">${r.type}</span>
-            <button class="tiny-btn" type="button" onclick="removeReminder(${i})">Delete</button>
+          <div class="inline-actions">
+            <span class="badge ${item.type}">${item.type === 'thisweek' ? 'This week' : item.type.charAt(0).toUpperCase() + item.type.slice(1)}</span>
+            <button class="tiny-btn" type="button" data-remove="${i}">Delete</button>
           </div>
-        </div>
-      `).join('') : '<div class="helper">No reminders saved yet.</div>';
+        `;
+        reminderList.appendChild(row);
+      });
+
+      reminderList.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.onclick = () => {
+          const items = loadLocal(REMINDERS_KEY, []);
+          items.splice(Number(btn.dataset.remove), 1);
+          saveLocal(REMINDERS_KEY, items);
+          renderReminders();
+          showToast('Reminder removed');
+        };
+      });
     }
 
-    function addReminder() {
-      const text = document.getElementById('reminderTextInput').value.trim();
+    document.getElementById('addReminderBtn').onclick = () => {
+      const text = safeText(document.getElementById('reminderTextInput').value);
       const type = document.getElementById('reminderTypeInput').value;
       if (!text) return showToast('Add reminder text first');
-      const reminders = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
-      reminders.unshift({ text, type });
-      saveReminders(reminders);
+      const items = loadLocal(REMINDERS_KEY, []);
+      items.unshift({ text, type });
+      saveLocal(REMINDERS_KEY, items);
       document.getElementById('reminderTextInput').value = '';
+      renderReminders();
       showToast('Reminder added');
-    }
+    };
 
-    function removeReminder(index) {
-      const reminders = JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
-      reminders.splice(index, 1);
-      saveReminders(reminders);
-      showToast('Reminder removed');
-    }
-
-    async function runHealthCheck() {
+    async function runHealthCheck(){
       healthStamp.textContent = 'Checking...';
-      for (const [key, url] of Object.entries(healthTargets)) {
+      const dots = document.querySelectorAll('[data-health-dot]');
+      dots.forEach(d => d.className = 'status-dot');
+
+      await Promise.all(Object.entries(healthTargets).map(async ([key, url]) => {
         const dot = document.querySelector(`[data-health-dot="${key}"]`);
-        dot.className = 'status-dot';
-        try {
-          await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+        try{
+          await fetch(url, { method:'HEAD', mode:'no-cors', cache:'no-store' });
           dot.classList.add('ok');
-        } catch {
+        }catch{
           dot.classList.add('bad');
         }
-      }
-      healthStamp.textContent = `Last checked ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+      }));
+
+      healthStamp.textContent = `Checked ${todayStamp()}`;
       showToast('Health check finished');
     }
 
-    function resetHealthCheck() {
-      document.querySelectorAll('[data-health-dot]').forEach(dot => dot.className = 'status-dot');
+    document.getElementById('runHealthCheckBtn').onclick = runHealthCheck;
+    document.getElementById('resetHealthCheckBtn').onclick = () => {
+      document.querySelectorAll('[data-health-dot]').forEach(d => d.className = 'status-dot');
       healthStamp.textContent = 'Not checked yet';
       showToast('Health dots reset');
+    };
+
+    function getWorkflowData(){
+      const stored = loadLocal(WORKFLOW_KEY, {});
+      return {
+        customer: safeText(wf.customer.value || stored.customer),
+        source: safeText(wf.source.value || stored.source || 'facebook messenger'),
+        project: safeText(wf.project.value || stored.project),
+        qty: safeText(wf.qty.value || stored.qty),
+        dueDate: safeText(wf.dueDate.value || stored.dueDate),
+        delivery: safeText(wf.delivery.value || stored.delivery),
+        type: safeText(wf.type.value || stored.type || 'existing'),
+        specs: safeText(wf.specs.value || stored.specs),
+        quoteTotal: safeText(wf.quoteTotal.value || stored.quoteTotal),
+        paymentLink: safeText(wf.paymentLink.value || stored.paymentLink),
+        internalNotes: safeText(wf.internalNotes.value || stored.internalNotes),
+        stage: workflowState.stage,
+        waitingOnCustomer: workflowState.waitingOnCustomer,
+        paid: workflowState.paid
+      };
     }
 
-    document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => copyText(btn.dataset.copy)));
-    document.querySelectorAll('[data-template]').forEach(btn => btn.addEventListener('click', () => copyText(templates[btn.dataset.template] || '')));
-    document.getElementById('saveNotesBtn').addEventListener('click', saveNotes);
-    document.getElementById('clearNotesBtn').addEventListener('click', clearNotes);
-    document.getElementById('saveMoneyBtn').addEventListener('click', saveMoney);
-    document.getElementById('resetMoneyBtn').addEventListener('click', resetMoney);
-    document.getElementById('saveTaxBtn').addEventListener('click', saveTax);
-    document.getElementById('copyTaxLinesBtn').addEventListener('click', copyTaxLines);
-    document.getElementById('addReminderBtn').addEventListener('click', addReminder);
-    document.getElementById('runHealthCheckBtn').addEventListener('click', runHealthCheck);
-    document.getElementById('resetHealthCheckBtn').addEventListener('click', resetHealthCheck);
+    function saveWorkflow(){
+      saveLocal(WORKFLOW_KEY, getWorkflowData());
+      wf.saveStatus.textContent = `Saved ${todayStamp()}`;
+      updateWorkflowSummary();
+      showToast('Workflow saved');
+    }
+
+    function loadWorkflow(){
+      const data = loadLocal(WORKFLOW_KEY, null);
+      if (!data) {
+        updateStageUI();
+        updateWorkflowSummary();
+        return;
+      }
+      wf.customer.value = data.customer || '';
+      wf.source.value = data.source || 'facebook messenger';
+      wf.project.value = data.project || '';
+      wf.qty.value = data.qty || '';
+      wf.dueDate.value = data.dueDate || '';
+      wf.delivery.value = data.delivery || '';
+      wf.type.value = data.type || 'existing';
+      wf.specs.value = data.specs || '';
+      wf.quoteTotal.value = data.quoteTotal || '';
+      wf.paymentLink.value = data.paymentLink || '';
+      wf.internalNotes.value = data.internalNotes || '';
+      workflowState.stage = Number(data.stage) || 0;
+      workflowState.waitingOnCustomer = !!data.waitingOnCustomer;
+      workflowState.paid = !!data.paid;
+      wf.saveStatus.textContent = 'Loaded saved workflow';
+      updateStageUI();
+      updateWorkflowSummary();
+    }
+
+    function resetWorkflow(){
+      localStorage.removeItem(WORKFLOW_KEY);
+      wf.customer.value = '';
+      wf.source.value = 'facebook messenger';
+      wf.project.value = '';
+      wf.qty.value = '';
+      wf.dueDate.value = '';
+      wf.delivery.value = '';
+      wf.type.value = 'existing';
+      wf.specs.value = '';
+      wf.quoteTotal.value = '';
+      wf.paymentLink.value = '';
+      wf.internalNotes.value = '';
+      workflowState.stage = 0;
+      workflowState.waitingOnCustomer = false;
+      workflowState.paid = false;
+      wf.saveStatus.textContent = 'Workflow reset';
+      updateStageUI();
+      updateWorkflowSummary();
+      showToast('Workflow reset');
+    }
+
+    function updateWorkflowSummary(){
+      const stage = workflowStages[workflowState.stage];
+      wf.summaryStage.textContent = stage.title.replace(/^\d+\.\s*/, '');
+      wf.summaryProgress.textContent = `${workflowState.stage + 1} / ${workflowStages.length}`;
+      wf.summaryWaiting.textContent = workflowState.waitingOnCustomer ? 'Customer' : '—';
+      wf.summaryPayment.textContent = workflowState.paid ? 'Paid' : 'Unpaid';
+    }
+
+    function updateStageUI(){
+      const stage = workflowStages[workflowState.stage];
+      wf.stageTitle.textContent = stage.title;
+      wf.stageIntro.textContent = stage.intro;
+      wf.stageBadge.textContent = stage.badge;
+      wf.stageNextAction.textContent = workflowState.waitingOnCustomer ? 'Waiting on customer response or action.' : stage.next;
+      wf.stageChecks.innerHTML = '';
+
+      stage.checks.forEach((text, i) => {
+        const row = document.createElement('label');
+        row.className = 'stage-check';
+        row.innerHTML = `
+          <input type="checkbox" data-stage-check="${workflowState.stage}-${i}">
+          <span>${text}</span>
+        `;
+        wf.stageChecks.appendChild(row);
+      });
+
+      wf.stepButtons.forEach((btn, i) => btn.classList.toggle('active', i === workflowState.stage));
+      wf.prevBtn.disabled = workflowState.stage === 0;
+      wf.nextBtn.textContent = workflowState.stage === workflowStages.length - 1 ? 'Stay on final step' : 'Next step';
+      wf.markWaitingBtn.textContent = workflowState.waitingOnCustomer ? 'Clear waiting flag' : 'Mark waiting on customer';
+      wf.markPaidBtn.textContent = workflowState.paid ? 'Mark unpaid' : 'Mark paid';
+      updateWorkflowSummary();
+    }
+
+    function moveStage(dir){
+      workflowState.stage = Math.max(0, Math.min(workflowStages.length - 1, workflowState.stage + dir));
+      updateStageUI();
+      saveWorkflow();
+    }
+
+    wf.stepButtons.forEach(btn => {
+      btn.onclick = () => {
+        workflowState.stage = Number(btn.dataset.stage);
+        updateStageUI();
+        saveWorkflow();
+      };
+    });
+
+    wf.prevBtn.onclick = () => moveStage(-1);
+    wf.nextBtn.onclick = () => {
+      if (workflowState.stage < workflowStages.length - 1){
+        moveStage(1);
+      } else {
+        showToast('Already on final step');
+      }
+    };
+    wf.markWaitingBtn.onclick = () => {
+      workflowState.waitingOnCustomer = !workflowState.waitingOnCustomer;
+      updateStageUI();
+      saveWorkflow();
+      showToast(workflowState.waitingOnCustomer ? 'Marked waiting on customer' : 'Waiting flag cleared');
+    };
+    wf.markPaidBtn.onclick = () => {
+      workflowState.paid = !workflowState.paid;
+      updateStageUI();
+      saveWorkflow();
+      showToast(workflowState.paid ? 'Marked paid' : 'Marked unpaid');
+    };
+
+    document.getElementById('wfSaveBtn').onclick = saveWorkflow;
+    document.getElementById('wfResetBtn').onclick = resetWorkflow;
+
+    [
+      wf.customer,wf.source,wf.project,wf.qty,wf.dueDate,wf.delivery,wf.type,wf.specs,wf.quoteTotal,wf.paymentLink,wf.internalNotes
+    ].forEach(el => {
+      el.addEventListener('input', updateWorkflowSummary);
+      el.addEventListener('change', updateWorkflowSummary);
+    });
+
+    function fallbackName(){
+      return safeText(wf.customer.value) || 'there';
+    }
+
+    function projectName(){
+      return safeText(wf.project.value) || 'your project';
+    }
+
+    function quoteAmountText(){
+      const v = safeText(wf.quoteTotal.value);
+      return v ? money(v) : '[quote total]';
+    }
+
+    function dueDateText(){
+      return safeText(wf.dueDate.value) || '[due date]';
+    }
+
+    function deliveryText(){
+      return safeText(wf.delivery.value) || 'pickup / delivery details';
+    }
+
+    function buildNeedInfoMessage(){
+      return `Thanks for reaching out to OliPoly 3D about ${projectName()}. To finish your quote, please send the quantity, size if important, color/material preferences, when you need it by, and any photo, sketch, or link that would help.`;
+    }
+
+    function buildQuoteMessage(){
+      return `Here is your quote for ${projectName()}:
+Quantity: ${safeText(wf.qty.value) || '[qty]'}
+Total: ${quoteAmountText()}
+Delivery: ${deliveryText()}
+Estimated completion: ${dueDateText()}
+
+If everything looks good, reply with "approved" and I will move to the next step.`;
+    }
+
+    function buildApprovalMessage(){
+      return `If everything looks good for ${projectName()}, please reply with "approved" so I can move forward with the order.`;
+    }
+
+    function buildPaymentMessage(){
+      const link = safeText(wf.paymentLink.value) || '[insert payment link]';
+      return `Perfect — your order for ${projectName()} is ready for payment.
+Payment link: ${link}
+
+Once payment is received, I will confirm the order and continue with the next step.`;
+    }
+
+    function buildReadyMessage(){
+      return `Your order for ${projectName()} is ready. Please reply when you would like to arrange ${deliveryText()}. Thank you again for your order.`;
+    }
+
+    function buildFollowupMessage(){
+      return `Hi ${fallbackName()}, just checking in to make sure everything with ${projectName()} went well. Thank you again for supporting OliPoly 3D.`;
+    }
+
+    document.getElementById('copyNeedInfoBtn').onclick = () => copyText(buildNeedInfoMessage(), 'Info request copied');
+    document.getElementById('copyQuoteBtn').onclick = () => copyText(buildQuoteMessage(), 'Quote message copied');
+    document.getElementById('copyApprovalBtn').onclick = () => copyText(buildApprovalMessage(), 'Approval message copied');
+    document.getElementById('copyPaymentBtn').onclick = () => copyText(buildPaymentMessage(), 'Payment message copied');
+    document.getElementById('copyReadyBtn').onclick = () => copyText(buildReadyMessage(), 'Ready message copied');
+    document.getElementById('copyFollowupBtn').onclick = () => copyText(buildFollowupMessage(), 'Follow-up message copied');
 
     loadNotes();
     loadMoney();
     loadTax();
-    loadReminders();
-    window.removeReminder = removeReminder;
+    renderReminders();
+    loadWorkflow();
   </script>
 </body>
 </html>
