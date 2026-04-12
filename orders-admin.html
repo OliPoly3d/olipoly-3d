@@ -533,13 +533,13 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       setMsg($('formMessage'),'Deleted');
     }
 
-    $('signupBtn').onclick = signup;
-    $('loginBtn').onclick = login;
-    $('logoutBtn').onclick = logout;
-    $('refreshBtn').onclick = fetchOrders;
-    $('newBtn').onclick = resetForm;
-    $('saveBtn').onclick = saveOrder;
-    $('deleteBtn').onclick = deleteOrder;
+    if ($('signupBtn')) $('signupBtn').onclick = signup;
+if ($('loginBtn')) $('loginBtn').onclick = login;
+if ($('logoutBtn')) $('logoutBtn').onclick = logout;
+if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
+if ($('newBtn')) $('newBtn').onclick = resetForm;
+if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
+if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
     $('openStripeBtn')?.onclick = () => {
   const url = $('paymentLinkStripe')?.value;
   if(url) window.open(url, '_blank');
