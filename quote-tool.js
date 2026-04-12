@@ -471,7 +471,7 @@ function defaultAssumptions() {
   if (t === 'craft_show') return `Pricing is for pre-made inventory or event stock currently available or planned for a batch run. Final color appearance may vary slightly by filament brand and print settings. Quantities available may change as inventory sells. ${shippingLine}`;
   if (t === 'business_bulk') return `Quote is based on the listed quantity, materials, and expected production approach. Final schedule, delivery timing, and any packaging or labeling requirements should be confirmed at approval. Material color and finish may vary slightly by filament brand and production batch. ${shippingLine}`;
   if (t === 'repeat') return `Quote is based on a prior or repeat-style item using current material, labor, and machine assumptions. Minor variation in color, finish, or packaging may occur depending on current stock and print settings. ${shippingLine}`;
-  return `Quote includes one proof/review round, standard finishing unless noted, and the materials and colors listed in this quote. Final color appearance may vary slightly by filament brand and print settings. ${shippingLine} Custom orders begin after quote approval and any required deposit.`;
+  return `This quote includes collaborative design iteration, proofing, and review until the quoted design direction is mutually accepted. Standard finishing is included unless otherwise noted, and final printed color may vary slightly due to filament batch, material, and printer settings. Local pickup is assumed unless otherwise noted. Production timing is scheduled to begin within 24 hours after the quote is confirmed accepted in writing with OliPoly 3D.`;
 }
 
 function paymentTermsText() {
@@ -483,6 +483,15 @@ function paymentTermsText() {
     net_30: 'Payment is due within 30 days of invoice date.'
   };
   return map[els.paymentTerms.value] || 'Payment due on receipt of invoice.';
+}
+
+function quotePaymentTermsText() {
+  const depositPct = num(els.depositPercent.value);
+  if (depositPct > 0) {
+    const pctText = Number.isInteger(depositPct) ? `${depositPct}` : `${depositPct.toFixed(2).replace(/\.00$/, '')}`;
+    return `${pctText}% is due up front, with the remaining balance due after order completion at or prior to delivery, shipment, or pickup.`;
+  }
+  return 'Payment is due after order completion at or prior to shipping, delivery, or pickup.';
 }
 
 function applyShippingMode() {
@@ -504,7 +513,6 @@ function applyProfessionalMode() {
 
   if (on) {
     if (!els.companyName.value.trim() && els.customerName.value.trim()) els.companyName.value = els.customerName.value.trim();
-    if (!els.customerNotes.value.trim()) els.customerNotes.value = 'Quote prepared for a business or multi-unit order based on the specifications discussed.';
     if (!els.invoiceNotes.value.trim()) els.invoiceNotes.value = 'Please reference the invoice number with payment or internal approval.';
   }
 }
@@ -526,17 +534,8 @@ function applyOrderType() {
   if (isCraft && els.shippingMode.value === 'ship_estimated') els.shippingMode.value = 'pickup';
   if (isCraft && els.quoteStatus.value === 'pending') els.quoteStatus.value = 'accepted';
 
-  if (!els.customerNotes.value.trim()) {
-    els.customerNotes.value = isCraft
-      ? 'Pre-made inventory item prepared for sale. Pricing reflects finished stock on hand unless otherwise noted.'
-      : isBulk
-        ? 'Quote prepared for a business / multi-unit order. Final schedule and delivery details can be confirmed at approval.'
-        : isRepeat
-          ? 'Quote prepared from a prior or repeat-style order with current materials and labor assumptions.'
-          : 'Custom 3D printed item quoted from the specifications discussed.';
-  }
-
   if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
+
   if (isCraft && els.profitMode.value === 'percent' && num(els.profitValue.value) < 35) els.profitValue.value = 35;
   if (isBulk && els.profitMode.value === 'percent' && num(els.profitValue.value) < 25) els.profitValue.value = 25;
 
@@ -555,10 +554,7 @@ function toggleReadySend() {
   const on = document.body.classList.contains('ready-send');
   els.readySendBtn.textContent = `Ready to Send: ${on ? 'On' : 'Off'}`;
 
-  if (on) {
-    if (!els.customerNotes.value.trim()) els.customerNotes.value = 'Custom 3D printed item quoted from the specifications discussed.';
-    if (!els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
-  }
+  if (on && !els.assumptions.value.trim()) els.assumptions.value = defaultAssumptions();
 }
 
 const rowValue = (row) => num(row.querySelector('.item-amount').value);
@@ -715,13 +711,11 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   els.pdfDocType.textContent = isInvoice ? 'Invoice' : professional ? 'Professional Quote' : 'Quote';
   els.pdfBrandSub.textContent = isInvoice ? 'Invoice and payment document' : professional ? 'Professional business quote' : 'Custom 3D printing quote';
   els.pdfTitle.textContent = isInvoice ? (professional ? 'Professional Invoice' : 'Invoice') : (professional ? 'Professional Quote' : (els.quoteTitle.value.trim() || 'Customer Quote'));
-  els.pdfSubtitle.textContent = isInvoice
-    ? (els.invoiceType.value === 'deposit'
-      ? 'Deposit request for approved work.'
-      : els.invoiceType.value === 'final'
-        ? 'Final balance invoice for completed or approved work.'
-        : 'Full invoice for the quoted order.')
-    : (professional ? 'Formal quote prepared for review and approval.' : (els.customerNotes.value.trim() || 'A polished customer-ready quote for your order.'));
+
+  if (els.pdfSubtitle) {
+    els.pdfSubtitle.textContent = '';
+    els.pdfSubtitle.classList.add('hidden');
+  }
 
   els.pdfQuoteNumber.textContent = els.quoteNumber.value || '—';
   els.pdfInvoiceNumber.textContent = els.invoiceNumber.value || '—';
@@ -746,19 +740,59 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   const invoiceAmountEl = $('pdfInvoiceAmount');
   if (invoiceAmountEl) invoiceAmountEl.textContent = money(invoiceAmount(total, deposit, balance));
 
-  els.pdfCustomerNotes.textContent = isInvoice
-    ? (els.invoiceNotes.value.trim() || 'Please remit payment according to the terms listed below.')
-    : (els.customerNotes.value.trim() || 'No customer-facing notes added yet.');
+  if (els.pdfCustomerNotes) {
+    const notes = (isInvoice ? els.invoiceNotes.value : els.customerNotes.value).trim();
+    if (notes) {
+      els.pdfCustomerNotes.textContent = notes;
+      els.pdfCustomerNotes.classList.remove('hidden');
+      els.pdfCustomerNotes.style.display = '';
+    } else {
+      els.pdfCustomerNotes.textContent = '';
+      els.pdfCustomerNotes.classList.add('hidden');
+      els.pdfCustomerNotes.style.display = 'none';
+    }
+  }
 
-  els.pdfAssumptions.textContent = isInvoice
-    ? (professional
-      ? `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}${els.poNumber.value.trim() ? ` | PO #: ${els.poNumber.value.trim()}` : ''}`
-      : `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}`)
-    : (els.assumptions.value.trim() || 'No exclusions or assumptions added yet.');
+  if (els.pdfAssumptions) {
+    els.pdfAssumptions.textContent = isInvoice
+      ? (professional
+          ? `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}${els.poNumber.value.trim() ? ` | PO #: ${els.poNumber.value.trim()}` : ''}`
+          : `Project reference: ${els.quoteTitle.value.trim() || 'Quoted project'}`)
+      : defaultAssumptions();
+  }
 
-  els.pdfInvoiceTerms.innerHTML = `<strong>Payment Terms</strong><br>${paymentTermsText()}`
-    + `${els.customerEmail.value.trim() ? `<br>Billing contact: ${els.customerEmail.value.trim()}` : ''}`
-    + `${els.invoiceNotes.value.trim() ? `<br><br>${els.invoiceNotes.value.trim()}` : ''}`;
+  const trackingEl = $('pdfTrackingInfo');
+  if (trackingEl) {
+    if (isInvoice) {
+      trackingEl.classList.add('hidden');
+      trackingEl.style.display = 'none';
+      trackingEl.innerHTML = '';
+    } else {
+      trackingEl.innerHTML = '<strong>Order Tracking</strong><br>Once this quote is accepted and moved into an in-process order, you can track it at the OliPoly 3D order tracker by entering your full quote number in the format "Q-######".';
+      trackingEl.classList.remove('hidden');
+      trackingEl.style.display = '';
+    }
+  }
+
+  const quoteTermsEl = $('pdfQuoteTerms');
+  if (quoteTermsEl) {
+    if (isInvoice) {
+      quoteTermsEl.classList.add('hidden');
+      quoteTermsEl.style.display = 'none';
+      quoteTermsEl.innerHTML = '';
+    } else {
+      quoteTermsEl.innerHTML = `<strong>Payment Terms</strong><br>${quotePaymentTermsText()}`;
+      quoteTermsEl.classList.remove('hidden');
+      quoteTermsEl.style.display = '';
+    }
+  }
+
+  if (els.pdfInvoiceTerms) {
+    els.pdfInvoiceTerms.innerHTML =
+      `<strong>Payment Terms</strong><br>${paymentTermsText()}` +
+      `${els.customerEmail.value.trim() ? `<br>Billing contact: ${els.customerEmail.value.trim()}` : ''}` +
+      `${els.invoiceNotes.value.trim() ? `<br><br>${els.invoiceNotes.value.trim()}` : ''}`;
+  }
 
   document.querySelectorAll('.quote-only').forEach((el) => el.classList.toggle('hidden', isInvoice));
   document.querySelectorAll('.invoice-only').forEach((el) => el.classList.toggle('hidden', !isInvoice));
@@ -797,6 +831,7 @@ function render() {
   if (els.materialUnitCost) {
     els.materialUnitCost.textContent = money(materialTotal / Math.max(1, num(els.qty.value) || 1));
   }
+
   els.simpleSummary.textContent = `Simple inputs: ${money(materialTotal)} material, ${money(els.simplePackaging.value)} packaging, ${money(els.simpleShipping.value)} shipping, ${money(els.simpleHardware.value)} hardware, ${money(designTotal)} design labor, ${money(machineTotal)} machine time, ${money(postTotal)} post-process labor.`;
 
   const suggested = suggestedProfitPercent();
@@ -816,7 +851,7 @@ function render() {
   const roundingStep = num(els.roundingMode.value);
 
   let finalQuote = roundingStep > 0 ? Math.round(finalRaw / roundingStep) * roundingStep : finalRaw;
-  const minTotal = Math.max(1, num(els.qty.value) || 1) === 1 ? 20 : 30;
+  const minTotal = (Math.max(1, num(els.qty.value) || 1) === 1) ? 20 : 30;
   if (finalQuote < minTotal) finalQuote = minTotal;
 
   const beforeTax = taxRate > 0 ? finalQuote / (1 + taxRate) : finalQuote;
@@ -861,7 +896,7 @@ function render() {
   els.sumMargin.textContent = `${marginPct.toFixed(1)}%`;
   els.outMargin.textContent = `${marginPct.toFixed(1)}%`;
   els.outDiscount.textContent = `-${money(discount)}`;
-  els.profitGuardrail.textContent = actualProfit < 5 || marginPct < 25 ? 'Warning' : 'OK';
+  els.profitGuardrail.textContent = (actualProfit < 5 || marginPct < 25) ? 'Warning' : 'OK';
   if (els.activePreset) els.activePreset.textContent = PRESETS[els.presetSelect.value]?.name || 'Custom';
 
   els.quoteSummary.textContent = `${els.quoteTitle.value.trim() || 'Untitled quote'}${documentClientName() !== '—' ? ` for ${documentClientName()}` : ''}: ${qty} item${qty === 1 ? '' : 's'}, ${money(direct)} direct costs, ${money(overhead)} overhead, ${money(actualProfit)} actual profit, ${money(deposit)} deposit, ${money(balance)} balance, final quoted total ${money(finalQuote)}${num(els.salesTax.value) ? ' including tax' : ''}${roundingGain ? ` after ${money(roundingGain)} smart rounding` : ''}.`;
@@ -905,8 +940,7 @@ function render() {
     `<div style="margin-bottom:12px;">${documentClientName() !== '—' ? `Client: ${documentClientName()}<br>` : ''}Quantity: ${qty}</div>`,
     `<div style="margin-bottom:12px;">Subtotal: ${money(beforeTax)}${num(els.salesTax.value) ? `<br>Sales tax: ${money(tax)}` : ''}<br><strong>Total quote: ${money(finalQuote)}</strong></div>`,
     `<div style="margin-bottom:12px;">Deposit due: ${money(deposit)}<br>Balance due: ${money(balance)}</div>`,
-    `<div style="margin-bottom:12px;">${els.customerNotes.value.trim() || 'No customer-facing notes added yet.'}</div>`,
-    `<div style="margin-bottom:12px;">${els.assumptions.value.trim() || 'No exclusions or assumptions added yet.'}</div>`
+    `<div style="margin-bottom:12px;">${els.assumptions.value.trim() || defaultAssumptions()}</div>`
   ].join('');
 
   fillPdf('quote', finalQuote, beforeTax, tax, deposit, balance, perItem);
@@ -1029,8 +1063,7 @@ function refreshHistoryUI() {
   const list = readHistory().sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
   const current = els.savedQuotesSelect.value;
 
-  els.savedQuotesSelect.innerHTML = '<option value="">Select a saved quote</option>'
-    + list.map((q) => `<option value="${q.quoteNumber}">${q.quoteNumber} — ${q.quoteTitle || 'Untitled'} (${q.quoteStatus})</option>`).join('');
+  els.savedQuotesSelect.innerHTML = '<option value="">Select a saved quote</option>' + list.map((q) => `<option value="${q.quoteNumber}">${q.quoteNumber} — ${q.quoteTitle || 'Untitled'} (${q.quoteStatus})</option>`).join('');
 
   if (list.some((q) => q.quoteNumber === current)) els.savedQuotesSelect.value = current;
   els.historySummary.textContent = list.length
@@ -1244,7 +1277,7 @@ async function loadDemo() {
   els.salesTax.value = 0;
   els.taxPreset.value = 'out_of_state';
   els.depositPercent.value = 50;
-  els.customerNotes.value = 'Quote includes production of the listed quantity using the discussed geometry and material assumptions. Packaging and delivery timing to be confirmed at award.';
+  els.customerNotes.value = '';
   els.invoiceNotes.value = 'Please reference the invoice number and PO number with remittance.';
   els.assumptions.value = defaultAssumptions();
   els.filamentCount.value = 1;
