@@ -500,11 +500,20 @@
     $('newBtn').onclick = resetForm;
     $('saveBtn').onclick = saveOrder;
     $('deleteBtn').onclick = deleteOrder;
-    $('openInvoiceBtn').onclick = () => {
-      const url = $('paymentLink').value.trim();
-      if(!url) return setMsg($('formMessage'),'Add a Stripe invoice URL first.',true);
-      window.open(url, '_blank', 'noopener');
-    };
+    $('openStripeBtn')?.onclick = () => {
+  const url = $('paymentLinkStripe')?.value;
+  if(url) window.open(url, '_blank');
+};
+
+$('openPaypalBtn')?.onclick = () => {
+  const url = $('paymentLinkPaypal')?.value;
+  if(url) window.open(url, '_blank');
+};
+
+$('openVenmoBtn')?.onclick = () => {
+  const url = $('paymentLinkVenmo')?.value;
+  if(url) window.open(url, '_blank');
+};
     $('clearFiltersBtn').onclick = () => {
       $('searchInput').value = '';
       $('statusFilter').value = 'all';
