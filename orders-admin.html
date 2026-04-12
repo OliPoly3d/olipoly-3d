@@ -222,17 +222,22 @@
     }
 
     function normalizePaymentStatus(){
-      const hasLink = $('paymentLinkStripe')?.value.trim() || $('paymentLinkPaypal')?.value.trim() || $('paymentLinkVenmo')?.value.trim() || '';
-      const deposit = num($('depositAmount').value);
-      const total = num($('orderTotal').value);
-      const balance = Math.max(0, total - deposit);
+  const hasLink =
+    $('paymentLinkStripe')?.value.trim() ||
+    $('paymentLinkPaypal')?.value.trim() ||
+    $('paymentLinkVenmo')?.value.trim() ||
+    '';
 
-      if(!hasLink && $('paymentStatus').value === 'deposit_due') $('paymentStatus').value = 'unpaid';
-      if(hasLink && $('paymentStatus').value === 'unpaid' && deposit > 0) $('paymentStatus').value = 'deposit_due';
-      if($('paymentStatus').value === 'deposit_paid' && balance <= 0) $('paymentStatus').value = 'paid';
-      if($('paymentStatus').value === 'paid') $('balanceAmount').value = '0.00';
-      syncPaidDate();
-    }
+  const deposit = num($('depositAmount').value);
+  const total = num($('orderTotal').value);
+  const balance = Math.max(0, total - deposit);
+
+  if(!hasLink && $('paymentStatus').value === 'deposit_due') $('paymentStatus').value = 'unpaid';
+  if(hasLink && $('paymentStatus').value === 'unpaid' && deposit > 0) $('paymentStatus').value = 'deposit_due';
+  if($('paymentStatus').value === 'deposit_paid' && balance <= 0) $('paymentStatus').value = 'paid';
+  if($('paymentStatus').value === 'paid') $('balanceAmount').value = '0.00';
+  syncPaidDate();
+}
 
     function snapshotForm(){
       return {
@@ -249,39 +254,40 @@
         status: $('status').value,
         payment_status: $('paymentStatus').value,
         fulfillment: $('fulfillment').value,
-        tracking_number: $('trackingNumber').value.trim() || null,
-        payment_link: $('paymentLinkStripe')?.value.trim() || null,
+       tracking_number: $('trackingNumber').value.trim() || null,
+
+payment_link: $('paymentLinkStripe')?.value.trim() || null,
 payment_link_stripe: $('paymentLinkStripe')?.value.trim() || null,
 payment_link_paypal: $('paymentLinkPaypal')?.value.trim() || null,
 payment_link_venmo: $('paymentLinkVenmo')?.value.trim() || null,
-        stripe_invoice_id: $('stripeInvoiceId').value.trim() || null,
-        paid_date: $('paidDate').value || null,
-        internal_notes: $('internalNotes').value.trim() || null,
-        public_status_text: $('publicStatusText').value.trim() || null,
-        public_next_step: $('publicNextStep').value.trim() || null,
-        shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
-        payment_link_stripe: $('paymentLinkStripe')?.value.trim() || '',
-        payment_link_paypal: $('paymentLinkPaypal')?.value.trim() || '',
-        payment_link_venmo: $('paymentLinkVenmo')?.value.trim() || '',
+
+stripe_invoice_id: $('stripeInvoiceId').value.trim() || null,
+paid_date: $('paidDate').value || null,
+internal_notes: $('internalNotes').value.trim() || null,
+public_status_text: $('publicStatusText').value.trim() || null,
+public_next_step: $('publicNextStep').value.trim() || null,
+shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
       };
     }
 
-    function publicTrackingPayload(payload) {
-      return {
-        order_number: payload.order_number,
-        user_id: payload.user_id,
-        order_title: payload.order_title || null,
-        status: payload.status,
-        payment_status: payload.payment_status,
-        public_status_text: payload.public_status_text || null,
-        public_next_step: payload.public_next_step || null,
-        shipping_or_pickup_note: payload.shipping_or_pickup_note || null,
-        tracking_number: payload.tracking_number || null,
-        payment_link: payload.payment_link || null,
-        paid_date: payload.paid_date || null
-      };
-    }
-
+function publicTrackingPayload(payload) {
+  return {
+    order_number: payload.order_number,
+    user_id: payload.user_id,
+    order_title: payload.order_title || null,
+    status: payload.status,
+    payment_status: payload.payment_status,
+    public_status_text: payload.public_status_text || null,
+    public_next_step: payload.public_next_step || null,
+    shipping_or_pickup_note: payload.shipping_or_pickup_note || null,
+    tracking_number: payload.tracking_number || null,
+    payment_link: payload.payment_link || null,
+    payment_link_stripe: payload.payment_link_stripe || null,
+    payment_link_paypal: payload.payment_link_paypal || null,
+    payment_link_venmo: payload.payment_link_venmo || null,
+    paid_date: payload.paid_date || null
+  };
+}
     function resetForm(){
       activeId = null;
       $('detailTitle').textContent = 'Order Details';
