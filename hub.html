@@ -762,7 +762,16 @@ if($('addReminderBtn')){
     writeRem(l);
   };
 }
-
+const STAGES = [
+  { title: '1. Intake', intro: '', next: '', checks: [] },
+  { title: '2. Quote', intro: '', next: '', checks: [] },
+  { title: '3. Approval', intro: '', next: '', checks: [] },
+  { title: '4. Payment', intro: '', next: '', checks: [] },
+  { title: '5. Production', intro: '', next: '', checks: [] },
+  { title: '6. Finishing', intro: '', next: '', checks: [] },
+  { title: '7. Ready', intro: '', next: '', checks: [] },
+  { title: '8. Complete', intro: '', next: '', checks: [] }
+];
 /* =========================
    WORKFLOW (RESTORED + FIXED)
 ========================= */
