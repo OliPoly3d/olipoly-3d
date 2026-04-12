@@ -105,6 +105,10 @@ function previewOrderNumberFromQuote(qNum) {
   if (!qNum) return '—';
   return String(qNum).replace(/^Q-/, 'OP-');
 }
+function previewOrderNumberFromQuote(qNum) {
+  if (!qNum) return '—';
+  return String(qNum).replace(/^Q-/, 'OP-');
+}
 const readHistory = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
   catch { return []; }
@@ -495,10 +499,10 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   }
 
   const pdfTextMap = {
-    pdfQuoteNumber: els.quoteNumber.value || '—',
-    pdfOrderPreview: previewOrderNumberFromQuote(els.quoteNumber.value),
-    pdfInvoiceNumber: els.invoiceNumber.value || '—',
-    pdfQuoteDate: isInvoice ? (els.invoiceDate.value || els.quoteDate.value || '—') : (els.quoteDate.value || '—'),
+  pdfQuoteNumber: els.quoteNumber.value || '—',
+  pdfOrderPreview: previewOrderNumberFromQuote(els.quoteNumber.value),
+  pdfInvoiceNumber: els.invoiceNumber.value || '—',
+  pdfQuoteDate: isInvoice ? (els.invoiceDate.value || els.quoteDate.value || '—') : (els.quoteDate.value || '—'),
     pdfValidThrough: els.validThrough.value || '—',
     pdfPaymentDueDate: els.paymentDueDate.value || '—',
     pdfTurnaround: els.turnaround.value || '—',
