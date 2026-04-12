@@ -530,14 +530,15 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
   }
 
   if (els.pdfTrackingInfo) {
-    if (isInvoice) {
-      toggleHidden(els.pdfTrackingInfo, true);
-      els.pdfTrackingInfo.innerHTML = '';
-    } else {
-      toggleHidden(els.pdfTrackingInfo, false);
-      els.pdfTrackingInfo.innerHTML = '<strong>Order Tracking</strong><br>Once this quote is accepted and moved into an in-process order, you can track it at the OliPoly 3D order tracker by entering your full quote number in the format "Q-######".';
-    }
+  if (isInvoice) {
+    toggleHidden(els.pdfTrackingInfo, true);
+    els.pdfTrackingInfo.innerHTML = '';
+  } else {
+    const futureOrderNumber = previewOrderNumberFromQuote(els.quoteNumber.value);
+    toggleHidden(els.pdfTrackingInfo, false);
+    els.pdfTrackingInfo.innerHTML = `<strong>Order Tracking</strong><br>Once this quote is accepted, it will be assigned Order Number <strong>${futureOrderNumber}</strong>. You can track your order anytime on the OliPoly 3D tracking page using that exact order number.`;
   }
+}
 
   if (els.pdfQuoteTerms) {
     if (isInvoice) {
