@@ -828,16 +828,41 @@ function wfPaid(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.paid=!o.p
 function wfNew(){ wfSave(); const s=wfEnsure(); const o=wfNewOrder(); s.orders.unshift(o); s.activeId=o.id; wfWrite(s); wfRender();}
 
 window.addEventListener('DOMContentLoaded',()=>{
-  wfEnsure(); wfRender();
+  wfEnsure(); 
+  wfRender();
 
   ['wfCustomer','wfProject','wfQty','wfPaymentLink'].forEach(id=>{
-    const el=$(id); if(el) el.addEventListener('input',wfSave);
+    const el=$(id);
+    if(el) el.addEventListener('input',wfSave);
   });
 
-  $('wfNextBtn')?.onclick=wfNext;
-  $('wfPrevBtn')?.onclick=wfPrev;
-  $('wfMarkPaidBtn')?.onclick=wfPaid;
-  $('wfNewOrderBtn')?.onclick=wfNew;
+  $('wfNextBtn')?.onclick = wfNext;
+  $('wfPrevBtn')?.onclick = wfPrev;
+  $('wfMarkPaidBtn')?.onclick = wfPaid;
+  $('wfNewOrderBtn')?.onclick = wfNew;
+
+  // ✅ FIXED: now inside DOM load
+  $('sendToOrdersBtn')?.addEventListener("click", () => {
+
+    const o = wfActive();
+
+    if (!o) {
+      alert("No order selected");
+      return;
+    }
+
+    const data = {
+      customer: o.customer,
+      project: o.project,
+      qty: o.qty,
+      paymentLink: o.paymentLink
+    };
+
+    localStorage.setItem("olipoly_transfer", JSON.stringify(data));
+
+    alert("Order sent! Now open Orders Admin");
+  });
+
 });
   document.getElementById("sendToOrdersBtn")?.addEventListener("click", () => {
 
