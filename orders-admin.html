@@ -566,8 +566,8 @@ $('openVenmoBtn')?.onclick = () => {
     $('statusFilter').addEventListener('input', renderList);
     $('paymentFilter').addEventListener('input', renderList);
     $('sortBy').addEventListener('input', renderList);
-    ['orderNumber','orderTotal','depositAmount','paymentStatus','status','publicStatusText','publicNextStep','shippingOrPickupNote','trackingNumber','paymentLink','paidDate'].forEach(id => $(id).addEventListener('input', updatePreview));
-
+    ['orderNumber','orderTotal','depositAmount','paymentStatus','status','publicStatusText','publicNextStep','shippingOrPickupNote','trackingNumber','paymentLinkStripe','paymentLinkPaypal','paymentLinkVenmo','paidDate']
+  .forEach(id => $(id)?.addEventListener('input', updatePreview));
     resetForm();
     renderList();
     $('logoutBtn').classList.add('hidden');
