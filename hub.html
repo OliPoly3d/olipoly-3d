@@ -633,372 +633,211 @@
 
   <div class="toast" id="toast"></div>
 
-  <script>
-    const NOTES_KEY = 'olipoly_hub_notes_v2';
-    const MONEY_KEY = 'olipoly_hub_money_v1';
-    const TAX_KEY = 'olipoly_hub_tax_v1';
-    const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
-    const WF_KEY = 'olipoly_hub_workflow_v1';
+<script>
+const NOTES_KEY = 'olipoly_hub_notes_v2';
+const MONEY_KEY = 'olipoly_hub_money_v1';
+const TAX_KEY = 'olipoly_hub_tax_v1';
+const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
+const WF_KEY = 'olipoly_hub_workflow_v3';
 
-    const templates = {
-      orderReceived: `Thanks for your order request. I received it and will review the details shortly. If needed, I will follow up with any questions and next steps. You can track your order here: https://olipoly3d.github.io/olipoly-3d/track.html`,
-      readyPickup: `Your order is ready. Please reply when you would like to arrange pickup or delivery details. Thank you again for your order.`,
-      paymentLink: `Here is your payment link for this order: [insert payment link]. Once payment is received, I will continue with the next step on your order.`,
-      delayUpdate: `Quick update on your order: I need a little more time than originally expected. Thank you for your patience. I will keep you updated as I make progress.`
-    };
+const $ = (id) => document.getElementById(id);
+const money = (v) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0);
 
-    const STAGES = [
-      { title:'1. Intake', intro:'Confirm enough information exists to move into pricing and planning.', next:'Collect missing intake details.', checks:['Customer identified','Project described','Source noted','Due date considered'] },
-      { title:'2. Review', intro:'Review print approach, material, and feasibility.', next:'Validate specs and printing approach.', checks:['Specs reviewed','Material direction chosen','Questions clarified'] },
-      { title:'3. Quote', intro:'Build or confirm pricing before approval.', next:'Send quote to customer.', checks:['Price prepared','Quote total entered','Quote message ready'] },
-      { title:'4. Approval', intro:'Customer approves before production.', next:'Get approval confirmation.', checks:['Quote sent','Customer approved','Final scope confirmed'] },
-      { title:'5. Payment', intro:'Collect deposit or full payment.', next:'Send payment link or confirm payment.', checks:['Invoice created','Payment link pasted','Payment status updated'] },
-      { title:'6. Production', intro:'Print and process the order.', next:'Move into production and post-processing.', checks:['Production started','Post-processing planned','Issues noted if needed'] },
-      { title:'7. Delivery', intro:'Prepare pickup, delivery, or shipping.', next:'Coordinate handoff with customer.', checks:['Pickup or shipping ready','Customer contacted','Tracking or pickup note ready'] },
-      { title:'8. Complete', intro:'Order is done and closed out.', next:'Archive details and follow up if helpful.', checks:['Customer received order','Any follow-up handled','Order complete'] }
-    ];
+/* =========================
+   TOAST
+========================= */
+function showToast(text){
+  const el = $('toast');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>el.classList.remove('show'),1800);
+}
 
-    const $ = (id) => document.getElementById(id);
-    const money = (v) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v) || 0);
+/* =========================
+   NOTES
+========================= */
+const notesEl = $('hubNotes');
+if(notesEl){
+  notesEl.value = localStorage.getItem(NOTES_KEY) || '';
+  $('saveNotesBtn').onclick = () => {
+    localStorage.setItem(NOTES_KEY, notesEl.value);
+    showToast('Notes saved');
+  };
+  $('clearNotesBtn').onclick = () => {
+    notesEl.value = '';
+    localStorage.removeItem(NOTES_KEY);
+    showToast('Notes cleared');
+  };
+}
 
-    function showToast(text){
-      const el = $('toast');
-      el.textContent = text;
-      el.classList.add('show');
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => el.classList.remove('show'), 1800);
-    }
+/* =========================
+   MONEY
+========================= */
+function renderMoney(){
+  if(!$('moneyTodayRevenue')) return;
+  const tr = Number($('moneyTodayRevenue').value)||0;
+  const mr = Number($('moneyMonthRevenue').value)||0;
+  const me = Number($('moneyMonthExpenses').value)||0;
 
-    document.querySelectorAll('[data-copy]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(btn.dataset.copy || '');
-          showToast('Copied');
-        } catch { showToast('Copy failed'); }
-      });
-    });
+  $('moneyTodayRevenueDisplay').textContent = money(tr);
+  $('moneyMonthRevenueDisplay').textContent = money(mr);
+  $('moneyMonthExpensesDisplay').textContent = money(me);
+  $('moneyMonthProfitDisplay').textContent = money(mr-me);
+}
 
-    document.querySelectorAll('[data-template]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(templates[btn.dataset.template] || '');
-          showToast('Message copied');
-        } catch { showToast('Copy failed'); }
-      });
-    });
+if($('saveMoneyBtn')){
+  const m = JSON.parse(localStorage.getItem(MONEY_KEY)||'{}');
+  $('moneyTodayRevenue').value = m.todayRevenue||'';
+  $('moneyMonthRevenue').value = m.monthRevenue||'';
+  $('moneyMonthExpenses').value = m.monthExpenses||'';
+  renderMoney();
 
-    const notesEl = $('hubNotes');
-    const notesStatus = $('notesStatus');
-    const savedNotes = localStorage.getItem(NOTES_KEY);
-    if (savedNotes) notesEl.value = savedNotes;
-    $('saveNotesBtn').onclick = () => {
-      localStorage.setItem(NOTES_KEY, notesEl.value);
-      notesStatus.textContent = 'Saved';
-      showToast('Notes saved');
-    };
-    $('clearNotesBtn').onclick = () => {
-      notesEl.value = '';
-      localStorage.removeItem(NOTES_KEY);
-      notesStatus.textContent = 'Cleared';
-      showToast('Notes cleared');
-    };
-
-    const moneyState = JSON.parse(localStorage.getItem(MONEY_KEY) || '{}');
-    $('moneyTodayRevenue').value = moneyState.todayRevenue || '';
-    $('moneyMonthRevenue').value = moneyState.monthRevenue || '';
-    $('moneyMonthExpenses').value = moneyState.monthExpenses || '';
-    function renderMoney(){
-      const todayRevenue = Number($('moneyTodayRevenue').value) || 0;
-      const monthRevenue = Number($('moneyMonthRevenue').value) || 0;
-      const monthExpenses = Number($('moneyMonthExpenses').value) || 0;
-      $('moneyTodayRevenueDisplay').textContent = money(todayRevenue);
-      $('moneyMonthRevenueDisplay').textContent = money(monthRevenue);
-      $('moneyMonthExpensesDisplay').textContent = money(monthExpenses);
-      $('moneyMonthProfitDisplay').textContent = money(monthRevenue - monthExpenses);
-    }
+  $('saveMoneyBtn').onclick = () => {
+    localStorage.setItem(MONEY_KEY, JSON.stringify({
+      todayRevenue:$('moneyTodayRevenue').value,
+      monthRevenue:$('moneyMonthRevenue').value,
+      monthExpenses:$('moneyMonthExpenses').value
+    }));
     renderMoney();
-    $('saveMoneyBtn').onclick = () => {
-      localStorage.setItem(MONEY_KEY, JSON.stringify({
-        todayRevenue:$('moneyTodayRevenue').value,
-        monthRevenue:$('moneyMonthRevenue').value,
-        monthExpenses:$('moneyMonthExpenses').value
-      }));
-      renderMoney();
-      showToast('Money snapshot saved');
-    };
+    showToast('Money saved');
+  };
+}
 
-    const taxState = JSON.parse(localStorage.getItem(TAX_KEY) || '{}');
-    $('taxableSalesInput').value = taxState.taxableSales || '';
-    $('taxRateInput').value = taxState.taxRate || '';
-    function renderTax(){
-      const taxable = Number($('taxableSalesInput').value) || 0;
-      const rate = Number($('taxRateInput').value) || 0;
-      $('taxCollectedDisplay').textContent = money(taxable * (rate / 100));
-    }
+/* =========================
+   TAX
+========================= */
+function renderTax(){
+  if(!$('taxableSalesInput')) return;
+  const t = Number($('taxableSalesInput').value)||0;
+  const r = Number($('taxRateInput').value)||0;
+  $('taxCollectedDisplay').textContent = money(t*(r/100));
+}
+
+if($('saveTaxBtn')){
+  const t = JSON.parse(localStorage.getItem(TAX_KEY)||'{}');
+  $('taxableSalesInput').value = t.taxableSales||'';
+  $('taxRateInput').value = t.taxRate||'';
+  renderTax();
+
+  $('saveTaxBtn').onclick = () => {
+    localStorage.setItem(TAX_KEY, JSON.stringify({
+      taxableSales:$('taxableSalesInput').value,
+      taxRate:$('taxRateInput').value
+    }));
     renderTax();
-    $('saveTaxBtn').onclick = () => {
-      localStorage.setItem(TAX_KEY, JSON.stringify({
-        taxableSales:$('taxableSalesInput').value,
-        taxRate:$('taxRateInput').value
-      }));
-      renderTax();
-      showToast('Tax helper saved');
-    };
-    $('taxableSalesInput').addEventListener('input', renderTax);
-    $('taxRateInput').addEventListener('input', renderTax);
+    showToast('Tax saved');
+  };
+}
 
-    function readReminders(){ try { return JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]'); } catch { return []; } }
-    function writeReminders(list){ localStorage.setItem(REMINDERS_KEY, JSON.stringify(list)); renderReminders(); }
-    function renderReminders(){
-      const list = readReminders();
-      const root = $('reminderList');
-      root.innerHTML = list.length ? '' : '<div class="helper">No reminders yet.</div>';
-      list.forEach((item, idx) => {
-        const row = document.createElement('div');
-        row.className = 'reminder-item';
-        row.innerHTML = `<span>${item}</span><button class="tiny-btn" type="button">Remove</button>`;
-        row.querySelector('button').onclick = () => writeReminders(list.filter((_, i) => i !== idx));
-        root.appendChild(row);
-      });
-    }
-    renderReminders();
-    $('addReminderBtn').onclick = () => {
-      const val = $('reminderInput').value.trim();
-      if (!val) return;
-      const list = readReminders();
-      list.unshift(val);
-      $('reminderInput').value = '';
-      writeReminders(list);
-      showToast('Reminder added');
-    };
+/* =========================
+   REMINDERS
+========================= */
+function readRem(){ try{return JSON.parse(localStorage.getItem(REMINDERS_KEY)||'[]')}catch{return[]}}
+function writeRem(l){ localStorage.setItem(REMINDERS_KEY,JSON.stringify(l)); renderRem(); }
 
-    async function checkLink(url){
-      try {
-        const res = await fetch(url, { method:'HEAD', mode:'no-cors' });
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    const healthMap = {
-      main:'https://olipoly3d.github.io/olipoly-3d/index.html',
-      tracker:'https://olipoly3d.github.io/olipoly-3d/track.html',
-      admin:'https://olipoly3d.github.io/olipoly-3d/orders-admin.html',
-      finance:'https://olipoly3d.github.io/olipoly-3d/finance-pro.html',
-      quote:'https://olipoly3d.github.io/olipoly-3d/quote-tool.html',
-      pm:'https://olipoly3d.github.io/olipoly-3d/pm.html'
-    };
-    $('runHealthCheckBtn').onclick = async () => {
-      $('healthStamp').textContent = 'Checking...';
-      const dots = document.querySelectorAll('[data-health-dot]');
-      for (const dot of dots) {
-        dot.className = 'status-dot';
-        const key = dot.dataset.healthDot;
-        const ok = await checkLink(healthMap[key]);
-        dot.classList.add(ok ? 'ok' : 'bad');
-      }
-      $('healthStamp').textContent = `Checked ${new Date().toLocaleTimeString()}`;
-      showToast('Health check finished');
-    };
-    $('resetHealthCheckBtn').onclick = () => {
-      document.querySelectorAll('[data-health-dot]').forEach(dot => dot.className = 'status-dot');
-      $('healthStamp').textContent = 'Not checked yet';
-    };
+function renderRem(){
+  const list = readRem();
+  const root = $('reminderList');
+  if(!root) return;
 
-    function readWorkflow(){
-      try {
-        return JSON.parse(localStorage.getItem(WF_KEY) || '{"orders":[],"activeId":null}');
-      } catch {
-        return { orders: [], activeId: null };
-      }
-    }
-    function writeWorkflow(state){ localStorage.setItem(WF_KEY, JSON.stringify(state)); }
-    function currentOrder(){
-      const state = readWorkflow();
-      return state.orders.find(o => o.id === state.activeId) || null;
-    }
-    function emptyOrder(){
-      return {
-        id: `wf-${Date.now()}`,
-        customer:'', source:'facebook messenger', project:'', qty:'', dueDate:'', delivery:'', type:'existing',
-        quoteTotal:'', paymentLink:'', specs:'', internalNotes:'', stage:0, waitingOn:'—', paid:false
-      };
-    }
-    function syncOrderFromInputs(order){
-      order.customer = $('wfCustomer').value;
-      order.source = $('wfSource').value;
-      order.project = $('wfProject').value;
-      order.qty = $('wfQty').value;
-      order.dueDate = $('wfDueDate').value;
-      order.delivery = $('wfDelivery').value;
-      order.type = $('wfType').value;
-      order.quoteTotal = $('wfQuoteTotal').value;
-      order.paymentLink = $('wfPaymentLink').value;
-      order.specs = $('wfSpecs').value;
-      order.internalNotes = $('wfInternalNotes').value;
-    }
-    function loadOrderToInputs(order){
-      $('wfCustomer').value = order.customer || '';
-      $('wfSource').value = order.source || 'facebook messenger';
-      $('wfProject').value = order.project || '';
-      $('wfQty').value = order.qty || '';
-      $('wfDueDate').value = order.dueDate || '';
-      $('wfDelivery').value = order.delivery || '';
-      $('wfType').value = order.type || 'existing';
-      $('wfQuoteTotal').value = order.quoteTotal || '';
-      $('wfPaymentLink').value = order.paymentLink || '';
-      $('wfSpecs').value = order.specs || '';
-      $('wfInternalNotes').value = order.internalNotes || '';
-    }
-    function renderWorkflow(){
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId) || state.orders[0] || null;
-      if (active && state.activeId !== active.id) { state.activeId = active.id; writeWorkflow(state); }
-      const list = $('wfOrderList');
-      list.innerHTML = '';
-      if (!state.orders.length) list.innerHTML = '<div class="helper">No saved orders yet.</div>';
-      state.orders.forEach(order => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `wf-order-item ${order.id === state.activeId ? 'active' : ''}`;
-        btn.innerHTML = `<div class="wf-order-top"><div class="wf-order-name">${order.project || 'Untitled order'}</div><span class="badge ${order.paid ? 'good' : 'upcoming'}">${order.paid ? 'Paid' : 'Unpaid'}</span></div><div class="wf-order-meta">${order.customer || 'No customer'} • ${STAGES[order.stage || 0].title.replace(/^\d+\.\s*/,'')}</div>`;
-        btn.onclick = () => { state.activeId = order.id; writeWorkflow(state); renderWorkflow(); };
-        list.appendChild(btn);
-      });
-      if (!active) {
-        loadOrderToInputs(emptyOrder());
-        $('wfSaveStatus').textContent = 'No order saved yet';
-        return;
-      }
-      loadOrderToInputs(active);
-      const stage = STAGES[active.stage || 0];
-      $('wfSummaryStage').textContent = stage.title.replace(/^\d+\.\s*/,'');
-      $('wfSummaryPayment').textContent = active.paid ? 'Paid' : 'Unpaid';
-      $('wfSummaryWaiting').textContent = active.waitingOn || '—';
-      $('wfSummaryProgress').textContent = `${(active.stage || 0) + 1} / ${STAGES.length}`;
-      $('stageTitle').textContent = stage.title;
-      $('stageIntro').textContent = stage.intro;
-      $('stageBadge').textContent = `Stage ${(active.stage || 0) + 1} of ${STAGES.length}`;
-      $('stageNextAction').textContent = stage.next;
-      document.querySelectorAll('#wfStepStrip .step-btn').forEach((btn, idx) => btn.classList.toggle('active', idx === (active.stage || 0)));
-      const checks = $('stageChecks');
-      checks.innerHTML = '';
-      stage.checks.forEach(text => {
-        const row = document.createElement('label');
-        row.className = 'stage-check';
-        row.innerHTML = `<input type="checkbox" /><span>${text}</span>`;
-        checks.appendChild(row);
-      });
-      $('wfSaveStatus').textContent = `Loaded ${active.project || 'order'}`;
-    }
-    function saveCurrentWorkflow(){
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      syncOrderFromInputs(active);
-      writeWorkflow(state);
-      renderWorkflow();
-      showToast('Order saved');
-    }
-    $('wfNewOrderBtn').onclick = () => {
-      const state = readWorkflow();
-      const order = emptyOrder();
-      state.orders.unshift(order);
-      state.activeId = order.id;
-      writeWorkflow(state);
-      renderWorkflow();
-      showToast('New order created');
-    };
-    $('wfSaveBtn').onclick = saveCurrentWorkflow;
-    $('wfDuplicateBtn').onclick = () => {
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      const clone = { ...active, id:`wf-${Date.now()}`, project: `${active.project || 'Order'} copy` };
-      state.orders.unshift(clone);
-      state.activeId = clone.id;
-      writeWorkflow(state);
-      renderWorkflow();
-      showToast('Order duplicated');
-    };
-    $('wfDeleteBtn').onclick = () => {
-      const state = readWorkflow();
-      if (!state.activeId) return;
-      state.orders = state.orders.filter(o => o.id !== state.activeId);
-      state.activeId = state.orders[0]?.id || null;
-      writeWorkflow(state);
-      renderWorkflow();
-      showToast('Order deleted');
-    };
-    $('wfPrevBtn').onclick = () => {
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      active.stage = Math.max(0, (active.stage || 0) - 1);
-      syncOrderFromInputs(active);
-      writeWorkflow(state);
-      renderWorkflow();
-    };
-    $('wfNextBtn').onclick = () => {
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      active.stage = Math.min(STAGES.length - 1, (active.stage || 0) + 1);
-      syncOrderFromInputs(active);
-      writeWorkflow(state);
-      renderWorkflow();
-    };
-    $('wfMarkWaitingBtn').onclick = () => {
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      active.waitingOn = active.waitingOn === 'Customer' ? '—' : 'Customer';
-      syncOrderFromInputs(active);
-      writeWorkflow(state);
-      renderWorkflow();
-      showToast('Waiting status updated');
-    };
-    $('wfMarkPaidBtn').onclick = () => {
-      const state = readWorkflow();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      active.paid = !active.paid;
-      syncOrderFromInputs(active);
-      writeWorkflow(state);
-      renderWorkflow();
-      showToast(active.paid ? 'Marked paid' : 'Marked unpaid');
-    };
-    document.querySelectorAll('#wfStepStrip .step-btn').forEach(btn => {
-      btn.onclick = () => {
-        const state = readWorkflow();
-        const active = state.orders.find(o => o.id === state.activeId);
-        if (!active) return;
-        active.stage = Number(btn.dataset.stage) || 0;
-        syncOrderFromInputs(active);
-        writeWorkflow(state);
-        renderWorkflow();
-      };
-    });
-    $('copyNeedInfoBtn').onclick = async () => {
-      const o = currentOrder();
-      const msg = `Thanks for reaching out about ${o?.project || 'your project'}. I just need a little more information before I can quote it: size, quantity, color/material, and timing.`;
-      await navigator.clipboard.writeText(msg); showToast('Message copied');
-    };
-    $('copyQuoteBtn').onclick = async () => {
-      const o = currentOrder();
-      const msg = `Here is your quote for ${o?.project || 'your order'}: ${o?.quoteTotal ? `$${Number(o.quoteTotal).toFixed(2)}` : '[insert amount]'}. Let me know if you would like to move forward.`;
-      await navigator.clipboard.writeText(msg); showToast('Message copied');
-    };
-    $('copyApprovalBtn').onclick = async () => { await navigator.clipboard.writeText('Thanks — once you confirm approval, I will move this into the next step.'); showToast('Message copied'); };
-    $('copyPaymentBtn').onclick = async () => {
-      const o = currentOrder();
-      const msg = `Here is your payment link for this order: ${o?.paymentLink || '[insert payment link]'}. Once payment is received, I will continue with the next step on your order.`;
-      await navigator.clipboard.writeText(msg); showToast('Message copied');
-    };
-    $('copyReadyBtn').onclick = async () => { await navigator.clipboard.writeText('Your order is ready. Please reply when you would like to arrange pickup or delivery details. Thank you again for your order.'); showToast('Message copied'); };
-    $('copyFollowupBtn').onclick = async () => { await navigator.clipboard.writeText('Just checking in on this order request. Let me know if you would still like to move forward.'); showToast('Message copied'); };
+  root.innerHTML='';
+  list.forEach((r,i)=>{
+    const row=document.createElement('div');
+    row.innerHTML = `${r} <button>x</button>`;
+    row.querySelector('button').onclick=()=>writeRem(list.filter((_,x)=>x!==i));
+    root.appendChild(row);
+  });
+}
 
-    renderWorkflow();
-  </script>
+if($('addReminderBtn')){
+  renderRem();
+  $('addReminderBtn').onclick=()=>{
+    const v=$('reminderInput').value.trim();
+    if(!v) return;
+    const l=readRem(); l.unshift(v);
+    $('reminderInput').value='';
+    writeRem(l);
+  };
+}
+
+/* =========================
+   WORKFLOW (FIXED)
+========================= */
+
+function wfRead(){
+  try{return JSON.parse(localStorage.getItem(WF_KEY))||{orders:[],activeId:null}}
+  catch{return {orders:[],activeId:null}}
+}
+
+function wfWrite(s){ localStorage.setItem(WF_KEY,JSON.stringify(s)); }
+
+function wfNewOrder(){
+  return {
+    id:'wf_'+Date.now(),
+    customer:'',project:'',qty:'',
+    paymentLink:'',stage:0,paid:false
+  }
+}
+
+function wfEnsure(){
+  const s=wfRead();
+  if(!s.orders.length){
+    const o=wfNewOrder();
+    s.orders=[o]; s.activeId=o.id;
+  }
+  if(!s.activeId) s.activeId=s.orders[0].id;
+  wfWrite(s); return s;
+}
+
+function wfActive(){
+  const s=wfEnsure();
+  return s.orders.find(o=>o.id===s.activeId);
+}
+
+function wfSave(){
+  const s=wfEnsure(); const o=wfActive();
+  if(!o) return;
+
+  o.customer=$('wfCustomer')?.value||'';
+  o.project=$('wfProject')?.value||'';
+  o.qty=$('wfQty')?.value||'';
+  o.paymentLink=$('wfPaymentLink')?.value||'';
+
+  wfWrite(s);
+}
+
+function wfRender(){
+  const s=wfEnsure(); const o=wfActive();
+  if(!o) return;
+
+  if($('wfCustomer')) $('wfCustomer').value=o.customer||'';
+  if($('wfProject')) $('wfProject').value=o.project||'';
+  if($('wfQty')) $('wfQty').value=o.qty||'';
+  if($('wfPaymentLink')) $('wfPaymentLink').value=o.paymentLink||'';
+
+  if($('wfSummaryPayment')) $('wfSummaryPayment').textContent=o.paid?'Paid':'Unpaid';
+  if($('wfSummaryProgress')) $('wfSummaryProgress').textContent=(o.stage+1)+' / 8';
+}
+
+function wfNext(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.stage=Math.min(7,o.stage+1); wfWrite(s); wfRender();}
+function wfPrev(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.stage=Math.max(0,o.stage-1); wfWrite(s); wfRender();}
+function wfPaid(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.paid=!o.paid; wfWrite(s); wfRender();}
+function wfNew(){ wfSave(); const s=wfEnsure(); const o=wfNewOrder(); s.orders.unshift(o); s.activeId=o.id; wfWrite(s); wfRender();}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  wfEnsure(); wfRender();
+
+  ['wfCustomer','wfProject','wfQty','wfPaymentLink'].forEach(id=>{
+    const el=$(id); if(el) el.addEventListener('input',wfSave);
+  });
+
+  $('wfNextBtn')?.onclick=wfNext;
+  $('wfPrevBtn')?.onclick=wfPrev;
+  $('wfMarkPaidBtn')?.onclick=wfPaid;
+  $('wfNewOrderBtn')?.onclick=wfNew;
+});
+</script>
 </body>
 </html>
