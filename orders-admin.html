@@ -251,6 +251,9 @@
         public_status_text: $('publicStatusText').value.trim() || null,
         public_next_step: $('publicNextStep').value.trim() || null,
         shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null
+        payment_link_stripe: $('paymentLinkStripe')?.value.trim() || '',
+        payment_link_paypal: $('paymentLinkPaypal')?.value.trim() || '',
+        payment_link_venmo: $('paymentLinkVenmo')?.value.trim() || '',
       };
     }
 
