@@ -294,6 +294,9 @@
 ].forEach(id => {
   if ($(id)) $(id).value = '';
 });
+      // ✅ Set default payment links
+if ($('paymentLinkPaypal')) $('paymentLinkPaypal').value = 'https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8';
+if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/u/OliPoly3D';
       $('orderDate').value = today();
       $('quantity').value = 1;
       $('orderTotal').value = 0;
