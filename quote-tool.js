@@ -496,6 +496,7 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
 
   const pdfTextMap = {
     pdfQuoteNumber: els.quoteNumber.value || '—',
+    pdfOrderPreview: previewOrderNumberFromQuote(els.quoteNumber.value),
     pdfInvoiceNumber: els.invoiceNumber.value || '—',
     pdfQuoteDate: isInvoice ? (els.invoiceDate.value || els.quoteDate.value || '—') : (els.quoteDate.value || '—'),
     pdfValidThrough: els.validThrough.value || '—',
