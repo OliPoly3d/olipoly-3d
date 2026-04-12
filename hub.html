@@ -46,7 +46,7 @@
     button{min-height:var(--tap)}
     .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:20px 0 120px}
 
-    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.workflow-card,.workflow-shell,.stage-card,.manifest-card,.summary-box,.workflow-orders-pane,.workflow-details-pane,.workflow-stage-pane{
+    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.checklist-shell,.summary-box{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
@@ -70,11 +70,10 @@
 
     .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
     .link-card h4,.link-card p,.mini-card h4,.mini-card p,.template-card h4,.template-card p,
-    .metric-card h4,.metric-card p,.workflow-card h4,.workflow-card p,.stage-card h4,.stage-card p,
-    .manifest-card h4,.manifest-card p,.workflow-orders-pane h4,.workflow-details-pane h4,.workflow-stage-pane h4{margin:0}
+    .metric-card h4,.metric-card p,.status-card h3,.status-card p,.notes-card h3,.notes-card p{margin:0}
 
     .brand h1{font-size:1.12rem}
-    .brand p,.section-title p,.muted,.helper,.fine,.label-hint,.summary-sub,.wf-order-meta{color:var(--muted)}
+    .brand p,.section-title p,.muted,.helper,.fine,.summary-sub{color:var(--muted)}
 
     .hero,.dashboard-grid,.two-col,.three-col,.four-col{display:grid;gap:18px}
     .hero{grid-template-columns:1.1fr .9fr;margin-bottom:18px}
@@ -82,11 +81,11 @@
     .three-col{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
     .four-col{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
 
-    .hero-card,.card,.notes-card,.status-card,.quick-actions,.workflow-shell{padding:24px;border-radius:var(--radius-xl)}
+    .hero-card,.card,.notes-card,.status-card,.quick-actions,.checklist-shell{padding:24px;border-radius:var(--radius-xl)}
     .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
     .hero-card p{line-height:1.7}
 
-    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row,.stack-actions,.form-grid,.stage-actions,.quick-copy-grid,.workflow-toolbar,.wf-order-badges{
+    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row,.stack-actions{
       display:flex;flex-wrap:wrap;gap:10px
     }
 
@@ -97,29 +96,24 @@
       color:var(--muted);font-size:.88rem;font-weight:700;
     }
 
-    .btn,.ghost,.copy-btn,.tiny-btn,.step-btn,.step-nav-btn{
+    .btn,.ghost,.copy-btn,.tiny-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
       border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
       cursor:pointer;min-height:var(--tap);padding:12px 16px;
     }
-    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover,.step-btn:hover,.step-nav-btn:hover{transform:translateY(-1px)}
+    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
 
     .btn{
       border:none;color:#fff;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 10px 24px rgba(222,111,184,.22);
     }
-    .ghost,.copy-btn,.tiny-btn,.step-btn,.step-nav-btn{
+    .ghost,.copy-btn,.tiny-btn{
       border:1px solid var(--line);background:rgba(255,255,255,.76);color:var(--text);
     }
     .ghost{padding:11px 14px}
     .copy-btn{padding:10px 14px}
     .tiny-btn{padding:10px 12px;font-size:.86rem;min-height:42px}
-    .step-btn.active{
-      background:linear-gradient(135deg,var(--accent),var(--accent2));
-      color:#fff;border-color:transparent;
-      box-shadow:0 10px 24px rgba(222,111,184,.2);
-    }
 
     .quick-actions{padding:18px 20px;border-radius:var(--radius-xl);margin-bottom:18px}
     .quick-grid{margin-top:12px}
@@ -140,25 +134,24 @@
     .status-dot.warn{background:var(--warn);box-shadow:0 0 0 4px rgba(240,180,41,.14)}
     .status-dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.13)}
 
-    textarea,.money-input,.small-input,.tax-input,.reminder-input,.wf-input,.wf-select{
+    textarea,.money-input,.small-input,.tax-input,.reminder-input,.check-input{
       width:100%;border-radius:18px;border:1px solid var(--line);padding:13px 14px;
       background:rgba(255,255,255,.82);color:var(--text);outline:none;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.7);min-height:48px;
     }
     textarea{resize:vertical}
     .notes-card textarea{min-height:168px}
-    .wf-textarea{min-height:110px}
-    textarea:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus,.wf-input:focus,.wf-select:focus{
+    textarea:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus,.check-input:focus{
       border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)
     }
 
     .section-title{margin-bottom:12px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .link-card,.mini-card,.template-card,.metric-card,.workflow-card,.stage-card,.manifest-card{
+    .link-card,.mini-card,.template-card,.metric-card{
       padding:20px;border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:100%;
     }
-    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4,.workflow-card h4,.stage-card h4,.manifest-card h4{font-size:1.04rem}
-    .link-card p,.mini-card p,.template-card p,.metric-card p,.workflow-card p,.stage-card p,.manifest-card p{color:var(--muted);line-height:1.6}
+    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4{font-size:1.04rem}
+    .link-card p,.mini-card p,.template-card p,.metric-card p{color:var(--muted);line-height:1.6}
 
     .url{
       display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
@@ -176,9 +169,7 @@
 
     .money-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
     .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-    .workflow-grid,.template-grid,.asset-grid,.test-grid,.manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .form-grid .full{grid-column:1 / -1}
+    .template-grid,.asset-grid,.test-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 
     .label{display:grid;gap:6px;font-weight:700;font-size:.94rem}
 
@@ -205,28 +196,22 @@
       border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.65;
     }
 
-    .workflow-shell{background:var(--panel-strong)}
-    .workflow-toolbar{align-items:center;margin:0 0 14px}
-    .workflow-manager{display:grid;grid-template-columns:300px minmax(0,1.2fr) minmax(320px,.95fr);gap:18px;align-items:start}
-    .workflow-orders-pane,.workflow-details-pane,.workflow-stage-pane{border-radius:24px;padding:18px;min-width:0;background:rgba(255,255,255,.78)}
-    .wf-order-list{display:grid;gap:10px}
-    .wf-order-item{display:grid;gap:6px;padding:12px 14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.82);cursor:pointer;transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;text-align:left}
-    .wf-order-item:hover{transform:translateY(-1px)}
-    .wf-order-item.active{border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.08);background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,245,251,.94))}
-    .wf-order-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-    .wf-order-name{font-weight:900;line-height:1.2}
-    .workflow-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
-    .compact-summary{margin-top:14px}
-    .workflow-stage-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
-    .step-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
-    .stage-body{display:grid;gap:14px}
-    .stage-checks{display:grid;gap:10px}
-    .stage-check{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.75);border:1px solid var(--line);line-height:1.5}
-    .stage-check input{margin-top:4px}
-    .stage-check span{display:block;font-size:.96rem}
-    .readable-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .quick-copy-grid{display:grid;grid-template-columns:1fr;gap:10px}
-    .workflow-stage-pane .copy-btn{justify-content:flex-start;text-align:left}
+    .checklist-shell{background:var(--panel-strong)}
+    .checklist-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}
+    .checklist-panel,.checklist-side{
+      border-radius:24px;padding:18px;min-width:0;background:rgba(255,255,255,.78);
+      border:1px solid var(--line);box-shadow:var(--shadow);
+    }
+    .checklist-list{display:grid;gap:10px;margin-top:12px}
+    .check-row{
+      display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:18px;
+      border:1px solid var(--line);background:rgba(255,255,255,.82);line-height:1.5;
+    }
+    .check-row input{margin-top:4px}
+    .check-number{
+      display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+      border-radius:999px;background:rgba(157,124,255,.12);color:#6b57be;font-weight:900;font-size:.85rem;flex:0 0 auto;
+    }
 
     .mobile-dock{
       position:fixed;left:12px;right:12px;bottom:12px;z-index:40;display:none;gap:10px;
@@ -244,25 +229,26 @@
     .toast.show{opacity:1;transform:translateY(0)}
     .hidden{display:none!important}
 
-    @media (max-width:1100px){.workflow-manager{grid-template-columns:1fr}}
-    @media (max-width:1000px){.hero,.dashboard-grid,.grid,.manifest-grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.workflow-summary{grid-template-columns:1fr 1fr}}
+    @media (max-width:1000px){
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.checklist-grid{
+        grid-template-columns:1fr 1fr
+      }
+    }
     @media (max-width:900px){
       .topbar{border-radius:28px;align-items:flex-start;flex-direction:column}
       .topbar .btn{width:100%}
       .wrap{padding-bottom:118px}
       .mobile-dock{display:flex}
-      .hero,.dashboard-grid,.grid,.manifest-grid,.money-grid,.input-grid,.workflow-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.workflow-summary{grid-template-columns:1fr}
-      .form-grid{grid-template-columns:1fr}
-      .step-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.checklist-grid{
+        grid-template-columns:1fr
+      }
     }
-    @media (max-width:700px){.workflow-toolbar{align-items:stretch}.workflow-toolbar>*{width:100%}.readable-actions{grid-template-columns:1fr}.workflow-orders-pane,.workflow-details-pane,.workflow-stage-pane{padding:16px}.wf-order-top{flex-direction:column;align-items:flex-start}}
     @media (max-width:640px){
       .wrap{width:min(100% - 16px,1120px);padding-top:14px}
-      .hero-card,.card,.notes-card,.status-card,.quick-actions,.workflow-shell{padding:18px}
+      .hero-card,.card,.notes-card,.status-card,.quick-actions,.checklist-shell{padding:18px}
       .status-pill{min-width:100%}
-      .actions,.inline-actions,.tiny-actions,.stack-actions,.stage-actions,.field-row{gap:8px}
-      .btn,.ghost,.copy-btn,.tiny-btn,.step-nav-btn{width:100%}
-      .step-strip{grid-template-columns:1fr}
+      .actions,.inline-actions,.tiny-actions,.stack-actions,.field-row{gap:8px}
+      .btn,.ghost,.copy-btn,.tiny-btn{width:100%}
       .topbar{top:8px}
       .brand h1{font-size:1.02rem}
       .brand p{font-size:.9rem}
@@ -281,7 +267,7 @@
         </div>
         <div>
           <h1>OliPoly 3D Site Hub</h1>
-          <p>Quick links, workflow control, snapshots, reminders, assets, and admin tools.</p>
+          <p>Quick links, snapshots, reminders, assets, and admin tools.</p>
         </div>
       </div>
       <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
@@ -292,15 +278,16 @@
         <h2>One landing page for every OliPoly destination.</h2>
         <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, printer maintenance page, forms, GitHub, Supabase, and daily operating shortcuts without hunting for links.</p>
         <div class="pill-row">
-          <span class="pill">Order workflow</span>
+          <span class="pill">Quote tool</span>
+          <span class="pill">Orders admin</span>
+          <span class="pill">Tracker</span>
+          <span class="pill">Stripe invoices</span>
           <span class="pill">Money snapshot</span>
           <span class="pill">Sales tax</span>
           <span class="pill">Reminders</span>
           <span class="pill">Assets</span>
           <span class="pill">Testing tools</span>
-          <span class="pill">Templates</span>
           <span class="pill">Printer PM</span>
-          <span class="pill">Stripe invoices</span>
         </div>
       </section>
 
@@ -310,7 +297,7 @@
           <p>Keep this page pinned on mobile and desktop for one clean place to navigate your workflow.</p>
         </div>
         <div class="note" style="margin-top:0;">
-          Safe additions in this version are browser-only: copy buttons only copy text, notes and workflow progress save locally on this device, and the workflow helpers do not change any live site data. Stripe links here open Stripe only and do not change your site directly.
+          This version removes the live order workflow manager in favor of a simple checklist and a cleaner process. Quote Tool should be your source for quotes, Orders Admin should be your source of truth for active orders, and Tracker should be the customer-facing status page.
         </div>
       </section>
     </section>
@@ -324,8 +311,8 @@
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main Site</a>
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Orders Admin</a>
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/track.html">Tracker</a>
-        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance Tool</a>
         <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Quote Tool</a>
+        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance Tool</a>
         <a class="btn" href="pm.html">Printer PM</a>
         <a class="btn" href="materials.html">Materials</a>
         <a class="btn ext" href="https://dashboard.stripe.com">Stripe Dashboard</a>
@@ -335,794 +322,338 @@
       </div>
     </section>
 
-    <section class="workflow-shell">
+    <section class="checklist-shell">
       <div class="section-title">
-        <h3>Order workflow manager</h3>
-        <p>Save multiple incoming orders and move each one through the same clean process.</p>
+        <h3>Order process checklist</h3>
+        <p>Use this as a simple double-check for most orders.</p>
       </div>
 
-      <div class="workflow-toolbar">
-        <button class="btn" id="wfNewOrderBtn" type="button">New order</button>
-        <button class="tiny-btn" id="wfSaveBtn" type="button">Save current order</button>
-        <button class="tiny-btn" id="wfDuplicateBtn" type="button">Duplicate order</button>
-        <button class="tiny-btn" id="wfDeleteBtn" type="button">Delete order</button>
-        <button id="sendToOrdersBtn">Send to Orders</button>
-        <span class="helper" id="wfSaveStatus">No order saved yet</span>
+      <div class="checklist-grid">
+        <section class="checklist-panel">
+          <label class="label">
+            Order # / cross-check
+            <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or OP-#####" />
+          </label>
+
+          <div class="checklist-list">
+            <label class="check-row"><span class="check-number">1</span><input type="checkbox" class="process-check" data-label="Receive request" /><span>Receive request</span></label>
+            <label class="check-row"><span class="check-number">2</span><input type="checkbox" class="process-check" data-label="Send info reply" /><span>Send info / intake reply</span></label>
+            <label class="check-row"><span class="check-number">3</span><input type="checkbox" class="process-check" data-label="Create quote" /><span>Manually create quote in Quote Tool</span></label>
+            <label class="check-row"><span class="check-number">4</span><input type="checkbox" class="process-check" data-label="Email quote" /><span>Email quote</span></label>
+            <label class="check-row"><span class="check-number">5</span><input type="checkbox" class="process-check" data-label="Mark accepted" /><span>After accepted, change Q- to OP- and mark accepted</span></label>
+            <label class="check-row"><span class="check-number">6</span><input type="checkbox" class="process-check" data-label="Create Stripe invoice" /><span>Create Stripe invoice</span></label>
+            <label class="check-row"><span class="check-number">7</span><input type="checkbox" class="process-check" data-label="Paste into Orders Admin" /><span>Paste Stripe URL into Orders Admin and update</span></label>
+            <label class="check-row"><span class="check-number">8</span><input type="checkbox" class="process-check" data-label="Verify tracker" /><span>Verify on Tracker</span></label>
+            <label class="check-row"><span class="check-number">9</span><input type="checkbox" class="process-check" data-label="Manage statuses" /><span>Manage tracking and statuses in Orders Admin</span></label>
+            <label class="check-row"><span class="check-number">10</span><input type="checkbox" class="process-check" data-label="Send completion email" /><span>Send final completion email with Tracker page again for payment/status options</span></label>
+          </div>
+        </section>
+
+        <section class="checklist-side">
+          <div class="section-title">
+            <h3>Process notes</h3>
+            <p>Simple reminders for the handoff between tools.</p>
+          </div>
+
+          <div class="summary-box" style="margin-bottom:12px;">
+            <div class="summary-value">Quote Tool</div>
+            <div class="summary-sub">Create and send quotes here. This is the starting point.</div>
+          </div>
+
+          <div class="summary-box" style="margin-bottom:12px;">
+            <div class="summary-value">Orders Admin</div>
+            <div class="summary-sub">This is the source of truth once a quote is accepted.</div>
+          </div>
+
+          <div class="summary-box" style="margin-bottom:12px;">
+            <div class="summary-value">Tracker</div>
+            <div class="summary-sub">Customer-facing status page. Verify every new accepted order here.</div>
+          </div>
+
+          <div class="summary-box">
+            <div class="summary-value">Stripe</div>
+            <div class="summary-sub">Create one invoice per accepted order and paste the hosted invoice link into Orders Admin.</div>
+          </div>
+
+          <div class="note">
+            Recommended numbering: keep the same digits when accepted.<br /><br />
+            Example:<br />
+            <strong>Q-12345 → OP-12345</strong>
+          </div>
+        </section>
+      </div>
+    </section>    
+    <!-- =========================
+         MONEY SNAPSHOT
+    ========================== -->
+    <section class="card">
+      <div class="section-title">
+        <h3>Quick money snapshot</h3>
+        <p>Simple daily awareness — not full accounting.</p>
       </div>
 
-      <div class="workflow-manager">
-        <section class="workflow-orders-pane">
-          <div class="section-title" style="margin-bottom:10px;">
-            <h4>Saved orders</h4>
-            <p>Tap any saved order to load it.</p>
-          </div>
-          <div id="wfOrderList" class="wf-order-list"></div>
-        </section>
+      <div class="money-grid">
+        <label class="label">
+          Today revenue
+          <input id="revToday" class="money-input" placeholder="0.00" />
+        </label>
 
-        <section class="workflow-details-pane">
-          <div class="section-title" style="margin-bottom:10px;">
-            <h4>Order details</h4>
-            <p>Main info for the currently selected order.</p>
-          </div>
+        <label class="label">
+          This week revenue
+          <input id="revWeek" class="money-input" placeholder="0.00" />
+        </label>
 
-          <div class="form-grid">
-            <label class="label">
-              Customer / company
-              <input class="wf-input" id="wfCustomer" type="text" placeholder="Customer name" />
-            </label>
+        <label class="label">
+          This month revenue
+          <input id="revMonth" class="money-input" placeholder="0.00" />
+        </label>
 
-            <label class="label">
-              Source
-              <select class="wf-select" id="wfSource">
-                <option value="facebook messenger">Facebook Messenger</option>
-                <option value="text">Text</option>
-                <option value="website form">Website form</option>
-                <option value="email">Email</option>
-                <option value="in person">In person</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-
-            <label class="label full">
-              Item / project
-              <input class="wf-input" id="wfProject" type="text" placeholder="Project or item name" />
-            </label>
-
-            <label class="label">
-              Quantity
-              <input class="wf-input" id="wfQty" type="number" min="1" step="1" placeholder="Qty" />
-            </label>
-
-            <label class="label">
-              Due date
-              <input class="wf-input" id="wfDueDate" type="date" />
-            </label>
-
-            <label class="label">
-              Delivery method
-              <select class="wf-select" id="wfDelivery">
-                <option value="">Choose one</option>
-                <option value="pickup">Pickup</option>
-                <option value="delivery">Local delivery</option>
-                <option value="shipping">Shipping</option>
-                <option value="unknown">Not confirmed yet</option>
-              </select>
-            </label>
-
-            <label class="label">
-              Order type
-              <select class="wf-select" id="wfType">
-                <option value="existing">Existing item</option>
-                <option value="minor custom">Minor custom</option>
-                <option value="full custom">Full custom</option>
-                <option value="bulk">Business / bulk</option>
-              </select>
-            </label>
-
-            <label class="label">
-              Quote total
-              <input class="wf-input" id="wfQuoteTotal" type="number" min="0" step="0.01" placeholder="0.00" />
-            </label>
-
-            <label class="label">
-              Payment link
-              <input class="wf-input" id="wfPaymentLink" type="text" placeholder="Paste Stripe or invoice link" />
-            </label>
-
-            <label class="label full">
-              Customer details / specs
-              <textarea class="wf-textarea" id="wfSpecs" placeholder="What they want, size, color, material, deadline notes, link/file reference, special requests"></textarea>
-            </label>
-
-            <label class="label full">
-              Internal notes
-              <textarea class="wf-textarea" id="wfInternalNotes" placeholder="Machine notes, design time, test print notes, follow-up items, file locations"></textarea>
-            </label>
-          </div>
-
-          <div class="workflow-summary compact-summary">
-            <div class="summary-box"><div class="summary-value" id="wfSummaryStage">Intake</div><div class="summary-sub">Current stage</div></div>
-            <div class="summary-box"><div class="summary-value" id="wfSummaryPayment">Unpaid</div><div class="summary-sub">Payment</div></div>
-            <div class="summary-box"><div class="summary-value" id="wfSummaryWaiting">—</div><div class="summary-sub">Waiting on</div></div>
-            <div class="summary-box"><div class="summary-value" id="wfSummaryProgress">1 / 8</div><div class="summary-sub">Progress</div></div>
-          </div>
-        </section>
-
-        <section class="workflow-stage-pane">
-          <div class="workflow-stage-title">
-            <div>
-              <h4 id="stageTitle">1. Intake</h4>
-              <p id="stageIntro">Confirm enough information exists to move into pricing and planning.</p>
-            </div>
-            <span class="badge upcoming" id="stageBadge">Stage 1 of 8</span>
-          </div>
-
-          <div class="step-strip" id="wfStepStrip">
-            <button class="step-btn active" type="button" data-stage="0">1 Intake</button>
-            <button class="step-btn" type="button" data-stage="1">2 Review</button>
-            <button class="step-btn" type="button" data-stage="2">3 Quote</button>
-            <button class="step-btn" type="button" data-stage="3">4 Approval</button>
-            <button class="step-btn" type="button" data-stage="4">5 Payment</button>
-            <button class="step-btn" type="button" data-stage="5">6 Production</button>
-            <button class="step-btn" type="button" data-stage="6">7 Delivery</button>
-            <button class="step-btn" type="button" data-stage="7">8 Complete</button>
-          </div>
-
-          <div class="stage-body">
-            <div class="stage-checks" id="stageChecks"></div>
-            <div class="summary-box"><div class="summary-value" id="stageNextAction">Collect missing intake details.</div><div class="summary-sub">Suggested next action</div></div>
-            <div class="readable-actions">
-              <button class="step-nav-btn" id="wfPrevBtn" type="button">Previous</button>
-              <button class="btn" id="wfNextBtn" type="button">Next</button>
-              <button class="tiny-btn" id="wfMarkWaitingBtn" type="button">Mark waiting</button>
-              <button class="tiny-btn" id="wfMarkPaidBtn" type="button">Toggle paid</button>
-            </div>
-            <div class="section-title" style="margin:8px 0 0;"><h4>Quick message helpers</h4><p>Copy based on the current order.</p></div>
-            <div class="quick-copy-grid">
-              <button class="copy-btn" type="button" id="copyNeedInfoBtn">Copy request-for-info</button>
-              <button class="copy-btn" type="button" id="copyQuoteBtn">Copy quote message</button>
-              <button class="copy-btn" type="button" id="copyApprovalBtn">Copy approval message</button>
-              <button class="copy-btn" type="button" id="copyPaymentBtn">Copy payment message</button>
-              <button class="copy-btn" type="button" id="copyReadyBtn">Copy ready message</button>
-              <button class="copy-btn" type="button" id="copyFollowupBtn">Copy follow-up</button>
-            </div>
-          </div>
-        </section>
+        <label class="label">
+          Pending payments
+          <input id="revPending" class="money-input" placeholder="0.00" />
+        </label>
       </div>
     </section>
 
+    <!-- =========================
+         SALES TAX QUICK HELPER
+    ========================== -->
+    <section class="card">
+      <div class="section-title">
+        <h3>Sales tax quick calc</h3>
+        <p>Use for quick estimates before entering finance tool.</p>
+      </div>
+
+      <div class="input-grid">
+        <label class="label">
+          Sale amount
+          <input id="taxSale" class="tax-input" placeholder="0.00" />
+        </label>
+
+        <label class="label">
+          Tax %
+          <input id="taxRate" class="tax-input" placeholder="7.25" />
+        </label>
+
+        <label class="label">
+          Tax amount
+          <input id="taxAmount" class="tax-input" disabled />
+        </label>
+
+        <label class="label">
+          Total w/ tax
+          <input id="taxTotal" class="tax-input" disabled />
+        </label>
+      </div>
+    </section>
+
+    <!-- =========================
+         REMINDERS
+    ========================== -->
+    <section class="card">
+      <div class="section-title">
+        <h3>Reminders</h3>
+        <p>Simple follow-ups so nothing slips.</p>
+      </div>
+
+      <div class="inline-actions">
+        <input id="reminderInput" class="reminder-input" placeholder="Add reminder..." />
+        <button class="btn" id="addReminderBtn">Add</button>
+      </div>
+
+      <div id="reminderList" class="reminder-list"></div>
+    </section>
+
+    <!-- =========================
+         QUICK LINKS GRID
+    ========================== -->
+    <section class="grid">
+      <div class="link-card">
+        <h4>Orders Admin</h4>
+        <p>Create, update, and manage all orders.</p>
+        <span class="url">orders-admin.html</span>
+        <div class="actions">
+          <a class="btn" href="orders-admin.html">Open</a>
+        </div>
+      </div>
+
+      <div class="link-card">
+        <h4>Tracker Page</h4>
+        <p>Customer-facing order status.</p>
+        <span class="url">track.html</span>
+        <div class="actions">
+          <a class="btn" href="track.html">Open</a>
+        </div>
+      </div>
+
+      <div class="link-card">
+        <h4>Quote Tool</h4>
+        <p>Create quotes and convert to orders.</p>
+        <span class="url">quote-tool.html</span>
+        <div class="actions">
+          <a class="btn" href="quote-tool.html">Open</a>
+        </div>
+      </div>
+
+      <div class="link-card">
+        <h4>Finance Tool</h4>
+        <p>Track revenue, costs, and tax.</p>
+        <span class="url">finance-pro.html</span>
+        <div class="actions">
+          <a class="btn" href="finance-pro.html">Open</a>
+        </div>
+      </div>
+    </section>
+        <!-- =========================
+         NOTES + HEALTH CHECK
+    ========================== -->
     <section class="dashboard-grid">
       <section class="status-card">
-        <div class="section-title"><h3>Quick health check</h3><p>Colored dots show whether a page appears reachable right now.</p></div>
-        <div class="tiny-actions">
-          <button class="tiny-btn" id="runHealthCheckBtn" type="button">Run health check</button>
-          <button class="tiny-btn" id="resetHealthCheckBtn" type="button">Reset dots</button>
-          <span class="helper" id="healthStamp">Not checked yet</span>
+        <h3>Quick health check</h3>
+        <p class="muted">Use this as a quick mental check each day.</p>
+
+        <div class="status-grid">
+          <div class="status-pill">
+            <span class="status-dot ok"></span>
+            Orders flowing
+          </div>
+
+          <div class="status-pill">
+            <span class="status-dot ok"></span>
+            Payments coming in
+          </div>
+
+          <div class="status-pill">
+            <span class="status-dot warn"></span>
+            Any stuck orders?
+          </div>
+
+          <div class="status-pill">
+            <span class="status-dot ok"></span>
+            Tracker accurate
+          </div>
         </div>
-        <div class="status-grid" id="healthGrid">
-          <div class="status-pill"><span class="status-dot" data-health-dot="main"></span><strong>Main site</strong></div>
-          <div class="status-pill"><span class="status-dot" data-health-dot="tracker"></span><strong>Tracker</strong></div>
-          <div class="status-pill"><span class="status-dot" data-health-dot="admin"></span><strong>Orders admin</strong></div>
-          <div class="status-pill"><span class="status-dot" data-health-dot="finance"></span><strong>Finance</strong></div>
-          <div class="status-pill"><span class="status-dot" data-health-dot="quote"></span><strong>Quote tool</strong></div>
-          <div class="status-pill"><span class="status-dot" data-health-dot="pm"></span><strong>Printer PM</strong></div>
-        </div>
-        <p class="helper" style="margin:14px 0 0;">Green = reachable, red = failed check, gray = not checked.</p>
       </section>
 
       <section class="notes-card">
-        <div class="section-title"><h3>Today’s reminders</h3><p>This saves in your browser on this device.</p></div>
-        <textarea id="hubNotes" placeholder="Examples:
-- Update upcoming events on main site
-- Check new Formspree submissions
-- Reconcile finance entries
-- Push latest repo changes
-- Clean P1S and P2S maintenance notes"></textarea>
-        <div class="inline-actions" style="margin-top:12px;">
-          <button class="tiny-btn" id="saveNotesBtn" type="button">Save notes</button>
-          <button class="tiny-btn" id="clearNotesBtn" type="button">Clear notes</button>
-          <span class="helper" id="notesStatus">Nothing saved yet</span>
-        </div>
+        <h3>Notes</h3>
+        <p class="muted">Quick scratchpad — auto saves.</p>
+        <textarea id="hubNotes" placeholder="Notes, follow-ups, ideas..."></textarea>
       </section>
     </section>
 
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title"><h3>Daily money snapshot</h3><p>Quick local scoreboard for today and this month.</p></div>
-      <div class="money-grid">
-        <div class="metric-card"><div class="metric-top"><div><h4>Today revenue</h4><p>Local quick-entry value</p></div><span class="badge upcoming">Today</span></div><div class="metric-value" id="moneyTodayRevenueDisplay">$0.00</div></div>
-        <div class="metric-card"><div class="metric-top"><div><h4>Month revenue</h4><p>Use as a fast scoreboard</p></div><span class="badge upcoming">Month</span></div><div class="metric-value" id="moneyMonthRevenueDisplay">$0.00</div></div>
-        <div class="metric-card"><div class="metric-top"><div><h4>Month expenses</h4><p>Quick operating total</p></div><span class="badge thisweek">Costs</span></div><div class="metric-value" id="moneyMonthExpensesDisplay">$0.00</div></div>
-        <div class="metric-card"><div class="metric-top"><div><h4>Estimated profit</h4><p>Simple revenue minus expenses</p></div><span class="badge good">Estimate</span></div><div class="metric-value" id="moneyMonthProfitDisplay">$0.00</div></div>
-      </div>
-      <div class="input-grid">
-        <label class="label">Today revenue<input class="money-input" id="moneyTodayRevenue" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-        <label class="label">Month revenue<input class="money-input" id="moneyMonthRevenue" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-        <label class="label">Month expenses<input class="money-input" id="moneyMonthExpenses" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-        <div class="label"><span>&nbsp;</span><button class="tiny-btn" id="saveMoneyBtn" type="button">Save money snapshot</button></div>
-      </div>
-    </section>
-
-    <section class="two-col">
-      <section class="card">
-        <div class="section-title"><h3>Sales tax quick helper</h3><p>Fast local reminder values for filing prep.</p></div>
-        <div class="form-grid">
-          <label class="label">Taxable sales<input class="tax-input" id="taxableSalesInput" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-          <label class="label">Tax rate %<input class="tax-input" id="taxRateInput" type="number" min="0" step="0.001" placeholder="0.00" /></label>
-          <div class="summary-box full"><div class="summary-value" id="taxCollectedDisplay">$0.00</div><div class="summary-sub">Estimated tax collected</div></div>
-        </div>
-        <div class="inline-actions" style="margin-top:12px;"><button class="tiny-btn" id="saveTaxBtn" type="button">Save tax helper</button></div>
-      </section>
-
-      <section class="card">
-        <div class="section-title"><h3>Simple reminders list</h3><p>Browser-local reminders for filing, follow-ups, or events.</p></div>
-        <div class="field-row">
-          <input class="reminder-input" id="reminderInput" type="text" placeholder="Add reminder" />
-          <button class="tiny-btn" id="addReminderBtn" type="button">Add</button>
-        </div>
-        <div class="reminder-list" id="reminderList"></div>
-      </section>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title"><h3>Forms, tools, and admin services</h3><p>External services you are using with the site.</p></div>
-      <div class="grid">
-        <div class="link-card"><h4>Formspree Endpoint</h4><p>Your current form endpoint for contact submissions.</p><span class="url">https://formspree.io/f/xojplkjw</span><div class="actions"><a class="btn ext" href="https://formspree.io/f/xojplkjw">Open Formspree</a></div></div>
-        <div class="link-card"><h4>Tally Form</h4><p>Your upload form link if you still want to use it.</p><span class="url">https://tally.so/r/gDZY6N</span><div class="actions"><a class="btn ext" href="https://tally.so/r/gDZY6N">Open Tally Form</a></div></div>
-        <div class="link-card"><h4>Supabase Project</h4><p>Your database, auth, and table management dashboard.</p><span class="url">https://supabase.com/dashboard/project/alffoktlwhpfothieude</span><div class="actions"><a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Open Supabase</a></div></div>
-        <div class="link-card"><h4>Stripe Invoices</h4><p>Create one invoice per order, then paste the hosted invoice URL into Orders Admin.</p><span class="url">https://dashboard.stripe.com/invoices</span><div class="actions"><a class="btn ext" href="https://dashboard.stripe.com/invoices">Open Stripe Invoices</a></div></div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title"><h3>GitHub</h3><p>Repository and Pages management links.</p></div>
-      <div class="grid">
-        <div class="link-card"><h4>GitHub Repository</h4><p>Your code repository for the OliPoly site and tools.</p><span class="url">https://github.com/olipoly3d/olipoly-3d</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">Open Repo</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d">Copy URL</button></div></div>
-        <div class="link-card"><h4>GitHub Pages settings</h4><p>Open Pages settings for deployment checks.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/settings/pages">Copy URL</button></div></div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title"><h3>Message templates</h3><p>Quick copy helpers for common updates.</p></div>
-      <div class="template-grid">
-        <div class="template-card"><h4>Order received</h4><p>Use after intake.</p><div class="actions"><button class="copy-btn" type="button" data-template="orderReceived">Copy message</button></div></div>
-        <div class="template-card"><h4>Ready for pickup</h4><p>Use when the order is finished.</p><div class="actions"><button class="copy-btn" type="button" data-template="readyPickup">Copy message</button></div></div>
-        <div class="template-card"><h4>Payment link</h4><p>Use after creating a Stripe invoice.</p><div class="actions"><button class="copy-btn" type="button" data-template="paymentLink">Copy message</button></div></div>
-        <div class="template-card"><h4>Delay update</h4><p>Use when timelines shift.</p><div class="actions"><button class="copy-btn" type="button" data-template="delayUpdate">Copy message</button></div></div>
-      </div>
-    </section>
-
-    <section class="two-col">
-      <section class="card">
-        <div class="section-title"><h3>File and asset quick access</h3><p>Fast links to common branding and site assets.</p></div>
-        <div class="asset-grid">
-          <div class="mini-card"><h4>Logo preview in images</h4><p>Primary logo-preview path used across the site.</p><span class="url">https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png</span><div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/images/logo-preview.png">Copy URL</button></div></div>
-          <div class="mini-card"><h4>Logo preview at root</h4><p>Useful if you keep a backup copy at the repo root.</p><span class="url">https://olipoly3d.github.io/olipoly-3d/logo-preview.png</span><div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Open Asset</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/logo-preview.png">Copy URL</button></div></div>
-          <div class="mini-card"><h4>Repo images folder</h4><p>Open the images folder in GitHub for quick file checks.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/tree/main/images</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Open Folder</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/tree/main/images">Copy URL</button></div></div>
-          <div class="mini-card"><h4>Public site root</h4><p>Useful for quick live-file testing.</p><span class="url">https://olipoly3d.github.io/olipoly-3d/</span><div class="actions"><a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/">Open Root</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/">Copy URL</button></div></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-title"><h3>Testing tools panel</h3><p>Helpful for previews, speed checks, and mobile layout testing.</p></div>
-        <div class="test-grid">
-          <div class="mini-card"><h4>Facebook Sharing Debugger</h4><p>Refresh and test social preview images.</p><span class="url">https://developers.facebook.com/tools/debug/</span><div class="actions"><a class="btn ext" href="https://developers.facebook.com/tools/debug/">Open Tool</a></div></div>
-          <div class="mini-card"><h4>PageSpeed Insights</h4><p>Run quick performance and mobile checks.</p><span class="url">https://pagespeed.web.dev/</span><div class="actions"><a class="btn ext" href="https://pagespeed.web.dev/">Open Tool</a></div></div>
-          <div class="mini-card"><h4>GitHub Pages settings</h4><p>Open Pages settings for deployment checks.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/settings/pages</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/settings/pages">Open Settings</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/settings/pages">Copy URL</button></div></div>
-          <div class="mini-card"><h4>GitHub Actions / Deployments</h4><p>Helpful when a GitHub Pages update did not go live as expected.</p><span class="url">https://github.com/olipoly3d/olipoly-3d/actions</span><div class="actions"><a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d/actions">Open Actions</a><button class="copy-btn" type="button" data-copy="https://github.com/olipoly3d/olipoly-3d/actions">Copy URL</button></div></div>
-        </div>
-      </section>
-    </section>
-
-    <section class="card" style="margin-bottom:18px;">
-      <div class="section-title"><h3>Maintenance links</h3><p>Useful for deployments, quick checks, and future admin additions.</p></div>
-      <div class="grid">
-        <div class="link-card"><h4>Printer maintenance page</h4><p>Your PM dashboard for machine presets, issue logs, and preventative maintenance.</p><span class="url">pm.html</span><div class="actions"><a class="btn" href="pm.html">Open PM</a><button class="copy-btn" type="button" data-copy="https://olipoly3d.github.io/olipoly-3d/pm.html">Copy live URL</button></div></div>
-        <div class="link-card"><h4>Stripe workflow notes</h4><p>Use one Stripe invoice per order. Copy the hosted invoice URL and paste it into Orders Admin.</p><span class="url">Stripe → Invoices → Finalize invoice → Copy hosted invoice URL</span><div class="actions"><a class="btn ext" href="https://dashboard.stripe.com/invoices">Open Stripe Invoices</a></div></div>
-      </div>
-    </section>
-
-    <div class="note">Safe update notes: all sections are browser-local helpers and link outs. No live site pages, orders, database tables, or finance records are edited from this hub. Stripe additions are shortcuts and workflow reminders only.</div>
   </div>
 
-  <nav class="mobile-dock" aria-label="Quick mobile actions">
-    <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main</a>
-    <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Admin</a>
-    <a class="btn ext" href="https://dashboard.stripe.com/invoices">Stripe</a>
-    <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance</a>
-    <a class="btn" href="pm.html">PM</a>
-  </nav>
+  <!-- =========================
+       SCRIPT
+  ========================== -->
+  <script>
 
-  <div class="toast" id="toast"></div>
+  /* =========================
+     NOTES SAVE
+  ========================== */
+  const NOTES_KEY = 'hub_notes';
 
-<script>
-const NOTES_KEY = 'olipoly_hub_notes_v2';
-const MONEY_KEY = 'olipoly_hub_money_v1';
-const TAX_KEY = 'olipoly_hub_tax_v1';
-const REMINDERS_KEY = 'olipoly_hub_reminders_v1';
-const WF_KEY = 'olipoly_hub_workflow_v3';
+  const notesEl = document.getElementById('hubNotes');
+  if (notesEl) {
+    notesEl.value = localStorage.getItem(NOTES_KEY) || '';
 
-const $ = (id) => document.getElementById(id);
-const money = (v) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0);
+    notesEl.addEventListener('input', () => {
+      localStorage.setItem(NOTES_KEY, notesEl.value);
+    });
+  }
 
-/* =========================
-   TOAST
-========================= */
-function showToast(text){
-  const el = $('toast');
-  if(!el) return;
-  el.textContent = text;
-  el.classList.add('show');
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(()=>el.classList.remove('show'),1800);
-}
+  /* =========================
+     TAX CALCULATOR
+  ========================== */
+  function calcTax() {
+    const sale = parseFloat(document.getElementById('taxSale')?.value) || 0;
+    const rate = parseFloat(document.getElementById('taxRate')?.value) || 0;
 
-/* =========================
-   NOTES
-========================= */
-const notesEl = $('hubNotes');
-if(notesEl){
-  notesEl.value = localStorage.getItem(NOTES_KEY) || '';
-  $('saveNotesBtn').onclick = () => {
-    localStorage.setItem(NOTES_KEY, notesEl.value);
-    showToast('Notes saved');
-  };
-  $('clearNotesBtn').onclick = () => {
-    notesEl.value = '';
-    localStorage.removeItem(NOTES_KEY);
-    showToast('Notes cleared');
-  };
-}
+    const tax = sale * (rate / 100);
+    const total = sale + tax;
 
-/* =========================
-   MONEY
-========================= */
-function renderMoney(){
-  if(!$('moneyTodayRevenue')) return;
-  const tr = Number($('moneyTodayRevenue').value)||0;
-  const mr = Number($('moneyMonthRevenue').value)||0;
-  const me = Number($('moneyMonthExpenses').value)||0;
+    document.getElementById('taxAmount').value = tax.toFixed(2);
+    document.getElementById('taxTotal').value = total.toFixed(2);
+  }
 
-  $('moneyTodayRevenueDisplay').textContent = money(tr);
-  $('moneyMonthRevenueDisplay').textContent = money(mr);
-  $('moneyMonthExpensesDisplay').textContent = money(me);
-  $('moneyMonthProfitDisplay').textContent = money(mr-me);
-}
-
-if($('saveMoneyBtn')){
-  const m = JSON.parse(localStorage.getItem(MONEY_KEY)||'{}');
-  $('moneyTodayRevenue').value = m.todayRevenue||'';
-  $('moneyMonthRevenue').value = m.monthRevenue||'';
-  $('moneyMonthExpenses').value = m.monthExpenses||'';
-  renderMoney();
-
-  $('saveMoneyBtn').onclick = () => {
-    localStorage.setItem(MONEY_KEY, JSON.stringify({
-      todayRevenue:$('moneyTodayRevenue').value,
-      monthRevenue:$('moneyMonthRevenue').value,
-      monthExpenses:$('moneyMonthExpenses').value
-    }));
-    renderMoney();
-    showToast('Money saved');
-  };
-}
-
-/* =========================
-   TAX
-========================= */
-function renderTax(){
-  if(!$('taxableSalesInput')) return;
-  const t = Number($('taxableSalesInput').value)||0;
-  const r = Number($('taxRateInput').value)||0;
-  $('taxCollectedDisplay').textContent = money(t*(r/100));
-}
-
-if($('saveTaxBtn')){
-  const t = JSON.parse(localStorage.getItem(TAX_KEY)||'{}');
-  $('taxableSalesInput').value = t.taxableSales||'';
-  $('taxRateInput').value = t.taxRate||'';
-  renderTax();
-
-  $('saveTaxBtn').onclick = () => {
-    localStorage.setItem(TAX_KEY, JSON.stringify({
-      taxableSales:$('taxableSalesInput').value,
-      taxRate:$('taxRateInput').value
-    }));
-    renderTax();
-    showToast('Tax saved');
-  };
-}
-
-/* =========================
-   REMINDERS
-========================= */
-function readRem(){ try{return JSON.parse(localStorage.getItem(REMINDERS_KEY)||'[]')}catch{return[]}}
-function writeRem(l){ localStorage.setItem(REMINDERS_KEY,JSON.stringify(l)); renderRem(); }
-
-function renderRem(){
-  const list = readRem();
-  const root = $('reminderList');
-  if(!root) return;
-
-  root.innerHTML='';
-  list.forEach((r,i)=>{
-    const row=document.createElement('div');
-    row.innerHTML = `${r} <button>x</button>`;
-    row.querySelector('button').onclick=()=>writeRem(list.filter((_,x)=>x!==i));
-    root.appendChild(row);
+  ['taxSale','taxRate'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener('input', calcTax);
+    }
   });
-}
 
-if($('addReminderBtn')){
-  renderRem();
-  $('addReminderBtn').onclick=()=>{
-    const v=$('reminderInput').value.trim();
-    if(!v) return;
-    const l=readRem(); l.unshift(v);
-    $('reminderInput').value='';
-    writeRem(l);
-  };
-}
-const STAGES = [
-  { title: '1. Intake', intro: '', next: '', checks: [] },
-  { title: '2. Quote', intro: '', next: '', checks: [] },
-  { title: '3. Approval', intro: '', next: '', checks: [] },
-  { title: '4. Payment', intro: '', next: '', checks: [] },
-  { title: '5. Production', intro: '', next: '', checks: [] },
-  { title: '6. Finishing', intro: '', next: '', checks: [] },
-  { title: '7. Ready', intro: '', next: '', checks: [] },
-  { title: '8. Complete', intro: '', next: '', checks: [] }
-];
-/* =========================
-   WORKFLOW (RESTORED + FIXED)
-========================= */
+  /* =========================
+     REMINDERS
+  ========================== */
+  const REM_KEY = 'hub_reminders';
 
-function readWorkflow(){
-  try {
-    return JSON.parse(localStorage.getItem(WF_KEY) || '{"orders":[],"activeId":null}');
-  } catch {
-    return { orders: [], activeId: null };
+  function loadReminders(){
+    return JSON.parse(localStorage.getItem(REM_KEY) || '[]');
   }
-}
 
-function writeWorkflow(state){
-  localStorage.setItem(WF_KEY, JSON.stringify(state));
-}
-
-function currentOrder(){
-  const state = readWorkflow();
-  return state.orders.find(o => o.id === state.activeId) || null;
-}
-
-function emptyOrder(){
-  return {
-    id: `wf-${Date.now()}`,
-    customer:'',
-    source:'facebook messenger',
-    project:'',
-    qty:'',
-    dueDate:'',
-    delivery:'',
-    type:'existing',
-    quoteTotal:'',
-    paymentLink:'',
-    specs:'',
-    internalNotes:'',
-    stage:0,
-    waitingOn:'—',
-    paid:false
-  };
-}
-
-function syncOrderFromInputs(order){
-  if (!order) return;
-  order.customer = $('wfCustomer')?.value || '';
-  order.source = $('wfSource')?.value || 'facebook messenger';
-  order.project = $('wfProject')?.value || '';
-  order.qty = $('wfQty')?.value || '';
-  order.dueDate = $('wfDueDate')?.value || '';
-  order.delivery = $('wfDelivery')?.value || '';
-  order.type = $('wfType')?.value || 'existing';
-  order.quoteTotal = $('wfQuoteTotal')?.value || '';
-  order.paymentLink = $('wfPaymentLink')?.value || '';
-  order.specs = $('wfSpecs')?.value || '';
-  order.internalNotes = $('wfInternalNotes')?.value || '';
-}
-
-function loadOrderToInputs(order){
-  if (!order) return;
-  if ($('wfCustomer')) $('wfCustomer').value = order.customer || '';
-  if ($('wfSource')) $('wfSource').value = order.source || 'facebook messenger';
-  if ($('wfProject')) $('wfProject').value = order.project || '';
-  if ($('wfQty')) $('wfQty').value = order.qty || '';
-  if ($('wfDueDate')) $('wfDueDate').value = order.dueDate || '';
-  if ($('wfDelivery')) $('wfDelivery').value = order.delivery || '';
-  if ($('wfType')) $('wfType').value = order.type || 'existing';
-  if ($('wfQuoteTotal')) $('wfQuoteTotal').value = order.quoteTotal || '';
-  if ($('wfPaymentLink')) $('wfPaymentLink').value = order.paymentLink || '';
-  if ($('wfSpecs')) $('wfSpecs').value = order.specs || '';
-  if ($('wfInternalNotes')) $('wfInternalNotes').value = order.internalNotes || '';
-}
-
-function ensureWorkflowState(){
-  const state = readWorkflow();
-  if (!state.orders.length) {
-    const starter = emptyOrder();
-    state.orders = [starter];
-    state.activeId = starter.id;
-    writeWorkflow(state);
-  } else if (!state.activeId || !state.orders.find(o => o.id === state.activeId)) {
-    state.activeId = state.orders[0].id;
-    writeWorkflow(state);
+  function saveReminders(list){
+    localStorage.setItem(REM_KEY, JSON.stringify(list));
   }
-  return state;
-}
 
-function renderWorkflow(){
-  const state = ensureWorkflowState();
-  const active = state.orders.find(o => o.id === state.activeId) || null;
+  function renderReminders(){
+    const listEl = document.getElementById('reminderList');
+    if(!listEl) return;
 
-  const list = $('wfOrderList');
-  if (list) {
-    list.innerHTML = '';
-    state.orders.forEach(order => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `wf-order-item ${order.id === state.activeId ? 'active' : ''}`;
-      btn.innerHTML = `
-        <div class="wf-order-top">
-          <div class="wf-order-name">${order.project || 'Untitled order'}</div>
-          <span class="badge ${order.paid ? 'good' : 'upcoming'}">${order.paid ? 'Paid' : 'Unpaid'}</span>
-        </div>
-        <div class="wf-order-meta">
-          ${order.customer || 'No customer'} • ${STAGES[order.stage || 0].title.replace(/^\\d+\\.\\s*/,'')}
-        </div>
+    const reminders = loadReminders();
+    listEl.innerHTML = '';
+
+    reminders.forEach((text, index)=>{
+      const row = document.createElement('div');
+      row.className = 'reminder-item';
+
+      row.innerHTML = `
+        <span>${text}</span>
+        <button class="tiny-btn" data-index="${index}">Remove</button>
       `;
-      btn.onclick = () => {
-        const s = readWorkflow();
-        const current = s.orders.find(o => o.id === s.activeId);
-        syncOrderFromInputs(current);
-        writeWorkflow(s);
 
-        s.activeId = order.id;
-        writeWorkflow(s);
-        renderWorkflow();
+      row.querySelector('button').onclick = () => {
+        reminders.splice(index,1);
+        saveReminders(reminders);
+        renderReminders();
       };
-      list.appendChild(btn);
+
+      listEl.appendChild(row);
     });
   }
 
-  if (!active) return;
+  document.getElementById('addReminderBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('reminderInput');
+    if(!input.value.trim()) return;
 
-  loadOrderToInputs(active);
+    const reminders = loadReminders();
+    reminders.push(input.value.trim());
+    saveReminders(reminders);
 
-  const stage = STAGES[active.stage || 0];
-  if ($('wfSummaryStage')) $('wfSummaryStage').textContent = stage.title.replace(/^\\d+\\.\\s*/,'');
-  if ($('wfSummaryPayment')) $('wfSummaryPayment').textContent = active.paid ? 'Paid' : 'Unpaid';
-  if ($('wfSummaryWaiting')) $('wfSummaryWaiting').textContent = active.waitingOn || '—';
-  if ($('wfSummaryProgress')) $('wfSummaryProgress').textContent = `${(active.stage || 0) + 1} / ${STAGES.length}`;
-  if ($('stageTitle')) $('stageTitle').textContent = stage.title;
-  if ($('stageIntro')) $('stageIntro').textContent = stage.intro;
-  if ($('stageBadge')) $('stageBadge').textContent = `Stage ${(active.stage || 0) + 1} of ${STAGES.length}`;
-  if ($('stageNextAction')) $('stageNextAction').textContent = stage.next;
-
-  document.querySelectorAll('#wfStepStrip .step-btn').forEach((btn, idx) => {
-    btn.classList.toggle('active', idx === (active.stage || 0));
+    input.value = '';
+    renderReminders();
   });
 
-  const checks = $('stageChecks');
-  if (checks) {
-    checks.innerHTML = '';
-    stage.checks.forEach(text => {
-      const row = document.createElement('label');
-      row.className = 'stage-check';
-      row.innerHTML = `<input type="checkbox" /><span>${text}</span>`;
-      checks.appendChild(row);
+  renderReminders();
+
+  /* =========================
+     MONEY SNAPSHOT SAVE
+  ========================== */
+  const MONEY_FIELDS = ['revToday','revWeek','revMonth','revPending'];
+
+  MONEY_FIELDS.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+
+    el.value = localStorage.getItem(id) || '';
+
+    el.addEventListener('input', ()=>{
+      localStorage.setItem(id, el.value);
     });
-  }
-
-  if ($('wfSaveStatus')) $('wfSaveStatus').textContent = `Loaded ${active.project || 'order'}`;
-}
-
-function saveCurrentWorkflow(showMessage = true){
-  const state = ensureWorkflowState();
-  const active = state.orders.find(o => o.id === state.activeId);
-  if (!active) return;
-  syncOrderFromInputs(active);
-  writeWorkflow(state);
-  renderWorkflow();
-  if (showMessage) showToast('Order saved');
-}
-
-function wfNext(){
-  const state = ensureWorkflowState();
-  const active = state.orders.find(o => o.id === state.activeId);
-  if (!active) return;
-  syncOrderFromInputs(active);
-  active.stage = Math.min(STAGES.length - 1, (active.stage || 0) + 1);
-  writeWorkflow(state);
-  renderWorkflow();
-}
-
-function wfPrev(){
-  const state = ensureWorkflowState();
-  const active = state.orders.find(o => o.id === state.activeId);
-  if (!active) return;
-  syncOrderFromInputs(active);
-  active.stage = Math.max(0, (active.stage || 0) - 1);
-  writeWorkflow(state);
-  renderWorkflow();
-}
-
-function wfPaid(){
-  const state = ensureWorkflowState();
-  const active = state.orders.find(o => o.id === state.activeId);
-  if (!active) return;
-  syncOrderFromInputs(active);
-  active.paid = !active.paid;
-  writeWorkflow(state);
-  renderWorkflow();
-  showToast(active.paid ? 'Marked paid' : 'Marked unpaid');
-}
-
-function wfNew(){
-  const state = ensureWorkflowState();
-  const current = state.orders.find(o => o.id === state.activeId);
-  syncOrderFromInputs(current);
-
-  const fresh = emptyOrder();
-  state.orders.unshift(fresh);
-  state.activeId = fresh.id;
-  writeWorkflow(state);
-  renderWorkflow();
-  showToast('New order created');
-}
-
-function wfDuplicate(){
-  const state = ensureWorkflowState();
-  const active = state.orders.find(o => o.id === state.activeId);
-  if (!active) return;
-  syncOrderFromInputs(active);
-
-  const copy = {
-    ...active,
-    id: `wf-${Date.now()}`,
-    project: `${active.project || 'Order'} copy`
-  };
-
-  state.orders.unshift(copy);
-  state.activeId = copy.id;
-  writeWorkflow(state);
-  renderWorkflow();
-  showToast('Order duplicated');
-}
-
-function wfDelete(){
-  const state = ensureWorkflowState();
-  state.orders = state.orders.filter(o => o.id !== state.activeId);
-
-  if (!state.orders.length) {
-    const fresh = emptyOrder();
-    state.orders = [fresh];
-    state.activeId = fresh.id;
-  } else {
-    state.activeId = state.orders[0].id;
-  }
-
-  writeWorkflow(state);
-  renderWorkflow();
-  showToast('Order deleted');
-}
-  window.addEventListener('DOMContentLoaded', () => {
-  ensureWorkflowState();
-  renderWorkflow();
-
-  const wfIds = [
-    'wfCustomer','wfSource','wfProject','wfQty','wfDueDate',
-    'wfDelivery','wfType','wfQuoteTotal','wfPaymentLink',
-    'wfSpecs','wfInternalNotes'
-  ];
-
-  document.addEventListener('input', (e) => {
-    if (wfIds.includes(e.target?.id)) saveCurrentWorkflow(false);
   });
 
-  document.addEventListener('change', (e) => {
-    if (wfIds.includes(e.target?.id)) saveCurrentWorkflow(false);
-  });
+  </script>
 
-  document.addEventListener('blur', (e) => {
-    if (wfIds.includes(e.target?.id)) saveCurrentWorkflow(false);
-  }, true);
-
-  if ($('wfNextBtn')) $('wfNextBtn').onclick = wfNext;
-  if ($('wfPrevBtn')) $('wfPrevBtn').onclick = wfPrev;
-  if ($('wfMarkPaidBtn')) $('wfMarkPaidBtn').onclick = wfPaid;
-  if ($('wfNewOrderBtn')) $('wfNewOrderBtn').onclick = wfNew;
-  if ($('wfSaveBtn')) $('wfSaveBtn').onclick = () => saveCurrentWorkflow(true);
-  if ($('wfDuplicateBtn')) $('wfDuplicateBtn').onclick = wfDuplicate;
-  if ($('wfDeleteBtn')) $('wfDeleteBtn').onclick = wfDelete;
-
-  document.querySelectorAll('#wfStepStrip .step-btn').forEach(btn => {
-    btn.onclick = () => {
-      const state = ensureWorkflowState();
-      const active = state.orders.find(o => o.id === state.activeId);
-      if (!active) return;
-      syncOrderFromInputs(active);
-      active.stage = Number(btn.dataset.stage) || 0;
-      writeWorkflow(state);
-      renderWorkflow();
-    };
-  });
-
-  if ($('sendToOrdersBtn')) {
-    $('sendToOrdersBtn').onclick = () => {
-      const o = currentOrder();
-
-      if (!o) {
-        alert('No order selected');
-        return;
-      }
-
-      const data = {
-        customer: o.customer,
-        project: o.project,
-        qty: o.qty,
-        paymentLink: o.paymentLink
-      };
-
-      localStorage.setItem('olipoly_transfer', JSON.stringify(data));
-      alert('Order sent! Now open Orders Admin');
-    };
-  }
-
-  if ($('copyNeedInfoBtn')) {
-    $('copyNeedInfoBtn').onclick = async () => {
-      const o = currentOrder();
-      const msg = `Thanks for reaching out about ${o?.project || 'your project'}. I just need a little more information before I can quote it: size, quantity, color/material, and timing.`;
-      await navigator.clipboard.writeText(msg);
-      showToast('Message copied');
-    };
-  }
-
-  if ($('copyQuoteBtn')) {
-    $('copyQuoteBtn').onclick = async () => {
-      const o = currentOrder();
-      const msg = `Here is your quote for ${o?.project || 'your order'}: ${o?.quoteTotal ? `$${Number(o.quoteTotal).toFixed(2)}` : '[insert amount]'}. Let me know if you would like to move forward.`;
-      await navigator.clipboard.writeText(msg);
-      showToast('Message copied');
-    };
-  }
-
-  if ($('copyApprovalBtn')) {
-    $('copyApprovalBtn').onclick = async () => {
-      await navigator.clipboard.writeText('Thanks — once you confirm approval, I will move this into the next step.');
-      showToast('Message copied');
-    };
-  }
-
-  if ($('copyPaymentBtn')) {
-    $('copyPaymentBtn').onclick = async () => {
-      const o = currentOrder();
-      const msg = `Here is your payment link for this order: ${o?.paymentLink || '[insert payment link]'}. Once payment is received, I will continue with the next step on your order.`;
-      await navigator.clipboard.writeText(msg);
-      showToast('Message copied');
-    };
-  }
-
-  if ($('copyReadyBtn')) {
-    $('copyReadyBtn').onclick = async () => {
-      await navigator.clipboard.writeText('Your order is ready. Please reply when you would like to arrange pickup or delivery details. Thank you again for your order.');
-      showToast('Message copied');
-    };
-  }
-
-  if ($('copyFollowupBtn')) {
-    $('copyFollowupBtn').onclick = async () => {
-      await navigator.clipboard.writeText('Just checking in on this order request. Let me know if you would still like to move forward.');
-      showToast('Message copied');
-    };
-  }
-});
-</script>
 </body>
 </html>
