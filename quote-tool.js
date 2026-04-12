@@ -1010,3 +1010,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     forceNormalScreenView();
   }
 });
+// ===============================
+// OLI POLY AUTOMATION LAYER
+// ===============================
+
+function convertQuoteToOrderNumber(qNum){
+  if(!qNum) return '';
+  return qNum.replace(/^Q-/, 'OP-');
+}
+
+function buildLocalTransferData(){
+  return {
+    orderNumber: convertQuoteToOrderNumber(els.quoteNumber.value),
+    customer: els.companyName.value || els.customerName.value || '',
+    project: els.quoteTitle.value || '',
+    qty: els.qty.value || '',
+    paymentLink: ''
+  };
+}
+
+async function acceptAndCreateOrder(){
+  try {
+
+    // 1. Set accepted
+    els.quoteStatus.value = 'accepted';
+
+    // 2. Convert Q → OP
+    const original = els.quoteNumber.value;
+    const opNumber = convertQuoteToOrderNumber(original);
+    els.quoteNumber.value = opNumber;
+
+    // 3. Save transfer data
+    const transferData = buildLocalTransferData();
+    localStorage.setItem("olipoly_transfer", JSON.stringify(transferData));
+
+    // 4. Try backend sync (optional)
+    try {
+      await syncAcceptedQuoteToOrders();
+    } catch (err) {
+      console.warn("Supabase sync skipped:", err.message);
+    }
+
+    // 5. Redirect
+    window.location.href = "orders-admin.html";
+
+  } catch (err) {
+    alert("Error creating order: " + err.message);
+  }
+}
+
+// Hook button AFTER everything loads
+window.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('acceptCreateBtn');
+  if(btn){
+    btn.onclick = acceptAndCreateOrder;
+  }
+});
