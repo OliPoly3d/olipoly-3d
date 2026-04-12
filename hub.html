@@ -764,139 +764,290 @@ if($('addReminderBtn')){
 }
 
 /* =========================
-   WORKFLOW (FIXED)
+   WORKFLOW (RESTORED + FIXED)
 ========================= */
 
-function wfRead(){
-  try{return JSON.parse(localStorage.getItem(WF_KEY))||{orders:[],activeId:null}}
-  catch{return {orders:[],activeId:null}}
+function readWorkflow(){
+  try {
+    return JSON.parse(localStorage.getItem(WF_KEY) || '{"orders":[],"activeId":null}');
+  } catch {
+    return { orders: [], activeId: null };
+  }
 }
 
-function wfWrite(s){ localStorage.setItem(WF_KEY,JSON.stringify(s)); }
+function writeWorkflow(state){
+  localStorage.setItem(WF_KEY, JSON.stringify(state));
+}
 
-function wfNewOrder(){
+function currentOrder(){
+  const state = readWorkflow();
+  return state.orders.find(o => o.id === state.activeId) || null;
+}
+
+function emptyOrder(){
   return {
-    id:'wf_'+Date.now(),
-    customer:'',project:'',qty:'',
-    paymentLink:'',stage:0,paid:false
+    id: `wf-${Date.now()}`,
+    customer:'',
+    source:'facebook messenger',
+    project:'',
+    qty:'',
+    dueDate:'',
+    delivery:'',
+    type:'existing',
+    quoteTotal:'',
+    paymentLink:'',
+    specs:'',
+    internalNotes:'',
+    stage:0,
+    waitingOn:'—',
+    paid:false
+  };
+}
+
+function syncOrderFromInputs(order){
+  if (!order) return;
+  order.customer = $('wfCustomer')?.value || '';
+  order.source = $('wfSource')?.value || 'facebook messenger';
+  order.project = $('wfProject')?.value || '';
+  order.qty = $('wfQty')?.value || '';
+  order.dueDate = $('wfDueDate')?.value || '';
+  order.delivery = $('wfDelivery')?.value || '';
+  order.type = $('wfType')?.value || 'existing';
+  order.quoteTotal = $('wfQuoteTotal')?.value || '';
+  order.paymentLink = $('wfPaymentLink')?.value || '';
+  order.specs = $('wfSpecs')?.value || '';
+  order.internalNotes = $('wfInternalNotes')?.value || '';
+}
+
+function loadOrderToInputs(order){
+  if (!order) return;
+  if ($('wfCustomer')) $('wfCustomer').value = order.customer || '';
+  if ($('wfSource')) $('wfSource').value = order.source || 'facebook messenger';
+  if ($('wfProject')) $('wfProject').value = order.project || '';
+  if ($('wfQty')) $('wfQty').value = order.qty || '';
+  if ($('wfDueDate')) $('wfDueDate').value = order.dueDate || '';
+  if ($('wfDelivery')) $('wfDelivery').value = order.delivery || '';
+  if ($('wfType')) $('wfType').value = order.type || 'existing';
+  if ($('wfQuoteTotal')) $('wfQuoteTotal').value = order.quoteTotal || '';
+  if ($('wfPaymentLink')) $('wfPaymentLink').value = order.paymentLink || '';
+  if ($('wfSpecs')) $('wfSpecs').value = order.specs || '';
+  if ($('wfInternalNotes')) $('wfInternalNotes').value = order.internalNotes || '';
+}
+
+function ensureWorkflowState(){
+  const state = readWorkflow();
+  if (!state.orders.length) {
+    const starter = emptyOrder();
+    state.orders = [starter];
+    state.activeId = starter.id;
+    writeWorkflow(state);
+  } else if (!state.activeId || !state.orders.find(o => o.id === state.activeId)) {
+    state.activeId = state.orders[0].id;
+    writeWorkflow(state);
   }
+  return state;
 }
 
-function wfEnsure(){
-  const s=wfRead();
-  if(!s.orders.length){
-    const o=wfNewOrder();
-    s.orders=[o]; s.activeId=o.id;
+function renderWorkflow(){
+  const state = ensureWorkflowState();
+  const active = state.orders.find(o => o.id === state.activeId) || null;
+
+  const list = $('wfOrderList');
+  if (list) {
+    list.innerHTML = '';
+    state.orders.forEach(order => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `wf-order-item ${order.id === state.activeId ? 'active' : ''}`;
+      btn.innerHTML = `
+        <div class="wf-order-top">
+          <div class="wf-order-name">${order.project || 'Untitled order'}</div>
+          <span class="badge ${order.paid ? 'good' : 'upcoming'}">${order.paid ? 'Paid' : 'Unpaid'}</span>
+        </div>
+        <div class="wf-order-meta">
+          ${order.customer || 'No customer'} • ${STAGES[order.stage || 0].title.replace(/^\\d+\\.\\s*/,'')}
+        </div>
+      `;
+      btn.onclick = () => {
+        const s = readWorkflow();
+        const current = s.orders.find(o => o.id === s.activeId);
+        syncOrderFromInputs(current);
+        writeWorkflow(s);
+
+        s.activeId = order.id;
+        writeWorkflow(s);
+        renderWorkflow();
+      };
+      list.appendChild(btn);
+    });
   }
-  if(!s.activeId) s.activeId=s.orders[0].id;
-  wfWrite(s); return s;
+
+  if (!active) return;
+
+  loadOrderToInputs(active);
+
+  const stage = STAGES[active.stage || 0];
+  if ($('wfSummaryStage')) $('wfSummaryStage').textContent = stage.title.replace(/^\\d+\\.\\s*/,'');
+  if ($('wfSummaryPayment')) $('wfSummaryPayment').textContent = active.paid ? 'Paid' : 'Unpaid';
+  if ($('wfSummaryWaiting')) $('wfSummaryWaiting').textContent = active.waitingOn || '—';
+  if ($('wfSummaryProgress')) $('wfSummaryProgress').textContent = `${(active.stage || 0) + 1} / ${STAGES.length}`;
+  if ($('stageTitle')) $('stageTitle').textContent = stage.title;
+  if ($('stageIntro')) $('stageIntro').textContent = stage.intro;
+  if ($('stageBadge')) $('stageBadge').textContent = `Stage ${(active.stage || 0) + 1} of ${STAGES.length}`;
+  if ($('stageNextAction')) $('stageNextAction').textContent = stage.next;
+
+  document.querySelectorAll('#wfStepStrip .step-btn').forEach((btn, idx) => {
+    btn.classList.toggle('active', idx === (active.stage || 0));
+  });
+
+  const checks = $('stageChecks');
+  if (checks) {
+    checks.innerHTML = '';
+    stage.checks.forEach(text => {
+      const row = document.createElement('label');
+      row.className = 'stage-check';
+      row.innerHTML = `<input type="checkbox" /><span>${text}</span>`;
+      checks.appendChild(row);
+    });
+  }
+
+  if ($('wfSaveStatus')) $('wfSaveStatus').textContent = `Loaded ${active.project || 'order'}`;
 }
 
-function wfActive(){
-  const s=wfEnsure();
-  return s.orders.find(o=>o.id===s.activeId);
+function saveCurrentWorkflow(showMessage = true){
+  const state = ensureWorkflowState();
+  const active = state.orders.find(o => o.id === state.activeId);
+  if (!active) return;
+  syncOrderFromInputs(active);
+  writeWorkflow(state);
+  renderWorkflow();
+  if (showMessage) showToast('Order saved');
 }
 
-function wfSave(){
-  const s=wfEnsure(); const o=wfActive();
-  if(!o) return;
-
-  o.customer=$('wfCustomer')?.value||'';
-  o.project=$('wfProject')?.value||'';
-  o.qty=$('wfQty')?.value||'';
-  o.paymentLink=$('wfPaymentLink')?.value||'';
-
-  wfWrite(s);
+function wfNext(){
+  const state = ensureWorkflowState();
+  const active = state.orders.find(o => o.id === state.activeId);
+  if (!active) return;
+  syncOrderFromInputs(active);
+  active.stage = Math.min(STAGES.length - 1, (active.stage || 0) + 1);
+  writeWorkflow(state);
+  renderWorkflow();
 }
 
-function wfRender(){
-  const s=wfEnsure(); const o=wfActive();
-  if(!o) return;
-
-  if($('wfCustomer')) $('wfCustomer').value=o.customer||'';
-  if($('wfProject')) $('wfProject').value=o.project||'';
-  if($('wfQty')) $('wfQty').value=o.qty||'';
-  if($('wfPaymentLink')) $('wfPaymentLink').value=o.paymentLink||'';
-
-  if($('wfSummaryPayment')) $('wfSummaryPayment').textContent=o.paid?'Paid':'Unpaid';
-  if($('wfSummaryProgress')) $('wfSummaryProgress').textContent=(o.stage+1)+' / 8';
+function wfPrev(){
+  const state = ensureWorkflowState();
+  const active = state.orders.find(o => o.id === state.activeId);
+  if (!active) return;
+  syncOrderFromInputs(active);
+  active.stage = Math.max(0, (active.stage || 0) - 1);
+  writeWorkflow(state);
+  renderWorkflow();
 }
 
-function wfNext(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.stage=Math.min(7,o.stage+1); wfWrite(s); wfRender();}
-function wfPrev(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.stage=Math.max(0,o.stage-1); wfWrite(s); wfRender();}
-function wfPaid(){ wfSave(); const s=wfEnsure(); const o=wfActive(); o.paid=!o.paid; wfWrite(s); wfRender();}
-function wfNew(){ wfSave(); const s=wfEnsure(); const o=wfNewOrder(); s.orders.unshift(o); s.activeId=o.id; wfWrite(s); wfRender();}
-function wfSaveCurrent(){
-  wfSave();
-  showToast('Order saved');
+function wfPaid(){
+  const state = ensureWorkflowState();
+  const active = state.orders.find(o => o.id === state.activeId);
+  if (!active) return;
+  syncOrderFromInputs(active);
+  active.paid = !active.paid;
+  writeWorkflow(state);
+  renderWorkflow();
+  showToast(active.paid ? 'Marked paid' : 'Marked unpaid');
+}
+
+function wfNew(){
+  const state = ensureWorkflowState();
+  const current = state.orders.find(o => o.id === state.activeId);
+  syncOrderFromInputs(current);
+
+  const fresh = emptyOrder();
+  state.orders.unshift(fresh);
+  state.activeId = fresh.id;
+  writeWorkflow(state);
+  renderWorkflow();
+  showToast('New order created');
 }
 
 function wfDuplicate(){
-  wfSave();
-  const s = wfEnsure();
-  const o = wfActive();
-  if (!o) return;
+  const state = ensureWorkflowState();
+  const active = state.orders.find(o => o.id === state.activeId);
+  if (!active) return;
+  syncOrderFromInputs(active);
 
   const copy = {
-    ...o,
-    id: 'wf_' + Date.now(),
-    project: (o.project || 'Order') + ' copy'
+    ...active,
+    id: `wf-${Date.now()}`,
+    project: `${active.project || 'Order'} copy`
   };
 
-  s.orders.unshift(copy);
-  s.activeId = copy.id;
-  wfWrite(s);
-  wfRender();
+  state.orders.unshift(copy);
+  state.activeId = copy.id;
+  writeWorkflow(state);
+  renderWorkflow();
   showToast('Order duplicated');
 }
 
 function wfDelete(){
-  const s = wfEnsure();
+  const state = ensureWorkflowState();
+  state.orders = state.orders.filter(o => o.id !== state.activeId);
 
-  s.orders = s.orders.filter(o => o.id !== s.activeId);
-
-  if (!s.orders.length) {
-    const fresh = wfNewOrder();
-    s.orders = [fresh];
-    s.activeId = fresh.id;
+  if (!state.orders.length) {
+    const fresh = emptyOrder();
+    state.orders = [fresh];
+    state.activeId = fresh.id;
   } else {
-    s.activeId = s.orders[0].id;
+    state.activeId = state.orders[0].id;
   }
 
-  wfWrite(s);
-  wfRender();
+  writeWorkflow(state);
+  renderWorkflow();
   showToast('Order deleted');
 }
-window.addEventListener('DOMContentLoaded', () => {
-  wfEnsure();
-  wfRender();
+  window.addEventListener('DOMContentLoaded', () => {
+  ensureWorkflowState();
+  renderWorkflow();
 
-  const wfIds = ['wfCustomer','wfProject','wfQty','wfPaymentLink'];
+  const wfIds = [
+    'wfCustomer','wfSource','wfProject','wfQty','wfDueDate',
+    'wfDelivery','wfType','wfQuoteTotal','wfPaymentLink',
+    'wfSpecs','wfInternalNotes'
+  ];
 
   document.addEventListener('input', (e) => {
-    if (wfIds.includes(e.target?.id)) wfSave();
+    if (wfIds.includes(e.target?.id)) saveCurrentWorkflow(false);
   });
 
   document.addEventListener('change', (e) => {
-    if (wfIds.includes(e.target?.id)) wfSave();
+    if (wfIds.includes(e.target?.id)) saveCurrentWorkflow(false);
   });
 
   document.addEventListener('blur', (e) => {
-    if (wfIds.includes(e.target?.id)) wfSave();
+    if (wfIds.includes(e.target?.id)) saveCurrentWorkflow(false);
   }, true);
 
   if ($('wfNextBtn')) $('wfNextBtn').onclick = wfNext;
   if ($('wfPrevBtn')) $('wfPrevBtn').onclick = wfPrev;
   if ($('wfMarkPaidBtn')) $('wfMarkPaidBtn').onclick = wfPaid;
   if ($('wfNewOrderBtn')) $('wfNewOrderBtn').onclick = wfNew;
-
-  if ($('wfSaveBtn')) $('wfSaveBtn').onclick = wfSaveCurrent;
+  if ($('wfSaveBtn')) $('wfSaveBtn').onclick = () => saveCurrentWorkflow(true);
   if ($('wfDuplicateBtn')) $('wfDuplicateBtn').onclick = wfDuplicate;
   if ($('wfDeleteBtn')) $('wfDeleteBtn').onclick = wfDelete;
 
+  document.querySelectorAll('#wfStepStrip .step-btn').forEach(btn => {
+    btn.onclick = () => {
+      const state = ensureWorkflowState();
+      const active = state.orders.find(o => o.id === state.activeId);
+      if (!active) return;
+      syncOrderFromInputs(active);
+      active.stage = Number(btn.dataset.stage) || 0;
+      writeWorkflow(state);
+      renderWorkflow();
+    };
+  });
+
   if ($('sendToOrdersBtn')) {
     $('sendToOrdersBtn').onclick = () => {
-      const o = wfActive();
+      const o = currentOrder();
 
       if (!o) {
         alert('No order selected');
@@ -912,6 +1063,54 @@ window.addEventListener('DOMContentLoaded', () => {
 
       localStorage.setItem('olipoly_transfer', JSON.stringify(data));
       alert('Order sent! Now open Orders Admin');
+    };
+  }
+
+  if ($('copyNeedInfoBtn')) {
+    $('copyNeedInfoBtn').onclick = async () => {
+      const o = currentOrder();
+      const msg = `Thanks for reaching out about ${o?.project || 'your project'}. I just need a little more information before I can quote it: size, quantity, color/material, and timing.`;
+      await navigator.clipboard.writeText(msg);
+      showToast('Message copied');
+    };
+  }
+
+  if ($('copyQuoteBtn')) {
+    $('copyQuoteBtn').onclick = async () => {
+      const o = currentOrder();
+      const msg = `Here is your quote for ${o?.project || 'your order'}: ${o?.quoteTotal ? `$${Number(o.quoteTotal).toFixed(2)}` : '[insert amount]'}. Let me know if you would like to move forward.`;
+      await navigator.clipboard.writeText(msg);
+      showToast('Message copied');
+    };
+  }
+
+  if ($('copyApprovalBtn')) {
+    $('copyApprovalBtn').onclick = async () => {
+      await navigator.clipboard.writeText('Thanks — once you confirm approval, I will move this into the next step.');
+      showToast('Message copied');
+    };
+  }
+
+  if ($('copyPaymentBtn')) {
+    $('copyPaymentBtn').onclick = async () => {
+      const o = currentOrder();
+      const msg = `Here is your payment link for this order: ${o?.paymentLink || '[insert payment link]'}. Once payment is received, I will continue with the next step on your order.`;
+      await navigator.clipboard.writeText(msg);
+      showToast('Message copied');
+    };
+  }
+
+  if ($('copyReadyBtn')) {
+    $('copyReadyBtn').onclick = async () => {
+      await navigator.clipboard.writeText('Your order is ready. Please reply when you would like to arrange pickup or delivery details. Thank you again for your order.');
+      showToast('Message copied');
+    };
+  }
+
+  if ($('copyFollowupBtn')) {
+    $('copyFollowupBtn').onclick = async () => {
+      await navigator.clipboard.writeText('Just checking in on this order request. Let me know if you would still like to move forward.');
+      showToast('Message copied');
     };
   }
 });
