@@ -42,8 +42,17 @@
     .status-pill,.payment-pill{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;font-size:.78rem;font-weight:800;letter-spacing:.04em;border:1px solid transparent}.s-quote_sent,.s-awaiting_approval,.s-awaiting_deposit,.p-unpaid,.p-deposit_due{background:rgba(255,211,154,.28);border-color:rgba(213,163,90,.28);color:#936a30}.s-in_design,.s-in_production,.s-post_processing{background:rgba(155,123,255,.15);border-color:rgba(155,123,255,.24);color:#6e56bf}.s-ready_for_pickup,.s-shipped,.s-completed,.p-deposit_paid,.p-paid{background:rgba(122,175,157,.16);border-color:rgba(122,175,157,.25);color:#4f816f}.p-refunded{background:rgba(217,109,143,.14);border-color:rgba(217,109,143,.24);color:#b34f72}
     .progress{display:grid;gap:14px;margin:18px 0 10px}.timeline{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:start}.timeline::before{content:"";position:absolute;left:6%;right:6%;top:18px;height:4px;border-radius:999px;background:linear-gradient(90deg, rgba(216,107,179,.12), rgba(155,123,255,.12));z-index:0}.timeline-fill{position:absolute;left:6%;top:18px;height:4px;width:0%;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:width .35s ease;z-index:1}.step{position:relative;z-index:2;display:grid;justify-items:center;gap:10px;padding:0 8px;background:none;border:none;text-align:center;color:var(--muted);font-size:.84rem;line-height:1.35}.step-dot{width:18px;height:18px;border-radius:999px;background:#fff;border:3px solid rgba(216,107,179,.22);box-shadow:0 0 0 6px rgba(255,255,255,.45);transition:all .25s ease}.step-label{max-width:120px}.step.active{color:#6b4f74}.step.active .step-dot{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:rgba(216,107,179,.14);box-shadow:0 0 0 6px rgba(255,240,248,.85), 0 0 18px rgba(216,107,179,.18)}
     .detail{display:grid;gap:12px}.detail .note strong{display:block;margin-bottom:6px;color:#5f4468}.hidden{display:none!important}.footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    .payment-card{padding:18px;border-radius:22px;border:1px solid rgba(216,107,179,.18);background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,244,250,.95));box-shadow:0 14px 30px rgba(216,107,179,.12)}
+    .payment-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+    .payment-text{margin:0 0 14px;color:#866a86;font-size:.95rem;line-height:1.55}
+    .payment-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 20px;border-radius:999px;font-weight:800;text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25);transition:.2s}
+    .payment-btn:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(222,111,184,.32)}
+    .payment-badge{padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
+    .payment-badge.unpaid,.payment-badge.deposit_due{background:#ffe4b5;color:#936a30}
+    .payment-badge.deposit_paid,.payment-badge.paid{background:#d8f5e7;color:#3c7d66}
+    .payment-badge.refunded{background:#ffd6df;color:#b34f72}
     @media (max-width:900px){.info-grid,.timeline{grid-template-columns:1fr 1fr}}
-    @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.info-grid,.timeline,.search-row{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.info-grid,.timeline,.search-row{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}.payment-btn{width:100%}}
   </style>
 </head>
 <body>
@@ -98,7 +107,14 @@
         <div class="note"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
         <div class="note"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
         <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
-        <div class="note hidden" id="paymentWrap"><strong>Payment Link</strong><a id="paymentLink" href="#" target="_blank" rel="noopener" style="color:#b2558c;word-break:break-all;font-weight:700;">Open payment link</a></div>
+        <div class="payment-card hidden" id="paymentWrap">
+          <div class="payment-head">
+            <strong>Payment</strong>
+            <span id="paymentBadge" class="payment-badge">Unpaid</span>
+          </div>
+          <p id="paymentMessage" class="payment-text">A payment link is available for this order.</p>
+          <a id="paymentBtn" class="payment-btn" href="#" target="_blank" rel="noopener">Pay Invoice</a>
+        </div>
       </div>
     </section>
     <p class="footer">This public tracking page reads customer-safe fields from <code>order_tracking_public</code>.</p>
@@ -113,8 +129,8 @@
       orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
       viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'),
       viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'),
-      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paymentWrap:$('paymentWrap'), paymentLink:$('paymentLink'),
-      timelineFill:$('timelineFill')
+      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paymentWrap:$('paymentWrap'),
+      timelineFill:$('timelineFill'), paymentBtn:$('paymentBtn'), paymentBadge:$('paymentBadge'), paymentMessage:$('paymentMessage')
     };
 
     function setMessage(text,isError=false){
@@ -135,6 +151,38 @@
     function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v]||v;}
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
     function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_for_pickup:5,shipped:5,completed:5})[status]||1;}
+
+    function renderPayment(o){
+      if(!o.payment_link){
+        els.paymentWrap.classList.add('hidden');
+        return;
+      }
+
+      els.paymentWrap.classList.remove('hidden');
+
+      const status = o.payment_status || 'unpaid';
+      els.paymentBadge.textContent = paymentLabel(status);
+      els.paymentBadge.className = `payment-badge ${status}`;
+      els.paymentBtn.href = o.payment_link;
+      els.paymentBtn.style.display = 'inline-flex';
+
+      if(status === 'paid'){
+        els.paymentMessage.textContent = 'This order has been paid in full.';
+        els.paymentBtn.style.display = 'none';
+      } else if(status === 'deposit_paid'){
+        els.paymentMessage.textContent = 'A remaining balance may still be due.';
+        els.paymentBtn.textContent = 'Pay Remaining Balance';
+      } else if(status === 'deposit_due'){
+        els.paymentMessage.textContent = 'A deposit is required to begin this order.';
+        els.paymentBtn.textContent = 'Pay Deposit';
+      } else if(status === 'refunded'){
+        els.paymentMessage.textContent = 'This order has been refunded.';
+        els.paymentBtn.style.display = 'none';
+      } else {
+        els.paymentMessage.textContent = 'A payment is required for this order.';
+        els.paymentBtn.textContent = 'Pay Invoice';
+      }
+    }
 
     function renderOrder(o){
       els.resultCard.classList.remove('hidden');
@@ -157,13 +205,7 @@
         els.trackingWrap.classList.add('hidden');
       }
 
-      if(o.payment_link){
-        els.paymentWrap.classList.remove('hidden');
-        els.paymentLink.href=o.payment_link;
-      } else {
-        els.paymentWrap.classList.add('hidden');
-      }
-
+      renderPayment(o);
       setMessage(`Showing the latest public update for ${o.order_number}.`);
     }
 
