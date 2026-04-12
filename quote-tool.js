@@ -545,10 +545,16 @@ function fillPdf(mode, total, beforeTax, tax, deposit, balance, perItem) {
 }
 
   if (els.pdfInvoiceTerms) {
+  if (isInvoice) {
+    toggleHidden(els.pdfInvoiceTerms, false);
     els.pdfInvoiceTerms.innerHTML = `<strong>Payment Terms</strong><br>${paymentTermsText()}`
       + `${els.customerEmail.value.trim() ? `<br>Billing contact: ${els.customerEmail.value.trim()}` : ''}`
       + `${els.invoiceNotes.value.trim() ? `<br><br>${els.invoiceNotes.value.trim()}` : ''}`;
+  } else {
+    toggleHidden(els.pdfInvoiceTerms, true);
+    els.pdfInvoiceTerms.innerHTML = '';
   }
+}
 
   document.querySelectorAll('.quote-only').forEach((el) => el.classList.toggle('hidden', isInvoice));
   document.querySelectorAll('.invoice-only').forEach((el) => el.classList.toggle('hidden', !isInvoice));
