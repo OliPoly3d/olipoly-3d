@@ -481,7 +481,14 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       autoBalance();
       normalizePaymentStatus();
       syncPaidDate();
-      const payload = snapshotForm();
+      if ($('paymentLinkPaypal') && !$('paymentLinkPaypal').value.trim()) {
+  $('paymentLinkPaypal').value = 'https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8';
+}
+if ($('paymentLinkVenmo') && !$('paymentLinkVenmo').value.trim()) {
+  $('paymentLinkVenmo').value = 'https://www.venmo.com/u/OliPoly3D';
+}
+
+const payload = snapshotForm();
       if(!payload.order_title) return setMsg($('formMessage'),'Project / item is required.',true);
 
       const currentRow = activeId ? orders.find(o => o.id === activeId) : null;
