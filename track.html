@@ -43,14 +43,17 @@
     .progress{display:grid;gap:14px;margin:18px 0 10px}.timeline{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:start}.timeline::before{content:"";position:absolute;left:6%;right:6%;top:18px;height:4px;border-radius:999px;background:linear-gradient(90deg, rgba(216,107,179,.12), rgba(155,123,255,.12));z-index:0}.timeline-fill{position:absolute;left:6%;top:18px;height:4px;width:0%;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:width .35s ease;z-index:1}.step{position:relative;z-index:2;display:grid;justify-items:center;gap:10px;padding:0 8px;background:none;border:none;text-align:center;color:var(--muted);font-size:.84rem;line-height:1.35}.step-dot{width:18px;height:18px;border-radius:999px;background:#fff;border:3px solid rgba(216,107,179,.22);box-shadow:0 0 0 6px rgba(255,255,255,.45);transition:all .25s ease}.step-label{max-width:120px}.step.active{color:#6b4f74}.step.active .step-dot{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:rgba(216,107,179,.14);box-shadow:0 0 0 6px rgba(255,240,248,.85), 0 0 18px rgba(216,107,179,.18)}
     .detail{display:grid;gap:12px}.detail .note strong{display:block;margin-bottom:6px;color:#5f4468}.hidden{display:none!important}.footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
     .payment-card{padding:18px;border-radius:22px;border:1px solid rgba(216,107,179,.18);background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,244,250,.95));box-shadow:0 14px 30px rgba(216,107,179,.12)}
-.payment-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-.payment-text{margin:0 0 14px;color:#866a86;font-size:.95rem;line-height:1.55}
-.payment-buttons{display:grid;gap:10px}
-.payment-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 20px;border-radius:999px;font-weight:800;text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25);transition:.2s}
-.payment-btn:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(222,111,184,.32)}
-.paypal-btn{background:#0070ba}
-.venmo-btn{background:#3d95ce}
-.payment-badge{padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
+    .payment-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+    .payment-text{margin:0 0 14px;color:#866a86;font-size:.95rem;line-height:1.55}
+    .cash-option{margin:0 0 12px;padding:14px 16px;border-radius:18px;border:1px solid rgba(216,107,179,.18);background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,251,.98));color:#6f5d76;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+    .cash-option strong{display:block;margin-bottom:4px;color:#5f4468;font-size:.95rem}
+    .cash-option span{display:block;font-size:.92rem;line-height:1.55}
+    .payment-buttons{display:grid;gap:10px}
+    .payment-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 20px;border-radius:999px;font-weight:800;text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25);transition:.2s}
+    .payment-btn:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(222,111,184,.32)}
+    .paypal-btn{background:#0070ba}
+    .venmo-btn{background:#3d95ce}
+    .payment-badge{padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
     .payment-badge.unpaid,.payment-badge.deposit_due{background:#ffe4b5;color:#936a30}
     .payment-badge.deposit_paid,.payment-badge.paid{background:#d8f5e7;color:#3c7d66}
     .payment-badge.refunded{background:#ffd6df;color:#b34f72}
@@ -111,19 +114,24 @@
         <div class="note"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
         <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
         <div class="note hidden" id="paidDateWrap"><strong>Paid</strong><span id="viewPaidDate">—</span></div>
-       <div class="payment-card hidden" id="paymentWrap">
-  <div class="payment-head">
-    <strong>Payment</strong>
-    <span id="paymentBadge" class="payment-badge">Unpaid</span>
-  </div>
-  <p id="paymentMessage" class="payment-text">Payment options are available for this order.</p>
+        <div class="payment-card hidden" id="paymentWrap">
+          <div class="payment-head">
+            <strong>Payment</strong>
+            <span id="paymentBadge" class="payment-badge">Unpaid</span>
+          </div>
+          <p id="paymentMessage" class="payment-text">Payment options are available for this order.</p>
 
-  <div id="paymentButtons" class="payment-buttons">
-    <a id="paymentBtnStripe" class="payment-btn hidden" href="#" target="_blank" rel="noopener">Pay with Card / Apple Pay</a>
-    <a id="paymentBtnPaypal" class="payment-btn paypal-btn hidden" href="#" target="_blank" rel="noopener">Pay with PayPal</a>
-    <a id="paymentBtnVenmo" class="payment-btn venmo-btn hidden" href="#" target="_blank" rel="noopener">Pay with Venmo</a>
-  </div>
-</div>
+          <div id="cashOption" class="cash-option hidden">
+            <strong>Cash available</strong>
+            <span id="cashMessage">Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.</span>
+          </div>
+
+          <div id="paymentButtons" class="payment-buttons">
+            <a id="paymentBtnStripe" class="payment-btn hidden" href="#" target="_blank" rel="noopener">Pay with Card / Apple Pay</a>
+            <a id="paymentBtnPaypal" class="payment-btn paypal-btn hidden" href="#" target="_blank" rel="noopener">Pay with PayPal</a>
+            <a id="paymentBtnVenmo" class="payment-btn venmo-btn hidden" href="#" target="_blank" rel="noopener">Pay with Venmo</a>
+          </div>
+        </div>
       </div>
     </section>
     <p class="footer">This public tracking page reads customer-safe fields from <code>order_tracking_public</code>.</p>
@@ -135,17 +143,19 @@
 
     const $ = id => document.getElementById(id);
     const els = {
-  orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
-  viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'),
-  viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'),
-  viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paidDateWrap:$('paidDateWrap'), viewPaidDate:$('viewPaidDate'), paymentWrap:$('paymentWrap'),
-  timelineFill:$('timelineFill'),
-  paymentBadge:$('paymentBadge'),
-  paymentMessage:$('paymentMessage'),
-  paymentBtnStripe:$('paymentBtnStripe'),
-  paymentBtnPaypal:$('paymentBtnPaypal'),
-  paymentBtnVenmo:$('paymentBtnVenmo')
-};
+      orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
+      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'),
+      viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'),
+      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paidDateWrap:$('paidDateWrap'), viewPaidDate:$('viewPaidDate'), paymentWrap:$('paymentWrap'),
+      timelineFill:$('timelineFill'),
+      paymentBadge:$('paymentBadge'),
+      paymentMessage:$('paymentMessage'),
+      cashOption:$('cashOption'),
+      cashMessage:$('cashMessage'),
+      paymentBtnStripe:$('paymentBtnStripe'),
+      paymentBtnPaypal:$('paymentBtnPaypal'),
+      paymentBtnVenmo:$('paymentBtnVenmo')
+    };
 
     function setMessage(text,isError=false){
       els.lookupMessage.textContent=text;
@@ -172,68 +182,77 @@
     }
 
     function renderPayment(o){
-  const status = o.payment_status || 'unpaid';
-  const stripe = o.payment_link_stripe || o.payment_link || '';
-  const paypal = o.payment_link_paypal || '';
-  const venmo = o.payment_link_venmo || '';
+      const status = o.payment_status || 'unpaid';
+      const stripe = o.payment_link_stripe || o.payment_link || '';
+      const paypal = o.payment_link_paypal || '';
+      const venmo = o.payment_link_venmo || '';
+      const showCash = status === 'unpaid' || status === 'deposit_due' || status === 'deposit_paid';
 
-  els.paymentBadge.textContent = paymentLabel(status);
-  els.paymentBadge.className = `payment-badge ${status}`;
+      els.paymentBadge.textContent = paymentLabel(status);
+      els.paymentBadge.className = `payment-badge ${status}`;
+      els.cashOption.classList.add('hidden');
+      els.cashMessage.textContent = status === 'deposit_paid'
+        ? 'Cash can be used for any remaining balance at pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.'
+        : 'Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.';
 
-  if(o.paid_date){
-    els.paidDateWrap.classList.remove('hidden');
-    els.viewPaidDate.textContent = formatPaidDate(o.paid_date);
-  } else {
-    els.paidDateWrap.classList.add('hidden');
-  }
+      if(o.paid_date){
+        els.paidDateWrap.classList.remove('hidden');
+        els.viewPaidDate.textContent = formatPaidDate(o.paid_date);
+      } else {
+        els.paidDateWrap.classList.add('hidden');
+      }
 
-  els.paymentBtnStripe.classList.add('hidden');
-  els.paymentBtnPaypal.classList.add('hidden');
-  els.paymentBtnVenmo.classList.add('hidden');
+      els.paymentBtnStripe.classList.add('hidden');
+      els.paymentBtnPaypal.classList.add('hidden');
+      els.paymentBtnVenmo.classList.add('hidden');
 
-  if(!stripe && !paypal && !venmo){
-    els.paymentWrap.classList.add('hidden');
-    return;
-  }
+      if(!stripe && !paypal && !venmo && !showCash){
+        els.paymentWrap.classList.add('hidden');
+        return;
+      }
 
-  els.paymentWrap.classList.remove('hidden');
+      els.paymentWrap.classList.remove('hidden');
 
-  if(status === 'paid'){
-    els.paymentMessage.textContent = o.paid_date ? `This order was paid in full on ${formatPaidDate(o.paid_date)}.` : 'This order has been paid in full.';
-    return;
-  }
+      if(showCash && status !== 'paid' && status !== 'refunded'){
+        els.cashOption.classList.remove('hidden');
+      }
 
-  if(status === 'refunded'){
-    els.paymentMessage.textContent = 'This order has been refunded.';
-    return;
-  }
+      if(status === 'paid'){
+        els.paymentMessage.textContent = o.paid_date ? `This order was paid in full on ${formatPaidDate(o.paid_date)}.` : 'This order has been paid in full.';
+        return;
+      }
 
-  if(status === 'deposit_paid'){
-    els.paymentMessage.textContent = 'A remaining balance may still be due.';
-  } else if(status === 'deposit_due'){
-    els.paymentMessage.textContent = 'A deposit is required to begin this order.';
-  } else {
-    els.paymentMessage.textContent = 'Payment options are available for this order.';
-  }
+      if(status === 'refunded'){
+        els.paymentMessage.textContent = 'This order has been refunded.';
+        return;
+      }
 
-  if(stripe){
-    els.paymentBtnStripe.href = stripe;
-    els.paymentBtnStripe.textContent = status === 'deposit_due' ? 'Pay Deposit with Card / Apple Pay' : status === 'deposit_paid' ? 'Pay Remaining Balance with Card / Apple Pay' : 'Pay with Card / Apple Pay';
-    els.paymentBtnStripe.classList.remove('hidden');
-  }
+      if(status === 'deposit_paid'){
+        els.paymentMessage.textContent = 'A remaining balance may still be due.';
+      } else if(status === 'deposit_due'){
+        els.paymentMessage.textContent = 'A deposit is required to begin this order.';
+      } else {
+        els.paymentMessage.textContent = 'Payment options are available for this order.';
+      }
 
-  if(paypal){
-    els.paymentBtnPaypal.href = paypal;
-    els.paymentBtnPaypal.textContent = status === 'deposit_due' ? 'Pay Deposit with PayPal' : status === 'deposit_paid' ? 'Pay Remaining Balance with PayPal' : 'Pay with PayPal';
-    els.paymentBtnPaypal.classList.remove('hidden');
-  }
+      if(stripe){
+        els.paymentBtnStripe.href = stripe;
+        els.paymentBtnStripe.textContent = status === 'deposit_due' ? 'Pay Deposit with Card / Apple Pay' : status === 'deposit_paid' ? 'Pay Remaining Balance with Card / Apple Pay' : 'Pay with Card / Apple Pay';
+        els.paymentBtnStripe.classList.remove('hidden');
+      }
 
-  if(venmo){
-    els.paymentBtnVenmo.href = venmo;
-    els.paymentBtnVenmo.textContent = status === 'deposit_due' ? 'Pay Deposit with Venmo' : status === 'deposit_paid' ? 'Pay Remaining Balance with Venmo' : 'Pay with Venmo';
-    els.paymentBtnVenmo.classList.remove('hidden');
-  }
-}
+      if(paypal){
+        els.paymentBtnPaypal.href = paypal;
+        els.paymentBtnPaypal.textContent = status === 'deposit_due' ? 'Pay Deposit with PayPal' : status === 'deposit_paid' ? 'Pay Remaining Balance with PayPal' : 'Pay with PayPal';
+        els.paymentBtnPaypal.classList.remove('hidden');
+      }
+
+      if(venmo){
+        els.paymentBtnVenmo.href = venmo;
+        els.paymentBtnVenmo.textContent = status === 'deposit_due' ? 'Pay Deposit with Venmo' : status === 'deposit_paid' ? 'Pay Remaining Balance with Venmo' : 'Pay with Venmo';
+        els.paymentBtnVenmo.classList.remove('hidden');
+      }
+    }
 
     function renderOrder(o){
       els.resultCard.classList.remove('hidden');
