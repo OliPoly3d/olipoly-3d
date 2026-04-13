@@ -170,7 +170,32 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
 .legal-toggle{margin:16px auto 0;width:min(var(--max),calc(100% - 32px));font-size:.75rem;color:#7a6b80;border-top:1px solid rgba(0,0,0,.05);padding-top:14px}
 .legal-toggle summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:8px;font:1.02rem "Cormorant Garamond",serif;color:#2a2132}.legal-toggle summary::-webkit-details-marker{display:none}.legal-toggle summary::after{content:'+';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:rgba(236,72,153,.1);color:var(--p);font-size:.9rem;font-weight:700;transition:transform .2s ease}.legal-toggle[open] summary::after{transform:rotate(45deg)}.legal-content{margin-top:10px;line-height:1.5}.legal-content p{margin:0}
 .footer-wrap{align-items:center;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--line);font:1rem "Cormorant Garamond",serif;letter-spacing:.02em;color:#2a2132}.footer-wrap div:last-child{font:400 .92rem Inter,sans-serif;letter-spacing:.02em;color:#8a7691}
+.footer-legal-link{
+  display:flex;
+  justify-content:center;
+  width:100%;
+  margin-top:10px;
+}
 
+.footer-legal-link a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 16px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#de6fb8,#9d7cff);
+  color:#fff;
+  font-weight:700;
+  text-decoration:none;
+  font-size:.9rem;
+  box-shadow:0 10px 22px rgba(222,111,184,.2);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+
+.footer-legal-link a:hover{
+  transform:translateY(-1px);
+  box-shadow:0 14px 28px rgba(222,111,184,.28);
+}
 @keyframes brandShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 @keyframes brandGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(236,72,153,0))}50%{filter:drop-shadow(0 0 10px rgba(236,72,153,.22))}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
