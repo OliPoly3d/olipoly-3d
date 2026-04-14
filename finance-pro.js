@@ -989,7 +989,7 @@ els.taxExportBtn.onclick = exportTaxReport;
 els.runTaxReportBtn.onclick = renderTaxReport;
 els.monthlyTaxReportBtn.onclick = renderMonthlyTaxReport;
 els.monthlyTaxMonth.oninput = renderMonthlyTaxReport;
-els.saveBtn.onclick = () => els.entryForm.requestSubmit();
+els.saveBtn.onclick = null;
 els.entryForm.onsubmit = saveEntry;
 els.cancelEditBtn.onclick = resetForm;
 if (els.saveSettingsBtn) els.saveSettingsBtn.onclick = saveSettings;
