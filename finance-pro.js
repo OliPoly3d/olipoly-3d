@@ -901,7 +901,7 @@ async function saveEntry(e) {
     setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
     resetForm();
     await fetchEntries();
-    } catch (err) {
+      } catch (err) {
     setMsg(`Save failed: ${err?.message || err}`, true);
   } finally {
     els.saveBtn.disabled = false;
