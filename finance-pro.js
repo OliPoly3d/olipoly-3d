@@ -782,7 +782,6 @@ async function saveEntry(e) {
   if (els.entryAmount.value === '' || Number.isNaN(num(els.entryAmount.value))) return setMsg('Amount is required.', true);
 
   els.saveBtn.disabled = true;
-  const originalText = els.saveBtn.textContent;
   els.saveBtn.textContent = editingId ? 'Updating...' : 'Saving...';
 
   try {
@@ -901,11 +900,11 @@ async function saveEntry(e) {
     setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
     resetForm();
     await fetchEntries();
-      } catch (err) {
+  } catch (err) {
     setMsg(`Save failed: ${err?.message || err}`, true);
+    els.saveBtn.textContent = editingId ? 'Update Entry' : 'Save Entry';
   } finally {
     els.saveBtn.disabled = false;
-    els.saveBtn.textContent = originalText;
   }
 }
 
