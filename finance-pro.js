@@ -5,7 +5,6 @@ const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
 const HUB_FINANCE_SUMMARY_KEY = 'olipoly_finance_dashboard_summary_v1';
 const FINANCE_SETTINGS_KEY = 'olipoly_finance_settings_v1';
-console.log('FINANCE PRO JS LOADED v2');
 const $ = id => document.getElementById(id);
 const num = v => Number(v) || 0;
 const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num(v));
@@ -891,7 +890,6 @@ async function saveEntry(e) {
       updated_at: new Date().toISOString()
     };
 
-    console.log('SAVE START', { editingId, payload });
 
 const r = editingId
   ? await supabase.from('financial_entries')
@@ -902,8 +900,6 @@ const r = editingId
   : await supabase.from('financial_entries')
       .insert(payload)
       .select();
-console.log('SAVE RESPONSE', r);
-alert(JSON.stringify(r));
 
 if (r.error) return setMsg(`Save failed: ${r.error.message}`, true);
 
