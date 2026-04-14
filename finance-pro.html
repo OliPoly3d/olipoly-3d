@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -43,227 +44,283 @@
       </div>
     </div>
 
-    <section id="loginSection" class="login-wrap">
-      <div class="login-card">
-        <h2>Sign in to your private tracker</h2>
-        <p>This version uses <strong>Supabase</strong> for a real login and cloud-stored data, so your entries can be accessed across devices instead of living only in one browser.</p>
+```
+<section id="loginSection" class="login-wrap">
+  <div class="login-card">
+    <h2>Sign in to your private tracker</h2>
+    <p>This version uses <strong>Supabase</strong> for a real login and cloud-stored data, so your entries can be accessed across devices instead of living only in one browser.</p>
+    <div class="form-grid">
+      <div class="full">
+        <label for="emailInput">Email</label>
+        <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="full">
+        <label for="passwordInput">Password</label>
+        <textarea id="passwordInput" class="mask-password" placeholder="Enter password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" rows="1" style="min-height:48px;resize:none;overflow:hidden;white-space:nowrap;"></textarea>
+      </div>
+      <div class="full" style="margin-top:-6px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--muted);">
+          <input id="showPasswordToggle" type="checkbox" style="width:auto;accent-color:var(--accent);"> Show password
+        </label>
+      </div>
+    </div>
+    <div class="button-row" style="margin-top:16px;justify-content:flex-start;">
+      <button class="btn" id="loginBtn" type="button">Log In</button>
+      <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
+    </div>
+    <div class="setup-box hidden" id="authMessage"></div>
+  </div>
+</section>
+
+<section id="appSection" class="hidden">
+  <div class="hero">
+    <div>
+      <h2>Track sales, tax collected, real costs, shipping, mileage, and monthly profit.</h2>
+      <p>Income entries can treat your amount as tax-inclusive. Expense entries can now capture vendor details, business-use percentages, receipt links, and mileage-based deductions for delivery and supply runs.</p>
+    </div>
+    <div class="hero-note">
+      <strong>Best use for your workflow</strong>
+      <span>For a tax-inclusive customer total, enter the full paid amount, turn on tax-inclusive mode, and enter the tax rate. For mileage, switch to an expense entry and choose Vehicle / Delivery Mileage to auto-calculate the deductible amount from miles and rate.</span>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card"><span>Startup Expenses</span><strong id="startupTotal">$0.00</strong><small>Expenses before first sale.</small></div>
+    <div class="summary-card"><span>Product Revenue</span><strong id="productRevenue">$0.00</strong><small>Pre-tax product revenue only.</small></div>
+    <div class="summary-card"><span>Shipping Revenue</span><strong id="shippingRevenue">$0.00</strong><small>Pre-tax shipping revenue only.</small></div>
+    <div class="summary-card"><span>Sales Tax Collected</span><strong id="salesTaxCollectedTotal">$0.00</strong><small>Tracked separately from revenue.</small></div>
+    <div class="summary-card"><span>Total Costs</span><strong id="totalCosts">$0.00</strong><small>Base expenses plus shipping paid and direct costs.</small></div>
+    <div class="summary-card"><span>Net Profit</span><strong id="netProfit">$0.00</strong><small>Revenue minus visible costs, excluding tax collected.</small></div>
+    <div class="summary-card"><span>Entries</span><strong id="entryCount">0</strong><small>Total records shown by your current filters.</small></div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h3 id="formHeading">Add Financial Entry</h3>
+      <p class="sub">Use income for customer payments and expense for materials, shipping labels, packaging, event fees, printer repairs, delivery mileage, software, home-based overhead, and other business costs.</p>
+      <form id="entryForm" novalidate>
         <div class="form-grid">
-          <div class="full">
-            <label for="emailInput">Email</label>
-            <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email">
+          <div>
+            <label for="entryType">Entry Type</label>
+            <select id="entryType" required>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
           </div>
-          <div class="full">
-            <label for="passwordInput">Password</label>
-            <textarea id="passwordInput" class="mask-password" placeholder="Enter password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" rows="1" style="min-height:48px;resize:none;overflow:hidden;white-space:nowrap;"></textarea>
+          <div>
+            <label for="entryDate">Date</label>
+            <input id="entryDate" type="date" required>
           </div>
-          <div class="full" style="margin-top:-6px;">
-            <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--muted);">
-              <input id="showPasswordToggle" type="checkbox" style="width:auto;accent-color:var(--accent);"> Show password
+
+          <div>
+            <label for="entryCategory">Category</label>
+            <select id="entryCategory" required>
+              <option value="Sale">Sale</option>
+              <option value="Material">Material</option>
+              <option value="Shipping">Shipping</option>
+              <option value="Packaging">Packaging</option>
+              <option value="Marketplace Fee">Marketplace Fee</option>
+              <option value="Machine Maintenance">Machine Maintenance</option>
+              <option value="Printer Parts / Repairs">Printer Parts / Repairs</option>
+              <option value="Equipment">Equipment</option>
+              <option value="Admin / Setup">Admin / Setup</option>
+              <option value="Software / Subscriptions">Software / Subscriptions</option>
+              <option value="Advertising / Marketing">Advertising / Marketing</option>
+              <option value="Domain / Website">Domain / Website</option>
+              <option value="Office Supplies">Office Supplies</option>
+              <option value="Home Office">Home Office</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Internet / Phone">Internet / Phone</option>
+              <option value="Vehicle / Delivery Mileage">Vehicle / Delivery Mileage</option>
+              <option value="Fees">Fees</option>
+              <option value="Event Booth">Event Booth</option>
+              <option value="Supplies">Supplies</option>
+              <option value="R&amp;D / Prototyping">R&amp;D / Prototyping</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+
+          <div id="capexWrap" class="hidden">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="capexToggle" type="checkbox" style="width:auto;accent-color:var(--accent);">
+              Mark as CapEx (Asset Purchase)
             </label>
           </div>
-        </div>
-        <div class="button-row" style="margin-top:16px;justify-content:flex-start;">
-          <button class="btn" id="loginBtn" type="button">Log In</button>
-          <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
-        </div>
-        <div class="setup-box hidden" id="authMessage"></div>
-      </div>
-    </section>
 
-    <section id="appSection" class="hidden">
-      <div class="hero">
-        <div>
-          <h2>Track sales, tax collected, real costs, shipping, and monthly profit.</h2>
-          <p>Income entries can now treat your amount as tax-inclusive. The tracker will back sales tax out automatically so only pre-tax revenue feeds your revenue totals.</p>
-        </div>
-        <div class="hero-note">
-          <strong>Best use for your workflow</strong>
-          <span>For a tax-inclusive customer total, enter the full paid amount, turn on tax-inclusive mode, and enter the tax rate. The page will auto-calculate net revenue and sales tax collected for that sale.</span>
-        </div>
-      </div>
+          <div>
+            <label for="taxCategory">Tax Category</label>
+            <select id="taxCategory">
+              <option value="auto">Auto from category</option>
+              <option value="income_sales">Sales Income</option>
+              <option value="income_shipping">Shipping Income</option>
+              <option value="materials">Materials</option>
+              <option value="packaging">Packaging</option>
+              <option value="shipping_out">Shipping Purchased</option>
+              <option value="marketplace_fees">Marketplace Fees</option>
+              <option value="equipment_maintenance">Equipment & Maintenance</option>
+              <option value="event_fees">Event & Booth Fees</option>
+              <option value="supplies">Supplies</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
 
-      <div class="summary-grid">
-        <div class="summary-card"><span>Startup Expenses</span><strong id="startupTotal">$0.00</strong><small>Expenses before first sale.</small></div>
-        <div class="summary-card"><span>Product Revenue</span><strong id="productRevenue">$0.00</strong><small>Pre-tax product revenue only.</small></div>
-        <div class="summary-card"><span>Shipping Revenue</span><strong id="shippingRevenue">$0.00</strong><small>Pre-tax shipping revenue only.</small></div>
-        <div class="summary-card"><span>Sales Tax Collected</span><strong id="salesTaxCollectedTotal">$0.00</strong><small>Tracked separately from revenue.</small></div>
-        <div class="summary-card"><span>Total Costs</span><strong id="totalCosts">$0.00</strong><small>Base expenses plus shipping paid and direct costs.</small></div>
-        <div class="summary-card"><span>Net Profit</span><strong id="netProfit">$0.00</strong><small>Revenue minus visible costs, excluding tax collected.</small></div>
-        <div class="summary-card"><span>Entries</span><strong id="entryCount">0</strong><small>Total records shown by your current filters.</small></div>
-      </div>
+          <div>
+            <label for="entryAmount">Amount Entered</label>
+            <input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required>
+          </div>
+          <div>
+            <label for="businessUsePercent">Business Use %</label>
+            <input id="businessUsePercent" type="number" min="0" max="100" step="0.01" placeholder="100">
+          </div>
+          <div>
+            <label for="vendorName">Vendor / Store</label>
+            <input id="vendorName" type="text" maxlength="120" placeholder="Amazon, Micro Center, USPS, JoAnn, etc.">
+          </div>
+          <div>
+            <label for="paymentMethod">Payment Method</label>
+            <select id="paymentMethod">
+              <option value="">Select</option>
+              <option value="Business Card">Business Card</option>
+              <option value="Personal Card">Personal Card</option>
+              <option value="Cash">Cash</option>
+              <option value="PayPal">PayPal</option>
+              <option value="Venmo">Venmo</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="full">
+            <label for="receiptLink">Receipt Link</label>
+            <input id="receiptLink" type="url" maxlength="300" placeholder="Optional receipt URL">
+          </div>
 
-      <div class="grid">
-        <section class="panel">
-          <h3 id="formHeading">Add Financial Entry</h3>
-          <p class="sub">Use income for customer payments and expense for materials, shipping labels, packaging, event fees, machine maintenance, and other business costs.</p>
-          <form id="entryForm" novalidate>
+          <div id="mileageWrap" class="hidden full">
             <div class="form-grid">
               <div>
-                <label for="entryType">Entry Type</label>
-                <select id="entryType" required>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
+                <label for="milesDriven">Miles Driven</label>
+                <input id="milesDriven" type="number" min="0" step="0.1" placeholder="0.0">
               </div>
               <div>
-                <label for="entryDate">Date</label>
-                <input id="entryDate" type="date" required>
-              </div>
-
-              <div>
-                <label for="entryCategory">Category</label>
-                <select id="entryCategory" required>
-                  <option value="Sale">Sale</option>
-                  <option value="Material">Material</option>
-                  <option value="Shipping">Shipping</option>
-                  <option value="Packaging">Packaging</option>
-                  <option value="Marketplace Fee">Marketplace Fee</option>
-                  <option value="Machine Maintenance">Machine Maintenance</option>
-                  <option value="Equipment">Equipment</option>
-                  <option value="Admin / Setup">Admin / Setup</option>
-                  <option value="Software / Subscriptions">Software / Subscriptions</option>
-                  <option value="Fees">Fees</option>
-                  <option value="Event Booth">Event Booth</option>
-                  <option value="Supplies">Supplies</option>
-                  <option value="Custom">Custom</option>
-                </select>
-              </div>
-
-              <div id="capexWrap" class="hidden">
-                <label style="display:flex;align-items:center;gap:8px;">
-                  <input id="capexToggle" type="checkbox" style="width:auto;accent-color:var(--accent);">
-                  Mark as CapEx (Asset Purchase)
-                </label>
-              </div>
-
-              <div>
-                <label for="taxCategory">Tax Category</label>
-                <select id="taxCategory">
-                  <option value="auto">Auto from category</option>
-                  <option value="income_sales">Sales Income</option>
-                  <option value="income_shipping">Shipping Income</option>
-                  <option value="materials">Materials</option>
-                  <option value="packaging">Packaging</option>
-                  <option value="shipping_out">Shipping Purchased</option>
-                  <option value="marketplace_fees">Marketplace Fees</option>
-                  <option value="equipment_maintenance">Equipment & Maintenance</option>
-                  <option value="event_fees">Event & Booth Fees</option>
-                  <option value="supplies">Supplies</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="entryAmount">Amount Entered</label>
-                <input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required>
-              </div>
-              <div>
-                <label for="shippingCharged">Shipping Charged to Customer</label>
-                <input id="shippingCharged" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-              <div>
-                <label for="taxIncluded">Amount Includes Sales Tax?</label>
-                <select id="taxIncluded">
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </div>
-              <div>
-                <label for="salesTaxRate">Sales Tax Rate %</label>
-                <input id="salesTaxRate" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-              <div>
-                <label for="salesTaxCollected">Sales Tax Collected</label>
-                <input id="salesTaxCollected" type="number" step="0.01" readonly>
-              </div>
-              <div>
-                <label for="netRevenuePreview">Net Revenue Preview</label>
-                <input id="netRevenuePreview" type="number" step="0.01" readonly>
-              </div>
-              <div>
-                <label for="shippingCost">Shipping Cost You Paid</label>
-                <input id="shippingCost" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-              <div>
-                <label for="materialCost">Material Cost (for COGS)</label>
-                <input id="materialCost" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-              <div>
-                <label for="packagingCost">Packaging Cost (for COGS)</label>
-                <input id="packagingCost" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-              <div>
-                <label for="laborCost">Labor Cost (optional)</label>
-                <input id="laborCost" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-              <div>
-                <label for="otherDirectCost">Other Direct Cost</label>
-                <input id="otherDirectCost" type="number" min="0" step="0.01" placeholder="0.00">
-              </div>
-
-              <div class="full">
-                <label for="entryTitle">Title</label>
-                <input id="entryTitle" type="text" maxlength="120" placeholder="Example: Beach toy order / PETG filament / Craft show booth fee" required>
+                <label for="mileageRate">Mileage Rate</label>
+                <input id="mileageRate" type="number" min="0" step="0.0001" placeholder="Enter current IRS rate">
               </div>
               <div class="full">
-                <label for="entryNotes">Notes</label>
-                <textarea id="entryNotes" maxlength="500" placeholder="Optional details: order number, customer name, shipping vs pickup, color/material, vendor, etc."></textarea>
+                <label>How this works</label>
+                <div class="stat-note">For mileage entries, Amount Entered becomes the deductible mileage amount automatically: miles × rate.</div>
               </div>
             </div>
-
-            <div class="message" id="entryTypeHint" style="margin-top:16px;"></div>
-
-            <div class="button-row" style="margin-top:16px;justify-content:flex-start;">
-              <button class="btn" id="saveBtn" type="submit">Save Entry</button>
-              <button class="btn-ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button>
-            </div>
-          </form>
-          <div class="message hidden" id="formMessage"></div>
-        </section>
-
-        <section class="panel">
-          <h3>Monthly Profit Summary</h3>
-          <p class="sub">This rolls up each month’s visible entries so you can quickly see revenue, tax collected, COGS, costs, and profit trends.</p>
-          <div id="monthlySummary" class="stat-note">No monthly data yet. Add entries to start building your summary.</div>
-          <div class="monthly-grid" id="monthlyGrid"></div>
-
-          <h3 style="margin-top:18px;">Ohio Monthly Filing Report</h3>
-          <p class="sub">Pick a month to generate the exact numbers to type into OH|TAX eServices for a standard on-time Ohio UST-1 filing.</p>
-          <div class="filters" style="margin-top:0;">
-            <input id="monthlyTaxMonth" type="month">
-            <button class="btn" id="monthlyTaxReportBtn" type="button">Generate Monthly Filing Report</button>
           </div>
-          <div id="monthlyTaxOutput" class="stat-note">No monthly filing report generated yet.</div>
 
-          <h3 style="margin-top:18px;">Tax Report</h3>
-          <p class="sub">Use this to review year totals by tax bucket before export.</p>
-          <div class="filters" style="margin-top:0;">
-            <input id="taxYearFilter" type="number" min="2020" max="2100" step="1" placeholder="Year">
-            <button class="btn-ghost" id="runTaxReportBtn" type="button">Run Tax Report</button>
+          <div>
+            <label for="shippingCharged">Shipping Charged to Customer</label>
+            <input id="shippingCharged" type="number" min="0" step="0.01" placeholder="0.00">
           </div>
-          <div id="taxReportWrap" class="stat-note">No tax report generated yet.</div>
-        </section>
-      </div>
+          <div>
+            <label for="taxIncluded">Amount Includes Sales Tax?</label>
+            <select id="taxIncluded">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+          <div>
+            <label for="salesTaxRate">Sales Tax Rate %</label>
+            <input id="salesTaxRate" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div>
+            <label for="salesTaxCollected">Sales Tax Collected</label>
+            <input id="salesTaxCollected" type="number" step="0.01" readonly>
+          </div>
+          <div>
+            <label for="netRevenuePreview">Net Revenue Preview</label>
+            <input id="netRevenuePreview" type="number" step="0.01" readonly>
+          </div>
+          <div>
+            <label for="shippingCost">Shipping Cost You Paid</label>
+            <input id="shippingCost" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div>
+            <label for="materialCost">Material Cost (for COGS)</label>
+            <input id="materialCost" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div>
+            <label for="packagingCost">Packaging Cost (for COGS)</label>
+            <input id="packagingCost" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div>
+            <label for="laborCost">Labor Cost (optional)</label>
+            <input id="laborCost" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div>
+            <label for="otherDirectCost">Other Direct Cost</label>
+            <input id="otherDirectCost" type="number" min="0" step="0.01" placeholder="0.00">
+          </div>
 
-      <section class="table-card">
-        <h3>Transactions</h3>
-        <div class="filters">
-          <select id="typeFilter">
-            <option value="all">All Types</option>
-            <option value="income">Income Only</option>
-            <option value="expense">Expense Only</option>
-          </select>
-          <input id="monthFilter" type="month">
-          <input id="searchFilter" type="text" placeholder="Search title, category, or notes">
-          <button class="btn-ghost" id="clearFiltersBtn" type="button">Clear Filters</button>
+          <div class="full">
+            <label for="entryTitle">Title</label>
+            <input id="entryTitle" type="text" maxlength="120" placeholder="Example: Beach toy order / PETG filament / Craft show booth fee / USPS supply run" required>
+          </div>
+          <div class="full">
+            <label for="entryNotes">Notes</label>
+            <textarea id="entryNotes" maxlength="500" placeholder="Optional details: order number, customer name, vendor, trip purpose, pickup vs delivery, material, or home-office allocation notes."></textarea>
+          </div>
         </div>
-        <div id="tableWrap"></div>
-      </section>
 
-      <p class="footer-note">Private OliPoly 3D tracker powered by Supabase login and cloud storage.</p>
+        <div class="message" id="entryTypeHint" style="margin-top:16px;"></div>
+
+        <div class="button-row" style="margin-top:16px;justify-content:flex-start;">
+          <button class="btn" id="saveBtn" type="submit">Save Entry</button>
+          <button class="btn-ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button>
+        </div>
+      </form>
+      <div class="message hidden" id="formMessage"></div>
+    </section>
+
+    <section class="panel">
+      <h3>Monthly Profit Summary</h3>
+      <p class="sub">This rolls up each month’s visible entries so you can quickly see revenue, tax collected, COGS, costs, and profit trends.</p>
+      <div id="monthlySummary" class="stat-note">No monthly data yet. Add entries to start building your summary.</div>
+      <div class="monthly-grid" id="monthlyGrid"></div>
+
+      <h3 style="margin-top:18px;">Ohio Monthly Filing Report</h3>
+      <p class="sub">Pick a month to generate the exact numbers to type into OH|TAX eServices for a standard on-time Ohio UST-1 filing.</p>
+      <div class="filters" style="margin-top:0;">
+        <input id="monthlyTaxMonth" type="month">
+        <button class="btn" id="monthlyTaxReportBtn" type="button">Generate Monthly Filing Report</button>
+      </div>
+      <div id="monthlyTaxOutput" class="stat-note">No monthly filing report generated yet.</div>
+
+      <h3 style="margin-top:18px;">Tax Report</h3>
+      <p class="sub">Use this to review year totals by tax bucket before export.</p>
+      <div class="filters" style="margin-top:0;">
+        <input id="taxYearFilter" type="number" min="2020" max="2100" step="1" placeholder="Year">
+        <button class="btn-ghost" id="runTaxReportBtn" type="button">Run Tax Report</button>
+      </div>
+      <div id="taxReportWrap" class="stat-note">No tax report generated yet.</div>
     </section>
   </div>
 
+  <section class="table-card">
+    <h3>Transactions</h3>
+    <div class="filters">
+      <select id="typeFilter">
+        <option value="all">All Types</option>
+        <option value="income">Income Only</option>
+        <option value="expense">Expense Only</option>
+      </select>
+      <input id="monthFilter" type="month">
+      <input id="searchFilter" type="text" placeholder="Search title, category, notes, or vendor">
+      <button class="btn-ghost" id="clearFiltersBtn" type="button">Clear Filters</button>
+    </div>
+    <div id="tableWrap"></div>
+  </section>
+
+  <p class="footer-note">Private OliPoly 3D tracker powered by Supabase login and cloud storage.</p>
+</section>
+```
+
+  </div>
+
   <script type="module" src="finance-pro.js"></script>
+
 </body>
 </html>
