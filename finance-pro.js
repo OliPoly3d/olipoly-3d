@@ -4,6 +4,7 @@ const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
 const HUB_FINANCE_SUMMARY_KEY = 'olipoly_finance_dashboard_summary_v1';
+const FINANCE_SETTINGS_KEY = 'olipoly_finance_settings_v1';
 
 const $ = id => document.getElementById(id);
 const num = v => Number(v) || 0;
@@ -32,7 +33,9 @@ const ids = [
   'productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid',
   'tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap',
   'capexWrap','capexToggle','monthlyTaxMonth','monthlyTaxReportBtn','monthlyTaxOutput',
-  'businessUsePercent','vendorName','paymentMethod','receiptLink','mileageWrap','milesDriven','mileageRate'
+  'businessUsePercent','vendorName','paymentMethod','receiptLink','mileageWrap','milesDriven','mileageRate',
+  'tripPurpose','tripFrom','tripTo','roundTripToggle',
+  'defaultMileageRate','officeSqft','homeSqft','homeOfficePercent','saveSettingsBtn','settingsMessage'
 ];
 const els = Object.fromEntries(ids.map(id => [id, $(id)]));
 
@@ -49,10 +52,16 @@ let currentUser = null;
 let entries = [];
 let editingId = null;
 let customCategoryValue = '';
+let settings = {
+  defaultMileageRate: 0,
+  officeSqft: 0,
+  homeSqft: 0
+};
 
-const hide = el => el.classList.add('hidden');
-const show = el => el.classList.remove('hidden');
+const hide = el => el?.classList.add('hidden');
+const show = el => el?.classList.remove('hidden');
 const setPanel = (el, text, isError = false, palette = 'green') => {
+  if (!el) return;
   el.textContent = text;
   show(el);
   const themes = {
@@ -65,6 +74,7 @@ const setPanel = (el, text, isError = false, palette = 'green') => {
 };
 const setMsg = (t, e = false) => setPanel(els.formMessage, t, e, 'green');
 const setAuthMsg = (t, e = false) => setPanel(els.authMessage, t, e, 'amber');
+const setSettingsMsg = (t, e = false) => setPanel(els.settingsMessage, t, e, e ? 'red' : 'green');
 
 const defaultTax = (type, cat) => type === 'income'
   ? (cat === 'Shipping' ? 'income_shipping' : 'income_sales')
@@ -102,6 +112,52 @@ function computeTaxExclusive(total, rate) {
   return { tax: +(total - net).toFixed(2), net };
 }
 
+function calculateHomeOfficePercent() {
+  const office = num(els.officeSqft?.value);
+  const home = num(els.homeSqft?.value);
+  const pct = office > 0 && home > 0 ? +((office / home) * 100).toFixed(2) : 0;
+  if (els.homeOfficePercent) els.homeOfficePercent.value = pct ? pct.toFixed(2) : '';
+  return pct;
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(FINANCE_SETTINGS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    settings = {
+      defaultMileageRate: num(parsed.defaultMileageRate),
+      officeSqft: num(parsed.officeSqft),
+      homeSqft: num(parsed.homeSqft)
+    };
+  } catch (err) {
+    console.warn('Could not load finance settings:', err);
+  }
+}
+
+function applySettingsToUI() {
+  if (els.defaultMileageRate) els.defaultMileageRate.value = settings.defaultMileageRate ? settings.defaultMileageRate.toFixed(4) : '';
+  if (els.officeSqft) els.officeSqft.value = settings.officeSqft || '';
+  if (els.homeSqft) els.homeSqft.value = settings.homeSqft || '';
+  calculateHomeOfficePercent();
+}
+
+function saveSettings() {
+  settings = {
+    defaultMileageRate: num(els.defaultMileageRate?.value),
+    officeSqft: num(els.officeSqft?.value),
+    homeSqft: num(els.homeSqft?.value)
+  };
+  try {
+    localStorage.setItem(FINANCE_SETTINGS_KEY, JSON.stringify(settings));
+    calculateHomeOfficePercent();
+    setSettingsMsg('Defaults saved.');
+    updateEntryTypeHint();
+  } catch (err) {
+    setSettingsMsg(`Could not save defaults: ${err?.message || err}`, true);
+  }
+}
+
 function updateTaxPreview() {
   const total = num(els.entryAmount.value);
   const rate = num(els.salesTaxRate.value);
@@ -128,6 +184,10 @@ function updateExpenseHelpers() {
 
   if (isMileage) {
     els.businessUsePercent.value = '100';
+    if (!els.mileageRate.value && num(settings.defaultMileageRate) > 0) {
+      els.mileageRate.value = settings.defaultMileageRate.toFixed(4);
+    }
+    if (!els.tripFrom.value) els.tripFrom.value = 'Home workshop / office';
     const miles = num(els.milesDriven.value);
     const rate = num(els.mileageRate.value);
     els.entryAmount.value = miles && rate ? (miles * rate).toFixed(2) : '';
@@ -136,6 +196,13 @@ function updateExpenseHelpers() {
   } else {
     els.entryAmount.readOnly = false;
     els.entryAmount.placeholder = '0.00';
+  }
+
+  if (!isIncome && els.entryCategory.value === 'Home Office' && num(settings.officeSqft) > 0 && num(settings.homeSqft) > 0) {
+    const pct = calculateHomeOfficePercent();
+    if (!els.businessUsePercent.value || num(els.businessUsePercent.value) === 100) {
+      els.businessUsePercent.value = pct ? pct.toFixed(2) : '100';
+    }
   }
 }
 
@@ -153,7 +220,14 @@ function updateEntryTypeHint() {
   } else if (isMileageCategory(els.entryCategory.value)) {
     setPanel(
       els.entryTypeHint,
-      'Mileage expense: enter miles and the current mileage rate. Amount Entered becomes the deductible mileage amount automatically.',
+      'Mileage expense: enter miles, rate, trip purpose, and route details. Amount Entered becomes the deductible mileage amount automatically.',
+      false,
+      'amber'
+    );
+  } else if (els.entryCategory.value === 'Home Office') {
+    setPanel(
+      els.entryTypeHint,
+      'Home office helper: save your workspace and home square footage above, then use this category with the suggested business-use percentage as a planning aid for shared home costs.',
       false,
       'amber'
     );
@@ -186,12 +260,13 @@ function resetForm() {
   els.taxIncluded.value = 'no';
   els.capexToggle.checked = false;
   els.businessUsePercent.value = '100';
-  els.mileageRate.value = '';
+  els.mileageRate.value = settings.defaultMileageRate ? settings.defaultMileageRate.toFixed(4) : '';
   [
     'shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview',
     'shippingCost','materialCost','packagingCost','laborCost','otherDirectCost',
-    'milesDriven','vendorName','paymentMethod','receiptLink'
-  ].forEach(k => els[k].value = '');
+    'milesDriven','vendorName','paymentMethod','receiptLink','tripPurpose','tripFrom','tripTo'
+  ].forEach(k => { if (els[k]) els[k].value = ''; });
+  if (els.roundTripToggle) els.roundTripToggle.checked = false;
   els.formHeading.textContent = 'Add Financial Entry';
   els.saveBtn.textContent = 'Save Entry';
   els.cancelEditBtn.classList.add('hidden');
@@ -205,7 +280,7 @@ function filteredEntries() {
     .filter(e => {
       if (els.typeFilter.value !== 'all' && e.type !== els.typeFilter.value) return false;
       if (els.monthFilter.value && !e.entry_date.startsWith(els.monthFilter.value)) return false;
-      if (search && !`${e.title} ${e.category} ${e.notes || ''} ${e.vendor_name || ''}`.toLowerCase().includes(search)) return false;
+      if (search && !`${e.title} ${e.category} ${e.notes || ''} ${e.vendor_name || ''} ${e.trip_purpose || ''} ${e.trip_to || ''}`.toLowerCase().includes(search)) return false;
       return true;
     })
     .sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date));
@@ -299,6 +374,8 @@ function renderTable(list) {
             ${e.vendor_name ? `<div style="margin-top:6px;color:var(--muted);font-size:.86rem;">Vendor: ${escapeHtml(e.vendor_name)}</div>` : ''}
             ${num(e.business_use_percent) && num(e.business_use_percent) !== 100 ? `<div style="margin-top:4px;color:var(--muted);font-size:.86rem;">Business use: ${num(e.business_use_percent).toFixed(2)}%</div>` : ''}
             ${num(e.miles_driven) ? `<div style="margin-top:4px;color:var(--muted);font-size:.86rem;">Mileage: ${num(e.miles_driven).toFixed(1)} mi @ ${num(e.mileage_rate).toFixed(4)}</div>` : ''}
+            ${e.trip_purpose ? `<div style="margin-top:4px;color:var(--muted);font-size:.86rem;">Trip: ${escapeHtml(e.trip_purpose)}</div>` : ''}
+            ${(e.trip_from || e.trip_to) ? `<div style="margin-top:4px;color:var(--muted);font-size:.86rem;">Route: ${escapeHtml(e.trip_from || '')}${e.trip_from && e.trip_to ? ' → ' : ''}${escapeHtml(e.trip_to || '')}${e.round_trip ? ' (round trip)' : ''}</div>` : ''}
             ${e.notes ? `<div style="margin-top:6px;color:var(--muted);font-size:.86rem;line-height:1.5;">${escapeHtml(e.notes)}</div>` : ''}
             ${e.receipt_link ? `<div style="margin-top:6px;font-size:.86rem;"><a href="${escapeHtml(e.receipt_link)}" target="_blank" rel="noopener noreferrer">Receipt</a></div>` : ''}
           </td>
@@ -479,7 +556,7 @@ function renderTaxReport() {
       <div><strong>Estimated net profit:</strong> ${money(s.netProfit)}</div>
 
       <div style="margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.55;">
-                Per-sale material, packaging, labor, and other direct cost fields stay available for pricing and profit visibility only and are not deducted again here. This tracker groups equipment-related purchases into an equipment bucket for visibility, but your actual tax treatment can still follow your year-one expensing approach.
+        Per-sale material, packaging, labor, and other direct cost fields stay available for pricing and profit visibility only and are not deducted again here. This tracker groups equipment-related purchases into an equipment bucket for visibility, but your actual tax treatment can still follow your year-one expensing approach.
       </div>
     </div>
   `;
@@ -558,7 +635,7 @@ function exportCSV() {
       'Date','Type','Category','Tax Category','Deductible / Revenue Amount','Original Amount',
       'Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost',
       'Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Vendor','Payment Method',
-      'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Title','Notes'
+      'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Trip Purpose','Trip From','Trip To','Round Trip','Title','Notes'
     ],
     ...entries.map(e => [
       e.entry_date,
@@ -582,6 +659,10 @@ function exportCSV() {
       num(e.business_use_percent || 100).toFixed(2),
       num(e.miles_driven).toFixed(2),
       num(e.mileage_rate).toFixed(4),
+      e.trip_purpose || '',
+      e.trip_from || '',
+      e.trip_to || '',
+      e.round_trip ? 'yes' : 'no',
       e.title,
       e.notes || ''
     ])
@@ -654,8 +735,13 @@ function startEdit(id) {
     ['receiptLink','receipt_link'],
     ['businessUsePercent','business_use_percent'],
     ['milesDriven','miles_driven'],
-    ['mileageRate','mileage_rate']
-  ].forEach(([k, p]) => els[k].value = e[p] ?? '');
+    ['mileageRate','mileage_rate'],
+    ['tripPurpose','trip_purpose'],
+    ['tripFrom','trip_from'],
+    ['tripTo','trip_to']
+  ].forEach(([k, p]) => { if (els[k]) els[k].value = e[p] ?? ''; });
+
+  if (els.roundTripToggle) els.roundTripToggle.checked = !!e.round_trip;
 
   els.entryAmount.value = e.type === 'income'
     ? ((num(e.amount) + num(e.sales_tax_collected)) || '')
@@ -742,6 +828,7 @@ async function saveEntry(e) {
         const rate = num(els.mileageRate.value);
         if (miles <= 0) return setMsg('Enter miles driven for a mileage entry.', true);
         if (rate <= 0) return setMsg('Enter a mileage rate for a mileage entry.', true);
+        if (!els.tripPurpose.value.trim()) return setMsg('Enter a trip purpose for a mileage entry.', true);
         originalAmount = +(miles * rate).toFixed(2);
         amount = originalAmount;
       } else {
@@ -782,6 +869,10 @@ async function saveEntry(e) {
       business_use_percent: isIncome ? 100 : (Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100))),
       miles_driven: isMileage ? num(els.milesDriven.value) : 0,
       mileage_rate: isMileage ? num(els.mileageRate.value) : 0,
+      trip_purpose: isMileage ? els.tripPurpose.value.trim() : '',
+      trip_from: isMileage ? els.tripFrom.value.trim() : '',
+      trip_to: isMileage ? els.tripTo.value.trim() : '',
+      round_trip: isMileage ? !!els.roundTripToggle.checked : false,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
       tax_included: isIncome ? els.taxIncluded.value : 'no',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
@@ -836,6 +927,8 @@ async function logout() {
 
 async function init() {
   hide(els.authMessage);
+  loadSettings();
+  applySettingsToUI();
   els.entryDate.value = todayISO();
   els.taxYearFilter.value = currentYear();
   els.monthlyTaxMonth.value = currentMonth();
@@ -873,9 +966,16 @@ async function init() {
   els.salesTaxRate,
   els.businessUsePercent,
   els.milesDriven,
-  els.mileageRate
+  els.mileageRate,
+  els.defaultMileageRate,
+  els.officeSqft,
+  els.homeSqft
 ].filter(Boolean).forEach(el => {
-  el.oninput = el.onchange = () => { updateEntryTypeHint(); updateTaxPreview(); };
+  el.oninput = el.onchange = () => {
+    if (el === els.officeSqft || el === els.homeSqft) calculateHomeOfficePercent();
+    updateEntryTypeHint();
+    updateTaxPreview();
+  };
 });
 
 els.passwordInput.classList.add('mask-password');
@@ -892,6 +992,7 @@ els.monthlyTaxMonth.oninput = renderMonthlyTaxReport;
 els.saveBtn.onclick = () => els.entryForm.requestSubmit();
 els.entryForm.onsubmit = saveEntry;
 els.cancelEditBtn.onclick = resetForm;
+if (els.saveSettingsBtn) els.saveSettingsBtn.onclick = saveSettings;
 els.clearFiltersBtn.onclick = () => {
   els.typeFilter.value = 'all';
   els.monthFilter.value = '';
