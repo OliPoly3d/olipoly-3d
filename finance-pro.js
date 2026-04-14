@@ -31,13 +31,17 @@ const ids = [
   'netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes',
   'productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid',
   'tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap',
-  'capexWrap','capexToggle','monthlyTaxMonth','monthlyTaxReportBtn','monthlyTaxOutput'
+  'capexWrap','capexToggle','monthlyTaxMonth','monthlyTaxReportBtn','monthlyTaxOutput',
+  'businessUsePercent','vendorName','paymentMethod','receiptLink','mileageWrap','milesDriven','mileageRate'
 ];
 const els = Object.fromEntries(ids.map(id => [id, $(id)]));
 
 const BASE_CATEGORIES = [
-  'Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance','Equipment',
-  'Admin / Setup','Software / Subscriptions','Fees','Event Booth','Supplies'
+  'Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance',
+  'Printer Parts / Repairs','Equipment','Admin / Setup','Software / Subscriptions',
+  'Advertising / Marketing','Domain / Website','Office Supplies','Home Office',
+  'Utilities','Internet / Phone','Vehicle / Delivery Mileage','Fees','Event Booth',
+  'Supplies','R&D / Prototyping'
 ];
 
 let supabase;
@@ -70,17 +74,27 @@ const defaultTax = (type, cat) => type === 'income'
       Shipping:'shipping_out',
       'Marketplace Fee':'marketplace_fees',
       'Machine Maintenance':'equipment_maintenance',
+      'Printer Parts / Repairs':'equipment_maintenance',
       Equipment:'equipment_maintenance',
       'Equipment (CapEx)':'equipment_maintenance',
       'Admin / Setup':'other',
       'Software / Subscriptions':'other',
+      'Advertising / Marketing':'other',
+      'Domain / Website':'other',
+      'Office Supplies':'supplies',
+      'Home Office':'other',
+      Utilities:'other',
+      'Internet / Phone':'other',
+      'Vehicle / Delivery Mileage':'other',
       Fees:'marketplace_fees',
       'Event Booth':'event_fees',
-      Supplies:'supplies'
+      Supplies:'supplies',
+      'R&D / Prototyping':'other'
     })[cat] || 'other';
 
 const directCost = e => num(e.material_cost) + num(e.packaging_cost) + num(e.labor_cost) + num(e.other_direct_cost);
 const visibleCost = e => (e.type === 'expense' ? num(e.amount) : 0) + num(e.shipping_cost) + directCost(e);
+const isMileageCategory = category => category === 'Vehicle / Delivery Mileage';
 
 function computeTaxExclusive(total, rate) {
   if (!rate) return { tax: 0, net: total };
@@ -106,23 +120,52 @@ function updateTaxPreview() {
   }
 }
 
+function updateExpenseHelpers() {
+  const isIncome = els.entryType.value === 'income';
+  const isMileage = !isIncome && isMileageCategory(els.entryCategory.value);
+
+  els.mileageWrap.classList.toggle('hidden', !isMileage);
+
+  if (isMileage) {
+    els.businessUsePercent.value = '100';
+    const miles = num(els.milesDriven.value);
+    const rate = num(els.mileageRate.value);
+    els.entryAmount.value = miles && rate ? (miles * rate).toFixed(2) : '';
+    els.entryAmount.readOnly = true;
+    els.entryAmount.placeholder = 'Auto-calculated from miles × rate';
+  } else {
+    els.entryAmount.readOnly = false;
+    els.entryAmount.placeholder = '0.00';
+  }
+}
+
 function updateEntryTypeHint() {
   els.capexWrap.classList.toggle('hidden', els.entryCategory.value !== 'Equipment');
+  updateExpenseHelpers();
+
   if (els.entryType.value === 'income') {
     setPanel(
       els.entryTypeHint,
-      'Income entry: if Amount Includes Sales Tax = Yes, the tracker backs tax out automatically so only pre-tax revenue feeds revenue totals. Shipping charged stays separate. Use Expense for bulk materials, fees, maintenance, booth fees, and general supplies.',
+      'Income entry: if Amount Includes Sales Tax = Yes, the tracker backs tax out automatically so only pre-tax revenue feeds revenue totals. Shipping charged stays separate.',
+      false,
+      'amber'
+    );
+  } else if (isMileageCategory(els.entryCategory.value)) {
+    setPanel(
+      els.entryTypeHint,
+      'Mileage expense: enter miles and the current mileage rate. Amount Entered becomes the deductible mileage amount automatically.',
       false,
       'amber'
     );
   } else {
     setPanel(
       els.entryTypeHint,
-      'Expense entry: use this for bulk materials, marketplace fees, machine maintenance, event booths, supplies, startup/admin costs, software, and other overhead. Expense entries do not create revenue.',
+      'Expense entry: use Business Use % for shared expenses like internet, phone, utilities, or home-office style costs. The tracker will save only the deductible portion in Amount.',
       false,
       'amber'
     );
   }
+
   updateTaxPreview();
 }
 
@@ -142,7 +185,13 @@ function resetForm() {
   els.taxCategory.value = 'auto';
   els.taxIncluded.value = 'no';
   els.capexToggle.checked = false;
-  ['shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost'].forEach(k => els[k].value = '');
+  els.businessUsePercent.value = '100';
+  els.mileageRate.value = '';
+  [
+    'shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview',
+    'shippingCost','materialCost','packagingCost','laborCost','otherDirectCost',
+    'milesDriven','vendorName','paymentMethod','receiptLink'
+  ].forEach(k => els[k].value = '');
   els.formHeading.textContent = 'Add Financial Entry';
   els.saveBtn.textContent = 'Save Entry';
   els.cancelEditBtn.classList.add('hidden');
@@ -156,7 +205,7 @@ function filteredEntries() {
     .filter(e => {
       if (els.typeFilter.value !== 'all' && e.type !== els.typeFilter.value) return false;
       if (els.monthFilter.value && !e.entry_date.startsWith(els.monthFilter.value)) return false;
-      if (search && !`${e.title} ${e.category} ${e.notes || ''}`.toLowerCase().includes(search)) return false;
+      if (search && !`${e.title} ${e.category} ${e.notes || ''} ${e.vendor_name || ''}`.toLowerCase().includes(search)) return false;
       return true;
     })
     .sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date));
@@ -224,7 +273,52 @@ function renderTable(list) {
     els.tableWrap.innerHTML = '<div class="empty-state">No entries match your current filters.</div>';
     return;
   }
-  els.tableWrap.innerHTML = `<table><thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Category</th><th>Revenue</th><th>Tax</th><th>Ship In</th><th>Ship Out</th><th>COGS</th><th>Actions</th></tr></thead><tbody>${list.map(e => `<tr><td>${e.entry_date}</td><td><span class="type-pill ${e.type === 'income' ? 'type-income' : 'type-expense'}">${e.type}</span></td><td><strong>${escapeHtml(e.title)}</strong>${e.notes ? `<div style="margin-top:6px;color:var(--muted);font-size:.86rem;line-height:1.5;">${escapeHtml(e.notes)}</div>` : ''}</td><td>${escapeHtml(e.category)}</td><td>${money(e.amount)}</td><td>${money(e.sales_tax_collected)}</td><td>${money(e.shipping_charged)}</td><td>${money(e.shipping_cost)}</td><td>${money(directCost(e))}</td><td><div class="mini-actions"><button class="btn-ghost" type="button" data-edit="${e.id}">Edit</button><button class="btn-danger" type="button" data-delete="${e.id}">Delete</button></div></td></tr>`).join('')}</tbody></table>`;
+
+  els.tableWrap.innerHTML = `<table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Revenue / Expense</th>
+        <th>Tax</th>
+        <th>Ship In</th>
+        <th>Ship Out</th>
+        <th>COGS</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${list.map(e => `
+        <tr>
+          <td>${e.entry_date}</td>
+          <td><span class="type-pill ${e.type === 'income' ? 'type-income' : 'type-expense'}">${e.type}</span></td>
+          <td>
+            <strong>${escapeHtml(e.title)}</strong>
+            ${e.vendor_name ? `<div style="margin-top:6px;color:var(--muted);font-size:.86rem;">Vendor: ${escapeHtml(e.vendor_name)}</div>` : ''}
+            ${num(e.business_use_percent) && num(e.business_use_percent) !== 100 ? `<div style="margin-top:4px;color:var(--muted);font-size:.86rem;">Business use: ${num(e.business_use_percent).toFixed(2)}%</div>` : ''}
+            ${num(e.miles_driven) ? `<div style="margin-top:4px;color:var(--muted);font-size:.86rem;">Mileage: ${num(e.miles_driven).toFixed(1)} mi @ ${num(e.mileage_rate).toFixed(4)}</div>` : ''}
+            ${e.notes ? `<div style="margin-top:6px;color:var(--muted);font-size:.86rem;line-height:1.5;">${escapeHtml(e.notes)}</div>` : ''}
+            ${e.receipt_link ? `<div style="margin-top:6px;font-size:.86rem;"><a href="${escapeHtml(e.receipt_link)}" target="_blank" rel="noopener noreferrer">Receipt</a></div>` : ''}
+          </td>
+          <td>${escapeHtml(e.category)}</td>
+          <td>${money(e.amount)}</td>
+          <td>${money(e.sales_tax_collected)}</td>
+          <td>${money(e.shipping_charged)}</td>
+          <td>${money(e.shipping_cost)}</td>
+          <td>${money(directCost(e))}</td>
+          <td>
+            <div class="mini-actions">
+              <button class="btn-ghost" type="button" data-edit="${e.id}">Edit</button>
+              <button class="btn-danger" type="button" data-delete="${e.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>`;
+
   els.tableWrap.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => startEdit(b.dataset.edit));
   els.tableWrap.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => deleteEntry(b.dataset.delete));
 }
@@ -385,7 +479,7 @@ function renderTaxReport() {
       <div><strong>Estimated net profit:</strong> ${money(s.netProfit)}</div>
 
       <div style="margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.55;">
-        This report groups your tracker into Schedule C style lines. Per-sale material, packaging, labor, and other direct cost fields stay available for pricing/profit visibility only and are not deducted again here.
+        Per-sale material, packaging, labor, and other direct cost fields stay available for pricing and profit visibility only and are not deducted again here.
       </div>
     </div>
   `;
@@ -458,13 +552,38 @@ function downloadCSV(name, rows) {
 
 function exportCSV() {
   if (!entries.length) return alert('There are no entries to export yet.');
+
   downloadCSV(`olipoly-financial-export-${todayISO()}.csv`, [
-    ['Date','Type','Category','Tax Category','Revenue Amount','Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost','Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Title','Notes'],
+    [
+      'Date','Type','Category','Tax Category','Deductible / Revenue Amount','Original Amount',
+      'Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost',
+      'Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Vendor','Payment Method',
+      'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Title','Notes'
+    ],
     ...entries.map(e => [
-      e.entry_date, e.type, e.category, e.tax_category || defaultTax(e.type, e.category),
-      num(e.amount).toFixed(2), num(e.sales_tax_collected).toFixed(2), num(e.shipping_charged).toFixed(2), e.tax_included || 'no',
-      num(e.sales_tax_rate).toFixed(2), num(e.shipping_cost).toFixed(2), num(e.material_cost).toFixed(2), num(e.packaging_cost).toFixed(2),
-      num(e.labor_cost).toFixed(2), num(e.other_direct_cost).toFixed(2), e.title, e.notes || ''
+      e.entry_date,
+      e.type,
+      e.category,
+      e.tax_category || defaultTax(e.type, e.category),
+      num(e.amount).toFixed(2),
+      num(e.original_amount || e.amount).toFixed(2),
+      num(e.sales_tax_collected).toFixed(2),
+      num(e.shipping_charged).toFixed(2),
+      e.tax_included || 'no',
+      num(e.sales_tax_rate).toFixed(2),
+      num(e.shipping_cost).toFixed(2),
+      num(e.material_cost).toFixed(2),
+      num(e.packaging_cost).toFixed(2),
+      num(e.labor_cost).toFixed(2),
+      num(e.other_direct_cost).toFixed(2),
+      e.vendor_name || '',
+      e.payment_method || '',
+      e.receipt_link || '',
+      num(e.business_use_percent || 100).toFixed(2),
+      num(e.miles_driven).toFixed(2),
+      num(e.mileage_rate).toFixed(4),
+      e.title,
+      e.notes || ''
     ])
   ]);
 }
@@ -507,22 +626,48 @@ async function fetchEntries() {
 function startEdit(id) {
   const e = entries.find(x => x.id === id);
   if (!e) return;
+
   editingId = id;
   const isCapex = e.category === 'Equipment (CapEx)';
   customCategoryValue = BASE_CATEGORIES.includes(e.category) || isCapex ? '' : (e.category || '');
+
   els.formHeading.textContent = 'Edit Financial Entry';
   els.saveBtn.textContent = 'Update Entry';
   els.cancelEditBtn.classList.remove('hidden');
+
   [
-    ['entryType','type'],['entryDate','entry_date'],['shippingCharged','shipping_charged'],['taxIncluded','tax_included'],['salesTaxRate','sales_tax_rate'],
-    ['salesTaxCollected','sales_tax_collected'],['shippingCost','shipping_cost'],['materialCost','material_cost'],['packagingCost','packaging_cost'],
-    ['laborCost','labor_cost'],['otherDirectCost','other_direct_cost'],['entryTitle','title'],['entryNotes','notes']
+    ['entryType','type'],
+    ['entryDate','entry_date'],
+    ['shippingCharged','shipping_charged'],
+    ['taxIncluded','tax_included'],
+    ['salesTaxRate','sales_tax_rate'],
+    ['salesTaxCollected','sales_tax_collected'],
+    ['shippingCost','shipping_cost'],
+    ['materialCost','material_cost'],
+    ['packagingCost','packaging_cost'],
+    ['laborCost','labor_cost'],
+    ['otherDirectCost','other_direct_cost'],
+    ['entryTitle','title'],
+    ['entryNotes','notes'],
+    ['vendorName','vendor_name'],
+    ['paymentMethod','payment_method'],
+    ['receiptLink','receipt_link'],
+    ['businessUsePercent','business_use_percent'],
+    ['milesDriven','miles_driven'],
+    ['mileageRate','mileage_rate']
   ].forEach(([k, p]) => els[k].value = e[p] ?? '');
-  els.entryAmount.value = (num(e.amount) + num(e.sales_tax_collected)) || '';
+
+  els.entryAmount.value = e.type === 'income'
+    ? ((num(e.amount) + num(e.sales_tax_collected)) || '')
+    : (num(e.original_amount) || num(e.amount) || '');
+
   els.netRevenuePreview.value = e.amount ?? '';
   els.entryCategory.value = isCapex ? 'Equipment' : (BASE_CATEGORIES.includes(e.category) ? e.category : 'Custom');
   els.capexToggle.checked = isCapex;
   els.taxCategory.value = e.tax_category || 'auto';
+
+  if (!els.businessUsePercent.value) els.businessUsePercent.value = '100';
+
   updateEntryTypeHint();
   updateTaxPreview();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -562,15 +707,28 @@ async function saveEntry(e) {
     }
 
     const isIncome = els.entryType.value === 'income';
+    const isMileage = !isIncome && isMileageCategory(category);
     const saleCosts = num(els.shippingCost.value) + num(els.materialCost.value) + num(els.packagingCost.value) + num(els.laborCost.value) + num(els.otherDirectCost.value);
     const suspiciousExpense = /material|filament|spool|fee|maintenance|booth|supplies/i.test(`${els.entryTitle.value} ${category}`);
 
-    if (!isIncome && saleCosts > 0 && num(els.entryAmount.value) === 0) return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Base Amount.', true);
-    if (!isIncome && isCapexEquipment && num(els.entryAmount.value) <= 0) return setMsg('Enter the full purchase amount for this Equipment asset.', true);
-    if (isIncome && suspiciousExpense && num(els.shippingCharged.value) === 0 && saleCosts === 0) return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.', true);
+    if (!isIncome && saleCosts > 0 && num(els.entryAmount.value) === 0) {
+      return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Amount Entered.', true);
+    }
 
-    let amount = num(els.entryAmount.value);
+    if (!isIncome && isCapexEquipment && num(els.entryAmount.value) <= 0) {
+      return setMsg('Enter the full purchase amount for this Equipment asset.', true);
+    }
+
+    if (isIncome && suspiciousExpense && num(els.shippingCharged.value) === 0 && saleCosts === 0) {
+      return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.', true);
+    }
+
+    let originalAmount = num(els.entryAmount.value);
+    let amount = originalAmount;
     let salesTaxCollected = 0;
+    let notes = els.entryNotes.value.trim();
+    let taxCat = els.taxCategory.value === 'auto' ? defaultTax(els.entryType.value, category) : els.taxCategory.value;
+
     if (isIncome && els.taxIncluded.value === 'yes') {
       if (num(els.salesTaxRate.value) <= 0) return setMsg('Enter a sales tax rate when tax-inclusive mode is on.', true);
       const x = computeTaxExclusive(amount, num(els.salesTaxRate.value));
@@ -578,11 +736,29 @@ async function saveEntry(e) {
       amount = x.net;
     }
 
-    const firstIncomeDate = getFirstIncomeDate();
-    let notes = els.entryNotes.value.trim();
-    let taxCat = els.taxCategory.value === 'auto' ? defaultTax(els.entryType.value, category) : els.taxCategory.value;
+    if (!isIncome) {
+      if (isMileage) {
+        const miles = num(els.milesDriven.value);
+        const rate = num(els.mileageRate.value);
+        if (miles <= 0) return setMsg('Enter miles driven for a mileage entry.', true);
+        if (rate <= 0) return setMsg('Enter a mileage rate for a mileage entry.', true);
+        originalAmount = +(miles * rate).toFixed(2);
+        amount = originalAmount;
+      } else {
+        const businessUsePercent = Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100));
+        if (businessUsePercent <= 0) return setMsg('Business Use % must be greater than 0 for expense entries.', true);
+        amount = +(originalAmount * (businessUsePercent / 100)).toFixed(2);
 
-    if (els.entryType.value === 'expense') {
+        if (businessUsePercent < 100) {
+          const adjustmentNote = `[Business-use adjusted from ${money(originalAmount)} at ${businessUsePercent.toFixed(2)}%]`;
+          notes = notes ? `${adjustmentNote} ${notes}` : adjustmentNote;
+        }
+      }
+    }
+
+    const firstIncomeDate = getFirstIncomeDate();
+
+    if (!isIncome) {
       const entryDate = els.entryDate.value;
       if (!firstIncomeDate || entryDate < firstIncomeDate) {
         if (!notes.toLowerCase().includes('startup')) notes = `[Startup Expense] ${notes}`.trim();
@@ -599,6 +775,13 @@ async function saveEntry(e) {
       title: els.entryTitle.value.trim(),
       notes,
       amount,
+      original_amount: isIncome ? amount : originalAmount,
+      vendor_name: els.vendorName.value.trim(),
+      payment_method: els.paymentMethod.value || '',
+      receipt_link: els.receiptLink.value.trim(),
+      business_use_percent: isIncome ? 100 : (Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100))),
+      miles_driven: isMileage ? num(els.milesDriven.value) : 0,
+      mileage_rate: isMileage ? num(els.mileageRate.value) : 0,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
       tax_included: isIncome ? els.taxIncluded.value : 'no',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
@@ -616,6 +799,7 @@ async function saveEntry(e) {
       : await supabase.from('financial_entries').insert(payload);
 
     if (r.error) return setMsg(`Save failed: ${r.error.message}`, true);
+
     setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
     resetForm();
     await fetchEntries();
@@ -655,6 +839,7 @@ async function init() {
   els.entryDate.value = todayISO();
   els.taxYearFilter.value = currentYear();
   els.monthlyTaxMonth.value = currentMonth();
+  els.businessUsePercent.value = '100';
   if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
     return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.', true);
   }
@@ -679,7 +864,17 @@ async function init() {
   });
 }
 
-[els.entryType, els.entryCategory, els.capexToggle, els.entryAmount, els.taxIncluded, els.salesTaxRate].forEach(el => {
+[
+  els.entryType,
+  els.entryCategory,
+  els.capexToggle,
+  els.entryAmount,
+  els.taxIncluded,
+  els.salesTaxRate,
+  els.businessUsePercent,
+  els.milesDriven,
+  els.mileageRate
+].forEach(el => {
   el.oninput = el.onchange = () => { updateEntryTypeHint(); updateTaxPreview(); };
 });
 
