@@ -773,10 +773,6 @@ async function saveEntry(e) {
 
   if (els.saveBtn.disabled) return;
 
-  els.saveBtn.disabled = true;
-  const originalText = els.saveBtn.textContent;
-  els.saveBtn.textContent = editingId ? 'Updating...' : 'Saving...';
-
   hide(els.formMessage);
   updateEntryTypeHint();
 
@@ -784,6 +780,10 @@ async function saveEntry(e) {
   if (!els.entryCategory.value) return setMsg('Category is required.', true);
   if (!els.entryTitle.value.trim()) return setMsg('Title is required.', true);
   if (els.entryAmount.value === '' || Number.isNaN(num(els.entryAmount.value))) return setMsg('Amount is required.', true);
+
+  els.saveBtn.disabled = true;
+  const originalText = els.saveBtn.textContent;
+  els.saveBtn.textContent = editingId ? 'Updating...' : 'Saving...';
 
   try {
     let category = els.entryCategory.value;
