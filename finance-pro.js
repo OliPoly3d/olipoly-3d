@@ -904,7 +904,6 @@ const r = editingId
       .select();
 console.log('SAVE RESPONSE', r);
 alert(JSON.stringify(r));
-console.log('SAVE RESPONSE', r);
 
 if (r.error) return setMsg(`Save failed: ${r.error.message}`, true);
 
