@@ -466,7 +466,7 @@ function renderTaxReport() {
 
       <div style="margin-top:10px;"><strong>Schedule C expense lines</strong></div>
       <div>Line 10 – Commissions & fees: ${money(s.line10)}</div>
-      <div>Line 13 – Depreciation / equipment bucket: ${money(s.line13)}</div>
+      <div>Line 13 – Equipment / machine purchases bucket: ${money(s.line13)}</div>
       <div>Line 20b – Rent / booth fees: ${money(s.line20b)}</div>
       <div>Line 21 – Repairs & maintenance: ${money(s.line21)}</div>
       <div>Line 22 – Supplies: ${money(s.line22)}</div>
@@ -479,7 +479,7 @@ function renderTaxReport() {
       <div><strong>Estimated net profit:</strong> ${money(s.netProfit)}</div>
 
       <div style="margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.55;">
-        Per-sale material, packaging, labor, and other direct cost fields stay available for pricing and profit visibility only and are not deducted again here.
+                Per-sale material, packaging, labor, and other direct cost fields stay available for pricing and profit visibility only and are not deducted again here. This tracker groups equipment-related purchases into an equipment bucket for visibility, but your actual tax treatment can still follow your year-one expensing approach.
       </div>
     </div>
   `;
@@ -597,7 +597,7 @@ function exportTaxReport() {
     [year,'Line 1','Gross receipts',num(s.grossReceipts).toFixed(2),'Sales + shipping income, excluding sales tax collected'],
     [year,'Not income','Sales tax collected',num(s.salesTaxCollected).toFixed(2),'Tracked separately from revenue'],
     [year,'Line 10','Commissions and fees',num(s.line10).toFixed(2),'Fees / marketplace fees'],
-    [year,'Line 13','Depreciation / equipment bucket',num(s.line13).toFixed(2),'Equipment bucket from tracker'],
+    [year,'Line 13','Equipment / machine purchases bucket',num(s.line13).toFixed(2),'Equipment-related purchases grouped by the tracker; tax treatment may follow year-one expensing'],
     [year,'Line 20b','Rent / booth fees',num(s.line20b).toFixed(2),'Event booth fees'],
     [year,'Line 21','Repairs and maintenance',num(s.line21).toFixed(2),'Currently not separately grouped'],
     [year,'Line 22','Supplies',num(s.line22).toFixed(2),'Materials + packaging + supplies'],
@@ -874,7 +874,7 @@ async function init() {
   els.businessUsePercent,
   els.milesDriven,
   els.mileageRate
-].forEach(el => {
+].filter(Boolean).forEach(el => {
   el.oninput = el.onchange = () => { updateEntryTypeHint(); updateTaxPreview(); };
 });
 
