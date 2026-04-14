@@ -770,6 +770,13 @@ async function deleteEntry(id) {
 
 async function saveEntry(e) {
   e?.preventDefault?.();
+
+  if (els.saveBtn.disabled) return;
+
+  els.saveBtn.disabled = true;
+  const originalText = els.saveBtn.textContent;
+  els.saveBtn.textContent = editingId ? 'Updating...' : 'Saving...';
+
   hide(els.formMessage);
   updateEntryTypeHint();
 
@@ -894,8 +901,11 @@ async function saveEntry(e) {
     setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
     resetForm();
     await fetchEntries();
-  } catch (err) {
+    } catch (err) {
     setMsg(`Save failed: ${err?.message || err}`, true);
+  } finally {
+    els.saveBtn.disabled = false;
+    els.saveBtn.textContent = originalText;
   }
 }
 
