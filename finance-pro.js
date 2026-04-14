@@ -5,6 +5,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
 const HUB_FINANCE_SUMMARY_KEY = 'olipoly_finance_dashboard_summary_v1';
 const FINANCE_SETTINGS_KEY = 'olipoly_finance_settings_v1';
+
 const $ = id => document.getElementById(id);
 const num = v => Number(v) || 0;
 const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num(v));
@@ -252,6 +253,7 @@ function resetForm() {
   editingId = null;
   customCategoryValue = '';
   els.entryForm.reset();
+  delete els.entryForm.dataset.saving;
   els.entryType.value = 'income';
   els.entryDate.value = todayISO();
   els.entryCategory.value = 'Sale';
@@ -268,6 +270,7 @@ function resetForm() {
   if (els.roundTripToggle) els.roundTripToggle.checked = false;
   els.formHeading.textContent = 'Add Financial Entry';
   els.saveBtn.textContent = 'Save Entry';
+  els.saveBtn.disabled = false;
   els.cancelEditBtn.classList.add('hidden');
   hide(els.formMessage);
   updateEntryTypeHint();
@@ -708,11 +711,15 @@ function startEdit(id) {
   if (!e) return;
 
   editingId = id;
+  customCategoryValue = '';
+  delete els.entryForm.dataset.saving;
+
   const isCapex = e.category === 'Equipment (CapEx)';
   customCategoryValue = BASE_CATEGORIES.includes(e.category) || isCapex ? '' : (e.category || '');
 
   els.formHeading.textContent = 'Edit Financial Entry';
   els.saveBtn.textContent = 'Update Entry';
+  els.saveBtn.disabled = false;
   els.cancelEditBtn.classList.remove('hidden');
 
   [
@@ -770,7 +777,7 @@ async function deleteEntry(id) {
 async function saveEntry(e) {
   e?.preventDefault?.();
 
-  if (els.saveBtn.disabled) return;
+  if (els.entryForm.dataset.saving === '1') return;
 
   hide(els.formMessage);
   updateEntryTypeHint();
@@ -780,8 +787,11 @@ async function saveEntry(e) {
   if (!els.entryTitle.value.trim()) return setMsg('Title is required.', true);
   if (els.entryAmount.value === '' || Number.isNaN(num(els.entryAmount.value))) return setMsg('Amount is required.', true);
 
+  const wasEditing = !!editingId;
+
+  els.entryForm.dataset.saving = '1';
   els.saveBtn.disabled = true;
-  els.saveBtn.textContent = editingId ? 'Updating...' : 'Saving...';
+  els.saveBtn.textContent = wasEditing ? 'Updating...' : 'Saving...';
 
   try {
     let category = els.entryCategory.value;
@@ -791,7 +801,10 @@ async function saveEntry(e) {
     if (category === 'Custom') {
       if (!customCategoryValue) {
         const customInput = prompt('Enter custom category name:', customCategoryValue || '')?.trim();
-        if (!customInput) return setMsg('Custom category is required.', true);
+        if (!customInput) {
+          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
+          return setMsg('Custom category is required.', true);
+        }
         customCategoryValue = customInput;
       }
       category = customCategoryValue;
@@ -799,18 +812,29 @@ async function saveEntry(e) {
 
     const isIncome = els.entryType.value === 'income';
     const isMileage = !isIncome && isMileageCategory(category);
-    const saleCosts = num(els.shippingCost.value) + num(els.materialCost.value) + num(els.packagingCost.value) + num(els.laborCost.value) + num(els.otherDirectCost.value);
-    const suspiciousExpense = /material|filament|spool|fee|maintenance|booth|supplies/i.test(`${els.entryTitle.value} ${category}`);
+    const saleCosts =
+      num(els.shippingCost.value) +
+      num(els.materialCost.value) +
+      num(els.packagingCost.value) +
+      num(els.laborCost.value) +
+      num(els.otherDirectCost.value);
+
+    const suspiciousExpense = /material|filament|spool|fee|maintenance|booth|supplies/i.test(
+      `${els.entryTitle.value} ${category}`
+    );
 
     if (!isIncome && saleCosts > 0 && num(els.entryAmount.value) === 0) {
+      els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
       return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Amount Entered.', true);
     }
 
     if (!isIncome && isCapexEquipment && num(els.entryAmount.value) <= 0) {
+      els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
       return setMsg('Enter the full purchase amount for this Equipment asset.', true);
     }
 
     if (isIncome && suspiciousExpense && num(els.shippingCharged.value) === 0 && saleCosts === 0) {
+      els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
       return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.', true);
     }
 
@@ -818,10 +842,15 @@ async function saveEntry(e) {
     let amount = originalAmount;
     let salesTaxCollected = 0;
     let notes = els.entryNotes.value.trim();
-    let taxCat = els.taxCategory.value === 'auto' ? defaultTax(els.entryType.value, category) : els.taxCategory.value;
+    let taxCat = els.taxCategory.value === 'auto'
+      ? defaultTax(els.entryType.value, category)
+      : els.taxCategory.value;
 
     if (isIncome && els.taxIncluded.value === 'yes') {
-      if (num(els.salesTaxRate.value) <= 0) return setMsg('Enter a sales tax rate when tax-inclusive mode is on.', true);
+      if (num(els.salesTaxRate.value) <= 0) {
+        els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
+        return setMsg('Enter a sales tax rate when tax-inclusive mode is on.', true);
+      }
       const x = computeTaxExclusive(amount, num(els.salesTaxRate.value));
       salesTaxCollected = x.tax;
       amount = x.net;
@@ -831,14 +860,26 @@ async function saveEntry(e) {
       if (isMileage) {
         const miles = num(els.milesDriven.value);
         const rate = num(els.mileageRate.value);
-        if (miles <= 0) return setMsg('Enter miles driven for a mileage entry.', true);
-        if (rate <= 0) return setMsg('Enter a mileage rate for a mileage entry.', true);
-        if (!els.tripPurpose.value.trim()) return setMsg('Enter a trip purpose for a mileage entry.', true);
+        if (miles <= 0) {
+          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
+          return setMsg('Enter miles driven for a mileage entry.', true);
+        }
+        if (rate <= 0) {
+          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
+          return setMsg('Enter a mileage rate for a mileage entry.', true);
+        }
+        if (!els.tripPurpose.value.trim()) {
+          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
+          return setMsg('Enter a trip purpose for a mileage entry.', true);
+        }
         originalAmount = +(miles * rate).toFixed(2);
         amount = originalAmount;
       } else {
         const businessUsePercent = Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100));
-        if (businessUsePercent <= 0) return setMsg('Business Use % must be greater than 0 for expense entries.', true);
+        if (businessUsePercent <= 0) {
+          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
+          return setMsg('Business Use % must be greater than 0 for expense entries.', true);
+        }
         amount = +(originalAmount * (businessUsePercent / 100)).toFixed(2);
 
         if (businessUsePercent < 100) {
@@ -871,7 +912,7 @@ async function saveEntry(e) {
       vendor_name: els.vendorName.value.trim(),
       payment_method: els.paymentMethod.value || '',
       receipt_link: els.receiptLink.value.trim(),
-      business_use_percent: isIncome ? 100 : (Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100))),
+      business_use_percent: isIncome ? 100 : Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100)),
       miles_driven: isMileage ? num(els.milesDriven.value) : 0,
       mileage_rate: isMileage ? num(els.mileageRate.value) : 0,
       trip_purpose: isMileage ? els.tripPurpose.value.trim() : '',
@@ -890,30 +931,24 @@ async function saveEntry(e) {
       updated_at: new Date().toISOString()
     };
 
+    const r = wasEditing
+      ? await supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
+      : await supabase.from('financial_entries').insert(payload);
 
-const r = editingId
-  ? await supabase.from('financial_entries')
-      .update(payload)
-      .eq('id', editingId)
-      .eq('user_id', currentUser.id)
-      .select()
-  : await supabase.from('financial_entries')
-      .insert(payload)
-      .select();
+    if (r.error) throw new Error(r.error.message);
 
-if (r.error) return setMsg(`Save failed: ${r.error.message}`, true);
-
-setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
-resetForm();
-
-console.log('BEFORE FETCH ENTRIES');
-await fetchEntries();
-console.log('AFTER FETCH ENTRIES');
+    setMsg(wasEditing ? 'Entry updated.' : 'Entry saved.');
+    resetForm();
+    await fetchEntries();
   } catch (err) {
     setMsg(`Save failed: ${err?.message || err}`, true);
-    els.saveBtn.textContent = editingId ? 'Update Entry' : 'Save Entry';
   } finally {
+    delete els.entryForm.dataset.saving;
     els.saveBtn.disabled = false;
+    els.saveBtn.textContent =
+      els.formHeading.textContent === 'Edit Financial Entry'
+        ? 'Update Entry'
+        : 'Save Entry';
   }
 }
 
