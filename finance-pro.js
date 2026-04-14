@@ -894,8 +894,14 @@ async function saveEntry(e) {
     console.log('SAVE START', { editingId, payload });
 
 const r = editingId
-  ? await supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
-  : await supabase.from('financial_entries').insert(payload);
+  ? await supabase.from('financial_entries')
+      .update(payload)
+      .eq('id', editingId)
+      .eq('user_id', currentUser.id)
+      .select()
+  : await supabase.from('financial_entries')
+      .insert(payload)
+      .select();
 
 console.log('SAVE RESPONSE', r);
 
