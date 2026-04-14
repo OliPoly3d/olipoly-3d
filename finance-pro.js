@@ -891,15 +891,22 @@ async function saveEntry(e) {
       updated_at: new Date().toISOString()
     };
 
-    const r = editingId
-      ? await supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
-      : await supabase.from('financial_entries').insert(payload);
+    console.log('SAVE START', { editingId, payload });
 
-    if (r.error) return setMsg(`Save failed: ${r.error.message}`, true);
+const r = editingId
+  ? await supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
+  : await supabase.from('financial_entries').insert(payload);
 
-    setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
-    resetForm();
-    await fetchEntries();
+console.log('SAVE RESPONSE', r);
+
+if (r.error) return setMsg(`Save failed: ${r.error.message}`, true);
+
+setMsg(editingId ? 'Entry updated.' : 'Entry saved.');
+resetForm();
+
+console.log('BEFORE FETCH ENTRIES');
+await fetchEntries();
+console.log('AFTER FETCH ENTRIES');
   } catch (err) {
     setMsg(`Save failed: ${err?.message || err}`, true);
     els.saveBtn.textContent = editingId ? 'Update Entry' : 'Save Entry';
