@@ -227,7 +227,7 @@
         <h3>Reminders</h3>
         <p>Editable recurring reminders that disappear when complete and return on the next occurrence.</p>
       </div>
-      <div id="reminderSummary" class="summary-box" style="margin-bottom:10px; font-weight:800;">Loading summary...</div>
+      <div id="reminderSummary" class="summary-box" style="margin-bottom:10px; font-weight:800;">● 0 overdue &nbsp;&nbsp; ● 0 this week &nbsp;&nbsp; ● 0 upcoming</div>
       <div class="reminder-toolbar">
         <input id="reminderTitleInput" class="reminder-input" placeholder="Reminder title" />
         <input id="reminderDateInput" class="reminder-input" type="date" />
@@ -327,7 +327,7 @@
         <textarea id="hubNotes" placeholder="Notes, follow-ups, ideas..."></textarea>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
           <button class="btn" id="saveNotesBtn" type="button">Save Notes</button>
-          <div id="notesStatus" class="auth-status" style="margin-top:0;flex:1 1 260px;">Notes not saved yet.</div>
+          <div id="notesStatus" class="auth-status" style="margin-top:0;flex:1 1 260px;">Sign in to save notes.</div>
         </div>
       </section>
     </section>
@@ -369,7 +369,6 @@
     };
 
     let currentUser = null;
-    let noteSaveTimer = null;
     let reminders = [];
 
     const HEALTH_TARGETS = [
@@ -388,7 +387,7 @@
       els.authStatus.textContent = signedIn
         ? 'Cloud sync is active. Notes and reminders are shared across devices.'
         : 'Sign in to load and save notes and reminders from Supabase.';
-      if (!signedIn && els.notesStatus) els.notesStatus.textContent = 'Sign in to save notes.';
+      els.notesStatus.textContent = signedIn ? 'Ready to save.' : 'Sign in to save notes.';
       els.logoutBtn.classList.toggle('hidden', !signedIn);
       els.loginBtn.classList.toggle('hidden', signedIn);
       els.signupBtn.classList.toggle('hidden', signedIn);
@@ -399,6 +398,7 @@
       els.reminderDateInput.disabled = !signedIn;
       els.reminderRecurrenceInput.disabled = !signedIn;
       els.addReminderBtn.disabled = !signedIn;
+      els.saveNotesBtn.disabled = !signedIn;
     }
 
     async function loadCloudNote() {
@@ -409,14 +409,19 @@
       const { data, error } = await supabase.from('hub_notes').select('notes').eq('user_id', currentUser.id).maybeSingle();
       if (error) {
         els.authStatus.textContent = `Could not load notes: ${error.message}`;
+        els.notesStatus.textContent = `Load failed: ${error.message}`;
         return;
       }
       els.notes.value = data?.notes || '';
-      if (els.notesStatus) els.notesStatus.textContent = 'Notes loaded from cloud.';
+      els.notesStatus.textContent = 'Notes loaded from cloud.';
     }
 
     async function saveCloudNote() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        els.notesStatus.textContent = 'Sign in to save notes.';
+        return;
+      }
+      els.notesStatus.textContent = 'Saving notes...';
       const { error } = await supabase.from('hub_notes').upsert({
         user_id: currentUser.id,
         notes: els.notes.value,
@@ -424,16 +429,18 @@
       }, { onConflict: 'user_id' });
       if (error) {
         els.authStatus.textContent = `Could not save notes: ${error.message}`;
-        if (els.notesStatus) els.notesStatus.textContent = `Save failed: ${error.message}`;
+        els.notesStatus.textContent = `Save failed: ${error.message}`;
         return;
       }
-      if (els.notesStatus) els.notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
+      els.notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
     }
 
-    function debounceNoteSave() {
-      clearTimeout(noteSaveTimer);
-      noteSaveTimer = setTimeout(saveCloudNote, 500);
-      if (els.notesStatus) els.notesStatus.textContent = 'Saving...';
+    function markNotesDirty() {
+      if (!currentUser) {
+        els.notesStatus.textContent = 'Sign in to save notes.';
+        return;
+      }
+      els.notesStatus.textContent = 'Unsaved changes.';
     }
 
     function normalizeDate(value) {
@@ -475,6 +482,8 @@
         .order('created_at', { ascending: true });
       if (error) {
         els.authStatus.textContent = `Could not load reminders: ${error.message}`;
+        reminders = [];
+        renderReminders();
         return;
       }
       reminders = data || [];
@@ -568,7 +577,6 @@
 
       title.addEventListener('change', async () => {
         await updateReminder(reminder.id, { title: title.value });
-        reminder.title = title.value;
       });
 
       due.addEventListener('change', async () => {
@@ -622,7 +630,8 @@
         else if (reminder.due_date < today) grouped.overdue.push(reminder);
         else {
           const diffDays = Math.ceil((new Date(reminder.due_date) - new Date(today)) / (1000 * 60 * 60 * 24));
-          if (diffDays <= 7) grouped.thisweek.push(reminder); else grouped.upcoming.push(reminder);
+          if (diffDays <= 7) grouped.thisweek.push(reminder);
+          else grouped.upcoming.push(reminder);
         }
       });
 
@@ -632,6 +641,7 @@
         els.reminderEmpty.classList.remove('hidden');
         return;
       }
+
       els.reminderEmpty.classList.add('hidden');
       [['Overdue','overdue',grouped.overdue],['This Week','thisweek',grouped.thisweek],['Upcoming','upcoming',grouped.upcoming],['No Date','nodate',grouped.nodate]].forEach(([label, tone, list]) => {
         if (list.length) els.reminderGroups.appendChild(renderReminderGroup(label, tone, list, today));
@@ -639,7 +649,10 @@
     }
 
     async function addReminder() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        els.authStatus.textContent = 'Sign in to add reminders.';
+        return;
+      }
       const title = els.reminderTitleInput.value.trim();
       if (!title) return;
       const { error } = await supabase.from('hub_reminders').insert({
@@ -682,7 +695,11 @@
       const mapped = HEALTH_TARGETS.map(target => results.find(r => r.url === target.url) || { ...target, state: 'idle' });
       els.healthCheckList.innerHTML = mapped.map(item => `<div class="status-row"><div class="status-main"><div class="status-name">${item.name}</div><div class="status-url">${item.url}</div></div><span class="status-light ${item.state}"></span><a class="tiny-btn" href="${item.url}" target="_blank" rel="noopener noreferrer">Open</a></div>`).join('');
     }
-    function setHealthSummary(text) { els.healthCheckSummary.textContent = text; }
+
+    function setHealthSummary(text) {
+      els.healthCheckSummary.textContent = text;
+    }
+
     async function checkOnePage(target) {
       try {
         const response = await fetch(target.url, { method: 'GET', cache: 'no-store', credentials: 'same-origin' });
@@ -691,6 +708,7 @@
         return { ...target, state: 'bad', status: '', error: error?.message || 'Load failed' };
       }
     }
+
     async function runHealthCheck() {
       els.runHealthCheckBtn.disabled = true;
       els.runHealthCheckBtn.textContent = 'Checking...';
@@ -759,17 +777,17 @@
       const { data } = await supabase.auth.getSession();
       currentUser = data?.session?.user || null;
       setAuthUi();
+      renderReminders();
       if (currentUser) {
         await loadCloudNote();
         await loadReminders();
       } else {
         els.notes.value = '';
         reminders = [];
-        renderReminders();
       }
     }
 
-    els.notes?.addEventListener('input', debounceNoteSave);
+    els.notes?.addEventListener('input', markNotesDirty);
     els.saveNotesBtn?.addEventListener('click', saveCloudNote);
     els.addReminderBtn?.addEventListener('click', addReminder);
     els.loginBtn?.addEventListener('click', login);
@@ -791,6 +809,7 @@
     });
 
     renderHealthChecks();
+    renderReminders();
     bootstrap();
   </script>
 </body>
