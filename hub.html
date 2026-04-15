@@ -370,6 +370,29 @@
 
     let currentUser = null;
     let reminders = [];
+    let notesSaving = false;
+    let reminderAdding = false;
+    let authBusy = false;
+
+    async function withTimeout(promise, ms = 12000, label = 'Request') {
+      let timer;
+      try {
+        return await Promise.race([
+          promise,
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`${label} timed out.`)), ms);
+          })
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function setButtonBusy(button, busy, busyText, idleText) {
+      if (!button) return;
+      button.disabled = busy;
+      button.textContent = busy ? busyText : idleText;
+    }
 
     const HEALTH_TARGETS = [
       { name: 'Main Site', url: 'index.html' },
@@ -421,18 +444,33 @@
         els.notesStatus.textContent = 'Sign in to save notes.';
         return;
       }
+      if (notesSaving) return;
+      notesSaving = true;
+      setButtonBusy(els.saveNotesBtn, true, 'Saving...', 'Save Notes');
       els.notesStatus.textContent = 'Saving notes...';
-      const { error } = await supabase.from('hub_notes').upsert({
-        user_id: currentUser.id,
-        notes: els.notes.value,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-      if (error) {
-        els.authStatus.textContent = `Could not save notes: ${error.message}`;
-        els.notesStatus.textContent = `Save failed: ${error.message}`;
-        return;
+      try {
+        const { error } = await withTimeout(
+          supabase.from('hub_notes').upsert({
+            user_id: currentUser.id,
+            notes: els.notes.value,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' }),
+          12000,
+          'Save notes'
+        );
+        if (error) {
+          els.authStatus.textContent = `Could not save notes: ${error.message}`;
+          els.notesStatus.textContent = `Save failed: ${error.message}`;
+          return;
+        }
+        els.notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        els.authStatus.textContent = err.message;
+        els.notesStatus.textContent = err.message;
+      } finally {
+        notesSaving = false;
+        setButtonBusy(els.saveNotesBtn, false, 'Saving...', 'Save Notes');
       }
-      els.notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
     }
 
     function markNotesDirty() {
@@ -653,25 +691,43 @@
         els.authStatus.textContent = 'Sign in to add reminders.';
         return;
       }
+      if (reminderAdding) return;
       const title = els.reminderTitleInput.value.trim();
-      if (!title) return;
-      const { error } = await supabase.from('hub_reminders').insert({
-        user_id: currentUser.id,
-        title,
-        due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
-        recurrence: els.reminderRecurrenceInput.value || 'none',
-        completed: false,
-        next_due_date: null
-      });
-      if (error) {
-        els.authStatus.textContent = `Could not add reminder: ${error.message}`;
+      if (!title) {
+        els.authStatus.textContent = 'Enter a reminder title.';
         return;
       }
-      els.authStatus.textContent = 'Reminder added.';
-      els.reminderTitleInput.value = '';
-      els.reminderDateInput.value = '';
-      els.reminderRecurrenceInput.value = 'none';
-      await loadReminders();
+      reminderAdding = true;
+      setButtonBusy(els.addReminderBtn, true, 'Adding...', 'Add');
+      els.authStatus.textContent = 'Adding reminder...';
+      try {
+        const { error } = await withTimeout(
+          supabase.from('hub_reminders').insert({
+            user_id: currentUser.id,
+            title,
+            due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
+            recurrence: els.reminderRecurrenceInput.value || 'none',
+            completed: false,
+            next_due_date: null
+          }),
+          12000,
+          'Add reminder'
+        );
+        if (error) {
+          els.authStatus.textContent = `Could not add reminder: ${error.message}`;
+          return;
+        }
+        els.authStatus.textContent = 'Reminder added.';
+        els.reminderTitleInput.value = '';
+        els.reminderDateInput.value = '';
+        els.reminderRecurrenceInput.value = 'none';
+        await loadReminders();
+      } catch (err) {
+        els.authStatus.textContent = err.message;
+      } finally {
+        reminderAdding = false;
+        setButtonBusy(els.addReminderBtn, false, 'Adding...', 'Add');
+      }
     }
 
     function calcTax() {
@@ -727,50 +783,92 @@
     }
 
     async function login() {
+      if (authBusy) return;
       const email = els.email.value.trim();
       const password = els.password.value;
       if (!email || !password) {
         els.authStatus.textContent = 'Enter your email and password.';
         return;
       }
+      authBusy = true;
+      setButtonBusy(els.loginBtn, true, 'Signing in...', 'Log In');
       els.authStatus.textContent = 'Signing in...';
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        els.authStatus.textContent = `Login failed: ${error.message}`;
-        return;
+      try {
+        const { error } = await withTimeout(
+          supabase.auth.signInWithPassword({ email, password }),
+          12000,
+          'Login'
+        );
+        if (error) {
+          els.authStatus.textContent = `Login failed: ${error.message}`;
+          return;
+        }
+        els.authStatus.textContent = 'Signed in.';
+      } catch (err) {
+        els.authStatus.textContent = err.message;
+      } finally {
+        authBusy = false;
+        setButtonBusy(els.loginBtn, false, 'Signing in...', 'Log In');
       }
-      els.authStatus.textContent = 'Signed in.';
     }
 
     async function signup() {
+      if (authBusy) return;
       const email = els.email.value.trim();
       const password = els.password.value;
       if (!email || !password) {
         els.authStatus.textContent = 'Enter your email and password.';
         return;
       }
+      authBusy = true;
+      setButtonBusy(els.signupBtn, true, 'Creating...', 'Create');
       els.authStatus.textContent = 'Creating account...';
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        els.authStatus.textContent = `Signup failed: ${error.message}`;
-        return;
+      try {
+        const { error } = await withTimeout(
+          supabase.auth.signUp({ email, password }),
+          12000,
+          'Signup'
+        );
+        if (error) {
+          els.authStatus.textContent = `Signup failed: ${error.message}`;
+          return;
+        }
+        els.authStatus.textContent = 'Account created. If email confirmation is enabled, confirm your email before logging in.';
+      } catch (err) {
+        els.authStatus.textContent = err.message;
+      } finally {
+        authBusy = false;
+        setButtonBusy(els.signupBtn, false, 'Creating...', 'Create');
       }
-      els.authStatus.textContent = 'Account created. If email confirmation is enabled, confirm your email before logging in.';
     }
 
     async function logout() {
+      if (authBusy) return;
+      authBusy = true;
+      setButtonBusy(els.logoutBtn, true, 'Signing out...', 'Log Out');
       els.authStatus.textContent = 'Signing out...';
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) {
-        els.authStatus.textContent = `Logout failed: ${error.message}`;
-        return;
+      try {
+        const { error } = await withTimeout(
+          supabase.auth.signOut({ scope: 'local' }),
+          12000,
+          'Logout'
+        );
+        if (error) {
+          els.authStatus.textContent = `Logout failed: ${error.message}`;
+          return;
+        }
+        currentUser = null;
+        reminders = [];
+        els.notes.value = '';
+        renderReminders();
+        setAuthUi();
+        els.authStatus.textContent = 'Signed out.';
+      } catch (err) {
+        els.authStatus.textContent = err.message;
+      } finally {
+        authBusy = false;
+        setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
       }
-      currentUser = null;
-      reminders = [];
-      els.notes.value = '';
-      renderReminders();
-      setAuthUi();
-      els.authStatus.textContent = 'Signed out.';
     }
 
     async function bootstrap() {
