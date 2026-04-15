@@ -453,7 +453,7 @@
           supabase.from('hub_notes').upsert({
             user_id: currentUser.id,
             notes: els.notes.value,
-            updated_at: new Date().toISOString()
+            updated_at_removed: undefined
           }, { onConflict: 'user_id' }),
           12000,
           'Save notes'
@@ -517,7 +517,7 @@
         .select('*')
         .eq('user_id', currentUser.id)
         .order('due_date', { ascending: true })
-        .order('created_at', { ascending: true });
+        ;
       if (error) {
         els.authStatus.textContent = `Could not load reminders: ${error.message}`;
         reminders = [];
@@ -532,7 +532,7 @@
     async function updateReminder(id, patch) {
       const { error } = await supabase
         .from('hub_reminders')
-        .update({ ...patch, updated_at: new Date().toISOString() })
+        .update({ ...patch, updated_at_removed: undefined })
         .eq('id', id)
         .eq('user_id', currentUser.id);
       if (error) {
@@ -564,7 +564,7 @@
           .select('*')
           .eq('user_id', currentUser.id)
           .order('due_date', { ascending: true })
-          .order('created_at', { ascending: true });
+          ;
         reminders = data || [];
       }
     }
