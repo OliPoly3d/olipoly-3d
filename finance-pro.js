@@ -13,7 +13,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const currentYear = () => new Date().getFullYear();
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const csvCell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-const escapeHtml = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+const escapeHtml = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#039;' }[m]));
 const monthLabel = ym => {
   if (!ym) return '';
   const [y, m] = ym.split('-').map(Number);
@@ -60,6 +60,7 @@ let settings = {
 
 const hide = el => el?.classList.add('hidden');
 const show = el => el?.classList.remove('hidden');
+
 const setPanel = (el, text, isError = false, palette = 'green') => {
   if (!el) return;
   el.textContent = text;
@@ -72,6 +73,7 @@ const setPanel = (el, text, isError = false, palette = 'green') => {
   const [bg, border, color] = isError ? themes.red : themes[palette];
   Object.assign(el.style, { background: bg, borderColor: border, color });
 };
+
 const setMsg = (t, e = false) => setPanel(els.formMessage, t, e, 'green');
 const setAuthMsg = (t, e = false) => setPanel(els.authMessage, t, e, 'amber');
 const setSettingsMsg = (t, e = false) => setPanel(els.settingsMessage, t, e, e ? 'red' : 'green');
@@ -254,6 +256,7 @@ function resetForm() {
   customCategoryValue = '';
   els.entryForm.reset();
   delete els.entryForm.dataset.saving;
+
   els.entryType.value = 'income';
   els.entryDate.value = todayISO();
   els.entryCategory.value = 'Sale';
@@ -262,12 +265,15 @@ function resetForm() {
   els.capexToggle.checked = false;
   els.businessUsePercent.value = '100';
   els.mileageRate.value = settings.defaultMileageRate ? settings.defaultMileageRate.toFixed(4) : '';
+
   [
     'shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview',
     'shippingCost','materialCost','packagingCost','laborCost','otherDirectCost',
     'milesDriven','vendorName','paymentMethod','receiptLink','tripPurpose','tripFrom','tripTo'
   ].forEach(k => { if (els[k]) els[k].value = ''; });
+
   if (els.roundTripToggle) els.roundTripToggle.checked = false;
+
   els.formHeading.textContent = 'Add Financial Entry';
   els.saveBtn.textContent = 'Save Entry';
   els.saveBtn.disabled = false;
@@ -300,6 +306,7 @@ function updateSummary(list) {
   entries.forEach(e => {
     if (e.type === 'expense' && (!firstIncomeDate || e.entry_date < firstIncomeDate)) startup += visibleCost(e);
   });
+
   list.forEach(e => {
     if (e.type === 'income') {
       pr += num(e.amount);
@@ -324,21 +331,23 @@ function renderMonthly(list) {
     els.monthlyGrid.innerHTML = '';
     return;
   }
-  const m = {};
+
+  const months = {};
   list.forEach(e => {
     const k = e.entry_date.slice(0, 7);
-    m[k] ??= { r: 0, t: 0, c: 0, o: 0 };
+    months[k] ??= { r: 0, t: 0, c: 0, o: 0 };
     if (e.type === 'income') {
-      m[k].r += num(e.amount) + num(e.shipping_charged);
-      m[k].t += num(e.sales_tax_collected);
-      m[k].c += directCost(e);
-      m[k].o += num(e.shipping_cost);
+      months[k].r += num(e.amount) + num(e.shipping_charged);
+      months[k].t += num(e.sales_tax_collected);
+      months[k].c += directCost(e);
+      months[k].o += num(e.shipping_cost);
     } else {
-      m[k].o += num(e.amount) + num(e.shipping_cost);
+      months[k].o += num(e.amount) + num(e.shipping_cost);
     }
   });
+
   els.monthlySummary.textContent = 'Latest visible months are summarized below.';
-  els.monthlyGrid.innerHTML = Object.entries(m)
+  els.monthlyGrid.innerHTML = Object.entries(months)
     .sort((a, b) => b[0].localeCompare(a[0]))
     .slice(0, 6)
     .map(([k, v]) => `<div class="month-card"><strong>${k}</strong><div>Revenue: ${money(v.r)}</div><div>Tax Collected: ${money(v.t)}</div><div>COGS: ${money(v.c)}</div><div>Other Costs: ${money(v.o)}</div><div>Profit: ${money(v.r - v.c - v.o)}</div></div>`)
@@ -700,7 +709,9 @@ async function fetchEntries() {
     .eq('user_id', currentUser.id)
     .order('entry_date', { ascending: false })
     .order('created_at', { ascending: false });
+
   if (error) return setAuthMsg(`Could not load entries: ${error.message}`, true);
+
   hide(els.authMessage);
   entries = data || [];
   renderAll();
@@ -931,11 +942,11 @@ async function saveEntry(e) {
       updated_at: new Date().toISOString()
     };
 
-    const r = wasEditing
+    const result = wasEditing
       ? await supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
       : await supabase.from('financial_entries').insert(payload);
 
-    if (r.error) throw new Error(r.error.message);
+    if (result.error) throw new Error(result.error.message);
 
     setMsg(wasEditing ? 'Entry updated.' : 'Entry saved.');
     resetForm();
@@ -952,28 +963,54 @@ async function saveEntry(e) {
   }
 }
 
+async function clearBadSession() {
+  try {
+    await supabase.auth.signOut({ scope: 'local' });
+  } catch (_) {
+    // ignore
+  }
+  currentUser = null;
+  entries = [];
+  setUI(false);
+  resetForm();
+}
+
 async function login() {
-  if (!els.emailInput.value || !els.passwordInput.value) return setAuthMsg('Enter your email and password.', true);
+  if (!els.emailInput.value || !els.passwordInput.value) {
+    return setAuthMsg('Enter your email and password.', true);
+  }
+
   setAuthMsg('Signing in...');
-  const { error } = await supabase.auth.signInWithPassword({ email: els.emailInput.value.trim(), password: els.passwordInput.value });
+
+  await clearBadSession();
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: els.emailInput.value.trim(),
+    password: els.passwordInput.value
+  });
+
   if (error) return setAuthMsg(`Login failed: ${error.message}`, true);
   hide(els.authMessage);
 }
 
 async function signup() {
-  if (!els.emailInput.value || !els.passwordInput.value) return setAuthMsg('Enter an email and password to create your account.', true);
+  if (!els.emailInput.value || !els.passwordInput.value) {
+    return setAuthMsg('Enter an email and password to create your account.', true);
+  }
+
   setAuthMsg('Creating account...');
-  const { error } = await supabase.auth.signUp({ email: els.emailInput.value.trim(), password: els.passwordInput.value });
+
+  const { error } = await supabase.auth.signUp({
+    email: els.emailInput.value.trim(),
+    password: els.passwordInput.value
+  });
+
   if (error) return setAuthMsg(`Signup failed: ${error.message}`, true);
   setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');
 }
 
 async function logout() {
-  await supabase.auth.signOut();
-  currentUser = null;
-  setUI(false);
-  entries = [];
-  resetForm();
+  await clearBadSession();
   renderAll();
   setAuthMsg('Logged out.');
 }
@@ -982,24 +1019,47 @@ async function init() {
   hide(els.authMessage);
   loadSettings();
   applySettingsToUI();
+
   els.entryDate.value = todayISO();
   els.taxYearFilter.value = currentYear();
   els.monthlyTaxMonth.value = currentMonth();
   els.businessUsePercent.value = '100';
+
   if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
     return setAuthMsg('Setup not finished yet. Add your Supabase URL and anon key in the code before using this page.', true);
   }
+
   updateEntryTypeHint();
+
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data: { session } } = await supabase.auth.getSession();
-  currentUser = session?.user || null;
-  setUI(!!currentUser);
+
+  try {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error && /refresh token/i.test(error.message || '')) {
+      await clearBadSession();
+    } else {
+      currentUser = data?.session?.user || null;
+      setUI(!!currentUser);
+      if (currentUser) await fetchEntries();
+    }
+  } catch (_) {
+    await clearBadSession();
+  }
+
   renderTaxReport();
   renderMonthlyTaxReport();
-  if (currentUser) await fetchEntries();
-  supabase.auth.onAuthStateChange(async (_, s) => {
-    currentUser = s?.user || null;
+
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'TOKEN_REFRESH_FAILED' || event === 'SIGNED_OUT') {
+      await clearBadSession();
+      renderAll();
+      return;
+    }
+
+    currentUser = session?.user || null;
     setUI(!!currentUser);
+
     if (currentUser) {
       hide(els.authMessage);
       await fetchEntries();
@@ -1033,6 +1093,7 @@ async function init() {
 
 els.passwordInput.classList.add('mask-password');
 els.showPasswordToggle.onchange = () => els.passwordInput.classList.toggle('mask-password', !els.showPasswordToggle.checked);
+
 els.loginBtn.onclick = login;
 els.signupBtn.onclick = signup;
 els.logoutBtn.onclick = logout;
@@ -1042,16 +1103,23 @@ els.taxExportBtn.onclick = exportTaxReport;
 els.runTaxReportBtn.onclick = renderTaxReport;
 els.monthlyTaxReportBtn.onclick = renderMonthlyTaxReport;
 els.monthlyTaxMonth.oninput = renderMonthlyTaxReport;
-els.saveBtn.onclick = null;
+
+/* Important: do NOT wire saveBtn.onclick to requestSubmit().
+   The button is already type="submit" in the HTML. */
 els.entryForm.onsubmit = saveEntry;
 els.cancelEditBtn.onclick = resetForm;
+
 if (els.saveSettingsBtn) els.saveSettingsBtn.onclick = saveSettings;
+
 els.clearFiltersBtn.onclick = () => {
   els.typeFilter.value = 'all';
   els.monthFilter.value = '';
   els.searchFilter.value = '';
   renderAll();
 };
-[els.typeFilter, els.monthFilter, els.searchFilter].forEach(el => el.oninput = renderAll);
+
+[els.typeFilter, els.monthFilter, els.searchFilter].forEach(el => {
+  el.oninput = renderAll;
+});
 
 init();
