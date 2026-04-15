@@ -6,25 +6,19 @@
   <title>OliPoly 3D | Site Hub</title>
   <style>
     :root{
-      --bg:#fff8fc;
-      --panel:rgba(255,255,255,.9);
-      --panel-strong:rgba(255,255,255,.96);
+      --panel:rgba(255,255,255,.92);
       --line:rgba(221,159,204,.28);
-      --line-strong:rgba(221,159,204,.42);
       --text:#3f3146;
       --muted:#816c88;
       --accent:#de6fb8;
       --accent2:#9d7cff;
-      --accent-soft:rgba(222,111,184,.1);
       --shadow:0 20px 44px rgba(189,132,176,.16);
       --ok:#4caf50;
       --warn:#f0b429;
       --bad:#e45a7a;
       --unknown:#b8a7be;
-      --radius-xl:28px;
-      --radius-lg:24px;
-      --radius-md:18px;
-      --radius-sm:14px;
+      --radius-xl:24px;
+      --radius-lg:18px;
       --tap:46px;
     }
 
@@ -44,9 +38,9 @@
     a{color:inherit}
     button,input,textarea,select{font:inherit}
     button{min-height:var(--tap)}
-    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:20px 0 120px}
+    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:20px 0 80px}
 
-    .topbar,.card,.hero-card,.link-card,.quick-actions,.status-card,.notes-card,.mini-card,.template-card,.metric-card,.checklist-shell,.summary-box{
+    .topbar,.card,.quick-actions,.health-check-card,.checklist-shell,.summary-box,.auth-card{
       background:var(--panel);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
@@ -55,7 +49,7 @@
 
     .topbar{
       display:flex;justify-content:space-between;align-items:center;gap:18px;
-      padding:14px 18px;border-radius:999px;margin-bottom:18px;
+      padding:14px 18px;border-radius:999px;margin-bottom:16px;
       position:sticky;top:12px;z-index:30;background:rgba(255,252,254,.88);
     }
 
@@ -67,193 +61,119 @@
     }
     .logo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
     .icon-fallback{color:#fff;font-size:22px;font-weight:800;letter-spacing:.04em}
-
-    .brand h1,.brand p,.hero-card h2,.hero-card p,.section-title h3,.section-title p,
-    .link-card h4,.link-card p,.mini-card h4,.mini-card p,.template-card h4,.template-card p,
-    .metric-card h4,.metric-card p,.status-card h3,.status-card p,.notes-card h3,.notes-card p{margin:0}
-
+    .brand h1,.brand p,.section-title h3,.section-title p,.notes-card h3,.notes-card p{margin:0}
     .brand h1{font-size:1.12rem}
-    .brand p,.section-title p,.muted,.helper,.fine,.summary-sub{color:var(--muted)}
+    .brand p,.section-title p,.muted{color:var(--muted)}
 
-    .hero,.dashboard-grid,.two-col,.three-col,.four-col{display:grid;gap:18px}
-    .hero{grid-template-columns:1.1fr .9fr;margin-bottom:18px}
-    .dashboard-grid,.two-col{grid-template-columns:1fr 1fr;margin-bottom:18px}
-    .three-col{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
-    .four-col{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
+    .card,.quick-actions,.health-check-card,.checklist-shell,.auth-card,.notes-card{padding:16px;border-radius:var(--radius-xl);margin-bottom:16px}
+    .section-title{margin-bottom:10px}
 
-    .hero-card,.card,.notes-card,.status-card,.quick-actions,.checklist-shell{padding:24px;border-radius:var(--radius-xl)}
-    .hero-card h2{font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.02;margin-bottom:10px}
-    .hero-card p{line-height:1.7}
-
-    .pill-row,.quick-grid,.status-grid,.actions,.inline-actions,.tiny-actions,.field-row,.stack-actions{
-      display:flex;flex-wrap:wrap;gap:10px
-    }
-
-    .pill-row{margin-top:16px}
-    .pill{
-      display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;
-      background:rgba(255,255,255,.78);border:1px solid rgba(221,159,204,.26);
-      color:var(--muted);font-size:.88rem;font-weight:700;
-    }
-
-    .btn,.ghost,.copy-btn,.tiny-btn{
+    .btn,.ghost,.tiny-btn{
       display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
-      border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+      border-radius:999px;font-weight:800;transition:transform .18s ease, box-shadow .18s ease;
       cursor:pointer;min-height:var(--tap);padding:12px 16px;
     }
-    .btn:hover,.ghost:hover,.copy-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
+    .btn:hover,.ghost:hover,.tiny-btn:hover{transform:translateY(-1px)}
+    .btn{border:none;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 24px rgba(222,111,184,.22)}
+    .ghost,.tiny-btn{border:1px solid var(--line);background:rgba(255,255,255,.76);color:var(--text)}
+    .tiny-btn{padding:8px 10px;font-size:.82rem;min-height:36px}
 
-    .btn{
-      border:none;color:#fff;
-      background:linear-gradient(135deg,var(--accent),var(--accent2));
-      box-shadow:0 10px 24px rgba(222,111,184,.22);
-    }
-    .ghost,.copy-btn,.tiny-btn{
-      border:1px solid var(--line);background:rgba(255,255,255,.76);color:var(--text);
-    }
-    .ghost{padding:11px 14px}
-    .copy-btn{padding:10px 14px}
-    .tiny-btn{padding:10px 12px;font-size:.86rem;min-height:42px}
+    .auth-grid{display:grid;grid-template-columns:1.2fr 1fr auto auto;gap:10px;align-items:end}
+    .auth-status{margin-top:10px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+    .auth-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .auth-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.76);border:1px solid var(--line);font-weight:800;font-size:.86rem}
+    .sync-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(157,124,255,.10);border:1px solid rgba(157,124,255,.18);color:#6b57be;font-weight:800;font-size:.82rem}
 
-    .quick-actions{padding:18px 20px;border-radius:var(--radius-xl);margin-bottom:18px}
-    .quick-grid{margin-top:12px}
-    .quick-grid > *{flex:1 1 170px}
-
-    .status-grid{gap:12px;margin-top:14px}
-    .status-pill{
-      display:flex;align-items:center;gap:10px;
-      padding:10px 12px;border-radius:999px;
-      background:rgba(255,255,255,.76);border:1px solid var(--line);
-      min-width:220px;
+    .label{display:grid;gap:6px;font-weight:700;font-size:.94rem}
+    textarea,.money-input,.tax-input,.reminder-input,.check-input,.reminder-title-input,.reminder-date-input,.reminder-select{
+      width:100%;border-radius:16px;border:1px solid var(--line);padding:12px 13px;
+      background:rgba(255,255,255,.84);color:var(--text);outline:none;min-height:44px;
     }
-    .status-dot{
-      width:11px;height:11px;border-radius:50%;background:var(--unknown);flex:0 0 auto;
-      box-shadow:0 0 0 4px rgba(184,167,190,.12);
-    }
-    .status-dot.ok{background:var(--ok);box-shadow:0 0 0 4px rgba(76,175,80,.12)}
-    .status-dot.warn{background:var(--warn);box-shadow:0 0 0 4px rgba(240,180,41,.14)}
-    .status-dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.13)}
-
-    textarea,.money-input,.small-input,.tax-input,.reminder-input,.check-input{
-      width:100%;border-radius:18px;border:1px solid var(--line);padding:13px 14px;
-      background:rgba(255,255,255,.82);color:var(--text);outline:none;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);min-height:48px;
-    }
-    textarea{resize:vertical}
-    .notes-card textarea{min-height:168px}
-    textarea:focus,.money-input:focus,.small-input:focus,.tax-input:focus,.reminder-input:focus,.check-input:focus{
+    textarea{resize:vertical;min-height:168px}
+    textarea:focus,.money-input:focus,.tax-input:focus,.reminder-input:focus,.check-input:focus,.reminder-title-input:focus,.reminder-date-input:focus,.reminder-select:focus{
       border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)
     }
 
-    .section-title{margin-bottom:12px}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .link-card,.mini-card,.template-card,.metric-card{
-      padding:20px;border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:10px;min-height:100%;
-    }
-    .link-card h4,.mini-card h4,.template-card h4,.metric-card h4{font-size:1.04rem}
-    .link-card p,.mini-card p,.template-card p,.metric-card p{color:var(--muted);line-height:1.6}
+    .summary-box{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.78)}
+    .reminder-toolbar{display:grid;grid-template-columns:1.4fr .9fr .8fr auto;gap:10px;margin-top:10px}
+    .reminder-groups{display:grid;gap:12px;margin-top:12px}
+    .reminder-group{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.74)}
+    .reminder-group-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:rgba(255,255,255,.84);border-bottom:1px solid rgba(221,159,204,.18)}
+    .reminder-group-title{display:flex;align-items:center;gap:8px;font-weight:900;font-size:.92rem}
+    .reminder-group-count{font-size:.78rem;color:var(--muted);font-weight:800}
+    .reminder-table{width:100%;border-collapse:collapse}
+    .reminder-table th,.reminder-table td{padding:10px 12px;border-bottom:1px solid rgba(221,159,204,.18);text-align:left;vertical-align:middle;font-size:.9rem}
+    .reminder-table th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:rgba(255,255,255,.82)}
+    .reminder-table tr:last-child td{border-bottom:none}
+    .reminder-empty{padding:14px 12px;color:var(--muted);font-size:.92rem}
+    .reminder-muted{color:var(--muted);font-size:.82rem}
+    .reminder-done{opacity:.6;text-decoration:line-through}
+    .reminder-check{width:18px;height:18px;accent-color:#de6fb8}
 
-    .url{
-      display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.84rem;
-      color:#6d5f90;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.14);
-      padding:10px 12px;border-radius:14px;overflow-wrap:anywhere;
-    }
-
-    .actions{margin-top:auto}
-    .inline-actions{align-items:center}
-    .field-row{align-items:center}
-
-    .metric-card{background:rgba(255,255,255,.78)}
-    .metric-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-    .metric-value{font-size:1.7rem;font-weight:900;line-height:1.05}
-
-    .money-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
-    .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-    .template-grid,.asset-grid,.test-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-
-    .label{display:grid;gap:6px;font-weight:700;font-size:.94rem}
-
-    .summary-box{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.78)}
-    .summary-value{font-weight:900;font-size:1.2rem}
-
-    .reminder-list{display:grid;gap:10px;margin-top:12px}
-    .reminder-item{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.74);border:1px solid var(--line);
-    }
-
-    .badge{
-      display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;
-      font-size:.78rem;font-weight:900;border:1px solid var(--line);background:#fff;
-    }
+    .badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;font-size:.78rem;font-weight:900;border:1px solid var(--line);background:#fff}
     .badge.overdue{color:#b33857;background:rgba(228,90,122,.09)}
     .badge.thisweek{color:#946200;background:rgba(240,180,41,.11)}
     .badge.upcoming{color:#5e4ba2;background:rgba(157,124,255,.11)}
-    .badge.good{color:#2f7a39;background:rgba(76,175,80,.11)}
+    .group-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+    .group-dot.overdue{background:var(--bad)}
+    .group-dot.thisweek{background:var(--warn)}
+    .group-dot.upcoming{background:var(--accent2)}
+    .group-dot.nodate{background:var(--unknown)}
 
-    .note{
-      margin-top:22px;padding:18px;border-radius:22px;background:rgba(255,255,255,.72);
-      border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.65;
-    }
+    .health-check-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+    .health-check-summary{margin-top:0;padding:10px 12px;border-radius:16px;font-size:.9rem;line-height:1.45;border:1px dashed rgba(221,159,204,.35);background:rgba(255,255,255,.72);color:var(--muted)}
+    .health-check-list{margin-top:10px;display:grid;gap:8px}
+    .status-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 12px;border-radius:16px;background:rgba(255,255,255,.76);border:1px solid var(--line)}
+    .status-main{display:grid;gap:4px;min-width:0}
+    .status-name{font-weight:800;font-size:.95rem;line-height:1.2}
+    .status-url{font-size:.78rem;color:var(--muted);overflow-wrap:anywhere;line-height:1.25}
+    .status-light{width:12px;height:12px;border-radius:50%;border:1px solid var(--line);background:var(--unknown);box-shadow:0 0 0 3px rgba(184,167,190,.12)}
+    .status-light.checking{background:var(--accent2);box-shadow:0 0 0 4px rgba(157,124,255,.14)}
+    .status-light.ok{background:var(--ok);box-shadow:0 0 0 4px rgba(76,175,80,.14)}
+    .status-light.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(228,90,122,.14)}
 
-    .checklist-shell{background:var(--panel-strong)}
-    .checklist-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}
-    .checklist-panel,.checklist-side{
-      border-radius:24px;padding:18px;min-width:0;background:rgba(255,255,255,.78);
-      border:1px solid var(--line);box-shadow:var(--shadow);
-    }
+    .quick-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .quick-grid > *{flex:1 1 170px}
+
+    .checklist-shell{background:rgba(255,255,255,.96)}
     .checklist-list{display:grid;gap:10px;margin-top:12px}
-    .check-row{
-      display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:18px;
-      border:1px solid var(--line);background:rgba(255,255,255,.82);line-height:1.5;
-    }
+    .check-row{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.82);line-height:1.5}
     .check-row input{margin-top:4px}
-    .check-number{
-      display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
-      border-radius:999px;background:rgba(157,124,255,.12);color:#6b57be;font-weight:900;font-size:.85rem;flex:0 0 auto;
-    }
+    .check-number{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:rgba(157,124,255,.12);color:#6b57be;font-weight:900;font-size:.85rem;flex:0 0 auto}
 
-    .mobile-dock{
-      position:fixed;left:12px;right:12px;bottom:12px;z-index:40;display:none;gap:10px;
-      padding:10px;border-radius:24px;background:rgba(255,252,254,.9);backdrop-filter:blur(12px);
-      border:1px solid var(--line);box-shadow:var(--shadow);
-    }
-    .mobile-dock a,.mobile-dock button{flex:1;min-width:0;padding:12px 8px;font-size:.9rem}
+    .money-grid,.input-grid,.dashboard-grid{display:grid;gap:12px}
+    .money-grid,.input-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:12px}
+    .dashboard-grid{grid-template-columns:1fr}
 
-    .toast{
-      position:fixed;right:16px;bottom:16px;z-index:50;max-width:min(360px,calc(100% - 32px));
-      background:rgba(61,49,70,.96);color:#fff;padding:12px 14px;border-radius:16px;
-      box-shadow:0 16px 36px rgba(44,31,52,.24);opacity:0;pointer-events:none;transform:translateY(12px);
-      transition:opacity .18s ease, transform .18s ease;
-    }
-    .toast.show{opacity:1;transform:translateY(0)}
     .hidden{display:none!important}
 
-    @media (max-width:1000px){
-      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.checklist-grid{
-        grid-template-columns:1fr 1fr
-      }
-    }
     @media (max-width:900px){
       .topbar{border-radius:28px;align-items:flex-start;flex-direction:column}
       .topbar .btn{width:100%}
-      .wrap{padding-bottom:118px}
-      .mobile-dock{display:flex}
-      .hero,.dashboard-grid,.grid,.money-grid,.input-grid,.template-grid,.asset-grid,.test-grid,.three-col,.four-col,.checklist-grid{
-        grid-template-columns:1fr
-      }
+      .auth-grid{grid-template-columns:1fr 1fr}
+      .money-grid,.input-grid{grid-template-columns:1fr 1fr}
+      .wrap{padding-bottom:64px}
     }
     @media (max-width:640px){
       .wrap{width:min(100% - 16px,1120px);padding-top:14px}
-      .hero-card,.card,.notes-card,.status-card,.quick-actions,.checklist-shell{padding:18px}
-      .status-pill{min-width:100%}
-      .actions,.inline-actions,.tiny-actions,.stack-actions,.field-row{gap:8px}
-      .btn,.ghost,.copy-btn,.tiny-btn{width:100%}
+      .card,.quick-actions,.health-check-card,.checklist-shell,.auth-card,.notes-card{padding:14px}
+      .btn,.ghost,.tiny-btn{width:100%}
       .topbar{top:8px}
       .brand h1{font-size:1.02rem}
       .brand p{font-size:.9rem}
-      .mobile-dock{gap:8px;padding:8px}
-      .mobile-dock a,.mobile-dock button{font-size:.84rem;padding:10px 6px}
+      .auth-grid,.reminder-toolbar,.money-grid,.input-grid{grid-template-columns:1fr}
+      .auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      .health-check-header{align-items:stretch}
+      .health-check-header .btn{width:100%}
+      .status-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+      .status-row .tiny-btn{grid-column:1 / -1;width:100%}
+      .reminder-table thead{display:none}
+      .reminder-table,.reminder-table tbody,.reminder-table tr,.reminder-table td{display:block;width:100%}
+      .reminder-table tr{padding:10px 12px;border-bottom:1px solid rgba(221,159,204,.18)}
+      .reminder-table tr:last-child{border-bottom:none}
+      .reminder-table td{padding:4px 0;border:none}
+      .reminder-table td[data-label]::before{content:attr(data-label);display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+      .reminder-group-header{padding:9px 12px}
     }
   </style>
 </head>
@@ -273,52 +193,81 @@
       <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
     </header>
 
-    <section class="hero">
-      <section class="hero-card">
-        <h2>One landing page for every OliPoly destination.</h2>
-        <p>Use this internal hub as your control panel so you can jump straight to the website, tracker, admin pages, finance tool, quote tool, printer maintenance page, forms, GitHub, Supabase, and daily operating shortcuts without hunting for links.</p>
-        <div class="pill-row">
-          <span class="pill">Quote tool</span>
-          <span class="pill">Orders admin</span>
-          <span class="pill">Tracker</span>
-          <span class="pill">Stripe invoices</span>
-          <span class="pill">Money snapshot</span>
-          <span class="pill">Sales tax</span>
-          <span class="pill">Reminders</span>
-          <span class="pill">Assets</span>
-          <span class="pill">Testing tools</span>
-          <span class="pill">Printer PM</span>
+    <section class="auth-card">
+      <div class="section-title" style="margin-bottom:10px;">
+        <h3>Cloud Sync</h3>
+        <p>Sign in to sync notes and reminders across devices.</p>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <div class="auth-badge" id="cloudSyncBadge">Not signed in</div>
+        <div class="sync-pill">Supabase sync</div>
+      </div>
+      <div class="auth-grid">
+        <label class="label">
+          Email
+          <input id="hubEmail" class="reminder-input" type="email" placeholder="you@example.com" />
+        </label>
+        <label class="label">
+          Password
+          <input id="hubPassword" class="reminder-input" type="password" placeholder="Password" />
+        </label>
+        <div class="auth-actions">
+          <button class="btn" id="hubLoginBtn" type="button">Log In</button>
+          <button class="ghost" id="hubSignupBtn" type="button">Create</button>
         </div>
-      </section>
+        <div class="auth-actions">
+          <button class="ghost hidden" id="hubLogoutBtn" type="button">Log Out</button>
+        </div>
+      </div>
+      <div id="hubAuthStatus" class="auth-status">Waiting for sign-in.</div>
+    </section>
 
-      <section class="card">
-        <div class="section-title">
-          <h3>Recommended use</h3>
-          <p>Keep this page pinned on mobile and desktop for one clean place to navigate your workflow.</p>
+    <section class="card">
+      <div class="section-title">
+        <h3>Reminders</h3>
+        <p>Editable recurring reminders that disappear when complete and return on the next occurrence.</p>
+      </div>
+      <div id="reminderSummary" class="summary-box" style="margin-bottom:10px; font-weight:800;">Loading summary...</div>
+      <div class="reminder-toolbar">
+        <input id="reminderTitleInput" class="reminder-input" placeholder="Reminder title" />
+        <input id="reminderDateInput" class="reminder-input" type="date" />
+        <select id="reminderRecurrenceInput" class="reminder-input">
+          <option value="none">One time</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <button class="btn" id="addReminderBtn" type="button">Add</button>
+      </div>
+      <div id="reminderGroups" class="reminder-groups"></div>
+      <div id="reminderEmpty" class="reminder-empty hidden">No active reminders right now.</div>
+    </section>
+
+    <section class="health-check-card">
+      <div class="health-check-header">
+        <div class="section-title" style="margin-bottom:0;">
+          <h3>Health check</h3>
+          <p class="muted">Check core pages quickly.</p>
         </div>
-        <div class="note" style="margin-top:0;">
-          This version removes the live order workflow manager in favor of a simple checklist and a cleaner process. Quote Tool should be your source for quotes, Orders Admin should be your source of truth for active orders, and Tracker should be the customer-facing status page.
-        </div>
-      </section>
+        <button class="btn" id="runHealthCheckBtn" type="button">Run Check</button>
+      </div>
+      <div id="healthCheckSummary" class="health-check-summary">No check run yet.</div>
+      <div id="healthCheckList" class="health-check-list"></div>
     </section>
 
     <section class="quick-actions">
       <div class="section-title">
-        <h3>Quick actions</h3>
-        <p>Your most-used destinations, all in one row.</p>
+        <h3>External Links</h3>
+        <p>Fast access to external dashboards and tools.</p>
       </div>
       <div class="quick-grid">
-        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Main Site</a>
-        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/orders-admin.html">Orders Admin</a>
-        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/track.html">Tracker</a>
-        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/quote-tool.html">Quote Tool</a>
-        <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/finance-pro.html">Finance Tool</a>
-        <a class="btn" href="pm.html">Printer PM</a>
-        <a class="btn" href="materials.html">Materials</a>
-        <a class="btn ext" href="https://dashboard.stripe.com">Stripe Dashboard</a>
-        <a class="btn ext" href="https://dashboard.stripe.com/invoices">Stripe Invoices</a>
-        <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude">Supabase</a>
-        <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d">GitHub Repo</a>
+        <a class="btn ext" href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe Dashboard</a>
+        <a class="btn ext" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener noreferrer">Stripe Invoices</a>
+        <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
+        <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude" target="_blank" rel="noopener noreferrer">Supabase</a>
+        <a class="btn ext" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal</a>
+        <a class="btn ext" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo</a>
+        <a class="btn ext" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail</a>
       </div>
     </section>
 
@@ -327,333 +276,493 @@
         <h3>Order process checklist</h3>
         <p>Use this as a simple double-check for most orders.</p>
       </div>
-
-      <div class="checklist-grid">
-        <section class="checklist-panel">
-          <label class="label">
-            Order # / cross-check
-            <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or OP-#####" />
-          </label>
-
-          <div class="checklist-list">
-            <label class="check-row"><span class="check-number">1</span><input type="checkbox" class="process-check" data-label="Receive request" /><span>Receive request</span></label>
-            <label class="check-row"><span class="check-number">2</span><input type="checkbox" class="process-check" data-label="Send info reply" /><span>Send info / intake reply</span></label>
-            <label class="check-row"><span class="check-number">3</span><input type="checkbox" class="process-check" data-label="Create quote" /><span>Manually create quote in Quote Tool</span></label>
-            <label class="check-row"><span class="check-number">4</span><input type="checkbox" class="process-check" data-label="Email quote" /><span>Email quote</span></label>
-            <label class="check-row"><span class="check-number">5</span><input type="checkbox" class="process-check" data-label="Mark accepted" /><span>After accepted, change Q- to OP- and mark accepted</span></label>
-            <label class="check-row"><span class="check-number">6</span><input type="checkbox" class="process-check" data-label="Create Stripe invoice" /><span>Create Stripe invoice</span></label>
-            <label class="check-row"><span class="check-number">7</span><input type="checkbox" class="process-check" data-label="Paste into Orders Admin" /><span>Paste Stripe URL into Orders Admin and update</span></label>
-            <label class="check-row"><span class="check-number">8</span><input type="checkbox" class="process-check" data-label="Verify tracker" /><span>Verify on Tracker</span></label>
-            <label class="check-row"><span class="check-number">9</span><input type="checkbox" class="process-check" data-label="Manage statuses" /><span>Manage tracking and statuses in Orders Admin</span></label>
-            <label class="check-row"><span class="check-number">10</span><input type="checkbox" class="process-check" data-label="Send completion email" /><span>Send final completion email with Tracker page again for payment/status options</span></label>
-          </div>
-        </section>
-
-        <section class="checklist-side">
-          <div class="section-title">
-            <h3>Process notes</h3>
-            <p>Simple reminders for the handoff between tools.</p>
-          </div>
-
-          <div class="summary-box" style="margin-bottom:12px;">
-            <div class="summary-value">Quote Tool</div>
-            <div class="summary-sub">Create and send quotes here. This is the starting point.</div>
-          </div>
-
-          <div class="summary-box" style="margin-bottom:12px;">
-            <div class="summary-value">Orders Admin</div>
-            <div class="summary-sub">This is the source of truth once a quote is accepted.</div>
-          </div>
-
-          <div class="summary-box" style="margin-bottom:12px;">
-            <div class="summary-value">Tracker</div>
-            <div class="summary-sub">Customer-facing status page. Verify every new accepted order here.</div>
-          </div>
-
-          <div class="summary-box">
-            <div class="summary-value">Stripe</div>
-            <div class="summary-sub">Create one invoice per accepted order and paste the hosted invoice link into Orders Admin.</div>
-          </div>
-
-          <div class="note">
-            Recommended numbering: keep the same digits when accepted.<br /><br />
-            Example:<br />
-            <strong>Q-12345 → OP-12345</strong>
-          </div>
-        </section>
+      <label class="label">
+        Order # / cross-check
+        <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or OP-#####" />
+      </label>
+      <div class="checklist-list">
+        <label class="check-row"><span class="check-number">1</span><input type="checkbox" class="process-check" /><span>Receive request</span></label>
+        <label class="check-row"><span class="check-number">2</span><input type="checkbox" class="process-check" /><span>Send info / intake reply</span></label>
+        <label class="check-row"><span class="check-number">3</span><input type="checkbox" class="process-check" /><span>Manually create quote in Quote Tool</span></label>
+        <label class="check-row"><span class="check-number">4</span><input type="checkbox" class="process-check" /><span>Email quote</span></label>
+        <label class="check-row"><span class="check-number">5</span><input type="checkbox" class="process-check" /><span>After accepted, change Q- to OP- and mark accepted</span></label>
+        <label class="check-row"><span class="check-number">6</span><input type="checkbox" class="process-check" /><span>Create Stripe invoice</span></label>
+        <label class="check-row"><span class="check-number">7</span><input type="checkbox" class="process-check" /><span>Paste Stripe URL into Orders Admin and update</span></label>
+        <label class="check-row"><span class="check-number">8</span><input type="checkbox" class="process-check" /><span>Verify on Tracker</span></label>
+        <label class="check-row"><span class="check-number">9</span><input type="checkbox" class="process-check" /><span>Manage tracking and statuses in Orders Admin</span></label>
+        <label class="check-row"><span class="check-number">10</span><input type="checkbox" class="process-check" /><span>Send final completion email with Tracker page again for payment/status options</span></label>
       </div>
-    </section>    
-    <!-- =========================
-         MONEY SNAPSHOT
-    ========================== -->
+    </section>
+
     <section class="card">
       <div class="section-title">
         <h3>Quick money snapshot</h3>
         <p>Simple daily awareness — not full accounting.</p>
       </div>
-
       <div class="money-grid">
-        <label class="label">
-          Today revenue
-          <input id="revToday" class="money-input" placeholder="0.00" />
-        </label>
-
-        <label class="label">
-          This week revenue
-          <input id="revWeek" class="money-input" placeholder="0.00" />
-        </label>
-
-        <label class="label">
-          This month revenue
-          <input id="revMonth" class="money-input" placeholder="0.00" />
-        </label>
-
-        <label class="label">
-          Pending payments
-          <input id="revPending" class="money-input" placeholder="0.00" />
-        </label>
+        <label class="label">Today revenue<input id="revToday" class="money-input" placeholder="0.00" /></label>
+        <label class="label">This week revenue<input id="revWeek" class="money-input" placeholder="0.00" /></label>
+        <label class="label">This month revenue<input id="revMonth" class="money-input" placeholder="0.00" /></label>
+        <label class="label">Pending payments<input id="revPending" class="money-input" placeholder="0.00" /></label>
       </div>
     </section>
 
-    <!-- =========================
-         SALES TAX QUICK HELPER
-    ========================== -->
     <section class="card">
       <div class="section-title">
         <h3>Sales tax quick calc</h3>
         <p>Use for quick estimates before entering finance tool.</p>
       </div>
-
       <div class="input-grid">
-        <label class="label">
-          Sale amount
-          <input id="taxSale" class="tax-input" placeholder="0.00" />
-        </label>
-
-        <label class="label">
-          Tax %
-          <input id="taxRate" class="tax-input" placeholder="7.25" />
-        </label>
-
-        <label class="label">
-          Tax amount
-          <input id="taxAmount" class="tax-input" disabled />
-        </label>
-
-        <label class="label">
-          Total w/ tax
-          <input id="taxTotal" class="tax-input" disabled />
-        </label>
+        <label class="label">Sale amount<input id="taxSale" class="tax-input" placeholder="0.00" /></label>
+        <label class="label">Tax %<input id="taxRate" class="tax-input" placeholder="7.25" /></label>
+        <label class="label">Tax amount<input id="taxAmount" class="tax-input" disabled /></label>
+        <label class="label">Total w/ tax<input id="taxTotal" class="tax-input" disabled /></label>
       </div>
     </section>
 
-    <!-- =========================
-         REMINDERS
-    ========================== -->
-    <section class="card">
-      <div class="section-title">
-        <h3>Reminders</h3>
-        <p>Simple follow-ups so nothing slips.</p>
-      </div>
-
-      <div class="inline-actions">
-        <input id="reminderInput" class="reminder-input" placeholder="Add reminder..." />
-        <button class="btn" id="addReminderBtn">Add</button>
-      </div>
-
-      <div id="reminderList" class="reminder-list"></div>
-    </section>
-
-    <!-- =========================
-         QUICK LINKS GRID
-    ========================== -->
-    <section class="grid">
-      <div class="link-card">
-        <h4>Orders Admin</h4>
-        <p>Create, update, and manage all orders.</p>
-        <span class="url">orders-admin.html</span>
-        <div class="actions">
-          <a class="btn" href="orders-admin.html">Open</a>
-        </div>
-      </div>
-
-      <div class="link-card">
-        <h4>Tracker Page</h4>
-        <p>Customer-facing order status.</p>
-        <span class="url">track.html</span>
-        <div class="actions">
-          <a class="btn" href="track.html">Open</a>
-        </div>
-      </div>
-
-      <div class="link-card">
-        <h4>Quote Tool</h4>
-        <p>Create quotes and convert to orders.</p>
-        <span class="url">quote-tool.html</span>
-        <div class="actions">
-          <a class="btn" href="quote-tool.html">Open</a>
-        </div>
-      </div>
-
-      <div class="link-card">
-        <h4>Finance Tool</h4>
-        <p>Track revenue, costs, and tax.</p>
-        <span class="url">finance-pro.html</span>
-        <div class="actions">
-          <a class="btn" href="finance-pro.html">Open</a>
-        </div>
-      </div>
-    </section>
-        <!-- =========================
-         NOTES + HEALTH CHECK
-    ========================== -->
     <section class="dashboard-grid">
-      <section class="status-card">
-        <h3>Quick health check</h3>
-        <p class="muted">Use this as a quick mental check each day.</p>
-
-        <div class="status-grid">
-          <div class="status-pill">
-            <span class="status-dot ok"></span>
-            Orders flowing
-          </div>
-
-          <div class="status-pill">
-            <span class="status-dot ok"></span>
-            Payments coming in
-          </div>
-
-          <div class="status-pill">
-            <span class="status-dot warn"></span>
-            Any stuck orders?
-          </div>
-
-          <div class="status-pill">
-            <span class="status-dot ok"></span>
-            Tracker accurate
-          </div>
-        </div>
-      </section>
-
       <section class="notes-card">
         <h3>Notes</h3>
-        <p class="muted">Quick scratchpad — auto saves.</p>
+        <p class="muted">Quick scratchpad — cloud synced.</p>
         <textarea id="hubNotes" placeholder="Notes, follow-ups, ideas..."></textarea>
       </section>
     </section>
-
   </div>
 
-  <!-- =========================
-       SCRIPT
-  ========================== -->
-  <script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  /* =========================
-     NOTES SAVE
-  ========================== */
-  const NOTES_KEY = 'hub_notes';
+    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const todayISO = () => new Date().toISOString().slice(0, 10);
 
-  const notesEl = document.getElementById('hubNotes');
-  if (notesEl) {
-    notesEl.value = localStorage.getItem(NOTES_KEY) || '';
+    const els = {
+      notes: document.getElementById('hubNotes'),
+      authBadge: document.getElementById('cloudSyncBadge'),
+      authStatus: document.getElementById('hubAuthStatus'),
+      email: document.getElementById('hubEmail'),
+      password: document.getElementById('hubPassword'),
+      loginBtn: document.getElementById('hubLoginBtn'),
+      signupBtn: document.getElementById('hubSignupBtn'),
+      logoutBtn: document.getElementById('hubLogoutBtn'),
+      reminderSummary: document.getElementById('reminderSummary'),
+      reminderGroups: document.getElementById('reminderGroups'),
+      reminderEmpty: document.getElementById('reminderEmpty'),
+      reminderTitleInput: document.getElementById('reminderTitleInput'),
+      reminderDateInput: document.getElementById('reminderDateInput'),
+      reminderRecurrenceInput: document.getElementById('reminderRecurrenceInput'),
+      addReminderBtn: document.getElementById('addReminderBtn'),
+      taxSale: document.getElementById('taxSale'),
+      taxRate: document.getElementById('taxRate'),
+      taxAmount: document.getElementById('taxAmount'),
+      taxTotal: document.getElementById('taxTotal'),
+      runHealthCheckBtn: document.getElementById('runHealthCheckBtn'),
+      healthCheckSummary: document.getElementById('healthCheckSummary'),
+      healthCheckList: document.getElementById('healthCheckList')
+    };
 
-    notesEl.addEventListener('input', () => {
-      localStorage.setItem(NOTES_KEY, notesEl.value);
-    });
-  }
+    let currentUser = null;
+    let noteSaveTimer = null;
+    let reminders = [];
 
-  /* =========================
-     TAX CALCULATOR
-  ========================== */
-  function calcTax() {
-    const sale = parseFloat(document.getElementById('taxSale')?.value) || 0;
-    const rate = parseFloat(document.getElementById('taxRate')?.value) || 0;
+    const HEALTH_TARGETS = [
+      { name: 'Main Site', url: 'index.html' },
+      { name: 'Orders Admin', url: 'orders-admin.html' },
+      { name: 'Tracker', url: 'track.html' },
+      { name: 'Quote Tool', url: 'quote-tool.html' },
+      { name: 'Finance Tool', url: 'finance-pro.html' },
+      { name: 'Printer PM', url: 'pm.html' },
+      { name: 'Materials', url: 'materials.html' }
+    ];
 
-    const tax = sale * (rate / 100);
-    const total = sale + tax;
-
-    document.getElementById('taxAmount').value = tax.toFixed(2);
-    document.getElementById('taxTotal').value = total.toFixed(2);
-  }
-
-  ['taxSale','taxRate'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el){
-      el.addEventListener('input', calcTax);
+    function setAuthUi() {
+      const signedIn = !!currentUser;
+      els.authBadge.textContent = signedIn ? `Signed in: ${currentUser.email}` : 'Not signed in';
+      els.authStatus.textContent = signedIn
+        ? 'Cloud sync is active. Notes and reminders are shared across devices.'
+        : 'Sign in to load and save notes and reminders from Supabase.';
+      els.logoutBtn.classList.toggle('hidden', !signedIn);
+      els.loginBtn.classList.toggle('hidden', signedIn);
+      els.signupBtn.classList.toggle('hidden', signedIn);
+      els.email.disabled = signedIn;
+      els.password.disabled = signedIn;
+      els.notes.disabled = !signedIn;
+      els.reminderTitleInput.disabled = !signedIn;
+      els.reminderDateInput.disabled = !signedIn;
+      els.reminderRecurrenceInput.disabled = !signedIn;
+      els.addReminderBtn.disabled = !signedIn;
     }
-  });
 
-  /* =========================
-     REMINDERS
-  ========================== */
-  const REM_KEY = 'hub_reminders';
+    async function loadCloudNote() {
+      if (!currentUser) {
+        els.notes.value = '';
+        return;
+      }
+      const { data, error } = await supabase.from('hub_notes').select('notes').eq('user_id', currentUser.id).maybeSingle();
+      if (error) {
+        els.authStatus.textContent = `Could not load notes: ${error.message}`;
+        return;
+      }
+      els.notes.value = data?.notes || '';
+    }
 
-  function loadReminders(){
-    return JSON.parse(localStorage.getItem(REM_KEY) || '[]');
-  }
+    async function saveCloudNote() {
+      if (!currentUser) return;
+      const { error } = await supabase.from('hub_notes').upsert({
+        user_id: currentUser.id,
+        notes: els.notes.value,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (error) els.authStatus.textContent = `Could not save notes: ${error.message}`;
+    }
 
-  function saveReminders(list){
-    localStorage.setItem(REM_KEY, JSON.stringify(list));
-  }
+    function debounceNoteSave() {
+      clearTimeout(noteSaveTimer);
+      noteSaveTimer = setTimeout(saveCloudNote, 500);
+    }
 
-  function renderReminders(){
-    const listEl = document.getElementById('reminderList');
-    if(!listEl) return;
+    function normalizeDate(value) {
+      if (!value) return '';
+      return new Date(`${value}T00:00:00`).toISOString().slice(0, 10);
+    }
 
-    const reminders = loadReminders();
-    listEl.innerHTML = '';
+    function addDays(dateStr, days) {
+      const d = new Date(`${dateStr}T00:00:00`);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
 
-    reminders.forEach((text, index)=>{
-      const row = document.createElement('div');
-      row.className = 'reminder-item';
+    function addMonths(dateStr, months) {
+      const d = new Date(`${dateStr}T00:00:00`);
+      d.setMonth(d.getMonth() + months);
+      return d.toISOString().slice(0, 10);
+    }
 
+    function nextDueDate(reminder) {
+      if (!reminder.due_date || reminder.recurrence === 'none') return '';
+      if (reminder.recurrence === 'daily') return addDays(reminder.due_date, 1);
+      if (reminder.recurrence === 'weekly') return addDays(reminder.due_date, 7);
+      if (reminder.recurrence === 'monthly') return addMonths(reminder.due_date, 1);
+      return '';
+    }
+
+    async function loadReminders() {
+      if (!currentUser) {
+        reminders = [];
+        renderReminders();
+        return;
+      }
+      const { data, error } = await supabase
+        .from('hub_reminders')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('due_date', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) {
+        els.authStatus.textContent = `Could not load reminders: ${error.message}`;
+        return;
+      }
+      reminders = data || [];
+      await reviveRecurringReminders();
+      renderReminders();
+    }
+
+    async function updateReminder(id, patch) {
+      const { error } = await supabase
+        .from('hub_reminders')
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', currentUser.id);
+      if (error) {
+        els.authStatus.textContent = `Could not update reminder: ${error.message}`;
+        return false;
+      }
+      return true;
+    }
+
+    async function deleteReminder(id) {
+      const { error } = await supabase.from('hub_reminders').delete().eq('id', id).eq('user_id', currentUser.id);
+      if (error) {
+        els.authStatus.textContent = `Could not delete reminder: ${error.message}`;
+        return;
+      }
+      await loadReminders();
+    }
+
+    async function reviveRecurringReminders() {
+      if (!currentUser) return;
+      const today = todayISO();
+      const dueToRevive = reminders.filter(r => r.completed && r.recurrence !== 'none' && r.next_due_date && r.next_due_date <= today);
+      for (const reminder of dueToRevive) {
+        await updateReminder(reminder.id, { completed: false, due_date: reminder.next_due_date, next_due_date: null });
+      }
+      if (dueToRevive.length) {
+        const { data } = await supabase
+          .from('hub_reminders')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('due_date', { ascending: true })
+          .order('created_at', { ascending: true });
+        reminders = data || [];
+      }
+    }
+
+    function buildReminderRow(reminder, today) {
+      const row = document.createElement('tr');
       row.innerHTML = `
-        <span>${text}</span>
-        <button class="tiny-btn" data-index="${index}">Remove</button>
+        <td data-label="Done"><input class="reminder-check" type="checkbox"></td>
+        <td data-label="Reminder"><input class="reminder-title-input" type="text"></td>
+        <td data-label="Due"><div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><input class="reminder-date-input" type="date"><span class="badge"></span></div></td>
+        <td data-label="Repeat"><select class="reminder-select"><option value="none">One time</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select><div class="reminder-muted"></div></td>
+        <td data-label="Actions"><button class="tiny-btn" type="button">Delete</button></td>
       `;
 
-      row.querySelector('button').onclick = () => {
-        reminders.splice(index,1);
-        saveReminders(reminders);
+      const check = row.querySelector('.reminder-check');
+      const title = row.querySelector('.reminder-title-input');
+      const due = row.querySelector('.reminder-date-input');
+      const recurrence = row.querySelector('.reminder-select');
+      const muted = row.querySelector('.reminder-muted');
+      const badge = row.querySelector('.badge');
+      const del = row.querySelector('.tiny-btn');
+
+      check.checked = !!reminder.completed;
+      title.value = reminder.title || '';
+      due.value = reminder.due_date || '';
+      recurrence.value = reminder.recurrence || 'none';
+      muted.textContent = reminder.next_due_date ? `Next: ${reminder.next_due_date}` : '';
+
+      if (!reminder.due_date) {
+        badge.textContent = 'No date';
+        badge.className = 'badge';
+      } else if (reminder.due_date < today) {
+        badge.textContent = 'Overdue';
+        badge.className = 'badge overdue';
+      } else {
+        const diffDays = Math.ceil((new Date(reminder.due_date) - new Date(today)) / (1000 * 60 * 60 * 24));
+        badge.textContent = diffDays <= 7 ? 'This week' : 'Upcoming';
+        badge.className = diffDays <= 7 ? 'badge thisweek' : 'badge upcoming';
+      }
+
+      check.addEventListener('change', async () => {
+        await updateReminder(reminder.id, {
+          completed: check.checked,
+          next_due_date: check.checked ? nextDueDate(reminder) || null : null
+        });
+        await loadReminders();
+      });
+
+      title.addEventListener('change', async () => {
+        await updateReminder(reminder.id, { title: title.value });
+        reminder.title = title.value;
+      });
+
+      due.addEventListener('change', async () => {
+        const normalized = normalizeDate(due.value);
+        await updateReminder(reminder.id, {
+          due_date: normalized,
+          next_due_date: reminder.completed && reminder.recurrence !== 'none'
+            ? nextDueDate({ ...reminder, due_date: normalized }) || null
+            : reminder.next_due_date || null
+        });
+        await loadReminders();
+      });
+
+      recurrence.addEventListener('change', async () => {
+        await updateReminder(reminder.id, {
+          recurrence: recurrence.value,
+          next_due_date: reminder.completed
+            ? nextDueDate({ ...reminder, recurrence: recurrence.value }) || null
+            : reminder.next_due_date || null
+        });
+        await loadReminders();
+      });
+
+      del.addEventListener('click', async () => {
+        await deleteReminder(reminder.id);
+      });
+
+      return row;
+    }
+
+    function renderReminderGroup(label, tone, list, today) {
+      const wrapper = document.createElement('section');
+      wrapper.className = 'reminder-group';
+      wrapper.innerHTML = `
+        <div class="reminder-group-header"><div class="reminder-group-title"><span class="group-dot ${tone}"></span>${label}</div><div class="reminder-group-count">${list.length}</div></div>
+        <table class="reminder-table"><thead><tr><th>Done</th><th>Reminder</th><th>Due</th><th>Repeat</th><th>Actions</th></tr></thead><tbody></tbody></table>
+      `;
+      const tbody = wrapper.querySelector('tbody');
+      list.forEach(reminder => tbody.appendChild(buildReminderRow(reminder, today)));
+      return wrapper;
+    }
+
+    function renderReminders() {
+      const active = reminders.filter(r => !r.completed).sort((a, b) => (a.due_date || '9999-12-31').localeCompare(b.due_date || '9999-12-31'));
+      els.reminderGroups.innerHTML = '';
+      const today = todayISO();
+      const grouped = { overdue: [], thisweek: [], upcoming: [], nodate: [] };
+
+      active.forEach(reminder => {
+        if (!reminder.due_date) grouped.nodate.push(reminder);
+        else if (reminder.due_date < today) grouped.overdue.push(reminder);
+        else {
+          const diffDays = Math.ceil((new Date(reminder.due_date) - new Date(today)) / (1000 * 60 * 60 * 24));
+          if (diffDays <= 7) grouped.thisweek.push(reminder); else grouped.upcoming.push(reminder);
+        }
+      });
+
+      els.reminderSummary.innerHTML = `<span style="color:#e45a7a;">● ${grouped.overdue.length} overdue</span>&nbsp;&nbsp;<span style="color:#f0b429;">● ${grouped.thisweek.length} this week</span>&nbsp;&nbsp;<span style="color:#9d7cff;">● ${grouped.upcoming.length} upcoming</span>`;
+
+      if (!active.length) {
+        els.reminderEmpty.classList.remove('hidden');
+        return;
+      }
+      els.reminderEmpty.classList.add('hidden');
+      [['Overdue','overdue',grouped.overdue],['This Week','thisweek',grouped.thisweek],['Upcoming','upcoming',grouped.upcoming],['No Date','nodate',grouped.nodate]].forEach(([label, tone, list]) => {
+        if (list.length) els.reminderGroups.appendChild(renderReminderGroup(label, tone, list, today));
+      });
+    }
+
+    async function addReminder() {
+      if (!currentUser) return;
+      const title = els.reminderTitleInput.value.trim();
+      if (!title) return;
+      const { error } = await supabase.from('hub_reminders').insert({
+        user_id: currentUser.id,
+        title,
+        due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
+        recurrence: els.reminderRecurrenceInput.value || 'none',
+        completed: false,
+        next_due_date: null
+      });
+      if (error) {
+        els.authStatus.textContent = `Could not add reminder: ${error.message}`;
+        return;
+      }
+      els.reminderTitleInput.value = '';
+      els.reminderDateInput.value = '';
+      els.reminderRecurrenceInput.value = 'none';
+      await loadReminders();
+    }
+
+    function calcTax() {
+      const sale = parseFloat(els.taxSale?.value) || 0;
+      const rate = parseFloat(els.taxRate?.value) || 0;
+      const tax = sale * (rate / 100);
+      const total = sale + tax;
+      if (els.taxAmount) els.taxAmount.value = tax.toFixed(2);
+      if (els.taxTotal) els.taxTotal.value = total.toFixed(2);
+    }
+    [els.taxSale, els.taxRate].forEach(el => el?.addEventListener('input', calcTax));
+
+    ['revToday','revWeek','revMonth','revPending'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = localStorage.getItem(id) || '';
+      el.addEventListener('input', () => localStorage.setItem(id, el.value));
+    });
+
+    function renderHealthChecks(results = []) {
+      const mapped = HEALTH_TARGETS.map(target => results.find(r => r.url === target.url) || { ...target, state: 'idle' });
+      els.healthCheckList.innerHTML = mapped.map(item => `<div class="status-row"><div class="status-main"><div class="status-name">${item.name}</div><div class="status-url">${item.url}</div></div><span class="status-light ${item.state}"></span><a class="tiny-btn" href="${item.url}" target="_blank" rel="noopener noreferrer">Open</a></div>`).join('');
+    }
+    function setHealthSummary(text) { els.healthCheckSummary.textContent = text; }
+    async function checkOnePage(target) {
+      try {
+        const response = await fetch(target.url, { method: 'GET', cache: 'no-store', credentials: 'same-origin' });
+        return { ...target, state: response.ok ? 'ok' : 'bad', status: response.status };
+      } catch (error) {
+        return { ...target, state: 'bad', status: '', error: error?.message || 'Load failed' };
+      }
+    }
+    async function runHealthCheck() {
+      els.runHealthCheckBtn.disabled = true;
+      els.runHealthCheckBtn.textContent = 'Checking...';
+      setHealthSummary('Checking all pages...');
+      renderHealthChecks(HEALTH_TARGETS.map(target => ({ ...target, state: 'checking' })));
+      const results = [];
+      for (const target of HEALTH_TARGETS) {
+        const result = await checkOnePage(target);
+        results.push(result);
+        renderHealthChecks(results);
+      }
+      const failCount = results.filter(r => r.state !== 'ok').length;
+      setHealthSummary(failCount === 0 ? 'All systems operational' : 'Issues detected — check red indicators');
+      els.runHealthCheckBtn.disabled = false;
+      els.runHealthCheckBtn.textContent = 'Run Check';
+    }
+
+    async function login() {
+      const email = els.email.value.trim();
+      const password = els.password.value;
+      if (!email || !password) {
+        els.authStatus.textContent = 'Enter your email and password.';
+        return;
+      }
+      els.authStatus.textContent = 'Signing in...';
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        els.authStatus.textContent = `Login failed: ${error.message}`;
+      }
+    }
+
+    async function signup() {
+      const email = els.email.value.trim();
+      const password = els.password.value;
+      if (!email || !password) {
+        els.authStatus.textContent = 'Enter your email and password.';
+        return;
+      }
+      els.authStatus.textContent = 'Creating account...';
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        els.authStatus.textContent = `Signup failed: ${error.message}`;
+        return;
+      }
+      els.authStatus.textContent = 'Account created. If email confirmation is enabled, confirm your email before logging in.';
+    }
+
+    async function logout() {
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+
+    async function bootstrap() {
+      const { data } = await supabase.auth.getSession();
+      currentUser = data?.session?.user || null;
+      setAuthUi();
+      if (currentUser) {
+        await loadCloudNote();
+        await loadReminders();
+      } else {
+        els.notes.value = '';
+        reminders = [];
         renderReminders();
-      };
+      }
+    }
 
-      listEl.appendChild(row);
+    els.notes?.addEventListener('input', debounceNoteSave);
+    els.addReminderBtn?.addEventListener('click', addReminder);
+    els.loginBtn?.addEventListener('click', login);
+    els.signupBtn?.addEventListener('click', signup);
+    els.logoutBtn?.addEventListener('click', logout);
+    els.runHealthCheckBtn?.addEventListener('click', runHealthCheck);
+
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      currentUser = session?.user || null;
+      setAuthUi();
+      if (currentUser) {
+        await loadCloudNote();
+        await loadReminders();
+      } else {
+        els.notes.value = '';
+        reminders = [];
+        renderReminders();
+      }
     });
-  }
 
-  document.getElementById('addReminderBtn')?.addEventListener('click', () => {
-    const input = document.getElementById('reminderInput');
-    if(!input.value.trim()) return;
-
-    const reminders = loadReminders();
-    reminders.push(input.value.trim());
-    saveReminders(reminders);
-
-    input.value = '';
-    renderReminders();
-  });
-
-  renderReminders();
-
-  /* =========================
-     MONEY SNAPSHOT SAVE
-  ========================== */
-  const MONEY_FIELDS = ['revToday','revWeek','revMonth','revPending'];
-
-  MONEY_FIELDS.forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-
-    el.value = localStorage.getItem(id) || '';
-
-    el.addEventListener('input', ()=>{
-      localStorage.setItem(id, el.value);
-    });
-  });
-
+    renderHealthChecks();
+    bootstrap();
   </script>
-
 </body>
 </html>
