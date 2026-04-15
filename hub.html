@@ -325,6 +325,10 @@
         <h3>Notes</h3>
         <p class="muted">Quick scratchpad — cloud synced.</p>
         <textarea id="hubNotes" placeholder="Notes, follow-ups, ideas..."></textarea>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+          <button class="btn" id="saveNotesBtn" type="button">Save Notes</button>
+          <div id="notesStatus" class="auth-status" style="margin-top:0;flex:1 1 260px;">Notes not saved yet.</div>
+        </div>
       </section>
     </section>
   </div>
@@ -346,6 +350,8 @@
       loginBtn: document.getElementById('hubLoginBtn'),
       signupBtn: document.getElementById('hubSignupBtn'),
       logoutBtn: document.getElementById('hubLogoutBtn'),
+      saveNotesBtn: document.getElementById('saveNotesBtn'),
+      notesStatus: document.getElementById('notesStatus'),
       reminderSummary: document.getElementById('reminderSummary'),
       reminderGroups: document.getElementById('reminderGroups'),
       reminderEmpty: document.getElementById('reminderEmpty'),
@@ -382,6 +388,7 @@
       els.authStatus.textContent = signedIn
         ? 'Cloud sync is active. Notes and reminders are shared across devices.'
         : 'Sign in to load and save notes and reminders from Supabase.';
+      if (!signedIn && els.notesStatus) els.notesStatus.textContent = 'Sign in to save notes.';
       els.logoutBtn.classList.toggle('hidden', !signedIn);
       els.loginBtn.classList.toggle('hidden', signedIn);
       els.signupBtn.classList.toggle('hidden', signedIn);
@@ -405,6 +412,7 @@
         return;
       }
       els.notes.value = data?.notes || '';
+      if (els.notesStatus) els.notesStatus.textContent = 'Notes loaded from cloud.';
     }
 
     async function saveCloudNote() {
@@ -414,12 +422,18 @@
         notes: els.notes.value,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
-      if (error) els.authStatus.textContent = `Could not save notes: ${error.message}`;
+      if (error) {
+        els.authStatus.textContent = `Could not save notes: ${error.message}`;
+        if (els.notesStatus) els.notesStatus.textContent = `Save failed: ${error.message}`;
+        return;
+      }
+      if (els.notesStatus) els.notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
     }
 
     function debounceNoteSave() {
       clearTimeout(noteSaveTimer);
       noteSaveTimer = setTimeout(saveCloudNote, 500);
+      if (els.notesStatus) els.notesStatus.textContent = 'Saving...';
     }
 
     function normalizeDate(value) {
@@ -640,6 +654,7 @@
         els.authStatus.textContent = `Could not add reminder: ${error.message}`;
         return;
       }
+      els.authStatus.textContent = 'Reminder added.';
       els.reminderTitleInput.value = '';
       els.reminderDateInput.value = '';
       els.reminderRecurrenceInput.value = 'none';
@@ -704,7 +719,9 @@
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         els.authStatus.textContent = `Login failed: ${error.message}`;
+        return;
       }
+      els.authStatus.textContent = 'Signed in.';
     }
 
     async function signup() {
@@ -724,7 +741,18 @@
     }
 
     async function logout() {
-      await supabase.auth.signOut({ scope: 'local' });
+      els.authStatus.textContent = 'Signing out...';
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) {
+        els.authStatus.textContent = `Logout failed: ${error.message}`;
+        return;
+      }
+      currentUser = null;
+      reminders = [];
+      els.notes.value = '';
+      renderReminders();
+      setAuthUi();
+      els.authStatus.textContent = 'Signed out.';
     }
 
     async function bootstrap() {
@@ -742,6 +770,7 @@
     }
 
     els.notes?.addEventListener('input', debounceNoteSave);
+    els.saveNotesBtn?.addEventListener('click', saveCloudNote);
     els.addReminderBtn?.addEventListener('click', addReminder);
     els.loginBtn?.addEventListener('click', login);
     els.signupBtn?.addEventListener('click', signup);
