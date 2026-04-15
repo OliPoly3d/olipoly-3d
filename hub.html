@@ -452,8 +452,7 @@
         const { error } = await withTimeout(
           supabase.from('hub_notes').upsert({
             user_id: currentUser.id,
-            notes: els.notes.value,
-            updated_at_removed: undefined
+            notes: els.notes.value
           }, { onConflict: 'user_id' }),
           12000,
           'Save notes'
@@ -532,7 +531,7 @@
     async function updateReminder(id, patch) {
       const { error } = await supabase
         .from('hub_reminders')
-        .update({ ...patch, updated_at_removed: undefined })
+        .update({ ...patch })
         .eq('id', id)
         .eq('user_id', currentUser.id);
       if (error) {
