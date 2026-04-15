@@ -374,20 +374,6 @@
     let reminderAdding = false;
     let authBusy = false;
 
-    async function withTimeout(promise, ms = 12000, label = 'Request') {
-      let timer;
-      try {
-        return await Promise.race([
-          promise,
-          new Promise((_, reject) => {
-            timer = setTimeout(() => reject(new Error(`${label} timed out.`)), ms);
-          })
-        ]);
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-
     function setButtonBusy(button, busy, busyText, idleText) {
       if (!button) return;
       button.disabled = busy;
@@ -449,14 +435,10 @@
       setButtonBusy(els.saveNotesBtn, true, 'Saving...', 'Save Notes');
       els.notesStatus.textContent = 'Saving notes...';
       try {
-        const { error } = await withTimeout(
-          supabase.from('hub_notes').upsert({
+        const { error } = await supabase.from('hub_notes').upsert({
             user_id: currentUser.id,
             notes: els.notes.value
-          }, { onConflict: 'user_id' }),
-          12000,
-          'Save notes'
-        );
+          }, { onConflict: 'user_id' });
         if (error) {
           els.authStatus.textContent = `Could not save notes: ${error.message}`;
           els.notesStatus.textContent = `Save failed: ${error.message}`;
@@ -700,18 +682,14 @@
       setButtonBusy(els.addReminderBtn, true, 'Adding...', 'Add');
       els.authStatus.textContent = 'Adding reminder...';
       try {
-        const { error } = await withTimeout(
-          supabase.from('hub_reminders').insert({
+        const { error } = await supabase.from('hub_reminders').insert({
             user_id: currentUser.id,
             title,
             due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
             recurrence: els.reminderRecurrenceInput.value || 'none',
             completed: false,
             next_due_date: null
-          }),
-          12000,
-          'Add reminder'
-        );
+          });
         if (error) {
           els.authStatus.textContent = `Could not add reminder: ${error.message}`;
           return;
@@ -793,11 +771,7 @@
       setButtonBusy(els.loginBtn, true, 'Signing in...', 'Log In');
       els.authStatus.textContent = 'Signing in...';
       try {
-        const { error } = await withTimeout(
-          supabase.auth.signInWithPassword({ email, password }),
-          12000,
-          'Login'
-        );
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           els.authStatus.textContent = `Login failed: ${error.message}`;
           return;
@@ -823,11 +797,7 @@
       setButtonBusy(els.signupBtn, true, 'Creating...', 'Create');
       els.authStatus.textContent = 'Creating account...';
       try {
-        const { error } = await withTimeout(
-          supabase.auth.signUp({ email, password }),
-          12000,
-          'Signup'
-        );
+        const { error } = await supabase.auth.signUp({ email, password });
         if (error) {
           els.authStatus.textContent = `Signup failed: ${error.message}`;
           return;
@@ -847,11 +817,7 @@
       setButtonBusy(els.logoutBtn, true, 'Signing out...', 'Log Out');
       els.authStatus.textContent = 'Signing out...';
       try {
-        const { error } = await withTimeout(
-          supabase.auth.signOut({ scope: 'local' }),
-          12000,
-          'Logout'
-        );
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) {
           els.authStatus.textContent = `Logout failed: ${error.message}`;
           return;
