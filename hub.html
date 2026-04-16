@@ -339,6 +339,52 @@
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function getAccessToken() {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const token = data?.session?.access_token;
+      if (!token) throw new Error('No active session token found. Please log in again.');
+      return token;
+    }
+
+    async function restUpsertHubNote(userId, notes) {
+      const token = await getAccessToken();
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/hub_notes?on_conflict=user_id`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          Prefer: 'resolution=merge-duplicates,return=representation'
+        },
+        body: JSON.stringify([{ user_id: userId, notes }])
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Save notes failed: ${response.status} ${text}`);
+      }
+      return response.json();
+    }
+
+    async function restInsertReminder(payload) {
+      const token = await getAccessToken();
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/hub_reminders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify([payload])
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Add reminder failed: ${response.status} ${text}`);
+      }
+      return response.json();
+    }
     const todayISO = () => new Date().toISOString().slice(0, 10);
 
     const els = {
@@ -435,15 +481,13 @@
       setButtonBusy(els.saveNotesBtn, true, 'Saving...', 'Save Notes');
       els.notesStatus.textContent = 'Saving notes...';
       try {
+        await restUpsertHubNote(currentUser.id, els.notes.value);
+        /* replaced hanging supabase upsert
         const { error } = await supabase.from('hub_notes').upsert({
             user_id: currentUser.id,
             notes: els.notes.value
           }, { onConflict: 'user_id' });
-        if (error) {
-          els.authStatus.textContent = `Could not save notes: ${error.message}`;
-          els.notesStatus.textContent = `Save failed: ${error.message}`;
-          return;
-        }
+        */
         els.notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
       } catch (err) {
         els.authStatus.textContent = err.message;
@@ -682,7 +726,7 @@
       setButtonBusy(els.addReminderBtn, true, 'Adding...', 'Add');
       els.authStatus.textContent = 'Adding reminder...';
       try {
-        const { error } = await supabase.from('hub_reminders').insert({
+        await restInsertReminder({
             user_id: currentUser.id,
             title,
             due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
@@ -690,10 +734,16 @@
             completed: false,
             next_due_date: null
           });
-        if (error) {
-          els.authStatus.textContent = `Could not add reminder: ${error.message}`;
-          return;
-        }
+          /* replaced hanging supabase insert
+          const { error } = await supabase.from('hub_reminders').insert({
+            user_id: currentUser.id,
+            title,
+            due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
+            recurrence: els.reminderRecurrenceInput.value || 'none',
+            completed: false,
+            next_due_date: null
+          });
+        */
         els.authStatus.textContent = 'Reminder added.';
         els.reminderTitleInput.value = '';
         els.reminderDateInput.value = '';
