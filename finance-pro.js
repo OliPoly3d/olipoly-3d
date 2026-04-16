@@ -52,6 +52,7 @@ let currentUser = null;
 let entries = [];
 let editingId = null;
 let customCategoryValue = '';
+let authBusy = false;
 let settings = {
   defaultMileageRate: 0,
   officeSqft: 0,
@@ -963,56 +964,112 @@ async function saveEntry(e) {
   }
 }
 
-async function clearBadSession() {
-  try {
-    await supabase.auth.signOut({ scope: 'local' });
-  } catch (_) {
-    // ignore
-  }
+function applySignedOutState(message = '') {
   currentUser = null;
   entries = [];
   setUI(false);
   resetForm();
+  renderAll();
+  if (message) setAuthMsg(message);
+}
+
+async function safeLocalSignOut(timeoutMs = 2500) {
+  if (!supabase) return;
+  try {
+    await Promise.race([
+      supabase.auth.signOut({ scope: 'local' }),
+      new Promise(resolve => setTimeout(resolve, timeoutMs))
+    ]);
+  } catch (_) {
+    // ignore local sign-out cleanup issues
+  }
 }
 
 async function login() {
+  if (authBusy) return;
+
   if (!els.emailInput.value || !els.passwordInput.value) {
     return setAuthMsg('Enter your email and password.', true);
   }
 
+  authBusy = true;
   setAuthMsg('Signing in...');
 
-  await clearBadSession();
+  // Clear UI immediately so a stale session does not keep the app visible.
+  applySignedOutState();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: els.emailInput.value.trim(),
-    password: els.passwordInput.value
-  });
+  // Try to clear any stale local session without blocking forever.
+  await safeLocalSignOut();
 
-  if (error) return setAuthMsg(`Login failed: ${error.message}`, true);
-  hide(els.authMessage);
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: els.emailInput.value.trim(),
+      password: els.passwordInput.value
+    });
+
+    if (error) {
+      setAuthMsg(`Login failed: ${error.message}`, true);
+      return;
+    }
+
+    const { data } = await supabase.auth.getSession();
+    currentUser = data?.session?.user || null;
+    setUI(!!currentUser);
+
+    if (currentUser) {
+      hide(els.authMessage);
+      await fetchEntries();
+    } else {
+      setAuthMsg('Login completed but no session was found. Refresh once and try again.', true);
+    }
+  } catch (err) {
+    setAuthMsg(`Login failed: ${err?.message || err}`, true);
+  } finally {
+    authBusy = false;
+  }
 }
 
 async function signup() {
+  if (authBusy) return;
+
   if (!els.emailInput.value || !els.passwordInput.value) {
     return setAuthMsg('Enter an email and password to create your account.', true);
   }
 
+  authBusy = true;
   setAuthMsg('Creating account...');
 
-  const { error } = await supabase.auth.signUp({
-    email: els.emailInput.value.trim(),
-    password: els.passwordInput.value
-  });
+  try {
+    const { error } = await supabase.auth.signUp({
+      email: els.emailInput.value.trim(),
+      password: els.passwordInput.value
+    });
 
-  if (error) return setAuthMsg(`Signup failed: ${error.message}`, true);
-  setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');
+    if (error) {
+      setAuthMsg(`Signup failed: ${error.message}`, true);
+      return;
+    }
+
+    setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');
+  } catch (err) {
+    setAuthMsg(`Signup failed: ${err?.message || err}`, true);
+  } finally {
+    authBusy = false;
+  }
 }
 
 async function logout() {
-  await clearBadSession();
-  renderAll();
-  setAuthMsg('Logged out.');
+  if (authBusy) return;
+
+  authBusy = true;
+
+  // Reset the page immediately so the button never appears to do nothing.
+  applySignedOutState('Logged out.');
+
+  // Clean up the local Supabase session in the background.
+  await safeLocalSignOut();
+
+  authBusy = false;
 }
 
 async function init() {
@@ -1036,27 +1093,24 @@ async function init() {
   try {
     const { data, error } = await supabase.auth.getSession();
 
-    if (error && /refresh token/i.test(error.message || '')) {
-      await clearBadSession();
+    if (error) {
+      applySignedOutState('Sign in to your private tracker.');
     } else {
       currentUser = data?.session?.user || null;
       setUI(!!currentUser);
-      if (currentUser) await fetchEntries();
+      if (currentUser) {
+        hide(els.authMessage);
+        await fetchEntries();
+      }
     }
   } catch (_) {
-    await clearBadSession();
+    applySignedOutState('Sign in to your private tracker.');
   }
 
   renderTaxReport();
   renderMonthlyTaxReport();
 
   supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'TOKEN_REFRESH_FAILED' || event === 'SIGNED_OUT') {
-      await clearBadSession();
-      renderAll();
-      return;
-    }
-
     currentUser = session?.user || null;
     setUI(!!currentUser);
 
@@ -1066,6 +1120,7 @@ async function init() {
     } else {
       entries = [];
       renderAll();
+      setAuthMsg('Logged out.');
     }
   });
 }
