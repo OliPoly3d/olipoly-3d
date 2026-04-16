@@ -338,7 +338,6 @@
 
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-    const AUTH_STORAGE_KEY = 'sb-alffoktlwhpfothieude-auth-token';
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function getAccessToken() {
@@ -391,6 +390,22 @@
       if (!response.ok) {
         const text = await response.text();
         throw new Error(`Add reminder failed: ${response.status} ${text}`);
+      }
+      return response.json();
+    }
+
+    async function restLoadHubNote(userId) {
+      const token = getAccessToken();
+      const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/hub_notes?user_id=eq.${encodeURIComponent(userId)}&select=notes&limit=1`, {
+        method: 'GET',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Load notes failed: ${response.status} ${text}`);
       }
       return response.json();
     }
@@ -487,14 +502,14 @@
         els.notes.value = '';
         return;
       }
-      const { data, error } = await supabase.from('hub_notes').select('notes').eq('user_id', currentUser.id).maybeSingle();
-      if (error) {
-        els.authStatus.textContent = `Could not load notes: ${error.message}`;
-        els.notesStatus.textContent = `Load failed: ${error.message}`;
-        return;
+      try {
+        const rows = await restLoadHubNote(currentUser.id);
+        els.notes.value = rows?.[0]?.notes || '';
+        els.notesStatus.textContent = 'Notes loaded from cloud.';
+      } catch (error) {
+        els.authStatus.textContent = error.message;
+        els.notesStatus.textContent = error.message;
       }
-      els.notes.value = data?.notes || '';
-      els.notesStatus.textContent = 'Notes loaded from cloud.';
     }
 
     async function saveCloudNote() {
@@ -831,12 +846,7 @@
       setButtonBusy(els.loginBtn, true, 'Signing in...', 'Log In');
       els.authStatus.textContent = 'Signing in...';
       try {
-        // clear any stale local session first
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        sessionStorage.removeItem(AUTH_STORAGE_KEY);
-        currentSession = null;
-        currentUser = null;
-
+        
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           els.authStatus.textContent = `Login failed: ${error.message}`;
@@ -896,8 +906,6 @@
       els.authStatus.textContent = 'Signing out...';
 
       const cleanupSession = () => {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        sessionStorage.removeItem(AUTH_STORAGE_KEY);
         currentSession = null;
         currentUser = null;
         reminders = [];
@@ -923,22 +931,30 @@
       }
     }
 
-    async function bootstrap() {
+    async function refreshCloudState() {
       const { data } = await supabase.auth.getSession();
       currentSession = data?.session || null;
       currentUser = currentSession?.user || null;
       setAuthUi();
-      renderReminders();
 
-      if (currentUser) {
-        await loadCloudNote();
-        await loadReminders();
-        els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
-      } else {
-        els.notes.value = '';
+      if (!currentUser) {
         reminders = [];
+        els.notes.value = '';
+        renderReminders();
         els.authStatus.textContent = 'Sign in to load and save notes and reminders from Supabase.';
+        return;
       }
+
+      await Promise.all([
+        loadCloudNote(),
+        loadReminders()
+      ]);
+      els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
+    }
+
+    async function bootstrap() {
+      renderReminders();
+      await refreshCloudState();
     }
 
     els.notes?.addEventListener('input', markNotesDirty);
@@ -953,16 +969,20 @@
       currentSession = session || null;
       currentUser = currentSession?.user || null;
       setAuthUi();
-      if (currentUser) {
-        await loadCloudNote();
-        await loadReminders();
-        els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
-      } else {
+
+      if (!currentUser) {
         els.notes.value = '';
         reminders = [];
         renderReminders();
         els.authStatus.textContent = 'Signed out.';
+        return;
       }
+
+      await Promise.all([
+        loadCloudNote(),
+        loadReminders()
+      ]);
+      els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
     });
 
     renderHealthChecks();
