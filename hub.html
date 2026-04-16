@@ -891,17 +891,15 @@
       setAuthUi();
       els.authStatus.textContent = 'Signed out.';
 
-      try {
-        await Promise.race([
-          supabase.auth.signOut({ scope: 'local' }),
-          new Promise(resolve => setTimeout(resolve, 2500))
-        ]);
-      } catch (_) {
-        // ignore cleanup issues after local UI reset
-      } finally {
-        authBusy = false;
-        setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
-      }
+      authBusy = false;
+      setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
+
+      Promise.race([
+        supabase.auth.signOut({ scope: 'local' }),
+        new Promise(resolve => setTimeout(resolve, 2500))
+      ]).catch(() => {
+        // ignore background cleanup issues
+      });
     }
 
     async function bootstrap() {
