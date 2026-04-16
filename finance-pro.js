@@ -984,35 +984,55 @@ async function safeLocalSignOut(timeoutMs = 2500) {
     // ignore local sign-out cleanup issues
   }
 }
-
+async function withTimeout(promise, ms, label) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out.`)), ms);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function login() {
   if (authBusy) return;
 
-  if (!els.emailInput.value || !els.passwordInput.value) {
+  const email = els.emailInput.value.trim();
+  const password = els.passwordInput.value;
+
+  if (!email || !password) {
     return setAuthMsg('Enter your email and password.', true);
   }
 
   authBusy = true;
   setAuthMsg('Signing in...');
 
-  // Clear UI immediately so a stale session does not keep the app visible.
-  applySignedOutState();
-
-  // Try to clear any stale local session without blocking forever.
-  await safeLocalSignOut();
-
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: els.emailInput.value.trim(),
-      password: els.passwordInput.value
-    });
+    const { error } = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      12000,
+      'Login'
+    );
 
     if (error) {
       setAuthMsg(`Login failed: ${error.message}`, true);
       return;
     }
 
-    const { data } = await supabase.auth.getSession();
+    const { data, error: sessionError } = await withTimeout(
+      supabase.auth.getSession(),
+      5000,
+      'Session refresh'
+    );
+
+    if (sessionError) {
+      setAuthMsg(`Login succeeded, but session check failed: ${sessionError.message}`, true);
+      return;
+    }
+
     currentUser = data?.session?.user || null;
     setUI(!!currentUser);
 
@@ -1028,7 +1048,6 @@ async function login() {
     authBusy = false;
   }
 }
-
 async function signup() {
   if (authBusy) return;
 
@@ -1063,13 +1082,11 @@ async function logout() {
 
   authBusy = true;
 
-  // Reset the page immediately so the button never appears to do nothing.
   applySignedOutState('Logged out.');
 
-  // Clean up the local Supabase session in the background.
-  await safeLocalSignOut();
-
-  authBusy = false;
+  safeLocalSignOut().finally(() => {
+    authBusy = false;
+  });
 }
 
 async function init() {
