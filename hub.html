@@ -338,6 +338,7 @@
 
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+    const AUTH_STORAGE_KEY = 'sb-alffoktlwhpfothieude-auth-token';
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function getAccessToken() {
@@ -830,19 +831,30 @@
       setButtonBusy(els.loginBtn, true, 'Signing in...', 'Log In');
       els.authStatus.textContent = 'Signing in...';
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        // clear any stale local session first
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        currentSession = null;
+        currentUser = null;
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           els.authStatus.textContent = `Login failed: ${error.message}`;
           return;
         }
+
+        const { data } = await supabase.auth.getSession();
         currentSession = data?.session || null;
         currentUser = currentSession?.user || null;
         setAuthUi();
+
         if (currentUser) {
           await loadCloudNote();
           await loadReminders();
+          els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
+        } else {
+          els.authStatus.textContent = 'Login completed but no session was found. Refresh once and try again.';
         }
-        els.authStatus.textContent = 'Signed in.';
       } catch (err) {
         els.authStatus.textContent = err.message;
       } finally {
@@ -883,23 +895,32 @@
       setButtonBusy(els.logoutBtn, true, 'Signing out...', 'Log Out');
       els.authStatus.textContent = 'Signing out...';
 
-      currentSession = null;
-      currentUser = null;
-      reminders = [];
-      els.notes.value = '';
-      renderReminders();
-      setAuthUi();
+      const cleanupSession = () => {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        currentSession = null;
+        currentUser = null;
+        reminders = [];
+        els.notes.value = '';
+        renderReminders();
+        setAuthUi();
+      };
+
+      cleanupSession();
       els.authStatus.textContent = 'Signed out.';
 
-      authBusy = false;
-      setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
-
-      Promise.race([
-        supabase.auth.signOut({ scope: 'local' }),
-        new Promise(resolve => setTimeout(resolve, 2500))
-      ]).catch(() => {
-        // ignore background cleanup issues
-      });
+      try {
+        await Promise.race([
+          supabase.auth.signOut({ scope: 'local' }),
+          new Promise(resolve => setTimeout(resolve, 2500))
+        ]);
+      } catch (_) {
+        // ignore cleanup issues after local purge
+      } finally {
+        cleanupSession();
+        authBusy = false;
+        setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
+      }
     }
 
     async function bootstrap() {
@@ -908,12 +929,15 @@
       currentUser = currentSession?.user || null;
       setAuthUi();
       renderReminders();
+
       if (currentUser) {
         await loadCloudNote();
         await loadReminders();
+        els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
       } else {
         els.notes.value = '';
         reminders = [];
+        els.authStatus.textContent = 'Sign in to load and save notes and reminders from Supabase.';
       }
     }
 
@@ -932,10 +956,12 @@
       if (currentUser) {
         await loadCloudNote();
         await loadReminders();
+        els.authStatus.textContent = `Signed in as ${currentUser.email}.`;
       } else {
         els.notes.value = '';
         reminders = [];
         renderReminders();
+        els.authStatus.textContent = 'Signed out.';
       }
     });
 
