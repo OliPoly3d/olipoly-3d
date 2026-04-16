@@ -830,10 +830,17 @@
       setButtonBusy(els.loginBtn, true, 'Signing in...', 'Log In');
       els.authStatus.textContent = 'Signing in...';
       try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           els.authStatus.textContent = `Login failed: ${error.message}`;
           return;
+        }
+        currentSession = data?.session || null;
+        currentUser = currentSession?.user || null;
+        setAuthUi();
+        if (currentUser) {
+          await loadCloudNote();
+          await loadReminders();
         }
         els.authStatus.textContent = 'Signed in.';
       } catch (err) {
@@ -885,14 +892,12 @@
       els.authStatus.textContent = 'Signed out.';
 
       try {
-        await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/logout`, {
-          method: 'POST',
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${supabase.auth.getSession ? '' : ''}`
-          }
-        }, 3000).catch(() => null);
-        await supabase.auth.signOut({ scope: 'local' }).catch(() => null);
+        await Promise.race([
+          supabase.auth.signOut({ scope: 'local' }),
+          new Promise(resolve => setTimeout(resolve, 2500))
+        ]);
+      } catch (_) {
+        // ignore cleanup issues after local UI reset
       } finally {
         authBusy = false;
         setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
