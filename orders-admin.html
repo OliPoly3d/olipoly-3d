@@ -467,7 +467,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
     async function fetchOrders(){
       await getCurrentUser();
       if(!currentUser) return setMsg($('authMessage'),'Login first',true);
-      const {data,error} = await api('/rest/v1/orders?select=*&order=updated_at.desc');
+      const {data,error} = await api(`/rest/v1/orders?select=*&user_id=eq.${currentUser.id}&order=updated_at.desc`);
       if(error) return setMsg($('authMessage'), error.message || 'Load failed', true);
       orders = data || [];
       renderList();
