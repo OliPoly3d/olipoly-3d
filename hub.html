@@ -340,17 +340,25 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function getAccessToken() {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      const token = data?.session?.access_token;
+    function getAccessToken() {
+      const token = currentSession?.access_token;
       if (!token) throw new Error('No active session token found. Please log in again.');
       return token;
     }
 
+    async function fetchWithTimeout(url, options = {}, ms = 12000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ms);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     async function restUpsertHubNote(userId, notes) {
-      const token = await getAccessToken();
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/hub_notes?on_conflict=user_id`, {
+      const token = getAccessToken();
+      const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/hub_notes?on_conflict=user_id`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -368,8 +376,8 @@
     }
 
     async function restInsertReminder(payload) {
-      const token = await getAccessToken();
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/hub_reminders`, {
+      const token = getAccessToken();
+      const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/hub_reminders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -382,6 +390,22 @@
       if (!response.ok) {
         const text = await response.text();
         throw new Error(`Add reminder failed: ${response.status} ${text}`);
+      }
+      return response.json();
+    }
+
+    async function restLoadReminders(userId) {
+      const token = getAccessToken();
+      const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/hub_reminders?user_id=eq.${encodeURIComponent(userId)}&select=*&order=due_date.asc`, {
+        method: 'GET',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Load reminders failed: ${response.status} ${text}`);
       }
       return response.json();
     }
@@ -415,6 +439,7 @@
     };
 
     let currentUser = null;
+    let currentSession = null;
     let reminders = [];
     let notesSaving = false;
     let reminderAdding = false;
@@ -537,21 +562,15 @@
         renderReminders();
         return;
       }
-      const { data, error } = await supabase
-        .from('hub_reminders')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('due_date', { ascending: true })
-        ;
-      if (error) {
-        els.authStatus.textContent = `Could not load reminders: ${error.message}`;
+      try {
+        reminders = await restLoadReminders(currentUser.id);
+        await reviveRecurringReminders();
+        renderReminders();
+      } catch (error) {
+        els.authStatus.textContent = error.message;
         reminders = [];
         renderReminders();
-        return;
       }
-      reminders = data || [];
-      await reviveRecurringReminders();
-      renderReminders();
     }
 
     async function updateReminder(id, patch) {
@@ -584,13 +603,7 @@
         await updateReminder(reminder.id, { completed: false, due_date: reminder.next_due_date, next_due_date: null });
       }
       if (dueToRevive.length) {
-        const { data } = await supabase
-          .from('hub_reminders')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .order('due_date', { ascending: true })
-          ;
-        reminders = data || [];
+        reminders = await restLoadReminders(currentUser.id);
       }
     }
 
@@ -726,7 +739,7 @@
       setButtonBusy(els.addReminderBtn, true, 'Adding...', 'Add');
       els.authStatus.textContent = 'Adding reminder...';
       try {
-        await restInsertReminder({
+        const inserted = await restInsertReminder({
             user_id: currentUser.id,
             title,
             due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
@@ -734,21 +747,17 @@
             completed: false,
             next_due_date: null
           });
-          /* replaced hanging supabase insert
-          const { error } = await supabase.from('hub_reminders').insert({
-            user_id: currentUser.id,
-            title,
-            due_date: normalizeDate(els.reminderDateInput.value || '') || todayISO(),
-            recurrence: els.reminderRecurrenceInput.value || 'none',
-            completed: false,
-            next_due_date: null
-          });
-        */
         els.authStatus.textContent = 'Reminder added.';
         els.reminderTitleInput.value = '';
         els.reminderDateInput.value = '';
         els.reminderRecurrenceInput.value = 'none';
-        await loadReminders();
+        if (Array.isArray(inserted) && inserted.length) {
+          reminders.push(inserted[0]);
+          reminders.sort((a, b) => (a.due_date || '9999-12-31').localeCompare(b.due_date || '9999-12-31'));
+          renderReminders();
+        } else {
+          await loadReminders();
+        }
       } catch (err) {
         els.authStatus.textContent = err.message;
       } finally {
@@ -785,7 +794,7 @@
 
     async function checkOnePage(target) {
       try {
-        const response = await fetch(target.url, { method: 'GET', cache: 'no-store', credentials: 'same-origin' });
+        const response = await fetchWithTimeout(target.url, { method: 'GET', cache: 'no-store', credentials: 'same-origin' });
         return { ...target, state: response.ok ? 'ok' : 'bad', status: response.status };
       } catch (error) {
         return { ...target, state: 'bad', status: '', error: error?.message || 'Load failed' };
@@ -866,20 +875,24 @@
       authBusy = true;
       setButtonBusy(els.logoutBtn, true, 'Signing out...', 'Log Out');
       els.authStatus.textContent = 'Signing out...';
+
+      currentSession = null;
+      currentUser = null;
+      reminders = [];
+      els.notes.value = '';
+      renderReminders();
+      setAuthUi();
+      els.authStatus.textContent = 'Signed out.';
+
       try {
-        const { error } = await supabase.auth.signOut({ scope: 'local' });
-        if (error) {
-          els.authStatus.textContent = `Logout failed: ${error.message}`;
-          return;
-        }
-        currentUser = null;
-        reminders = [];
-        els.notes.value = '';
-        renderReminders();
-        setAuthUi();
-        els.authStatus.textContent = 'Signed out.';
-      } catch (err) {
-        els.authStatus.textContent = err.message;
+        await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/logout`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${supabase.auth.getSession ? '' : ''}`
+          }
+        }, 3000).catch(() => null);
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => null);
       } finally {
         authBusy = false;
         setButtonBusy(els.logoutBtn, false, 'Signing out...', 'Log Out');
@@ -888,7 +901,8 @@
 
     async function bootstrap() {
       const { data } = await supabase.auth.getSession();
-      currentUser = data?.session?.user || null;
+      currentSession = data?.session || null;
+      currentUser = currentSession?.user || null;
       setAuthUi();
       renderReminders();
       if (currentUser) {
@@ -909,7 +923,8 @@
     els.runHealthCheckBtn?.addEventListener('click', runHealthCheck);
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
-      currentUser = session?.user || null;
+      currentSession = session || null;
+      currentUser = currentSession?.user || null;
       setAuthUi();
       if (currentUser) {
         await loadCloudNote();
