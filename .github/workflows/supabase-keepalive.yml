@@ -2,7 +2,7 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    - cron: "15 13 * * *"
+    - cron: "15 13 * * *" # Daily at 13:15 UTC
   workflow_dispatch:
 
 jobs:
@@ -10,8 +10,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ping Supabase
+      - name: Ping Supabase tables
         run: |
-          curl -sS "${{ secrets.SUPABASE_URL }}/rest/v1/orders?select=id&limit=1" \
+          set -e
+
+          echo "Pinging orders..."
+          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/orders?select=id&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+
+          echo ""
+          echo "Pinging public order tracker..."
+          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/order_tracking_public?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+
+          echo ""
+          echo "Pinging finance entries..."
+          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/finance_entries?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+
+          echo ""
+          echo "Supabase keep-alive completed."
