@@ -1152,41 +1152,56 @@ async function init() {
   };
 });
 
-els.passwordInput.classList.add('mask-password');
-els.showPasswordToggle.onchange = () => els.passwordInput.classList.toggle('mask-password', !els.showPasswordToggle.checked);
-els.passwordInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    login();
-  }
-});
+// ----------------------------
+// SAFE EVENT WIRING
+// ----------------------------
+// This section is intentionally defensive: if one optional element is missing,
+// the entire JS file should NOT crash and kill login/show-password.
 
-els.loginBtn.onclick = login;
-els.signupBtn.onclick = signup;
-els.logoutBtn.onclick = logout;
-els.refreshBtn.onclick = fetchEntries;
-els.exportBtn.onclick = exportCSV;
-els.taxExportBtn.onclick = exportTaxReport;
-els.runTaxReportBtn.onclick = renderTaxReport;
-els.monthlyTaxReportBtn.onclick = renderMonthlyTaxReport;
-els.monthlyTaxMonth.oninput = renderMonthlyTaxReport;
+if (els.passwordInput) els.passwordInput.classList.add('mask-password');
+
+if (els.showPasswordToggle && els.passwordInput) {
+  els.showPasswordToggle.addEventListener('change', () => {
+    els.passwordInput.classList.toggle('mask-password', !els.showPasswordToggle.checked);
+  });
+}
+
+if (els.passwordInput) {
+  els.passwordInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      login();
+    }
+  });
+}
+
+if (els.loginBtn) els.loginBtn.addEventListener('click', login);
+if (els.signupBtn) els.signupBtn.addEventListener('click', signup);
+if (els.logoutBtn) els.logoutBtn.addEventListener('click', logout);
+if (els.refreshBtn) els.refreshBtn.addEventListener('click', fetchEntries);
+if (els.exportBtn) els.exportBtn.addEventListener('click', exportCSV);
+if (els.taxExportBtn) els.taxExportBtn.addEventListener('click', exportTaxReport);
+if (els.runTaxReportBtn) els.runTaxReportBtn.addEventListener('click', renderTaxReport);
+if (els.monthlyTaxReportBtn) els.monthlyTaxReportBtn.addEventListener('click', renderMonthlyTaxReport);
+if (els.monthlyTaxMonth) els.monthlyTaxMonth.addEventListener('input', renderMonthlyTaxReport);
 
 /* Important: do NOT wire saveBtn.onclick to requestSubmit().
    The button is already type="submit" in the HTML. */
-els.entryForm.onsubmit = saveEntry;
-els.cancelEditBtn.onclick = resetForm;
+if (els.entryForm) els.entryForm.addEventListener('submit', saveEntry);
+if (els.cancelEditBtn) els.cancelEditBtn.addEventListener('click', resetForm);
+if (els.saveSettingsBtn) els.saveSettingsBtn.addEventListener('click', saveSettings);
 
-if (els.saveSettingsBtn) els.saveSettingsBtn.onclick = saveSettings;
+if (els.clearFiltersBtn) {
+  els.clearFiltersBtn.addEventListener('click', () => {
+    if (els.typeFilter) els.typeFilter.value = 'all';
+    if (els.monthFilter) els.monthFilter.value = '';
+    if (els.searchFilter) els.searchFilter.value = '';
+    renderAll();
+  });
+}
 
-els.clearFiltersBtn.onclick = () => {
-  els.typeFilter.value = 'all';
-  els.monthFilter.value = '';
-  els.searchFilter.value = '';
-  renderAll();
-};
-
-[els.typeFilter, els.monthFilter, els.searchFilter].forEach(el => {
-  el.oninput = renderAll;
+[els.typeFilter, els.monthFilter, els.searchFilter].filter(Boolean).forEach(el => {
+  el.addEventListener('input', renderAll);
 });
 
 init();
