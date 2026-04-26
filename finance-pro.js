@@ -1023,100 +1023,66 @@ async function withTimeout(promise, ms, label) {
 }
 
 async function login() {
-  if (authBusy) return;
-
-  const email = els.emailInput.value.trim();
-  const password = els.passwordInput.value;
-
-  if (!email || !password) {
+  if (!els.emailInput.value || !els.passwordInput.value) {
     return setAuthMsg('Enter your email and password.', true);
   }
 
-  authBusy = true;
   setAuthMsg('Signing in...');
 
   try {
-    const { error } = await withTimeout(
-      supabase.auth.signInWithPassword({ email, password }),
-      12000,
-      'Login'
-    );
+    const { error } = await supabase.auth.signInWithPassword({
+      email: els.emailInput.value.trim(),
+      password: els.passwordInput.value
+    });
 
-    if (error) {
-      setAuthMsg(`Login failed: ${error.message}`, true);
-      return;
-    }
+    if (error) return setAuthMsg(`Login failed: ${error.message}`, true);
 
-    const { data, error: sessionError } = await withTimeout(
-      supabase.auth.getSession(),
-      5000,
-      'Session refresh'
-    );
+    hide(els.authMessage);
 
-    if (sessionError) {
-      setAuthMsg(`Login succeeded, but session check failed: ${sessionError.message}`, true);
-      return;
-    }
-
+    const { data } = await supabase.auth.getSession();
     currentUser = data?.session?.user || null;
     setUI(!!currentUser);
 
-    if (currentUser) {
-      hide(els.authMessage);
-      await fetchEntries();
-    } else {
-      setAuthMsg('Login completed but no session was found. Refresh once and try again.', true);
-    }
+    if (currentUser) await fetchEntries();
   } catch (err) {
     setAuthMsg(`Login failed: ${err?.message || err}`, true);
-  } finally {
-    authBusy = false;
   }
 }
 
 async function signup() {
-  if (authBusy) return;
-
   if (!els.emailInput.value || !els.passwordInput.value) {
     return setAuthMsg('Enter an email and password to create your account.', true);
   }
 
-  authBusy = true;
   setAuthMsg('Creating account...');
 
   try {
-    const { error } = await withTimeout(
-      supabase.auth.signUp({
-        email: els.emailInput.value.trim(),
-        password: els.passwordInput.value
-      }),
-      12000,
-      'Signup'
-    );
+    const { error } = await supabase.auth.signUp({
+      email: els.emailInput.value.trim(),
+      password: els.passwordInput.value
+    });
 
-    if (error) {
-      setAuthMsg(`Signup failed: ${error.message}`, true);
-      return;
-    }
+    if (error) return setAuthMsg(`Signup failed: ${error.message}`, true);
 
     setAuthMsg('Account created. If email confirmation is enabled in Supabase, confirm your email before logging in.');
   } catch (err) {
     setAuthMsg(`Signup failed: ${err?.message || err}`, true);
-  } finally {
-    authBusy = false;
   }
 }
 
 async function logout() {
-  if (authBusy) return;
+  try {
+    await supabase.auth.signOut();
+  } catch (err) {
+    console.warn('Logout cleanup issue:', err);
+  }
 
-  authBusy = true;
-
-  applySignedOutState('Logged out.');
-
-  safeLocalSignOut().finally(() => {
-    authBusy = false;
-  });
+  currentUser = null;
+  setUI(false);
+  entries = [];
+  resetForm();
+  renderAll();
+  setAuthMsg('Logged out.');
 }
 
 async function init() {
@@ -1138,30 +1104,20 @@ async function init() {
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   try {
-    const { data, error } = await withTimeout(
-      supabase.auth.getSession(),
-      7000,
-      'Initial session check'
-    );
-
-    if (error) {
-      applySignedOutState('Sign in to your private tracker.');
-    } else {
-      currentUser = data?.session?.user || null;
-      setUI(!!currentUser);
-      if (currentUser) {
-        hide(els.authMessage);
-        await fetchEntries();
-      }
-    }
-  } catch (_) {
-    applySignedOutState('Sign in to your private tracker.');
+    const { data: { session } } = await supabase.auth.getSession();
+    currentUser = session?.user || null;
+    setUI(!!currentUser);
+  } catch (err) {
+    currentUser = null;
+    setUI(false);
   }
 
   renderTaxReport();
   renderMonthlyTaxReport();
 
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  if (currentUser) await fetchEntries();
+
+  supabase.auth.onAuthStateChange(async (_event, session) => {
     currentUser = session?.user || null;
     setUI(!!currentUser);
 
@@ -1171,7 +1127,6 @@ async function init() {
     } else {
       entries = [];
       renderAll();
-      setAuthMsg('Logged out.');
     }
   });
 }
@@ -1199,6 +1154,12 @@ async function init() {
 
 els.passwordInput.classList.add('mask-password');
 els.showPasswordToggle.onchange = () => els.passwordInput.classList.toggle('mask-password', !els.showPasswordToggle.checked);
+els.passwordInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    login();
+  }
+});
 
 els.loginBtn.onclick = login;
 els.signupBtn.onclick = signup;
