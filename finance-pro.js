@@ -631,8 +631,7 @@ function renderAll() {
 }
 
 function downloadCSV(name, rows) {
-  const csv = rows.map(r => r.map(csvCell).join(',')).join('
-');
+  const csv = rows.map(r => r.map(csvCell).join(',')).join(String.fromCharCode(10));
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   a.download = name;
