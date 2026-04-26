@@ -631,7 +631,8 @@ function renderAll() {
 }
 
 function downloadCSV(name, rows) {
-  const csv = rows.map(r => r.map(csvCell).join(',')).join('\n');
+  const csv = rows.map(r => r.map(csvCell).join(',')).join('
+');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   a.download = name;
@@ -704,18 +705,30 @@ function exportTaxReport() {
 
 async function fetchEntries() {
   if (!supabase || !currentUser) return;
-  const { data, error } = await supabase
-    .from('financial_entries')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('entry_date', { ascending: false })
-    .order('created_at', { ascending: false });
 
-  if (error) return setAuthMsg(`Could not load entries: ${error.message}`, true);
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('financial_entries')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('entry_date', { ascending: false })
+        .order('created_at', { ascending: false }),
+      12000,
+      'Loading financial entries'
+    );
 
-  hide(els.authMessage);
-  entries = data || [];
-  renderAll();
+    if (error) {
+      setAuthMsg(`Could not load entries: ${error.message}`, true);
+      return;
+    }
+
+    hide(els.authMessage);
+    entries = data || [];
+    renderAll();
+  } catch (err) {
+    setAuthMsg(`Could not load entries: ${err?.message || err}`, true);
+  }
 }
 
 function startEdit(id) {
@@ -779,11 +792,21 @@ function startEdit(id) {
 
 async function deleteEntry(id) {
   if (!confirm('Delete this entry?')) return;
-  const { error } = await supabase.from('financial_entries').delete().eq('id', id).eq('user_id', currentUser.id);
-  if (error) return setMsg(`Delete failed: ${error.message}`, true);
-  setMsg('Entry deleted.');
-  if (editingId === id) resetForm();
-  await fetchEntries();
+
+  try {
+    const { error } = await withTimeout(
+      supabase.from('financial_entries').delete().eq('id', id).eq('user_id', currentUser.id),
+      12000,
+      'Deleting entry'
+    );
+
+    if (error) return setMsg(`Delete failed: ${error.message}`, true);
+    setMsg('Entry deleted.');
+    if (editingId === id) resetForm();
+    await fetchEntries();
+  } catch (err) {
+    setMsg(`Delete failed: ${err?.message || err}`, true);
+  }
 }
 
 async function saveEntry(e) {
@@ -797,7 +820,7 @@ async function saveEntry(e) {
   if (!els.entryDate.value) return setMsg('Date is required.', true);
   if (!els.entryCategory.value) return setMsg('Category is required.', true);
   if (!els.entryTitle.value.trim()) return setMsg('Title is required.', true);
-  if (els.entryAmount.value === '' || Number.isNaN(num(els.entryAmount.value))) return setMsg('Amount is required.', true);
+  if (els.entryAmount.value === '' || Number.isNaN(Number(els.entryAmount.value))) return setMsg('Amount is required.', true);
 
   const wasEditing = !!editingId;
 
@@ -814,7 +837,6 @@ async function saveEntry(e) {
       if (!customCategoryValue) {
         const customInput = prompt('Enter custom category name:', customCategoryValue || '')?.trim();
         if (!customInput) {
-          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
           return setMsg('Custom category is required.', true);
         }
         customCategoryValue = customInput;
@@ -836,17 +858,14 @@ async function saveEntry(e) {
     );
 
     if (!isIncome && saleCosts > 0 && num(els.entryAmount.value) === 0) {
-      els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
       return setMsg('This looks like a sale cost breakdown. Switch Entry Type to Income or enter the expense amount in Amount Entered.', true);
     }
 
     if (!isIncome && isCapexEquipment && num(els.entryAmount.value) <= 0) {
-      els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
       return setMsg('Enter the full purchase amount for this Equipment asset.', true);
     }
 
     if (isIncome && suspiciousExpense && num(els.shippingCharged.value) === 0 && saleCosts === 0) {
-      els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
       return setMsg('This may be a cost, not revenue. Bulk material purchases, fees, maintenance, booth costs, and supplies usually belong under Expense.', true);
     }
 
@@ -860,7 +879,6 @@ async function saveEntry(e) {
 
     if (isIncome && els.taxIncluded.value === 'yes') {
       if (num(els.salesTaxRate.value) <= 0) {
-        els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
         return setMsg('Enter a sales tax rate when tax-inclusive mode is on.', true);
       }
       const x = computeTaxExclusive(amount, num(els.salesTaxRate.value));
@@ -873,15 +891,12 @@ async function saveEntry(e) {
         const miles = num(els.milesDriven.value);
         const rate = num(els.mileageRate.value);
         if (miles <= 0) {
-          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
           return setMsg('Enter miles driven for a mileage entry.', true);
         }
         if (rate <= 0) {
-          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
           return setMsg('Enter a mileage rate for a mileage entry.', true);
         }
         if (!els.tripPurpose.value.trim()) {
-          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
           return setMsg('Enter a trip purpose for a mileage entry.', true);
         }
         originalAmount = +(miles * rate).toFixed(2);
@@ -889,7 +904,6 @@ async function saveEntry(e) {
       } else {
         const businessUsePercent = Math.max(0, Math.min(100, num(els.businessUsePercent.value) || 100));
         if (businessUsePercent <= 0) {
-          els.saveBtn.textContent = wasEditing ? 'Update Entry' : 'Save Entry';
           return setMsg('Business Use % must be greater than 0 for expense entries.', true);
         }
         amount = +(originalAmount * (businessUsePercent / 100)).toFixed(2);
@@ -931,50 +945,59 @@ async function saveEntry(e) {
       trip_from: isMileage ? els.tripFrom.value.trim() : '',
       trip_to: isMileage ? els.tripTo.value.trim() : '',
       round_trip: isMileage ? !!els.roundTripToggle.checked : false,
+      sales_tax_collected: salesTaxCollected,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
       tax_included: isIncome ? els.taxIncluded.value : 'no',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
-      sales_tax_collected: isIncome ? salesTaxCollected : 0,
       shipping_cost: num(els.shippingCost.value),
-      material_cost: num(els.materialCost.value),
-      packaging_cost: num(els.packagingCost.value),
-      labor_cost: num(els.laborCost.value),
-      other_direct_cost: num(els.otherDirectCost.value),
-      updated_at: new Date().toISOString()
+      material_cost: isIncome ? num(els.materialCost.value) : 0,
+      packaging_cost: isIncome ? num(els.packagingCost.value) : 0,
+      labor_cost: isIncome ? num(els.laborCost.value) : 0,
+      other_direct_cost: isIncome ? num(els.otherDirectCost.value) : 0
     };
 
-    const result = wasEditing
-      ? await supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
-      : await supabase.from('financial_entries').insert(payload);
+    const result = await withTimeout(
+      wasEditing
+        ? supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
+        : supabase.from('financial_entries').insert(payload),
+      12000,
+      wasEditing ? 'Updating entry' : 'Saving entry'
+    );
 
-    if (result.error) throw new Error(result.error.message);
+    if (result.error) throw result.error;
 
     setMsg(wasEditing ? 'Entry updated.' : 'Entry saved.');
     resetForm();
     await fetchEntries();
   } catch (err) {
+    console.error('Finance entry save failed:', err);
     setMsg(`Save failed: ${err?.message || err}`, true);
   } finally {
     delete els.entryForm.dataset.saving;
     els.saveBtn.disabled = false;
-    els.saveBtn.textContent =
-      els.formHeading.textContent === 'Edit Financial Entry'
-        ? 'Update Entry'
-        : 'Save Entry';
+    els.saveBtn.textContent = editingId ? 'Update Entry' : 'Save Entry';
   }
 }
 
-function applySignedOutState(message = '') {
+function applySignedOutState(message = 'Sign in to your private tracker.') {
   currentUser = null;
   entries = [];
+  editingId = null;
+  authBusy = false;
+
+  if (els.entryForm) delete els.entryForm.dataset.saving;
+  if (els.saveBtn) {
+    els.saveBtn.disabled = false;
+    els.saveBtn.textContent = 'Save Entry';
+  }
+
   setUI(false);
-  resetForm();
   renderAll();
-  if (message) setAuthMsg(message);
+  setAuthMsg(message, false);
 }
 
 async function safeLocalSignOut(timeoutMs = 2500) {
-  if (!supabase) return;
+  if (!supabase?.auth) return;
   try {
     await Promise.race([
       supabase.auth.signOut({ scope: 'local' }),
@@ -984,6 +1007,7 @@ async function safeLocalSignOut(timeoutMs = 2500) {
     // ignore local sign-out cleanup issues
   }
 }
+
 async function withTimeout(promise, ms, label) {
   let timer;
   try {
@@ -997,6 +1021,7 @@ async function withTimeout(promise, ms, label) {
     clearTimeout(timer);
   }
 }
+
 async function login() {
   if (authBusy) return;
 
@@ -1048,6 +1073,7 @@ async function login() {
     authBusy = false;
   }
 }
+
 async function signup() {
   if (authBusy) return;
 
@@ -1059,10 +1085,14 @@ async function signup() {
   setAuthMsg('Creating account...');
 
   try {
-    const { error } = await supabase.auth.signUp({
-      email: els.emailInput.value.trim(),
-      password: els.passwordInput.value
-    });
+    const { error } = await withTimeout(
+      supabase.auth.signUp({
+        email: els.emailInput.value.trim(),
+        password: els.passwordInput.value
+      }),
+      12000,
+      'Signup'
+    );
 
     if (error) {
       setAuthMsg(`Signup failed: ${error.message}`, true);
@@ -1108,7 +1138,11 @@ async function init() {
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   try {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await withTimeout(
+      supabase.auth.getSession(),
+      7000,
+      'Initial session check'
+    );
 
     if (error) {
       applySignedOutState('Sign in to your private tracker.');
