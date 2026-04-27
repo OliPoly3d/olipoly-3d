@@ -102,6 +102,22 @@ nav a.cta{padding:8px 16px;color:#fff} nav a.cta::after{display:none}
 .hero-image-wrap::before{content:"";position:absolute;inset:8% 2% 10% 18%;border-radius:28px;background:radial-gradient(circle at center,rgba(236,72,153,.18),rgba(167,139,250,.14) 42%,transparent 72%);filter:blur(24px);animation:glow 4.5s ease-in-out infinite}
 .hero-image{position:relative;z-index:1;width:100%;max-width:420px;border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.12);object-fit:cover;animation:floatImage 5s ease-in-out infinite}
 
+/* Poly mascot integration */
+.brand-poly-icon{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(236,72,153,.18));animation:polyFly 8s ease-in-out infinite;transform-origin:center;will-change:transform}
+.hero-poly-stage{position:relative;z-index:1;width:100%;max-width:460px;min-height:420px;display:flex;align-items:center;justify-content:center}
+.hero-poly-mascot{position:relative;z-index:2;width:min(100%,420px);max-height:430px;object-fit:contain;border-radius:0;box-shadow:none;animation:floatImage 5s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(236,72,153,.24)) drop-shadow(0 0 28px rgba(167,139,250,.18))}
+.hero-poly-badge{position:absolute;z-index:3;left:18px;bottom:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(236,72,153,.14);box-shadow:0 12px 24px rgba(236,72,153,.13);color:#5f4d69;font:600 .88rem Inter,sans-serif;backdrop-filter:blur(10px);cursor:pointer;transition:transform .2s ease, box-shadow .2s ease;animation:polyBadgePulse 3.8s ease-in-out infinite}
+.hero-poly-badge:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(236,72,153,.18)}
+.hero-poly-badge span{color:var(--p)}
+.poly-story-popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(31,26,36,.46);z-index:125}
+.poly-story-popup.active{display:flex}
+.poly-story-card{width:min(560px,100%);position:relative;padding:28px 24px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,244,248,.94));border:1px solid rgba(236,72,153,.16);box-shadow:0 24px 54px rgba(31,26,36,.2)}
+.poly-story-card h3{margin:0 0 10px;font:700 2rem/1.05 "Cormorant Garamond",serif;color:#241b2b}
+.poly-story-card p{margin:0 0 12px;color:#5f4d69;line-height:1.58}
+.poly-story-card strong{color:#2a2132}
+.poly-story-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border:0;border-radius:999px;background:rgba(236,72,153,.1);color:var(--p);font-weight:800;cursor:pointer}
+.poly-story-note{margin-top:14px;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.72);border:1px solid rgba(236,72,153,.1);font-weight:600}
+
 .section{padding:34px 0 18px}.section-head{align-items:end;gap:24px;margin-bottom:22px}.section-head h2{margin:0;font-size:clamp(2.25rem,3vw,2.7rem);line-height:1.05;letter-spacing:-.02em;color:#241b2b}.section-head p{margin:0;max-width:680px;color:#866f8d;font-size:1rem}
 .steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;position:relative;align-items:stretch}
 .steps::before{content:"";position:absolute;left:7%;right:7%;top:34px;height:2px;background:linear-gradient(90deg,rgba(236,72,153,.18),rgba(167,139,250,.22),rgba(236,72,153,.18));z-index:0}
@@ -166,6 +182,36 @@ input::placeholder,textarea::placeholder{color:#8aa0b7} textarea{min-height:110p
 .file-input{padding:10px;border:1px dashed rgba(0,0,0,.1);background:rgba(255,255,255,.85)}
 .modal,.success-popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px}.modal{background:rgba(0,0,0,.6);z-index:100}.modal.active,.success-popup.active{display:flex}.modal img{max-width:min(960px,92vw);max-height:88vh;border-radius:20px;border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow)}.success-popup{background:rgba(0,0,0,.45);z-index:120}.success-card{width:min(520px,100%);padding:28px 24px;text-align:left;border:1px solid rgba(236,72,153,.12);box-shadow:0 20px 44px rgba(31,26,36,.18)}.success-card h3{margin:0 0 10px;font-size:1.9rem;line-height:1.05}.success-card p{margin:0 0 14px}.success-steps{margin:0 0 18px;padding-left:18px}.success-steps li{margin-bottom:6px}.success-actions{justify-content:flex-end}
 
+
+/* Poly helper */
+.poly-helper{position:fixed;right:18px;bottom:18px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.poly-helper-panel{width:min(330px,calc(100vw - 36px));display:none;padding:16px;border-radius:22px;background:rgba(255,255,255,.94);border:1px solid rgba(236,72,153,.16);box-shadow:0 20px 44px rgba(31,26,36,.16);backdrop-filter:blur(12px)}
+.poly-helper.active .poly-helper-panel{display:block;animation:fadeUp .22s ease forwards}
+.poly-helper-panel h3{margin:0 0 6px;font:700 1.35rem/1.05 "Cormorant Garamond",serif;color:#241b2b}
+.poly-helper-panel p{margin:0 0 12px;color:#6e5d78;font-size:.92rem;line-height:1.45}
+.poly-helper-links{display:grid;gap:8px}
+.poly-helper-links a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,244,248,.96),rgba(255,255,255,.94));border:1px solid rgba(236,72,153,.10);font:600 .9rem Inter,sans-serif;color:#2a2132}
+.poly-helper-links a:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(236,72,153,.12)}
+.poly-helper-links a span{color:var(--p)}
+.poly-helper-toggle{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--s));color:#fff;box-shadow:0 14px 30px rgba(236,72,153,.25);cursor:pointer;font:700 .95rem Inter,sans-serif;transition:transform .2s ease, box-shadow .2s ease}
+.poly-helper-toggle:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(236,72,153,.32)}
+.poly-helper-toggle img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(255,255,255,.35));animation:float 3.8s ease-in-out infinite;transform-origin:center;transition:transform .22s ease}
+.poly-helper-toggle:hover img{animation:none;transform:rotate(-12deg) scale(1.08)}
+.poly-helper-close{position:absolute;top:10px;right:12px;border:0;background:rgba(236,72,153,.09);color:var(--p);width:28px;height:28px;border-radius:999px;cursor:pointer;font-weight:800}
+@media (max-width:680px){
+  .poly-helper{right:12px;bottom:12px}
+  .poly-helper-toggle{padding:8px 12px;font-size:.86rem;gap:8px}
+  .poly-helper-toggle img{width:38px;height:38px}
+  .poly-helper-panel{padding:14px;width:min(315px,calc(100vw - 24px));border-radius:20px}
+  .poly-helper-panel h3{font-size:1.25rem}
+  .poly-helper-panel p{font-size:.88rem}
+  .poly-helper-links a{padding:10px 11px;font-size:.86rem}
+  .poly-story-popup{padding:18px}
+  .poly-story-card{padding:24px 18px 20px;border-radius:22px}
+  .poly-story-card h3{font-size:1.65rem}
+  .poly-story-card p{font-size:.94rem;line-height:1.52}
+}
+
 footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.helper{color:#6e5d78}
 .legal-toggle{margin:16px auto 0;width:min(var(--max),calc(100% - 32px));font-size:.75rem;color:#7a6b80;border-top:1px solid rgba(0,0,0,.05);padding-top:14px}
 .legal-toggle summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:8px;font:1.02rem "Cormorant Garamond",serif;color:#2a2132}.legal-toggle summary::-webkit-details-marker{display:none}.legal-toggle summary::after{content:'+';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:rgba(236,72,153,.1);color:var(--p);font-size:.9rem;font-weight:700;transition:transform .2s ease}.legal-toggle[open] summary::after{transform:rotate(45deg)}.legal-content{margin-top:10px;line-height:1.5}.legal-content p{margin:0}
@@ -204,8 +250,29 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
 @keyframes glow{0%,100%{opacity:.85}50%{opacity:1}}
 @keyframes floatImage{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
-@media (prefers-reduced-motion:reduce){.hero h1,.hero p,.hero-actions,.trust-row,.hero-image,.hero-image-wrap::before,.brand-name span,.logo,.gallery-category{animation:none}}
+@keyframes polyFly{
+  0%,100%{transform:translate(0,0) rotate(-4deg) scale(1)}
+  18%{transform:translate(10px,-10px) rotate(7deg) scale(1.05)}
+  36%{transform:translate(42px,-7px) rotate(-5deg) scale(1)}
+  54%{transform:translate(70px,8px) rotate(8deg) scale(1.04)}
+  72%{transform:translate(32px,12px) rotate(-6deg) scale(1)}
+  88%{transform:translate(6px,4px) rotate(4deg) scale(1.02)}
+}
+@keyframes polyFlyMobile{
+  0%,100%{transform:translate(0,0) rotate(-4deg)}
+  35%{transform:translate(12px,-6px) rotate(6deg)}
+  70%{transform:translate(22px,5px) rotate(-5deg)}
+}
+@keyframes polyBadgePulse{
+  0%,100%{box-shadow:0 12px 24px rgba(236,72,153,.13);transform:scale(1)}
+  50%{box-shadow:0 16px 34px rgba(236,72,153,.22);transform:scale(1.025)}
+}
+
+@media (prefers-reduced-motion:reduce){.hero h1,.hero p,.hero-actions,.trust-row,.hero-image,.hero-poly-mascot,.brand-poly-icon,.poly-helper-toggle img,.hero-poly-badge,.hero-image-wrap::before,.brand-name span,.logo,.gallery-category{animation:none}.poly-helper-toggle:hover img{transform:none}}
 @media (max-width:980px){
+  .hero-poly-stage{max-width:420px;min-height:360px}
+  .hero-poly-mascot{width:min(100%,370px)}
+
   .container{width:min(var(--max),calc(100% - 28px))}
   .nav-wrap{gap:16px;padding:14px 0}
   nav{gap:12px;flex-wrap:wrap;justify-content:flex-end}
@@ -235,6 +302,11 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
   .event-meta{grid-template-columns:1fr 1fr;gap:12px 16px}
 }
 @media (max-width:680px){
+  .brand-poly-icon{width:28px;height:28px;animation:polyFlyMobile 7s ease-in-out infinite}
+  .hero-poly-stage{max-width:340px;min-height:300px;margin:auto}
+  .hero-poly-mascot{width:min(100%,300px)}
+  .hero-poly-badge{left:50%;bottom:4px;transform:translateX(-50%);font-size:.76rem;padding:8px 11px;white-space:nowrap}
+
   .container{width:min(var(--max),calc(100% - 22px))}
   .split-grid{grid-template-columns:1fr}
   .steps::before,.step:not(:last-child)::after{display:none}
@@ -293,6 +365,7 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
 <header class="site-header">
   <div class="container nav-wrap">
     <div class="brand">
+      <img src="images/poly-head.png" alt="Poly mascot icon" class="brand-poly-icon">
       <svg class="logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <rect x="6" y="8" width="52" height="48" rx="12" fill="rgba(255,255,255,0.95)" stroke="var(--line)" stroke-width="2"/>
         <rect x="10" y="8" width="44" height="8" rx="4" fill="var(--s)" opacity="0.6"/>
@@ -340,7 +413,10 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
         <div class="hero-divider"></div>
       </div>
       <div class="hero-image-wrap">
-        <img src="images/print20.jpg" alt="Bambu Lab P2S with AMS Pro" class="hero-image">
+        <div class="hero-poly-stage" aria-label="Poly mascot with a 3D printer backdrop">
+          <img src="images/poly-mascot.png" alt="Poly the OliPoly mascot" class="hero-poly-mascot">
+          <button class="hero-poly-badge" type="button" id="polyStoryOpen"><span>Click to meet Poly</span> • OliPoly's mascot</button>
+        </div>
       </div>
     </div>
   </section>
@@ -355,7 +431,7 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
         <article class="step"><div class="step-number">1</div><h3>Submit your idea</h3><p>Share what you want made.</p></article>
         <article class="step"><div class="step-number">2</div><h3>Send references</h3><p>Upload files or examples.</p></article>
         <article class="step"><div class="step-number">3</div><h3>Review options</h3><p>Confirm design, material, and pricing.</p></article>
-        <article class="step"><div class="step-number">4</div><h3>Bring it to life</h3><p>We print and deliver.</p></article>
+        <article class="step"><div class="step-number">4</div><h3>Poly brings it to life</h3><p>We print and deliver.</p></article>
       </div>
     </div>
   </section>
@@ -539,8 +615,39 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
 </section>
 </main>
 
+
+<div class="poly-helper" id="polyHelper">
+  <div class="poly-helper-panel" role="dialog" aria-label="Poly helper menu">
+    <button class="poly-helper-close" type="button" id="polyHelperClose" aria-label="Close Poly helper">×</button>
+    <h3>Need a hand?</h3>
+    <p>Poly can help you jump to the right spot.</p>
+    <div class="poly-helper-links">
+      <a href="#order">Start a custom print <span>→</span></a>
+      <a href="track.html">Track an order <span>→</span></a>
+      <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Upload reference files <span>→</span></a>
+      <a href="#gallery">Browse recent work <span>→</span></a>
+    </div>
+  </div>
+  <button class="poly-helper-toggle" type="button" id="polyHelperToggle" aria-expanded="false" aria-controls="polyHelper">
+    <img src="images/poly-head.png" alt="" aria-hidden="true">
+    Ask Poly
+  </button>
+</div>
+
 <div class="modal" id="modal" aria-hidden="true">
   <img id="modalImg" alt="Expanded gallery view">
+</div>
+
+
+<div class="poly-story-popup" id="polyStoryPopup" aria-hidden="true">
+  <div class="poly-story-card" role="dialog" aria-modal="true" aria-labelledby="polyStoryTitle">
+    <button class="poly-story-close" type="button" id="polyStoryClose" aria-label="Close Poly story">×</button>
+    <h3 id="polyStoryTitle">Meet Poly 🐝</h3>
+    <p><strong>Poly was dreamed up by Oli — Olive, age 8 — from OliPoly 3D.</strong></p>
+    <p>After seeing how busy we were bringing custom ideas to life, Olive said we were basically <strong>busy as a bee printing</strong> — and Poly was born.</p>
+    <p>Now Poly helps welcome people to the site, guide new ideas, and remind everyone that custom 3D printing can be creative, friendly, and fun.</p>
+    <p class="poly-story-note">Careful though… once you see your idea turn into a real print, the printing bug may bite you too!</p>
+  </div>
 </div>
 
 <div class="success-popup" id="orderSuccessPopup" aria-hidden="true">
@@ -572,7 +679,7 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
 
 <footer>
   <div class="container footer-wrap">
-    <div>© 2026 OliPoly 3D LLC</div>
+    <div>© 2026 OliPoly 3D LLC • Built by Poly 🐝</div>
     <div>Creative maker branding • Custom prints • Prototypes</div>
     <div class="footer-legal-link">
       <a href="legal.html">Terms &amp; Privacy</a>
@@ -644,6 +751,26 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('#closeContactSuccess')?.addEventListener('click',()=>togglePopup('contactSuccessPopup',false));
   bindForm('order-form','orderSuccessPopup');
   bindForm('contact-form','contactSuccessPopup');
+  const polyStoryPopup=document.getElementById('polyStoryPopup');
+  const polyStoryOpen=document.getElementById('polyStoryOpen');
+  const polyStoryClose=document.getElementById('polyStoryClose');
+  const setPolyStoryOpen=show=>{
+    polyStoryPopup?.classList.toggle('active',show);
+    polyStoryPopup?.setAttribute('aria-hidden',show?'false':'true');
+  };
+  polyStoryOpen?.addEventListener('click',()=>setPolyStoryOpen(true));
+  polyStoryClose?.addEventListener('click',()=>setPolyStoryOpen(false));
+  polyStoryPopup?.addEventListener('click',e=>e.target.id==='polyStoryPopup'&&setPolyStoryOpen(false));
+  const polyHelper=document.getElementById('polyHelper');
+  const polyToggle=document.getElementById('polyHelperToggle');
+  const polyClose=document.getElementById('polyHelperClose');
+  const setPolyOpen=show=>{
+    polyHelper?.classList.toggle('active',show);
+    polyToggle?.setAttribute('aria-expanded',show?'true':'false');
+  };
+  polyToggle?.addEventListener('click',()=>setPolyOpen(!polyHelper?.classList.contains('active')));
+  polyClose?.addEventListener('click',()=>setPolyOpen(false));
+  document.querySelectorAll('.poly-helper-links a').forEach(link=>link.addEventListener('click',()=>setPolyOpen(false)));
 });
 </script>
 </body>
