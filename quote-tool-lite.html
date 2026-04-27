@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Quote Tool Lite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+:root{
+  --bg:#f5eef7; --panel:rgba(255,255,255,.92); --panel2:rgba(255,246,251,.94); --line:rgba(236,72,153,.14);
+  --text:#221827; --muted:#76657f; --accent:#ec4899; --accent2:#a78bfa; --accent3:#fb7185; --danger:#f43f5e;
+  --success:#16a34a; --shadow:0 18px 42px rgba(56,24,64,.10); --r:24px; --max:1180px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);background:
+  radial-gradient(circle at top left,rgba(236,72,153,.16),transparent 28%),
+  radial-gradient(circle at top right,rgba(167,139,250,.14),transparent 26%),
+  linear-gradient(180deg,#eef2f7 0%,var(--bg) 100%)}
+.wrap{width:min(var(--max),calc(100% - 28px));margin:0 auto;padding:22px 0 56px;position:relative;z-index:1}
+.topbar,.card,.summary,.line-item,.quick-card{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;border-radius:999px;margin-bottom:18px;position:sticky;top:12px;z-index:8;background:rgba(255,255,255,.82)}
+.brand{display:flex;align-items:center;gap:12px}
+.icon{width:44px;height:44px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(236,72,153,.18);font-size:21px}
+.brand h1,.brand p,.hero h2,.hero p,.card h3,.sub,.summary h3,.summary p{margin:0}
+.brand h1{font-family:"Cormorant Garamond",serif;font-size:clamp(1.35rem,2.4vw,1.85rem);line-height:1}
+.brand p,.sub,.hero p,.hint,.muted{color:var(--muted)}
+.sub{margin-top:6px;margin-bottom:16px;line-height:1.55}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px}
+.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:11px 15px;font:inherit;font-weight:800;cursor:pointer;transition:.2s ease}
+.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 12px 26px rgba(236,72,153,.22)}
+.btn-ghost{color:var(--text);background:rgba(255,255,255,.72);border:1px solid rgba(0,0,0,.07)}
+.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
+.btn:hover,.btn-ghost:hover,.btn-danger:hover{transform:translateY(-1px)}
+.hero{display:grid;grid-template-columns:1fr .75fr;gap:18px;margin-bottom:18px}
+.hero>.card,.card{padding:22px;border-radius:var(--r)}
+.hero h2{font-family:"Cormorant Garamond",serif;font-size:clamp(2.1rem,4vw,3.25rem);margin-bottom:10px;line-height:1.02;letter-spacing:-.03em}
+.hero p{line-height:1.65}
+.quick-card{padding:18px;border-radius:var(--r);background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,244,248,.92))}
+.quick-card strong{font-family:"Cormorant Garamond",serif;font-size:1.35rem;display:block;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}
+.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.summary{padding:18px;border-radius:22px;background:var(--panel2)}
+.summary span{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:800}
+.summary strong{display:block;font-size:clamp(1.2rem,2.4vw,1.9rem)}
+.primary-total{background:linear-gradient(135deg,rgba(236,72,153,.12),rgba(167,139,250,.12));border-color:rgba(236,72,153,.24)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1 / -1}
+label{display:block;margin-bottom:6px;color:var(--muted);font-size:.86rem;font-weight:800}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(80,44,92,.12);background:rgba(255,255,255,.8);color:var(--text);font:inherit;outline:none}
+select option,select optgroup{background:#fff;color:#221827}
+input:focus,select:focus,textarea:focus{border-color:rgba(236,72,153,.52);box-shadow:0 0 0 4px rgba(236,72,153,.10)}
+textarea{min-height:88px;resize:vertical}
+.action-strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(236,72,153,.1)}
+.note,.empty,.pill-panel{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.62);border:1px dashed rgba(236,72,153,.18);color:var(--muted);line-height:1.55}
+.advanced-wrap{margin-top:18px}
+.advanced-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px 16px;border-radius:18px;border:1px solid rgba(236,72,153,.14);background:rgba(255,255,255,.72);cursor:pointer;font-weight:900;color:var(--text)}
+.advanced-toggle small{color:var(--muted);font-weight:600}
+.advanced-panel.hidden,.hidden{display:none!important}
+.advanced-panel{margin-top:14px;display:grid;gap:18px}
+.line-items{display:grid;gap:12px;margin-top:12px}.line-item{padding:14px;border-radius:20px}.line-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.line-head strong{font-size:.95rem}
+.calc-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06)}.calc-row:last-child{border-bottom:none}.calc-row strong{font-size:1rem}.total{font-size:1.12rem}
+.confidence-ok{color:#15803d}.confidence-warn{color:#b45309}.confidence-risk{color:#be123c}
+.field-missing{border-color:rgba(244,63,94,.72)!important;box-shadow:0 0 0 4px rgba(244,63,94,.12)!important;background:rgba(244,63,94,.07)!important}
+body.ready-send .internal-only{display:none!important}
+body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:0 0 0 1px rgba(236,72,153,.08),var(--shadow)}
+.mode-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}.mode-card{padding:16px 18px;border-radius:22px;border:1px solid rgba(236,72,153,.14);background:rgba(255,255,255,.62)}.mode-card strong{display:block;margin-bottom:4px}
+.lite-muted-section{opacity:.94}
+.footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+.professional-only.hidden{display:none!important}
+@media screen {
+  .wrap{display:block!important;visibility:visible!important;opacity:1!important}
+  .pdf-sheet{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;position:fixed!important;inset:0!important;z-index:-1!important;overflow:hidden!important}
+}
+.pdf-sheet{display:none}
+.pdf-shell{max-width:900px;margin:0 auto;padding:28px;background:linear-gradient(180deg,#08101f 0%,#0d1730 100%);color:#eef4ff}
+.pdf-card{border:1px solid rgba(126,144,255,.18);border-radius:28px;background:rgba(12,19,40,.96);box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden}
+.pdf-hero{padding:28px 30px;background:radial-gradient(circle at top left,rgba(126,123,255,.24),transparent 40%),radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 35%),linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08))}
+.pdf-brand{display:flex;align-items:center;gap:14px;margin-bottom:18px}.pdf-icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#7e7bff,#2ee6c4);box-shadow:0 0 26px rgba(126,123,255,.28);font-size:24px}.pdf-brand h2,.pdf-brand p,.pdf-hero h1,.pdf-hero p{margin:0}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#a8b5db}.pdf-hero h1{font-size:2rem;line-height:1.04;margin-bottom:10px}.pdf-grid,.pdf-totals{display:grid;gap:14px}.pdf-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:24px 30px}.pdf-panel{padding:18px;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}.pdf-line{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.pdf-line:last-child{border-bottom:none}.pdf-line strong{font-size:1rem}.pdf-totals{padding:0 30px 24px}.pdf-total-card{padding:18px;border-radius:22px;background:linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08));border:1px solid rgba(126,144,255,.18)}.pdf-total-card .pdf-line{border-color:rgba(255,255,255,.12)}.pdf-footer{padding:0 30px 30px;display:grid;gap:14px}.pdf-note{padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);line-height:1.65;color:#d9e3ff}.doc-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;font-size:.78rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);margin-bottom:10px}
+.standard-look .pdf-card{border-color:rgba(126,144,255,.2);background:rgba(12,19,40,.96)}.standard-look .pdf-total-card{background:linear-gradient(135deg,rgba(126,123,255,.12),rgba(46,230,196,.08));border-color:rgba(126,144,255,.18)}
+.professional-look .pdf-card{border-color:rgba(255,255,255,.16);background:#0f172d}.professional-look .pdf-hero{background:linear-gradient(135deg,#10182f 0%,#182443 60%,#203152 100%);border-bottom:2px solid rgba(255,255,255,.08)}.professional-look .pdf-icon{background:linear-gradient(135deg,#3b4b7d,#2e6f85);box-shadow:none}.professional-look .doc-chip{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}.professional-look .pdf-panel,.professional-look .pdf-note{background:rgba(255,255,255,.025);border-color:rgba(255,255,255,.11)}.professional-look .pdf-total-card{background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border-color:rgba(255,255,255,.16)}
+@media print{
+  @page{size:letter portrait;margin:0.22in}
+  html,body{width:8.5in;height:11in;overflow:hidden}
+  body{background:#fff!important;color:#111!important;font-size:10px;line-height:1.18;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{display:none!important}
+  .pdf-sheet{display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:static!important;inset:auto!important;z-index:auto!important}
+  .pdf-shell{padding:0;max-width:none;background:#fff!important;color:#111!important}
+  .pdf-card{width:100%;height:10.45in;overflow:hidden;box-shadow:none;background:#fff!important;color:#111!important;border:1px solid #d6deea;border-radius:18px}
+  .pdf-hero{padding:12px 16px 9px!important}.standard-look .pdf-hero{background:linear-gradient(135deg,#eef2ff,#eefcf9)!important;border-bottom:1px solid #d7e0ef}.professional-look .pdf-hero{background:linear-gradient(135deg,#e8edf6,#dde5f1)!important;border-bottom:2px solid #b9c6da!important}
+  .pdf-brand{margin-bottom:8px}.pdf-brand h2{font-size:.98rem}.pdf-brand p,.pdf-hero p,.pdf-line small{color:#4a5568!important}
+  .pdf-icon{width:34px;height:34px;border-radius:10px;box-shadow:none!important;transform:none;font-size:16px}
+  .pdf-hero h1{font-size:1.18rem;margin-bottom:2px;line-height:1.02}.doc-chip{margin-bottom:7px;padding:4px 8px;font-size:.62rem;color:#1f2937!important;background:#f3f6fb!important;border-color:#cfd8e6!important}
+  .pdf-grid{grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px 8px}.pdf-panel{padding:9px 10px;border-radius:12px;background:#fff!important;color:#111!important;border:1px solid #d9deea}
+  .pdf-line{padding:3px 0;gap:10px}.pdf-line strong{font-size:.84rem}.pdf-totals{padding:0 16px 8px;gap:8px}.pdf-total-card{padding:9px 10px;border-radius:12px;background:#f8fafc!important;color:#111!important;border:1px solid #cfd8e6}
+  .pdf-footer{padding:0 16px 12px;gap:8px}.pdf-note{padding:9px 10px;border-radius:12px;background:#fff!important;color:#111!important;border:1px solid #d9deea;line-height:1.24;font-size:.84rem;max-height:1.55in;overflow:hidden}
+  #pdfChecklist{font-size:.82rem;line-height:1.18;max-height:1.25in;overflow:hidden}
+  #pdfCustomerNotes,#pdfAssumptions,#pdfTrackingInfo,#pdfQuoteTerms,#pdfInvoiceTerms{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
+  .professional-look #pdfCustomerNotes,.professional-look #pdfAssumptions,.professional-look #pdfTrackingInfo,.professional-look #pdfQuoteTerms,.professional-look #pdfInvoiceTerms{-webkit-line-clamp:6}
+}
+@media (max-width:1020px){.hero,.grid,.summary-grid,.mode-row{grid-template-columns:1fr}}
+@media (max-width:720px){
+  .wrap{width:min(100% - 12px,1180px);padding-top:10px;padding-bottom:32px}.topbar{border-radius:22px;position:static;padding:12px 12px 14px;gap:12px;align-items:flex-start;flex-direction:column}.brand{width:100%;align-items:flex-start}.brand h1{font-size:1.35rem}.brand p{font-size:.86rem;line-height:1.45}.btn-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn,.btn-ghost,.btn-danger{width:100%;min-height:44px;padding:11px 12px;font-size:.92rem}.hero>.card,.summary,.card{padding:16px;border-radius:20px}.hero{gap:14px;margin-bottom:14px}.hero h2{font-size:1.8rem;line-height:1.08}.sub,.hero p,.note{font-size:.94rem;line-height:1.5}.mode-row{gap:10px;margin-bottom:14px}.mode-card{padding:14px 14px;border-radius:18px}.summary-grid{gap:10px;margin-bottom:14px}.summary{padding:14px 15px}.summary span{font-size:.72rem;margin-bottom:6px}.summary strong{font-size:1.15rem}.form-grid,.pdf-grid{grid-template-columns:1fr}.form-grid{gap:12px}.full{grid-column:auto}label{font-size:.84rem;margin-bottom:5px}input,select,textarea{padding:12px 12px;border-radius:14px;font-size:16px}textarea{min-height:88px}.line-item{padding:12px;border-radius:18px}.line-head{align-items:flex-start;flex-direction:column}.calc-row{align-items:flex-start;flex-direction:column;gap:4px;padding:9px 0}.advanced-toggle{padding:12px 14px;border-radius:16px}.footer{font-size:.8rem;margin-top:14px}.pdf-shell{padding:0}.pdf-grid{padding:14px 18px}.pdf-panel,.pdf-total-card,.pdf-note{padding:14px;border-radius:18px}
+}
+@media (max-width:520px){.btn-row{grid-template-columns:1fr}.summary-grid{grid-template-columns:1fr 1fr}.icon{width:38px;height:38px;border-radius:12px;font-size:18px}.mode-card strong{font-size:.95rem}.pdf-line{flex-direction:column;align-items:flex-start;gap:3px;padding:8px 0}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="icon">🐝</div>
+        <div>
+          <h1>OliPoly 3D Quote Tool</h1>
+          <p>Quick quote first. Advanced controls stay available when you need them.</p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
+        <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
+        <button class="btn-ghost" id="readySendBtn" type="button">Ready to Send: Off</button>
+        <button class="btn" id="customerPdfBtn" type="button">Generate Quote PDF</button>
+        <button class="btn" id="acceptCreateBtn" type="button">Accept & Create Order</button>
+      </div>
+    </div>
+
+    <section class="hero">
+      <div class="card">
+        <h2>Quote faster without losing your full pricing engine.</h2>
+        <p>Start with the few fields you usually need: customer, project, material, machine time, labor, and delivery. Everything advanced is still here, just tucked away until needed.</p>
+      </div>
+      <div class="quick-card">
+        <strong>Quick workflow</strong>
+        <p class="sub">1. Fill the quick quote fields<br>2. Review the totals<br>3. Generate the PDF or accept into orders</p>
+        <div class="note" id="modeHint">Standard mode is best for regular customer quotes. Advanced options are available below.</div>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+      <div class="summary primary-total"><span>Final Quote</span><strong id="sumQuote">$0.00</strong></div>
+      <div class="summary"><span>Price Per Item</span><strong id="sumPerItem">$0.00</strong></div>
+      <div class="summary"><span>Deposit Due</span><strong id="sumDeposit">$0.00</strong></div>
+      <div class="summary"><span>Balance Due</span><strong id="sumBalance">$0.00</strong></div>
+      <div class="summary"><span>Margin %</span><strong id="sumMargin">0.0%</strong></div>
+      <div class="summary"><span>Quote Confidence</span><strong id="quoteConfidence" class="confidence-ok">Ready</strong></div>
+    </section>
+
+    <div class="grid">
+      <section class="card customer-priority">
+        <h3>1. Customer & Project</h3>
+        <p class="sub">The main details needed for the quote and PDF.</p>
+        <div class="form-grid">
+          <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /></div>
+          <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="email@example.com" /></div>
+          <div class="full"><label for="quoteTitle">Project / Quote Title</label><input id="quoteTitle" placeholder="Example: Custom name sign, replacement clip, beach toy set" /></div>
+          <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="turnaround">Turnaround</label><input id="turnaround" placeholder="Example: 5–7 business days" /></div>
+          <div><label for="shippingMode">Fulfillment</label><select id="shippingMode"><option value="pickup">Local Pickup</option><option value="delivery">Local Delivery</option><option value="ship_estimated">Shipped Order (Estimated Shipping)</option><option value="ship_customer_label">Customer-Provided Label</option></select></div>
+          <div><label for="depositPercent">Deposit %</label><input id="depositPercent" type="number" min="0" max="100" step="0.01" value="50" /></div>
+          <div class="full"><label for="customerNotes">Customer-Facing Notes</label><textarea id="customerNotes" placeholder="What the quote includes, material/color notes, pickup/shipping expectations, etc."></textarea></div>
+        </div>
+
+        <div class="action-strip">
+          <button class="btn" id="generateQuoteBtn" type="button">Review Quote</button>
+          <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
+          <button class="btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
+          <button class="btn-ghost" id="invoicePdfBtn" type="button">Generate Invoice PDF</button>
+          <button class="btn-ghost" id="resetBtn" type="button">Reset</button>
+        </div>
+        <div class="note hidden" id="missingInputsNotice"></div>
+      </section>
+
+      <section class="card">
+        <h3>2. Quick Pricing Inputs</h3>
+        <p class="sub">This is the simplified area for most quotes.</p>
+        <div class="form-grid">
+          <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
+          <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
+          <div><label for="filament1Cost">Filament Roll Cost</label><input id="filament1Cost" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="filament1Used">Total Grams Used</label><input id="filament1Used" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="machineHours">Machine Hours</label><input id="machineHours" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="designHours">Design Hours</label><input id="designHours" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="designRate">Design Rate / Hour</label><input id="designRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="postHours">Post-Process Hours</label><input id="postHours" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="postRate">Post-Process Rate / Hour</label><input id="postRate" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simplePackaging">Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="simpleShipping">Shipping / Delivery Cost</label><input id="simpleShipping" type="number" min="0" step="0.01" value="0" /></div>
+          <div class="full"><label for="simpleHardware">Hardware / Inserts / Magnets</label><input id="simpleHardware" type="number" min="0" step="0.01" value="0" /></div>
+        </div>
+        <p class="note" id="simpleSummary">Simple inputs: $0.00 material, $0.00 packaging, $0.00 shipping, $0.00 hardware, $0.00 design labor, $0.00 machine time, $0.00 post-process labor.</p>
+      </section>
+    </div>
+
+    <section class="advanced-wrap">
+      <button class="advanced-toggle" id="advancedToggle" type="button">
+        <span>Advanced controls, history, and internal outputs</span>
+        <small id="advancedToggleText">Show details</small>
+      </button>
+
+      <div class="advanced-panel hidden" id="advancedPanel">
+        <section class="card">
+          <h3>Document Details</h3>
+          <p class="sub">These are auto-filled where possible and kept for your existing PDF/order workflow.</p>
+          <div class="form-grid">
+            <div><label for="quoteNumber">Quote Number</label><input id="quoteNumber" placeholder="Q-000001" /></div>
+            <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="INV-000001" /></div>
+            <div><label for="quoteDate">Quote Date</label><input id="quoteDate" type="date" /></div>
+            <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
+            <div><label for="validThrough">Valid Through</label><input id="validThrough" type="date" /></div>
+            <div><label for="paymentDueDate">Payment Due Date</label><input id="paymentDueDate" type="date" /></div>
+            <div><label for="companyName">Company / Client Name</label><input id="companyName" placeholder="Optional for business orders" /></div>
+            <div><label for="contactName">Contact Person</label><input id="contactName" placeholder="Optional" /></div>
+            <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Optional" /></div>
+            <div><label for="quoteStatus">Quote Status</label><select id="quoteStatus"><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select></div>
+            <div><label for="orderType">Order Type</label><select id="orderType"><option value="custom">Custom Order</option><option value="repeat">Repeat Order</option><option value="craft_show">Craft Show / Pre-Made</option><option value="business_bulk">Business / Bulk Order</option></select></div>
+            <div><label for="presetSelect">Preset</label><select id="presetSelect"><option value="custom">Custom</option><option value="small_print">Small Print</option><option value="medium_print">Medium Print</option><option value="custom_job">Custom Job</option><option value="bagg_accessory">Bogg Accessory</option><option value="beach_toy">Beach Toy</option><option value="name_sign">Name Sign</option></select></div>
+            <div><label for="professionalMode">Professional / Bulk Client Mode</label><select id="professionalMode"><option value="off">Off — Standard Customer Style</option><option value="on">On — Professional Company Style</option></select></div>
+            <div><label for="invoiceType">Invoice Type</label><select id="invoiceType"><option value="deposit">Deposit Invoice</option><option value="final">Final Balance Invoice</option><option value="full">Full / Custom Invoice</option></select></div>
+            <div><label for="paymentTerms">Payment Terms</label><select id="paymentTerms"><option value="due_on_receipt">Due on Receipt</option><option value="deposit_to_start">Deposit Required to Start</option><option value="due_on_completion">Due on Completion</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option></select></div>
+            <div><label for="unitsPerItem">Print Units Per Item</label><input id="unitsPerItem" type="number" min="1" step="1" value="1" /></div>
+            <div class="full"><label for="quoteNotes">Internal Notes</label><textarea id="quoteNotes"></textarea></div>
+            <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions"></textarea></div>
+            <div class="full professional-only hidden"><label for="invoiceNotes">Invoice Notes</label><textarea id="invoiceNotes"></textarea></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Additional Filaments</h3>
+          <div class="form-grid">
+            <div><label for="filament2Cost">Filament 2 Roll Cost</label><input id="filament2Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="filament2Used">Total Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="filament3Cost">Filament 3 Roll Cost</label><input id="filament3Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="filament3Used">Total Filament 3 Grams Used</label><input id="filament3Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="filament4Cost">Filament 4 Roll Cost</label><input id="filament4Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="filament4Used">Total Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Profit, Tax, and Rounding</h3>
+          <div class="form-grid">
+            <div><label for="profitMode">Profit Mode</label><select id="profitMode"><option value="percent">Percent Markup</option><option value="flat">Flat Profit</option></select></div>
+            <div><label for="suggestedMode">Suggested Profit</label><select id="suggestedMode"><option value="standard">Standard</option><option value="aggressive">Aggressive</option><option value="off">Off</option></select></div>
+            <div><label for="profitValue">Profit Value</label><input id="profitValue" type="number" min="0" step="0.01" value="35" /></div>
+            <div><label for="discount">Discount</label><input id="discount" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="taxPreset">Tax Preset</label><select id="taxPreset"><option value="custom">Custom</option><option value="portage">Portage 7.25%</option><option value="summit">Summit 6.75%</option><option value="cuyahoga">Cuyahoga 8%</option><option value="franklin">Franklin 7.5%</option><option value="out_of_state">Out of State / No Tax</option></select></div>
+            <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="roundingMode">Rounding</label><select id="roundingMode"><option value="0">No Rounding</option><option value="1">Nearest $1</option><option value="5">Nearest $5</option><option value="10">Nearest $10</option></select></div>
+            <div><label for="marketplacePercent">Marketplace / Processing %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Line Items</h3>
+          <p class="sub">These are automatically fed by Quick Pricing, but can be edited here.</p>
+          <div class="grid">
+            <div>
+              <h3>Direct Costs</h3>
+              <div id="directItems" class="line-items"></div>
+              <button class="btn-ghost" id="addDirectBtn" type="button">Add Direct Cost</button>
+            </div>
+            <div>
+              <h3>Overhead Costs</h3>
+              <div id="overheadItems" class="line-items"></div>
+              <button class="btn-ghost" id="addOverheadBtn" type="button">Add Overhead Cost</button>
+            </div>
+          </div>
+          <button class="btn-ghost" id="applyHelpersBtn" type="button" style="margin-top:12px;">Reapply Quick Inputs to Line Items</button>
+        </section>
+
+        <section class="card">
+          <h3>Saved Quote History</h3>
+          <div class="form-grid">
+            <div><label for="savedQuotesSelect">Saved Quotes</label><select id="savedQuotesSelect"><option value="">Select a saved quote</option></select></div>
+            <div>
+              <label>&nbsp;</label>
+              <div class="btn-row">
+                <button class="btn-ghost" id="loadQuoteBtn" type="button">Load Selected</button>
+                <button class="btn-danger" id="deleteQuoteBtn" type="button">Delete Selected</button>
+              </div>
+            </div>
+          </div>
+          <div class="note" id="historySummary">No saved quotes yet.</div>
+        </section>
+
+        <section class="card">
+          <h3>Detailed Output</h3>
+          <div class="summary-grid">
+            <div class="summary"><span>Direct Costs</span><strong id="sumDirect">$0.00</strong></div>
+            <div class="summary"><span>Overhead</span><strong id="sumOverhead">$0.00</strong></div>
+            <div class="summary"><span>Target Profit</span><strong id="sumProfit">$0.00</strong></div>
+            <div class="summary"><span>Break-Even</span><strong id="sumBreakEven">$0.00</strong></div>
+            <div class="summary"><span>Profit Guardrail</span><strong id="profitGuardrail">OK</strong></div>
+            <div class="summary"><span>Batch Cost / Unit</span><strong id="batchUnitCost">$0.00</strong></div>
+          </div>
+          <div class="note" id="quoteSummary"></div>
+          <div class="note" id="profitWarning"></div>
+          <div class="note" id="customerQuoteView"></div>
+          <div class="note" id="financeReadyView"></div>
+          <button class="btn-ghost" id="copyFinanceBtn" type="button">Copy Finance Entry</button>
+        </section>
+
+        <section class="card">
+          <h3>Batch / Inventory Helper</h3>
+          <div class="form-grid">
+            <div><label for="batchName">Batch Name</label><input id="batchName" /></div>
+            <div><label for="batchSku">SKU</label><input id="batchSku" /></div>
+            <div><label for="batchUnits">Units Made</label><input id="batchUnits" type="number" min="1" step="1" value="1" /></div>
+            <div><label for="batchColors">Colors</label><input id="batchColors" type="number" min="1" max="4" step="1" value="1" /></div>
+            <div><label for="batchRollWeight">Roll Weight</label><input id="batchRollWeight" type="number" min="1" step="1" value="1000" /></div>
+            <div><label for="batchPriceTarget">Target Price</label><input id="batchPriceTarget" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament1Cost">Filament 1 Cost</label><input id="batchFilament1Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament1Used">Filament 1 Used</label><input id="batchFilament1Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament2Cost">Filament 2 Cost</label><input id="batchFilament2Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament2Used">Filament 2 Used</label><input id="batchFilament2Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament3Cost">Filament 3 Cost</label><input id="batchFilament3Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament3Used">Filament 3 Used</label><input id="batchFilament3Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament4Cost">Filament 4 Cost</label><input id="batchFilament4Cost" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchFilament4Used">Filament 4 Used</label><input id="batchFilament4Used" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchPackaging">Packaging</label><input id="batchPackaging" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchLabor">Labor</label><input id="batchLabor" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchOther">Other</label><input id="batchOther" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchOverhead">Overhead</label><input id="batchOverhead" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="batchSold">Units Sold</label><input id="batchSold" type="number" min="0" step="1" value="0" /></div>
+            <div><label for="batchLocation">Location</label><input id="batchLocation" /></div>
+          </div>
+          <button class="btn-ghost" id="applyBatchBtn" type="button" style="margin-top:12px;">Calculate Batch</button>
+          <div class="summary-grid" style="margin-top:14px;">
+            <div class="summary"><span>Batch Total Cost</span><strong id="batchTotalCost">$0.00</strong></div>
+            <div class="summary"><span>Batch Units</span><strong id="batchUnitsOut">1</strong></div>
+            <div class="summary"><span>Unsold Value</span><strong id="batchUnsoldValue">$0.00</strong></div>
+            <div class="summary"><span>Material Unit Cost</span><strong id="materialUnitCost">$0.00</strong></div>
+            <div class="summary"><span>Active Preset</span><strong id="activePreset">Custom</strong></div>
+          </div>
+          <div class="note" id="batchSummary"></div>
+          <div class="note" id="inventoryReadyView"></div>
+        </section>
+
+        <section class="card">
+          <h3>Calculation Breakdown</h3>
+          <div class="calc-row"><span>Direct</span><strong id="outDirect">$0.00</strong></div>
+          <div class="calc-row"><span>Overhead</span><strong id="outOverhead">$0.00</strong></div>
+          <div class="calc-row"><span>Base</span><strong id="outBase">$0.00</strong></div>
+          <div class="calc-row"><span>Profit</span><strong id="outProfit">$0.00</strong></div>
+          <div class="calc-row"><span>Per Item</span><strong id="outPerItem">$0.00</strong></div>
+          <div class="calc-row"><span>Break Even</span><strong id="outBreakEven">$0.00</strong></div>
+          <div class="calc-row"><span>Margin</span><strong id="outMargin">0.0%</strong></div>
+          <div class="calc-row"><span>Pre-Discount</span><strong id="outPreDiscount">$0.00</strong></div>
+          <div class="calc-row"><span>Discount</span><strong id="outDiscount">$0.00</strong></div>
+          <div class="calc-row"><span>Before Tax</span><strong id="outBeforeTax">$0.00</strong></div>
+          <div class="calc-row"><span>Rounded Before Tax</span><strong id="outRoundedBeforeTax">$0.00</strong></div>
+          <div class="calc-row"><span>Rounding Gain</span><strong id="outRoundingGain">$0.00</strong></div>
+          <div class="calc-row"><span>Tax</span><strong id="outTax">$0.00</strong></div>
+          <div class="calc-row"><span>Deposit</span><strong id="outDeposit">$0.00</strong></div>
+          <div class="calc-row"><span>Balance</span><strong id="outBalance">$0.00</strong></div>
+          <div class="calc-row total"><span>Final</span><strong id="outFinal">$0.00</strong></div>
+        </section>
+      </div>
+    </section>
+
+    <template id="lineItemTemplate">
+      <div class="line-item">
+        <div class="line-head">
+          <strong class="line-title">Cost</strong>
+          <button class="btn-danger removeBtn" type="button">Remove</button>
+        </div>
+        <div class="form-grid">
+          <div><label>Label</label><input class="item-label" /></div>
+          <div><label>Type</label><select class="item-type"><option value="per_order">Per Order</option><option value="per_item">Per Item</option></select></div>
+          <div><label>Amount</label><input class="item-amount" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label>Note</label><input class="item-note" /></div>
+        </div>
+      </div>
+    </template>
+
+    <div class="footer">OliPoly 3D Quote Tool Lite • Existing saved quote history and quote numbering logic are preserved.</div>
+  </div>
+
+  <section class="pdf-sheet" id="pdfSheet" aria-hidden="true">
+    <div class="pdf-shell">
+      <div class="pdf-card standard-look" id="pdfCard">
+        <div class="pdf-hero">
+          <div class="doc-chip"><span id="pdfDocType">Quote</span></div>
+          <div class="pdf-brand">
+            <div class="pdf-icon">✦</div>
+            <div>
+              <h2>OliPoly 3D</h2>
+              <p id="pdfBrandSub">Custom 3D printing quote</p>
+            </div>
+          </div>
+          <h1 id="pdfTitle">Customer Quote</h1>
+          <p id="pdfSubtitle" class="hidden"></p>
+        </div>
+        <div class="pdf-grid">
+          <div class="pdf-panel">
+            <div class="pdf-line quote-only">
+  <span>Quote Number</span>
+  <strong id="pdfQuoteNumber">—</strong>
+</div>
+<div class="pdf-line quote-only">
+  <span>Order Number (upon acceptance)</span>
+  <strong id="pdfOrderPreview">—</strong>
+</div>
+
+<div class="pdf-line invoice-only hidden">
+  <span>Invoice Number</span>
+  <strong id="pdfInvoiceNumber">—</strong>
+</div>
+
+<div class="pdf-line">
+  <span>Date</span>
+  <strong id="pdfQuoteDate">—</strong>
+</div>
+            <div class="pdf-line quote-only"><span>Valid Through</span><strong id="pdfValidThrough">—</strong></div>
+            <div class="pdf-line invoice-only hidden"><span>Payment Due</span><strong id="pdfPaymentDueDate">—</strong></div>
+            <div class="pdf-line quote-only"><span>Turnaround</span><strong id="pdfTurnaround">—</strong></div>
+            <div class="pdf-line"><span>Status</span><strong id="pdfStatus">Pending</strong></div>
+          </div>
+          <div class="pdf-panel">
+            <div class="pdf-line"><span>Client</span><strong id="pdfCustomerName">—</strong></div>
+            <div class="pdf-line professional-row hidden"><span>Company</span><strong id="pdfCompanyName">—</strong></div>
+            <div class="pdf-line professional-row hidden"><span>Contact</span><strong id="pdfContactName">—</strong></div>
+            <div class="pdf-line professional-row hidden"><span>PO Number</span><strong id="pdfPoNumber">—</strong></div>
+            <div class="pdf-line"><span>Project</span><strong id="pdfProject">—</strong></div>
+            <div class="pdf-line"><span>Quantity</span><strong id="pdfQty">1</strong></div>
+            <div class="pdf-line"><span>Price Per Item</span><strong id="pdfPerItem">$0.00</strong></div>
+          </div>
+        </div>
+        <div class="pdf-totals">
+          <div class="pdf-total-card quote-only">
+            <div class="pdf-line"><span>Subtotal</span><strong id="pdfSubtotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfTax">$0.00</strong></div>
+            <div class="pdf-line"><span>Total Quote</span><strong id="pdfTotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Deposit Due</span><strong id="pdfDeposit">$0.00</strong></div>
+            <div class="pdf-line"><span>Balance Due</span><strong id="pdfBalance">$0.00</strong></div>
+          </div>
+          <div class="pdf-total-card invoice-only hidden">
+            <div class="pdf-line"><span>Subtotal</span><strong id="pdfSubtotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfTax">$0.00</strong></div>
+            <div class="pdf-line"><span>Total</span><strong id="pdfTotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Deposit</span><strong id="pdfDeposit">$0.00</strong></div>
+            <div class="pdf-line"><span>Balance</span><strong id="pdfBalance">$0.00</strong></div>
+            <div class="pdf-line"><span>Invoice Amount</span><strong id="pdfInvoiceAmount">$0.00</strong></div>
+          </div>
+        </div>
+        <div class="pdf-footer">
+          <div class="pdf-note hidden" id="pdfCustomerNotes"></div>
+          <div class="pdf-note" id="pdfAssumptions"></div>
+          <div class="pdf-note quote-only" id="pdfTrackingInfo"></div>
+          <div class="pdf-note quote-only" id="pdfQuoteTerms"></div>
+          <div class="pdf-note invoice-only hidden" id="pdfInvoiceTerms"></div>
+          <div class="pdf-note" id="pdfChecklist"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <script src="quote-tool.js"></script>
+</body>
+</html>
