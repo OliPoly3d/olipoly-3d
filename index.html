@@ -106,8 +106,8 @@ nav a.cta{padding:8px 16px;color:#fff} nav a.cta::after{display:none}
 .brand-poly-icon{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(236,72,153,.18));animation:polyFly 8s ease-in-out infinite;transform-origin:center;will-change:transform}
 .hero-poly-stage{position:relative;z-index:1;width:100%;max-width:460px;min-height:420px;display:flex;align-items:center;justify-content:center}
 .hero-poly-mascot{position:relative;z-index:2;width:min(100%,420px);max-height:430px;object-fit:contain;border-radius:0;box-shadow:none;animation:floatImage 5s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(236,72,153,.24)) drop-shadow(0 0 28px rgba(167,139,250,.18))}
-.hero-poly-badge{position:absolute;z-index:3;left:18px;bottom:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(236,72,153,.14);box-shadow:0 12px 24px rgba(236,72,153,.13);color:#5f4d69;font:600 .88rem Inter,sans-serif;backdrop-filter:blur(10px);cursor:pointer;transition:transform .2s ease, box-shadow .2s ease;animation:polyBadgePulse 3.8s ease-in-out infinite}
-.hero-poly-badge:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(236,72,153,.18)}
+.hero-poly-badge{position:absolute;z-index:3;left:50%;bottom:14px;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(236,72,153,.14);box-shadow:0 12px 24px rgba(236,72,153,.13);color:#5f4d69;font:600 .88rem Inter,sans-serif;backdrop-filter:blur(10px);cursor:pointer;white-space:nowrap;max-width:92vw;transition:box-shadow .2s ease;animation:polyBadgeFloatPulse 5s ease-in-out infinite}
+.hero-poly-badge:hover{box-shadow:0 16px 30px rgba(236,72,153,.18)}
 .hero-poly-badge span{color:var(--p)}
 .poly-story-popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(31,26,36,.46);z-index:125}
 .poly-story-popup.active{display:flex}
@@ -263,12 +263,12 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
   35%{transform:translate(12px,-6px) rotate(6deg)}
   70%{transform:translate(22px,5px) rotate(-5deg)}
 }
-@keyframes polyBadgePulse{
-  0%,100%{box-shadow:0 12px 24px rgba(236,72,153,.13);transform:scale(1)}
-  50%{box-shadow:0 16px 34px rgba(236,72,153,.22);transform:scale(1.025)}
+@keyframes polyBadgeFloatPulse{
+  0%,100%{box-shadow:0 12px 24px rgba(236,72,153,.13);transform:translateX(-50%) translateY(0) scale(1)}
+  50%{box-shadow:0 16px 34px rgba(236,72,153,.22);transform:translateX(-50%) translateY(-3px) scale(1.018)}
 }
 
-@media (prefers-reduced-motion:reduce){.hero h1,.hero p,.hero-actions,.trust-row,.hero-image,.hero-poly-mascot,.brand-poly-icon,.poly-helper-toggle img,.hero-poly-badge,.hero-image-wrap::before,.brand-name span,.logo,.gallery-category{animation:none}.poly-helper-toggle:hover img{transform:none}}
+@media (prefers-reduced-motion:reduce){.hero h1,.hero p,.hero-actions,.trust-row,.hero-image,.hero-poly-mascot,.brand-poly-icon,.poly-helper-toggle img,.hero-poly-badge,.hero-image-wrap::before,.brand-name span,.logo,.gallery-category{animation:none}.hero-poly-badge{transform:translateX(-50%)}.poly-helper-toggle:hover img{transform:none}}
 @media (max-width:980px){
   .hero-poly-stage{max-width:420px;min-height:360px}
   .hero-poly-mascot{width:min(100%,370px)}
@@ -305,7 +305,7 @@ footer{padding:40px 0 60px;color:#7f6c88}.contact-shell p,.step p,.section p,.he
   .brand-poly-icon{width:28px;height:28px;animation:polyFlyMobile 7s ease-in-out infinite}
   .hero-poly-stage{max-width:340px;min-height:300px;margin:auto}
   .hero-poly-mascot{width:min(100%,300px)}
-  .hero-poly-badge{left:50%;bottom:4px;transform:translateX(-50%);font-size:.76rem;padding:8px 11px;white-space:nowrap}
+  .hero-poly-badge{left:50%;bottom:6px;font-size:.76rem;padding:8px 11px;white-space:nowrap;max-width:88vw}
 
   .container{width:min(var(--max),calc(100% - 22px))}
   .split-grid{grid-template-columns:1fr}
