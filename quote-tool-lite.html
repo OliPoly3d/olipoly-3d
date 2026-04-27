@@ -117,7 +117,7 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
       <div class="btn-row">
         <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
         <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
-        <button class="btn-ghost" id="readySendBtn" type="button">Ready to Send: Off</button>
+        <button class="btn-ghost" id="readySendBtn" type="button">Preview Customer View</button>
         <button class="btn" id="customerPdfBtn" type="button">Generate Quote PDF</button>
         <button class="btn" id="acceptCreateBtn" type="button">Accept & Create Order</button>
       </div>
@@ -458,5 +458,19 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
 
 
   <script src="quote-tool.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('readySendBtn');
+  if (!btn) return;
+  const relabel = () => {
+    const on = document.body.classList.contains('ready-send');
+    btn.textContent = on ? 'Customer Preview: On' : 'Preview Customer View';
+  };
+  btn.addEventListener('click', () => setTimeout(relabel, 0));
+  relabel();
+});
+</script>
+
 </body>
 </html>
