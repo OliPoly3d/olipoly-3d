@@ -464,10 +464,70 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   .saved-inline-controls{grid-template-columns:1fr}
 }
 
+
+/* === Saved Quotes Full-Width + Quote Input Grid V5 === */
+.saved-quotes-inline{
+  grid-column:1 / -1!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:18px 0 20px!important;
+}
+.saved-inline-head{
+  grid-template-columns:minmax(280px,1fr) minmax(320px,.75fr)!important;
+}
+.saved-inline-controls{
+  grid-template-columns:minmax(320px,1fr) 180px 180px!important;
+}
+
+/* Keep the main input area as two useful columns on desktop:
+   left = simple quote/project form, right = cost inputs/results/advanced card */
+.grid{
+  align-items:start!important;
+}
+.grid > .saved-quotes-inline{
+  grid-column:1 / -1!important;
+}
+@media (min-width:1021px){
+  .grid{
+    grid-template-columns:minmax(0,1fr) minmax(380px,.9fr)!important;
+  }
+}
+@media (max-width:820px){
+  .saved-inline-head,
+  .saved-inline-controls{
+    grid-template-columns:1fr!important;
+  }
+}
+
+
+/* === Supabase Saved Quotes V6 === */
+.saved-source-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(46,230,196,.10);
+  color:#197766;
+  font-weight:800;
+  font-size:.78rem;
+}
+.saved-source-pill.local{
+  background:rgba(236,72,153,.10);
+  color:#8a2f67;
+}
+.saved-cloud-status{
+  margin-top:8px;
+  font-size:.84rem;
+  color:#7f6c88;
+}
+
 </style>
 </head>
 <body>
-<!-- QUOTE_TOOL_LITE_SAVED_INLINE_V4 -->
+<!-- QUOTE_TOOL_LITE_SUPABASE_QUOTES_V6 -->
+<!-- QUOTE_TOOL_LITE_FULL_WIDTH_SAVED_V5 -->
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
@@ -512,15 +572,13 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
       <div class="summary"><span>Quote Confidence</span><strong id="quoteConfidence" class="confidence-ok">Ready</strong></div>
     </section>
 
-    <div class="grid">
-      
-    <section class="card saved-quotes-inline" id="savedQuotesInline">
+<section class="card saved-quotes-inline" id="savedQuotesInline">
       <div class="saved-inline-head">
         <div>
           <h3>Saved Quotes</h3>
-          <p class="sub">Save a quote, then load it later to edit, update, or create the order.</p>
+          <p class="sub">Save quotes to Supabase cloud storage when logged in, with browser backup as fallback.</p>
         </div>
-        <div class="saved-inline-summary" id="historySummary">No saved quotes yet.</div>
+        <div class="saved-inline-summary" id="historySummary">Cloud quotes load here when logged in. Browser backups appear if cloud loading is unavailable.</div>
       </div>
       <div class="saved-inline-controls">
         <div>
@@ -534,6 +592,7 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
       </div>
     </section>
 
+    <div class="grid">
 <section class="card customer-priority">
         <h3>1. Customer & Project</h3>
         <p class="sub">The main details needed for the quote and PDF.</p>
