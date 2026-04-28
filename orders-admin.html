@@ -54,6 +54,8 @@
         <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
         <button class="btn-danger hidden" id="logoutBtn" type="button">Log Out</button>
         <button class="btn" id="newBtn" type="button">New Order</button>
+        
+        <a class="btn" href="quote.html">Create Quote</a>
       </div>
     </div>
 
@@ -249,7 +251,7 @@
     function snapshotForm(){
       return {
         user_id: currentUser?.id,
-        order_number: $('orderNumber').value.trim() || `OP-${Date.now().toString().slice(-5)}`,
+        order_number: $('orderNumber').value.trim(),
         order_date: $('orderDate').value || today(),
         customer_name: $('customerName').value.trim() || null,
         customer_email: $('customerEmail').value.trim() || null,
