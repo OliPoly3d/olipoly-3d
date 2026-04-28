@@ -85,6 +85,20 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   .primary-actions,.secondary-actions{grid-template-columns:1fr}
 }
 
+
+.saved-quotes-lite{margin-bottom:18px}
+.section-title-row{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.saved-actions{display:flex;gap:10px;flex-wrap:wrap}
+.saved-actions .btn-ghost,.saved-actions .btn-danger{flex:1;min-width:180px}
+.saved-help{margin-top:12px}
+.lite-status-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;padding:11px 16px;border-radius:999px;background:rgba(31,26,36,.94);color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.22);font-weight:800;font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease}
+.lite-status-toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+@media (max-width:720px){
+  .saved-actions{display:grid;grid-template-columns:1fr}
+  .saved-actions .btn-ghost,.saved-actions .btn-danger{width:100%;min-width:0}
+  .lite-status-toast{width:calc(100% - 28px);text-align:center}
+}
+
 @media screen {
   .wrap{display:block!important;visibility:visible!important;opacity:1!important}
   .pdf-sheet{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;position:fixed!important;inset:0!important;z-index:-1!important;overflow:hidden!important}
@@ -202,7 +216,7 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
         </div>
 
         <div class="action-strip">
-          <button class="btn" id="generateQuoteBtn" type="button">Review Quote</button>
+          <button class="btn" id="generateQuoteBtn" type="button">Check Missing Inputs</button>
           <button class="btn-ghost" id="resetBtn" type="button">Reset</button>
         </div>
         <div class="note hidden" id="missingInputsNotice"></div>
@@ -499,5 +513,6 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   <script src="quote-tool.js"></script>
   <script src="quote-tool-lite.js"></script>
 
+  <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
 </body>
 </html>
