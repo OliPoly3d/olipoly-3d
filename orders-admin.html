@@ -641,12 +641,6 @@ if ($('openVenmoBtn')) {
     orderDateEl.value = new Date().toISOString().slice(0, 10);
   }
 
-  // If order number is empty, generate a simple one
-  const orderNumberEl = document.getElementById('orderNumber');
-  if (orderNumberEl && !orderNumberEl.value) {
-    orderNumberEl.value = `OP-${Date.now().toString().slice(-5)}`;
-  }
-
   localStorage.removeItem('olipoly_transfer');
   alert('Order loaded from Hub. Review it, then click Save Order.');
 });
