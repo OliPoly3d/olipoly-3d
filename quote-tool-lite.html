@@ -415,29 +415,63 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   .saved-bar-controls select{grid-column:auto}
 }
 
+
+/* === Saved Quotes Inline Placement Fix === */
+.saved-quotes-bar{display:none!important}
+.saved-quotes-inline{
+  position:relative!important;
+  top:auto!important;
+  z-index:1!important;
+  margin:18px 0!important;
+  padding:18px!important;
+  border-radius:24px!important;
+  background:rgba(255,255,255,.94)!important;
+  border:1px solid rgba(236,72,153,.14)!important;
+  box-shadow:0 14px 32px rgba(56,24,64,.08)!important;
+  backdrop-filter:blur(12px);
+}
+.saved-inline-head{
+  display:grid;
+  grid-template-columns:minmax(240px,1fr) minmax(260px,.8fr);
+  gap:14px;
+  align-items:start;
+  margin-bottom:14px;
+}
+.saved-inline-head h3{margin:0 0 4px}
+.saved-inline-head .sub{margin:0}
+.saved-inline-summary{
+  color:#7f6c88;
+  font-size:.92rem;
+  line-height:1.4;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(236,72,153,.07);
+  border:1px solid rgba(236,72,153,.08);
+}
+.saved-inline-controls{
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) 170px 170px;
+  gap:10px;
+  align-items:end;
+}
+.saved-inline-controls button{
+  min-height:48px;
+  width:100%;
+}
+.saved-inline-controls select{width:100%}
+@media (max-width:820px){
+  .saved-inline-head{grid-template-columns:1fr}
+  .saved-inline-controls{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
-<!-- QUOTE_TOOL_LITE_HEADER_V3 -->
+<!-- QUOTE_TOOL_LITE_SAVED_INLINE_V4 -->
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
         <div class="icon">🐝</div>
-        
-    <section class="saved-quotes-bar" id="savedQuotesBar">
-      <div class="saved-bar-title">
-        <strong>Saved Quotes</strong>
-        <span>Save, load, edit, or delete previous quotes.</span>
-      </div>
-      <div class="saved-bar-controls">
-        <select id="savedQuotesSelect">
-          <option value="">Select a saved quote</option>
-        </select>
-        <button class="btn-ghost" id="loadQuoteBtn" type="button">Load</button>
-        <button class="btn-danger" id="deleteQuoteBtn" type="button">Delete</button>
-      </div>
-      <div class="saved-bar-summary" id="historySummary">No saved quotes yet.</div>
-    </section>
 <div>
           <h1>OliPoly 3D Quote Tool</h1>
           <p>Quick quote first. Advanced controls stay available when you need them.</p>
@@ -479,7 +513,28 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
     </section>
 
     <div class="grid">
-      <section class="card customer-priority">
+      
+    <section class="card saved-quotes-inline" id="savedQuotesInline">
+      <div class="saved-inline-head">
+        <div>
+          <h3>Saved Quotes</h3>
+          <p class="sub">Save a quote, then load it later to edit, update, or create the order.</p>
+        </div>
+        <div class="saved-inline-summary" id="historySummary">No saved quotes yet.</div>
+      </div>
+      <div class="saved-inline-controls">
+        <div>
+          <label for="savedQuotesSelect">Saved Quote Library</label>
+          <select id="savedQuotesSelect">
+            <option value="">Select a saved quote</option>
+          </select>
+        </div>
+        <button class="btn-ghost" id="loadQuoteBtn" type="button">Load Selected</button>
+        <button class="btn-danger" id="deleteQuoteBtn" type="button">Delete Selected</button>
+      </div>
+    </section>
+
+<section class="card customer-priority">
         <h3>1. Customer & Project</h3>
         <p class="sub">The main details needed for the quote and PDF.</p>
 
@@ -799,4 +854,3 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
 </body>
 </html>
-<!-- deploy retry -->
