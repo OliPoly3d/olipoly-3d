@@ -67,6 +67,24 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
 .lite-muted-section{opacity:.94}
 .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
 .professional-only.hidden{display:none!important}
+
+.topbar-actions{display:grid;gap:10px;min-width:min(620px,100%)}
+.primary-actions,.secondary-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.secondary-actions{opacity:.94}
+.secondary-actions .btn-ghost{padding:10px 13px;font-size:.9rem}
+.quote-type-panel{margin:14px 0 16px;padding:16px;border-radius:20px;background:linear-gradient(180deg,rgba(255,244,248,.96),rgba(255,255,255,.8));border:1px solid rgba(236,72,153,.13)}
+.lite-format-summary{margin-top:10px;border-style:solid;background:rgba(255,255,255,.72)}
+.lite-field-hidden{display:none!important}
+.lite-format-chip{display:inline-flex;align-items:center;gap:7px;margin-top:4px;padding:6px 10px;border-radius:999px;background:rgba(236,72,153,.1);color:#7a2f5e;font-weight:800;font-size:.82rem}
+@media (max-width:720px){
+  .topbar-actions{width:100%}
+  .primary-actions,.secondary-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .primary-actions .btn,.primary-actions .btn-ghost,.secondary-actions .btn-ghost{width:100%;min-height:44px}
+}
+@media (max-width:520px){
+  .primary-actions,.secondary-actions{grid-template-columns:1fr}
+}
+
 @media screen {
   .wrap{display:block!important;visibility:visible!important;opacity:1!important}
   .pdf-sheet{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;position:fixed!important;inset:0!important;z-index:-1!important;overflow:hidden!important}
@@ -114,12 +132,19 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
           <p>Quick quote first. Advanced controls stay available when you need them.</p>
         </div>
       </div>
-      <div class="btn-row">
-        <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
-        <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
-        <button class="btn-ghost" id="readySendBtn" type="button">Preview Customer View</button>
-        <button class="btn" id="customerPdfBtn" type="button">Generate Quote PDF</button>
-        <button class="btn" id="acceptCreateBtn" type="button">Accept & Create Order</button>
+      <div class="topbar-actions">
+        <div class="primary-actions">
+          <button class="btn-ghost" id="saveQuoteBtn" type="button">Save Quote</button>
+          <button class="btn" id="customerPdfBtn" type="button">Generate Quote PDF</button>
+          <button class="btn" id="acceptCreateBtn" type="button">Accept & Create Order</button>
+        </div>
+        <div class="secondary-actions">
+          <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
+          <button class="btn-ghost" id="readySendBtn" type="button">Preview Customer View</button>
+          <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
+          <button class="btn-ghost" id="invoicePdfBtn" type="button">Invoice PDF</button>
+          <button class="btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
+        </div>
       </div>
     </div>
 
@@ -148,6 +173,23 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
       <section class="card customer-priority">
         <h3>1. Customer & Project</h3>
         <p class="sub">The main details needed for the quote and PDF.</p>
+
+        <div class="quote-type-panel customer-priority">
+          <label for="liteQuoteType">Quote Format / Customer Type</label>
+          <select id="liteQuoteType">
+            <option value="retail">Retail / Individual Customer</option>
+            <option value="custom">Custom Design Project</option>
+            <option value="business">Business / Bulk Order</option>
+            <option value="repeat">Repeat Customer</option>
+            <option value="craft">Craft Show / Pre-Made</option>
+            <option value="po">Professional / PO Customer</option>
+          </select>
+          <div class="note lite-format-summary" id="liteFormatSummary">
+            <strong>Retail / Individual Customer</strong><br>
+            Friendly customer quote with simple payment terms and minimal business fields.
+          </div>
+        </div>
+
         <div class="form-grid">
           <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="email@example.com" /></div>
@@ -161,9 +203,6 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
 
         <div class="action-strip">
           <button class="btn" id="generateQuoteBtn" type="button">Review Quote</button>
-          <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
-          <button class="btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
-          <button class="btn-ghost" id="invoicePdfBtn" type="button">Generate Invoice PDF</button>
           <button class="btn-ghost" id="resetBtn" type="button">Reset</button>
         </div>
         <div class="note hidden" id="missingInputsNotice"></div>
@@ -458,19 +497,7 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
 
 
   <script src="quote-tool.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('readySendBtn');
-  if (!btn) return;
-  const relabel = () => {
-    const on = document.body.classList.contains('ready-send');
-    btn.textContent = on ? 'Customer Preview: On' : 'Preview Customer View';
-  };
-  btn.addEventListener('click', () => setTimeout(relabel, 0));
-  relabel();
-});
-</script>
+  <script src="quote-tool-lite.js"></script>
 
 </body>
 </html>
