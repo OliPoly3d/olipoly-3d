@@ -158,6 +158,7 @@
         <div class="btn-row" style="margin-top:14px;">
           <button class="btn" id="saveBtn" type="button">Save Order</button>
           <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
+          <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Send Completion Email</button>
         </div>
         <div class="message" id="formMessage"></div>
         <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
@@ -549,6 +550,60 @@ const payload = snapshotForm();
       setMsg($('formMessage'),'Deleted');
     }
 
+
+    function buildCompletionEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
+      const fulfillmentLine =
+        fulfillment === 'shipping'
+          ? 'If this order is being shipped, tracking or shipping details will be provided as available.'
+          : fulfillment === 'delivery'
+            ? 'If this order is being delivered, reply to coordinate final details.'
+            : "If you're picking up, just reply to coordinate a time.";
+
+      const paymentLine =
+        paymentStatus === 'paid'
+          ? 'Payment is marked paid in full.'
+          : 'You can view payment options or complete payment from the tracker link below.';
+
+      return `Hi — your order is complete and ready.
+
+Order #: ${orderNumber}
+${orderTitle ? `Project: ${orderTitle}\n` : ''}
+View your order details and payment options:
+${trackLink}
+
+${paymentLine}
+
+${fulfillmentLine}
+
+Thanks!
+OliPoly 3D`;
+    }
+
+    function openGmailCompletionEmail() {
+      const orderNumber = $('orderNumber').value.trim();
+      const email = $('customerEmail').value.trim();
+      const orderTitle = $('orderTitle').value.trim();
+      const paymentStatus = $('paymentStatus').value;
+      const fulfillment = $('fulfillment').value;
+
+      if (!orderNumber || !email) {
+        alert('Order number and customer email are required.');
+        return;
+      }
+
+      const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
+      const subject = `Your order is ready – OliPoly 3D (${orderNumber})`;
+      const body = buildCompletionEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
+
+      const gmailUrl =
+        `https://mail.google.com/mail/?view=cm&fs=1` +
+        `&to=${encodeURIComponent(email)}` +
+        `&su=${encodeURIComponent(subject)}` +
+        `&body=${encodeURIComponent(body)}`;
+
+      window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+    }
+
     if ($('signupBtn')) $('signupBtn').onclick = signup;
 if ($('loginBtn')) $('loginBtn').onclick = login;
 if ($('logoutBtn')) $('logoutBtn').onclick = logout;
@@ -556,6 +611,7 @@ if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
 if ($('newBtn')) $('newBtn').onclick = resetForm;
 if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
 if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
+if ($('sendCompleteEmailBtn')) $('sendCompleteEmailBtn').onclick = openGmailCompletionEmail;
     if ($('openStripeBtn')) {
   $('openStripeBtn').onclick = () => {
     const url = $('paymentLinkStripe')?.value;
