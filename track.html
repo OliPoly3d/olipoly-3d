@@ -83,7 +83,7 @@
       <h3>Find Your Order</h3>
       <p class="sub">Enter your order number to see the latest public status from OliPoly 3D.</p>
       <div class="search-row">
-        <div><label for="orderLookup">Order Number</label><input id="orderLookup" placeholder="Example: OP-1001" /></div>
+        <div><label for="orderLookup">Order Number</label><input id="orderLookup" placeholder="Example: Q-000205 or OP-000205" /></div>
         <div style="display:flex;align-items:end;gap:10px;"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
       </div>
       <div class="note" id="lookupMessage" style="margin-top:14px;">Enter your order number to see the current status.</div>
@@ -173,7 +173,13 @@
     function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v]||v;}
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
     function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_for_pickup:5,shipped:5,completed:5})[status]||1;}
-
+    function normalizeLookupNumber(value){
+    const raw = String(value || '').trim().toUpperCase();
+    if (!raw) return '';
+    if (raw.startsWith('Q-')) return raw.replace(/^Q-/, 'OP-');
+    return raw;
+}
+    
     function formatPaidDate(dateStr){
       if(!dateStr) return '';
       const d = new Date(`${dateStr}T00:00:00`);
@@ -280,10 +286,11 @@
     }
 
     async function lookup(){
-      const id=els.orderLookup.value.trim();
-      if(!id) return setMessage('Enter an order number first.',true);
+      const typedId = els.orderLookup.value.trim();
+      if(!typedId) return setMessage('Enter a quote or order number first.',true);
 
-      const safeId=encodeURIComponent(id);
+      const id = normalizeLookupNumber(typedId);
+      const safeId = encodeURIComponent(id);
       const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link,payment_link_stripe,payment_link_paypal,payment_link_venmo,paid_date&order_number=eq.${safeId}&limit=1`;
       const {data,error}=await api(path);
 
@@ -293,13 +300,23 @@
       }
       if(!data||!data.length){
         els.resultCard.classList.add('hidden');
-        return setMessage('We could not find that order number yet. Double-check it and try again.',true);
+        if (typedId.toUpperCase().startsWith('Q-')) {
+  return setMessage(`We could not find an accepted order for ${typedId} yet. If this quote was just accepted, try again in a moment using ${id}.`, true);
+}
+return setMessage('We could not find that order number yet. Double-check it and try again.',true);
       }
       renderOrder(data[0]);
     }
 
     els.lookupBtn.onclick=lookup;
-    els.orderLookup.addEventListener('keydown',e=>{ if(e.key==='Enter') lookup(); });
+els.orderLookup.addEventListener('keydown',e=>{ if(e.key==='Enter') lookup(); });
+
+const urlParams = new URLSearchParams(window.location.search);
+const incomingOrder = urlParams.get('order') || urlParams.get('q');
+if (incomingOrder) {
+  els.orderLookup.value = incomingOrder;
+  lookup();
+}
   </script>
 </body>
 </html>
