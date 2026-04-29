@@ -768,9 +768,9 @@ async function loadCustomerResponses() {
     }
 
     const res = await window.sbApi(
-  `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_name,customer_email,customer_response,customer_response_message,converted_order_number,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
-  { method: "GET" }
-);
+      `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_name,customer_email,quote_data,customer_response,customer_response_message,converted_order_number,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
+      { method: "GET" }
+    );
 
     if (!res.ok || res.error) {
       throw new Error(res.error?.message || JSON.stringify(res.error || res.data || {}) || "Could not load responses.");
@@ -824,7 +824,12 @@ if (q.customer_response === "accepted" && q.converted_order_number) {
 
   emailBtn.onclick = () => {
     const orderNumber = q.converted_order_number;
-    const email = q.customer_email;
+    const email =
+      q.customer_email ||
+      q.quote_data?.fields?.customerEmail ||
+      q.quote_data?.fields?.email ||
+      q.quote_data?.fields?.contactEmail ||
+      "";
 
     if (!orderNumber || !email) {
       alert("Missing order number or customer email.");
