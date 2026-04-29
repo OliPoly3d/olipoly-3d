@@ -754,3 +754,102 @@ OliPoly 3D`;
   });
 })();
 
+
+/* === Customer Responses Panel === */
+async function loadCustomerResponses() {
+  try {
+    if (typeof window.sbApi !== "function") {
+      console.warn("Customer responses skipped: sbApi() is not available yet.");
+      return;
+    }
+
+    const data = await window.sbApi(
+      `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_response,customer_response_message,converted_order_number,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
+      { method: "GET" }
+    );
+
+    const list = document.getElementById("responsesList");
+    if (!list) return;
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      list.innerHTML = `<div style="color:#866a86;">No recent responses yet.</div>`;
+      return;
+    }
+
+    list.innerHTML = "";
+
+    data.forEach((q) => {
+      const row = document.createElement("div");
+      row.style.cssText = `
+        padding:12px 14px;
+        border-radius:16px;
+        background:rgba(255,255,255,0.76);
+        border:1px solid rgba(216,107,179,.2);
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+      `;
+
+      const response = q.customer_response || "response";
+      const responseColor = response === "accepted" ? "#16a34a" : "#e45a7a";
+
+      const left = document.createElement("div");
+      left.style.cssText = "min-width:240px;line-height:1.45;";
+      left.innerHTML = `
+        <strong>${q.quote_number || "Quote"}</strong> – ${q.quote_title || "Untitled"}<br>
+        <span style="color:${responseColor};font-weight:800;">
+          ${response.toUpperCase()}
+        </span>
+        ${q.converted_order_number ? ` → <strong>${q.converted_order_number}</strong>` : ""}
+        ${q.customer_response_message ? `<br><em style="color:#6f5d76;">${q.customer_response_message}</em>` : ""}
+      `;
+
+      const right = document.createElement("div");
+      right.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+
+      const loadBtn = document.createElement("button");
+      loadBtn.textContent = "Load Quote";
+      loadBtn.className = "btn-ghost";
+      loadBtn.type = "button";
+      loadBtn.onclick = () => {
+        const select = document.getElementById("savedQuotesSelect");
+        if (select && q.quote_number) {
+          select.value = `cloud:${q.quote_number}`;
+          document.getElementById("loadQuoteBtn")?.click();
+        } else if (q.quote_number) {
+          const quoteInput = document.getElementById("quoteNumber");
+          if (quoteInput) quoteInput.value = q.quote_number;
+        }
+      };
+      right.appendChild(loadBtn);
+
+      if (q.converted_order_number) {
+        const orderBtn = document.createElement("button");
+        orderBtn.textContent = "Open Orders";
+        orderBtn.className = "btn-ghost";
+        orderBtn.type = "button";
+        orderBtn.onclick = () => {
+          window.open("orders-admin.html", "_blank", "noopener,noreferrer");
+        };
+        right.appendChild(orderBtn);
+      }
+
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    });
+  } catch (err) {
+    console.error("Failed to load customer responses:", err);
+    const list = document.getElementById("responsesList");
+    if (list) {
+      list.innerHTML = `<div style="color:#e45a7a;">Could not load customer responses. Make sure you are logged in.</div>`;
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(loadCustomerResponses, 900);
+});
+
