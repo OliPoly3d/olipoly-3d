@@ -603,7 +603,7 @@
 })();
 
 
-/* Customer quote-response email/link layer V1 */
+/* Customer quote-response Gmail email/link layer V2 */
 (() => {
   const $ = (id) => document.getElementById(id);
   const getField = (id) => ($(id)?.value || "").trim();
@@ -670,44 +670,78 @@ Project: ${project}
 Estimated total: ${total}
 Estimated timing: ${turnaround}
 
-${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to accept or decline the quote:
+${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to review, accept, or decline the quote:
 
 ${link}
+
+Once accepted, your order number will use the same number with OP- instead of Q-.
 
 Thank you!
 OliPoly 3D`;
   }
 
   function buildHtmlEmail(link) {
-    const text = buildPlainEmail(link).replace(/\n/g, "<br>");
+    const customerName = getField("customerName") || getField("contactName") || "";
+    const project = getField("quoteTitle") || getField("projectTitle") || "your custom 3D print";
+    const total = quoteTotalText() || "See quote";
+    const turnaround = getField("turnaround") || "to be confirmed based on approval timing";
+    const notes = getField("customerNotes");
+    const assumptions = getField("assumptions");
+    const quoteNumber = getField("quoteNumber");
+
     return `<div style="font-family:Arial,sans-serif;color:#3f3146;line-height:1.6;background:#fff7fb;padding:24px;">
-  <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #f2c4df;border-radius:22px;padding:24px;">
-    <h1 style="font-family:Georgia,serif;color:#2a2132;margin-top:0;">Your OliPoly 3D Quote</h1>
-    <p>${text}</p>
+  <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #f2c4df;border-radius:22px;padding:24px;box-shadow:0 12px 30px rgba(222,111,184,.14);">
+    <h1 style="font-family:Georgia,serif;color:#2a2132;margin:0 0 10px;">Your OliPoly 3D Quote</h1>
+    <p style="margin:0 0 16px;">${customerName ? `Hi ${customerName},` : "Hi,"}</p>
+    <p style="margin:0 0 16px;">Thanks for reaching out! Your quote is ready to review.</p>
+
+    <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:16px;padding:16px;margin:16px 0;">
+      <p style="margin:0 0 8px;"><strong>Quote:</strong> ${quoteNumber}</p>
+      <p style="margin:0 0 8px;"><strong>Project:</strong> ${project}</p>
+      <p style="margin:0 0 8px;"><strong>Estimated total:</strong> ${total}</p>
+      <p style="margin:0;"><strong>Estimated timing:</strong> ${turnaround}</p>
+    </div>
+
+    ${notes ? `<p style="margin:0 0 10px;"><strong>Notes:</strong> ${notes}</p>` : ""}
+    ${assumptions ? `<p style="margin:0 0 10px;"><strong>Assumptions:</strong> ${assumptions}</p>` : ""}
+
+    <p style="margin:18px 0 8px;">Please use the button below to accept or decline the quote.</p>
+
     <p style="text-align:center;margin:24px 0;">
       <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px;">Review / Respond to Quote</a>
     </p>
+
+    <p style="font-size:13px;color:#816c88;margin:18px 0 0;">If the button does not work, copy and paste this link:<br>${link}</p>
   </div>
 </div>`;
+  }
+
+  function openGmailCompose(to, subject, body) {
+    const gmailUrl =
+      "https://mail.google.com/mail/?view=cm&fs=1" +
+      `&to=${encodeURIComponent(to || "")}` +
+      `&su=${encodeURIComponent(subject || "")}` +
+      `&body=${encodeURIComponent(body || "")}`;
+    window.open(gmailUrl, "_blank", "noopener,noreferrer");
   }
 
   async function prepareCustomerEmail() {
     const btn = $("prepareCustomerEmailBtn");
     try {
       if (btn) { btn.disabled = true; btn.textContent = "Preparing..."; }
+
       const { quoteNumber, publicToken } = await ensureCloudQuoteForCustomerLink();
       const origin = window.location.origin || "https://olipoly3d.com";
       const link = `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber)}&token=${encodeURIComponent(publicToken)}`;
-      const htmlEmail = buildHtmlEmail(link);
+
       const plainEmail = buildPlainEmail(link);
+      const htmlEmail = buildHtmlEmail(link);
+      const customerEmail = getField("customerEmail");
+      const subject = `OliPoly 3D Quote ${quoteNumber}`;
 
       await navigator.clipboard.writeText(htmlEmail);
-
-      const customerEmail = getField("customerEmail");
-      const subject = encodeURIComponent(`OliPoly 3D Quote ${quoteNumber}`);
-      const body = encodeURIComponent(plainEmail);
-      alert("Customer email HTML copied to clipboard. A plain email window will open too.");
-      window.location.href = `mailto:${customerEmail || ""}?subject=${subject}&body=${body}`;
+      alert("Styled email HTML copied to your clipboard. Gmail will open with a plain prefilled draft for review. Send from OliPoly3D@gmail.com.");
+      openGmailCompose(customerEmail, subject, plainEmail);
     } catch (err) {
       alert(`Could not prepare customer email:\n\n${err.message || err}`);
     } finally {
@@ -719,3 +753,4 @@ OliPoly 3D`;
     $("prepareCustomerEmailBtn")?.addEventListener("click", prepareCustomerEmail);
   });
 })();
+
