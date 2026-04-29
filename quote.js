@@ -815,7 +815,49 @@ async function loadCustomerResponses() {
 
       const right = document.createElement("div");
       right.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+// ✅ SEND CONFIRMATION EMAIL BUTTON
+if (q.customer_response === "accepted" && q.converted_order_number) {
+  const emailBtn = document.createElement("button");
+  emailBtn.textContent = "Send Confirmation Email";
+  emailBtn.className = "btn-ghost";
+  emailBtn.type = "button";
 
+  emailBtn.onclick = () => {
+    const orderNumber = q.converted_order_number;
+    const email = q.customer_email;
+
+    if (!orderNumber || !email) {
+      alert("Missing order number or customer email.");
+      return;
+    }
+
+    const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
+
+    const subject = `Order Confirmed – OliPoly 3D (${orderNumber})`;
+
+    const body = `Hi — your order has been created.
+
+Order #: ${orderNumber}
+
+Track your order and complete payment:
+${trackLink}
+
+If you have any questions, just reply.
+
+Thanks!
+OliPoly 3D`;
+
+    const gmailUrl =
+      "https://mail.google.com/mail/?view=cm&fs=1" +
+      `&to=${encodeURIComponent(email)}` +
+      `&su=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+
+    window.open(gmailUrl, "_blank", "noopener,noreferrer");
+  };
+
+  right.appendChild(emailBtn);
+}
       const loadBtn = document.createElement("button");
       loadBtn.textContent = "Load Quote";
       loadBtn.className = "btn-ghost";
