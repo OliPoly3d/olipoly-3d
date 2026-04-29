@@ -52,11 +52,16 @@ fetch("https://formspree.io/f/xbdqnnyj", {
 $('doneMessage').innerHTML=`Thank you — your quote has been accepted.<br><br>
 Your order number is <strong>${orderNumber}</strong>.<br><br>
 We’ll review the accepted quote and follow up with any final production details.<br><br>
+
 <strong>Payment options:</strong><br>
 <a class="track-link" href="https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8" target="_blank" rel="noopener">Pay with PayPal</a>
 <a class="track-link" href="https://www.venmo.com/u/OliPoly3D" target="_blank" rel="noopener">Pay with Venmo</a>
 <br><br>
-If card payment is preferred, we’ll send a secure Stripe invoice link. You can also track progress using your order number below.`;
+
+<strong>Pay with card:</strong><br>
+Use the “Track Order” button below to open your order page. A secure card payment option is available there.<br><br>
+
+You can track progress using your order number below.`;
 $('trackLink').href=`track.html?order=${encodeURIComponent(orderNumber)}`;$('trackLink').classList.remove('hidden')}else{$('doneTitle').textContent='Response received';
 $('doneMessage').textContent='Thanks for the update. We’ll review your note and follow up if needed.';}}catch(err){showStatus($('responseStatus'),err.message||'Could not submit response.','error');btn.disabled=false;other.disabled=false;btn.textContent=decision==='accepted'?'Accept Quote':'Decline Quote'}}
 $('acceptBtn').addEventListener('click',()=>respond('accepted'));$('declineBtn').addEventListener('click',()=>respond('declined'));loadQuote();
