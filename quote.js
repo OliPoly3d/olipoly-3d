@@ -831,7 +831,41 @@ async function loadCustomerResponses() {
         }
       };
       right.appendChild(loadBtn);
+const reviseBtn = document.createElement("button");
+reviseBtn.textContent = "Mark Revised";
+reviseBtn.className = "btn-ghost";
+reviseBtn.type = "button";
+reviseBtn.onclick = async () => {
+  if (!q.quote_number) return;
 
+  const ok = confirm(`Mark ${q.quote_number} as revised and clear the customer response?`);
+  if (!ok) return;
+
+  try {
+    const encoded = encodeURIComponent(q.quote_number);
+    const res = await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        quote_status: "revised",
+        customer_response: null,
+        customer_response_message: null,
+        responded_at: null,
+        updated_at: new Date().toISOString()
+      })
+    });
+
+    if (!res.ok || res.error) {
+      throw new Error(res.error?.message || "Could not mark revised.");
+    }
+
+    await loadCustomerResponses();
+    alert(`${q.quote_number} marked revised. You can now update it and resend the same quote link.`);
+  } catch (err) {
+    alert(`Could not mark revised:\n\n${err.message || err}`);
+  }
+};
+right.appendChild(reviseBtn);
       if (q.converted_order_number) {
         const orderBtn = document.createElement("button");
         orderBtn.textContent = "Open Orders";
