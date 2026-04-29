@@ -241,23 +241,37 @@
         els.paymentMessage.textContent = 'Payment options are available for this order.';
       }
 
-      if(stripe){
-        els.paymentBtnStripe.href = stripe;
-        els.paymentBtnStripe.textContent = status === 'deposit_due' ? 'Pay Deposit with Card / Apple Pay' : status === 'deposit_paid' ? 'Pay Remaining Balance with Card / Apple Pay' : 'Pay with Card / Apple Pay';
-        els.paymentBtnStripe.classList.remove('hidden');
-      }
+      const canShowPaymentButtons = status !== 'paid' && status !== 'refunded';
 
-      if(paypal){
-        els.paymentBtnPaypal.href = paypal;
-        els.paymentBtnPaypal.textContent = status === 'deposit_due' ? 'Pay Deposit with PayPal' : status === 'deposit_paid' ? 'Pay Remaining Balance with PayPal' : 'Pay with PayPal';
-        els.paymentBtnPaypal.classList.remove('hidden');
-      }
+if(stripe && canShowPaymentButtons){
+  els.paymentBtnStripe.href = stripe;
+  els.paymentBtnStripe.textContent = status === 'deposit_due'
+    ? 'Pay Deposit with Card / Apple Pay'
+    : status === 'deposit_paid'
+      ? 'Pay Remaining Balance with Card / Apple Pay'
+      : 'Pay with Card / Apple Pay';
+  els.paymentBtnStripe.classList.remove('hidden');
+}
 
-      if(venmo){
-        els.paymentBtnVenmo.href = venmo;
-        els.paymentBtnVenmo.textContent = status === 'deposit_due' ? 'Pay Deposit with Venmo' : status === 'deposit_paid' ? 'Pay Remaining Balance with Venmo' : 'Pay with Venmo';
-        els.paymentBtnVenmo.classList.remove('hidden');
-      }
+if(paypal && canShowPaymentButtons){
+  els.paymentBtnPaypal.href = paypal;
+  els.paymentBtnPaypal.textContent = status === 'deposit_due'
+    ? 'Pay Deposit with PayPal'
+    : status === 'deposit_paid'
+      ? 'Pay Remaining Balance with PayPal'
+      : 'Pay with PayPal';
+  els.paymentBtnPaypal.classList.remove('hidden');
+}
+
+if(venmo && canShowPaymentButtons){
+  els.paymentBtnVenmo.href = venmo;
+  els.paymentBtnVenmo.textContent = status === 'deposit_due'
+    ? 'Pay Deposit with Venmo'
+    : status === 'deposit_paid'
+      ? 'Pay Remaining Balance with Venmo'
+      : 'Pay with Venmo';
+  els.paymentBtnVenmo.classList.remove('hidden');
+}
     }
 
     function renderOrder(o){
