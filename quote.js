@@ -757,28 +757,35 @@ OliPoly 3D`;
 
 /* === Customer Responses Panel === */
 async function loadCustomerResponses() {
+  const list = document.getElementById("responsesList");
+
   try {
+    if (!list) return;
+
     if (typeof window.sbApi !== "function") {
-      console.warn("Customer responses skipped: sbApi() is not available yet.");
+      list.innerHTML = `<div style="color:#e45a7a;">Could not load customer responses. Supabase helper is not ready yet.</div>`;
       return;
     }
 
-    const data = await window.sbApi(
+    const res = await window.sbApi(
       `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_response,customer_response_message,converted_order_number,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
       { method: "GET" }
     );
 
-    const list = document.getElementById("responsesList");
-    if (!list) return;
+    if (!res.ok || res.error) {
+      throw new Error(res.error?.message || JSON.stringify(res.error || res.data || {}) || "Could not load responses.");
+    }
 
-    if (!data || !Array.isArray(data) || data.length === 0) {
+    const rows = Array.isArray(res.data) ? res.data : [];
+
+    if (rows.length === 0) {
       list.innerHTML = `<div style="color:#866a86;">No recent responses yet.</div>`;
       return;
     }
 
     list.innerHTML = "";
 
-    data.forEach((q) => {
+    rows.forEach((q) => {
       const row = document.createElement("div");
       row.style.cssText = `
         padding:12px 14px;
@@ -842,7 +849,6 @@ async function loadCustomerResponses() {
     });
   } catch (err) {
     console.error("Failed to load customer responses:", err);
-    const list = document.getElementById("responsesList");
     if (list) {
       list.innerHTML = `<div style="color:#e45a7a;">Could not load customer responses. Make sure you are logged in.</div>`;
     }
@@ -850,6 +856,6 @@ async function loadCustomerResponses() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(loadCustomerResponses, 900);
+  setTimeout(loadCustomerResponses, 1200);
 });
 
