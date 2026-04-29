@@ -187,7 +187,7 @@
         </div>
         <div>
           <h1>OliPoly 3D Site Hub</h1>
-          <p>Quick links, snapshots, reminders, assets, and admin tools.</p>
+          <p>Login, reminders, system checks, workflow, and admin tools.</p>
         </div>
       </div>
       <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
@@ -220,6 +220,35 @@
         </div>
       </div>
       <div id="hubAuthStatus" class="auth-status">Waiting for sign-in.</div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h3>System Status</h3>
+        <p>Quick view of what’s ready to use after signing into Supabase.</p>
+      </div>
+
+      <div class="checklist-list">
+        <div class="check-row">
+          <span class="check-number">✓</span>
+          <span id="statusAuth">Checking login...</span>
+        </div>
+
+        <div class="check-row">
+          <span class="check-number">✓</span>
+          <span id="statusOrders">Orders Admin ready</span>
+        </div>
+
+        <div class="check-row">
+          <span class="check-number">✓</span>
+          <span id="statusQuote">Quote Tool ready</span>
+        </div>
+
+        <div class="check-row">
+          <span class="check-number">✓</span>
+          <span id="statusFinance">Finance ready</span>
+        </div>
+      </div>
     </section>
 
     <section class="card">
@@ -264,6 +293,10 @@
         <a class="btn ext" href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe Dashboard</a>
         <a class="btn ext" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener noreferrer">Stripe Invoices</a>
         <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
+        <a class="btn ext" href="orders-admin.html">Orders Admin</a>
+        <a class="btn ext" href="quote.html">Quote Tool</a>
+        <a class="btn ext" href="track.html">Tracker</a>
+        <a class="btn ext" href="finance-pro.html">Finance</a>
         <a class="btn ext" href="quote-tool.html">Advanced Quote Tool</a>
         <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude" target="_blank" rel="noopener noreferrer">Supabase</a>
         <a class="btn ext" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal</a>
@@ -282,32 +315,15 @@
         <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or OP-#####" />
       </label>
       <div class="checklist-list">
-        <label class="check-row"><span class="check-number">1</span><input type="checkbox" class="process-check" /><span>Receive request</span></label>
-        <label class="check-row"><span class="check-number">2</span><input type="checkbox" class="process-check" /><span>Send info / intake reply</span></label>
-        <label class="check-row"><span class="check-number">3</span><input type="checkbox" class="process-check" /><span>Create quote in Quote Tool</span></label>
-        <label class="check-row"><span class="check-number">4</span><input type="checkbox" class="process-check" /><span>Email quote</span></label>
-        <label class="check-row"><span class="check-number">5</span><input type="checkbox" class="process-check" /><span>After accepted, change Q- to OP- and mark accepted</span></label>
-        <label class="check-row"><span class="check-number">6</span><input type="checkbox" class="process-check" /><span>Create Stripe invoice</span></label>
-        <label class="check-row"><span class="check-number">7</span><input type="checkbox" class="process-check" /><span>Paste Stripe URL into Orders Admin and update</span></label>
-        <label class="check-row"><span class="check-number">8</span><input type="checkbox" class="process-check" /><span>Verify on Tracker</span></label>
-        <label class="check-row"><span class="check-number">9</span><input type="checkbox" class="process-check" /><span>Manage tracking and statuses in Orders Admin</span></label>
-        <label class="check-row"><span class="check-number">10</span><input type="checkbox" class="process-check" /><span>Send final completion email with Tracker page again for payment/status options</span></label>
+        <label class="check-row"><span class="check-number">1</span><input type="checkbox" class="process-check" /><span>Create and save quote in Quote Tool</span></label>
+        <label class="check-row"><span class="check-number">2</span><input type="checkbox" class="process-check" /><span>Send quote email using Prepare Customer Email</span></label>
+        <label class="check-row"><span class="check-number">3</span><input type="checkbox" class="process-check" /><span>Customer reviews quote and accepts or declines</span></label>
+        <label class="check-row"><span class="check-number">4</span><input type="checkbox" class="process-check" /><span>If accepted, order is auto-created as OP-####</span></label>
+        <label class="check-row"><span class="check-number">5</span><input type="checkbox" class="process-check" /><span>Customer pays from the Tracker page</span></label>
+        <label class="check-row"><span class="check-number">6</span><input type="checkbox" class="process-check" /><span>Update payment and production status in Orders Admin</span></label>
+        <label class="check-row"><span class="check-number">7</span><input type="checkbox" class="process-check" /><span>Complete, deliver, and close out the order</span></label>
       </div>
     </section>
-
-    <section class="card">
-      <div class="section-title">
-        <h3>Quick money snapshot</h3>
-        <p>Simple daily awareness — not full accounting.</p>
-      </div>
-      <div class="money-grid">
-        <label class="label">Today revenue<input id="revToday" class="money-input" placeholder="0.00" /></label>
-        <label class="label">This week revenue<input id="revWeek" class="money-input" placeholder="0.00" /></label>
-        <label class="label">This month revenue<input id="revMonth" class="money-input" placeholder="0.00" /></label>
-        <label class="label">Pending payments<input id="revPending" class="money-input" placeholder="0.00" /></label>
-      </div>
-    </section>
-
     <section class="card">
       <div class="section-title">
         <h3>Sales tax quick calc</h3>
@@ -452,7 +468,11 @@
       taxTotal: document.getElementById('taxTotal'),
       runHealthCheckBtn: document.getElementById('runHealthCheckBtn'),
       healthCheckSummary: document.getElementById('healthCheckSummary'),
-      healthCheckList: document.getElementById('healthCheckList')
+      healthCheckList: document.getElementById('healthCheckList'),
+      statusAuth: document.getElementById('statusAuth'),
+      statusOrders: document.getElementById('statusOrders'),
+      statusQuote: document.getElementById('statusQuote'),
+      statusFinance: document.getElementById('statusFinance')
     };
 
     let currentUser = null;
@@ -496,6 +516,30 @@
       els.reminderRecurrenceInput.disabled = !signedIn;
       els.addReminderBtn.disabled = !signedIn;
       els.saveNotesBtn.disabled = !signedIn;
+
+      if (els.statusAuth) {
+        els.statusAuth.textContent = signedIn
+          ? 'Logged into Supabase — quote, orders, finance, notes, and reminders can use cloud sync.'
+          : 'Not logged in — cloud-backed tools may not save or load correctly.';
+      }
+
+      if (els.statusOrders) {
+        els.statusOrders.textContent = signedIn
+          ? 'Orders Admin ready — open orders-admin.html.'
+          : 'Orders Admin needs Supabase login.';
+      }
+
+      if (els.statusQuote) {
+        els.statusQuote.textContent = signedIn
+          ? 'Quote Tool ready — saved quotes and customer response workflow are active.'
+          : 'Quote Tool will use browser fallback until you log in.';
+      }
+
+      if (els.statusFinance) {
+        els.statusFinance.textContent = signedIn
+          ? 'Finance ready — cloud sync should be available.'
+          : 'Finance cloud sync needs Supabase login.';
+      }
     }
 
     async function loadCloudNote() {
@@ -792,13 +836,6 @@
       if (els.taxTotal) els.taxTotal.value = total.toFixed(2);
     }
     [els.taxSale, els.taxRate].forEach(el => el?.addEventListener('input', calcTax));
-
-    ['revToday','revWeek','revMonth','revPending'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.value = localStorage.getItem(id) || '';
-      el.addEventListener('input', () => localStorage.setItem(id, el.value));
-    });
 
     function renderHealthChecks(results = []) {
       const mapped = HEALTH_TARGETS.map(target => results.find(r => r.url === target.url) || { ...target, state: 'idle' });
