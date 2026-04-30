@@ -98,7 +98,7 @@
       assumptions:
         "Quote is based on the details shared so far. Final color, finish, and small print details may vary slightly.",
       notes:
-        "Quote includes the printed item(s) described, standard print preparation, and basic finishing unless otherwise noted."
+        "Includes the printed item(s) described and standard print preparation."
     },
     custom: {
       label: "Custom Design Project",
@@ -112,7 +112,7 @@
       showBusinessFields: false,
       showPo: false,
       assumptions:
-        "Includes standard design iteration and print setup. Final output may vary slightly due to material and process characteristics.",
+        "Includes standard design iteration and print setup. Final output may vary slightly.",
       notes:
         "Includes custom design support based on the information provided. Please confirm fit, color, and use before approval."
     },
@@ -1221,6 +1221,94 @@ document.addEventListener("DOMContentLoaded", () => {
     }, { capture: true });
 
     window.addEventListener("beforeprint", populatePdfEnhancements);
+  });
+})();
+
+
+/* === PDF CLEANUP FIX V3: hide empty sections + concise notes + visible CTA === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const genericNotePhrases = [
+    "Includes the printed item(s) described and standard print preparation.",
+    "Includes standard design iteration and print setup. Final output may vary slightly.",
+    "Quote includes the printed item",
+    "standard print preparation",
+    "basic finishing"
+  ];
+
+  function textOf(el) {
+    return (el?.innerText || el?.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function isGenericOrEmpty(el) {
+    const txt = textOf(el);
+    if (!txt) return true;
+    if (txt.length < 3) return true;
+    return genericNotePhrases.some((phrase) => txt.toLowerCase().includes(phrase.toLowerCase()));
+  }
+
+  function setEmptyState(id, shouldHide) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.toggle("pdf-empty", !!shouldHide);
+  }
+
+  function simplifyPdfNotes() {
+    const notes = $("pdfCustomerNotes");
+    const assumptions = $("pdfAssumptions");
+    const tracking = $("pdfTrackingInfo");
+    const quoteTerms = $("pdfQuoteTerms");
+    const invoiceTerms = $("pdfInvoiceTerms");
+    const next = $("pdfNextSteps");
+    const pay = $("pdfPaymentCta");
+
+    setEmptyState("pdfCustomerNotes", isGenericOrEmpty(notes));
+
+    if (assumptions && !isGenericOrEmpty(assumptions)) {
+      let txt = textOf(assumptions);
+      txt = txt
+        .replace(/This quote includes collaborative design iteration, proofing, and review until the quoted design direction is mutually accepted\./gi, "Includes standard design iteration and print setup.")
+        .replace(/Standard finishing is included unless otherwise noted, and final printed color may vary slightly due to filament batch, material, and printer settings\./gi, "Final output may vary slightly due to material and process characteristics.")
+        .replace(/Production timing is scheduled to begin within 24 hours after the quote is confirmed accepted in writing with OliPoly 3D\./gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (txt.length > 210) txt = txt.slice(0, 205).trim() + "…";
+      assumptions.innerHTML = `<strong>Quote Notes</strong><br>${txt}`;
+    }
+
+    setEmptyState("pdfAssumptions", isGenericOrEmpty(assumptions));
+    setEmptyState("pdfTrackingInfo", !textOf(tracking));
+    setEmptyState("pdfQuoteTerms", !textOf(quoteTerms));
+    setEmptyState("pdfInvoiceTerms", invoiceTerms?.classList.contains("hidden") || !textOf(invoiceTerms));
+    setEmptyState("pdfNextSteps", !textOf(next));
+    setEmptyState("pdfPaymentCta", !textOf(pay));
+
+    if (pay && !pay.classList.contains("pdf-empty")) {
+      const links = pay.querySelector(".pdf-action-links");
+      if (links) {
+        links.style.display = "flex";
+        links.style.flexWrap = "nowrap";
+        links.style.gap = "5px";
+        links.style.marginTop = "4px";
+      }
+      pay.querySelectorAll(".pdf-action-link").forEach((a) => {
+        a.style.display = "inline-flex";
+        a.style.whiteSpace = "nowrap";
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    ["customerPdfBtn", "invoicePdfBtn"].forEach((id) => {
+      $(id)?.addEventListener("click", () => {
+        setTimeout(simplifyPdfNotes, 80);
+        setTimeout(simplifyPdfNotes, 250);
+      }, { capture: true });
+    });
+
+    window.addEventListener("beforeprint", simplifyPdfNotes);
   });
 })();
 

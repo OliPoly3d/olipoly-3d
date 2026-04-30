@@ -690,6 +690,45 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   .pdf-action-link{padding:4px 7px!important;font-size:.62rem!important;}
 }
 
+
+/* === PDF CLEANUP FIX V3: hide empty notes + visible CTA buttons === */
+.pdf-note.pdf-empty{display:none!important;}
+
+@media print{
+  .pdf-note.pdf-empty{display:none!important;}
+
+  #pdfPaymentCta{
+    max-height:none!important;
+    overflow:visible!important;
+    padding-bottom:7px!important;
+  }
+
+  #pdfNextSteps{
+    max-height:.38in!important;
+  }
+
+  .pdf-action-links{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    gap:5px!important;
+    margin-top:4px!important;
+  }
+
+  .pdf-action-link{
+    display:inline-flex!important;
+    white-space:nowrap!important;
+    min-width:auto!important;
+    padding:3px 7px!important;
+    font-size:.58rem!important;
+    line-height:1!important;
+  }
+
+  #pdfCustomerNotes,
+  #pdfAssumptions{
+    max-height:.42in!important;
+  }
+}
+
 </style>
 </head>
 <body>
