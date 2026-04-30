@@ -777,6 +777,28 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   }
 }
 
+
+/* === PDF CLEANUP FIX V5: quote notes and order-only pay wording === */
+@media print{
+  #pdfAssumptions{
+    max-height:none!important;
+    overflow:visible!important;
+    line-height:1.16!important;
+  }
+
+  #pdfAssumptions strong,
+  #pdfTrackingInfo strong,
+  #pdfNextSteps strong,
+  #pdfPaymentCta strong{
+    display:block!important;
+    margin-bottom:2px!important;
+  }
+
+  #pdfPaymentCta{
+    max-height:none!important;
+  }
+}
+
 </style>
 </head>
 <body>

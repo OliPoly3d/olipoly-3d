@@ -1434,3 +1434,128 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 })();
 
+
+/* === PDF CLEANUP FIX V5: quote notes and order-only pay wording === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function val(id) {
+    return ($(id)?.value || $(id)?.textContent || "").trim();
+  }
+
+  function textOf(el) {
+    return (el?.innerText || el?.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function setHidden(el, hide) {
+    if (!el) return;
+    el.classList.toggle("pdf-empty", !!hide);
+    el.classList.toggle("force-hide", !!hide);
+  }
+
+  function isProfessionalMode() {
+    const type = val("liteQuoteType").toLowerCase();
+    const mode = val("professionalMode").toLowerCase();
+    return mode === "on" || type === "business" || type === "po";
+  }
+
+  function orderFromQuote() {
+    const q = val("quoteNumber") || val("pdfQuoteNumber");
+    return q ? q.replace(/^Q-/i, "OP-") : "OP-######";
+  }
+
+  function buildQuoteNoteText() {
+    const customNotes = val("customerNotes");
+    const assumptions = val("assumptions");
+    const professional = isProfessionalMode();
+
+    const genericPattern = /quote includes|printed item|standard print preparation|basic finishing|final output may vary|final color|material and process|production timing/i;
+
+    if (customNotes && !genericPattern.test(customNotes)) {
+      return customNotes.length > 185 ? customNotes.slice(0, 180).trim() + "…" : customNotes;
+    }
+
+    if (professional) {
+      return "Quote is based on the listed scope, quantity, materials, and production approach. Scope or requirement changes may require an updated quote.";
+    }
+
+    if (assumptions && !genericPattern.test(assumptions)) {
+      return assumptions.length > 170 ? assumptions.slice(0, 165).trim() + "…" : assumptions;
+    }
+
+    return "Includes standard print preparation. Final color, finish, and fit may vary slightly due to material and process characteristics.";
+  }
+
+  function cleanupPdfV5() {
+    const customerNotes = $("pdfCustomerNotes");
+    const assumptions = $("pdfAssumptions");
+    const tracking = $("pdfTrackingInfo");
+    const quoteTerms = $("pdfQuoteTerms");
+    const invoiceTerms = $("pdfInvoiceTerms");
+    const next = $("pdfNextSteps");
+    const pay = $("pdfPaymentCta");
+
+    setHidden(customerNotes, true);
+
+    if (assumptions) {
+      assumptions.innerHTML = `<strong>Quote Notes</strong>${buildQuoteNoteText()}`;
+      setHidden(assumptions, false);
+    }
+
+    const orderNumber = orderFromQuote();
+    const trackHref = `https://olipoly3d.com/track.html${orderNumber !== "OP-######" ? `?order=${encodeURIComponent(orderNumber)}` : ""}`;
+    const payHref = "https://olipoly3d.com/pay.html";
+
+    if (tracking) {
+      tracking.innerHTML = `
+        <strong>Order Tracking</strong>
+        After acceptance, track this project using order number <strong>${orderNumber}</strong>.
+        <div class="pdf-action-links only-one">
+          <a class="pdf-action-link" href="${trackHref}">Track Order</a>
+        </div>
+      `;
+      setHidden(tracking, false);
+    }
+
+    if (next) {
+      next.innerHTML = `
+        <strong>Next Steps</strong>
+        Review and approve via your email link. After approval, use your order number to track progress and payment status.
+      `;
+      setHidden(next, false);
+    }
+
+    if (pay) {
+      pay.innerHTML = `
+        <strong>Pay</strong>
+        After the quote is accepted, payment options are available from the order tracker.
+        <div class="pdf-action-links only-one">
+          <a class="pdf-action-link" href="${payHref}">Payment Page</a>
+        </div>
+      `;
+      setHidden(pay, false);
+    }
+
+    [quoteTerms, invoiceTerms].forEach((el) => {
+      if (!el) return;
+      const hiddenInvoice = el.id === "pdfInvoiceTerms" && el.classList.contains("hidden");
+      setHidden(el, hiddenInvoice || !textOf(el));
+    });
+
+    document.querySelectorAll(".pdf-note").forEach((el) => {
+      if (!textOf(el)) setHidden(el, true);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    ["customerPdfBtn", "invoicePdfBtn"].forEach((id) => {
+      $(id)?.addEventListener("click", () => {
+        setTimeout(cleanupPdfV5, 80);
+        setTimeout(cleanupPdfV5, 250);
+        setTimeout(cleanupPdfV5, 500);
+      }, { capture: true });
+    });
+    window.addEventListener("beforeprint", cleanupPdfV5);
+  });
+})();
+
