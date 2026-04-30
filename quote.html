@@ -537,6 +537,122 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
   }
 }
+
+/* === PDF FORMAT UPGRADE V1: Hero Summary + CTA === */
+.pdf-hero-summary{
+  display:grid;
+  grid-template-columns:1.25fr 1fr 1fr;
+  gap:14px;
+  padding:18px 30px 0;
+}
+.pdf-metric{
+  padding:16px 18px;
+  border-radius:22px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.09);
+}
+.pdf-metric span{
+  display:block;
+  color:#a8b5db;
+  font-size:.76rem;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  margin-bottom:7px;
+}
+.pdf-metric strong{
+  display:block;
+  font-size:1.28rem;
+  line-height:1.05;
+  color:#eef4ff;
+}
+.pdf-metric-primary{
+  background:linear-gradient(135deg,rgba(126,123,255,.16),rgba(46,230,196,.10));
+  border-color:rgba(126,144,255,.24);
+}
+.pdf-metric-primary strong{font-size:1.6rem}
+.pdf-next-actions{
+  display:grid;
+  gap:10px;
+}
+.pdf-action-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:10px;
+}
+.pdf-action-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:9px 12px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:.86rem;
+  text-decoration:none;
+  color:#fff;
+  background:linear-gradient(135deg,#7e7bff,#2ee6c4);
+  border:1px solid rgba(255,255,255,.12);
+}
+.standard-look .pdf-action-link{
+  background:linear-gradient(135deg,#7e7bff,#2ee6c4);
+}
+.professional-look .pdf-action-link{
+  background:linear-gradient(135deg,#3b4b7d,#2e6f85);
+}
+.standard-look .pdf-hero-summary .pdf-metric-primary{
+  background:linear-gradient(135deg,rgba(126,123,255,.16),rgba(46,230,196,.10));
+}
+.professional-look .pdf-hero-summary .pdf-metric{
+  background:rgba(255,255,255,.028);
+  border-color:rgba(255,255,255,.12);
+}
+.professional-look .pdf-hero-summary .pdf-metric-primary{
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
+  border-color:rgba(255,255,255,.16);
+}
+
+@media print{
+  .pdf-hero-summary{
+    grid-template-columns:1.25fr 1fr 1fr;
+    gap:8px;
+    padding:9px 16px 0!important;
+  }
+  .pdf-metric{
+    padding:8px 10px!important;
+    border-radius:12px!important;
+    background:#f8fafc!important;
+    border:1px solid #cfd8e6!important;
+    color:#111!important;
+  }
+  .pdf-metric span{
+    color:#4a5568!important;
+    font-size:.58rem!important;
+    margin-bottom:3px!important;
+  }
+  .pdf-metric strong{
+    color:#111!important;
+    font-size:.88rem!important;
+  }
+  .pdf-metric-primary strong{font-size:1.02rem!important}
+  .pdf-action-links{gap:6px;margin-top:6px!important}
+  .pdf-action-link{
+    color:#111!important;
+    background:#f3f6fb!important;
+    border:1px solid #cfd8e6!important;
+    padding:5px 8px!important;
+    font-size:.72rem!important;
+  }
+  #pdfNextSteps,#pdfPaymentCta{
+    max-height:.95in;
+    font-size:.78rem!important;
+    line-height:1.18!important;
+  }
+}
+@media (max-width:720px){
+  .pdf-hero-summary{grid-template-columns:1fr;padding:14px 18px 0}
+}
+
 </style>
 </head>
 <body>
@@ -863,6 +979,22 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
           <h1 id="pdfTitle">Customer Quote</h1>
           <p id="pdfSubtitle" class="hidden"></p>
         </div>
+
+        <div class="pdf-hero-summary" id="pdfHeroSummary">
+          <div class="pdf-metric pdf-metric-primary">
+            <span id="pdfHeroTotalLabel">Total Quote</span>
+            <strong id="pdfHeroTotal">$0.00</strong>
+          </div>
+          <div class="pdf-metric">
+            <span id="pdfHeroDueLabel">Due to Start</span>
+            <strong id="pdfHeroDue">$0.00</strong>
+          </div>
+          <div class="pdf-metric">
+            <span id="pdfHeroTimeLabel">Turnaround</span>
+            <strong id="pdfHeroTime">—</strong>
+          </div>
+        </div>
+
         <div class="pdf-grid">
           <div class="pdf-panel">
             <div class="pdf-line quote-only">
@@ -921,6 +1053,8 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
           <div class="pdf-note quote-only" id="pdfTrackingInfo"></div>
           <div class="pdf-note quote-only" id="pdfQuoteTerms"></div>
           <div class="pdf-note invoice-only hidden" id="pdfInvoiceTerms"></div>
+          <div class="pdf-note pdf-next-actions" id="pdfNextSteps"></div>
+          <div class="pdf-note pdf-next-actions" id="pdfPaymentCta"></div>
           <div class="pdf-note" id="pdfChecklist"></div>
         </div>
       </div>
