@@ -1312,3 +1312,125 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 })();
 
+
+/* === PDF CLEANUP FIX V4: note de-dupe + tracking/payment layout === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function textOf(el) {
+    return (el?.innerText || el?.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function setHidden(el, hide) {
+    if (!el) return;
+    el.classList.toggle("pdf-empty", !!hide);
+    el.classList.toggle("force-hide", !!hide);
+  }
+
+  function getVal(id) {
+    return ($(id)?.value || $(id)?.textContent || "").trim();
+  }
+
+  function orderFromQuote() {
+    const q = getVal("quoteNumber") || getVal("pdfQuoteNumber");
+    return q ? q.replace(/^Q-/i, "OP-") : "";
+  }
+
+  function compactGenericText(txt) {
+    return txt
+      .replace(/Quote includes the printed item\(s\) described, standard print preparation, and basic finishing unless otherwise noted\./gi, "")
+      .replace(/Includes the printed item\(s\) described and standard print preparation\./gi, "")
+      .replace(/This quote includes collaborative design iteration, proofing, and review until the quoted design direction is mutually accepted\./gi, "Includes standard design iteration and print setup.")
+      .replace(/Standard finishing is included unless otherwise noted, and final printed color may vary slightly due to filament batch, material, and printer settings\./gi, "Final output may vary slightly.")
+      .replace(/Production timing is scheduled to begin within 24 hours after the quote is confirmed accepted in writing with OliPoly 3D\./gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function cleanupPdfV4() {
+    const customerNotes = $("pdfCustomerNotes");
+    const assumptions = $("pdfAssumptions");
+    const tracking = $("pdfTrackingInfo");
+    const quoteTerms = $("pdfQuoteTerms");
+    const invoiceTerms = $("pdfInvoiceTerms");
+    const next = $("pdfNextSteps");
+    const pay = $("pdfPaymentCta");
+
+    const rawCustomer = textOf(customerNotes);
+    const rawAssumptions = textOf(assumptions);
+
+    const customerLooksGeneric =
+      !rawCustomer ||
+      /quote includes|printed item|standard print preparation|basic finishing/i.test(rawCustomer);
+
+    setHidden(customerNotes, customerLooksGeneric);
+
+    if (assumptions) {
+      let txt = compactGenericText(rawAssumptions);
+      if (!txt) {
+        txt = "Includes standard print preparation. Final output may vary slightly.";
+      }
+      if (txt.length > 155) txt = txt.slice(0, 150).trim() + "…";
+      assumptions.innerHTML = `<strong>Quote Notes</strong><br>${txt}`;
+      setHidden(assumptions, !textOf(assumptions));
+    }
+
+    [quoteTerms, invoiceTerms, next, pay, tracking].forEach((el) => {
+      if (!el) return;
+      const isInvoiceHidden = el.id === "pdfInvoiceTerms" && el.classList.contains("hidden");
+      setHidden(el, isInvoiceHidden || !textOf(el));
+    });
+
+    const orderNumber = orderFromQuote() || "OP-######";
+    const trackHref = `https://olipoly3d.com/track.html${orderNumber !== "OP-######" ? `?order=${encodeURIComponent(orderNumber)}` : ""}`;
+    const payHref = "https://olipoly3d.com/pay.html";
+
+    if (tracking && !tracking.classList.contains("force-hide")) {
+      tracking.innerHTML = `
+        <strong>Order Tracking</strong><br>
+        After acceptance, track this project using order number <strong>${orderNumber}</strong>.
+        <div class="pdf-action-links only-one">
+          <a class="pdf-action-link" href="${trackHref}">Track Order</a>
+        </div>
+      `;
+      setHidden(tracking, false);
+    }
+
+    if (next && !next.classList.contains("force-hide")) {
+      next.innerHTML = `
+        <strong>Next Steps</strong><br>
+        Review and approve via your email link. After approval, use your order number to track progress and payment status.
+      `;
+      setHidden(next, false);
+    }
+
+    if (pay && !pay.classList.contains("force-hide")) {
+      pay.innerHTML = `
+        <strong>Pay</strong><br>
+        Pay through the tracker after approval, or use the payment page for in-person/craft show payments.
+        <div class="pdf-action-links only-one">
+          <a class="pdf-action-link" href="${payHref}">Payment Page</a>
+        </div>
+      `;
+      setHidden(pay, false);
+    }
+
+    document.querySelectorAll(".pdf-note").forEach((el) => {
+      const txt = textOf(el);
+      if (!txt) setHidden(el, true);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    ["customerPdfBtn", "invoicePdfBtn"].forEach((id) => {
+      $(id)?.addEventListener("click", () => {
+        setTimeout(cleanupPdfV4, 60);
+        setTimeout(cleanupPdfV4, 180);
+        setTimeout(cleanupPdfV4, 360);
+      }, { capture: true });
+    });
+
+    window.addEventListener("beforeprint", cleanupPdfV4);
+  });
+})();
+
