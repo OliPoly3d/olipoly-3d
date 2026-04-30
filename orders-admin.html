@@ -551,7 +551,7 @@ const payload = snapshotForm();
     }
 
 
-    function buildCompletionEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
+    function buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
       const fulfillmentLine =
         fulfillment === 'shipping'
           ? 'If this order is being shipped, tracking or shipping details will be provided as available.'
@@ -567,7 +567,8 @@ const payload = snapshotForm();
       return `Hi — your order is complete and ready.
 
 Order #: ${orderNumber}
-${orderTitle ? `Project: ${orderTitle}\n` : ''}
+${orderTitle ? `Project: ${orderTitle}
+` : ''}
 View your order details and payment options:
 ${trackLink}
 
@@ -579,7 +580,71 @@ Thanks!
 OliPoly 3D`;
     }
 
-    function openGmailCompletionEmail() {
+    function buildCompletionHtmlEmail(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
+      const fulfillmentLine =
+        fulfillment === 'shipping'
+          ? 'If this order is being shipped, tracking or shipping details will be provided as available.'
+          : fulfillment === 'delivery'
+            ? 'If this order is being delivered, reply to coordinate final details.'
+            : "If you're picking up, just reply to coordinate a time.";
+
+      const paymentLine =
+        paymentStatus === 'paid'
+          ? 'Payment is marked paid in full.'
+          : 'You can view payment options or complete payment from the tracker link below.';
+
+      return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,sans-serif;color:#3f3146;">
+  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
+    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff);"></div>
+
+    <div style="padding:26px 26px 10px;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;letter-spacing:-.03em;color:#241b2b;">
+        Oli<span style="color:#b86be8;">Poly</span> 3D
+      </div>
+      <div style="margin-top:4px;color:#866a86;font-size:14px;">
+        Custom prints • Creative builds • Prototypes
+      </div>
+    </div>
+
+    <div style="padding:12px 26px 26px;">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:8px 0 14px;color:#241b2b;">
+        Your order is ready
+      </h1>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
+        Hi — your order is complete and ready.
+      </p>
+
+      <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
+        <p style="margin:0 0 8px;"><strong>Order #:</strong> ${orderNumber}</p>
+        ${orderTitle ? `<p style="margin:0 0 8px;"><strong>Project:</strong> ${orderTitle}</p>` : ""}
+        <p style="margin:0;"><strong>Payment:</strong> ${paymentLine}</p>
+      </div>
+
+      <p style="font-size:16px;line-height:1.6;margin:18px 0 20px;">
+        ${fulfillmentLine}
+      </p>
+
+      <div style="text-align:center;margin:26px 0;">
+        <a href="${trackLink}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:999px;">
+          View Order & Payment Options
+        </a>
+      </div>
+
+      <p style="font-size:14px;line-height:1.55;color:#816c88;margin:0;">
+        If you have questions, just reply to this email.
+      </p>
+    </div>
+
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:16px 26px;color:#866a86;font-size:13px;line-height:1.5;">
+      OliPoly 3D • Custom 3D printing<br>
+      OliPoly3D@gmail.com • olipoly3d.com
+    </div>
+  </div>
+</div>`;
+    }
+
+    async function openGmailCompletionEmail() {
       const orderNumber = $('orderNumber').value.trim();
       const email = $('customerEmail').value.trim();
       const orderTitle = $('orderTitle').value.trim();
@@ -593,7 +658,15 @@ OliPoly 3D`;
 
       const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
       const subject = `Your order is ready – OliPoly 3D (${orderNumber})`;
-      const body = buildCompletionEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
+      const body = buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
+      const htmlEmail = buildCompletionHtmlEmail(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
+
+      try {
+        await navigator.clipboard.writeText(htmlEmail);
+        alert('Styled completion email copied to your clipboard. Gmail will open with a plain prefilled draft for review.');
+      } catch (_) {
+        alert('Gmail will open with a plain prefilled draft. Styled copy was not available from this browser.');
+      }
 
       const gmailUrl =
         `https://mail.google.com/mail/?view=cm&fs=1` +
