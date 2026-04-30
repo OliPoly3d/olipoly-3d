@@ -799,6 +799,17 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   }
 }
 
+
+/* === PDF CLEANUP FIX V6: prevent quote notes cutoff === */
+@media print{
+  #pdfAssumptions{
+    max-height:none!important;
+    min-height:auto!important;
+    overflow:visible!important;
+    white-space:normal!important;
+  }
+}
+
 </style>
 </head>
 <body>

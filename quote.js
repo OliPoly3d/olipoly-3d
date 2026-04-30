@@ -1559,3 +1559,72 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 })();
 
+
+/* === PDF CLEANUP FIX V6: concise complete quote notes === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function val(id) {
+    return ($(id)?.value || $(id)?.textContent || "").trim();
+  }
+
+  function setHidden(el, hide) {
+    if (!el) return;
+    el.classList.toggle("pdf-empty", !!hide);
+    el.classList.toggle("force-hide", !!hide);
+  }
+
+  function isProfessionalMode() {
+    const type = val("liteQuoteType").toLowerCase();
+    const mode = val("professionalMode").toLowerCase();
+    return mode === "on" || type === "business" || type === "po";
+  }
+
+  function buildFinalQuoteNoteText() {
+    const customNotes = val("customerNotes");
+    const type = val("liteQuoteType").toLowerCase();
+    const professional = isProfessionalMode();
+
+    const genericPattern = /quote includes|printed item|standard print preparation|basic finishing|final output may vary|final color|material and process|production timing|listed quantity|production approach|packaging|labeling requirements/i;
+
+    if (customNotes && !genericPattern.test(customNotes)) {
+      return customNotes.length > 135 ? customNotes.slice(0, 132).trim() + "…" : customNotes;
+    }
+
+    if (professional) {
+      return "Quote is based on the listed scope, quantity, materials, and production approach. Scope changes may require an updated quote.";
+    }
+
+    if (type === "custom") {
+      return "Includes standard design iteration and print setup. Final color, finish, and fit may vary slightly.";
+    }
+
+    return "Includes standard print preparation. Final color, finish, and fit may vary slightly.";
+  }
+
+  function cleanupPdfV6() {
+    const customerNotes = $("pdfCustomerNotes");
+    const assumptions = $("pdfAssumptions");
+
+    setHidden(customerNotes, true);
+
+    if (assumptions) {
+      assumptions.innerHTML = `<strong>Quote Notes</strong>${buildFinalQuoteNoteText()}`;
+      assumptions.style.maxHeight = "none";
+      assumptions.style.overflow = "visible";
+      setHidden(assumptions, false);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    ["customerPdfBtn", "invoicePdfBtn"].forEach((id) => {
+      $(id)?.addEventListener("click", () => {
+        setTimeout(cleanupPdfV6, 120);
+        setTimeout(cleanupPdfV6, 320);
+        setTimeout(cleanupPdfV6, 650);
+      }, { capture: true });
+    });
+    window.addEventListener("beforeprint", cleanupPdfV6);
+  });
+})();
+
