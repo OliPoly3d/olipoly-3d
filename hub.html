@@ -308,20 +308,66 @@
     <section class="checklist-shell">
       <div class="section-title">
         <h3>Order process checklist</h3>
-        <p>Use this as a simple double-check for most orders.</p>
+        <p>Use this as the current quote → order → payment → completion workflow.</p>
       </div>
       <label class="label">
         Order # / cross-check
         <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or OP-#####" />
       </label>
       <div class="checklist-list">
-        <label class="check-row"><span class="check-number">1</span><input type="checkbox" class="process-check" /><span>Create and save quote in Quote Tool</span></label>
-        <label class="check-row"><span class="check-number">2</span><input type="checkbox" class="process-check" /><span>Send quote email using Prepare Customer Email</span></label>
-        <label class="check-row"><span class="check-number">3</span><input type="checkbox" class="process-check" /><span>Customer reviews quote and accepts or declines</span></label>
-        <label class="check-row"><span class="check-number">4</span><input type="checkbox" class="process-check" /><span>If accepted, order is auto-created as OP-####</span></label>
-        <label class="check-row"><span class="check-number">5</span><input type="checkbox" class="process-check" /><span>Customer pays from the Tracker page</span></label>
-        <label class="check-row"><span class="check-number">6</span><input type="checkbox" class="process-check" /><span>Update payment and production status in Orders Admin</span></label>
-        <label class="check-row"><span class="check-number">7</span><input type="checkbox" class="process-check" /><span>Complete, deliver, and close out the order</span></label>
+        <label class="check-row">
+          <span class="check-number">1</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Receive request</strong><br><small>Message, form, email, or in-person request.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">2</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Build quote in Quote Tool</strong><br><small>Create/save the Q-##### quote and confirm customer details.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">3</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Send quote email</strong><br><small>Click Prepare Customer Email so the customer can review, accept, or decline.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">4</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Customer accepts quote</strong><br><small>System creates OP-##### and the response appears in Quote Tool.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">5</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Send confirmation email</strong><br><small>Click Send Confirmation Email to provide tracker and payment link.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">6</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Produce and update order</strong><br><small>Use Orders Admin to manage payment, status, notes, and tracker updates.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">7</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Customer payment</strong><br><small>Payment can happen through tracker, pay page, digital link, or in person.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">8</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Mark order complete</strong><br><small>Update status to completed once the order is finished.</small></span>
+        </label>
+
+        <label class="check-row">
+          <span class="check-number">9</span>
+          <input type="checkbox" class="process-check" />
+          <span><strong>Send completion email</strong><br><small>Click Send Completion Email for pickup, delivery, or final payment coordination.</small></span>
+        </label>
       </div>
     </section>
     <section class="card">
