@@ -856,7 +856,7 @@ async function loadCustomerResponses() {
     }
 
     const res = await window.sbApi(
-      `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_name,customer_email,quote_data,customer_response,customer_response_message,converted_order_number,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
+      `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_name,customer_email,quote_data,customer_response,customer_response_message,converted_order_number,confirmation_email_sent,confirmation_email_sent_at,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
       { method: "GET" }
     );
 
@@ -906,11 +906,22 @@ async function loadCustomerResponses() {
 // ✅ SEND CONFIRMATION EMAIL BUTTON
 if (q.customer_response === "accepted" && q.converted_order_number) {
   const emailBtn = document.createElement("button");
-  emailBtn.textContent = "Send Confirmation Email";
+  emailBtn.textContent = q.confirmation_email_sent ? "Confirmation Sent ✅" : "Send Confirmation Email";
   emailBtn.className = "btn-ghost";
   emailBtn.type = "button";
+  emailBtn.disabled = !!q.confirmation_email_sent;
+
+  if (q.confirmation_email_sent) {
+    emailBtn.title = q.confirmation_email_sent_at
+      ? `Confirmation email marked sent ${new Date(q.confirmation_email_sent_at).toLocaleString()}`
+      : "Confirmation email already marked sent.";
+    emailBtn.style.opacity = "0.68";
+    emailBtn.style.cursor = "not-allowed";
+  }
 
   emailBtn.onclick = async () => {
+    if (q.confirmation_email_sent) return;
+
     const orderNumber = q.converted_order_number;
     const email =
       q.customer_email ||
@@ -932,8 +943,7 @@ if (q.customer_response === "accepted" && q.converted_order_number) {
     const plainBody = `Hi${customerName ? ` ${customerName}` : ""} — your order has been created.
 
 Order #: ${orderNumber}
-${project ? `Project: ${project}
-` : ""}
+${project ? `Project: ${project}\n` : ""}
 Track your order and complete payment:
 ${trackLink}
 
@@ -946,9 +956,9 @@ OliPoly 3D`;
 
     try {
       await navigator.clipboard.writeText(htmlEmail);
-      alert("Styled confirmation email copied to your clipboard. Gmail will open with a plain prefilled draft for review.");
+      alert("Styled confirmation email copied to your clipboard. Gmail will open with a plain prefilled draft for review. After Gmail opens, this quote will be marked as confirmation sent.");
     } catch (_) {
-      alert("Gmail will open with a plain prefilled draft. Styled copy was not available from this browser.");
+      alert("Gmail will open with a plain prefilled draft. Styled copy was not available from this browser. After Gmail opens, this quote will be marked as confirmation sent.");
     }
 
     const gmailUrl =
@@ -958,6 +968,31 @@ OliPoly 3D`;
       `&body=${encodeURIComponent(plainBody)}`;
 
     window.open(gmailUrl, "_blank", "noopener,noreferrer");
+
+    try {
+      const encoded = encodeURIComponent(q.quote_number);
+      const markRes = await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          confirmation_email_sent: true,
+          confirmation_email_sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      if (!markRes.ok || markRes.error) {
+        throw new Error(markRes.error?.message || "Could not mark confirmation sent.");
+      }
+
+      emailBtn.textContent = "Confirmation Sent ✅";
+      emailBtn.disabled = true;
+      emailBtn.style.opacity = "0.68";
+      emailBtn.style.cursor = "not-allowed";
+      await loadCustomerResponses();
+    } catch (err) {
+      alert(`Gmail opened, but the sent status could not be saved:\n\n${err.message || err}`);
+    }
   };
 
   right.appendChild(emailBtn);
@@ -997,6 +1032,9 @@ reviseBtn.onclick = async () => {
         customer_response: null,
         customer_response_message: null,
         responded_at: null,
+        converted_order_number: null,
+        confirmation_email_sent: false,
+        confirmation_email_sent_at: null,
         updated_at: new Date().toISOString()
       })
     });

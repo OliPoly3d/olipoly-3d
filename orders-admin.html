@@ -332,6 +332,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('fulfillment').value = 'pickup';
       $('paidDate').value = '';
       $('publicPreview').textContent = 'No public preview yet.';
+      updateCompletionEmailButton(null);
       clearMsg($('formMessage'));
     }
 
@@ -360,7 +361,22 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('publicStatusText').value = o.public_status_text || '';
       $('publicNextStep').value = o.public_next_step || '';
       $('shippingOrPickupNote').value = o.shipping_or_pickup_note || '';
+      updateCompletionEmailButton(o);
       updatePreview();
+    }
+
+    function updateCompletionEmailButton(order = null) {
+      const btn = $('sendCompleteEmailBtn');
+      if (!btn) return;
+
+      const sent = !!order?.completion_email_sent;
+      btn.textContent = sent ? 'Completion Email Sent ✅' : 'Send Completion Email';
+      btn.disabled = sent;
+      btn.style.opacity = sent ? '0.68' : '';
+      btn.style.cursor = sent ? 'not-allowed' : '';
+      btn.title = sent && order?.completion_email_sent_at
+        ? `Completion email marked sent ${new Date(order.completion_email_sent_at).toLocaleString()}`
+        : '';
     }
 
     function updatePreview(){
@@ -408,7 +424,11 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('orderList').innerHTML = list.map(o => `
         <div class="order-row ${o.id===activeId?'active':''}" data-id="${o.id}">
           <div class="order-head"><div><strong>${o.order_number || 'No #'}</strong><p>${o.order_title || 'Untitled order'}</p></div><div>${money(o.order_total || 0)}</div></div>
-          <div class="order-meta"><span class="status-pill s-${o.status}">${statusLabel(o.status)}</span><span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span></div>
+          <div class="order-meta">
+            <span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>
+            <span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>
+            ${o.status === 'completed' ? `<span class="payment-pill ${o.completion_email_sent ? 'p-paid' : 'p-unpaid'}">${o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email'}</span>` : ''}
+          </div>
           <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
         </div>
       `).join('');
@@ -663,9 +683,9 @@ OliPoly 3D`;
 
       try {
         await navigator.clipboard.writeText(htmlEmail);
-        alert('Styled completion email copied to your clipboard. Gmail will open with a plain prefilled draft for review.');
+        alert('Styled completion email copied to your clipboard. Gmail will open with a plain prefilled draft for review. After Gmail opens, this order will be marked as completion email sent.');
       } catch (_) {
-        alert('Gmail will open with a plain prefilled draft. Styled copy was not available from this browser.');
+        alert('Gmail will open with a plain prefilled draft. Styled copy was not available from this browser. After Gmail opens, this order will be marked as completion email sent.');
       }
 
       const gmailUrl =
@@ -675,6 +695,36 @@ OliPoly 3D`;
         `&body=${encodeURIComponent(body)}`;
 
       window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+
+      try {
+        const patchPayload = {
+          completion_email_sent: true,
+          completion_email_sent_at: new Date().toISOString()
+        };
+
+        const targetPath = activeId
+          ? `/rest/v1/orders?id=eq.${activeId}`
+          : `/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;
+
+        const markRes = await api(targetPath, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(patchPayload)
+        });
+
+        if (markRes.error) {
+          throw new Error(markRes.error.message || JSON.stringify(markRes.error));
+        }
+
+        setMsg($('formMessage'), 'Completion email marked sent.');
+        await fetchOrders();
+        const saved = orders.find(o => o.order_number === orderNumber);
+        if (saved) loadIntoForm(saved);
+      } catch (err) {
+        alert(`Gmail opened, but the sent status could not be saved:
+
+${err.message || err}`);
+      }
     }
 
     if ($('signupBtn')) $('signupBtn').onclick = signup;
