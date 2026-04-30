@@ -1077,3 +1077,150 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(loadCustomerResponses, 1200);
 });
 
+
+/* === PDF FORMAT UPGRADE V1: Hero Summary + CTA === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let lastPdfMode = "quote";
+
+  const moneyText = (idList, fallback = "$0.00") => {
+    for (const id of idList) {
+      const el = $(id);
+      const text = (el?.textContent || el?.value || "").trim();
+      if (text) return text;
+    }
+    return fallback;
+  };
+
+  const fieldText = (idList, fallback = "—") => {
+    for (const id of idList) {
+      const el = $(id);
+      const text = (el?.value || el?.textContent || "").trim();
+      if (text) return text;
+    }
+    return fallback;
+  };
+
+  const labelForPaymentTerms = (value) => ({
+    due_on_receipt: "Due on receipt",
+    deposit_to_start: "Deposit required to start",
+    due_on_completion: "Due at completion",
+    net_15: "Net 15",
+    net_30: "Net 30"
+  })[value] || value || "To be confirmed";
+
+  const quoteToOrderNumber = (quoteNumber) => {
+    const q = (quoteNumber || "").trim();
+    if (!q) return "";
+    return q.replace(/^Q-/i, "OP-");
+  };
+
+  const isProfessionalMode = () => {
+    const type = fieldText(["liteQuoteType"], "").toLowerCase();
+    const mode = fieldText(["professionalMode"], "").toLowerCase();
+    return mode === "on" || ["business", "po"].includes(type);
+  };
+
+  function buildTrackLink(orderNumber) {
+    return orderNumber
+      ? `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`
+      : "https://olipoly3d.com/track.html";
+  }
+
+  function setHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+  }
+
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+
+  function populatePdfEnhancements() {
+    const professional = isProfessionalMode();
+    const invoiceMode =
+      lastPdfMode === "invoice" ||
+      /invoice/i.test($("pdfDocType")?.textContent || "") ||
+      /invoice/i.test($("pdfTitle")?.textContent || "");
+
+    const quoteNumber = fieldText(["quoteNumber", "pdfQuoteNumber"], "");
+    const orderNumber = quoteToOrderNumber(quoteNumber);
+    const trackLink = buildTrackLink(orderNumber);
+    const payLink = "https://olipoly3d.com/pay.html";
+    const paymentTerms = labelForPaymentTerms(fieldText(["paymentTerms"], ""));
+    const turnaround = fieldText(["turnaround", "pdfTurnaround"], "To be confirmed");
+
+    const total = moneyText(["sumQuote", "outFinal", "pdfTotal"], "$0.00");
+    const deposit = moneyText(["sumDeposit", "outDeposit", "pdfDeposit"], "$0.00");
+    const balance = moneyText(["sumBalance", "outBalance", "pdfBalance"], "$0.00");
+    const invoiceAmount = moneyText(["pdfInvoiceAmount", "sumBalance", "outBalance", "outFinal"], total);
+
+    if (invoiceMode) {
+      setText("pdfHeroTotalLabel", professional ? "Invoice Amount" : "Amount Due");
+      setText("pdfHeroTotal", invoiceAmount);
+      setText("pdfHeroDueLabel", "Payment Terms");
+      setText("pdfHeroDue", paymentTerms);
+      setText("pdfHeroTimeLabel", "Order / Invoice");
+      setText("pdfHeroTime", fieldText(["pdfInvoiceNumber", "invoiceNumber"], orderNumber || quoteNumber || "—"));
+    } else if (professional) {
+      setText("pdfHeroTotalLabel", "Total Contract Value");
+      setText("pdfHeroTotal", total);
+      setText("pdfHeroDueLabel", "Payment Terms");
+      setText("pdfHeroDue", paymentTerms);
+      setText("pdfHeroTimeLabel", "Lead Time");
+      setText("pdfHeroTime", turnaround);
+    } else {
+      setText("pdfHeroTotalLabel", "Total Quote");
+      setText("pdfHeroTotal", total);
+      setText("pdfHeroDueLabel", deposit && deposit !== "$0.00" ? "Due to Start" : "Due at Approval / Pickup");
+      setText("pdfHeroDue", deposit && deposit !== "$0.00" ? deposit : balance || total);
+      setText("pdfHeroTimeLabel", "Turnaround");
+      setText("pdfHeroTime", turnaround);
+    }
+
+    const nextCopy = invoiceMode
+      ? `Next step: complete payment using the available payment option, or reply to coordinate pickup, delivery, shipping, or PO processing.`
+      : professional
+        ? `Next steps: approve internally, reference quote number ${quoteNumber || "shown above"}, and provide PO or payment details as needed. Once accepted, the order can be tracked as ${orderNumber || "the OP- order number"}.`
+        : `To proceed: review and approve using the quote response link sent by email. Once accepted, your order number will be ${orderNumber || "the same number with OP- instead of Q-"} and you can track progress online.`;
+
+    setHTML("pdfNextSteps", `
+      <strong>${invoiceMode ? "Next Step" : "Next Steps"}</strong><br>
+      ${nextCopy}
+    `);
+
+    const paymentCopy = professional
+      ? `Digital payment options may be available through the tracker or payment page. PO customers should reference the quote/order number on payment or purchasing documents.`
+      : `Digital payment options are available through the tracker after approval, or through the general payment page for in-person/craft show payments.`;
+
+    setHTML("pdfPaymentCta", `
+      <strong>Payment / Tracking</strong><br>
+      ${paymentCopy}
+      <div class="pdf-action-links">
+        <a class="pdf-action-link" href="${trackLink}">Track Order</a>
+        <a class="pdf-action-link" href="${payLink}">Payment Page</a>
+      </div>
+    `);
+
+    const tracking = $("pdfTrackingInfo");
+    if (tracking && !invoiceMode) {
+      tracking.innerHTML = `<strong>Order Tracking</strong><br>After acceptance, track this project using order number <strong>${orderNumber || "OP-######"}</strong> at olipoly3d.com/track.html.`;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    $("customerPdfBtn")?.addEventListener("click", () => {
+      lastPdfMode = "quote";
+      setTimeout(populatePdfEnhancements, 50);
+    }, { capture: true });
+
+    $("invoicePdfBtn")?.addEventListener("click", () => {
+      lastPdfMode = "invoice";
+      setTimeout(populatePdfEnhancements, 50);
+    }, { capture: true });
+
+    window.addEventListener("beforeprint", populatePdfEnhancements);
+  });
+})();
+
