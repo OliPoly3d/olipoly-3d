@@ -96,7 +96,7 @@
       showBusinessFields: false,
       showPo: false,
       assumptions:
-        "This quote is based on the project details shared so far. Final color, finish, and small print details may vary slightly due to material, filament batch, and print settings. Local pickup is assumed unless otherwise noted.",
+        "Quote is based on the details shared so far. Final color, finish, and small print details may vary slightly.",
       notes:
         "Quote includes the printed item(s) described, standard print preparation, and basic finishing unless otherwise noted."
     },
@@ -112,9 +112,9 @@
       showBusinessFields: false,
       showPo: false,
       assumptions:
-        "This quote includes collaborative design iteration, proofing, and review until the quoted design direction is mutually accepted. Standard finishing is included unless otherwise noted, and final printed color may vary slightly due to filament batch, material, and printer settings.",
+        "Includes standard design iteration and print setup. Final output may vary slightly due to material and process characteristics.",
       notes:
-        "Quote includes custom design support based on the information provided. Please confirm size, use, color preference, and any required fit details before approval."
+        "Includes custom design support based on the information provided. Please confirm fit, color, and use before approval."
     },
     business: {
       label: "Business / Bulk Order",
@@ -128,9 +128,9 @@
       showBusinessFields: true,
       showPo: false,
       assumptions:
-        "Quote is based on the listed quantity, materials, and expected production approach. Final schedule, delivery timing, packaging, labeling, and any business-specific requirements should be confirmed at approval. Material color and finish may vary slightly by filament brand and production batch.",
+        "Quote is based on the listed quantity, materials, and production approach. Final requirements should be confirmed at approval.",
       notes:
-        "Quote includes the listed quantity and production assumptions. Bulk pricing is based on the quantity shown and may change if the order quantity or requirements change.",
+        "Bulk pricing is based on the quantity shown and may change if requirements change.",
       invoiceNotes:
         "Please reference the invoice number with payment or internal approval."
     },
@@ -146,9 +146,9 @@
       showBusinessFields: false,
       showPo: false,
       assumptions:
-        "Quote is based on a prior or repeat-style item using current material, labor, and machine assumptions. Minor variation in color, finish, or packaging may occur depending on current stock and print settings.",
+        "Repeat quote based on current material, labor, and machine assumptions.",
       notes:
-        "Repeat-order quote based on the current requested quantity and available material/production assumptions."
+        "Repeat-order quote based on requested quantity and available materials."
     },
     craft: {
       label: "Craft Show / Pre-Made",
@@ -162,9 +162,9 @@
       showBusinessFields: false,
       showPo: false,
       assumptions:
-        "Pricing is for pre-made inventory or event stock currently available or planned for a batch run. Final color appearance may vary slightly by filament brand and print settings. Quantities available may change as inventory sells.",
+        "Pricing is for available or planned event inventory. Quantities may change as inventory sells.",
       notes:
-        "Pricing is based on available or planned inventory. Pickup, event purchase, or shipping details can be confirmed separately."
+        "Pickup, event purchase, or shipping details can be confirmed separately."
     },
     po: {
       label: "Professional / PO Customer",
@@ -178,9 +178,9 @@
       showBusinessFields: true,
       showPo: true,
       assumptions:
-        "Quote is based on the listed scope, quantity, materials, and production assumptions. Any changes to specifications, required documentation, delivery requirements, packaging, or approval process may require an updated quote.",
+        "Quote is based on the listed scope, quantity, materials, and production assumptions. Scope changes may require an updated quote.",
       notes:
-        "Formal quote prepared for business purchasing review. Please confirm company name, contact, PO requirements, delivery needs, and any vendor setup requirements before approval.",
+        "Prepared for business purchasing review. Please confirm PO, delivery, and vendor setup requirements before approval.",
       invoiceNotes:
         "Please reference the invoice number and PO number with payment or internal approval."
     }
@@ -1180,22 +1180,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const nextCopy = invoiceMode
-      ? `Next step: complete payment using the available payment option, or reply to coordinate pickup, delivery, shipping, or PO processing.`
+      ? `Complete payment using the available option, or reply to coordinate fulfillment.`
       : professional
-        ? `Next steps: approve internally, reference quote number ${quoteNumber || "shown above"}, and provide PO or payment details as needed. Once accepted, the order can be tracked as ${orderNumber || "the OP- order number"}.`
-        : `To proceed: review and approve using the quote response link sent by email. Once accepted, your order number will be ${orderNumber || "the same number with OP- instead of Q-"} and you can track progress online.`;
+        ? `Approve internally and reference quote ${quoteNumber || "shown above"}. Once accepted, track as ${orderNumber || "the OP- order number"}.`
+        : `Review and approve via your email link. After approval, track and pay using your order number.`;
 
     setHTML("pdfNextSteps", `
-      <strong>${invoiceMode ? "Next Step" : "Next Steps"}</strong><br>
+      <strong>Next</strong><br>
       ${nextCopy}
     `);
 
     const paymentCopy = professional
-      ? `Digital payment options may be available through the tracker or payment page. PO customers should reference the quote/order number on payment or purchasing documents.`
-      : `Digital payment options are available through the tracker after approval, or through the general payment page for in-person/craft show payments.`;
+      ? `Pay via tracker/payment page when available. PO customers should reference the quote/order number.`
+      : `Pay via tracker after approval, or use the payment page for in-person/craft show payments.`;
 
     setHTML("pdfPaymentCta", `
-      <strong>Payment / Tracking</strong><br>
+      <strong>Pay / Track</strong><br>
       ${paymentCopy}
       <div class="pdf-action-links">
         <a class="pdf-action-link" href="${trackLink}">Track Order</a>

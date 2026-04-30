@@ -653,6 +653,43 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   .pdf-hero-summary{grid-template-columns:1fr;padding:14px 18px 0}
 }
 
+
+/* === PDF FIT + CLARITY FIX V2 === */
+@media print{
+  .pdf-card{height:10.45in!important;}
+  .pdf-hero{padding:8px 12px 6px!important;}
+  .pdf-brand{margin-bottom:4px!important;}
+  .pdf-icon{width:28px!important;height:28px!important;border-radius:9px!important;font-size:13px!important;}
+  .pdf-brand h2{font-size:.84rem!important;}
+  .pdf-brand p{font-size:.62rem!important;}
+  .pdf-hero h1{font-size:.96rem!important;margin-bottom:1px!important;}
+  .doc-chip{margin-bottom:4px!important;padding:3px 7px!important;font-size:.55rem!important;}
+  .pdf-hero-summary{padding:6px 12px 0!important;gap:6px!important;}
+  .pdf-metric{padding:6px 8px!important;border-radius:10px!important;}
+  .pdf-metric span{font-size:.5rem!important;margin-bottom:2px!important;}
+  .pdf-metric strong{font-size:.74rem!important;line-height:1.05!important;}
+  .pdf-metric-primary strong{font-size:.9rem!important;}
+  .pdf-grid{gap:6px!important;padding:7px 12px 5px!important;}
+  .pdf-panel{padding:6px 8px!important;border-radius:10px!important;}
+  .pdf-line{padding:2px 0!important;line-height:1.08!important;}
+  .pdf-line strong{font-size:.72rem!important;}
+  .pdf-line small{font-size:.62rem!important;}
+  .pdf-totals{padding:0 12px 5px!important;gap:5px!important;}
+  .pdf-total-card{padding:6px 8px!important;border-radius:10px!important;}
+  .pdf-footer{padding:0 12px 8px!important;gap:5px!important;}
+  .pdf-note{padding:6px 8px!important;border-radius:10px!important;font-size:.68rem!important;line-height:1.13!important;max-height:none!important;}
+  #pdfCustomerNotes,#pdfAssumptions,#pdfTrackingInfo,#pdfQuoteTerms,#pdfInvoiceTerms,#pdfNextSteps,#pdfPaymentCta{
+    display:block!important;-webkit-line-clamp:unset!important;max-height:none!important;overflow:hidden!important;
+  }
+  #pdfCustomerNotes{max-height:.36in!important;}
+  #pdfAssumptions{max-height:.48in!important;}
+  #pdfTrackingInfo{max-height:.36in!important;}
+  #pdfNextSteps,#pdfPaymentCta{max-height:.48in!important;}
+  #pdfChecklist{display:none!important;}
+  .pdf-action-links{gap:5px!important;margin-top:4px!important;}
+  .pdf-action-link{padding:4px 7px!important;font-size:.62rem!important;}
+}
+
 </style>
 </head>
 <body>
