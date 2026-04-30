@@ -689,29 +689,61 @@ OliPoly 3D`;
     const assumptions = getField("assumptions");
     const quoteNumber = getField("quoteNumber");
 
-    return `<div style="font-family:Arial,sans-serif;color:#3f3146;line-height:1.6;background:#fff7fb;padding:24px;">
-  <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #f2c4df;border-radius:22px;padding:24px;box-shadow:0 12px 30px rgba(222,111,184,.14);">
-    <h1 style="font-family:Georgia,serif;color:#2a2132;margin:0 0 10px;">Your OliPoly 3D Quote</h1>
-    <p style="margin:0 0 16px;">${customerName ? `Hi ${customerName},` : "Hi,"}</p>
-    <p style="margin:0 0 16px;">Thanks for reaching out! Your quote is ready to review.</p>
+    return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,sans-serif;color:#3f3146;">
+  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
+    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff);"></div>
 
-    <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:16px;padding:16px;margin:16px 0;">
-      <p style="margin:0 0 8px;"><strong>Quote:</strong> ${quoteNumber}</p>
-      <p style="margin:0 0 8px;"><strong>Project:</strong> ${project}</p>
-      <p style="margin:0 0 8px;"><strong>Estimated total:</strong> ${total}</p>
-      <p style="margin:0;"><strong>Estimated timing:</strong> ${turnaround}</p>
+    <div style="padding:26px 26px 10px;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;letter-spacing:-.03em;color:#241b2b;">
+        Oli<span style="color:#b86be8;">Poly</span> 3D
+      </div>
+      <div style="margin-top:4px;color:#866a86;font-size:14px;">
+        Custom prints • Creative builds • Prototypes
+      </div>
     </div>
 
-    ${notes ? `<p style="margin:0 0 10px;"><strong>Notes:</strong> ${notes}</p>` : ""}
-    ${assumptions ? `<p style="margin:0 0 10px;"><strong>Assumptions:</strong> ${assumptions}</p>` : ""}
+    <div style="padding:12px 26px 26px;">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:8px 0 14px;color:#241b2b;">
+        Your custom quote is ready
+      </h1>
 
-    <p style="margin:18px 0 8px;">Please use the button below to accept or decline the quote.</p>
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
+        ${customerName ? `Hi ${customerName},` : "Hi,"}
+      </p>
 
-    <p style="text-align:center;margin:24px 0;">
-      <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px;">Review / Respond to Quote</a>
-    </p>
+      <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
+        Thanks for reaching out! Your OliPoly 3D quote has been prepared and is ready to review.
+      </p>
 
-    <p style="font-size:13px;color:#816c88;margin:18px 0 0;">If the button does not work, copy and paste this link:<br>${link}</p>
+      <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
+        <p style="margin:0 0 8px;"><strong>Quote #:</strong> ${quoteNumber}</p>
+        <p style="margin:0 0 8px;"><strong>Project:</strong> ${project}</p>
+        <p style="margin:0 0 8px;"><strong>Estimated total:</strong> ${total}</p>
+        <p style="margin:0;"><strong>Estimated timing:</strong> ${turnaround}</p>
+      </div>
+
+      ${notes ? `<p style="font-size:15px;line-height:1.55;margin:0 0 10px;"><strong>Notes:</strong> ${notes}</p>` : ""}
+      ${assumptions ? `<p style="font-size:15px;line-height:1.55;margin:0 0 10px;"><strong>Assumptions:</strong> ${assumptions}</p>` : ""}
+
+      <p style="font-size:16px;line-height:1.6;margin:18px 0 20px;">
+        Please use the button below to review, accept, or decline the quote.
+      </p>
+
+      <div style="text-align:center;margin:26px 0;">
+        <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:999px;">
+          Review / Respond to Quote
+        </a>
+      </div>
+
+      <p style="font-size:14px;line-height:1.55;color:#816c88;margin:0;">
+        If the button does not work, copy and paste this link:<br>${link}
+      </p>
+    </div>
+
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:16px 26px;color:#866a86;font-size:13px;line-height:1.5;">
+      OliPoly 3D • Custom 3D printing<br>
+      OliPoly3D@gmail.com • olipoly3d.com
+    </div>
   </div>
 </div>`;
   }
@@ -756,6 +788,62 @@ OliPoly 3D`;
 
 
 /* === Customer Responses Panel === */
+
+function buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackLink }) {
+  return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,sans-serif;color:#3f3146;">
+  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
+    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff);"></div>
+
+    <div style="padding:26px 26px 10px;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;letter-spacing:-.03em;color:#241b2b;">
+        Oli<span style="color:#b86be8;">Poly</span> 3D
+      </div>
+      <div style="margin-top:4px;color:#866a86;font-size:14px;">
+        Custom prints • Creative builds • Prototypes
+      </div>
+    </div>
+
+    <div style="padding:12px 26px 26px;">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:8px 0 14px;color:#241b2b;">
+        Your order is confirmed
+      </h1>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
+        ${customerName ? `Hi ${customerName},` : "Hi,"}
+      </p>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
+        Thank you — your quote has been accepted and your order has been created.
+      </p>
+
+      <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
+        <p style="margin:0 0 8px;"><strong>Order #:</strong> ${orderNumber}</p>
+        ${project ? `<p style="margin:0;"><strong>Project:</strong> ${project}</p>` : ""}
+      </div>
+
+      <p style="font-size:16px;line-height:1.6;margin:18px 0 20px;">
+        You can track progress and complete payment using the button below.
+      </p>
+
+      <div style="text-align:center;margin:26px 0;">
+        <a href="${trackLink}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:999px;">
+          Track Order & Complete Payment
+        </a>
+      </div>
+
+      <p style="font-size:14px;line-height:1.55;color:#816c88;margin:0;">
+        If you have questions or need to make changes, just reply to this email.
+      </p>
+    </div>
+
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:16px 26px;color:#866a86;font-size:13px;line-height:1.5;">
+      OliPoly 3D • Custom 3D printing<br>
+      OliPoly3D@gmail.com • olipoly3d.com
+    </div>
+  </div>
+</div>`;
+}
+
 async function loadCustomerResponses() {
   const list = document.getElementById("responsesList");
 
@@ -822,7 +910,7 @@ if (q.customer_response === "accepted" && q.converted_order_number) {
   emailBtn.className = "btn-ghost";
   emailBtn.type = "button";
 
-  emailBtn.onclick = () => {
+  emailBtn.onclick = async () => {
     const orderNumber = q.converted_order_number;
     const email =
       q.customer_email ||
@@ -830,6 +918,8 @@ if (q.customer_response === "accepted" && q.converted_order_number) {
       q.quote_data?.fields?.email ||
       q.quote_data?.fields?.contactEmail ||
       "";
+    const customerName = q.customer_name || q.quote_data?.fields?.customerName || q.quote_data?.fields?.contactName || "";
+    const project = q.quote_title || q.quote_data?.fields?.quoteTitle || q.quote_data?.fields?.projectTitle || "";
 
     if (!orderNumber || !email) {
       alert("Missing order number or customer email.");
@@ -837,13 +927,13 @@ if (q.customer_response === "accepted" && q.converted_order_number) {
     }
 
     const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
-
     const subject = `Order Confirmed – OliPoly 3D (${orderNumber})`;
 
-    const body = `Hi — your order has been created.
+    const plainBody = `Hi${customerName ? ` ${customerName}` : ""} — your order has been created.
 
 Order #: ${orderNumber}
-
+${project ? `Project: ${project}
+` : ""}
 Track your order and complete payment:
 ${trackLink}
 
@@ -852,11 +942,20 @@ If you have any questions, just reply.
 Thanks!
 OliPoly 3D`;
 
+    const htmlEmail = buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackLink });
+
+    try {
+      await navigator.clipboard.writeText(htmlEmail);
+      alert("Styled confirmation email copied to your clipboard. Gmail will open with a plain prefilled draft for review.");
+    } catch (_) {
+      alert("Gmail will open with a plain prefilled draft. Styled copy was not available from this browser.");
+    }
+
     const gmailUrl =
       "https://mail.google.com/mail/?view=cm&fs=1" +
       `&to=${encodeURIComponent(email)}` +
       `&su=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(body)}`;
+      `&body=${encodeURIComponent(plainBody)}`;
 
     window.open(gmailUrl, "_blank", "noopener,noreferrer");
   };
