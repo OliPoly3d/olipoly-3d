@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>OliPoly 3D | FAQ</title>
+  <meta name="description" content="Frequently asked questions about OliPoly 3D custom printing, quotes, materials, turnaround time, pickup, shipping, prototypes, and order tracking." />
+
+  <style>
+    :root{
+      --bg:#fff8fc;
+      --panel:#ffffff;
+      --line:rgba(216,107,179,.18);
+      --line-strong:rgba(216,107,179,.28);
+      --text:#4a3550;
+      --muted:#6b5a6f;
+      --soft:#9b8b9a;
+      --accent:#d86bb3;
+      --accent2:#9d7cff;
+      --success:#16a34a;
+      --shadow:0 20px 50px rgba(216,107,179,.12);
+    }
+
+    *{box-sizing:border-box}
+
+    html{scroll-behavior:smooth}
+
+    body{
+      margin:0;
+      font-family:'Inter','Poppins',system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(216,107,179,.14), transparent 28%),
+        radial-gradient(circle at 88% 8%, rgba(157,124,255,.12), transparent 26%),
+        linear-gradient(180deg,#fffafd 0%,#fff5fb 48%,#fff8fc 100%);
+    }
+
+    a{
+      color:var(--accent);
+      text-decoration:none;
+      font-weight:700;
+    }
+
+    .wrap{
+      max-width:1040px;
+      margin:0 auto;
+      padding:40px 20px 60px;
+    }
+
+    .shell{
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,249,252,.98));
+      border:1px solid var(--line);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .hero{
+      padding:36px 34px 24px;
+      background:
+        radial-gradient(circle at top right,rgba(157,124,255,.16),transparent 32%),
+        linear-gradient(135deg, rgba(255,247,252,.96) 0%, rgba(255,239,251,.96) 45%, rgba(247,242,255,.96) 100%);
+      border-bottom:1px solid var(--line);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .brand img{
+      width:46px;
+      height:46px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 10px rgba(216,107,179,.16));
+    }
+
+    .wordmark{
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:1.9rem;
+      font-weight:700;
+      line-height:1;
+      color:#241b2b;
+      letter-spacing:-.03em;
+    }
+
+    .wordmark span{
+      background:linear-gradient(135deg,#de6fb8,#9d7cff);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+
+    .tag{
+      color:var(--soft);
+      font-size:.95rem;
+      margin-top:3px;
+    }
+
+    h1{
+      margin:0 0 12px;
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:clamp(2.3rem,5vw,3.6rem);
+      line-height:1.02;
+      color:#2d1f36;
+      letter-spacing:-.04em;
+    }
+
+    .intro{
+      margin:0;
+      color:var(--muted);
+      line-height:1.75;
+      max-width:780px;
+      font-size:1.02rem;
+    }
+
+    .hero-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:22px;
+    }
+
+    .btn,.btn-ghost{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px 18px;
+      border-radius:999px;
+      font-weight:800;
+      transition:.2s ease;
+    }
+
+    .btn{
+      color:#fff;
+      background:linear-gradient(135deg,#de6fb8,#9d7cff);
+      box-shadow:0 10px 22px rgba(222,111,184,.22);
+    }
+
+    .btn-ghost{
+      color:#4a3550;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(216,107,179,.14);
+    }
+
+    .btn:hover,.btn-ghost:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(216,107,179,.14);
+    }
+
+    .quicknav{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      padding:18px 24px 0;
+    }
+
+    .quicknav a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 15px;
+      border-radius:999px;
+      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,245,251,.95));
+      border:1px solid var(--line);
+      color:#6f5d76;
+      font-size:.9rem;
+      font-weight:800;
+      transition:.2s ease;
+    }
+
+    .quicknav a:hover{
+      transform:translateY(-1px);
+      border-color:rgba(216,107,179,.28);
+      box-shadow:0 10px 24px rgba(216,107,179,.08);
+    }
+
+    .content{
+      padding:18px;
+    }
+
+    .friendly-note{
+      margin:8px 8px 18px;
+      padding:22px;
+      border-radius:24px;
+      background:linear-gradient(135deg, rgba(255,247,252,.96), rgba(247,242,255,.96));
+      border:1px solid rgba(216,107,179,.14);
+      box-shadow:0 14px 28px rgba(216,107,179,.06);
+    }
+
+    .friendly-note h2{
+      margin:0 0 10px;
+      color:#2d1f36;
+      font-size:1.3rem;
+    }
+
+    .friendly-note p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .faq-group{
+      margin:18px 0 8px;
+      padding:0 8px;
+    }
+
+    .faq-group h2{
+      margin:0 0 12px;
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:1.65rem;
+      color:#2d1f36;
+      letter-spacing:-.02em;
+    }
+
+    details{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:22px;
+      margin:12px 0;
+      overflow:hidden;
+    }
+
+    details[open]{
+      border-color:var(--line-strong);
+      box-shadow:0 10px 26px rgba(216,107,179,.08);
+    }
+
+    summary{
+      list-style:none;
+      cursor:pointer;
+      padding:18px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      font-weight:850;
+      color:#2d1f36;
+      font-size:1.02rem;
+    }
+
+    summary::-webkit-details-marker{display:none}
+
+    .chev{
+      width:32px;
+      height:32px;
+      flex:0 0 32px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg, rgba(255,244,250,.95), rgba(247,242,255,.95));
+      border:1px solid var(--line);
+      color:var(--accent);
+      font-size:1.05rem;
+      transition:transform .2s ease;
+    }
+
+    details[open] .chev{transform:rotate(45deg)}
+
+    .answer{
+      padding:0 20px 20px;
+      border-top:1px solid rgba(216,107,179,.1);
+    }
+
+    .answer p{
+      margin:14px 0 0;
+      color:var(--muted);
+      line-height:1.75;
+    }
+
+    .answer ul{
+      margin:12px 0 0 18px;
+      padding:0;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .note-card{
+      margin:22px 8px 8px;
+      padding:26px;
+      border-radius:26px;
+      text-align:center;
+      background:linear-gradient(135deg, rgba(255,247,252,.96), rgba(247,242,255,.96));
+      border:1px solid rgba(216,107,179,.14);
+    }
+
+    .note-card h2{
+      margin:0 0 10px;
+      color:#2d1f36;
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:1.7rem;
+    }
+
+    .note-card p{
+      max-width:650px;
+      margin:0 auto 18px;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .footer{
+      padding:8px 22px 28px;
+      color:var(--soft);
+      font-size:.88rem;
+      text-align:center;
+    }
+
+    @media (max-width:720px){
+      .wrap{padding:20px 12px 36px}
+      .hero{padding:26px 20px 20px}
+      .brand{align-items:flex-start}
+      .brand img{width:40px;height:40px}
+      .wordmark{font-size:1.55rem}
+      .content{padding:10px}
+      .quicknav{padding:14px 14px 0;gap:8px}
+      .quicknav a{font-size:.84rem;padding:9px 13px}
+      .friendly-note{margin:6px;padding:18px;border-radius:20px}
+      .faq-group{padding:0 4px}
+      summary{padding:16px;align-items:flex-start}
+      .answer{padding:0 16px 16px}
+      .hero-actions{display:grid;grid-template-columns:1fr}
+      .btn,.btn-ghost{width:100%}
+      .note-card{margin:16px 6px 6px;padding:22px 18px}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="shell">
+
+      <header class="hero">
+        <div class="brand">
+          <img src="images/poly-head.png" alt="Poly mascot icon" onerror="this.style.display='none'">
+          <div>
+            <div class="wordmark">Oli<span>Poly</span> 3D</div>
+            <div class="tag">Creative 3D printing brought to life in Ohio</div>
+          </div>
+        </div>
+
+        <h1>FAQ</h1>
+
+        <p class="intro">
+          New to custom 3D printing? No problem. Here are quick, practical answers about starting a project, getting a quote, materials, timing, pickup, shipping, business orders, and what to expect from OliPoly 3D.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn" href="index.html#order">Start a Project</a>
+          <a class="btn-ghost" href="track.html">Track an Order</a>
+          <a class="btn-ghost" href="index.html">Back to Home</a>
+        </div>
+      </header>
+
+      <nav class="quicknav" aria-label="FAQ sections">
+        <a href="#ordering">Ordering</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#production">Production</a>
+        <a href="#pickup-shipping">Pickup & Shipping</a>
+        <a href="#business">Business Work</a>
+        <a href="#general">General</a>
+      </nav>
+
+      <main class="content">
+
+        <section class="friendly-note">
+          <h2>Custom printing should feel easy.</h2>
+          <p>
+            You do not need to know all the technical details before reaching out. Send your idea, a photo, a sketch, a broken part, a file, or even just a rough description — we’ll help figure out the next step.
+          </p>
+        </section>
+
+        <section class="faq-group" id="ordering">
+          <h2>Ordering</h2>
+
+          <details open>
+            <summary>
+              How do I start a custom project?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Start by using the project request form on the homepage. Share what you want made, how it will be used, any size or quantity details, and whether you have a file, photo, sketch, or example.
+              </p>
+              <p>
+                You can start here: <a href="index.html#order">Start Your Project</a>.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Do I need a 3D file already?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                No. A 3D file helps, but it is not required. You can send a photo, drawing, rough idea, broken part, measurement, inspiration image, or description and we’ll help determine whether it can be designed or printed.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can OliPoly help design something from an idea?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes, depending on the project. Some ideas may need design time, measurements, test prints, or revisions before the final piece is ready. Design work may affect the quote.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can I upload reference files or photos?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes. After submitting a project request, you can upload sketches, photos, STL/3MF files, screenshots, or reference images using the upload form linked on the homepage.
+              </p>
+              <p>
+                Upload here: <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="faq-group" id="pricing">
+          <h2>Pricing & Quotes</h2>
+
+          <details>
+            <summary>
+              How are prices calculated?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Pricing depends on material, print time, size, complexity, design work, quantity, finishing, packaging, shipping, and any special requirements. Custom projects are usually quoted before production begins.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Do custom orders require a deposit?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Some custom orders may require a deposit before production begins. The quote will explain whether a deposit is required and when the remaining balance is due.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can I request changes after receiving a quote?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes. If you need changes, reply before approving the quote. Changes after approval may affect pricing, timing, or feasibility, especially if production has already started.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              What happens after I accept a quote?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Once accepted, your quote can become an order number beginning with OP-. You’ll be able to track progress through the order tracker and complete payment using the available payment options.
+              </p>
+              <p>
+                Track here: <a href="track.html">Track Order</a>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="faq-group" id="production">
+          <h2>Production & Materials</h2>
+
+          <details>
+            <summary>
+              How long does a custom print take?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Timing depends on design complexity, print time, material availability, current order volume, and whether revisions or test prints are needed. Typical timing will be included in your quote when possible.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              What materials do you offer?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Common materials may include PLA, PETG, and other specialty filaments depending on the project. If you are not sure what material you need, OliPoly can recommend an option based on how the item will be used.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Are 3D printed items perfectly smooth?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Not usually. 3D printed items may show layer lines, small texture differences, seams, or slight variation in color and finish. That is normal for printed parts and handmade/custom production.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can you color-match prints?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Exact color matching is not guaranteed, but we can usually help choose a close material color or suggest options that fit the project.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="faq-group" id="pickup-shipping">
+          <h2>Pickup, Shipping & Tracking</h2>
+
+          <details>
+            <summary>
+              Do you offer local pickup?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes, local pickup may be available depending on the order and arrangement. Pickup details will be confirmed before completion or delivery.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Do you ship orders?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Shipping may be available depending on item size, durability, packaging needs, and destination. Shipping costs and timing can be included with your quote or final order details.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              How does order tracking work?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Accepted orders may receive an OP- order number. You can enter that number on the tracker page to view customer-safe order status updates, payment status, next steps, and pickup/shipping notes.
+              </p>
+              <p>
+                Go to: <a href="track.html">Track Order</a>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="faq-group" id="business">
+          <h2>Business, Prototypes & Replacement Parts</h2>
+
+          <details>
+            <summary>
+              Can you make replacement parts?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Often, yes. Replacement parts depend on size, function, material needs, measurements, and whether the part can be reasonably recreated. Some parts may require test fitting or revisions.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can you help with prototypes?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes. OliPoly can help with concept models, fit checks, small prototype parts, mockups, and early design iterations. Customers are responsible for validating final suitability for technical, commercial, safety, or production use.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can you handle small production runs?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Small batch or repeat production may be available depending on the part, quantity, timeline, material, and printer capacity. Bulk pricing may be quoted separately.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can businesses request quotes or purchase-order support?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes. For business projects, OliPoly can provide formal quotes and may support vendor paperwork, W-9 requests, and purchase-order style workflows when appropriate.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="faq-group" id="general">
+          <h2>General Questions</h2>
+
+          <details>
+            <summary>
+              Are 3D printed items food-safe?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Unless specifically stated in writing, OliPoly 3D printed items should not be assumed to be food-safe. Layer lines, material type, coating, cleaning method, and use conditions all matter.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Are prints safe for heavy loads or structural use?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Unless specifically agreed in writing, prints are not guaranteed for structural, load-bearing, safety-critical, or high-stress applications. Customers are responsible for evaluating suitability for the intended use.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can you print copyrighted characters, logos, or designs?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Customers are responsible for ensuring they have the right to use any submitted designs, logos, artwork, models, or requested content. OliPoly 3D may decline projects that appear to raise ownership or intellectual property concerns.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Where can I read the full terms and policies?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                You can review the full terms, privacy policy, refund language, payment details, and custom-order notes on the legal page.
+              </p>
+              <p>
+                Read here: <a href="legal.html">Terms & Privacy</a>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="note-card">
+          <h2>Still unsure?</h2>
+          <p>
+            Send the idea anyway. Whether it is a custom gift, functional part, prototype, model, or something unusual, OliPoly can help figure out whether it is a good fit.
+          </p>
+          <a class="btn" href="index.html#order">Start Your Project</a>
+        </section>
+
+      </main>
+
+      <footer class="footer">
+        © OliPoly 3D · FAQ for custom 3D printing, quotes, order tracking, and project requests
+      </footer>
+
+    </div>
+  </div>
+</body>
+</html>
