@@ -663,18 +663,18 @@
 
     return `${customerName ? `Hi ${customerName},` : "Hi,"}
 
-Thanks for reaching out! Your OliPoly 3D quote is ready to review.
+Thanks for reaching out! Your OliPoly project quote is ready to review.
 
 Quote: ${getField("quoteNumber")}
 Project: ${project}
 Estimated total: ${total}
 Estimated timing: ${turnaround}
 
-${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to review, accept, or decline the quote:
+${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to review the details, approve the quote, or request changes:
 
 ${link}
 
-Once accepted, your order number will use the same number with OP- instead of Q-.
+After approval, your project becomes an OP- order and you can track progress anytime through the OliPoly tracker.
 
 Thank you!
 OliPoly 3D`;
@@ -698,13 +698,13 @@ OliPoly 3D`;
         Oli<span style="color:#b86be8;">Poly</span> 3D
       </div>
       <div style="margin-top:4px;color:#866a86;font-size:14px;">
-        Custom prints • Creative builds • Prototypes
+        Creative 3D printing brought to life in Ohio
       </div>
     </div>
 
     <div style="padding:12px 26px 26px;">
       <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:8px 0 14px;color:#241b2b;">
-        Your custom quote is ready
+        Your OliPoly project quote is ready
       </h1>
 
       <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
@@ -712,7 +712,7 @@ OliPoly 3D`;
       </p>
 
       <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
-        Thanks for reaching out! Your OliPoly 3D quote has been prepared and is ready to review.
+        Thanks for reaching out! Your custom project quote has been prepared and is ready to review.
       </p>
 
       <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
@@ -725,13 +725,20 @@ OliPoly 3D`;
       ${notes ? `<p style="font-size:15px;line-height:1.55;margin:0 0 10px;"><strong>Notes:</strong> ${notes}</p>` : ""}
       ${assumptions ? `<p style="font-size:15px;line-height:1.55;margin:0 0 10px;"><strong>Assumptions:</strong> ${assumptions}</p>` : ""}
 
+      <div style="background:#fffafc;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
+        <p style="margin:0 0 8px;font-weight:800;color:#3f3146;">What happens after approval?</p>
+        <p style="margin:0 0 6px;color:#604d68;line-height:1.5;">• Your project becomes an OP- order.</p>
+        <p style="margin:0 0 6px;color:#604d68;line-height:1.5;">• Scheduling and final production prep begin.</p>
+        <p style="margin:0;color:#604d68;line-height:1.5;">• Tracking and payment options are available from the order page.</p>
+      </div>
+
       <p style="font-size:16px;line-height:1.6;margin:18px 0 20px;">
-        Please use the button below to review, accept, or decline the quote.
+        Use the button below to review the details, approve the quote, or request changes before moving forward.
       </p>
 
       <div style="text-align:center;margin:26px 0;">
         <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:999px;">
-          Review / Respond to Quote
+          Review Quote
         </a>
       </div>
 
@@ -799,13 +806,13 @@ function buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackL
         Oli<span style="color:#b86be8;">Poly</span> 3D
       </div>
       <div style="margin-top:4px;color:#866a86;font-size:14px;">
-        Custom prints • Creative builds • Prototypes
+        Creative 3D printing brought to life in Ohio
       </div>
     </div>
 
     <div style="padding:12px 26px 26px;">
       <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:8px 0 14px;color:#241b2b;">
-        Your order is confirmed
+        Your OliPoly order is confirmed
       </h1>
 
       <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
@@ -813,7 +820,7 @@ function buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackL
       </p>
 
       <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
-        Thank you — your quote has been accepted and your order has been created.
+        Thank you — your quote has been approved and your OliPoly order has been created.
       </p>
 
       <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
@@ -822,12 +829,12 @@ function buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackL
       </div>
 
       <p style="font-size:16px;line-height:1.6;margin:18px 0 20px;">
-        You can track progress and complete payment using the button below.
+        Your project is now live in the OliPoly tracker. Use the button below to track progress and view payment options.
       </p>
 
       <div style="text-align:center;margin:26px 0;">
         <a href="${trackLink}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:999px;">
-          Track Order & Complete Payment
+          Track Order / View Payment
         </a>
       </div>
 
@@ -1627,4 +1634,3 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("beforeprint", cleanupPdfV6);
   });
 })();
-
