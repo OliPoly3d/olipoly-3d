@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-if (location.hostname === "olipoly3d.github.io") {
-  location.replace("https://olipoly3d.com");
-}
-</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>OliPoly 3D</title>
@@ -367,6 +362,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
 </style>
 </head>
 <body>
+<!-- OliPoly index recovery build: full homepage file restored -->
 <header class="site-header">
   <div class="container nav-wrap">
     <div class="brand">
@@ -391,6 +387,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
     </div>
     <nav>
       <a href="#how-it-works">How It Works</a>
+        <a href="faq.html">FAQ</a>
       <a href="#gallery">Gallery</a>
       <a href="#events">Events</a>
       <a href="track.html">Track Order</a>
@@ -609,7 +606,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
             <option>ABS</option>
             <option>Not sure yet</option>
           </select>
-          <textarea name="details" placeholder="Tell us about your project"></textarea>
+          <textarea name="details" placeholder="Tell us about your project" required></textarea>
           
           <button class="cta" type="submit">Submit Order Request →</button>
         </form>
@@ -727,7 +724,7 @@ function openModal(src){$('#modalImg').src=src;$('#modal')?.classList.add('activ
 function closeModal(){$('#modal')?.classList.remove('active');$('#modal')?.setAttribute('aria-hidden','true')}
 
 function loadImages(){
-  const exts=['jpg','jpeg','png','webp','heic'];
+  const exts=['jpg','jpeg','png','webp'];
   $$('[data-base]').forEach(img=>{
     const trySrc=i=>{
       if(i>=exts.length) return;
