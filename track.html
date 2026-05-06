@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Track Order</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{
       --bg:#fff7fb;
@@ -34,6 +35,25 @@
     .btn,.btn-ghost{border:none;border-radius:999px;padding:14px 22px;font:inherit;font-weight:700;letter-spacing:.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .25s cubic-bezier(.4,0,.2,1);text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25)}
     .btn:hover,.btn-ghost:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(222,111,184,.32)} .btn:active,.btn-ghost:active{transform:translateY(0);box-shadow:0 6px 14px rgba(222,111,184,.25)}
     .wrap{width:min(1100px,calc(100% - 40px));margin:0 auto;padding:28px 0 64px}
+    .lookup-card{margin-bottom:28px;padding:34px;position:relative;overflow:hidden}
+    .lookup-card::before{content:"";position:absolute;inset:-80px -120px auto auto;width:260px;height:260px;border-radius:999px;background:radial-gradient(circle,rgba(216,107,179,.16),transparent 68%);pointer-events:none}
+    .eyebrow{display:inline-flex;margin-bottom:8px;font-size:.78rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#b264a0}
+    .lookup-copy h1{margin:0 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2.45rem,5vw,4rem);line-height:.98;letter-spacing:-.035em;color:#241b2b}
+    .lookup-note{margin-top:14px}
+    .search-action{display:flex;align-items:end;gap:10px}
+    .result-shell{padding:24px}
+    .result-hero{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;margin-bottom:18px;padding:22px;border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(255,239,248,.9));border:1px solid rgba(216,107,179,.14);box-shadow:0 12px 28px rgba(216,107,179,.08)}
+    .result-hero h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2rem,4vw,3rem);line-height:1;color:#241b2b;letter-spacing:-.03em}
+    .order-ref{margin:8px 0 0;color:var(--muted)}
+    .status-stack{display:grid;gap:10px;min-width:190px}
+    .status-stack>div{padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(216,107,179,.12)}
+    .status-stack span{display:block;margin-bottom:7px;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800}
+    .info-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:22px}
+    .update-card{background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(245,239,255,.92));border-style:solid;border-color:rgba(155,123,255,.18);box-shadow:0 12px 26px rgba(155,123,255,.08)}
+    .update-card strong{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.35rem;letter-spacing:-.01em}
+    .update-card span{font-size:1.02rem}
+    .footer a{color:#9b5cd8;font-weight:800;text-decoration:none}
+    .footer a:hover{text-decoration:underline}
     .card,.mini{padding:28px;border-radius:30px;background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,251,.95));border:1px solid var(--line);box-shadow:var(--shadow)}
     .card h3{font-size:1.2rem;font-weight:800;margin:0 0 8px}.sub{line-height:1.7;font-size:1.02rem;color:var(--muted);margin:0 0 14px}
     label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(216,107,179,.18);background:rgba(255,255,255,.82);color:var(--text);font:inherit;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)} input:focus{border-color:rgba(155,123,255,.42);box-shadow:0 0 0 4px rgba(216,107,179,.10)}
@@ -57,8 +77,8 @@
     .payment-badge.unpaid,.payment-badge.deposit_due{background:#ffe4b5;color:#936a30}
     .payment-badge.deposit_paid,.payment-badge.paid{background:#d8f5e7;color:#3c7d66}
     .payment-badge.refunded{background:#ffd6df;color:#b34f72}
-    @media (max-width:900px){.info-grid,.timeline{grid-template-columns:1fr 1fr}}
-    @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.info-grid,.timeline,.search-row{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}.payment-btn{width:100%}}
+    @media (max-width:900px){.info-grid,.timeline{grid-template-columns:1fr 1fr}.result-hero{grid-template-columns:1fr}.status-stack{grid-template-columns:1fr 1fr;min-width:0}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.lookup-card{padding:22px}.lookup-copy h1{font-size:2.35rem}.info-grid,.info-grid.compact,.timeline,.search-row,.status-stack{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}.payment-btn,.btn{width:100%}.result-shell{padding:16px}.result-hero{padding:18px}.timeline{gap:12px}.timeline::before,.timeline-fill{display:none}.step{grid-template-columns:auto 1fr;justify-items:start;text-align:left}.step-label{max-width:none}}
   </style>
 </head>
 <body>
@@ -72,47 +92,62 @@
       </div>
       <div class="brand-copy">
         <div class="brand-wordmark">Oli<span class="poly">Poly</span> 3D</div>
-        <div class="brand-tag">Creative 3D printing • Custom builds • Prototypes</div>
+        <div class="brand-tag">Creative 3D printing brought to life in Ohio</div>
       </div>
     </div>
     <a class="btn-ghost" href="index.html">Back to Home</a>
   </div>
 
   <div class="wrap">
-    <section class="card" style="margin-bottom:28px;">
-      <h3>Find Your Order</h3>
-      <p class="sub">Enter your order number to see the latest public status from OliPoly 3D.</p>
-      <div class="search-row">
-        <div><label for="orderLookup">Order Number</label><input id="orderLookup" placeholder="Example: Q-000205 or OP-000205" /></div>
-        <div style="display:flex;align-items:end;gap:10px;"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
+    <section class="card lookup-card">
+      <div class="lookup-copy">
+        <span class="eyebrow">Order Tracking</span>
+        <h1>Track your custom project</h1>
+        <p class="sub">Enter your quote or order number to see the latest customer-safe update from OliPoly 3D.</p>
       </div>
-      <div class="note" id="lookupMessage" style="margin-top:14px;">Enter your order number to see the current status.</div>
+      <div class="search-row">
+        <div>
+          <label for="orderLookup">Quote or Order Number</label>
+          <input id="orderLookup" placeholder="Example: Q-000205 or OP-000205" autocomplete="off" />
+        </div>
+        <div class="search-action"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
+      </div>
+      <div class="note lookup-note" id="lookupMessage">Enter your order number to see the current status.</div>
     </section>
 
-    <section class="card hidden" id="resultCard">
-      <div class="info-grid">
-        <div class="mini"><span>Order Number</span><strong id="viewOrderNumber">—</strong></div>
-        <div class="mini"><span>Project</span><strong id="viewProject">—</strong></div>
-        <div class="mini"><span>Status</span><strong id="viewStatus">—</strong></div>
-        <div class="mini"><span>Payment</span><strong id="viewPayment">—</strong></div>
+    <section class="card hidden result-shell" id="resultCard">
+      <div class="result-hero">
+        <div>
+          <span class="eyebrow">Current Project</span>
+          <h2 id="viewProject">—</h2>
+          <p class="order-ref">Order <strong id="viewOrderNumber">—</strong></p>
+        </div>
+        <div class="status-stack">
+          <div><span>Status</span><strong id="viewStatus">—</strong></div>
+          <div><span>Payment</span><strong id="viewPayment">—</strong></div>
+        </div>
+      </div>
+
+      <div class="info-grid compact">
         <div class="mini"><span>Total</span><strong id="viewTotal">—</strong></div>
+        <div class="mini"><span>Next milestone</span><strong id="viewMilestone">—</strong></div>
       </div>
 
       <div class="progress">
         <div class="timeline">
           <div class="timeline-fill" id="timelineFill"></div>
           <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label">Approved</div></div>
-          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label">Deposit</div></div>
-          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label">Production</div></div>
-          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label">Finishing</div></div>
+          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label">Scheduled</div></div>
+          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label">Printing</div></div>
+          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label">Finishing Touches</div></div>
           <div class="step" data-step="5"><div class="step-dot"></div><div class="step-label">Ready / Shipped</div></div>
         </div>
       </div>
 
       <div class="detail">
-        <div class="note"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
-        <div class="note"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
-        <div class="note"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
+        <div class="note update-card"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
+        <div class="note" id="nextStepWrap"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
+        <div class="note" id="fulfillmentWrap"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
         <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
         <div class="note hidden" id="paidDateWrap"><strong>Paid</strong><span id="viewPaidDate">—</span></div>
         <div class="payment-card hidden" id="paymentWrap">
@@ -120,7 +155,7 @@
             <strong>Payment</strong>
             <span id="paymentBadge" class="payment-badge">Unpaid</span>
           </div>
-          <p id="paymentMessage" class="payment-text">Payment options are available for this order.</p>
+          <p id="paymentMessage" class="payment-text">Your secure payment options are ready below.</p>
 
           <div id="cashOption" class="cash-option hidden">
             <strong>Cash available</strong>
@@ -135,7 +170,7 @@
         </div>
       </div>
     </section>
-    <p class="footer">This public tracking page reads customer-safe fields from <code>order_tracking_public</code>.</p>
+    <p class="footer">Questions about your order? Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a>.</p>
   </div>
 
   <script>
@@ -145,8 +180,8 @@
     const $ = id => document.getElementById(id);
     const els = {
       orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
-      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'), viewTotal:$('viewTotal'),
-      viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'),
+      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'), viewTotal:$('viewTotal'), viewMilestone:$('viewMilestone'),
+      viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'), nextStepWrap:$('nextStepWrap'), fulfillmentWrap:$('fulfillmentWrap'),
       viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paidDateWrap:$('paidDateWrap'), viewPaidDate:$('viewPaidDate'), paymentWrap:$('paymentWrap'),
       timelineFill:$('timelineFill'),
       paymentBadge:$('paymentBadge'),
@@ -239,7 +274,7 @@
       } else if(status === 'deposit_due'){
         els.paymentMessage.textContent = 'A deposit is required to begin this order.';
       } else {
-        els.paymentMessage.textContent = 'Payment options are available for this order.';
+        els.paymentMessage.textContent = 'Your secure payment options are ready below. Card, PayPal, and Venmo links may be shown when available for this order.';
       }
 
       const canShowPaymentButtons = status !== 'paid' && status !== 'refunded';
@@ -285,10 +320,23 @@ if(venmo && canShowPaymentButtons){
   ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(o.order_total)
   : '—';
       els.viewPublicStatus.textContent=o.public_status_text||'No public update yet.';
-      els.viewNextStep.textContent=o.public_next_step||'No next step listed yet.';
-      els.viewFulfillment.textContent=o.shipping_or_pickup_note||'No pickup or shipping note yet.';
+      const nextText = (o.public_next_step || '').trim();
+      const fulfillmentText = (o.shipping_or_pickup_note || '').trim();
+      if(nextText){
+        els.nextStepWrap.classList.remove('hidden');
+        els.viewNextStep.textContent=nextText;
+      }else{
+        els.nextStepWrap.classList.add('hidden');
+      }
+      if(fulfillmentText){
+        els.fulfillmentWrap.classList.remove('hidden');
+        els.viewFulfillment.textContent=fulfillmentText;
+      }else{
+        els.fulfillmentWrap.classList.add('hidden');
+      }
 
       const step=progressStep(o.status);
+      els.viewMilestone.textContent = document.querySelector(`.step[data-step="${step}"] .step-label`)?.textContent || '—';
       els.timelineFill.style.width=`${(step-1)*25}%`;
       document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active',Number(s.dataset.step)<=step));
 
