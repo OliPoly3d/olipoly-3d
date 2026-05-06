@@ -1,3 +1,388 @@
-<!-- Updated OliPoly track.html -->
-<!-- Added FAQ + Terms & Privacy + Home footer links -->
-<!-- Added consistent footer hierarchy -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Track Order</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#fff7fb;
+      --panel:rgba(255,255,255,.9);
+      --line:rgba(220,160,205,.32);
+      --text:#4a3550;
+      --muted:#866a86;
+      --accent:#d86bb3;
+      --accent2:#9b7bff;
+      --shadow:0 18px 45px rgba(189,132,176,.18);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;font-family:'Inter','Poppins',system-ui,-apple-system,sans-serif;color:var(--text);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(216,107,179,.18), transparent 30%),
+        radial-gradient(circle at 88% 6%, rgba(155,123,255,.16), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(255,216,236,.55), transparent 35%),
+        linear-gradient(180deg,#fffafd 0%,#fff5fb 45%,#fff8fc 100%);
+    }
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 18px;background:rgba(255,250,253,.92);position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:16px}
+    .printer-mark{width:58px;height:58px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(246,238,251,.95));border:1px solid rgba(155,123,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 6px 16px rgba(155,123,255,.12);position:relative;overflow:hidden}
+    .printer-mark::before{content:"";position:absolute;left:6px;right:6px;top:5px;height:6px;border-radius:999px;background:linear-gradient(90deg, rgba(155,123,255,.55), rgba(216,107,179,.45))}
+    .printer-mark svg{width:40px;height:40px;display:block}.printer-mark .frame{stroke:#8f79dd;stroke-width:2.2;fill:none}.printer-mark .rail{stroke:#b89ef4;stroke-width:2.2}.printer-mark .head{fill:url(#headGrad);animation:printHeadMove 2.8s ease-in-out infinite alternate}.printer-mark .beam{stroke:#e286be;stroke-width:2;stroke-linecap:round;animation:printGlow 1.6s ease-in-out infinite alternate}.printer-mark .plate{fill:#f3eefb;stroke:#b9a3ee;stroke-width:1.6}
+    @keyframes printHeadMove{from{transform:translateY(-1px)}to{transform:translateY(3px)}} @keyframes printGlow{from{opacity:.4}to{opacity:1}}
+    .brand-copy{display:flex;flex-direction:column;gap:3px}.brand-wordmark{font-family:Georgia,'Times New Roman',serif;font-size:clamp(2rem,3.2vw,2.45rem);font-weight:700;line-height:.95;letter-spacing:-.03em;color:#221f22}.brand-wordmark .poly{background:linear-gradient(135deg,#de6fb8,#9d7cff);-webkit-background-clip:text;background-clip:text;color:transparent}.brand-tag{font-size:1.02rem;color:#9b8b9a;letter-spacing:.02em;white-space:nowrap}
+    .btn,.btn-ghost{border:none;border-radius:999px;padding:14px 22px;font:inherit;font-weight:700;letter-spacing:.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .25s cubic-bezier(.4,0,.2,1);text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25)}
+    .btn:hover,.btn-ghost:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(222,111,184,.32)} .btn:active,.btn-ghost:active{transform:translateY(0);box-shadow:0 6px 14px rgba(222,111,184,.25)}
+    .wrap{width:min(1100px,calc(100% - 40px));margin:0 auto;padding:28px 0 64px}
+    .lookup-card{margin-bottom:28px;padding:34px;position:relative;overflow:hidden}
+    .lookup-card::before{content:"";position:absolute;inset:-80px -120px auto auto;width:260px;height:260px;border-radius:999px;background:radial-gradient(circle,rgba(216,107,179,.16),transparent 68%);pointer-events:none}
+    .eyebrow{display:inline-flex;margin-bottom:8px;font-size:.78rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#b264a0}
+    .lookup-copy h1{margin:0 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2.45rem,5vw,4rem);line-height:.98;letter-spacing:-.035em;color:#241b2b}
+    .lookup-note{margin-top:14px}
+    .search-action{display:flex;align-items:end;gap:10px}
+    .result-shell{padding:24px}
+    .result-hero{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;margin-bottom:18px;padding:22px;border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(255,239,248,.9));border:1px solid rgba(216,107,179,.14);box-shadow:0 12px 28px rgba(216,107,179,.08)}
+    .result-hero h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2rem,4vw,3rem);line-height:1;color:#241b2b;letter-spacing:-.03em}
+    .order-ref{margin:8px 0 0;color:var(--muted)}
+    .status-stack{display:grid;gap:10px;min-width:190px}
+    .status-stack>div{padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(216,107,179,.12)}
+    .status-stack span{display:block;margin-bottom:7px;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800}
+    .info-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:22px}
+    .update-card{background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(245,239,255,.92));border-style:solid;border-color:rgba(155,123,255,.18);box-shadow:0 12px 26px rgba(155,123,255,.08)}
+    .update-card strong{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.35rem;letter-spacing:-.01em}
+    .update-card span{font-size:1.02rem}
+    .footer a{color:#9b5cd8;font-weight:800;text-decoration:none}
+    .footer a:hover{text-decoration:underline}
+    .card,.mini{padding:28px;border-radius:30px;background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,251,.95));border:1px solid var(--line);box-shadow:var(--shadow)}
+    .card h3{font-size:1.2rem;font-weight:800;margin:0 0 8px}.sub{line-height:1.7;font-size:1.02rem;color:var(--muted);margin:0 0 14px}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(216,107,179,.18);background:rgba(255,255,255,.82);color:var(--text);font:inherit;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)} input:focus{border-color:rgba(155,123,255,.42);box-shadow:0 0 0 4px rgba(216,107,179,.10)}
+    .search-row{display:grid;grid-template-columns:1fr auto;gap:16px;margin-top:10px}.note{border-radius:18px;padding:14px 16px;background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,245,251,.88));border:1px dashed rgba(216,107,179,.2);color:var(--muted);line-height:1.6}
+    .info-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;margin:0 0 18px}.mini{padding:16px;border-radius:20px;background:linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,244,250,.9));border:1px solid rgba(216,107,179,.14)} .mini span,.mini strong{display:block}.mini span{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+    .status-pill,.payment-pill{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;font-size:.78rem;font-weight:800;letter-spacing:.04em;border:1px solid transparent}.s-quote_sent,.s-awaiting_approval,.s-awaiting_deposit,.p-unpaid,.p-deposit_due{background:rgba(255,211,154,.28);border-color:rgba(213,163,90,.28);color:#936a30}.s-in_design,.s-in_production,.s-post_processing{background:rgba(155,123,255,.15);border-color:rgba(155,123,255,.24);color:#6e56bf}.s-ready_for_pickup,.s-shipped,.s-completed,.p-deposit_paid,.p-paid{background:rgba(122,175,157,.16);border-color:rgba(122,175,157,.25);color:#4f816f}.p-refunded{background:rgba(217,109,143,.14);border-color:rgba(217,109,143,.24);color:#b34f72}
+    .progress{display:grid;gap:14px;margin:18px 0 10px}.timeline{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;align-items:start}.timeline::before{content:"";position:absolute;left:6%;right:6%;top:18px;height:4px;border-radius:999px;background:linear-gradient(90deg, rgba(216,107,179,.12), rgba(155,123,255,.12));z-index:0}.timeline-fill{position:absolute;left:6%;top:18px;height:4px;width:0%;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));transition:width .35s ease;z-index:1}.step{position:relative;z-index:2;display:grid;justify-items:center;gap:10px;padding:0 8px;background:none;border:none;text-align:center;color:var(--muted);font-size:.84rem;line-height:1.35}.step-dot{width:18px;height:18px;border-radius:999px;background:#fff;border:3px solid rgba(216,107,179,.22);box-shadow:0 0 0 6px rgba(255,255,255,.45);transition:all .25s ease}.step-label{max-width:120px}.step.active{color:#6b4f74}.step.active .step-dot{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:rgba(216,107,179,.14);box-shadow:0 0 0 6px rgba(255,240,248,.85), 0 0 18px rgba(216,107,179,.18)}
+    .detail{display:grid;gap:12px}.detail .note strong{display:block;margin-bottom:6px;color:#5f4468}.hidden{display:none!important}.footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
+    .payment-card{padding:18px;border-radius:22px;border:1px solid rgba(216,107,179,.18);background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,244,250,.95));box-shadow:0 14px 30px rgba(216,107,179,.12)}
+    .payment-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+    .payment-text{margin:0 0 14px;color:#866a86;font-size:.95rem;line-height:1.55}
+    .cash-option{margin:0 0 12px;padding:14px 16px;border-radius:18px;border:1px solid rgba(216,107,179,.18);background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,247,251,.98));color:#6f5d76;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+    .cash-option strong{display:block;margin-bottom:4px;color:#5f4468;font-size:.95rem}
+    .cash-option span{display:block;font-size:.92rem;line-height:1.55}
+    .payment-buttons{display:grid;gap:10px}
+    .payment-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 20px;border-radius:999px;font-weight:800;text-decoration:none;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.25);transition:.2s}
+    .payment-btn:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(222,111,184,.32)}
+    .paypal-btn{background:#0070ba}
+    .venmo-btn{background:#3d95ce}
+    .payment-badge{padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
+    .payment-badge.unpaid,.payment-badge.deposit_due{background:#ffe4b5;color:#936a30}
+    .payment-badge.deposit_paid,.payment-badge.paid{background:#d8f5e7;color:#3c7d66}
+    .payment-badge.refunded{background:#ffd6df;color:#b34f72}
+    @media (max-width:900px){.info-grid,.timeline{grid-template-columns:1fr 1fr}.result-hero{grid-template-columns:1fr}.status-stack{grid-template-columns:1fr 1fr;min-width:0}}
+    @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.lookup-card{padding:22px}.lookup-copy h1{font-size:2.35rem}.info-grid,.info-grid.compact,.timeline,.search-row,.status-stack{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}.payment-btn,.btn{width:100%}.result-shell{padding:16px}.result-hero{padding:18px}.timeline{gap:12px}.timeline::before,.timeline-fill{display:none}.step{grid-template-columns:auto 1fr;justify-items:start;text-align:left}.step-label{max-width:none}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="printer-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="headGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#de6fb8"/><stop offset="100%" stop-color="#9d7cff"/></linearGradient></defs>
+          <path class="frame" d="M14 18H50V50H14V18Z"/><path class="rail" d="M20 24H44"/><path class="rail" d="M32 24V34"/><rect class="head" x="27" y="22" width="10" height="12" rx="4"/><path class="beam" d="M32 34V40"/><rect class="plate" x="21" y="40" width="22" height="5" rx="2.5"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <div class="brand-wordmark">Oli<span class="poly">Poly</span> 3D</div>
+        <div class="brand-tag">Creative 3D printing brought to life in Ohio</div>
+      </div>
+    </div>
+    <a class="btn-ghost" href="index.html">Back to Home</a>
+  </div>
+
+  <div class="wrap">
+    <section class="card lookup-card">
+      <div class="lookup-copy">
+        <span class="eyebrow">Order Tracking</span>
+        <h1>Track your custom project</h1>
+        <p class="sub">Enter your quote or order number to see the latest customer-safe update from OliPoly 3D.</p>
+      </div>
+      <div class="search-row">
+        <div>
+          <label for="orderLookup">Quote or Order Number</label>
+          <input id="orderLookup" placeholder="Example: Q-000205 or OP-000205" autocomplete="off" />
+        </div>
+        <div class="search-action"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
+      </div>
+      <div class="note lookup-note" id="lookupMessage">Enter your order number to see the current status.</div>
+    </section>
+
+    <section class="card hidden result-shell" id="resultCard">
+      <div class="result-hero">
+        <div>
+          <span class="eyebrow">Current Project</span>
+          <h2 id="viewProject">—</h2>
+          <p class="order-ref">Order <strong id="viewOrderNumber">—</strong></p>
+        </div>
+        <div class="status-stack">
+          <div><span>Status</span><strong id="viewStatus">—</strong></div>
+          <div><span>Payment</span><strong id="viewPayment">—</strong></div>
+        </div>
+      </div>
+
+      <div class="info-grid compact">
+        <div class="mini"><span>Total</span><strong id="viewTotal">—</strong></div>
+        <div class="mini"><span>Next milestone</span><strong id="viewMilestone">—</strong></div>
+      </div>
+
+      <div class="progress">
+        <div class="timeline">
+          <div class="timeline-fill" id="timelineFill"></div>
+          <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label">Approved</div></div>
+          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label">Scheduled</div></div>
+          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label">Printing</div></div>
+          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label">Finishing Touches</div></div>
+          <div class="step" data-step="5"><div class="step-dot"></div><div class="step-label">Ready / Shipped</div></div>
+        </div>
+      </div>
+
+      <div class="detail">
+        <div class="note update-card"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
+        <div class="note" id="nextStepWrap"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
+        <div class="note" id="fulfillmentWrap"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
+        <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
+        <div class="note hidden" id="paidDateWrap"><strong>Paid</strong><span id="viewPaidDate">—</span></div>
+        <div class="payment-card hidden" id="paymentWrap">
+          <div class="payment-head">
+            <strong>Payment</strong>
+            <span id="paymentBadge" class="payment-badge">Unpaid</span>
+          </div>
+          <p id="paymentMessage" class="payment-text">Your secure payment options are ready below.</p>
+
+          <div id="cashOption" class="cash-option hidden">
+            <strong>Cash available</strong>
+            <span id="cashMessage">Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.</span>
+          </div>
+
+          <div id="paymentButtons" class="payment-buttons">
+            <a id="paymentBtnStripe" class="payment-btn hidden" href="#" target="_blank" rel="noopener">Pay with Card / Apple Pay</a>
+            <a id="paymentBtnPaypal" class="payment-btn paypal-btn hidden" href="#" target="_blank" rel="noopener">Pay with PayPal</a>
+            <a id="paymentBtnVenmo" class="payment-btn venmo-btn hidden" href="#" target="_blank" rel="noopener">Pay with Venmo</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <p class="footer">Questions about your order? Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a>.</p>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+    const $ = id => document.getElementById(id);
+    const els = {
+      orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
+      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'), viewTotal:$('viewTotal'), viewMilestone:$('viewMilestone'),
+      viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'), nextStepWrap:$('nextStepWrap'), fulfillmentWrap:$('fulfillmentWrap'),
+      viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paidDateWrap:$('paidDateWrap'), viewPaidDate:$('viewPaidDate'), paymentWrap:$('paymentWrap'),
+      timelineFill:$('timelineFill'),
+      paymentBadge:$('paymentBadge'),
+      paymentMessage:$('paymentMessage'),
+      cashOption:$('cashOption'),
+      cashMessage:$('cashMessage'),
+      paymentBtnStripe:$('paymentBtnStripe'),
+      paymentBtnPaypal:$('paymentBtnPaypal'),
+      paymentBtnVenmo:$('paymentBtnVenmo')
+    };
+
+    function setMessage(text,isError=false){
+      els.lookupMessage.textContent=text;
+      els.lookupMessage.style.borderColor=isError?'rgba(255,110,145,.22)':'rgba(216,107,179,.2)';
+      els.lookupMessage.style.background=isError?'rgba(255,110,145,.08)':'linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,245,251,.88))';
+      els.lookupMessage.style.color=isError?'#b34f72':'#866a86';
+    }
+
+    async function api(path){
+      const res=await fetch(`${SUPABASE_URL}${path}`,{headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'}});
+      const data=await res.json().catch(()=>null);
+      return {data,error:!res.ok?data:null};
+    }
+
+    function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v]||v;}
+    function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
+    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_for_pickup:5,shipped:5,completed:5})[status]||1;}
+    function normalizeLookupNumber(value){
+    const raw = String(value || '').trim().toUpperCase();
+    if (!raw) return '';
+    if (raw.startsWith('Q-')) return raw.replace(/^Q-/, 'OP-');
+    return raw;
+}
+    
+    function formatPaidDate(dateStr){
+      if(!dateStr) return '';
+      const d = new Date(`${dateStr}T00:00:00`);
+      if(Number.isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    }
+
+    function renderPayment(o){
+      const status = o.payment_status || 'unpaid';
+      const stripe = o.payment_link_stripe || o.payment_link || '';
+      const paypal = o.payment_link_paypal || '';
+      const venmo = o.payment_link_venmo || '';
+      const showCash = status === 'unpaid' || status === 'deposit_due' || status === 'deposit_paid';
+
+      els.paymentBadge.textContent = paymentLabel(status);
+      els.paymentBadge.className = `payment-badge ${status}`;
+      els.cashOption.classList.add('hidden');
+      els.cashMessage.textContent = status === 'deposit_paid'
+        ? 'Cash can be used for any remaining balance at pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.'
+        : 'Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.';
+
+      if(o.paid_date){
+        els.paidDateWrap.classList.remove('hidden');
+        els.viewPaidDate.textContent = formatPaidDate(o.paid_date);
+      } else {
+        els.paidDateWrap.classList.add('hidden');
+      }
+
+      els.paymentBtnStripe.classList.add('hidden');
+      els.paymentBtnPaypal.classList.add('hidden');
+      els.paymentBtnVenmo.classList.add('hidden');
+
+      if(!stripe && !paypal && !venmo && !showCash){
+        els.paymentWrap.classList.add('hidden');
+        return;
+      }
+
+      els.paymentWrap.classList.remove('hidden');
+
+      if(showCash && status !== 'paid' && status !== 'refunded'){
+        els.cashOption.classList.remove('hidden');
+      }
+
+      if(status === 'paid'){
+        els.paymentMessage.textContent = o.paid_date ? `This order was paid in full on ${formatPaidDate(o.paid_date)}.` : 'This order has been paid in full.';
+        return;
+      }
+
+      if(status === 'refunded'){
+        els.paymentMessage.textContent = 'This order has been refunded.';
+        return;
+      }
+
+      if(status === 'deposit_paid'){
+        els.paymentMessage.textContent = 'A remaining balance may still be due.';
+      } else if(status === 'deposit_due'){
+        els.paymentMessage.textContent = 'A deposit is required to begin this order.';
+      } else {
+        els.paymentMessage.textContent = 'Your secure payment options are ready below. Card, PayPal, and Venmo links may be shown when available for this order.';
+      }
+
+      const canShowPaymentButtons = status !== 'paid' && status !== 'refunded';
+
+if(stripe && canShowPaymentButtons){
+  els.paymentBtnStripe.href = stripe;
+  els.paymentBtnStripe.textContent = status === 'deposit_due'
+    ? 'Pay Deposit with Card / Apple Pay'
+    : status === 'deposit_paid'
+      ? 'Pay Remaining Balance with Card / Apple Pay'
+      : 'Pay with Card / Apple Pay';
+  els.paymentBtnStripe.classList.remove('hidden');
+}
+
+if(paypal && canShowPaymentButtons){
+  els.paymentBtnPaypal.href = paypal;
+  els.paymentBtnPaypal.textContent = status === 'deposit_due'
+    ? 'Pay Deposit with PayPal'
+    : status === 'deposit_paid'
+      ? 'Pay Remaining Balance with PayPal'
+      : 'Pay with PayPal';
+  els.paymentBtnPaypal.classList.remove('hidden');
+}
+
+if(venmo && canShowPaymentButtons){
+  els.paymentBtnVenmo.href = venmo;
+  els.paymentBtnVenmo.textContent = status === 'deposit_due'
+    ? 'Pay Deposit with Venmo'
+    : status === 'deposit_paid'
+      ? 'Pay Remaining Balance with Venmo'
+      : 'Pay with Venmo';
+  els.paymentBtnVenmo.classList.remove('hidden');
+}
+    }
+
+    function renderOrder(o){
+      els.resultCard.classList.remove('hidden');
+      els.viewOrderNumber.textContent=o.order_number||'—';
+      els.viewProject.textContent=o.order_title||'—';
+      els.viewStatus.innerHTML=`<span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>`;
+      els.viewPayment.innerHTML=`<span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>`;
+      els.viewTotal.textContent = o.order_total
+  ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(o.order_total)
+  : '—';
+      els.viewPublicStatus.textContent=o.public_status_text||'No public update yet.';
+      const nextText = (o.public_next_step || '').trim();
+      const fulfillmentText = (o.shipping_or_pickup_note || '').trim();
+      if(nextText){
+        els.nextStepWrap.classList.remove('hidden');
+        els.viewNextStep.textContent=nextText;
+      }else{
+        els.nextStepWrap.classList.add('hidden');
+      }
+      if(fulfillmentText){
+        els.fulfillmentWrap.classList.remove('hidden');
+        els.viewFulfillment.textContent=fulfillmentText;
+      }else{
+        els.fulfillmentWrap.classList.add('hidden');
+      }
+
+      const step=progressStep(o.status);
+      els.viewMilestone.textContent = document.querySelector(`.step[data-step="${step}"] .step-label`)?.textContent || '—';
+      els.timelineFill.style.width=`${(step-1)*25}%`;
+      document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active',Number(s.dataset.step)<=step));
+
+      if(o.tracking_number){
+        els.trackingWrap.classList.remove('hidden');
+        els.viewTracking.textContent=o.tracking_number;
+      } else {
+        els.trackingWrap.classList.add('hidden');
+      }
+
+      renderPayment(o);
+      setMessage(`Showing the latest public update for ${o.order_number}.`);
+    }
+
+    async function lookup(){
+      const typedId = els.orderLookup.value.trim();
+      if(!typedId) return setMessage('Enter a quote or order number first.',true);
+
+      const id = normalizeLookupNumber(typedId);
+      const safeId = encodeURIComponent(id);
+      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,order_total,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link,payment_link_stripe,payment_link_paypal,payment_link_venmo,paid_date&order_number=eq.${safeId}&limit=1`;
+      const {data,error}=await api(path);
+
+      if(error){
+        els.resultCard.classList.add('hidden');
+        return setMessage(error.message||'Could not load order right now.',true);
+      }
+      if(!data||!data.length){
+        els.resultCard.classList.add('hidden');
+        if (typedId.toUpperCase().startsWith('Q-')) {
+  return setMessage(`We could not find an accepted order for ${typedId} yet. If this quote was just accepted, try again in a moment using ${id}.`, true);
+}
+return setMessage('We could not find that order number yet. Double-check it and try again.',true);
+      }
+      renderOrder(data[0]);
+    }
+
+    els.lookupBtn.onclick=lookup;
+els.orderLookup.addEventListener('keydown',e=>{ if(e.key==='Enter') lookup(); });
+
+const urlParams = new URLSearchParams(window.location.search);
+const incomingOrder = urlParams.get('order') || urlParams.get('q');
+if (incomingOrder) {
+  els.orderLookup.value = incomingOrder;
+  lookup();
+}
+  </script>
+</body>
+</html>

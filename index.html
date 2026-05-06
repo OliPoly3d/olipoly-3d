@@ -1,3 +1,819 @@
-<!-- Updated OliPoly index.html -->
-<!-- Added FAQ + Terms & Privacy footer cross-links -->
-<!-- Added consistent footer navigation styling -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+if (location.hostname === "olipoly3d.github.io") {
+  location.replace("https://olipoly3d.com");
+}
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OliPoly 3D</title>
+<meta name="description" content="Creative 3D printing brought to life in Ohio — custom gifts, functional prints, prototypes, and colorful ideas made with care." />
+
+<!-- Open Graph -->
+<meta property="og:title" content="OliPoly 3D" />
+<meta property="og:description" content="Creative 3D printing brought to life in Ohio — custom gifts, functional prints, prototypes, and colorful ideas made with care." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://olipoly3d.com" />
+<meta property="og:image" content="https://olipoly3d.com/images/logo-preview.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="OliPoly 3D" />
+<meta name="twitter:description" content="Creative 3D printing brought to life in Ohio — custom gifts, functional prints, prototypes, and colorful ideas made with care." />
+<meta name="twitter:image" content="https://olipoly3d.com/images/logo-preview.png" />
+  
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#f2eaf3;--text:#1f1a24;--muted:#7a6b80;--line:rgba(0,0,0,.06);
+  --p:#ec4899;--s:#a78bfa;--a:#fb7185;--success:#16a34a;
+  --panel:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,244,248,.9));
+  --shadow:0 12px 30px rgba(0,0,0,.08);--shadow-lg:0 18px 34px rgba(236,72,153,.12);
+  --r:20px;--max:1140px;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{
+  margin:0;font:400 1rem/1.65 Inter,sans-serif;color:var(--text);
+  background:
+    radial-gradient(circle at top left,rgba(236,72,153,.14),transparent 28%),
+    radial-gradient(circle at top right,rgba(167,139,250,.12),transparent 24%),
+    linear-gradient(180deg,#eef2f7 0%,var(--bg) 100%);
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.container{width:min(var(--max),calc(100% - 32px));margin:auto}
+
+.step,.contact-shell,.testimonial,.customer-photo-card,.event-item,.success-card{
+  background:var(--panel);border:1px solid rgba(236,72,153,.1);border-radius:var(--r);box-shadow:0 10px 24px rgba(236,72,153,.06)
+}
+.step,.contact-shell,.testimonial,.customer-photo-card{padding:14px 16px 12px}
+.step:hover,.contact-shell:hover,.testimonial:hover,.customer-photo-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.step,.contact-shell,.testimonial,.customer-photo-card,.gallery img{transition:.2s ease}
+
+.cta,.btn-secondary,.btn{
+  display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;
+  font:500 1.05rem "Cormorant Garamond",serif;letter-spacing:.04em;white-space:nowrap;border:0;cursor:pointer
+}
+.cta{background:linear-gradient(135deg,var(--p),var(--s));color:#fff;box-shadow:0 10px 22px rgba(236,72,153,.22)}
+.cta:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(236,72,153,.28)}
+.btn,.btn-secondary{background:rgba(255,255,255,.9);color:var(--text);border:1px solid rgba(0,0,0,.08);box-shadow:0 10px 22px rgba(0,0,0,.06)}
+.btn:hover,.btn-secondary:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(0,0,0,.1)}
+
+.site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);box-shadow:0 8px 24px rgba(236,72,153,.04)}
+.nav-wrap,.brand,.hero-actions,.trust-row,.section-head,.footer-wrap,.success-actions{display:flex}
+.nav-wrap,.section-head,.footer-wrap{justify-content:space-between}
+.nav-wrap,.brand,.hero-actions,.trust-row,.success-actions{align-items:center}
+.nav-wrap{gap:16px;padding:14px 0}
+.brand{gap:12px}
+.logo{width:64px;height:64px;animation:float 4s ease-in-out infinite}
+.logo-static{animation:none!important}
+.brand-text{display:flex;flex-direction:column;gap:2px}
+.brand-name,.hero h1,.section-head h2,.step h3,.contact-shell h3,.testimonial h3,.customer-photo-card h3,.success-card h3,.event-name{font-family:"Cormorant Garamond",serif}.step h3,.contact-shell h3,.testimonial h3,.customer-photo-card h3,.success-card h3,.event-name{font-weight:600;color:#241b2b;letter-spacing:-.01em}
+#order .contact-shell h3{font-size:1.25rem;margin-bottom:6px}
+#order .contact-shell p{font-size:.98rem;line-height:1.6;color:#5f4d69}
+.brand-name{font-size:2rem;font-weight:700;line-height:.95}
+.brand-name span{background:linear-gradient(270deg,var(--p),var(--s),var(--a));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 14px rgba(236,72,153,.16);animation:brandShift 6s ease-in-out infinite,brandGlow 4.2s ease-in-out infinite}
+.brand-tag{font-size:.82rem;letter-spacing:.05em;color:#8d7894;opacity:0;animation:fadeUp .7s ease .2s forwards}
+nav{display:flex;align-items:center;gap:14px;flex-wrap:nowrap}
+nav a{position:relative;padding:6px 3px;font:.98rem "Cormorant Garamond",serif;letter-spacing:.03em;white-space:nowrap;transition:.2s ease}
+nav a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:2px;background:linear-gradient(135deg,var(--p),var(--s));transition:width .25s ease;border-radius:2px}
+nav a:hover{color:var(--p);transform:translateY(-1px)}
+nav a:hover::after{width:100%}
+nav a.cta{padding:8px 16px;color:#fff} nav a.cta::after{display:none}
+
+.hero{padding:68px 0 42px}
+.hero-grid,.steps,.gallery,.photo-testimonial-grid,.contact-grid,.event-meta{display:grid;gap:20px}
+.testimonial-grid{display:grid;gap:6px}
+.split-grid{grid-template-columns:1fr 1fr;align-items:start}
+.hero-grid{grid-template-columns:1.2fr .8fr;align-items:center;gap:40px}
+.hero h1{margin:0 0 16px;font-size:clamp(2.8rem,5vw,4.8rem);line-height:1.05;letter-spacing:-.03em;opacity:0;animation:fadeUp .8s ease forwards}
+.hero h1 .accent{color:var(--p);text-shadow:0 0 18px rgba(35,213,213,.18)}
+.hero p{margin:0;max-width:640px;color:var(--muted);font-size:1.05rem;opacity:0;animation:fadeUp .8s ease .15s forwards}
+.hero-actions{gap:14px;margin-top:28px;opacity:0;animation:fadeUp .8s ease .3s forwards}
+.trust-row{flex-wrap:wrap;gap:18px;margin-top:24px;color:var(--muted);font-size:.94rem;opacity:0;animation:fadeUp .8s ease .45s forwards}
+.trust-row span::before{content:"✓";color:var(--success);margin-right:8px;font-weight:700}
+.hero-divider{margin-top:28px;height:1px;background:linear-gradient(90deg,transparent,rgba(236,72,153,.25),rgba(167,139,250,.25),transparent);opacity:.8;animation:fadeUp .8s ease .55s forwards}
+.hero-image-wrap{position:relative;display:flex;justify-content:flex-end;opacity:0;animation:fadeUp .9s ease .2s forwards}
+.hero-image-wrap::before{content:"";position:absolute;inset:8% 2% 10% 18%;border-radius:28px;background:radial-gradient(circle at center,rgba(236,72,153,.18),rgba(167,139,250,.14) 42%,transparent 72%);filter:blur(24px);animation:glow 4.5s ease-in-out infinite}
+.hero-image{position:relative;z-index:1;width:100%;max-width:420px;border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.12);object-fit:cover;animation:floatImage 5s ease-in-out infinite}
+
+/* Poly mascot integration */
+.brand-poly-icon{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(236,72,153,.18));animation:polyFly 8s ease-in-out infinite;transform-origin:center;will-change:transform}
+.hero-poly-stage{position:relative;z-index:1;width:100%;max-width:460px;min-height:420px;display:flex;align-items:center;justify-content:center;animation:heroFloat 7s ease-in-out infinite}
+.hero-poly-mascot{position:relative;z-index:2;width:min(100%,420px);max-height:430px;object-fit:contain;border-radius:0;box-shadow:none;animation:floatImage 5s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(236,72,153,.24)) drop-shadow(0 0 28px rgba(167,139,250,.18))}
+.hero-poly-badge{position:absolute;z-index:3;left:50%;bottom:14px;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(236,72,153,.14);box-shadow:0 12px 24px rgba(236,72,153,.13);color:#5f4d69;font:600 .88rem Inter,sans-serif;backdrop-filter:blur(10px);cursor:pointer;white-space:nowrap;max-width:92vw;transition:box-shadow .2s ease;animation:polyBadgeFloatPulse 5s ease-in-out infinite}
+.hero-poly-badge:hover{box-shadow:0 16px 30px rgba(236,72,153,.18)}
+.hero-poly-badge span{color:var(--p)}
+.poly-story-popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(31,26,36,.46);z-index:125}
+.poly-story-popup.active{display:flex}
+.poly-story-card{width:min(560px,100%);position:relative;padding:28px 24px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,244,248,.94));border:1px solid rgba(236,72,153,.16);box-shadow:0 24px 54px rgba(31,26,36,.2)}
+.poly-story-card h3{margin:0 0 10px;font:700 2rem/1.05 "Cormorant Garamond",serif;color:#241b2b}
+.poly-story-card p{margin:0 0 12px;color:#5f4d69;line-height:1.58}
+.poly-story-mini{
+  width:128px;
+  height:128px;
+  object-fit:cover;
+  display:block;
+  margin:0 auto 18px;
+  border-radius:22px;
+  border:3px solid rgba(255,255,255,.92);
+  box-shadow:0 14px 28px rgba(236,72,153,.16);
+  filter:drop-shadow(0 8px 18px rgba(236,72,153,.12));
+}
+.poly-story-card strong{color:#2a2132}
+.poly-story-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border:0;border-radius:999px;background:rgba(236,72,153,.1);color:var(--p);font-weight:800;cursor:pointer}
+.poly-story-note{margin-top:14px;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.72);border:1px solid rgba(236,72,153,.1);font-weight:600}
+
+.section{padding:34px 0 18px}.section-head{align-items:end;gap:24px;margin-bottom:22px}.section-head h2{margin:0;font-size:clamp(2.25rem,3vw,2.7rem);line-height:1.05;letter-spacing:-.02em;color:#241b2b}.section-head p{margin:0;max-width:680px;color:#866f8d;font-size:1rem}
+.steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;position:relative;align-items:stretch}
+.steps::before{content:"";position:absolute;left:7%;right:7%;top:34px;height:2px;background:linear-gradient(90deg,rgba(236,72,153,.18),rgba(167,139,250,.22),rgba(236,72,153,.18));z-index:0}
+.step{position:relative;z-index:1;padding:18px 16px 16px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:150px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,244,248,.94))}
+.step-number{width:34px;height:34px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;background:linear-gradient(135deg,var(--p),var(--s));color:#fff;font:700 .96rem/1 Inter,sans-serif;box-shadow:0 8px 18px rgba(236,72,153,.18)}
+.step h3{margin:2px 0 6px;font-size:1.08rem;line-height:1.15;white-space:normal}
+.step p{margin:0;font-size:.92rem;line-height:1.45;max-width:18ch;white-space:normal;overflow:visible;text-overflow:clip}
+.step:hover{transform:translateY(-4px);box-shadow:0 18px 34px rgba(236,72,153,.14)}
+.step:not(:last-child)::after{content:"→";position:absolute;right:-15px;top:18px;color:rgba(236,72,153,.55);font:700 1.1rem/1 Inter,sans-serif}
+
+.gallery{grid-template-columns:1.05fr .95fr;grid-auto-rows:185px;gap:18px;align-items:stretch}
+.gallery-item{position:relative;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,244,248,.9));border:10px solid rgba(255,255,255,.92);box-shadow:0 12px 26px rgba(236,72,153,.08);transition:.22s ease}
+.gallery-item:hover{transform:translateY(-3px);box-shadow:0 18px 34px rgba(236,72,153,.16)}
+.gallery img{width:100%;height:100%;object-fit:cover;padding:0;border-radius:14px;cursor:pointer;transform:none;background:transparent;transition:.22s ease}
+.gallery img:hover{transform:none;box-shadow:none}
+.gallery-category{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid rgba(236,72,153,.10);box-shadow:0 10px 20px rgba(31,26,36,.10);font:600 1rem/1.1 "Cormorant Garamond",serif;letter-spacing:.035em;color:#2a2132;white-space:nowrap;backdrop-filter:blur(8px)}
+.gallery-item:nth-child(1){grid-column:1;grid-row:span 3}
+.gallery-item:nth-child(2),.gallery-item:nth-child(3),.gallery-item:nth-child(4){grid-column:2;grid-row:span 1}
+.gallery-item:nth-child(1) img{object-position:center center}
+.gallery-item:nth-child(2) img{object-position:center center}
+.gallery-item:nth-child(3) img{object-position:center center}
+.gallery-item:nth-child(4) img{object-position:center center}
+
+.photo-testimonial-grid{grid-template-columns:0.9fr 1.1fr;align-items:start}
+.customer-mini-gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+.customer-mini-gallery img{width:100%;height:120px;object-fit:cover;object-position:center 28%;border-radius:16px;cursor:pointer;box-shadow:0 8px 18px rgba(236,72,153,.08)}
+.customer-mini-gallery img:nth-child(1){object-position:center 22%}
+.customer-mini-gallery img:nth-child(2){object-position:center 30%}
+.customer-mini-gallery img:nth-child(3){object-position:center 26%}
+.customer-mini-gallery img:nth-child(4){object-position:center 34%}
+.customer-mini-gallery img:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 18px 30px rgba(236,72,153,.18);z-index:2}
+.testimonial{font-size:.88rem;line-height:1.45;color:#5f4d69;padding:12px}
+.testimonial p{margin:0 0 4px}
+.testimonial-separator{margin:6px 0;height:1px}
+.testimonial-stars{display:inline-flex;gap:4px;margin-bottom:12px;color:var(--a);font-size:.95rem;letter-spacing:.04em}
+.quote-mark{display:block;margin-bottom:8px;font:2.6rem/.8 "Cormorant Garamond",serif;color:var(--s);opacity:.8}
+.testimonial-separator{height:1px;background:linear-gradient(90deg,rgba(236,72,153,.18),rgba(167,139,250,.18),rgba(236,72,153,0));margin:18px 0;border:0}
+.testimonial-name{display:block;margin-top:6px;font:600 1.02rem "Cormorant Garamond",serif;letter-spacing:.02em;color:#2a2132}
+
+.event-list{display:grid;gap:16px}
+.event-empty{display:none;padding:20px;border-radius:var(--r);background:var(--panel);border:1px solid rgba(236,72,153,.12);box-shadow:0 10px 24px rgba(236,72,153,.06)}
+.event-empty h3{margin:0 0 6px;font:700 1.55rem/1.05 "Cormorant Garamond",serif;color:#241b2b}
+.event-empty p{margin:0 0 14px;color:#6e5d78}
+.event-empty .cta{width:auto}
+.event-item{overflow:hidden;position:relative;padding:0}
+.event-item.next-event{border-color:rgba(236,72,153,.28);box-shadow:0 16px 34px rgba(236,72,153,.14);background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,240,246,.92))}
+.event-summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;min-height:72px}.event-summary::-webkit-details-marker{display:none}
+.event-title-wrap{display:grid;gap:4px}
+.event-date{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;color:var(--p);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.event-name{font-size:1.35rem;line-height:1.1;display:inline-flex;align-items:center;gap:8px}
+.event-item.next-event .event-name::after{content:"Next";display:inline-block;padding:4px 8px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.03em;color:#fff;background:linear-gradient(135deg,var(--p),var(--s));box-shadow:0 6px 14px rgba(236,72,153,.18)}
+.event-toggle{width:34px;height:34px;border-radius:999px;background:linear-gradient(135deg,rgba(236,72,153,.14),rgba(167,139,250,.14));color:var(--p);font-size:1.1rem;font-weight:700;flex-shrink:0;transition:transform .2s ease;display:flex;align-items:center;justify-content:center;line-height:1}.event-item[open] .event-toggle{transform:rotate(45deg)}
+.event-body{padding:0 20px 20px;font-size:.97rem;color:#685672}.event-body span{overflow-wrap:anywhere}.event-meta strong{display:block;font-size:.84rem;letter-spacing:.03em;text-transform:uppercase;color:var(--text);margin-bottom:4px}.event-note{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+
+form{display:flex;flex-direction:column;gap:8px}
+#contact form{gap:6px}
+#contact textarea{min-height:90px}
+#contact input,#contact textarea{padding:8px 10px}
+input,textarea,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.06);background:rgba(255,255,255,.8);color:#2d2435;font:500 .97rem/1.45 Inter,sans-serif;outline:none}
+input::placeholder,textarea::placeholder{color:#8aa0b7} textarea{min-height:110px;resize:vertical}
+[data-fs-success],[data-fs-error],[data-fs-error="name"],[data-fs-error="email"],[data-fs-error="message"]{font-size:.9rem;min-height:1em;color:#ffd2c8}[data-fs-success]{color:#b8f0c8}
+
+.upload-shell{margin-top:16px;padding:16px 18px;border:1px dashed rgba(236,72,153,.28);border-radius:16px;background:rgba(255,255,255,.72);transition:.35s ease}
+.upload-shell.highlight{box-shadow:0 0 0 3px rgba(236,72,153,.25),0 12px 28px rgba(236,72,153,.18);transform:translateY(-2px)}
+.upload-shell h3{margin:0 0 6px}
+.upload-shell p{margin:0 0 12px}
+.upload-note{font-size:.88rem;color:#8a7691}
+.file-input{padding:10px;border:1px dashed rgba(0,0,0,.1);background:rgba(255,255,255,.85)}
+.modal,.success-popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px}.modal{background:rgba(0,0,0,.6);z-index:100}.modal.active,.success-popup.active{display:flex}.modal img{max-width:min(960px,92vw);max-height:88vh;border-radius:20px;border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow)}.success-popup{background:rgba(0,0,0,.45);z-index:120}.success-card{width:min(520px,100%);padding:28px 24px;text-align:left;border:1px solid rgba(236,72,153,.12);box-shadow:0 20px 44px rgba(31,26,36,.18)}.success-card h3{margin:0 0 10px;font-size:1.9rem;line-height:1.05}.success-card p{margin:0 0 14px}.success-steps{margin:0 0 18px;padding-left:18px}.success-steps li{margin-bottom:6px}.success-actions{justify-content:flex-end}
+
+
+/* Poly helper */
+.poly-helper{position:fixed;right:18px;bottom:18px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.poly-helper-panel{width:min(330px,calc(100vw - 36px));display:none;padding:16px;border-radius:22px;background:rgba(255,255,255,.94);border:1px solid rgba(236,72,153,.16);box-shadow:0 20px 44px rgba(31,26,36,.16);backdrop-filter:blur(12px)}
+.poly-helper.active .poly-helper-panel{display:block;animation:fadeUp .22s ease forwards}
+.poly-helper-panel h3{margin:0 0 6px;font:700 1.35rem/1.05 "Cormorant Garamond",serif;color:#241b2b}
+.poly-helper-panel p{margin:0 0 12px;color:#6e5d78;font-size:.92rem;line-height:1.45}
+.poly-helper-links{display:grid;gap:8px}
+.poly-helper-links a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,244,248,.96),rgba(255,255,255,.94));border:1px solid rgba(236,72,153,.10);font:600 .9rem Inter,sans-serif;color:#2a2132}
+.poly-helper-links a:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(236,72,153,.12)}
+.poly-helper-links a span{color:var(--p)}
+.poly-helper-toggle{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--s));color:#fff;box-shadow:0 14px 30px rgba(236,72,153,.25);cursor:pointer;font:700 .95rem Inter,sans-serif;transition:transform .2s ease, box-shadow .2s ease}
+.poly-helper-toggle:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(236,72,153,.32)}
+.poly-helper-toggle img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(255,255,255,.35));animation:float 3.8s ease-in-out infinite;transform-origin:center;transition:transform .22s ease}
+.poly-helper-toggle:hover img{animation:none;transform:rotate(-12deg) scale(1.08)}
+.poly-helper-close{position:absolute;top:10px;right:12px;border:0;background:rgba(236,72,153,.09);color:var(--p);width:28px;height:28px;border-radius:999px;cursor:pointer;font-weight:800}
+@media (max-width:680px){
+  .poly-helper{right:12px;bottom:12px}
+  .poly-helper-toggle{padding:8px 12px;font-size:.86rem;gap:8px}
+  .poly-helper-toggle img{width:38px;height:38px}
+  .poly-helper-panel{padding:14px;width:min(315px,calc(100vw - 24px));border-radius:20px}
+  .poly-helper-panel h3{font-size:1.25rem}
+  .poly-helper-panel p{font-size:.88rem}
+  .poly-helper-links a{padding:10px 11px;font-size:.86rem}
+  .poly-story-popup{padding:18px}
+  .poly-story-card{padding:24px 18px 20px;border-radius:22px}
+  .poly-story-card h3{font-size:1.65rem}
+  .poly-story-card p{font-size:.94rem;line-height:1.52}
+}
+
+footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.52));border-top:1px solid rgba(236,72,153,.08)}.contact-shell p,.step p,.section p,.helper{color:#6e5d78}
+.footer-wrap{display:grid;grid-template-columns:1.2fr .8fr;align-items:start;gap:30px;padding-top:10px;font:1rem "Cormorant Garamond",serif;letter-spacing:.02em;color:#2a2132}
+.footer-branding{display:flex;align-items:flex-start;gap:14px}
+.footer-branding img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(236,72,153,.14))}
+.footer-branding h3{margin:0;font:700 1.9rem/1 "Cormorant Garamond",serif;color:#241b2b}
+.footer-branding p{margin:6px 0 0;font:400 .92rem/1.6 Inter,sans-serif;color:#7a6b80}
+.footer-links{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.footer-links h4{margin:0 0 10px;font:.78rem Inter,sans-serif;text-transform:uppercase;letter-spacing:.12em;color:#a088ad}
+.footer-links a{display:block;margin-bottom:8px;font:500 .95rem Inter,sans-serif;color:#4c3f57}
+.footer-links a:hover{color:var(--p)}
+@keyframes brandShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes brandGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(236,72,153,0))}50%{filter:drop-shadow(0 0 10px rgba(236,72,153,.22))}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes fadeUp{0%{opacity:0;transform:translateY(18px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes labelFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-2px)}}
+@keyframes glow{0%,100%{opacity:.85}50%{opacity:1}}
+@keyframes floatImage{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+@keyframes polyFly{
+  0%,100%{transform:translate(0,0) rotate(-4deg) scale(1)}
+  18%{transform:translate(10px,-10px) rotate(7deg) scale(1.05)}
+  36%{transform:translate(42px,-7px) rotate(-5deg) scale(1)}
+  54%{transform:translate(70px,8px) rotate(8deg) scale(1.04)}
+  72%{transform:translate(32px,12px) rotate(-6deg) scale(1)}
+  88%{transform:translate(6px,4px) rotate(4deg) scale(1.02)}
+}
+@keyframes polyFlyMobile{
+  0%,100%{transform:translate(0,0) rotate(-4deg)}
+  35%{transform:translate(12px,-6px) rotate(6deg)}
+  70%{transform:translate(22px,5px) rotate(-5deg)}
+}
+@keyframes polyBadgeFloatPulse{
+  0%,100%{box-shadow:0 12px 24px rgba(236,72,153,.13);transform:translateX(-50%) translateY(0) scale(1)}
+  50%{box-shadow:0 16px 34px rgba(236,72,153,.22);transform:translateX(-50%) translateY(-3px) scale(1.018)}
+}
+
+@media (prefers-reduced-motion:reduce){.hero h1,.hero p,.hero-actions,.trust-row,.hero-image,.hero-poly-mascot,.brand-poly-icon,.poly-helper-toggle img,.hero-poly-badge,.hero-image-wrap::before,.brand-name span,.logo,.gallery-category{animation:none}.hero-poly-badge{transform:translateX(-50%)}.poly-helper-toggle:hover img{transform:none}}
+@media (max-width:980px){
+  .hero-poly-stage{max-width:420px;min-height:360px}
+  .hero-poly-mascot{width:min(100%,370px)}
+
+  .container{width:min(var(--max),calc(100% - 28px))}
+  .nav-wrap{gap:16px;padding:14px 0}
+  nav{gap:12px;flex-wrap:wrap;justify-content:flex-end}
+  nav a{font-size:.98rem}
+  .hero{padding:48px 0 28px}
+  .hero-grid{grid-template-columns:1fr;gap:26px}
+  .hero-grid>.hero-image-wrap{order:-1;justify-content:center}
+  .hero h1{font-size:clamp(2.35rem,6vw,3.5rem)}
+  .hero p{font-size:1rem;max-width:100%}
+  .hero-actions{gap:12px;margin-top:22px}
+  .trust-row{gap:12px 16px}
+  .section{padding:28px 0 14px}
+  .section-head{flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:18px}
+  .section-head h2{font-size:clamp(2rem,4vw,2.35rem)}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .steps::before,.step:not(:last-child)::after{display:none}
+  .gallery{grid-template-columns:1fr 1fr;grid-auto-rows:230px;gap:14px}
+  .gallery-item,.gallery-item:nth-child(1),.gallery-item:nth-child(2),.gallery-item:nth-child(3),.gallery-item:nth-child(4){grid-column:auto;grid-row:auto}
+  .gallery img{transform:none}
+  .gallery img:hover{transform:none}
+  .photo-testimonial-grid{grid-template-columns:.95fr 1.05fr;gap:18px}
+  .customer-mini-gallery img{height:110px}
+  .testimonial{font-size:.9rem;line-height:1.5}
+  .contact-grid,.split-grid{grid-template-columns:1fr;gap:16px}
+  .contact-shell{padding:16px}
+  .event-summary{padding:16px 18px;min-height:auto}
+  .event-meta{grid-template-columns:1fr 1fr;gap:12px 16px}
+}
+@media (max-width:680px){
+  .brand-poly-icon{width:28px;height:28px;animation:polyFlyMobile 7s ease-in-out infinite}
+  .hero-poly-stage{max-width:340px;min-height:300px;margin:auto}
+  .hero-poly-mascot{width:min(100%,300px)}
+  .hero-poly-badge{left:50%;bottom:6px;font-size:.76rem;padding:8px 11px;white-space:nowrap;max-width:88vw}
+
+  .container{width:min(var(--max),calc(100% - 22px))}
+  .split-grid{grid-template-columns:1fr}
+  .steps::before,.step:not(:last-child)::after{display:none}
+  .contact-grid>div:first-child::after{display:none}
+  .contact-grid>div:last-child{transform:none}
+  .site-header{position:static}
+  .nav-wrap{flex-direction:column;align-items:flex-start;gap:12px;padding:12px 0}
+  .brand{width:100%}
+  .logo{width:52px;height:52px}
+  .brand-name{font-size:1.4rem}
+  .brand-tag{font-size:.74rem}
+  nav{gap:8px;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap}
+  nav::-webkit-scrollbar{display:none}
+  nav a{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid rgba(0,0,0,.05);font-size:.78rem;line-height:1.15;text-align:center;white-space:nowrap}
+  .hero{padding:32px 0 18px}
+  .hero h1{font-size:clamp(2rem,8vw,2.7rem);margin-bottom:10px}
+  .hero p{font-size:.96rem}
+  .hero-actions{flex-direction:column;align-items:stretch;gap:10px}
+  .hero-actions .cta,.hero-actions .btn-secondary,.cta,.btn,.btn-secondary{min-height:46px}
+  .trust-row{gap:10px 14px;margin-top:16px;font-size:.88rem}
+  .section{padding:24px 0 12px}
+  .section-head{gap:8px;margin-bottom:16px}
+  .section-head h2{font-size:1.7rem}
+  .steps,.gallery,.photo-testimonial-grid,.event-meta,.contact-grid{grid-template-columns:1fr;gap:12px}
+  .step,.testimonial,.contact-shell,.customer-photo-card{padding:16px}
+  .step{min-height:auto}
+  .step h3,.testimonial h3,.contact-shell h3{font-size:1.04rem}
+  .step p{max-width:none}
+  .gallery{grid-template-columns:1fr;grid-auto-rows:auto;gap:14px}
+  .gallery-item,.gallery-item:nth-child(1),.gallery-item:nth-child(2),.gallery-item:nth-child(3),.gallery-item:nth-child(4){grid-column:auto;grid-row:auto}
+  .gallery-item{border-width:8px;border-radius:22px}
+  .gallery img{height:240px;padding:0;transform:none;border-radius:14px;object-position:center}
+  .gallery img:hover{transform:none;box-shadow:none;filter:none}
+  .gallery-category{left:14px;bottom:14px;transform:none;font-size:.9rem;padding:8px 13px}
+  .photo-testimonial-grid{gap:14px}
+  .customer-mini-gallery{gap:8px;margin-bottom:6px}
+  .customer-mini-gallery img{height:96px}
+  .testimonial-grid{gap:4px}
+  .testimonial{font-size:.86rem;line-height:1.42;padding:10px}
+  .testimonial-separator{margin:4px 0}
+  input,textarea,select{padding:12px 13px;font-size:.96rem}
+  #contact input,#contact textarea{padding:10px 11px}
+  textarea{min-height:96px}
+  .upload-shell{padding:14px 14px 12px}
+  .event-summary{padding:14px;align-items:flex-start;gap:12px}
+  .event-name{font-size:1.05rem;line-height:1.15;gap:6px;flex-wrap:wrap}
+  .event-date{font-size:.8rem}
+  .event-toggle{width:30px;height:30px;font-size:1rem}
+  .event-body{padding:0 14px 14px;font-size:.93rem}
+  .event-item{border-radius:16px}
+  .event-note{margin-top:10px;padding-top:10px}
+  .footer-wrap{grid-template-columns:1fr;gap:20px;padding-top:16px}
+  .footer-branding{gap:12px}
+  .footer-branding img{width:44px;height:44px}
+  .footer-branding h3{font-size:1.55rem}
+  .footer-branding p{font-size:.88rem;line-height:1.5}
+  .footer-links{grid-template-columns:1fr;gap:12px}
+  .footer-links a{margin-bottom:7px;font-size:.9rem}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <div class="brand">
+      <img src="images/poly-head.png" alt="Poly mascot icon" class="brand-poly-icon">
+      <svg class="logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="6" y="8" width="52" height="48" rx="12" fill="rgba(255,255,255,0.95)" stroke="var(--line)" stroke-width="2"/>
+        <rect x="10" y="8" width="44" height="8" rx="4" fill="var(--s)" opacity="0.6"/>
+        <rect x="12" y="18" width="40" height="30" rx="8" fill="rgba(167,139,250,0.12)" stroke="var(--s)" stroke-width="1.5"/>
+        <rect x="16" y="22" width="32" height="2" rx="1" fill="var(--muted)" opacity="0.5"/>
+        <rect x="26" y="22" width="12" height="10" rx="3" fill="var(--p)">
+          <animate attributeName="x" values="20;36;20" dur="2.4s" repeatCount="indefinite" />
+        </rect>
+        <circle cx="32" cy="36" r="4" fill="var(--a)">
+          <animate attributeName="r" values="4;5;4" dur="2.4s" repeatCount="indefinite" />
+        </circle>
+        <rect x="18" y="40" width="28" height="4" rx="2" fill="var(--text)" opacity="0.35"/>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-name">Oli<span>Poly</span> 3D</div>
+        <div class="brand-tag">Creative 3D printing brought to life in Ohio</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#events">Events</a>
+      <a href="track.html">Track Order</a>
+      <a href="#contact">Contact</a>
+      <a href="#order" class="cta">Start Your Project</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <h1>Custom 3D printing that feels <span class="accent">creative</span>, personal, and easy to start.</h1>
+        <p>OliPoly 3D helps turn ideas into real parts, prototypes, and custom creations with thoughtful design support, clean communication, and a maker-first approach.</p>
+        <div class="hero-actions">
+          <a class="cta" href="#order">Start Your Project</a>
+          <a class="btn-secondary" href="#gallery">View Recent Work</a>
+        </div>
+        <div class="trust-row">
+          <span>Custom one-off prints</span>
+          <span>Prototype-friendly process</span>
+          <span>Creative collaboration</span>
+        </div>
+        <div class="hero-divider"></div>
+      </div>
+      <div class="hero-image-wrap">
+        <div class="hero-poly-stage" aria-label="Poly mascot with a 3D printer backdrop">
+          <img src="images/poly-mascot.png" alt="Poly the OliPoly mascot" class="hero-poly-mascot">
+          <button class="hero-poly-badge" type="button" id="polyStoryOpen"><span>Click to meet Poly</span> • OliPoly's mascot</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works">
+    <div class="container">
+      <div class="section-head">
+        <div><h2>How it works</h2></div>
+        <p>A simple, collaborative process for turning an idea, sketch, photo, or file into a finished 3D print.</p>
+      </div>
+      <div class="steps">
+        <article class="step"><div class="step-number">1</div><h3>Share your idea</h3><p>Tell us what you want made, fixed, customized, or brought to life.</p></article>
+        <article class="step"><div class="step-number">2</div><h3>Show inspiration</h3><p>Send photos, sketches, files, measurements, or examples if you have them.</p></article>
+        <article class="step"><div class="step-number">3</div><h3>Refine the details</h3><p>We’ll help with material, size, design options, pricing, and next steps.</p></article>
+        <article class="step"><div class="step-number">4</div><h3>Watch it come to life</h3><p>Your piece is printed, finished, and prepared for pickup or shipping.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="gallery">
+    <div class="container">
+      <div class="section-head">
+        <div><h2>Recent work</h2></div>
+      </div>
+      <div class="gallery">
+        <div class="gallery-item"><img data-base="images/print2" alt="Detailed blue and silver 3D printed model semi truck"><span class="gallery-category">Precision Models</span></div>
+        <div class="gallery-item"><img data-base="images/print1" alt="Custom 3D printed signs, logos, and wall accessories"><span class="gallery-category">Custom Signs &amp; Logos</span></div>
+        <div class="gallery-item"><img data-base="images/print3" alt="Custom 3D printed espresso dosing funnels and functional accessories"><span class="gallery-category">Functional Accessories</span></div>
+        <div class="gallery-item"><img data-base="images/print4" alt="Colorful 3D printed toys, fidgets, and playful geometric prints"><span class="gallery-category">Toys &amp; Fidgets</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="social-proof">
+    <div class="container">
+      <div class="section-head"><div><h2>Customer favorites</h2></div></div>
+      <div class="photo-testimonial-grid">
+        <article class="customer-photo-card">
+          <div class="customer-mini-gallery">
+            <img data-base="images/print12" alt="Customer favorite 3D print photo 1">
+            <img data-base="images/print13" alt="Customer favorite 3D print photo 2">
+            <img data-base="images/print14" alt="Customer favorite 3D print photo 3">
+            <img data-base="images/print15" alt="Customer favorite 3D print photo 4">
+          </div>
+          <h3>Real customer photos</h3>
+          
+        </article>
+
+        <div class="testimonial-grid">
+          <article class="testimonial">
+            <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
+            <span class="quote-mark">“</span>
+            <p>I sent OliPoly a few ideas for my upcoming beach trip, and <strong>he brought them to life perfectly</strong>.<br><br>My kids (and husband!) had an absolute blast with the 3D-printed brick maker for the sand and the Bogg bag table was a huge hit. The entire process was simple and smooth from start to finish—couldn't be happier with the experience.</p>
+            <span class="testimonial-name">Alyssia B.</span>
+          </article>
+          <div class="testimonial-separator"></div>
+          <article class="testimonial">
+            <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
+            <span class="quote-mark">“</span>
+            <p>I would definitely recommend OliPoly for any and all 3D printed products. We’ve built up a wide range of items—from toys to functional household pieces and gaming accessories—and everything has been great. OliPoly is very thorough, easy to work with, and I’ll definitely be purchasing again in the future.</p>
+            <span class="testimonial-name">Dana M.</span>
+          </article>
+          <div class="testimonial-separator"></div>
+          <article class="testimonial">
+            <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
+            <span class="quote-mark">“</span>
+            <p>Communication was incredibly easy from start to finish, and OliPoly’s design ability really stood out in bringing ideas to life. Whether it was refining concepts or scaling up for larger business orders, everything was handled smoothly and professionally. Highly recommend for both custom and production-level needs.</p>
+            <span class="testimonial-name">Tom L.</span>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="events">
+    <div class="container">
+      <div class="section-head">
+        <div><h2>Upcoming events</h2></div>
+        <p>Tap each event for details.</p>
+      </div>
+      <div class="event-list">
+        <details class="event-item" data-event-date="2026-04-25T13:00:00">
+          <summary class="event-summary">
+            <div class="event-title-wrap"><span class="event-date">April 25, 2026</span><span class="event-name">Bloomfield Craft Show &amp; Farmers Market</span></div>
+            <span class="event-toggle">+</span>
+          </summary>
+          <div class="event-body">
+            <div class="event-meta">
+              <div><strong>Address</strong><span>8303 North Park Avenue Extension, North Bloomfield, OH 44450</span></div>
+              <div><strong>Time</strong><span>1:00 PM – 5:00 PM</span></div>
+            </div>
+            <p class="event-note">Stop by to shop customer favorites, see new seasonal prints, and ask questions in person about custom orders.</p>
+          </div>
+        </details>
+
+        <details class="event-item" data-event-date="2026-05-02T09:00:00">
+          <summary class="event-summary">
+            <div class="event-title-wrap"><span class="event-date">May 2, 2026</span><span class="event-name">Imagination Station Park Grand Opening</span></div>
+            <span class="event-toggle">+</span>
+          </summary>
+          <div class="event-body">
+            <div class="event-meta">
+              <div><strong>Address</strong><span>3372 Warren Meadville Road, Cortland, OH 44410</span></div>
+              <div><strong>Time</strong><span>10:00 AM – 4:00 PM</span></div>
+            </div>
+            <p class="event-note">A great chance to browse gifts, practical prints, and summer-ready products. Custom request forms will also be available at the booth.</p>
+          </div>
+        </details>
+
+        <details class="event-item" data-event-date="2026-05-16T09:00:00">
+          <summary class="event-summary">
+            <div class="event-title-wrap"><span class="event-date">May 16, 2026</span><span class="event-name">Trumbull County Fairgrounds Flea Market &amp; Craft Show</span></div>
+            <span class="event-toggle">+</span>
+          </summary>
+          <div class="event-body">
+            <div class="event-meta">
+              <div><strong>Address</strong><span>899 Everett Hull Rd, Bazetta, OH 44410</span></div>
+              <div><strong>Time</strong><span>9:00 AM – 3:00 PM</span></div>
+            </div>
+            <p class="event-note">Explore a wide range of vendors, flea market finds, and handmade goods. Stop by to see new prints and talk custom ideas in person.</p>
+          </div>
+        </details>
+
+        <article class="event-empty" id="eventEmpty">
+          <h3>Where should OliPoly pop up next?</h3>
+          <p>No upcoming events are posted right now. Know a craft show, market, school event, or community day where OliPoly 3D would fit in?</p>
+          <a class="cta" href="mailto:OliPoly3D@gmail.com?subject=Event%20Suggestion%20for%20OliPoly%203D&body=Hi%20OliPoly%203D%2C%0A%0AI%20think%20you%20should%20check%20out%20this%20event%3A%0A%0AEvent%20name%3A%0ALocation%3A%0ADate%2Ftime%3A%0ALink%20or%20details%3A%0A%0AThanks!">Suggest an Event</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+  <div class="container">
+    <div class="section-head">
+      <div><h2>Have a question first?</h2></div>
+      <p>Ask anything before starting your project.</p>
+    </div>
+    <div class="contact-grid split-grid">
+      <div class="contact-shell">
+        <p>If you are still figuring out your idea, reach out here. A short message is enough to start the conversation, and we’ll get back to you within 24 hours.</p>
+      </div>
+      <div class="contact-shell">
+        <div data-fs-success></div>
+        <div data-fs-error></div>
+        <form id="contact-form" action="https://formspree.io/f/xojplkjw" method="POST">
+          <input type="hidden" name="_subject" value="Inquiry">
+          <input type="text" name="name" placeholder="Your name" required>
+          <span data-fs-error="name"></span>
+          <input type="email" name="email" placeholder="Your email" required>
+          <span data-fs-error="email"></span>
+          <textarea name="message" placeholder="How can OliPoly 3D help?" required></textarea>
+          <span data-fs-error="message"></span>
+          <button class="cta" type="submit">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="order">
+  <div class="container">
+    <div class="section-head">
+      <div><h2>Start your custom print</h2></div>
+      <p>Ready to move forward? Submit your project details.</p>
+    </div>
+    <div class="contact-grid split-grid">
+      <div class="contact-shell">
+        <h3>What to include</h3>
+        <p>Briefly describe your idea, how it will be used, size, and any timeline.</p>
+        <p>If you have files, sketches, or reference images, you can send them after submitting.</p>
+        <h3 style="margin-top:14px;">After you submit</h3>
+        <p>We’ll review your request and follow up with options and next steps—usually within 24 hours.</p>
+      </div>
+      <div class="contact-shell">
+        <form id="order-form" action="https://formspree.io/f/xojplkjw" method="POST">
+          <input type="hidden" name="_subject" value="Order Request">
+          <input type="text" name="name" placeholder="Your name" required>
+          <input type="email" name="email" placeholder="Your email" required>
+          <input type="number" name="quantity" placeholder="Quantity needed" min="1">
+          <select name="material">
+            <option value="">Preferred material</option>
+            <option>PLA</option>
+            <option>PETG</option>
+            <option>ABS</option>
+            <option>Not sure yet</option>
+          </select>
+          <textarea name="details" placeholder="Tell us about your project"></textarea>
+          
+          <button class="cta" type="submit">Submit Order Request →</button>
+        </form>
+
+        <div class="upload-shell">
+          <h3>Upload reference files</h3>
+          <p>Add a sketch, photo, or file after submitting your request.</p>
+          <a class="cta" href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+
+<div class="poly-helper" id="polyHelper">
+  <div class="poly-helper-panel" role="dialog" aria-label="Poly helper menu">
+    <button class="poly-helper-close" type="button" id="polyHelperClose" aria-label="Close Poly helper">×</button>
+    <h3>Need a hand?</h3>
+    <p>Poly can help you jump to the right spot.</p>
+    <div class="poly-helper-links">
+      <a href="#order">Start a custom print <span>→</span></a>
+      <a href="track.html">Track an order <span>→</span></a>
+      <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Upload reference files <span>→</span></a>
+      <a href="#gallery">Browse recent work <span>→</span></a>
+    </div>
+  </div>
+  <button class="poly-helper-toggle" type="button" id="polyHelperToggle" aria-expanded="false" aria-controls="polyHelper">
+    <img src="images/poly-head.png" alt="" aria-hidden="true">
+    Ask Poly
+  </button>
+</div>
+
+<div class="modal" id="modal" aria-hidden="true">
+  <img id="modalImg" alt="Expanded gallery view">
+</div>
+
+
+<div class="poly-story-popup" id="polyStoryPopup" aria-hidden="true">
+  <div class="poly-story-card" role="dialog" aria-modal="true" aria-labelledby="polyStoryTitle">
+    <button class="poly-story-close" type="button" id="polyStoryClose" aria-label="Close Poly story">×</button>
+    <img src="images/print7.png" alt="Poly mascot" class="poly-story-mini">
+    <h3 id="polyStoryTitle">Meet Poly 🐝</h3>
+    <p><strong>Poly was dreamed up by Oli — Olive, age 8 — from OliPoly 3D.</strong></p>
+    <p>After seeing how busy we were bringing custom ideas to life, Olive said we were basically <strong>busy as a bee printing</strong> — and Poly was born.</p>
+    <p>Now Poly helps welcome people to the site, guide new ideas, and remind everyone that custom 3D printing can be creative, friendly, and fun.</p>
+    <p class="poly-story-note">Careful though… once you see your idea turn into a real print, the printing bug may bite you too!</p>
+  </div>
+</div>
+
+<div class="success-popup" id="orderSuccessPopup" aria-hidden="true">
+  <div class="success-card">
+    <h3>Request received</h3>
+    <p>Thanks for reaching out — we got your project request.</p>
+    <ul class="success-steps">
+      <li>We’ll review your details.</li>
+      <li>We’ll follow up with next steps.</li>
+      <li>You can expect a response within 24 hours.</li>
+      <li>Upload files below to help your request.</li>
+    </ul>
+    <div class="success-actions"><button class="cta" type="button" id="closeOrderSuccess">Close</button></div>
+  </div>
+</div>
+
+<div class="success-popup" id="contactSuccessPopup" aria-hidden="true">
+  <div class="success-card">
+    <h3>Message received</h3>
+    <p>Thanks for reaching out — we got your message.</p>
+    <ul class="success-steps">
+      <li>We’ll review your message.</li>
+      <li>You can expect a response within 24 hours.</li>
+    </ul>
+    <div class="success-actions"><button class="cta" type="button" id="closeContactSuccess">Close</button></div>
+  </div>
+</div>
+
+
+<footer>
+  <div class="container footer-wrap">
+    <div>
+      <div class="footer-branding">
+        <img src="images/poly-head.png" alt="Poly mascot icon">
+        <div>
+          <h3>OliPoly 3D</h3>
+          <p>Creative 3D printing brought to life in Ohio.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-links">
+      <div>
+        <h4>Explore</h4>
+        <a href="#gallery">Gallery</a>
+        <a href="#events">Events</a>
+        <a href="#how-it-works">How It Works</a>
+      </div>
+
+      <div>
+        <h4>Connect</h4>
+        <a href="track.html">Track Order</a>
+        <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a>
+        <a href="legal.html">Terms & Privacy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+
+function togglePopup(id,show){document.getElementById(id)?.classList.toggle('active',show)}
+function openModal(src){$('#modalImg').src=src;$('#modal')?.classList.add('active');$('#modal')?.setAttribute('aria-hidden','false')}
+function closeModal(){$('#modal')?.classList.remove('active');$('#modal')?.setAttribute('aria-hidden','true')}
+
+function loadImages(){
+  const exts=['jpg','jpeg','png','webp','heic'];
+  $$('[data-base]').forEach(img=>{
+    const trySrc=i=>{
+      if(i>=exts.length) return;
+      const src=`${img.dataset.base}.${exts[i]}`, test=new Image();
+      test.onload=()=>{img.src=src;img.onclick=()=>openModal(src)};
+      test.onerror=()=>trySrc(i+1);
+      test.src=src;
+    };
+    trySrc(0);
+  });
+}
+
+function markNextEvent(){
+  const today=new Date(), start=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const events=[...$$('.event-item')].map(el=>[el,new Date(el.dataset.eventDate)]);
+  const upcoming=events.filter(([,date])=>date>=start).sort((a,b)=>a[1]-b[1]);
+
+  events.forEach(([el,date])=>{
+    if(date<start) el.style.display='none';
+    el.classList.remove('next-event');
+  });
+
+  if(upcoming.length){
+    upcoming[0][0].classList.add('next-event');
+    $('#eventEmpty') && ($('#eventEmpty').style.display='none');
+  }else{
+    $('#eventEmpty') && ($('#eventEmpty').style.display='block');
+  }
+}
+
+function bindForm(formId,popupId){
+  const form=document.getElementById(formId);
+  if(!form) return;
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    try{
+      const res=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{Accept:'application/json'}});
+      if(!res.ok) throw 0;
+      form.reset();
+      togglePopup(popupId,true);
+      
+    }catch{
+      alert('There was a problem submitting the form. Please try again.');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  loadImages();
+  markNextEvent();
+  $('#modal')?.addEventListener('click',e=>e.target.id==='modal'&&closeModal());
+  $('#closeOrderSuccess')?.addEventListener('click',()=>{
+    togglePopup('orderSuccessPopup',false);
+    const upload=document.querySelector('.upload-shell');
+    if(upload){
+      setTimeout(()=>{
+        upload.classList.add('highlight');
+        upload.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>upload.classList.remove('highlight'),2200);
+      },150);
+    }
+  });
+  $('#closeContactSuccess')?.addEventListener('click',()=>togglePopup('contactSuccessPopup',false));
+  bindForm('order-form','orderSuccessPopup');
+  bindForm('contact-form','contactSuccessPopup');
+  const polyStoryPopup=document.getElementById('polyStoryPopup');
+  const polyStoryOpen=document.getElementById('polyStoryOpen');
+  const polyStoryClose=document.getElementById('polyStoryClose');
+  const setPolyStoryOpen=show=>{
+    polyStoryPopup?.classList.toggle('active',show);
+    polyStoryPopup?.setAttribute('aria-hidden',show?'false':'true');
+  };
+  polyStoryOpen?.addEventListener('click',()=>setPolyStoryOpen(true));
+  polyStoryClose?.addEventListener('click',()=>setPolyStoryOpen(false));
+  polyStoryPopup?.addEventListener('click',e=>e.target.id==='polyStoryPopup'&&setPolyStoryOpen(false));
+  const polyHelper=document.getElementById('polyHelper');
+  const polyToggle=document.getElementById('polyHelperToggle');
+  const polyClose=document.getElementById('polyHelperClose');
+  const setPolyOpen=show=>{
+    polyHelper?.classList.toggle('active',show);
+    polyToggle?.setAttribute('aria-expanded',show?'true':'false');
+  };
+  polyToggle?.addEventListener('click',()=>setPolyOpen(!polyHelper?.classList.contains('active')));
+  polyClose?.addEventListener('click',()=>setPolyOpen(false));
+  document.querySelectorAll('.poly-helper-links a').forEach(link=>link.addEventListener('click',()=>setPolyOpen(false)));
+});
+</script>
+</body>
+</html>
