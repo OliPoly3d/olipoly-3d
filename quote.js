@@ -2233,3 +2233,101 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("DOMContentLoaded", init);
 })();
 
+
+/* Professional Quote Cleanup Layer V1 */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function quoteType(){
+    return ($("liteQuoteType")?.value || document.body.dataset.liteQuoteType || "").trim();
+  }
+
+  function professional(){
+    return quoteType() === "business" || quoteType() === "po";
+  }
+
+  function hideRetailSections(){
+    const isPro = professional();
+
+    const chips = Array.from(document.querySelectorAll(".doc-chip"));
+    chips.forEach((chip)=>{
+      const text = (chip.textContent || "").trim().toLowerCase();
+
+      if(!isPro) return;
+
+      if(text === "next steps" || text === "pay"){
+        const panel = chip.closest(".pdf-panel") || chip.parentElement;
+        if(panel) panel.style.display = "none";
+      }
+    });
+
+    // Remove duplicated PO text if render injected twice
+    const po = $("pdfProfessionalPoInstructions");
+    if(po){
+      let html = po.innerHTML;
+      const duplicate = "To proceed with this order";
+      const first = html.indexOf(duplicate);
+      const second = html.indexOf(duplicate, first + 10);
+
+      if(second !== -1){
+        html = html.substring(0, second);
+        po.innerHTML = html;
+      }
+    }
+
+    const tracking = $("pdfTrackingInfo");
+    if(tracking && isPro){
+      tracking.innerHTML =
+        "After purchase order acceptance, OliPoly 3D will generate an OP-order number for production tracking, shipment coordination, and fulfillment updates.";
+    }
+  }
+
+  function patchRender(){
+    if(typeof window.render !== "function" || window.render._professionalCleanupPatched) return false;
+
+    const original = window.render;
+
+    window.render = function patchedCleanup(...args){
+      const result = original.apply(this,args);
+
+      setTimeout(hideRetailSections,0);
+      setTimeout(hideRetailSections,200);
+      setTimeout(hideRetailSections,700);
+
+      return result;
+    };
+
+    window.render._professionalCleanupPatched = true;
+    return true;
+  }
+
+  function init(){
+    const timer = setInterval(()=>{
+      patchRender();
+      hideRetailSections();
+    },250);
+
+    setTimeout(()=>clearInterval(timer),6000);
+
+    patchRender();
+    hideRetailSections();
+
+    ["customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn","liteQuoteType"].forEach((id)=>{
+      const el = $(id);
+      if(!el || el._cleanupBound) return;
+
+      el._cleanupBound = true;
+
+      ["click","change","input"].forEach((eventName)=>{
+        el.addEventListener(eventName,()=>{
+          setTimeout(hideRetailSections,0);
+          setTimeout(hideRetailSections,200);
+          setTimeout(hideRetailSections,700);
+        },{capture:true});
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+
