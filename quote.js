@@ -2367,7 +2367,11 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
-/* Professional PO PDF Workflow Layer V10 */
+/* Professional PO PDF Workflow Layer V11
+   Fixes the top hero summary cards directly:
+   - middle hero card becomes Payment Terms and pulls from #paymentTerms dropdown text
+   - right hero card becomes Lead Time and pulls from #turnaround
+*/
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -2393,74 +2397,36 @@ https://olipoly3d.com`;
   }
 
   function selectedLeadTimeText(){
-    return get("turnaround") || "";
+    return get("turnaround") || text("pdfTurnaround") || "To be confirmed";
   }
 
-  function fixTopSummaryCards(){
-    const root = document.querySelector(".pdf-sheet") || document;
+  function fixHeroSummaryCards(){
+    const pro = isProfessional();
+    if(!pro) return;
 
-    const cards = Array.from(
-      root.querySelectorAll(".pdf-total-card, .summary-card, .hero-card, .metric-card")
-    );
+    const terms = selectedPaymentTermsText();
+    const lead = selectedLeadTimeText();
 
-    // Fallback: detect by label text
-    const paymentTermsText = selectedPaymentTermsText();
-    const leadTimeText = selectedLeadTimeText();
+    const dueLabel = $("pdfHeroDueLabel");
+    const dueValue = $("pdfHeroDue");
+    const timeLabel = $("pdfHeroTimeLabel");
+    const timeValue = $("pdfHeroTime");
 
-    // Try explicit IDs first
-    const explicitTerms = [
-      "pdfPaymentTerms",
-      "pdfPaymentTermsValue",
-      "pdfHeroPaymentTerms"
-    ];
+    if(dueLabel) dueLabel.textContent = "Payment Terms";
+    if(dueValue && terms) dueValue.textContent = terms;
 
-    explicitTerms.forEach((id)=>{
-      const el = $(id);
-      if(el && paymentTermsText){
-        el.textContent = paymentTermsText;
-      }
-    });
-
-    const explicitLead = [
-      "pdfLeadTime",
-      "pdfHeroLeadTime"
-    ];
-
-    explicitLead.forEach((id)=>{
-      const el = $(id);
-      if(el && leadTimeText){
-        el.textContent = leadTimeText;
-      }
-    });
-
-    // Most reliable: scan visible cards by heading text.
-    const allBoxes = Array.from(root.querySelectorAll("div"));
-
-    allBoxes.forEach((box)=>{
-      const txt = (box.textContent || "").replace(/\s+/g," ").trim().toLowerCase();
-
-      // Payment Terms card
-      if(txt.includes("payment terms")){
-        const strongs = box.querySelectorAll("strong,b");
-        if(strongs.length){
-          strongs[strongs.length - 1].textContent = paymentTermsText;
-        }
-      }
-
-      // Lead Time card
-      if(txt.includes("lead time")){
-        const strongs = box.querySelectorAll("strong,b");
-        if(strongs.length){
-          strongs[strongs.length - 1].textContent = leadTimeText;
-        }
-      }
-    });
+    if(timeLabel) timeLabel.textContent = "Lead Time";
+    if(timeValue && lead) timeValue.textContent = lead;
   }
 
   function findFutureOrderNumber(){
     const candidates = [
       get("orderNumber"),
-      text("pdfOrderNumber")
+      text("pdfOrderPreview"),
+      text("pdfOrderNumber"),
+      text("pdfAcceptedOrderNumber"),
+      text("pdfConvertedOrderNumber"),
+      text("pdfOpOrderNumber")
     ].filter(Boolean);
 
     for(const value of candidates){
@@ -2477,67 +2443,100 @@ https://olipoly3d.com`;
     const pro = isProfessional();
     document.body.classList.toggle("professional-pdf-mode", pro);
 
-    fixTopSummaryCards();
+    fixHeroSummaryCards();
 
     const po = $("pdfProfessionalPoInstructions");
     const tracking = $("pdfTrackingInfo");
+    const next = $("pdfNextSteps");
+    const pay = $("pdfPaymentCta");
+    const quoteTerms = $("pdfQuoteTerms");
+    const invoiceTerms = $("pdfInvoiceTerms");
 
     const opNumber = findFutureOrderNumber();
 
-    if (po && pro) {
-      po.style.display = "block";
-      po.innerHTML =
-        `<strong>Purchase Order &amp; Order Processing</strong><br>` +
-        `To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.<br><br>` +
-        `Please include: billing address; shipping address; purchasing contact information; required customer part numbers or references; and any required packaging labels, receiving instructions, or routing information.<br><br>` +
-        `Once received, OliPoly 3D will begin scheduling manufacturing and fulfillment.`;
+    if (po) {
+      po.classList.toggle("hidden", !pro);
+      po.style.display = pro ? "block" : "none";
+      if(pro){
+        po.innerHTML =
+          `<strong>Purchase Order &amp; Order Processing</strong><br>` +
+          `To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.<br><br>` +
+          `Please include: billing address; shipping address; purchasing contact information; required customer part numbers or references; and any required packaging labels, receiving instructions, or routing information.<br><br>` +
+          `Once received, OliPoly 3D will begin scheduling manufacturing and fulfillment.`;
+      }
     }
 
     if (tracking && pro) {
       tracking.style.display = "block";
+      tracking.classList.remove("hidden");
       tracking.innerHTML =
         `<strong>Order Tracking</strong><br>` +
-        `Track this project using order number <strong>${opNumber || "OP-ORDER"}</strong>.<br>` +
+        `Track this project using order number <strong>${opNumber || "the OP-order number shown above"}</strong>.<br>` +
         `Tracking Portal: <a href="https://olipoly3d.com/track.html" target="_blank">https://olipoly3d.com/track.html</a>`;
     }
 
-    ["pdfNextSteps","pdfPaymentCta","pdfQuoteTerms","pdfInvoiceTerms"].forEach((id)=>{
-      const el = $(id);
-      if(el && pro){
+    [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
+      if (!el) return;
+      if (pro) {
         el.style.display = "none";
+        el.classList.add("hidden");
+      } else {
+        el.style.display = "";
+      }
+    });
+
+    document.querySelectorAll(".doc-chip").forEach((chip) => {
+      const chipText = (chip.textContent || "").trim().toLowerCase();
+      if ((chipText === "next steps" || chipText === "pay") && pro) {
+        const panel = chip.closest(".pdf-note") || chip.closest(".pdf-panel") || chip.parentElement;
+        if(panel){
+          panel.style.display = "none";
+          panel.classList.add("hidden");
+        }
       }
     });
   }
 
   function patchRender(){
-    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV10) return false;
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV11) return false;
 
     const original = window.render;
-
-    window.render = function patchedProfessionalPoWorkflow(...args){
+    window.render = function patchedProfessionalPoWorkflowV11(...args){
       const result = original.apply(this,args);
-
-      [0,100,300,700,1400,2200,3200].forEach((ms)=>{
-        setTimeout(applyProfessionalPoPdfWorkflow,ms);
-      });
-
+      [0,50,150,300,700,1400,2400,3600].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
       return result;
     };
 
-    window.render._professionalPoPdfWorkflowV10 = true;
+    window.render._professionalPoPdfWorkflowV11 = true;
     return true;
   }
 
+  function bind(){
+    ["liteQuoteType","professionalMode","paymentTerms","turnaround","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
+      const el = $(id);
+      if(!el || el._professionalPoPdfWorkflowV11Bound) return;
+      el._professionalPoPdfWorkflowV11Bound = true;
+      ["input","change","click"].forEach((eventName)=>{
+        el.addEventListener(eventName,()=>{
+          [0,50,150,300,700,1400,2400,3600].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
+        },{capture:true});
+      });
+    });
+
+    window.addEventListener("beforeprint", applyProfessionalPoPdfWorkflow, {capture:true});
+  }
+
   function init(){
+    bind();
     patchRender();
 
     const timer = setInterval(()=>{
+      bind();
       patchRender();
       applyProfessionalPoPdfWorkflow();
-    },200);
+    },150);
 
-    setTimeout(()=>clearInterval(timer),10000);
-
+    setTimeout(()=>clearInterval(timer),12000);
     applyProfessionalPoPdfWorkflow();
   }
 
