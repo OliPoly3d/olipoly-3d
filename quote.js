@@ -2142,237 +2142,6 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 
-/* Professional Prepare Customer Email Layer V1
-   Keeps the existing consumer/customer email behavior intact.
-   For business/PO/customer-terms quotes, the Prepare Customer Email button
-   generates a procurement-style email instead of the retail online-approval email.
-*/
-(() => {
-  const $ = (id) => document.getElementById(id);
-
-  function getField(id) {
-    return ($(id)?.value || "").trim();
-  }
-
-  function textFrom(id) {
-    return ($(id)?.textContent || "").trim();
-  }
-
-  function quoteType() {
-    return getField("liteQuoteType") || document.body.dataset.liteQuoteType || "";
-  }
-
-  function isProfessionalQuote() {
-    const type = quoteType();
-    const terms = getField("paymentTerms");
-    const professionalMode = getField("professionalMode");
-    return type === "business" || type === "po" || terms === "customer_terms" || professionalMode === "on";
-  }
-
-  function quoteTotalText() {
-    return textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
-  }
-
-  function makeSubject() {
-    const quoteNumber = getField("quoteNumber") || "Quote";
-    const project = getField("quoteTitle") || getField("projectTitle") || "";
-    return project ? `OliPoly 3D Quote ${quoteNumber} - ${project}` : `OliPoly 3D Quote ${quoteNumber}`;
-  }
-
-  function buildProfessionalPlainEmail() {
-    const contactName = getField("contactName") || getField("customerName") || "";
-    const companyName = getField("companyName") || "";
-    const quoteNumber = getField("quoteNumber") || "";
-    const project = getField("quoteTitle") || getField("projectTitle") || "the requested items";
-    const total = quoteTotalText();
-    const leadTime = getField("turnaround") || "as noted in the attached quote";
-    const poNumber = getField("poNumber");
-    const oliPart = getField("olipolyPartNumber");
-    const customerPart = getField("customerPartNumber");
-
-    const refs = [
-      quoteNumber ? `Quote: ${quoteNumber}` : "",
-      companyName ? `Company: ${companyName}` : "",
-      project ? `Project: ${project}` : "",
-      total ? `Quoted total: ${total}` : "",
-      leadTime ? `Lead time: ${leadTime}` : "",
-      poNumber ? `PO reference: ${poNumber}` : "",
-      oliPart ? `OliPoly Part #: ${oliPart}` : "",
-      customerPart ? `Customer Part #: ${customerPart}` : ""
-    ].filter(Boolean).join("\n");
-
-    return `${contactName ? `Hello ${contactName},` : "Hello,"}
-
-Attached is the requested quotation from OliPoly 3D for purchasing review.
-
-${refs}
-
-To proceed, please issue a purchase order referencing the quoted items, quantities, and pricing included in the attached quote.
-
-Please include:
-- Billing address
-- Shipping address
-- Purchasing contact information
-- Required customer part references
-- Any required packaging labels, routing instructions, or receiving requirements
-
-Current lead time is estimated at ${leadTime} unless otherwise noted.
-
-Please let me know if any revisions or additional documentation are needed.
-
-Thank you,
-
-OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
-https://olipoly3d.com`;
-  }
-
-  function buildProfessionalHtmlEmail() {
-    const contactName = getField("contactName") || getField("customerName") || "";
-    const companyName = getField("companyName") || "";
-    const quoteNumber = getField("quoteNumber") || "";
-    const project = getField("quoteTitle") || getField("projectTitle") || "the requested items";
-    const total = quoteTotalText();
-    const leadTime = getField("turnaround") || "as noted in the attached quote";
-    const poNumber = getField("poNumber");
-    const oliPart = getField("olipolyPartNumber");
-    const customerPart = getField("customerPartNumber");
-
-    const row = (label, value) => value ? `
-        <tr>
-          <td style="padding:8px 0;color:#866a86;width:38%;font-weight:700;">${label}</td>
-          <td style="padding:8px 0;color:#3f3146;font-weight:700;">${value}</td>
-        </tr>` : "";
-
-    return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,sans-serif;color:#3f3146;">
-  <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
-    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff);"></div>
-
-    <div style="padding:26px 26px 10px;">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;letter-spacing:-.03em;color:#241b2b;">
-        Oli<span style="color:#b86be8;">Poly</span> 3D
-      </div>
-      <div style="margin-top:4px;color:#866a86;font-size:14px;">
-        Custom 3D Printing • Creative Builds • Prototypes
-      </div>
-    </div>
-
-    <div style="padding:12px 26px 28px;">
-      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:31px;line-height:1.08;margin:8px 0 16px;color:#241b2b;">
-        Quotation for purchasing review
-      </h1>
-
-      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
-        ${contactName ? `Hello ${contactName},` : "Hello,"}
-      </p>
-
-      <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
-        Attached is the requested quotation from OliPoly 3D for purchasing review.
-      </p>
-
-      <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
-        <table style="width:100%;border-collapse:collapse;font-size:15px;">
-          ${row("Quote #", quoteNumber)}
-          ${row("Company", companyName)}
-          ${row("Project", project)}
-          ${row("Quoted total", total)}
-          ${row("Lead time", leadTime)}
-          ${row("PO reference", poNumber)}
-          ${row("OliPoly Part #", oliPart)}
-          ${row("Customer Part #", customerPart)}
-        </table>
-      </div>
-
-      <div style="background:#fffafc;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
-        <p style="margin:0 0 10px;font-weight:800;color:#3f3146;">To proceed</p>
-        <p style="font-size:15px;line-height:1.55;margin:0 0 12px;color:#604d68;">
-          Please issue a purchase order referencing the quoted items, quantities, and pricing included in the attached quote.
-        </p>
-
-        <p style="margin:0 0 8px;font-weight:800;color:#3f3146;">Please include:</p>
-        <ul style="margin:0;padding-left:20px;color:#604d68;font-size:15px;line-height:1.55;">
-          <li>Billing address</li>
-          <li>Shipping address</li>
-          <li>Purchasing contact information</li>
-          <li>Required customer part references</li>
-          <li>Any required packaging labels, routing instructions, or receiving requirements</li>
-        </ul>
-      </div>
-
-      <p style="font-size:15px;line-height:1.6;margin:18px 0 0;color:#604d68;">
-        Current lead time is estimated at <strong>${leadTime}</strong> unless otherwise noted. Please let me know if any revisions or additional documentation are needed.
-      </p>
-    </div>
-
-    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:16px 26px;color:#866a86;font-size:13px;line-height:1.5;">
-      OliPoly 3D LLC • Custom 3D Printing<br>
-      OliPoly3D@gmail.com • olipoly3d.com
-    </div>
-  </div>
-</div>`;
-  }
-
-  function openGmailCompose(to, subject, body) {
-    const gmailUrl =
-      "https://mail.google.com/mail/?view=cm&fs=1" +
-      `&to=${encodeURIComponent(to || "")}` +
-      `&su=${encodeURIComponent(subject || "")}` +
-      `&body=${encodeURIComponent(body || "")}`;
-    window.open(gmailUrl, "_blank", "noopener,noreferrer");
-  }
-
-  async function prepareProfessionalCustomerEmail(event) {
-    if (!isProfessionalQuote()) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-
-    const btn = $("prepareCustomerEmailBtn");
-
-    try {
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = "Preparing Pro Email...";
-      }
-
-      if (typeof window.render === "function") window.render();
-
-      const plainEmail = buildProfessionalPlainEmail();
-      const htmlEmail = buildProfessionalHtmlEmail();
-      const customerEmail = getField("customerEmail");
-      const subject = makeSubject();
-
-      try {
-        await navigator.clipboard.writeText(htmlEmail);
-        alert("Professional email HTML copied to your clipboard. Gmail will open with a plain prefilled draft. Attach the professional quote PDF before sending.");
-      } catch (clipErr) {
-        alert("Gmail will open with a plain prefilled professional draft. Attach the professional quote PDF before sending.");
-      }
-
-      openGmailCompose(customerEmail, subject, plainEmail);
-    } catch (err) {
-      alert(`Could not prepare professional customer email:\n\n${err.message || err}`);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Prepare Customer Email";
-      }
-    }
-  }
-
-  function initProfessionalEmailLayer() {
-    const btn = $("prepareCustomerEmailBtn");
-    if (!btn || btn._professionalEmailLayerBound) return;
-    btn._professionalEmailLayerBound = true;
-
-    // Capture phase lets this professional branch stop the existing consumer email handler only when appropriate.
-    btn.addEventListener("click", prepareProfessionalCustomerEmail, true);
-  }
-
-  document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
-})();
-
 /* Professional PO PDF Workflow Layer V12
    Directly controls the top hero cards and professional PO sections.
 */
@@ -2530,5 +2299,309 @@ https://olipoly3d.com`;
   }
 
   document.addEventListener("DOMContentLoaded", init);
+})();
+
+
+/* Professional Prepare Customer Email Layer V2
+   Keeps existing consumer/customer email behavior intact.
+   For business/PO/customer-terms quotes, creates a branded procurement-style
+   OliPoly email HTML and a clean plain-text Gmail fallback.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function getField(id) {
+    return ($(id)?.value || "").trim();
+  }
+
+  function textFrom(id) {
+    return ($(id)?.textContent || "").trim();
+  }
+
+  function escapeHtml(value) {
+    return String(value || "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m]));
+  }
+
+  function quoteType() {
+    return getField("liteQuoteType") || document.body.dataset.liteQuoteType || "";
+  }
+
+  function isProfessionalQuote() {
+    const type = quoteType();
+    const terms = getField("paymentTerms");
+    const professionalMode = getField("professionalMode");
+    return type === "business" || type === "po" || terms === "customer_terms" || professionalMode === "on";
+  }
+
+  function quoteTotalText() {
+    return textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
+  }
+
+  function selectedPaymentTermsText() {
+    const select = $("paymentTerms");
+    if (!select) return "";
+    const option = select.options?.[select.selectedIndex];
+    return (option?.textContent || select.value || "").trim();
+  }
+
+  function makeSubject() {
+    const quoteNumber = getField("quoteNumber") || "Quote";
+    const project = getField("quoteTitle") || getField("projectTitle") || "";
+    return project ? `OliPoly 3D Quote ${quoteNumber} - ${project}` : `OliPoly 3D Quote ${quoteNumber}`;
+  }
+
+  function professionalData() {
+    const rawContact = getField("contactName") || getField("customerName") || "";
+    const companyName = getField("companyName") || "";
+    const quoteNumber = getField("quoteNumber") || "";
+    const project = getField("quoteTitle") || getField("projectTitle") || "the requested items";
+    const total = quoteTotalText();
+    const leadTime = getField("turnaround") || "as noted in the attached quote";
+    const terms = selectedPaymentTermsText() || "Customer Standard Terms / PO Terms";
+    const poNumber = getField("poNumber");
+    const oliPart = getField("olipolyPartNumber");
+    const customerPart = getField("customerPartNumber");
+    const customerEmail = getField("customerEmail");
+
+    return {
+      rawContact,
+      greetingName: rawContact || "",
+      companyName,
+      quoteNumber,
+      project,
+      total,
+      leadTime,
+      terms,
+      poNumber,
+      oliPart,
+      customerPart,
+      customerEmail
+    };
+  }
+
+  function buildProfessionalPlainEmail() {
+    const d = professionalData();
+
+    const refs = [
+      d.quoteNumber ? `Quote: ${d.quoteNumber}` : "",
+      d.companyName ? `Company: ${d.companyName}` : "",
+      d.project ? `Project: ${d.project}` : "",
+      d.total ? `Quoted total: ${d.total}` : "",
+      d.terms ? `Payment terms: ${d.terms}` : "",
+      d.leadTime ? `Lead time: ${d.leadTime}` : "",
+      d.poNumber ? `PO reference: ${d.poNumber}` : "",
+      d.oliPart ? `OliPoly Part #: ${d.oliPart}` : "",
+      d.customerPart ? `Customer Part #: ${d.customerPart}` : ""
+    ].filter(Boolean).join("\n");
+
+    return `${d.greetingName ? `Hello ${d.greetingName},` : "Hello,"}
+
+Attached is the requested quotation from OliPoly 3D for purchasing review.
+
+${refs}
+
+To proceed, please issue a purchase order referencing the quoted items, quantities, and pricing included in the attached quote.
+
+Please include:
+- Billing address
+- Shipping address
+- Purchasing contact information
+- Required customer part references
+- Any required packaging labels, routing instructions, or receiving requirements
+
+Current lead time is estimated at ${d.leadTime} unless otherwise noted.
+
+Please let me know if any revisions or additional documentation are needed.
+
+Thank you,
+
+OliPoly 3D LLC
+Custom 3D Printing • Creative Builds • Prototypes
+OliPoly3D@gmail.com
+https://olipoly3d.com`;
+  }
+
+  function detailRow(label, value) {
+    if (!value) return "";
+    return `
+      <tr>
+        <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">${escapeHtml(label)}</td>
+        <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${escapeHtml(value)}</td>
+      </tr>`;
+  }
+
+  function buildProfessionalHtmlEmail() {
+    const d = professionalData();
+
+    return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:26px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
+
+    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+
+    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="vertical-align:middle;">
+            <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">
+              Oli<span style="color:#b86be8;">Poly</span> 3D
+            </div>
+            <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">
+              Custom 3D Printing • Creative Builds • Prototypes
+            </div>
+          </td>
+          <td style="width:74px;text-align:right;vertical-align:middle;">
+            <div style="display:inline-block;width:52px;height:52px;border-radius:17px;background:linear-gradient(135deg,#de6fb8,#9d7cff);text-align:center;line-height:52px;color:#ffffff;font-size:22px;font-weight:800;box-shadow:0 8px 18px rgba(157,124,255,.22);">
+              OP
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="padding:28px;">
+      <div style="display:inline-block;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:#f9ecf5;border:1px solid #f2c4df;color:#7c4a82;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">
+        Professional Quotation
+      </div>
+
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 16px;color:#241b2b;font-weight:700;">
+        Quotation for purchasing review
+      </h1>
+
+      <p style="font-size:15px;line-height:1.65;margin:0 0 16px;color:#4f4057;">
+        ${d.greetingName ? `Hello ${escapeHtml(d.greetingName)},` : "Hello,"}
+      </p>
+
+      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">
+        Attached is the requested quotation from <strong>OliPoly 3D</strong> for purchasing review.
+      </p>
+
+      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:8px;">
+          Quote Summary
+        </div>
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+          ${detailRow("Quote #", d.quoteNumber)}
+          ${detailRow("Company", d.companyName)}
+          ${detailRow("Project", d.project)}
+          ${detailRow("Quoted Total", d.total)}
+          ${detailRow("Payment Terms", d.terms)}
+          ${detailRow("Lead Time", d.leadTime)}
+          ${detailRow("PO Reference", d.poNumber)}
+          ${detailRow("OliPoly Part #", d.oliPart)}
+          ${detailRow("Customer Part #", d.customerPart)}
+        </table>
+      </div>
+
+      <div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:20px;padding:18px 20px;margin:20px 0;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">
+          Purchase Order &amp; Order Processing
+        </div>
+
+        <p style="font-size:15px;line-height:1.6;margin:0 0 12px;color:#4f4057;">
+          To proceed, please issue a purchase order referencing the quoted items, quantities, and pricing included in the attached quote.
+        </p>
+
+        <p style="font-size:14px;line-height:1.55;margin:0 0 8px;color:#4f4057;font-weight:800;">
+          Please include:
+        </p>
+
+        <ul style="margin:0;padding-left:20px;color:#604d68;font-size:14px;line-height:1.58;">
+          <li>Billing address</li>
+          <li>Shipping address</li>
+          <li>Purchasing contact information</li>
+          <li>Required customer part references</li>
+          <li>Any required packaging labels, routing instructions, or receiving requirements</li>
+        </ul>
+      </div>
+
+      <div style="border-left:4px solid #de6fb8;background:#fffafd;padding:14px 16px;border-radius:14px;margin:20px 0;color:#604d68;font-size:14px;line-height:1.6;">
+        Current lead time is estimated at <strong style="color:#2f2336;">${escapeHtml(d.leadTime)}</strong> unless otherwise noted.
+        Please let me know if any revisions or additional documentation are needed.
+      </div>
+
+      <p style="font-size:15px;line-height:1.6;margin:22px 0 0;color:#4f4057;">
+        Thank you,
+      </p>
+
+      <p style="font-size:15px;line-height:1.6;margin:8px 0 0;color:#4f4057;">
+        <strong>OliPoly 3D LLC</strong><br>
+        Custom 3D Printing • Creative Builds • Prototypes
+      </p>
+    </div>
+
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:18px 28px;color:#826889;font-size:13px;line-height:1.55;">
+      <strong style="color:#4f4057;">OliPoly 3D</strong><br>
+      <a href="mailto:OliPoly3D@gmail.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">OliPoly3D@gmail.com</a>
+      <span style="color:#c59db9;"> • </span>
+      <a href="https://olipoly3d.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">olipoly3d.com</a>
+    </div>
+  </div>
+</div>`;
+  }
+
+  function openGmailCompose(to, subject, body) {
+    const gmailUrl =
+      "https://mail.google.com/mail/?view=cm&fs=1" +
+      `&to=${encodeURIComponent(to || "")}` +
+      `&su=${encodeURIComponent(subject || "")}` +
+      `&body=${encodeURIComponent(body || "")}`;
+    window.open(gmailUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function prepareProfessionalCustomerEmail(event) {
+    if (!isProfessionalQuote()) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const btn = $("prepareCustomerEmailBtn");
+
+    try {
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Preparing Pro Email...";
+      }
+
+      if (typeof window.render === "function") window.render();
+
+      const plainEmail = buildProfessionalPlainEmail();
+      const htmlEmail = buildProfessionalHtmlEmail();
+      const customerEmail = professionalData().customerEmail;
+      const subject = makeSubject();
+
+      try {
+        await navigator.clipboard.writeText(htmlEmail);
+        alert("Branded professional email HTML copied to your clipboard. Gmail will open with a plain prefilled draft. Attach the professional quote PDF, then paste the styled HTML if desired before sending.");
+      } catch (clipErr) {
+        alert("Gmail will open with a plain prefilled professional draft. Attach the professional quote PDF before sending.");
+      }
+
+      openGmailCompose(customerEmail, subject, plainEmail);
+    } catch (err) {
+      alert(`Could not prepare professional customer email:\n\n${err.message || err}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Prepare Customer Email";
+      }
+    }
+  }
+
+  function initProfessionalEmailLayer() {
+    const btn = $("prepareCustomerEmailBtn");
+    if (!btn || btn._professionalEmailLayerBoundV2) return;
+    btn._professionalEmailLayerBoundV2 = true;
+
+    btn.addEventListener("click", prepareProfessionalCustomerEmail, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
