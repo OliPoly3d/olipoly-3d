@@ -810,6 +810,17 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   }
 }
 
+
+.manual-override-active{
+  border-style:solid!important;
+  background:linear-gradient(135deg,rgba(236,72,153,.10),rgba(167,139,250,.10))!important;
+  border-color:rgba(236,72,153,.24)!important;
+  color:#5f3b68!important;
+}
+.manual-override-active strong{
+  color:#241b2b;
+}
+
 </style>
 </head>
 <body>
@@ -859,6 +870,8 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
       <div class="summary"><span>Margin %</span><strong id="sumMargin">0.0%</strong></div>
       <div class="summary"><span>Quote Confidence</span><strong id="quoteConfidence" class="confidence-ok">Ready</strong></div>
     </section>
+
+    <div class="note hidden" id="manualPiecePriceNotice"></div>
 
 <section class="card saved-quotes-inline" id="savedQuotesInline">
       <div class="saved-inline-head">
@@ -999,6 +1012,8 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
             <div><label for="profitMode">Profit Mode</label><select id="profitMode"><option value="percent">Percent Markup</option><option value="flat">Flat Profit</option></select></div>
             <div><label for="suggestedMode">Suggested Profit</label><select id="suggestedMode"><option value="standard">Standard</option><option value="aggressive">Aggressive</option><option value="off">Off</option></select></div>
             <div><label for="profitValue">Profit Value</label><input id="profitValue" type="number" min="0" step="0.01" value="35" /></div>
+            <div><label for="manualPiecePriceOverride">Manual Piece Price Override ($ / piece)</label><input id="manualPiecePriceOverride" type="number" min="0" step="0.01" placeholder="Blank = calculated pricing" /></div>
+            <div><label for="manualPiecePriceReason">Override Reason / Notes</label><input id="manualPiecePriceReason" placeholder="Optional: bulk price, strategic quote, matched price..." /></div>
             <div><label for="discount">Discount</label><input id="discount" type="number" min="0" step="0.01" value="0" /></div>
             <div><label for="taxPreset">Tax Preset</label><select id="taxPreset"><option value="custom">Custom</option><option value="portage">Portage 7.25%</option><option value="summit">Summit 6.75%</option><option value="cuyahoga">Cuyahoga 8%</option><option value="franklin">Franklin 7.5%</option><option value="out_of_state">Out of State / No Tax</option></select></div>
             <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="0" /></div>

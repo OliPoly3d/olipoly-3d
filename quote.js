@@ -1634,3 +1634,171 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("beforeprint", cleanupPdfV6);
   });
 })();
+
+
+/* Manual Piece Price Override Layer V1
+   Adds an advanced override for known per-piece quote pricing.
+   Blank override = normal quote-tool calculation.
+   Filled override = override price × quantity, then applies shipping/delivery, discount, rounding, sales tax, deposit, and balance displays.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function num(id) {
+    const el = $(id);
+    return Number(String(el?.value || "").replace(/[^0-9.-]/g, "")) || 0;
+  }
+
+  function money(value) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+  }
+
+  function setTextAll(id, value) {
+    document.querySelectorAll(`#${id}`).forEach((el) => {
+      el.textContent = value;
+    });
+  }
+
+  function roundTo(value, increment) {
+    const inc = Number(increment) || 0;
+    if (!inc) return value;
+    return Math.round(value / inc) * inc;
+  }
+
+  function overrideActive() {
+    return num("manualPiecePriceOverride") > 0;
+  }
+
+  function applyManualPiecePriceOverride() {
+    const override = num("manualPiecePriceOverride");
+    const notice = $("manualPiecePriceNotice");
+
+    if (!override) {
+      if (notice) {
+        notice.classList.add("hidden");
+        notice.classList.remove("manual-override-active");
+        notice.innerHTML = "";
+      }
+      return;
+    }
+
+    const qty = Math.max(1, Math.round(num("qty") || 1));
+    const shipping = num("simpleShipping");
+    const discount = num("discount");
+    const taxRate = num("salesTax");
+    const roundingMode = num("roundingMode");
+    const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
+
+    const itemSubtotal = override * qty;
+    const beforeTax = Math.max(0, itemSubtotal + shipping - discount);
+    const roundedBeforeTax = Math.max(0, roundTo(beforeTax, roundingMode));
+    const tax = roundedBeforeTax * (taxRate / 100);
+    const final = roundedBeforeTax + tax;
+    const deposit = final * (depositPercent / 100);
+    const balance = Math.max(0, final - deposit);
+    const perItemFinal = qty ? final / qty : final;
+
+    const reason = ($("manualPiecePriceReason")?.value || "").trim();
+
+    setTextAll("sumQuote", money(final));
+    setTextAll("sumPerItem", money(perItemFinal));
+    setTextAll("sumDeposit", money(deposit));
+    setTextAll("sumBalance", money(balance));
+
+    setTextAll("outPerItem", money(override));
+    setTextAll("outPreDiscount", money(itemSubtotal + shipping));
+    setTextAll("outDiscount", money(discount));
+    setTextAll("outBeforeTax", money(beforeTax));
+    setTextAll("outRoundedBeforeTax", money(roundedBeforeTax));
+    setTextAll("outTax", money(tax));
+    setTextAll("outDeposit", money(deposit));
+    setTextAll("outBalance", money(balance));
+    setTextAll("outFinal", money(final));
+
+    setTextAll("pdfPerItem", money(override));
+    setTextAll("pdfSubtotal", money(roundedBeforeTax));
+    setTextAll("pdfTax", money(tax));
+    setTextAll("pdfTotal", money(final));
+    setTextAll("pdfDeposit", money(deposit));
+    setTextAll("pdfBalance", money(balance));
+    setTextAll("pdfInvoiceAmount", money(final));
+    setTextAll("pdfHeroTotal", money(final));
+    setTextAll("pdfHeroDue", money(deposit || final));
+
+    const confidence = $("quoteConfidence");
+    if (confidence) {
+      confidence.textContent = "Manual Override";
+      confidence.className = "confidence-ok";
+    }
+
+    if (notice) {
+      notice.classList.remove("hidden");
+      notice.classList.add("manual-override-active");
+      notice.innerHTML =
+        `<strong>Manual piece price override applied:</strong> ${money(override)} × ${qty} piece${qty === 1 ? "" : "s"}` +
+        `${shipping ? ` + ${money(shipping)} shipping/delivery` : ""}` +
+        `${discount ? ` − ${money(discount)} discount` : ""}` +
+        `${taxRate ? ` + ${taxRate}% sales tax` : ""}` +
+        `${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`;
+    }
+  }
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._manualPieceOverridePatched) return false;
+
+    const originalRender = window.render;
+    window.render = function patchedManualPieceOverrideRender(...args) {
+      const result = originalRender.apply(this, args);
+      setTimeout(applyManualPiecePriceOverride, 0);
+      return result;
+    };
+    window.render._manualPieceOverridePatched = true;
+    return true;
+  }
+
+  function bindManualOverrideInputs() {
+    [
+      "manualPiecePriceOverride",
+      "manualPiecePriceReason",
+      "qty",
+      "simpleShipping",
+      "discount",
+      "salesTax",
+      "roundingMode",
+      "depositPercent"
+    ].forEach((id) => {
+      const el = $(id);
+      if (!el || el._manualOverrideBound) return;
+      el._manualOverrideBound = true;
+      ["input", "change"].forEach((eventName) => {
+        el.addEventListener(eventName, () => {
+          if (typeof window.render === "function" && !overrideActive()) {
+            window.render();
+          }
+          setTimeout(applyManualPiecePriceOverride, 0);
+        });
+      });
+    });
+  }
+
+  function initManualPiecePriceOverride() {
+    bindManualOverrideInputs();
+    if (!patchRender()) {
+      const timer = setInterval(() => {
+        bindManualOverrideInputs();
+        if (patchRender()) {
+          clearInterval(timer);
+          if (typeof window.render === "function") window.render();
+          else applyManualPiecePriceOverride();
+        }
+      }, 250);
+      setTimeout(() => clearInterval(timer), 5000);
+    } else {
+      if (typeof window.render === "function") window.render();
+      else applyManualPiecePriceOverride();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initManualPiecePriceOverride);
+})();
+
