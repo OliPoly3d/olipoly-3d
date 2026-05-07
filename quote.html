@@ -887,6 +887,118 @@ body.professional-pdf-mode #pdfPaymentCta{
   text-decoration:underline;
 }
 
+
+.email-preview-modal.hidden{display:none!important}
+.email-preview-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:20px;
+}
+.email-preview-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(20,12,28,.62);
+  backdrop-filter:blur(8px);
+}
+.email-preview-dialog{
+  position:relative;
+  z-index:1;
+  width:min(980px,96vw);
+  max-height:92vh;
+  overflow:hidden;
+  border-radius:28px;
+  background:linear-gradient(180deg,#fff7fb,#ffffff);
+  border:1px solid rgba(222,111,184,.28);
+  box-shadow:0 28px 90px rgba(45,22,54,.34);
+  display:flex;
+  flex-direction:column;
+}
+.email-preview-head{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  padding:22px 24px 16px;
+  border-bottom:1px solid rgba(222,111,184,.18);
+  background:
+    radial-gradient(circle at top left,rgba(222,111,184,.20),transparent 34%),
+    radial-gradient(circle at top right,rgba(157,124,255,.18),transparent 30%),
+    #fff7fb;
+}
+.email-preview-kicker{
+  display:inline-flex;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(222,111,184,.12);
+  border:1px solid rgba(222,111,184,.20);
+  color:#7c4a82;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.email-preview-head h3{
+  margin:10px 0 4px;
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:1.55rem;
+  color:#241b2b;
+}
+.email-preview-head p{
+  margin:0;
+  color:#725b78;
+  line-height:1.45;
+}
+.email-preview-close{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:1px solid rgba(222,111,184,.24);
+  background:#fff;
+  color:#8d4e8f;
+  font-size:1.5rem;
+  font-weight:900;
+  cursor:pointer;
+}
+.email-preview-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:14px 24px;
+  border-bottom:1px solid rgba(222,111,184,.14);
+}
+.email-preview-note{
+  margin:0 24px 14px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(157,124,255,.08);
+  border:1px solid rgba(157,124,255,.16);
+  color:#5e4b67;
+  line-height:1.45;
+}
+.email-preview-frame{
+  flex:1;
+  min-height:420px;
+  overflow:hidden;
+  background:#f7eef5;
+  border-top:1px solid rgba(222,111,184,.14);
+}
+.email-preview-frame iframe{
+  width:100%;
+  height:100%;
+  min-height:520px;
+  border:0;
+  background:white;
+}
+@media(max-width:720px){
+  .email-preview-dialog{max-height:94vh;border-radius:22px}
+  .email-preview-head{padding:18px;align-items:flex-start}
+  .email-preview-actions{padding:12px 18px}
+  .email-preview-note{margin:0 18px 12px}
+  .email-preview-frame iframe{min-height:460px}
+}
+
 </style>
 </head>
 <body>
@@ -1322,5 +1434,34 @@ body.professional-pdf-mode #pdfPaymentCta{
   <script src="quote.js"></script>
 
   <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
+
+  <div class="email-preview-modal hidden" id="professionalEmailModal" aria-hidden="true">
+    <div class="email-preview-backdrop" id="professionalEmailBackdrop"></div>
+    <div class="email-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="professionalEmailTitle">
+      <div class="email-preview-head">
+        <div>
+          <span class="email-preview-kicker">Professional Email Preview</span>
+          <h3 id="professionalEmailTitle">OliPoly 3D customer email</h3>
+          <p>Review the branded email, copy the rich version, then open Gmail and paste it into the draft.</p>
+        </div>
+        <button class="email-preview-close" id="professionalEmailCloseBtn" type="button" aria-label="Close email preview">×</button>
+      </div>
+
+      <div class="email-preview-actions">
+        <button class="btn" id="copyProfessionalEmailRichBtn" type="button">Copy Rich Email</button>
+        <button class="btn-ghost" id="openProfessionalGmailBtn" type="button">Open Gmail Draft</button>
+        <button class="btn-ghost" id="downloadProfessionalEmailHtmlBtn" type="button">Download HTML</button>
+      </div>
+
+      <div class="email-preview-note" id="professionalEmailModalMessage">
+        Tip: Click <strong>Copy Rich Email</strong>, open Gmail, select the plain fallback text, then paste.
+      </div>
+
+      <div class="email-preview-frame">
+        <iframe id="professionalEmailPreviewFrame" title="Professional email preview"></iframe>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

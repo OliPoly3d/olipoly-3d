@@ -2302,13 +2302,19 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 
-/* Professional Prepare Customer Email Layer V2
-   Keeps existing consumer/customer email behavior intact.
-   For business/PO/customer-terms quotes, creates a branded procurement-style
-   OliPoly email HTML and a clean plain-text Gmail fallback.
+/* Professional Prepare Customer Email Layer V3
+   Keeps consumer email behavior intact.
+   For professional/PO/customer-terms quotes, opens a branded email preview modal.
 */
 (() => {
   const $ = (id) => document.getElementById(id);
+
+  let lastProfessionalEmail = {
+    html: "",
+    plain: "",
+    subject: "",
+    to: ""
+  };
 
   function getField(id) {
     return ($(id)?.value || "").trim();
@@ -2387,7 +2393,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function buildProfessionalPlainEmail() {
     const d = professionalData();
-
     const refs = [
       d.quoteNumber ? `Quote: ${d.quoteNumber}` : "",
       d.companyName ? `Company: ${d.companyName}` : "",
@@ -2554,50 +2559,153 @@ https://olipoly3d.com`;
     window.open(gmailUrl, "_blank", "noopener,noreferrer");
   }
 
-  async function prepareProfessionalCustomerEmail(event) {
+  function writePreviewFrame(html) {
+    const frame = $("professionalEmailPreviewFrame");
+    if (!frame) return;
+
+    const doc = frame.contentDocument || frame.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#fff7fb;">${html}</body></html>`);
+    doc.close();
+  }
+
+  function openModal() {
+    const modal = $("professionalEmailModal");
+    if (!modal) return;
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal() {
+    const modal = $("professionalEmailModal");
+    if (!modal) return;
+
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  async function copyRichEmail() {
+    if (!lastProfessionalEmail.html) return;
+
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const htmlBlob = new Blob([lastProfessionalEmail.html], { type: "text/html" });
+        const textBlob = new Blob([lastProfessionalEmail.plain], { type: "text/plain" });
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": htmlBlob,
+            "text/plain": textBlob
+          })
+        ]);
+      } else {
+        await navigator.clipboard.writeText(lastProfessionalEmail.html);
+      }
+
+      const msg = $("professionalEmailModalMessage");
+      if (msg) msg.innerHTML = "Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.";
+    } catch (err) {
+      const msg = $("professionalEmailModalMessage");
+      if (msg) msg.textContent = "Could not copy rich HTML automatically. Try Download HTML instead.";
+    }
+  }
+
+  function downloadHtmlEmail() {
+    if (!lastProfessionalEmail.html) return;
+
+    const blob = new Blob([lastProfessionalEmail.html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const safeQuote = (getField("quoteNumber") || "quote").replace(/[^a-z0-9_-]/gi, "-");
+
+    a.href = url;
+    a.download = `olipoly-professional-email-${safeQuote}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 600);
+  }
+
+  function openProfessionalGmailDraft() {
+    openGmailCompose(lastProfessionalEmail.to, lastProfessionalEmail.subject, lastProfessionalEmail.plain);
+  }
+
+  function prepareProfessionalCustomerEmail(event) {
     if (!isProfessionalQuote()) return;
 
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
 
-    const btn = $("prepareCustomerEmailBtn");
-
     try {
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = "Preparing Pro Email...";
-      }
-
       if (typeof window.render === "function") window.render();
 
-      const plainEmail = buildProfessionalPlainEmail();
-      const htmlEmail = buildProfessionalHtmlEmail();
-      const customerEmail = professionalData().customerEmail;
-      const subject = makeSubject();
+      const plain = buildProfessionalPlainEmail();
+      const html = buildProfessionalHtmlEmail();
+      const d = professionalData();
 
-      try {
-        await navigator.clipboard.writeText(htmlEmail);
-        alert("Branded professional email HTML copied to your clipboard. Gmail will open with a plain prefilled draft. Attach the professional quote PDF, then paste the styled HTML if desired before sending.");
-      } catch (clipErr) {
-        alert("Gmail will open with a plain prefilled professional draft. Attach the professional quote PDF before sending.");
-      }
+      lastProfessionalEmail = {
+        html,
+        plain,
+        subject: makeSubject(),
+        to: d.customerEmail
+      };
 
-      openGmailCompose(customerEmail, subject, plainEmail);
+      writePreviewFrame(html);
+      openModal();
     } catch (err) {
       alert(`Could not prepare professional customer email:\n\n${err.message || err}`);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Prepare Customer Email";
-      }
     }
   }
 
+  function bindModalButtons() {
+    const close = $("professionalEmailCloseBtn");
+    const backdrop = $("professionalEmailBackdrop");
+    const copy = $("copyProfessionalEmailRichBtn");
+    const open = $("openProfessionalGmailBtn");
+    const download = $("downloadProfessionalEmailHtmlBtn");
+
+    if (close && !close._emailModalBound) {
+      close._emailModalBound = true;
+      close.addEventListener("click", closeModal);
+    }
+
+    if (backdrop && !backdrop._emailModalBound) {
+      backdrop._emailModalBound = true;
+      backdrop.addEventListener("click", closeModal);
+    }
+
+    if (copy && !copy._emailModalBound) {
+      copy._emailModalBound = true;
+      copy.addEventListener("click", copyRichEmail);
+    }
+
+    if (open && !open._emailModalBound) {
+      open._emailModalBound = true;
+      open.addEventListener("click", openProfessionalGmailDraft);
+    }
+
+    if (download && !download._emailModalBound) {
+      download._emailModalBound = true;
+      download.addEventListener("click", downloadHtmlEmail);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+  }
+
   function initProfessionalEmailLayer() {
+    bindModalButtons();
+
     const btn = $("prepareCustomerEmailBtn");
-    if (!btn || btn._professionalEmailLayerBoundV2) return;
-    btn._professionalEmailLayerBoundV2 = true;
+    if (!btn || btn._professionalEmailLayerBoundV3) return;
+    btn._professionalEmailLayerBoundV3 = true;
 
     btn.addEventListener("click", prepareProfessionalCustomerEmail, true);
   }
