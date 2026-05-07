@@ -178,27 +178,7 @@ body.ready-send .customer-priority{border-color:rgba(236,72,153,.28);box-shadow:
   .pdf-grid{grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px 8px}.pdf-panel{padding:9px 10px;border-radius:12px;background:#fff!important;color:#111!important;border:1px solid #d9deea}
   .pdf-line{padding:3px 0;gap:10px}.pdf-line strong{font-size:.84rem}.pdf-totals{padding:0 16px 8px;gap:8px}.pdf-total-card{padding:9px 10px;border-radius:12px;background:#f8fafc!important;color:#111!important;border:1px solid #cfd8e6}
   .pdf-footer{padding:0 16px 12px;gap:8px}.pdf-note{padding:9px 10px;border-radius:12px;background:#fff!important;color:#111!important;border:1px solid #d9deea;line-height:1.24;font-size:.84rem;max-height:1.55in;overflow:hidden}
-  #pdfChecklist{font-size:.82rem;line-heig
-            <div class="pdf-panel professional-po-instructions-panel">
-              <div class="doc-chip">Purchase Order &amp; Order Processing</div>
-              <div class="pdf-copy" id="pdfProfessionalPoInstructions">
-                <p>To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.</p>
-
-                <p>Please include:</p>
-
-                <ul class="pdf-professional-po-list">
-                  <li>Billing address</li>
-                  <li>Shipping address</li>
-                  <li>Purchasing contact information</li>
-                  <li>Required customer part numbers or references</li>
-                  <li>Any required packaging labels, receiving instructions, or routing information</li>
-                </ul>
-
-                <p>Once received, OliPoly 3D will generate an OP-order number and begin scheduling manufacturing and fulfillment.</p>
-              </div>
-            </div>
-
-ht:1.18;max-height:1.25in;overflow:hidden}
+  #pdfChecklist{font-size:.82rem;line-height:1.18;max-height:1.25in;overflow:hidden}
   #pdfCustomerNotes,#pdfAssumptions,#pdfTrackingInfo,#pdfQuoteTerms,#pdfInvoiceTerms{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden}
   .professional-look #pdfCustomerNotes,.professional-look #pdfAssumptions,.professional-look #pdfTrackingInfo,.professional-look #pdfQuoteTerms,.professional-look #pdfInvoiceTerms{-webkit-line-clamp:6}
 }
@@ -846,24 +826,22 @@ body:not([data-lite-quote-type="business"]):not([data-lite-quote-type="po"]) .pr
 .manual-override-active strong{color:#241b2b}
 
 
-.professional-po-instructions-panel{
-  margin-bottom:12px;
-}
-
-.pdf-professional-po-list{
-  margin:10px 0 0 18px;
-  padding:0;
-}
-
-.pdf-professional-po-list li{
-  margin-bottom:4px;
-}
-
-body[data-lite-quote-type="business"] .pdf-pay-panel,
-body[data-lite-quote-type="po"] .pdf-pay-panel,
-body[data-lite-quote-type="business"] #pdfPaymentSection,
-body[data-lite-quote-type="po"] #pdfPaymentSection{
+body.professional-pdf-mode #pdfNextSteps,
+body.professional-pdf-mode #pdfPaymentCta,
+body.professional-pdf-mode #pdfQuoteTerms{
   display:none!important;
+}
+body:not(.professional-pdf-mode) #pdfProfessionalPoInstructions{
+  display:none!important;
+}
+body.professional-pdf-mode #pdfProfessionalPoInstructions{
+  display:block!important;
+}
+@media print{
+  body.professional-pdf-mode #pdfProfessionalPoInstructions{
+    max-height:none!important;
+    line-height:1.18!important;
+  }
 }
 
 </style>
@@ -1277,6 +1255,13 @@ body[data-lite-quote-type="po"] #pdfPaymentSection{
         <div class="pdf-footer">
           <div class="pdf-note hidden" id="pdfCustomerNotes"></div>
           <div class="pdf-note" id="pdfAssumptions"></div>
+
+          <div class="pdf-note professional-po-instructions-panel hidden" id="pdfProfessionalPoInstructions">
+            <strong>Purchase Order &amp; Order Processing</strong><br>
+            To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.<br><br>
+            Please include: billing address; shipping address; purchasing contact information; required customer part numbers or references; and any required packaging labels, receiving instructions, or routing information.<br><br>
+            Once received, OliPoly 3D will generate an OP-order number and begin scheduling manufacturing and fulfillment.
+          </div>
           <div class="pdf-note quote-only" id="pdfTrackingInfo"></div>
           <div class="pdf-note quote-only" id="pdfQuoteTerms"></div>
           <div class="pdf-note invoice-only hidden" id="pdfInvoiceTerms"></div>
