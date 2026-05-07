@@ -2367,12 +2367,16 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
-/* Professional PO PDF Workflow Layer V5 */
+/* Professional PO PDF Workflow Layer V7 */
 (() => {
   const $ = (id) => document.getElementById(id);
 
   function get(id){
     return ($(id)?.value || "").trim();
+  }
+
+  function text(id){
+    return ($(id)?.textContent || "").trim();
   }
 
   function isProfessional(){
@@ -2386,14 +2390,86 @@ https://olipoly3d.com`;
       customer_terms: "Customer Standard Terms / PO Terms",
       net_30: "Net 30",
       net_15: "Net 15",
-      due_on_receipt: "Due on Receipt"
+      net_45: "Net 45",
+      due_on_receipt: "Due on Receipt",
+      deposit_to_start: "Deposit to Start",
+      paid_in_full: "Paid in Full",
+      full_due_before_start: "Full Payment Before Start",
+      due_before_delivery: "Due Before Delivery"
     };
     return map[value] || value || "";
+  }
+
+  function updateTopPaymentTermsBox(){
+    const terms = paymentTermsLabel(get("paymentTerms"));
+    if(!terms) return;
+
+    // Known possible IDs first.
+    [
+      "pdfPaymentTerms",
+      "pdfPaymentTermsValue",
+      "pdfHeroPaymentTerms",
+      "pdfTerms",
+      "pdfTermsValue"
+    ].forEach((id)=>{
+      const el = $(id);
+      if(el) el.textContent = terms;
+    });
+
+    // Robust fallback: find the top metric/card/line whose label says Payment Terms,
+    // then replace its value even if the original template reused the total amount.
+    const root = document.querySelector(".pdf-sheet") || document;
+    const candidates = Array.from(root.querySelectorAll("*")).filter((el)=>{
+      const own = (el.textContent || "").trim().toLowerCase();
+      return own === "payment terms";
+    });
+
+    candidates.forEach((labelEl)=>{
+      const container =
+        labelEl.closest(".pdf-metric") ||
+        labelEl.closest(".summary") ||
+        labelEl.closest(".pdf-line") ||
+        labelEl.parentElement;
+
+      if(!container) return;
+
+      const valueEl =
+        container.querySelector("strong") ||
+        container.querySelector("b") ||
+        Array.from(container.children).find((child)=>child !== labelEl && (child.textContent || "").trim());
+
+      if(valueEl) valueEl.textContent = terms;
+    });
+  }
+
+  function findFutureOrderNumber(){
+    const candidates = [
+      get("orderNumber"),
+      get("convertedOrderNumber"),
+      get("acceptedOrderNumber"),
+      get("opOrderNumber"),
+      text("pdfOrderNumber"),
+      text("pdfAcceptedOrderNumber"),
+      text("pdfConvertedOrderNumber"),
+      text("pdfOpOrderNumber")
+    ].filter(Boolean);
+
+    for(const value of candidates){
+      const match = String(value).match(/OP-\d{3,}/i);
+      if(match) return match[0].toUpperCase();
+    }
+
+    const pdfSheet = document.querySelector(".pdf-sheet") || document;
+    const allText = pdfSheet.textContent || "";
+    const match = allText.match(/OP-\d{3,}/i);
+    return match ? match[0].toUpperCase() : "";
   }
 
   function applyProfessionalPoPdfWorkflow(){
     const pro = isProfessional();
     document.body.classList.toggle("professional-pdf-mode", pro);
+
+    updateTopPaymentTermsBox();
 
     const po = $("pdfProfessionalPoInstructions");
     const tracking = $("pdfTrackingInfo");
@@ -2402,18 +2478,7 @@ https://olipoly3d.com`;
     const quoteTerms = $("pdfQuoteTerms");
     const invoiceTerms = $("pdfInvoiceTerms");
 
-    // Set payment terms box correctly
-    const paymentTerms = $("pdfPaymentTerms");
-    if(paymentTerms){
-      const terms = paymentTermsLabel(get("paymentTerms"));
-      if(terms) paymentTerms.textContent = terms;
-    }
-
-    const opNumber =
-      get("orderNumber") ||
-      get("convertedOrderNumber") ||
-      document.querySelector("#pdfOrderNumber")?.textContent?.trim() ||
-      "";
+    const opNumber = findFutureOrderNumber();
 
     if (po) {
       po.classList.toggle("hidden", !pro);
@@ -2427,19 +2492,16 @@ https://olipoly3d.com`;
 
     if (tracking && pro) {
       const trackingUrl = "https://olipoly3d.com/track.html";
-
       tracking.style.display = "block";
       tracking.classList.remove("hidden");
-
       tracking.innerHTML =
         `<strong>Order Tracking</strong><br>` +
-        `${opNumber ? `Track this project using order number <strong>${opNumber}</strong>.` : `Track this project using the assigned OP-order number.`}<br>` +
+        `${opNumber ? `Track this project using order number <strong>${opNumber}</strong>.` : `Track this project using the OP-order number shown above.`}<br>` +
         `Tracking Portal: <a href="${trackingUrl}" target="_blank">${trackingUrl}</a>`;
     }
 
     [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
       if (!el) return;
-
       if (pro) {
         el.style.display = "none";
         el.classList.add("hidden");
@@ -2449,8 +2511,8 @@ https://olipoly3d.com`;
     });
 
     document.querySelectorAll(".doc-chip").forEach((chip) => {
-      const text = (chip.textContent || "").trim().toLowerCase();
-      if ((text === "next steps" || text === "pay") && pro) {
+      const chipText = (chip.textContent || "").trim().toLowerCase();
+      if ((chipText === "next steps" || chipText === "pay") && pro) {
         const panel = chip.closest(".pdf-note") || chip.closest(".pdf-panel") || chip.parentElement;
         if(panel){
           panel.style.display = "none";
@@ -2461,36 +2523,27 @@ https://olipoly3d.com`;
   }
 
   function patchRender(){
-    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV5) return false;
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV7) return false;
 
     const original = window.render;
-
-    window.render = function patchedProfessionalPoWorkflowV5(...args){
+    window.render = function patchedProfessionalPoWorkflowV7(...args){
       const result = original.apply(this,args);
-
-      [0,100,300,700,1400].forEach((ms)=>{
-        setTimeout(applyProfessionalPoPdfWorkflow,ms);
-      });
-
+      [0,100,300,700,1400,2200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
       return result;
     };
 
-    window.render._professionalPoPdfWorkflowV5 = true;
+    window.render._professionalPoPdfWorkflowV7 = true;
     return true;
   }
 
   function bind(){
     ["liteQuoteType","professionalMode","paymentTerms","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
       const el = $(id);
-      if(!el || el._professionalPoPdfWorkflowV5Bound) return;
-
-      el._professionalPoPdfWorkflowV5Bound = true;
-
+      if(!el || el._professionalPoPdfWorkflowV7Bound) return;
+      el._professionalPoPdfWorkflowV7Bound = true;
       ["input","change","click"].forEach((eventName)=>{
         el.addEventListener(eventName,()=>{
-          [0,100,300,700,1400].forEach((ms)=>{
-            setTimeout(applyProfessionalPoPdfWorkflow,ms);
-          });
+          [0,100,300,700,1400,2200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
         },{capture:true});
       });
     });
@@ -2508,8 +2561,7 @@ https://olipoly3d.com`;
       applyProfessionalPoPdfWorkflow();
     },250);
 
-    setTimeout(()=>clearInterval(timer),8000);
-
+    setTimeout(()=>clearInterval(timer),9000);
     applyProfessionalPoPdfWorkflow();
   }
 
