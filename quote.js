@@ -172,7 +172,7 @@
       summary: "Most formal format. Shows company/contact/PO fields, professional PDF styling, and invoice-ready terms.",
       orderType: "business_bulk",
       professionalMode: "on",
-      paymentTerms: "net_30",
+      paymentTerms: "customer_terms",
       depositPercent: 0,
       invoiceType: "full",
       showBusinessFields: true,
@@ -1974,6 +1974,162 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       applySoon();
     }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+
+
+/* Professional Customer Terms / PO Workflow Layer V1
+   Adds a Customer Standard Terms / PO Terms payment option and adjusts
+   professional PDF next-step language for corporate purchasing workflows.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function get(id) {
+    return ($(id)?.value || "").trim();
+  }
+
+  function isProfessionalQuote() {
+    const type = get("liteQuoteType") || document.body.dataset.liteQuoteType || "";
+    const mode = get("professionalMode");
+    return type === "business" || type === "po" || mode === "on";
+  }
+
+  function ensureCustomerTermsOption() {
+    const select = $("paymentTerms");
+    if (!select || select.querySelector('option[value="customer_terms"]')) return;
+
+    const opt = document.createElement("option");
+    opt.value = "customer_terms";
+    opt.textContent = "Customer Standard Terms / PO Terms";
+
+    const net30 = select.querySelector('option[value="net_30"]');
+    if (net30?.nextSibling) select.insertBefore(opt, net30.nextSibling);
+    else select.appendChild(opt);
+  }
+
+  function customerTermsText() {
+    const po = get("poNumber");
+    const customerPart = get("customerPartNumber");
+    const oliPart = get("olipolyPartNumber");
+
+    let parts = [
+      "This quote is prepared for customer purchasing review.",
+      "To approve, please reply by email or issue a purchase order for the items, quantities, and pricing listed above."
+    ];
+
+    if (po) parts.push(`Reference PO: ${po}.`);
+    if (customerPart || oliPart) {
+      parts.push(
+        `Part references: ${customerPart ? `Customer Part # ${customerPart}` : ""}${customerPart && oliPart ? " / " : ""}${oliPart ? `OliPoly Part # ${oliPart}` : ""}.`
+      );
+    }
+
+    parts.push("Payment will follow the customer’s approved standard terms unless otherwise agreed in writing.");
+
+    return parts.join(" ");
+  }
+
+  function professionalNextStepsText() {
+    return "Review this quote and approve by replying via email or issuing a purchase order for the items, quantities, and pricing listed above. Once accepted, OliPoly 3D will create an OP- order number for production tracking and fulfillment coordination.";
+  }
+
+  function applyCustomerTermsWorkflow() {
+    ensureCustomerTermsOption();
+
+    const terms = get("paymentTerms");
+    const professional = isProfessionalQuote();
+
+    const pdfQuoteTerms = $("pdfQuoteTerms");
+    const pdfInvoiceTerms = $("pdfInvoiceTerms");
+    const pdfTrackingInfo = $("pdfTrackingInfo");
+    const pdfNextActions = $("pdfNextActions");
+    const pdfCustomerNotes = $("pdfCustomerNotes");
+
+    if (terms === "customer_terms") {
+      const text = customerTermsText();
+
+      if (pdfQuoteTerms) pdfQuoteTerms.textContent = text;
+      if (pdfInvoiceTerms) pdfInvoiceTerms.textContent = text;
+
+      // Avoid payment-button style wording for corporate terms.
+      if (pdfTrackingInfo && professional) {
+        pdfTrackingInfo.textContent = professionalNextStepsText();
+      }
+
+      // Some quote templates use customer notes / next action sections instead of tracking info.
+      if (pdfNextActions && professional) {
+        pdfNextActions.textContent = professionalNextStepsText();
+      }
+
+      return;
+    }
+
+    // Even if terms are Net 30, PO professional quotes should still use realistic workflow language.
+    if (professional && (terms === "net_30" || terms === "due_on_receipt" || terms === "invoice")) {
+      if (pdfTrackingInfo) pdfTrackingInfo.textContent = professionalNextStepsText();
+      if (pdfNextActions) pdfNextActions.textContent = professionalNextStepsText();
+    }
+  }
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._customerTermsPatched) return false;
+    const original = window.render;
+    window.render = function patchedCustomerTermsRender(...args) {
+      const result = original.apply(this, args);
+      setTimeout(applyCustomerTermsWorkflow, 0);
+      setTimeout(applyCustomerTermsWorkflow, 250);
+      setTimeout(applyCustomerTermsWorkflow, 700);
+      return result;
+    };
+    window.render._customerTermsPatched = true;
+    return true;
+  }
+
+  function bind() {
+    ["paymentTerms", "liteQuoteType", "professionalMode", "poNumber", "customerPartNumber", "olipolyPartNumber"].forEach((id) => {
+      const el = $(id);
+      if (!el || el._customerTermsBound) return;
+      el._customerTermsBound = true;
+      ["input", "change"].forEach((eventName) => {
+        el.addEventListener(eventName, () => {
+          if (typeof window.render === "function") window.render();
+          setTimeout(applyCustomerTermsWorkflow, 80);
+        });
+      });
+    });
+
+    ["customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn"].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn._customerTermsPrintBound) return;
+      btn._customerTermsPrintBound = true;
+      btn.addEventListener("click", () => {
+        setTimeout(applyCustomerTermsWorkflow, 0);
+        setTimeout(applyCustomerTermsWorkflow, 200);
+        setTimeout(applyCustomerTermsWorkflow, 800);
+      }, { capture: true });
+    });
+
+    window.addEventListener("beforeprint", applyCustomerTermsWorkflow, { capture: true });
+  }
+
+  function init() {
+    ensureCustomerTermsOption();
+    bind();
+
+    const timer = setInterval(() => {
+      ensureCustomerTermsOption();
+      bind();
+      patchRender();
+      applyCustomerTermsWorkflow();
+    }, 250);
+
+    setTimeout(() => clearInterval(timer), 6000);
+
+    patchRender();
+    applyCustomerTermsWorkflow();
   }
 
   document.addEventListener("DOMContentLoaded", init);
