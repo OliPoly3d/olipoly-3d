@@ -1892,7 +1892,13 @@ document.addEventListener("DOMContentLoaded", () => {
     setTextAll("pdfBalance", money(v.balance));
     setTextAll("pdfInvoiceAmount", money(v.final));
     setTextAll("pdfHeroTotal", money(v.final));
-    setTextAll("pdfHeroDue", money(v.deposit || v.final));
+    if ((document.getElementById("pdfHeroDueLabel")?.textContent || "").trim().toLowerCase() === "payment terms") {
+      const select = document.getElementById("paymentTerms");
+      const selectedTerms = (select?.options?.[select.selectedIndex]?.textContent || select?.value || "").trim();
+      setTextAll("pdfHeroDue", selectedTerms || "Customer Standard Terms / PO Terms");
+    } else {
+      setTextAll("pdfHeroDue", money(v.deposit || v.final));
+    }
 
     setPdfAssumptions(v);
 
@@ -2367,10 +2373,8 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
-/* Professional PO PDF Workflow Layer V11
-   Fixes the top hero summary cards directly:
-   - middle hero card becomes Payment Terms and pulls from #paymentTerms dropdown text
-   - right hero card becomes Lead Time and pulls from #turnaround
+/* Professional PO PDF Workflow Layer V12
+   Directly controls the top hero cards and professional PO sections.
 */
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -2383,46 +2387,27 @@ https://olipoly3d.com`;
     return ($(id)?.textContent || "").trim();
   }
 
-  function isProfessional(){
-    const type = get("liteQuoteType") || document.body.dataset.liteQuoteType || "";
-    const mode = get("professionalMode");
-    return type === "business" || type === "po" || mode === "on";
-  }
-
   function selectedPaymentTermsText(){
     const select = $("paymentTerms");
-    if (!select) return "";
+    if (!select) return "Customer Standard Terms / PO Terms";
     const option = select.options?.[select.selectedIndex];
-    return (option?.textContent || select.value || "").trim();
+    return (option?.textContent || select.value || "Customer Standard Terms / PO Terms").trim();
   }
 
   function selectedLeadTimeText(){
     return get("turnaround") || text("pdfTurnaround") || "To be confirmed";
   }
 
-  function fixHeroSummaryCards(){
-    const pro = isProfessional();
-    if(!pro) return;
-
-    const terms = selectedPaymentTermsText();
-    const lead = selectedLeadTimeText();
-
-    const dueLabel = $("pdfHeroDueLabel");
-    const dueValue = $("pdfHeroDue");
-    const timeLabel = $("pdfHeroTimeLabel");
-    const timeValue = $("pdfHeroTime");
-
-    if(dueLabel) dueLabel.textContent = "Payment Terms";
-    if(dueValue && terms) dueValue.textContent = terms;
-
-    if(timeLabel) timeLabel.textContent = "Lead Time";
-    if(timeValue && lead) timeValue.textContent = lead;
+  function isProfessional(){
+    const type = get("liteQuoteType") || document.body.dataset.liteQuoteType || "";
+    const mode = get("professionalMode");
+    const terms = get("paymentTerms");
+    return type === "business" || type === "po" || mode === "on" || terms === "customer_terms";
   }
 
   function findFutureOrderNumber(){
     const candidates = [
       get("orderNumber"),
-      text("pdfOrderPreview"),
       text("pdfOrderNumber"),
       text("pdfAcceptedOrderNumber"),
       text("pdfConvertedOrderNumber"),
@@ -2439,22 +2424,36 @@ https://olipoly3d.com`;
     return match ? match[0].toUpperCase() : "";
   }
 
-  function applyProfessionalPoPdfWorkflow(){
+  function fixHeroCards(){
+    const pro = isProfessional();
+    if(!pro) return;
+
+    const terms = selectedPaymentTermsText();
+    const lead = selectedLeadTimeText();
+
+    const dueLabel = $("pdfHeroDueLabel");
+    const dueValue = $("pdfHeroDue");
+    const timeLabel = $("pdfHeroTimeLabel");
+    const timeValue = $("pdfHeroTime");
+
+    if(dueLabel) dueLabel.textContent = "Payment Terms";
+    if(dueValue) dueValue.textContent = terms;
+
+    if(timeLabel) timeLabel.textContent = "Lead Time";
+    if(timeValue) timeValue.textContent = lead;
+  }
+
+  function applyProfessionalWorkflow(){
     const pro = isProfessional();
     document.body.classList.toggle("professional-pdf-mode", pro);
 
-    fixHeroSummaryCards();
+    fixHeroCards();
 
     const po = $("pdfProfessionalPoInstructions");
     const tracking = $("pdfTrackingInfo");
-    const next = $("pdfNextSteps");
-    const pay = $("pdfPaymentCta");
-    const quoteTerms = $("pdfQuoteTerms");
-    const invoiceTerms = $("pdfInvoiceTerms");
-
     const opNumber = findFutureOrderNumber();
 
-    if (po) {
+    if(po){
       po.classList.toggle("hidden", !pro);
       po.style.display = pro ? "block" : "none";
       if(pro){
@@ -2466,7 +2465,7 @@ https://olipoly3d.com`;
       }
     }
 
-    if (tracking && pro) {
+    if(tracking && pro){
       tracking.style.display = "block";
       tracking.classList.remove("hidden");
       tracking.innerHTML =
@@ -2475,55 +2474,45 @@ https://olipoly3d.com`;
         `Tracking Portal: <a href="https://olipoly3d.com/track.html" target="_blank">https://olipoly3d.com/track.html</a>`;
     }
 
-    [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
-      if (!el) return;
-      if (pro) {
+    ["pdfNextSteps","pdfPaymentCta","pdfQuoteTerms","pdfInvoiceTerms"].forEach((id)=>{
+      const el = $(id);
+      if(!el) return;
+      if(pro){
         el.style.display = "none";
         el.classList.add("hidden");
       } else {
         el.style.display = "";
       }
     });
-
-    document.querySelectorAll(".doc-chip").forEach((chip) => {
-      const chipText = (chip.textContent || "").trim().toLowerCase();
-      if ((chipText === "next steps" || chipText === "pay") && pro) {
-        const panel = chip.closest(".pdf-note") || chip.closest(".pdf-panel") || chip.parentElement;
-        if(panel){
-          panel.style.display = "none";
-          panel.classList.add("hidden");
-        }
-      }
-    });
   }
 
   function patchRender(){
-    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV11) return false;
-
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV12) return false;
     const original = window.render;
-    window.render = function patchedProfessionalPoWorkflowV11(...args){
+
+    window.render = function patchedProfessionalPoWorkflowV12(...args){
       const result = original.apply(this,args);
-      [0,50,150,300,700,1400,2400,3600].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
+      [0,25,75,150,300,700,1400,2500,4000].forEach((ms)=>setTimeout(applyProfessionalWorkflow,ms));
       return result;
     };
 
-    window.render._professionalPoPdfWorkflowV11 = true;
+    window.render._professionalPoPdfWorkflowV12 = true;
     return true;
   }
 
   function bind(){
     ["liteQuoteType","professionalMode","paymentTerms","turnaround","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
       const el = $(id);
-      if(!el || el._professionalPoPdfWorkflowV11Bound) return;
-      el._professionalPoPdfWorkflowV11Bound = true;
+      if(!el || el._professionalPoPdfWorkflowV12Bound) return;
+      el._professionalPoPdfWorkflowV12Bound = true;
       ["input","change","click"].forEach((eventName)=>{
         el.addEventListener(eventName,()=>{
-          [0,50,150,300,700,1400,2400,3600].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
+          [0,25,75,150,300,700,1400,2500,4000].forEach((ms)=>setTimeout(applyProfessionalWorkflow,ms));
         },{capture:true});
       });
     });
 
-    window.addEventListener("beforeprint", applyProfessionalPoPdfWorkflow, {capture:true});
+    window.addEventListener("beforeprint", applyProfessionalWorkflow, {capture:true});
   }
 
   function init(){
@@ -2533,11 +2522,11 @@ https://olipoly3d.com`;
     const timer = setInterval(()=>{
       bind();
       patchRender();
-      applyProfessionalPoPdfWorkflow();
-    },150);
+      applyProfessionalWorkflow();
+    },100);
 
-    setTimeout(()=>clearInterval(timer),12000);
-    applyProfessionalPoPdfWorkflow();
+    setTimeout(()=>clearInterval(timer),15000);
+    applyProfessionalWorkflow();
   }
 
   document.addEventListener("DOMContentLoaded", init);
