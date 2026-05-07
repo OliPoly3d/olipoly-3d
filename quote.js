@@ -2367,7 +2367,7 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
-/* Professional PO PDF Workflow Layer V8 */
+/* Professional PO PDF Workflow Layer V9 */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -2392,60 +2392,63 @@ https://olipoly3d.com`;
     return (option?.textContent || select.value || "").trim();
   }
 
-  function forcePaymentTermsBox(){
-    const terms = selectedPaymentTermsText();
-    if(!terms) return;
+  function selectedLeadTimeText(){
+    return get("turnaround") || text("pdfLeadTime") || text("pdfHeroLeadTime") || "";
+  }
 
-    // Known IDs first.
-    [
-      "pdfPaymentTerms",
-      "pdfPaymentTermsValue",
-      "pdfHeroPaymentTerms",
-      "pdfTerms",
-      "pdfTermsValue"
-    ].forEach((id)=>{
-      const el = $(id);
-      if(el) el.textContent = terms;
-    });
+  function setMetricValueByLabel(labelText, value){
+    if(!value) return;
 
-    // Aggressive fallback: find any PDF summary/metric block whose visible label includes Payment Terms.
     const root = document.querySelector(".pdf-sheet") || document;
-    const blocks = Array.from(root.querySelectorAll(".pdf-metric, .summary, .pdf-line, div"));
+    const wanted = labelText.toLowerCase();
 
-    blocks.forEach((block)=>{
-      const raw = (block.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
-      if(!raw.includes("payment terms")) return;
+    // Look for metric cards / summary boxes only, not every div.
+    const boxes = Array.from(root.querySelectorAll(".pdf-metric, .summary, .pdf-line, .pdf-total-card"));
 
-      // Avoid rewriting the actual dropdown/input area.
-      if(block.querySelector && block.querySelector("#paymentTerms")) return;
+    for(const box of boxes){
+      const labels = Array.from(box.querySelectorAll("span, small, label"));
+      const hasLabel = labels.some((el)=>
+        (el.textContent || "").replace(/\s+/g," ").trim().toLowerCase() === wanted
+      );
 
-      const label = Array.from(block.querySelectorAll("span, small, label, div")).find((el)=>{
-        return (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase() === "payment terms";
-      });
+      if(!hasLabel) continue;
 
-      if(!label && raw !== "payment terms") return;
-
-      const valueTargets = Array.from(block.querySelectorAll("strong, b, .value, div, span")).filter((el)=>{
-        if(el === label) return false;
-        const t = (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
-        return t && t !== "payment terms";
-      });
-
-      if(valueTargets.length){
-        valueTargets[valueTargets.length - 1].textContent = terms;
-      } else if(label && label.nextElementSibling){
-        label.nextElementSibling.textContent = terms;
+      const valueEl = box.querySelector("strong") || box.querySelector("b");
+      if(valueEl){
+        valueEl.textContent = value;
+        return;
       }
+    }
+
+    // Fallback by ID only.
+    const idMap = {
+      "payment terms": ["pdfPaymentTerms", "pdfPaymentTermsValue", "pdfHeroPaymentTerms"],
+      "lead time": ["pdfLeadTime", "pdfHeroLeadTime"]
+    };
+
+    (idMap[wanted] || []).forEach((id)=>{
+      const el = $(id);
+      if(el) el.textContent = value;
+    });
+  }
+
+  function forceTopMetricBoxes(){
+    const terms = selectedPaymentTermsText();
+    const lead = selectedLeadTimeText();
+
+    // Set by precise labels.
+    setMetricValueByLabel("Payment Terms", terms);
+    setMetricValueByLabel("Lead Time", lead);
+
+    // Also set likely IDs, but do not cross-write terms into lead time.
+    ["pdfPaymentTerms","pdfPaymentTermsValue","pdfHeroPaymentTerms"].forEach((id)=>{
+      const el = $(id);
+      if(el && terms) el.textContent = terms;
     });
 
-    // Last-resort structural fallback for the top three metric cards:
-    // Find the element with label Payment Terms and replace the nearest following strong.
-    Array.from(root.querySelectorAll("*")).forEach((el)=>{
-      const t = (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
-      if(t !== "payment terms") return;
-      const container = el.closest(".pdf-metric") || el.parentElement;
-      const strong = container?.querySelector("strong");
-      if(strong) strong.textContent = terms;
+    ["pdfLeadTime","pdfHeroLeadTime"].forEach((id)=>{
+      const el = $(id);
+      if(el && lead) el.textContent = lead;
     });
   }
 
@@ -2476,7 +2479,7 @@ https://olipoly3d.com`;
     const pro = isProfessional();
     document.body.classList.toggle("professional-pdf-mode", pro);
 
-    forcePaymentTermsBox();
+    forceTopMetricBoxes();
 
     const po = $("pdfProfessionalPoInstructions");
     const tracking = $("pdfTrackingInfo");
@@ -2530,24 +2533,24 @@ https://olipoly3d.com`;
   }
 
   function patchRender(){
-    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV8) return false;
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV9) return false;
 
     const original = window.render;
-    window.render = function patchedProfessionalPoWorkflowV8(...args){
+    window.render = function patchedProfessionalPoWorkflow(...args){
       const result = original.apply(this,args);
       [0,100,300,700,1400,2200,3200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
       return result;
     };
 
-    window.render._professionalPoPdfWorkflowV8 = true;
+    window.render._professionalPoPdfWorkflowV9 = true;
     return true;
   }
 
   function bind(){
-    ["liteQuoteType","professionalMode","paymentTerms","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
+    ["liteQuoteType","professionalMode","paymentTerms","turnaround","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
       const el = $(id);
-      if(!el || el._professionalPoPdfWorkflowV8Bound) return;
-      el._professionalPoPdfWorkflowV8Bound = true;
+      if(!el || el._professionalPoPdfWorkflowV9Bound) return;
+      el._professionalPoPdfWorkflowV9Bound = true;
       ["input","change","click"].forEach((eventName)=>{
         el.addEventListener(eventName,()=>{
           [0,100,300,700,1400,2200,3200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
