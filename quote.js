@@ -1636,18 +1636,15 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 
-/* Manual Piece Price Override Layer V2
-   If manualPiecePriceOverride is blank, the normal quote-tool.js calculation is untouched.
+/* Manual Piece Price Override Layer V3
+   Blank override = normal quote-tool.js calculation.
 
-   If manualPiecePriceOverride has a value:
-   - quoted item subtotal = quantity x manual piece price
-   - add packaging + shipping
+   Active override:
+   - pieces = qty x manual price
+   - add packaging and shipping/delivery
    - subtract discount
-   - apply rounding
-   - apply sales tax
-   - calculate deposit/balance
-   - override screen totals and print/PDF preview totals
-   - does NOT include filament, grams, machine time, design labor, post labor, hardware, overhead, or margin math
+   - rounding, tax, deposit/balance
+   - print/PDF preview includes a transparent pricing breakdown
 */
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -1664,12 +1661,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function setTextAll(id, value) {
     document.querySelectorAll(`#${id}`).forEach((el) => {
       el.textContent = value;
-    });
-  }
-
-  function setHtmlAll(id, value) {
-    document.querySelectorAll(`#${id}`).forEach((el) => {
-      el.innerHTML = value;
     });
   }
 
@@ -1726,14 +1717,53 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function buildOverrideNote(v) {
+  function overrideNoticeHtml(v) {
     return `<strong>Manual piece price override applied:</strong> ${money(v.overridePiece)} × ${v.qty} piece${v.qty === 1 ? "" : "s"}` +
-      `<br><strong>Override subtotal:</strong> ${money(v.itemSubtotal)}` +
+      `<br><strong>Pieces subtotal:</strong> ${money(v.itemSubtotal)}` +
       `${v.packaging ? `<br><strong>Packaging:</strong> ${money(v.packaging)}` : ""}` +
       `${v.shipping ? `<br><strong>Shipping / delivery:</strong> ${money(v.shipping)}` : ""}` +
       `${v.discount ? `<br><strong>Discount:</strong> −${money(v.discount)}` : ""}` +
-      `${v.taxRate ? `<br><strong>Sales tax:</strong> ${v.taxRate}%` : ""}` +
+      `${v.roundingGain ? `<br><strong>Rounding adjustment:</strong> ${money(v.roundingGain)}` : ""}` +
+      `${v.taxRate ? `<br><strong>Sales tax:</strong> ${v.taxRate}% = ${money(v.tax)}` : ""}` +
       `${v.reason ? `<br><strong>Reason:</strong> ${v.reason}` : ""}`;
+  }
+
+  function pdfPricingBreakdownHtml(v) {
+    return `<strong>Pricing Method</strong><br>` +
+      `Manual piece price override applied for transparent per-piece quoting.<br><br>` +
+      `<strong>Pieces:</strong> ${money(v.overridePiece)} × ${v.qty} = ${money(v.itemSubtotal)}<br>` +
+      `<strong>Packaging:</strong> ${money(v.packaging)}<br>` +
+      `<strong>Shipping / Delivery:</strong> ${money(v.shipping)}<br>` +
+      `${v.discount ? `<strong>Discount:</strong> −${money(v.discount)}<br>` : ""}` +
+      `${v.roundingGain ? `<strong>Rounding Adjustment:</strong> ${money(v.roundingGain)}<br>` : ""}` +
+      `<strong>Taxable Subtotal:</strong> ${money(v.roundedBeforeTax)}<br>` +
+      `<strong>Sales Tax${v.taxRate ? ` (${v.taxRate}%)` : ""}:</strong> ${money(v.tax)}<br>` +
+      `<strong>Total Quote:</strong> ${money(v.final)}` +
+      `${v.reason ? `<br><strong>Override Note:</strong> ${v.reason}` : ""}`;
+  }
+
+  function setPdfAssumptions(v) {
+    const pdfAssumptions = $("pdfAssumptions");
+    if (!pdfAssumptions) return;
+
+    if (!pdfAssumptions.dataset.manualOriginalHtml) {
+      pdfAssumptions.dataset.manualOriginalHtml = pdfAssumptions.innerHTML || "";
+    }
+
+    const original = pdfAssumptions.dataset.manualOriginalHtml || "";
+    const breakdown = pdfPricingBreakdownHtml(v);
+    pdfAssumptions.innerHTML = original
+      ? `${breakdown}<br><br>${original}`
+      : breakdown;
+  }
+
+  function restorePdfAssumptionsIfInactive() {
+    if (isActive()) return;
+    const pdfAssumptions = $("pdfAssumptions");
+    if (pdfAssumptions?.dataset.manualOriginalHtml) {
+      pdfAssumptions.innerHTML = pdfAssumptions.dataset.manualOriginalHtml || "";
+      delete pdfAssumptions.dataset.manualOriginalHtml;
+    }
   }
 
   function applyManualPiecePriceOverride() {
@@ -1741,6 +1771,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!isActive()) {
       document.body.classList.remove("manual-piece-price-active");
+      restorePdfAssumptionsIfInactive();
       if (notice) {
         notice.classList.add("hidden");
         notice.classList.remove("manual-override-active");
@@ -1803,38 +1834,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setTextAll("pdfHeroTotal", money(v.final));
     setTextAll("pdfHeroDue", money(v.deposit || v.final));
 
-    // Add a clear PDF note so the printed customer quote does not look like it came from the worksheet math.
-    const manualPdfNote =
-      `<strong>Pricing Method</strong><br>` +
-      `Manual piece price override applied: ${money(v.overridePiece)} × ${v.qty} piece${v.qty === 1 ? "" : "s"}. ` +
-      `Packaging/shipping and sales tax are added separately when applicable.`;
-
-    const pdfAssumptions = $("pdfAssumptions");
-    if (pdfAssumptions && !pdfAssumptions.dataset.manualOverrideNote) {
-      pdfAssumptions.dataset.originalHtml = pdfAssumptions.innerHTML || "";
-      pdfAssumptions.dataset.manualOverrideNote = "true";
-    }
-    if (pdfAssumptions) {
-      const original = pdfAssumptions.dataset.originalHtml || "";
-      pdfAssumptions.innerHTML = original
-        ? `${manualPdfNote}<br><br>${original}`
-        : manualPdfNote;
-    }
+    setPdfAssumptions(v);
 
     if (notice) {
       notice.classList.remove("hidden");
       notice.classList.add("manual-override-active");
-      notice.innerHTML = buildOverrideNote(v);
-    }
-  }
-
-  function restorePdfAssumptionsIfInactive() {
-    if (isActive()) return;
-    const pdfAssumptions = $("pdfAssumptions");
-    if (pdfAssumptions?.dataset.manualOverrideNote) {
-      pdfAssumptions.innerHTML = pdfAssumptions.dataset.originalHtml || "";
-      delete pdfAssumptions.dataset.manualOverrideNote;
-      delete pdfAssumptions.dataset.originalHtml;
+      notice.innerHTML = overrideNoticeHtml(v);
     }
   }
 
@@ -1846,7 +1851,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function patchRender() {
-    if (typeof window.render !== "function" || window.render._manualPieceOverridePatchedV2) return false;
+    if (typeof window.render !== "function" || window.render._manualPieceOverridePatchedV3) return false;
 
     const originalRender = window.render;
     window.render = function patchedManualPieceOverrideRender(...args) {
@@ -1855,15 +1860,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return result;
     };
 
-    window.render._manualPieceOverridePatchedV2 = true;
+    window.render._manualPieceOverridePatchedV3 = true;
     return true;
   }
 
   function patchPdfButtons() {
     ["customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn"].forEach((id) => {
       const btn = $(id);
-      if (!btn || btn._manualOverridePdfBound) return;
-      btn._manualOverridePdfBound = true;
+      if (!btn || btn._manualOverridePdfBoundV3) return;
+      btn._manualOverridePdfBoundV3 = true;
       btn.addEventListener("click", () => applySoon([0, 60, 180, 420, 900, 1400]), { capture: true });
       btn.addEventListener("click", () => applySoon([20, 120, 300, 650, 1100, 1800]));
     });
@@ -1872,7 +1877,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("afterprint", () => applySoon([0, 150, 400]), { capture: true });
   }
 
-  function bindManualOverrideInputs() {
+  function bindInputs() {
     [
       "manualPiecePriceOverride",
       "manualPiecePriceReason",
@@ -1885,13 +1890,11 @@ document.addEventListener("DOMContentLoaded", () => {
       "depositPercent"
     ].forEach((id) => {
       const el = $(id);
-      if (!el || el._manualOverrideBoundV2) return;
-      el._manualOverrideBoundV2 = true;
+      if (!el || el._manualOverrideBoundV3) return;
+      el._manualOverrideBoundV3 = true;
       ["input", "change"].forEach((eventName) => {
         el.addEventListener(eventName, () => {
-          if (typeof window.render === "function") {
-            window.render();
-          }
+          if (typeof window.render === "function") window.render();
           applySoon();
         });
       });
@@ -1899,14 +1902,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function init() {
-    bindManualOverrideInputs();
+    bindInputs();
     patchPdfButtons();
 
     const timer = setInterval(() => {
-      bindManualOverrideInputs();
+      bindInputs();
       patchPdfButtons();
       patchRender();
       if (isActive()) applyManualPiecePriceOverride();
+      else restorePdfAssumptionsIfInactive();
     }, 250);
 
     setTimeout(() => clearInterval(timer), 7000);
