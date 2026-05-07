@@ -2136,135 +2136,6 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 
-/* Professional PO PDF Workflow Layer V4
-   Professional/business PDF behavior:
-   - PO instructions live in Purchase Order & Order Processing
-   - Order Tracking stays short and clean
-   - retail Next Steps / Pay / duplicated customer terms are hidden
-*/
-(() => {
-  const $ = (id) => document.getElementById(id);
-
-  function get(id){
-    return ($(id)?.value || "").trim();
-  }
-
-  function isProfessional(){
-    const type = get("liteQuoteType") || document.body.dataset.liteQuoteType || "";
-    const mode = get("professionalMode");
-    return type === "business" || type === "po" || mode === "on";
-  }
-
-  function cleanOrderTrackingSection(){
-    const tracking = $("pdfTrackingInfo");
-    if (!tracking) return;
-
-    tracking.style.display = "block";
-    tracking.classList.remove("hidden");
-    tracking.innerHTML =
-      `<strong>Order Tracking</strong><br>` +
-      `After purchase order acceptance, OliPoly 3D will provide an OP-order number for production tracking, shipment coordination, and fulfillment updates.`;
-  }
-
-  function applyProfessionalPoPdfWorkflow(){
-    const pro = isProfessional();
-    document.body.classList.toggle("professional-pdf-mode", pro);
-
-    const po = $("pdfProfessionalPoInstructions");
-    const next = $("pdfNextSteps");
-    const pay = $("pdfPaymentCta");
-    const quoteTerms = $("pdfQuoteTerms");
-    const invoiceTerms = $("pdfInvoiceTerms");
-
-    if (po) {
-      po.classList.toggle("hidden", !pro);
-      po.style.display = pro ? "block" : "none";
-      po.innerHTML =
-        `<strong>Purchase Order &amp; Order Processing</strong><br>` +
-        `To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.<br><br>` +
-        `Please include: billing address; shipping address; purchasing contact information; required customer part numbers or references; and any required packaging labels, receiving instructions, or routing information.<br><br>` +
-        `Once received, OliPoly 3D will generate an OP-order number and begin scheduling manufacturing and fulfillment.`;
-    }
-
-    if (pro) {
-      cleanOrderTrackingSection();
-
-      // Hide retail/customer payment workflow sections.
-      [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
-        if (!el) return;
-        el.style.display = "none";
-        el.classList.add("hidden");
-      });
-
-      // Also catch any panel whose chip still says Next Steps or Pay.
-      document.querySelectorAll(".doc-chip").forEach((chip) => {
-        const text = (chip.textContent || "").trim().toLowerCase();
-        if (text === "next steps" || text === "pay") {
-          const panel = chip.closest(".pdf-note") || chip.closest(".pdf-panel") || chip.parentElement;
-          if (panel) {
-            panel.style.display = "none";
-            panel.classList.add("hidden");
-          }
-        }
-      });
-    } else {
-      [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
-        if (!el) return;
-        el.style.display = "";
-      });
-    }
-  }
-
-  function patchRender(){
-    if (typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV4) return false;
-
-    const original = window.render;
-    window.render = function patchedProfessionalPoWorkflowV4(...args){
-      const result = original.apply(this, args);
-      [0, 80, 250, 600, 1200, 2000].forEach((ms) => {
-        setTimeout(applyProfessionalPoPdfWorkflow, ms);
-      });
-      return result;
-    };
-
-    window.render._professionalPoPdfWorkflowV4 = true;
-    return true;
-  }
-
-  function bind(){
-    ["liteQuoteType","professionalMode","paymentTerms","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id) => {
-      const el = $(id);
-      if (!el || el._professionalPoPdfWorkflowV4Bound) return;
-      el._professionalPoPdfWorkflowV4Bound = true;
-
-      ["input","change","click"].forEach((eventName) => {
-        el.addEventListener(eventName, () => {
-          [0, 80, 250, 600, 1200, 2000].forEach((ms) => setTimeout(applyProfessionalPoPdfWorkflow, ms));
-        }, { capture: true });
-      });
-    });
-
-    window.addEventListener("beforeprint", applyProfessionalPoPdfWorkflow, { capture: true });
-  }
-
-  function init(){
-    bind();
-    patchRender();
-
-    const timer = setInterval(() => {
-      bind();
-      patchRender();
-      applyProfessionalPoPdfWorkflow();
-    }, 250);
-
-    setTimeout(() => clearInterval(timer), 8000);
-    applyProfessionalPoPdfWorkflow();
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-})();
-
-
 /* Professional Prepare Customer Email Layer V1
    Keeps the existing consumer/customer email behavior intact.
    For business/PO/customer-terms quotes, the Prepare Customer Email button
@@ -2494,5 +2365,154 @@ https://olipoly3d.com`;
   }
 
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
+})();
+
+/* Professional PO PDF Workflow Layer V5 */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function get(id){
+    return ($(id)?.value || "").trim();
+  }
+
+  function isProfessional(){
+    const type = get("liteQuoteType") || document.body.dataset.liteQuoteType || "";
+    const mode = get("professionalMode");
+    return type === "business" || type === "po" || mode === "on";
+  }
+
+  function paymentTermsLabel(value){
+    const map = {
+      customer_terms: "Customer Standard Terms / PO Terms",
+      net_30: "Net 30",
+      net_15: "Net 15",
+      due_on_receipt: "Due on Receipt"
+    };
+    return map[value] || value || "";
+  }
+
+  function applyProfessionalPoPdfWorkflow(){
+    const pro = isProfessional();
+    document.body.classList.toggle("professional-pdf-mode", pro);
+
+    const po = $("pdfProfessionalPoInstructions");
+    const tracking = $("pdfTrackingInfo");
+    const next = $("pdfNextSteps");
+    const pay = $("pdfPaymentCta");
+    const quoteTerms = $("pdfQuoteTerms");
+    const invoiceTerms = $("pdfInvoiceTerms");
+
+    // Set payment terms box correctly
+    const paymentTerms = $("pdfPaymentTerms");
+    if(paymentTerms){
+      const terms = paymentTermsLabel(get("paymentTerms"));
+      if(terms) paymentTerms.textContent = terms;
+    }
+
+    const opNumber =
+      get("orderNumber") ||
+      get("convertedOrderNumber") ||
+      document.querySelector("#pdfOrderNumber")?.textContent?.trim() ||
+      "";
+
+    if (po) {
+      po.classList.toggle("hidden", !pro);
+      po.style.display = pro ? "block" : "none";
+      po.innerHTML =
+        `<strong>Purchase Order &amp; Order Processing</strong><br>` +
+        `To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.<br><br>` +
+        `Please include: billing address; shipping address; purchasing contact information; required customer part numbers or references; and any required packaging labels, receiving instructions, or routing information.<br><br>` +
+        `Once received, OliPoly 3D will begin scheduling manufacturing and fulfillment.`;
+    }
+
+    if (tracking && pro) {
+      const trackingUrl = "https://olipoly3d.com/track.html";
+
+      tracking.style.display = "block";
+      tracking.classList.remove("hidden");
+
+      tracking.innerHTML =
+        `<strong>Order Tracking</strong><br>` +
+        `${opNumber ? `Track this project using order number <strong>${opNumber}</strong>.` : `Track this project using the assigned OP-order number.`}<br>` +
+        `Tracking Portal: <a href="${trackingUrl}" target="_blank">${trackingUrl}</a>`;
+    }
+
+    [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
+      if (!el) return;
+
+      if (pro) {
+        el.style.display = "none";
+        el.classList.add("hidden");
+      } else {
+        el.style.display = "";
+      }
+    });
+
+    document.querySelectorAll(".doc-chip").forEach((chip) => {
+      const text = (chip.textContent || "").trim().toLowerCase();
+      if ((text === "next steps" || text === "pay") && pro) {
+        const panel = chip.closest(".pdf-note") || chip.closest(".pdf-panel") || chip.parentElement;
+        if(panel){
+          panel.style.display = "none";
+          panel.classList.add("hidden");
+        }
+      }
+    });
+  }
+
+  function patchRender(){
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV5) return false;
+
+    const original = window.render;
+
+    window.render = function patchedProfessionalPoWorkflowV5(...args){
+      const result = original.apply(this,args);
+
+      [0,100,300,700,1400].forEach((ms)=>{
+        setTimeout(applyProfessionalPoPdfWorkflow,ms);
+      });
+
+      return result;
+    };
+
+    window.render._professionalPoPdfWorkflowV5 = true;
+    return true;
+  }
+
+  function bind(){
+    ["liteQuoteType","professionalMode","paymentTerms","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
+      const el = $(id);
+      if(!el || el._professionalPoPdfWorkflowV5Bound) return;
+
+      el._professionalPoPdfWorkflowV5Bound = true;
+
+      ["input","change","click"].forEach((eventName)=>{
+        el.addEventListener(eventName,()=>{
+          [0,100,300,700,1400].forEach((ms)=>{
+            setTimeout(applyProfessionalPoPdfWorkflow,ms);
+          });
+        },{capture:true});
+      });
+    });
+
+    window.addEventListener("beforeprint", applyProfessionalPoPdfWorkflow, {capture:true});
+  }
+
+  function init(){
+    bind();
+    patchRender();
+
+    const timer = setInterval(()=>{
+      bind();
+      patchRender();
+      applyProfessionalPoPdfWorkflow();
+    },250);
+
+    setTimeout(()=>clearInterval(timer),8000);
+
+    applyProfessionalPoPdfWorkflow();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
 })();
 
