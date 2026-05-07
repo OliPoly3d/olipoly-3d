@@ -666,8 +666,7 @@
 Thanks for reaching out! Your OliPoly project quote is ready to review.
 
 Quote: ${getField("quoteNumber")}
-Project: ${project}
-Estimated total: ${total}
+Project: ${project}\n${getField("olipolyPartNumber") ? `OliPoly Part #: ${getField("olipolyPartNumber")}\n` : ""}${getField("customerPartNumber") ? `Customer Part #: ${getField("customerPartNumber")}\n` : ""}Estimated total: ${total}
 Estimated timing: ${turnaround}
 
 ${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to review the details, approve the quote, or request changes:
@@ -718,6 +717,8 @@ OliPoly 3D`;
       <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
         <p style="margin:0 0 8px;"><strong>Quote #:</strong> ${quoteNumber}</p>
         <p style="margin:0 0 8px;"><strong>Project:</strong> ${project}</p>
+        ${getField("olipolyPartNumber") ? `<p style="margin:0 0 8px;"><strong>OliPoly Part #:</strong> ${getField("olipolyPartNumber")}</p>` : ""}
+        ${getField("customerPartNumber") ? `<p style="margin:0 0 8px;"><strong>Customer Part #:</strong> ${getField("customerPartNumber")}</p>` : ""}
         <p style="margin:0 0 8px;"><strong>Estimated total:</strong> ${total}</p>
         <p style="margin:0;"><strong>Estimated timing:</strong> ${turnaround}</p>
       </div>
@@ -1636,292 +1637,78 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 
-/* Manual Piece Price Override Layer V3
-   Blank override = normal quote-tool.js calculation.
-
-   Active override:
-   - pieces = qty x manual price
-   - add packaging and shipping/delivery
-   - subtract discount
-   - rounding, tax, deposit/balance
-   - print/PDF preview includes a transparent pricing breakdown
+/* Professional Part Number Layer V1
+   Adds OliPoly internal part number and customer part number support for
+   business/professional quotes and future reorder workflows.
 */
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  function num(id) {
-    const el = $(id);
-    return Number(String(el?.value || "").replace(/[^0-9.-]/g, "")) || 0;
+  function get(id) {
+    return ($(id)?.value || "").trim();
   }
 
-  function money(value) {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
-  }
-
-  function setTextAll(id, value) {
+  function setText(id, value) {
     document.querySelectorAll(`#${id}`).forEach((el) => {
-      el.textContent = value;
+      el.textContent = value || "—";
+      const row = el.closest(".professional-part-line");
+      if (row) row.classList.toggle("part-empty", !value);
     });
   }
 
-  function roundTo(value, increment) {
-    const inc = Number(increment) || 0;
-    if (!inc) return value;
-    return Math.round(value / inc) * inc;
+  function quoteType() {
+    return $("liteQuoteType")?.value || document.body.dataset.liteQuoteType || "retail";
   }
 
-  function isActive() {
-    return num("manualPiecePriceOverride") > 0;
-  }
+  function syncPartFields() {
+    const type = quoteType();
+    const isProfessional = type === "business" || type === "po";
 
-  function values() {
-    const qty = Math.max(1, Math.round(num("qty") || 1));
-    const overridePiece = num("manualPiecePriceOverride");
-    const packaging = num("simplePackaging");
-    const shipping = num("simpleShipping");
-    const discount = num("discount");
-    const taxRate = num("salesTax");
-    const rounding = num("roundingMode");
-    const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
+    document.querySelectorAll(".professional-part-field").forEach((wrap) => {
+      wrap.classList.toggle("lite-field-hidden", !isProfessional);
+    });
 
-    const itemSubtotal = overridePiece * qty;
-    const extras = packaging + shipping;
-    const beforeDiscount = itemSubtotal + extras;
-    const beforeTax = Math.max(0, beforeDiscount - discount);
-    const roundedBeforeTax = Math.max(0, roundTo(beforeTax, rounding));
-    const roundingGain = roundedBeforeTax - beforeTax;
-    const tax = roundedBeforeTax * (taxRate / 100);
-    const final = roundedBeforeTax + tax;
-    const deposit = final * (depositPercent / 100);
-    const balance = Math.max(0, final - deposit);
+    setText("pdfOliPolyPartNumber", get("olipolyPartNumber"));
+    setText("pdfCustomerPartNumber", get("customerPartNumber"));
 
-    return {
-      qty,
-      overridePiece,
-      packaging,
-      shipping,
-      extras,
-      discount,
-      taxRate,
-      rounding,
-      itemSubtotal,
-      beforeDiscount,
-      beforeTax,
-      roundedBeforeTax,
-      roundingGain,
-      tax,
-      final,
-      deposit,
-      balance,
-      reason: ($("manualPiecePriceReason")?.value || "").trim()
-    };
-  }
-
-  function overrideNoticeHtml(v) {
-    return `<strong>Manual piece price override applied:</strong> ${money(v.overridePiece)} × ${v.qty} piece${v.qty === 1 ? "" : "s"}` +
-      `<br><strong>Pieces subtotal:</strong> ${money(v.itemSubtotal)}` +
-      `${v.packaging ? `<br><strong>Packaging:</strong> ${money(v.packaging)}` : ""}` +
-      `${v.shipping ? `<br><strong>Shipping / delivery:</strong> ${money(v.shipping)}` : ""}` +
-      `${v.discount ? `<br><strong>Discount:</strong> −${money(v.discount)}` : ""}` +
-      `${v.roundingGain ? `<br><strong>Rounding adjustment:</strong> ${money(v.roundingGain)}` : ""}` +
-      `${v.taxRate ? `<br><strong>Sales tax:</strong> ${v.taxRate}% = ${money(v.tax)}` : ""}` +
-      `${v.reason ? `<br><strong>Reason:</strong> ${v.reason}` : ""}`;
-  }
-
-  function pdfPricingBreakdownHtml(v) {
-    return `<strong>Pricing Method</strong><br>` +
-      `Manual piece price override applied for transparent per-piece quoting.<br><br>` +
-      `<strong>Pieces:</strong> ${money(v.overridePiece)} × ${v.qty} = ${money(v.itemSubtotal)}<br>` +
-      `<strong>Packaging:</strong> ${money(v.packaging)}<br>` +
-      `<strong>Shipping / Delivery:</strong> ${money(v.shipping)}<br>` +
-      `${v.discount ? `<strong>Discount:</strong> −${money(v.discount)}<br>` : ""}` +
-      `${v.roundingGain ? `<strong>Rounding Adjustment:</strong> ${money(v.roundingGain)}<br>` : ""}` +
-      `<strong>Taxable Subtotal:</strong> ${money(v.roundedBeforeTax)}<br>` +
-      `<strong>Sales Tax${v.taxRate ? ` (${v.taxRate}%)` : ""}:</strong> ${money(v.tax)}<br>` +
-      `<strong>Total Quote:</strong> ${money(v.final)}` +
-      `${v.reason ? `<br><strong>Override Note:</strong> ${v.reason}` : ""}`;
-  }
-
-  function setPdfAssumptions(v) {
-    const pdfAssumptions = $("pdfAssumptions");
-    if (!pdfAssumptions) return;
-
-    if (!pdfAssumptions.dataset.manualOriginalHtml) {
-      pdfAssumptions.dataset.manualOriginalHtml = pdfAssumptions.innerHTML || "";
-    }
-
-    const original = pdfAssumptions.dataset.manualOriginalHtml || "";
-    const breakdown = pdfPricingBreakdownHtml(v);
-    pdfAssumptions.innerHTML = original
-      ? `${breakdown}<br><br>${original}`
-      : breakdown;
-  }
-
-  function restorePdfAssumptionsIfInactive() {
-    if (isActive()) return;
-    const pdfAssumptions = $("pdfAssumptions");
-    if (pdfAssumptions?.dataset.manualOriginalHtml) {
-      pdfAssumptions.innerHTML = pdfAssumptions.dataset.manualOriginalHtml || "";
-      delete pdfAssumptions.dataset.manualOriginalHtml;
-    }
-  }
-
-  function applyManualPiecePriceOverride() {
-    const notice = $("manualPiecePriceNotice");
-
-    if (!isActive()) {
-      document.body.classList.remove("manual-piece-price-active");
-      restorePdfAssumptionsIfInactive();
-      if (notice) {
-        notice.classList.add("hidden");
-        notice.classList.remove("manual-override-active");
-        notice.innerHTML = "";
-      }
-      return;
-    }
-
-    const v = values();
-    document.body.classList.add("manual-piece-price-active");
-
-    // Top summary cards
-    setTextAll("sumQuote", money(v.final));
-    setTextAll("sumPerItem", money(v.overridePiece));
-    setTextAll("sumDirect", money(v.extras));
-    setTextAll("sumOverhead", money(0));
-    setTextAll("sumProfit", "Manual");
-    setTextAll("sumDeposit", money(v.deposit));
-    setTextAll("sumBalance", money(v.balance));
-    setTextAll("sumMargin", "Manual");
-    setTextAll("sumBreakEven", money(v.itemSubtotal));
-    setTextAll("batchUnitCost", money(v.overridePiece));
-
-    const guardrail = $("profitGuardrail");
-    if (guardrail) guardrail.textContent = "Manual Price";
-
-    const confidence = $("quoteConfidence");
-    if (confidence) {
-      confidence.textContent = "Manual Override";
-      confidence.className = "confidence-ok";
-    }
-
-    // Calculation breakdown card
-    setTextAll("outDirect", money(v.extras));
-    setTextAll("outOverhead", money(0));
-    setTextAll("outBase", money(v.itemSubtotal));
-    setTextAll("outProfit", "Manual");
-    setTextAll("outPerItem", money(v.overridePiece));
-    setTextAll("outBreakEven", money(v.itemSubtotal));
-    setTextAll("outMargin", "Manual");
-    setTextAll("outPreDiscount", money(v.beforeDiscount));
-    setTextAll("outDiscount", money(v.discount));
-    setTextAll("outBeforeTax", money(v.beforeTax));
-    setTextAll("outRoundedBeforeTax", money(v.roundedBeforeTax));
-    setTextAll("outRoundingGain", money(v.roundingGain));
-    setTextAll("outTax", money(v.tax));
-    setTextAll("outDeposit", money(v.deposit));
-    setTextAll("outBalance", money(v.balance));
-    setTextAll("outFinal", money(v.final));
-
-    // Print/PDF quote preview
-    setTextAll("pdfQty", String(v.qty));
-    setTextAll("pdfPerItem", money(v.overridePiece));
-    setTextAll("pdfSubtotal", money(v.roundedBeforeTax));
-    setTextAll("pdfTax", money(v.tax));
-    setTextAll("pdfTotal", money(v.final));
-    setTextAll("pdfDeposit", money(v.deposit));
-    setTextAll("pdfBalance", money(v.balance));
-    setTextAll("pdfInvoiceAmount", money(v.final));
-    setTextAll("pdfHeroTotal", money(v.final));
-    setTextAll("pdfHeroDue", money(v.deposit || v.final));
-
-    setPdfAssumptions(v);
-
-    if (notice) {
-      notice.classList.remove("hidden");
-      notice.classList.add("manual-override-active");
-      notice.innerHTML = overrideNoticeHtml(v);
-    }
-  }
-
-  function applySoon(times = [0, 50, 150, 350, 700]) {
-    times.forEach((ms) => setTimeout(() => {
-      if (isActive()) applyManualPiecePriceOverride();
-      else restorePdfAssumptionsIfInactive();
-    }, ms));
+    // If both are blank, hide the PDF rows. If either is present, only show populated rows.
+    const hasAny = !!(get("olipolyPartNumber") || get("customerPartNumber"));
+    document.querySelectorAll(".professional-part-line").forEach((row) => {
+      if (!hasAny) row.classList.add("part-empty");
+    });
   }
 
   function patchRender() {
-    if (typeof window.render !== "function" || window.render._manualPieceOverridePatchedV3) return false;
-
-    const originalRender = window.render;
-    window.render = function patchedManualPieceOverrideRender(...args) {
-      const result = originalRender.apply(this, args);
-      applySoon();
+    if (typeof window.render !== "function" || window.render._partNumbersPatched) return false;
+    const original = window.render;
+    window.render = function patchedPartNumberRender(...args) {
+      const result = original.apply(this, args);
+      setTimeout(syncPartFields, 0);
+      setTimeout(syncPartFields, 250);
       return result;
     };
-
-    window.render._manualPieceOverridePatchedV3 = true;
+    window.render._partNumbersPatched = true;
     return true;
   }
 
-  function patchPdfButtons() {
-    ["customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn"].forEach((id) => {
-      const btn = $(id);
-      if (!btn || btn._manualOverridePdfBoundV3) return;
-      btn._manualOverridePdfBoundV3 = true;
-      btn.addEventListener("click", () => applySoon([0, 60, 180, 420, 900, 1400]), { capture: true });
-      btn.addEventListener("click", () => applySoon([20, 120, 300, 650, 1100, 1800]));
-    });
-
-    window.addEventListener("beforeprint", () => applyManualPiecePriceOverride(), { capture: true });
-    window.addEventListener("afterprint", () => applySoon([0, 150, 400]), { capture: true });
-  }
-
-  function bindInputs() {
-    [
-      "manualPiecePriceOverride",
-      "manualPiecePriceReason",
-      "qty",
-      "simplePackaging",
-      "simpleShipping",
-      "discount",
-      "salesTax",
-      "roundingMode",
-      "depositPercent"
-    ].forEach((id) => {
+  function initPartNumbers() {
+    ["olipolyPartNumber", "customerPartNumber", "liteQuoteType"].forEach((id) => {
       const el = $(id);
-      if (!el || el._manualOverrideBoundV3) return;
-      el._manualOverrideBoundV3 = true;
-      ["input", "change"].forEach((eventName) => {
-        el.addEventListener(eventName, () => {
-          if (typeof window.render === "function") window.render();
-          applySoon();
-        });
-      });
+      if (!el || el._partNumberBound) return;
+      el._partNumberBound = true;
+      ["input", "change"].forEach((eventName) => el.addEventListener(eventName, syncPartFields));
     });
-  }
-
-  function init() {
-    bindInputs();
-    patchPdfButtons();
 
     const timer = setInterval(() => {
-      bindInputs();
-      patchPdfButtons();
       patchRender();
-      if (isActive()) applyManualPiecePriceOverride();
-      else restorePdfAssumptionsIfInactive();
+      syncPartFields();
     }, 250);
+    setTimeout(() => clearInterval(timer), 5000);
 
-    setTimeout(() => clearInterval(timer), 7000);
-
-    if (patchRender() && typeof window.render === "function") {
-      window.render();
-    } else {
-      applySoon();
-    }
+    patchRender();
+    syncPartFields();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", initPartNumbers);
 })();
 
