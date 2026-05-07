@@ -2135,3 +2135,101 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("DOMContentLoaded", init);
 })();
 
+
+/* Professional PO PDF Workflow Layer V2
+   Removes retail-style payment sections from business/PO quotes and
+   shows corporate PO workflow messaging instead.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function get(id){
+    return ($(id)?.value || "").trim();
+  }
+
+  function professionalMode(){
+    const type = get("liteQuoteType") || document.body.dataset.liteQuoteType || "";
+    return type === "business" || type === "po";
+  }
+
+  function applyProfessionalPdfWorkflow(){
+    const professional = professionalMode();
+
+    // Hide payment sections/buttons on PDF preview
+    [
+      "pdfPaymentSection",
+      "pdfPaySection",
+      "pdfPaymentLinks",
+      "pdfPaymentButtons"
+    ].forEach((id) => {
+      const el = $(id);
+      if (el) el.style.display = professional ? "none" : "";
+    });
+
+    document.querySelectorAll(".pdf-pay-panel").forEach((el) => {
+      el.style.display = professional ? "none" : "";
+    });
+
+    const instructions = $("pdfProfessionalPoInstructions");
+    if (instructions) {
+      instructions.closest(".professional-po-instructions-panel").style.display = professional ? "" : "none";
+    }
+
+    const tracking = $("pdfTrackingInfo");
+    if (tracking && professional) {
+      tracking.innerHTML =
+        "After purchase order acceptance, OliPoly 3D will generate an OP-order number for production tracking, shipment coordination, and fulfillment updates.";
+    }
+  }
+
+  function patchRender(){
+    if(typeof window.render !== "function" || window.render._professionalPdfWorkflowPatched) return false;
+
+    const original = window.render;
+
+    window.render = function patchedProfessionalWorkflowRender(...args){
+      const result = original.apply(this,args);
+
+      setTimeout(applyProfessionalPdfWorkflow,0);
+      setTimeout(applyProfessionalPdfWorkflow,200);
+      setTimeout(applyProfessionalPdfWorkflow,700);
+
+      return result;
+    };
+
+    window.render._professionalPdfWorkflowPatched = true;
+    return true;
+  }
+
+  function init(){
+    const timer = setInterval(() => {
+      patchRender();
+      applyProfessionalPdfWorkflow();
+    },250);
+
+    setTimeout(() => clearInterval(timer),6000);
+
+    patchRender();
+    applyProfessionalPdfWorkflow();
+
+    ["customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn","liteQuoteType"].forEach((id)=>{
+      const el = $(id);
+      if(!el || el._professionalWorkflowBound) return;
+
+      el._professionalWorkflowBound = true;
+
+      ["click","change","input"].forEach((eventName)=>{
+        el.addEventListener(eventName,()=>{
+          setTimeout(applyProfessionalPdfWorkflow,0);
+          setTimeout(applyProfessionalPdfWorkflow,200);
+          setTimeout(applyProfessionalPdfWorkflow,700);
+        },{capture:true});
+      });
+    });
+
+    window.addEventListener("beforeprint", applyProfessionalPdfWorkflow, {capture:true});
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+
