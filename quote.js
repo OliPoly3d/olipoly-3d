@@ -2367,7 +2367,7 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
-/* Professional PO PDF Workflow Layer V9 */
+/* Professional PO PDF Workflow Layer V10 */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -2393,75 +2393,74 @@ https://olipoly3d.com`;
   }
 
   function selectedLeadTimeText(){
-    return get("turnaround") || text("pdfLeadTime") || text("pdfHeroLeadTime") || "";
+    return get("turnaround") || "";
   }
 
-  function setMetricValueByLabel(labelText, value){
-    if(!value) return;
-
+  function fixTopSummaryCards(){
     const root = document.querySelector(".pdf-sheet") || document;
-    const wanted = labelText.toLowerCase();
 
-    // Look for metric cards / summary boxes only, not every div.
-    const boxes = Array.from(root.querySelectorAll(".pdf-metric, .summary, .pdf-line, .pdf-total-card"));
+    const cards = Array.from(
+      root.querySelectorAll(".pdf-total-card, .summary-card, .hero-card, .metric-card")
+    );
 
-    for(const box of boxes){
-      const labels = Array.from(box.querySelectorAll("span, small, label"));
-      const hasLabel = labels.some((el)=>
-        (el.textContent || "").replace(/\s+/g," ").trim().toLowerCase() === wanted
-      );
+    // Fallback: detect by label text
+    const paymentTermsText = selectedPaymentTermsText();
+    const leadTimeText = selectedLeadTimeText();
 
-      if(!hasLabel) continue;
+    // Try explicit IDs first
+    const explicitTerms = [
+      "pdfPaymentTerms",
+      "pdfPaymentTermsValue",
+      "pdfHeroPaymentTerms"
+    ];
 
-      const valueEl = box.querySelector("strong") || box.querySelector("b");
-      if(valueEl){
-        valueEl.textContent = value;
-        return;
+    explicitTerms.forEach((id)=>{
+      const el = $(id);
+      if(el && paymentTermsText){
+        el.textContent = paymentTermsText;
       }
-    }
-
-    // Fallback by ID only.
-    const idMap = {
-      "payment terms": ["pdfPaymentTerms", "pdfPaymentTermsValue", "pdfHeroPaymentTerms"],
-      "lead time": ["pdfLeadTime", "pdfHeroLeadTime"]
-    };
-
-    (idMap[wanted] || []).forEach((id)=>{
-      const el = $(id);
-      if(el) el.textContent = value;
-    });
-  }
-
-  function forceTopMetricBoxes(){
-    const terms = selectedPaymentTermsText();
-    const lead = selectedLeadTimeText();
-
-    // Set by precise labels.
-    setMetricValueByLabel("Payment Terms", terms);
-    setMetricValueByLabel("Lead Time", lead);
-
-    // Also set likely IDs, but do not cross-write terms into lead time.
-    ["pdfPaymentTerms","pdfPaymentTermsValue","pdfHeroPaymentTerms"].forEach((id)=>{
-      const el = $(id);
-      if(el && terms) el.textContent = terms;
     });
 
-    ["pdfLeadTime","pdfHeroLeadTime"].forEach((id)=>{
+    const explicitLead = [
+      "pdfLeadTime",
+      "pdfHeroLeadTime"
+    ];
+
+    explicitLead.forEach((id)=>{
       const el = $(id);
-      if(el && lead) el.textContent = lead;
+      if(el && leadTimeText){
+        el.textContent = leadTimeText;
+      }
+    });
+
+    // Most reliable: scan visible cards by heading text.
+    const allBoxes = Array.from(root.querySelectorAll("div"));
+
+    allBoxes.forEach((box)=>{
+      const txt = (box.textContent || "").replace(/\s+/g," ").trim().toLowerCase();
+
+      // Payment Terms card
+      if(txt.includes("payment terms")){
+        const strongs = box.querySelectorAll("strong,b");
+        if(strongs.length){
+          strongs[strongs.length - 1].textContent = paymentTermsText;
+        }
+      }
+
+      // Lead Time card
+      if(txt.includes("lead time")){
+        const strongs = box.querySelectorAll("strong,b");
+        if(strongs.length){
+          strongs[strongs.length - 1].textContent = leadTimeText;
+        }
+      }
     });
   }
 
   function findFutureOrderNumber(){
     const candidates = [
       get("orderNumber"),
-      get("convertedOrderNumber"),
-      get("acceptedOrderNumber"),
-      get("opOrderNumber"),
-      text("pdfOrderNumber"),
-      text("pdfAcceptedOrderNumber"),
-      text("pdfConvertedOrderNumber"),
-      text("pdfOpOrderNumber")
+      text("pdfOrderNumber")
     ].filter(Boolean);
 
     for(const value of candidates){
@@ -2469,8 +2468,7 @@ https://olipoly3d.com`;
       if(match) return match[0].toUpperCase();
     }
 
-    const pdfSheet = document.querySelector(".pdf-sheet") || document;
-    const allText = pdfSheet.textContent || "";
+    const allText = (document.querySelector(".pdf-sheet") || document).textContent || "";
     const match = allText.match(/OP-\d{3,}/i);
     return match ? match[0].toUpperCase() : "";
   }
@@ -2479,20 +2477,15 @@ https://olipoly3d.com`;
     const pro = isProfessional();
     document.body.classList.toggle("professional-pdf-mode", pro);
 
-    forceTopMetricBoxes();
+    fixTopSummaryCards();
 
     const po = $("pdfProfessionalPoInstructions");
     const tracking = $("pdfTrackingInfo");
-    const next = $("pdfNextSteps");
-    const pay = $("pdfPaymentCta");
-    const quoteTerms = $("pdfQuoteTerms");
-    const invoiceTerms = $("pdfInvoiceTerms");
 
     const opNumber = findFutureOrderNumber();
 
-    if (po) {
-      po.classList.toggle("hidden", !pro);
-      po.style.display = pro ? "block" : "none";
+    if (po && pro) {
+      po.style.display = "block";
       po.innerHTML =
         `<strong>Purchase Order &amp; Order Processing</strong><br>` +
         `To proceed with this order, please issue a purchase order referencing the quoted items, quantities, and pricing above.<br><br>` +
@@ -2501,77 +2494,50 @@ https://olipoly3d.com`;
     }
 
     if (tracking && pro) {
-      const trackingUrl = "https://olipoly3d.com/track.html";
       tracking.style.display = "block";
-      tracking.classList.remove("hidden");
       tracking.innerHTML =
         `<strong>Order Tracking</strong><br>` +
-        `${opNumber ? `Track this project using order number <strong>${opNumber}</strong>.` : `Track this project using the OP-order number shown above.`}<br>` +
-        `Tracking Portal: <a href="${trackingUrl}" target="_blank">${trackingUrl}</a>`;
+        `Track this project using order number <strong>${opNumber || "OP-ORDER"}</strong>.<br>` +
+        `Tracking Portal: <a href="https://olipoly3d.com/track.html" target="_blank">https://olipoly3d.com/track.html</a>`;
     }
 
-    [next, pay, quoteTerms, invoiceTerms].forEach((el) => {
-      if (!el) return;
-      if (pro) {
+    ["pdfNextSteps","pdfPaymentCta","pdfQuoteTerms","pdfInvoiceTerms"].forEach((id)=>{
+      const el = $(id);
+      if(el && pro){
         el.style.display = "none";
-        el.classList.add("hidden");
-      } else {
-        el.style.display = "";
-      }
-    });
-
-    document.querySelectorAll(".doc-chip").forEach((chip) => {
-      const chipText = (chip.textContent || "").trim().toLowerCase();
-      if ((chipText === "next steps" || chipText === "pay") && pro) {
-        const panel = chip.closest(".pdf-note") || chip.closest(".pdf-panel") || chip.parentElement;
-        if(panel){
-          panel.style.display = "none";
-          panel.classList.add("hidden");
-        }
       }
     });
   }
 
   function patchRender(){
-    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV9) return false;
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV10) return false;
 
     const original = window.render;
+
     window.render = function patchedProfessionalPoWorkflow(...args){
       const result = original.apply(this,args);
-      [0,100,300,700,1400,2200,3200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
+
+      [0,100,300,700,1400,2200,3200].forEach((ms)=>{
+        setTimeout(applyProfessionalPoPdfWorkflow,ms);
+      });
+
       return result;
     };
 
-    window.render._professionalPoPdfWorkflowV9 = true;
+    window.render._professionalPoPdfWorkflowV10 = true;
     return true;
   }
 
-  function bind(){
-    ["liteQuoteType","professionalMode","paymentTerms","turnaround","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
-      const el = $(id);
-      if(!el || el._professionalPoPdfWorkflowV9Bound) return;
-      el._professionalPoPdfWorkflowV9Bound = true;
-      ["input","change","click"].forEach((eventName)=>{
-        el.addEventListener(eventName,()=>{
-          [0,100,300,700,1400,2200,3200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
-        },{capture:true});
-      });
-    });
-
-    window.addEventListener("beforeprint", applyProfessionalPoPdfWorkflow, {capture:true});
-  }
-
   function init(){
-    bind();
     patchRender();
 
     const timer = setInterval(()=>{
-      bind();
       patchRender();
       applyProfessionalPoPdfWorkflow();
     },200);
 
     setTimeout(()=>clearInterval(timer),10000);
+
     applyProfessionalPoPdfWorkflow();
   }
 
