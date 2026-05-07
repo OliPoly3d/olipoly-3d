@@ -148,16 +148,14 @@
     .hidden{display:none!important}
 
 
-    .docs-grid,
-    .template-grid{
+    .docs-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
       gap:12px;
       margin-top:12px;
     }
 
-    .doc-card,
-    .template-card{
+    .doc-card{
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -170,38 +168,27 @@
       transition:.18s ease;
     }
 
-    .doc-card:hover,
-    .template-card:hover{
+    .doc-card:hover{
       transform:translateY(-2px);
       box-shadow:0 14px 26px rgba(222,111,184,.10);
     }
 
-    .doc-card strong,
-    .template-card strong{
+    .doc-card strong{
       color:#2d1f36;
     }
 
-    .doc-card small,
-    .template-card p{
+    .doc-card small{
       color:var(--muted);
       margin:0;
       line-height:1.45;
       font-size:.9rem;
     }
 
-    .doc-actions,
-    .template-actions{
+    .doc-actions{
       display:flex;
       gap:8px;
       flex-wrap:wrap;
       margin-top:auto;
-    }
-
-    .template-card textarea{
-      min-height:118px;
-      font-size:.88rem;
-      line-height:1.45;
-      background:rgba(255,255,255,.82);
     }
 
     @media (max-width:900px){
@@ -341,6 +328,109 @@
       <div id="healthCheckList" class="health-check-list"></div>
     </section>
 
+
+    <section class="card">
+      <div class="section-title">
+        <span class="section-kicker">Files</span>
+        <h3>Packaging, Business Docs & Files</h3>
+        <p>Quick access to consumer inserts, business packing slips, vendor docs, QR codes, and customer-facing graphics.</p>
+      </div>
+
+      <div class="section-title" style="margin-top:14px;">
+        <h3>Consumer / Friendly Packaging</h3>
+        <p>Use these for local customers, gifts, custom orders, retail-style shipments, and friendly branded packaging.</p>
+      </div>
+
+      <div class="docs-grid">
+        <div class="doc-card">
+          <strong>Consumer Thank-You Insert</strong>
+          <small>Polished customer insert for repeat orders, care notes, contact info, and friendly OliPoly branding.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/templates/consumer/consumer-thank-you-insert.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-thank-you-insert.pdf')">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="doc-card">
+          <strong>Consumer Shipping Label</strong>
+          <small>Friendly branded shipping label template for custom and retail-style orders.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/templates/consumer/consumer-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-shipping-label.pdf')">Copy Link</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:22px;">
+        <h3>Business / PO Packaging</h3>
+        <p>Use these for companies, PO orders, prototype shipments, replacement parts, and vendor-style fulfillment.</p>
+      </div>
+
+      <div class="docs-grid">
+        <div class="doc-card">
+          <strong>Business Packing Slip</strong>
+          <small>Professional PO-focused packing slip with part number, quantity, revision, and inspection fields.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/templates/business/business-packing-slip.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/business/business-packing-slip.pdf')">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="doc-card">
+          <strong>Business Shipping Label</strong>
+          <small>Clean PO-focused shipping label format for vendor and prototype shipments.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/templates/business/business-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/business/business-shipping-label.pdf')">Copy Link</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:22px;">
+        <h3>Business Docs & Assets</h3>
+        <p>Reusable business documents, QR codes, payment graphics, and vendor support files.</p>
+      </div>
+
+      <div class="docs-grid">
+        <div class="doc-card">
+          <strong>W-9 PDF</strong>
+          <small>Use for vendor setup and business customers that request tax paperwork.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/docs/w9.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/w9.pdf')">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="doc-card">
+          <strong>Vendor Setup Packet</strong>
+          <small>Business information packet for vendor onboarding, purchasing departments, and PO customers.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/docs/vendor-setup-packet.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/vendor-setup-packet.pdf')">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="doc-card">
+          <strong>Payment Sign Graphic</strong>
+          <small>Digital payment graphic for pickup, QR signage, events, and social posts.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/brand/payment-sign.png" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/brand/payment-sign.png')">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="doc-card">
+          <strong>Payment QR Codes</strong>
+          <small>QR code folder for PayPal, Venmo, card payments, website, upload form, and tracker links.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/qr/" target="_blank" rel="noopener noreferrer">Open Folder</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/qr/')">Copy Link</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
     <section class="quick-actions">
       <div class="section-title">
         <h3>External Links</h3>
@@ -359,135 +449,6 @@
         <a class="btn ext" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal</a>
         <a class="btn ext" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo</a>
         <a class="btn ext" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail</a>
-      </div>
-    </section>
-
-
-    <section class="card">
-      <div class="section-title">
-        <span class="section-kicker">Files</span>
-        <h3>Business Docs & Files</h3>
-        <p>Quick access to reusable business documents, QR codes, payment graphics, and customer handouts.</p>
-      </div>
-
-      <div class="docs-grid">
-        <div class="doc-card">
-          <strong>W-9 PDF</strong>
-          <small>Use for vendor setup and business customers that request tax paperwork.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/docs/w9.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/w9.pdf')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Vendor Setup Packet</strong>
-          <small>Folder or PDF packet for business/vendor onboarding documents.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/docs/vendor-setup-packet.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/vendor-setup-packet.pdf')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Thank-You Insert</strong>
-          <small>Printable customer insert card for orders, craft sales, and pickup bags.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/thank-you-insert.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/thank-you-insert.pdf')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Payment Sign Graphic</strong>
-          <small>Digital payment graphic for events, pickup, QR signage, and social posts.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/brand/payment-sign.png" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/brand/payment-sign.png')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Payment QR Codes</strong>
-          <small>QR code folder for PayPal, Venmo, card payments, and site links.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/qr/" target="_blank" rel="noopener noreferrer">Open Folder</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/qr/')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Shipping / Return Label Template</strong>
-          <small>Reusable label or return-address template for packing and fulfillment.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/shipping-label-template.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/shipping-label-template.pdf')">Copy Link</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <span class="section-kicker">Templates</span>
-        <h3>Message Templates</h3>
-        <p>Reusable customer messages for common OliPoly order and fulfillment moments.</p>
-      </div>
-
-      <div class="template-grid">
-        <div class="template-card">
-          <strong>Pickup Instructions</strong>
-          <p>For completed local pickup orders.</p>
-          <textarea readonly id="tplPickup">Hi! Your OliPoly 3D order is ready for pickup. Please reply with a good pickup window and I’ll confirm the details. Payment is due at or before pickup unless it has already been completed. Thank you!</textarea>
-          <div class="template-actions">
-            <button class="tiny-btn" type="button" onclick="copyFromField('tplPickup')">Copy</button>
-          </div>
-        </div>
-
-        <div class="template-card">
-          <strong>Quote Follow-Up</strong>
-          <p>For customers who have not responded to a quote yet.</p>
-          <textarea readonly id="tplQuoteFollowup">Hi! Just checking in on your OliPoly 3D quote. Let me know if you’d like to move forward, make any changes, or ask questions before approving. I’m happy to adjust details if needed.</textarea>
-          <div class="template-actions">
-            <button class="tiny-btn" type="button" onclick="copyFromField('tplQuoteFollowup')">Copy</button>
-          </div>
-        </div>
-
-        <div class="template-card">
-          <strong>Upload Files Reminder</strong>
-          <p>For customers who still need to send files/photos.</p>
-          <textarea readonly id="tplUploadReminder">Hi! When you have a chance, please send or upload any photos, sketches, measurements, files, or reference images for your project. Upload form: https://tally.so/r/gDZY6N</textarea>
-          <div class="template-actions">
-            <button class="tiny-btn" type="button" onclick="copyFromField('tplUploadReminder')">Copy</button>
-          </div>
-        </div>
-
-        <div class="template-card">
-          <strong>Payment Reminder</strong>
-          <p>For unpaid balances or deposit reminders.</p>
-          <textarea readonly id="tplPaymentReminder">Hi! Your OliPoly 3D payment link is available on the order tracker. Please use your OP- order number here: https://olipoly3d.com/track.html. Payment is due before pickup, delivery, or shipping unless we arranged otherwise.</textarea>
-          <div class="template-actions">
-            <button class="tiny-btn" type="button" onclick="copyFromField('tplPaymentReminder')">Copy</button>
-          </div>
-        </div>
-
-        <div class="template-card">
-          <strong>Order Completion</strong>
-          <p>For completed orders with tracker/payment info.</p>
-          <textarea readonly id="tplComplete">Hi! Your OliPoly 3D order is complete. You can view the final status and any payment or pickup/shipping notes on the tracker: https://olipoly3d.com/track.html. Thank you again for supporting OliPoly 3D!</textarea>
-          <div class="template-actions">
-            <button class="tiny-btn" type="button" onclick="copyFromField('tplComplete')">Copy</button>
-          </div>
-        </div>
-
-        <div class="template-card">
-          <strong>Business Intro</strong>
-          <p>For first contact with business/prototype customers.</p>
-          <textarea readonly id="tplBusinessIntro">Hi! OliPoly 3D creates custom 3D printed parts, prototypes, replacement pieces, display models, and small production runs in Ohio. I’m happy to review the project details, quantity, timeline, material needs, and any vendor setup requirements.</textarea>
-          <div class="template-actions">
-            <button class="tiny-btn" type="button" onclick="copyFromField('tplBusinessIntro')">Copy</button>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -556,7 +517,20 @@
         </label>
       </div>
     </section>
-<section class="dashboard-grid">
+    <section class="card">
+      <div class="section-title">
+        <h3>Sales tax quick calc</h3>
+        <p>Use for quick estimates before entering finance tool.</p>
+      </div>
+      <div class="input-grid">
+        <label class="label">Sale amount<input id="taxSale" class="tax-input" placeholder="0.00" /></label>
+        <label class="label">Tax %<input id="taxRate" class="tax-input" placeholder="7.25" /></label>
+        <label class="label">Tax amount<input id="taxAmount" class="tax-input" disabled /></label>
+        <label class="label">Total w/ tax<input id="taxTotal" class="tax-input" disabled /></label>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
       <section class="notes-card">
         <h3>Notes</h3>
         <p class="muted">Quick scratchpad — cloud synced.</p>
@@ -681,6 +655,10 @@
       reminderDateInput: document.getElementById('reminderDateInput'),
       reminderRecurrenceInput: document.getElementById('reminderRecurrenceInput'),
       addReminderBtn: document.getElementById('addReminderBtn'),
+      taxSale: document.getElementById('taxSale'),
+      taxRate: document.getElementById('taxRate'),
+      taxAmount: document.getElementById('taxAmount'),
+      taxTotal: document.getElementById('taxTotal'),
       runHealthCheckBtn: document.getElementById('runHealthCheckBtn'),
       healthCheckSummary: document.getElementById('healthCheckSummary'),
       healthCheckList: document.getElementById('healthCheckList'),
