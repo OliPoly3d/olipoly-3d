@@ -2367,7 +2367,7 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
-/* Professional PO PDF Workflow Layer V7 */
+/* Professional PO PDF Workflow Layer V8 */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -2385,26 +2385,18 @@ https://olipoly3d.com`;
     return type === "business" || type === "po" || mode === "on";
   }
 
-  function paymentTermsLabel(value){
-    const map = {
-      customer_terms: "Customer Standard Terms / PO Terms",
-      net_30: "Net 30",
-      net_15: "Net 15",
-      net_45: "Net 45",
-      due_on_receipt: "Due on Receipt",
-      deposit_to_start: "Deposit to Start",
-      paid_in_full: "Paid in Full",
-      full_due_before_start: "Full Payment Before Start",
-      due_before_delivery: "Due Before Delivery"
-    };
-    return map[value] || value || "";
+  function selectedPaymentTermsText(){
+    const select = $("paymentTerms");
+    if (!select) return "";
+    const option = select.options?.[select.selectedIndex];
+    return (option?.textContent || select.value || "").trim();
   }
 
-  function updateTopPaymentTermsBox(){
-    const terms = paymentTermsLabel(get("paymentTerms"));
+  function forcePaymentTermsBox(){
+    const terms = selectedPaymentTermsText();
     if(!terms) return;
 
-    // Known possible IDs first.
+    // Known IDs first.
     [
       "pdfPaymentTerms",
       "pdfPaymentTermsValue",
@@ -2416,29 +2408,44 @@ https://olipoly3d.com`;
       if(el) el.textContent = terms;
     });
 
-    // Robust fallback: find the top metric/card/line whose label says Payment Terms,
-    // then replace its value even if the original template reused the total amount.
+    // Aggressive fallback: find any PDF summary/metric block whose visible label includes Payment Terms.
     const root = document.querySelector(".pdf-sheet") || document;
-    const candidates = Array.from(root.querySelectorAll("*")).filter((el)=>{
-      const own = (el.textContent || "").trim().toLowerCase();
-      return own === "payment terms";
+    const blocks = Array.from(root.querySelectorAll(".pdf-metric, .summary, .pdf-line, div"));
+
+    blocks.forEach((block)=>{
+      const raw = (block.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if(!raw.includes("payment terms")) return;
+
+      // Avoid rewriting the actual dropdown/input area.
+      if(block.querySelector && block.querySelector("#paymentTerms")) return;
+
+      const label = Array.from(block.querySelectorAll("span, small, label, div")).find((el)=>{
+        return (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase() === "payment terms";
+      });
+
+      if(!label && raw !== "payment terms") return;
+
+      const valueTargets = Array.from(block.querySelectorAll("strong, b, .value, div, span")).filter((el)=>{
+        if(el === label) return false;
+        const t = (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+        return t && t !== "payment terms";
+      });
+
+      if(valueTargets.length){
+        valueTargets[valueTargets.length - 1].textContent = terms;
+      } else if(label && label.nextElementSibling){
+        label.nextElementSibling.textContent = terms;
+      }
     });
 
-    candidates.forEach((labelEl)=>{
-      const container =
-        labelEl.closest(".pdf-metric") ||
-        labelEl.closest(".summary") ||
-        labelEl.closest(".pdf-line") ||
-        labelEl.parentElement;
-
-      if(!container) return;
-
-      const valueEl =
-        container.querySelector("strong") ||
-        container.querySelector("b") ||
-        Array.from(container.children).find((child)=>child !== labelEl && (child.textContent || "").trim());
-
-      if(valueEl) valueEl.textContent = terms;
+    // Last-resort structural fallback for the top three metric cards:
+    // Find the element with label Payment Terms and replace the nearest following strong.
+    Array.from(root.querySelectorAll("*")).forEach((el)=>{
+      const t = (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if(t !== "payment terms") return;
+      const container = el.closest(".pdf-metric") || el.parentElement;
+      const strong = container?.querySelector("strong");
+      if(strong) strong.textContent = terms;
     });
   }
 
@@ -2469,7 +2476,7 @@ https://olipoly3d.com`;
     const pro = isProfessional();
     document.body.classList.toggle("professional-pdf-mode", pro);
 
-    updateTopPaymentTermsBox();
+    forcePaymentTermsBox();
 
     const po = $("pdfProfessionalPoInstructions");
     const tracking = $("pdfTrackingInfo");
@@ -2523,27 +2530,27 @@ https://olipoly3d.com`;
   }
 
   function patchRender(){
-    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV7) return false;
+    if(typeof window.render !== "function" || window.render._professionalPoPdfWorkflowV8) return false;
 
     const original = window.render;
-    window.render = function patchedProfessionalPoWorkflowV7(...args){
+    window.render = function patchedProfessionalPoWorkflowV8(...args){
       const result = original.apply(this,args);
-      [0,100,300,700,1400,2200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
+      [0,100,300,700,1400,2200,3200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
       return result;
     };
 
-    window.render._professionalPoPdfWorkflowV7 = true;
+    window.render._professionalPoPdfWorkflowV8 = true;
     return true;
   }
 
   function bind(){
     ["liteQuoteType","professionalMode","paymentTerms","customerPdfBtn","invoicePdfBtn","printBtn","generateQuoteBtn"].forEach((id)=>{
       const el = $(id);
-      if(!el || el._professionalPoPdfWorkflowV7Bound) return;
-      el._professionalPoPdfWorkflowV7Bound = true;
+      if(!el || el._professionalPoPdfWorkflowV8Bound) return;
+      el._professionalPoPdfWorkflowV8Bound = true;
       ["input","change","click"].forEach((eventName)=>{
         el.addEventListener(eventName,()=>{
-          [0,100,300,700,1400,2200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
+          [0,100,300,700,1400,2200,3200].forEach((ms)=>setTimeout(applyProfessionalPoPdfWorkflow,ms));
         },{capture:true});
       });
     });
@@ -2559,9 +2566,9 @@ https://olipoly3d.com`;
       bind();
       patchRender();
       applyProfessionalPoPdfWorkflow();
-    },250);
+    },200);
 
-    setTimeout(()=>clearInterval(timer),9000);
+    setTimeout(()=>clearInterval(timer),10000);
     applyProfessionalPoPdfWorkflow();
   }
 
