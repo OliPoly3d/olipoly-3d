@@ -2345,8 +2345,42 @@ document.addEventListener("DOMContentLoaded", () => {
     return type === "business" || type === "po" || terms === "customer_terms" || professionalMode === "on";
   }
 
+  function emailNum(id) {
+    return Number(String(getField(id) || "").replace(/[^0-9.-]/g, "")) || 0;
+  }
+
+  function emailMoney(value) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+  }
+
+  function emailRoundTo(value, increment) {
+    const inc = Number(increment) || 0;
+    if (!inc) return value;
+    return Math.round(value / inc) * inc;
+  }
+
+  function manualOverrideEmailTotal() {
+    const overridePiece = emailNum("manualPiecePriceOverride");
+    if (!overridePiece) return "";
+
+    const qty = Math.max(1, Math.round(emailNum("qty") || 1));
+    const packaging = emailNum("simplePackaging");
+    const shipping = emailNum("simpleShipping");
+    const discount = emailNum("discount");
+    const taxRate = emailNum("salesTax");
+    const rounding = emailNum("roundingMode");
+
+    const itemSubtotal = overridePiece * qty;
+    const beforeTax = Math.max(0, itemSubtotal + packaging + shipping - discount);
+    const roundedBeforeTax = Math.max(0, emailRoundTo(beforeTax, rounding));
+    const tax = roundedBeforeTax * (taxRate / 100);
+    const final = roundedBeforeTax + tax;
+
+    return emailMoney(final);
+  }
+
   function quoteTotalText() {
-    return textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
+    return manualOverrideEmailTotal() || textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
   }
 
   function selectedPaymentTermsText() {
@@ -2374,8 +2408,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const oliPart = getField("olipolyPartNumber");
     const customerPart = getField("customerPartNumber");
     const customerEmail = getField("customerEmail");
+    const manualOverridePiece = emailNum("manualPiecePriceOverride");
+    const manualOverrideQty = Math.max(1, Math.round(emailNum("qty") || 1));
+    const manualOverridePricingNote = manualOverridePiece
+      ? `${emailMoney(manualOverridePiece)} × ${manualOverrideQty} pcs`
+      : "";
 
     return {
+      manualOverridePricingNote,
       rawContact,
       greetingName: rawContact || "",
       companyName,
@@ -2398,6 +2438,7 @@ document.addEventListener("DOMContentLoaded", () => {
       d.companyName ? `Company: ${d.companyName}` : "",
       d.project ? `Project: ${d.project}` : "",
       d.total ? `Quoted total: ${d.total}` : "",
+      d.manualOverridePricingNote ? `Pricing method: ${d.manualOverridePricingNote}` : "",
       d.terms ? `Payment terms: ${d.terms}` : "",
       d.leadTime ? `Lead time: ${d.leadTime}` : "",
       d.poNumber ? `PO reference: ${d.poNumber}` : "",
@@ -2495,6 +2536,7 @@ https://olipoly3d.com`;
           ${detailRow("Company", d.companyName)}
           ${detailRow("Project", d.project)}
           ${detailRow("Quoted Total", d.total)}
+          ${detailRow("Pricing Method", d.manualOverridePricingNote)}
           ${detailRow("Payment Terms", d.terms)}
           ${detailRow("Lead Time", d.leadTime)}
           ${detailRow("PO Reference", d.poNumber)}
