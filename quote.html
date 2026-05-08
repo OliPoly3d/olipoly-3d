@@ -999,12 +999,6 @@ body.professional-pdf-mode #pdfPaymentCta{
   .email-preview-frame iframe{min-height:460px}
 }
 
-
-/* Quote-only cleanup: invoicing now lives in Orders Admin */
-#invoicePdfBtn,#downloadInvoiceBtn,#prepareInvoiceEmailBtn,#invoiceNumber,#invoiceType,#invoiceNotes,
-label[for="invoiceNumber"],label[for="invoiceType"],label[for="invoiceNotes"],
-.invoice-only,.invoice-section,.invoice-mode-section{display:none!important}
-
 </style>
 </head>
 <body>
@@ -1029,6 +1023,7 @@ label[for="invoiceNumber"],label[for="invoiceType"],label[for="invoiceNotes"],
           <button class="btn-ghost" id="demoBtn" type="button">Load Demo</button>
           <button class="btn-ghost" id="copySummaryBtn" type="button">Copy Summary</button>
           <button class="btn-ghost" id="prepareCustomerEmailBtn" type="button">Prepare Customer Email</button>
+          <button class="btn-ghost" id="invoicePdfBtn" type="button">Invoice PDF</button>
         </div>
       </div>
     </div>
@@ -1156,6 +1151,7 @@ label[for="invoiceNumber"],label[for="invoiceType"],label[for="invoiceNotes"],
           <p class="sub">These are auto-filled where possible and kept for your existing PDF/order workflow.</p>
           <div class="form-grid">
             <div><label for="quoteNumber">Quote Number</label><input id="quoteNumber" placeholder="Q-000001" /></div>
+            <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="INV-000001" /></div>
             <div><label for="quoteDate">Quote Date</label><input id="quoteDate" type="date" /></div>
             <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
             <div><label for="validThrough">Valid Through</label><input id="validThrough" type="date" /></div>
@@ -1169,10 +1165,12 @@ label[for="invoiceNumber"],label[for="invoiceType"],label[for="invoiceNotes"],
             <div><label for="orderType">Order Type</label><select id="orderType"><option value="custom">Custom Order</option><option value="repeat">Repeat Order</option><option value="craft_show">Craft Show / Pre-Made</option><option value="business_bulk">Business / Bulk Order</option></select></div>
             <div><label for="presetSelect">Preset</label><select id="presetSelect"><option value="custom">Custom</option><option value="small_print">Small Print</option><option value="medium_print">Medium Print</option><option value="custom_job">Custom Job</option><option value="bagg_accessory">Bogg Accessory</option><option value="beach_toy">Beach Toy</option><option value="name_sign">Name Sign</option></select></div>
             <div><label for="professionalMode">Professional / Bulk Client Mode</label><select id="professionalMode"><option value="off">Off — Standard Customer Style</option><option value="on">On — Professional Company Style</option></select></div>
+            <div><label for="invoiceType">Invoice Type</label><select id="invoiceType"><option value="deposit">Deposit Invoice</option><option value="final">Final Balance Invoice</option><option value="full">Full / Custom Invoice</option></select></div>
             <div><label for="paymentTerms">Payment Terms</label><select id="paymentTerms"><option value="due_on_receipt">Due on Receipt</option><option value="deposit_to_start">Deposit Required to Start</option><option value="due_on_completion">Due on Completion</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="customer_terms">Customer Standard Terms / PO Terms</option></select></div>
             <div><label for="unitsPerItem">Print Units Per Item</label><input id="unitsPerItem" type="number" min="1" step="1" value="1" /></div>
             <div class="full"><label for="quoteNotes">Internal Notes</label><textarea id="quoteNotes"></textarea></div>
             <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions"></textarea></div>
+            <div class="full professional-only hidden"><label for="invoiceNotes">Invoice Notes</label><textarea id="invoiceNotes"></textarea></div>
           </div>
         </section>
 
@@ -1463,6 +1461,17 @@ label[for="invoiceNumber"],label[for="invoiceType"],label[for="invoiceNotes"],
         <iframe id="professionalEmailPreviewFrame" title="Professional email preview"></iframe>
       </div>
     </div>
+  </div>
+
+
+  <!-- Quote engine compatibility fields: invoicing now lives in Orders Admin, but the legacy calculator still expects these values. -->
+  <div class="quote-engine-compat" aria-hidden="true" style="display:none!important;">
+    <input id="invoiceNumber" type="hidden" value="" />
+    <select id="invoiceType">
+      <option value="deposit" selected>deposit</option>
+      <option value="full">full</option>
+    </select>
+    <textarea id="invoiceNotes"></textarea>
   </div>
 
 </body>

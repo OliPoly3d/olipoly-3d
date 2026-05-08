@@ -2755,3 +2755,91 @@ https://olipoly3d.com`;
   document.addEventListener("DOMContentLoaded", initProfessionalEmailLayer);
 })();
 
+/* Quote-only cleanup layer
+   Invoice PDF/email generation now belongs in Orders Admin.
+   Legacy invoiceType/invoiceNotes/invoiceNumber fields remain hidden only for calculator compatibility.
+*/
+(() => {
+  function ensureQuoteEngineCompatibilityFields() {
+    const holderId = "quoteEngineCompatFields";
+    let holder = document.getElementById(holderId);
+
+    if (!holder) {
+      holder = document.createElement("div");
+      holder.id = holderId;
+      holder.className = "quote-engine-compat";
+      holder.setAttribute("aria-hidden", "true");
+      holder.style.cssText = "display:none!important;";
+      document.body.appendChild(holder);
+    }
+
+    if (!document.getElementById("invoiceNumber")) {
+      const input = document.createElement("input");
+      input.id = "invoiceNumber";
+      input.type = "hidden";
+      input.value = "";
+      holder.appendChild(input);
+    }
+
+    if (!document.getElementById("invoiceType")) {
+      const select = document.createElement("select");
+      select.id = "invoiceType";
+      select.innerHTML = `<option value="deposit">deposit</option><option value="full">full</option>`;
+      select.value = "deposit";
+      holder.appendChild(select);
+    }
+
+    if (!document.getElementById("invoiceNotes")) {
+      const notes = document.createElement("textarea");
+      notes.id = "invoiceNotes";
+      notes.value = "";
+      holder.appendChild(notes);
+    }
+
+    const invoiceType = document.getElementById("invoiceType");
+    if (invoiceType && !invoiceType.value) invoiceType.value = "deposit";
+  }
+
+  function removeInvoiceButtonsOnly() {
+    ["invoicePdfBtn", "downloadInvoiceBtn", "prepareInvoiceEmailBtn"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = "none";
+      el.classList.add("lite-hidden-action");
+    });
+
+    document.querySelectorAll("button").forEach((btn) => {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      if (text.includes("invoice")) {
+        btn.style.display = "none";
+        btn.classList.add("lite-hidden-action");
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    ensureQuoteEngineCompatibilityFields();
+    removeInvoiceButtonsOnly();
+    setTimeout(ensureQuoteEngineCompatibilityFields, 50);
+    setTimeout(removeInvoiceButtonsOnly, 250);
+    setTimeout(ensureQuoteEngineCompatibilityFields, 750);
+  });
+})();
+
+/* Hidden invoiceType compatibility sync */
+(() => {
+  function syncHiddenInvoiceType() {
+    const type = document.getElementById("liteQuoteType")?.value || document.body.dataset.liteQuoteType || "";
+    const invoiceType = document.getElementById("invoiceType");
+    if (!invoiceType) return;
+    invoiceType.value = (type === "po" || type === "craft") ? "full" : "deposit";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    syncHiddenInvoiceType();
+    document.getElementById("liteQuoteType")?.addEventListener("change", syncHiddenInvoiceType);
+    setTimeout(syncHiddenInvoiceType, 100);
+    setTimeout(syncHiddenInvoiceType, 500);
+  });
+})();
+
