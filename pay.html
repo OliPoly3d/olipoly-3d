@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OliPoly 3D | Pay</title>
-  <meta name="description" content="Quick payment options for OliPoly 3D." />
+
+  <title>OliPoly 3D | Quick Payments</title>
+  <meta name="description" content="Quick payment options for OliPoly 3D craft shows, pickups, and custom orders." />
+
   <style>
     :root{
       --bg:#fff7fb;
@@ -14,6 +16,7 @@
       --muted:#866a86;
       --accent:#de6fb8;
       --accent2:#9d7cff;
+      --accent3:#65d6c4;
       --shadow:0 18px 45px rgba(189,132,176,.18);
       --radius:28px;
     }
@@ -26,8 +29,8 @@
       font-family:Inter, Poppins, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color:var(--text);
       background:
-        radial-gradient(circle at 12% 10%, rgba(216,107,179,.20), transparent 30%),
-        radial-gradient(circle at 88% 6%, rgba(155,123,255,.18), transparent 28%),
+        radial-gradient(circle at 12% 8%, rgba(216,107,179,.22), transparent 28%),
+        radial-gradient(circle at 88% 5%, rgba(155,123,255,.18), transparent 28%),
         radial-gradient(circle at 50% 100%, rgba(255,216,236,.55), transparent 35%),
         linear-gradient(180deg,#fffafd 0%,#fff5fb 45%,#fff8fc 100%);
     }
@@ -35,24 +38,24 @@
     a{text-decoration:none;color:inherit}
 
     .wrap{
-      width:min(920px, calc(100% - 28px));
+      width:min(960px, calc(100% - 28px));
       margin:0 auto;
-      padding:22px 0 56px;
+      padding:18px 0 44px;
     }
 
     .topbar{
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:18px;
-      padding:14px 18px;
-      margin-bottom:20px;
+      gap:14px;
+      padding:12px 16px;
+      margin-bottom:14px;
       border-radius:999px;
-      background:rgba(255,250,253,.92);
+      background:rgba(255,250,253,.94);
       border:1px solid var(--line);
       box-shadow:var(--shadow);
       position:sticky;
-      top:12px;
+      top:10px;
       z-index:5;
       backdrop-filter:blur(12px);
     }
@@ -60,14 +63,14 @@
     .brand{
       display:flex;
       align-items:center;
-      gap:14px;
+      gap:12px;
       min-width:0;
     }
 
     .logo-wrap{
-      width:54px;
-      height:54px;
-      border-radius:18px;
+      width:50px;
+      height:50px;
+      border-radius:17px;
       display:grid;
       place-items:center;
       overflow:hidden;
@@ -95,7 +98,7 @@
     .brand h1{
       margin:0;
       font-family:Georgia, "Times New Roman", serif;
-      font-size:clamp(1.35rem, 4vw, 2rem);
+      font-size:clamp(1.28rem, 4vw, 1.9rem);
       letter-spacing:-.03em;
       line-height:1;
       color:#241b2b;
@@ -111,40 +114,57 @@
     .brand p{
       margin:3px 0 0;
       color:var(--muted);
-      font-size:.95rem;
-      white-space:nowrap;
+      font-size:.9rem;
+      line-height:1.25;
     }
 
     .btn-home{
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      min-height:44px;
-      padding:11px 16px;
+      min-height:42px;
+      padding:10px 15px;
       border-radius:999px;
       color:#fff;
-      font-weight:800;
+      font-weight:850;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 10px 22px rgba(222,111,184,.24);
       transition:.2s ease;
       white-space:nowrap;
+      flex:0 0 auto;
     }
 
     .btn-home:hover{transform:translateY(-1px)}
 
+    .mobile-fast-title{
+      display:none;
+      margin:0 0 10px;
+      text-align:center;
+      color:#6f5d76;
+      font-size:.95rem;
+      font-weight:850;
+    }
+
     .hero{
       display:grid;
-      grid-template-columns:1.05fr .95fr;
-      gap:18px;
+      grid-template-columns:.86fr 1.14fr;
+      gap:16px;
       align-items:stretch;
     }
 
     .card{
-      background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,247,251,.95));
+      background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,247,251,.95));
       border:1px solid var(--line);
       box-shadow:var(--shadow);
       border-radius:var(--radius);
-      padding:28px;
+      padding:22px;
+    }
+
+    .intro-card{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:14px;
     }
 
     .eyebrow{
@@ -157,17 +177,17 @@
       border:1px solid rgba(216,107,179,.16);
       color:#8f4f7b;
       font-weight:900;
-      font-size:.82rem;
+      font-size:.78rem;
       letter-spacing:.04em;
       text-transform:uppercase;
-      margin-bottom:14px;
+      margin-bottom:12px;
     }
 
     h2{
-      margin:0 0 12px;
+      margin:0 0 10px;
       font-family:Georgia, "Times New Roman", serif;
-      font-size:clamp(2.1rem, 6vw, 4rem);
-      line-height:1;
+      font-size:clamp(2rem, 5.4vw, 3.65rem);
+      line-height:.98;
       letter-spacing:-.05em;
       color:#241b2b;
     }
@@ -175,18 +195,18 @@
     .sub{
       margin:0;
       color:var(--muted);
-      line-height:1.65;
-      font-size:1.04rem;
+      line-height:1.58;
+      font-size:1rem;
     }
 
     .amount-note{
-      margin-top:18px;
-      padding:15px 16px;
-      border-radius:20px;
+      padding:13px 14px;
+      border-radius:18px;
       background:rgba(255,255,255,.76);
       border:1px dashed rgba(216,107,179,.26);
       color:#6f5d76;
-      line-height:1.55;
+      line-height:1.45;
+      font-size:.94rem;
     }
 
     .amount-note strong{
@@ -195,10 +215,39 @@
       margin-bottom:4px;
     }
 
+    .pay-card{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    .pay-heading{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .pay-heading h3{
+      margin:0;
+      font-family:Georgia, "Times New Roman", serif;
+      color:#241b2b;
+      font-size:1.65rem;
+      letter-spacing:-.03em;
+    }
+
+    .pay-heading span{
+      color:#8f4f7b;
+      font-size:.82rem;
+      font-weight:850;
+      white-space:nowrap;
+    }
+
     .pay-grid{
       display:grid;
-      gap:12px;
-      margin-top:4px;
+      gap:11px;
     }
 
     .pay-btn{
@@ -207,11 +256,11 @@
       justify-content:space-between;
       gap:14px;
       width:100%;
-      min-height:76px;
-      padding:16px 18px;
+      min-height:72px;
+      padding:15px 17px;
       border-radius:22px;
       border:1px solid rgba(216,107,179,.18);
-      background:rgba(255,255,255,.82);
+      background:rgba(255,255,255,.86);
       box-shadow:0 10px 24px rgba(189,132,176,.12);
       transition:.2s ease;
     }
@@ -224,13 +273,13 @@
     .pay-main{
       display:flex;
       align-items:center;
-      gap:14px;
+      gap:13px;
       min-width:0;
     }
 
     .pay-icon{
-      width:44px;
-      height:44px;
+      width:43px;
+      height:43px;
       border-radius:16px;
       display:grid;
       place-items:center;
@@ -244,23 +293,21 @@
     .venmo .pay-icon{background:#3d95ce}
     .cardpay .pay-icon{background:linear-gradient(135deg,#de6fb8,#9d7cff)}
 
-    .pay-copy{
-      min-width:0;
-    }
+    .pay-copy{min-width:0}
 
     .pay-copy strong{
       display:block;
       font-size:1.02rem;
       color:#3f3146;
-      line-height:1.2;
+      line-height:1.16;
     }
 
     .pay-copy span{
       display:block;
       margin-top:3px;
       color:var(--muted);
-      font-size:.92rem;
-      line-height:1.35;
+      font-size:.9rem;
+      line-height:1.28;
     }
 
     .arrow{
@@ -270,16 +317,27 @@
       flex:0 0 auto;
     }
 
+    .craft-note{
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:18px;
+      background:linear-gradient(135deg,rgba(222,111,184,.10),rgba(157,124,255,.08));
+      border:1px solid rgba(216,107,179,.18);
+      color:#604d68;
+      font-size:.92rem;
+      line-height:1.42;
+    }
+
     .mini-grid{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
       gap:12px;
-      margin-top:18px;
+      margin-top:16px;
     }
 
     .mini{
-      padding:14px;
-      border-radius:20px;
+      padding:13px;
+      border-radius:18px;
       background:rgba(255,255,255,.70);
       border:1px solid rgba(216,107,179,.14);
     }
@@ -287,49 +345,74 @@
     .mini strong{
       display:block;
       margin-bottom:4px;
-      font-size:.92rem;
+      font-size:.9rem;
     }
 
     .mini span{
       color:var(--muted);
-      font-size:.86rem;
-      line-height:1.35;
+      font-size:.84rem;
+      line-height:1.32;
     }
 
     .footer{
-      margin-top:18px;
+      margin-top:16px;
       text-align:center;
       color:var(--muted);
-      font-size:.86rem;
+      font-size:.84rem;
       line-height:1.5;
     }
 
     .footer a{
       color:#8f4fbe;
-      font-weight:800;
+      font-weight:850;
     }
 
     @media(max-width:820px){
-      .hero{grid-template-columns:1fr}
-      .topbar{
-        align-items:flex-start;
-        border-radius:26px;
-        flex-direction:column;
-      }
-      .btn-home{width:100%}
-      .brand p{white-space:normal}
-      .mini-grid{grid-template-columns:1fr}
+      .wrap{width:min(100% - 18px,960px);padding-top:10px;padding-bottom:30px}
+      .topbar{position:static;border-radius:24px;margin-bottom:10px;padding:10px 12px}
+      .logo-wrap{width:44px;height:44px;border-radius:15px}
+      .brand p{font-size:.8rem}
+      .btn-home{min-height:38px;padding:9px 12px;font-size:.86rem}
+      .mobile-fast-title{display:block}
+      .hero{grid-template-columns:1fr;gap:10px}
+      .pay-card{order:-1;padding:14px;border-radius:24px}
+      .pay-heading{margin-bottom:10px}
+      .pay-heading h3{font-size:1.28rem}
+      .pay-heading span{font-size:.78rem}
+      .pay-btn{min-height:61px;padding:12px 13px;border-radius:18px}
+      .pay-icon{width:38px;height:38px;border-radius:14px}
+      .pay-copy strong{font-size:.96rem}
+      .pay-copy span{font-size:.8rem}
+      .intro-card{padding:16px;border-radius:24px}
+      .eyebrow{display:none}
+      h2{font-size:1.9rem;margin-bottom:8px}
+      .sub{font-size:.93rem;line-height:1.45}
+      .amount-note{padding:11px 12px;font-size:.86rem}
+      .mini-grid{grid-template-columns:1fr;gap:8px;margin-top:10px}
+      .mini{padding:10px 12px}
     }
 
     @media(max-width:560px){
-      .wrap{width:min(100% - 16px,920px);padding-top:12px}
-      .card{padding:20px;border-radius:24px}
-      .pay-btn{align-items:flex-start}
+      .wrap{width:min(100% - 12px,960px);padding-top:8px}
+      .topbar{gap:9px}
+      .brand{gap:9px}
+      .brand h1{font-size:1.2rem}
+      .brand p{display:none}
+      .btn-home{min-width:96px;font-size:.8rem}
+      .pay-heading{align-items:flex-start;flex-direction:column;gap:2px}
+      .pay-grid{gap:8px}
+      .pay-btn{min-height:58px}
       .arrow{display:none}
-      .logo-wrap{width:48px;height:48px}
+      .craft-note{margin-top:9px;padding:10px 12px;font-size:.84rem}
+      .intro-card{padding:14px}
+      h2{font-size:1.65rem}
+      .sub{display:none}
+      .amount-note{margin-top:0}
+      .footer{font-size:.78rem}
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header class="topbar">
@@ -340,20 +423,25 @@
         </div>
         <div>
           <h1>Oli<span>Poly</span> 3D</h1>
-          <p>Quick payments for custom prints, craft shows, and pickups</p>
+          <p>Quick payments for craft shows, pickups, and custom orders</p>
         </div>
       </div>
-      <a class="btn-home" href="index.html">Back to Home</a>
+
+      <a class="btn-home" href="index.html">Home</a>
     </header>
 
+    <p class="mobile-fast-title">Choose a payment option below.</p>
+
     <main class="hero">
-      <section class="card">
-        <div class="eyebrow">Secure payment options</div>
-        <h2>Pay OliPoly 3D</h2>
-        <p class="sub">
-          Use this page for in-person purchases, craft show payments, pickup payments,
-          or custom order balances.
-        </p>
+      <section class="card intro-card">
+        <div>
+          <div class="eyebrow">Secure payment options</div>
+          <h2>Pay OliPoly 3D</h2>
+          <p class="sub">
+            Use this page for in-person purchases, craft show payments, pickup payments,
+            or custom order balances.
+          </p>
+        </div>
 
         <div class="amount-note">
           <strong>Before paying</strong>
@@ -377,13 +465,18 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card pay-card">
+        <div class="pay-heading">
+          <h3>Quick Pay</h3>
+          <span>Craft table friendly</span>
+        </div>
+
         <div class="pay-grid">
           <a class="pay-btn cardpay" href="https://buy.stripe.com/7sYdR2bGL39Y1oLg4h1oI00" target="_blank" rel="noopener">
             <span class="pay-main">
               <span class="pay-icon">💳</span>
               <span class="pay-copy">
-                <strong>Pay with Card / Apple Pay</strong>
+                <strong>Card / Apple Pay</strong>
                 <span>Secure checkout through Stripe.</span>
               </span>
             </span>
@@ -394,8 +487,8 @@
             <span class="pay-main">
               <span class="pay-icon">P</span>
               <span class="pay-copy">
-                <strong>Pay with PayPal</strong>
-                <span>Use PayPal balance, bank, or card.</span>
+                <strong>PayPal</strong>
+                <span>Balance, bank, or card.</span>
               </span>
             </span>
             <span class="arrow">→</span>
@@ -405,17 +498,16 @@
             <span class="pay-main">
               <span class="pay-icon">V</span>
               <span class="pay-copy">
-                <strong>Pay with Venmo</strong>
-                <span>Fast mobile payment option.</span>
+                <strong>Venmo</strong>
+                <span>Fast mobile payment.</span>
               </span>
             </span>
             <span class="arrow">→</span>
           </a>
         </div>
 
-        <div class="amount-note">
-          <strong>For craft shows</strong>
-          Show your payment confirmation before leaving the table so your purchase can be marked paid.
+        <div class="craft-note">
+          <strong>At events:</strong> please show your payment confirmation before leaving the table so your purchase can be marked paid.
         </div>
       </section>
     </main>
