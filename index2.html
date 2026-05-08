@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OliPoly 3D | Preview Homepage</title>
+<title>OliPoly 3D</title>
 <meta name="description" content="Creative 3D printing brought to life in Ohio — custom gifts, functional prints, prototypes, and colorful ideas made with care." />
 
 <!-- Open Graph -->
@@ -360,128 +360,59 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
   .footer-links a{margin-bottom:7px;font-size:.9rem}
 }
 
-/* === index2 preview enhancements === */
-.preview-ribbon{
-  position:fixed;
-  left:14px;
-  bottom:14px;
-  z-index:200;
-  padding:8px 12px;
-  border-radius:999px;
-  background:rgba(31,26,36,.82);
-  color:#fff;
-  font:700 .78rem Inter,sans-serif;
-  box-shadow:0 12px 26px rgba(31,26,36,.18);
-  backdrop-filter:blur(10px);
-}
-.capability-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:16px;
-}
-.capability-card{
-  padding:18px 18px 16px;
-  border-radius:22px;
+.business-details-card{
+  border-radius:24px;
   background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,244,248,.92));
-  border:1px solid rgba(236,72,153,.11);
-  box-shadow:0 10px 24px rgba(236,72,153,.06);
-}
-.capability-card h3{
-  margin:0 0 8px;
-  font:700 1.35rem/1.05 "Cormorant Garamond",serif;
-  color:#241b2b;
-}
-.capability-card p{
-  margin:0;
-  color:#6e5d78;
-  font-size:.96rem;
-  line-height:1.55;
-}
-.business-panel{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:18px;
-  align-items:stretch;
-}
-.business-card{
-  padding:22px;
-  border-radius:26px;
-  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,244,248,.94));
   border:1px solid rgba(236,72,153,.12);
   box-shadow:0 10px 24px rgba(236,72,153,.06);
+  overflow:hidden;
 }
-.business-card h3{
-  margin:0 0 10px;
-  font:700 1.6rem/1.05 "Cormorant Garamond",serif;
-  color:#241b2b;
-}
-.business-card ul{
-  margin:12px 0 0;
-  padding-left:18px;
-  color:#5f4d69;
-}
-.business-card li{margin:7px 0}
-.cta-band{
-  margin-top:24px;
-  padding:24px;
-  border-radius:28px;
-  background:
-    radial-gradient(circle at top left,rgba(236,72,153,.16),transparent 35%),
-    radial-gradient(circle at top right,rgba(167,139,250,.14),transparent 35%),
-    linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,244,248,.94));
-  border:1px solid rgba(236,72,153,.14);
-  box-shadow:0 14px 30px rgba(236,72,153,.08);
+.business-details-card summary{
+  list-style:none;
+  cursor:pointer;
   display:flex;
   justify-content:space-between;
   align-items:center;
   gap:18px;
+  padding:18px 20px;
 }
-.cta-band h2{
-  margin:0 0 6px;
-  font:700 clamp(1.8rem,3vw,2.55rem)/1.02 "Cormorant Garamond",serif;
+.business-details-card summary::-webkit-details-marker{display:none}
+.business-details-card summary strong{
+  display:block;
+  font:700 1.25rem/1.1 "Cormorant Garamond",serif;
   color:#241b2b;
 }
-.cta-band p{
-  margin:0;
-  color:#6e5d78;
-  max-width:640px;
+.business-details-card summary small{
+  display:block;
+  margin-top:5px;
+  color:#7a6b80;
+  font-weight:600;
 }
-.mini-links{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-top:14px;
-}
-.mini-link{
+.business-details-card summary b{
+  width:34px;
+  height:34px;
+  border-radius:999px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  padding:9px 13px;
-  border-radius:999px;
-  background:rgba(255,255,255,.82);
-  border:1px solid rgba(236,72,153,.12);
-  color:#4c3f57;
-  font-weight:700;
-  font-size:.9rem;
+  background:linear-gradient(135deg,rgba(236,72,153,.14),rgba(167,139,250,.14));
+  color:var(--p);
+  font-size:1.1rem;
+  transition:.2s ease;
 }
-.mini-link:hover{
-  transform:translateY(-1px);
-  box-shadow:0 10px 22px rgba(236,72,153,.12);
-}
-@media(max-width:900px){
-  .capability-grid,.business-panel{grid-template-columns:1fr}
-  .cta-band{flex-direction:column;align-items:flex-start}
-}
+.business-details-card[open] summary b{transform:rotate(45deg)}
+.business-details-body{padding:0 20px 20px}
+.compact-business-cta{margin-top:16px;padding:18px;display:block}
+.compact-business-cta h2{font-size:1.8rem}
 @media(max-width:680px){
-  .preview-ribbon{font-size:.7rem;left:10px;bottom:10px}
-  .capability-card,.business-card,.cta-band{padding:16px;border-radius:20px}
+  .business-details-card summary{padding:15px}
+  .business-details-body{padding:0 15px 15px}
 }
 
 </style>
 </head>
 <body>
-<div class="preview-ribbon">Preview: index2.html</div>
-<!-- OliPoly index2 preview build: enhanced public homepage, safe preview copy -->
+<!-- OliPoly index recovery build: full homepage file restored -->
 <header class="site-header">
   <div class="container nav-wrap">
     <div class="brand">
@@ -506,10 +437,8 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
     </div>
     <nav>
       <a href="#how-it-works">How It Works</a>
-        <a href="#business">Business / PO</a>
         <a href="faq.html">FAQ</a>
       <a href="#gallery">Gallery</a>
-      <a href="#business">Business / PO</a>
       <a href="#events">Events</a>
       <a href="track.html">Track Order</a>
       <a href="#contact">Contact</a>
@@ -523,14 +452,14 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
     <div class="container hero-grid">
       <div>
         <h1>Custom 3D printing that feels <span class="accent">creative</span>, personal, and easy to start.</h1>
-        <p>OliPoly 3D helps turn ideas into real parts, prototypes, custom gifts, and small-batch production pieces with thoughtful design support, clean communication, and a maker-first approach.</p>
+        <p>OliPoly 3D helps turn ideas into real parts, prototypes, and custom creations with thoughtful design support, clean communication, and a maker-first approach.</p>
         <div class="hero-actions">
           <a class="cta" href="#order">Start Your Project</a>
           <a class="btn-secondary" href="#gallery">View Recent Work</a>
         </div>
         <div class="trust-row">
           <span>Custom one-off prints</span>
-          <span>Prototype & small-batch friendly</span>
+          <span>Prototype-friendly process</span>
           <span>Creative collaboration</span>
         </div>
         <div class="hero-divider"></div>
@@ -551,34 +480,10 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
         <p>A simple, collaborative process for turning an idea, sketch, photo, or file into a finished 3D print.</p>
       </div>
       <div class="steps">
-        <article class="step"><div class="step-number">1</div><h3>Share your idea</h3><p>Send a description, photo, sketch, file, or measurements.</p></article>
-        <article class="step"><div class="step-number">2</div><h3>Get a quote</h3><p>We confirm scope, material, quantity, timing, and pricing.</p></article>
-        <article class="step"><div class="step-number">3</div><h3>Approve the work</h3><p>Review the quote, ask questions, or approve when ready.</p></article>
-        <article class="step"><div class="step-number">4</div><h3>Track production</h3><p>Your OP order can be tracked through printing, packing, and shipping.</p></article>
-      </div>
-    </div>
-  </section>
-
-
-  <section class="section" id="capabilities">
-    <div class="container">
-      <div class="section-head">
-        <div><h2>What OliPoly can help with</h2></div>
-        <p>From fun one-off ideas to practical parts and repeatable small-batch work.</p>
-      </div>
-      <div class="capability-grid">
-        <article class="capability-card">
-          <h3>Custom gifts & creative prints</h3>
-          <p>Personalized pieces, themed sets, decorations, fidgets, toys, and memorable one-off creations.</p>
-        </article>
-        <article class="capability-card">
-          <h3>Functional parts & accessories</h3>
-          <p>Brackets, organizers, adapters, holders, replacement-style pieces, and practical shop or home solutions.</p>
-        </article>
-        <article class="capability-card">
-          <h3>Prototypes & small batches</h3>
-          <p>Test-fit parts, concept models, short-run production, business requests, and PO-friendly quoting.</p>
-        </article>
+        <article class="step"><div class="step-number">1</div><h3>Share your idea</h3><p>Tell us what you want made, fixed, customized, or brought to life.</p></article>
+        <article class="step"><div class="step-number">2</div><h3>Show inspiration</h3><p>Send photos, sketches, files, measurements, or examples if you have them.</p></article>
+        <article class="step"><div class="step-number">3</div><h3>Refine the details</h3><p>We’ll help with material, size, design options, pricing, and next steps.</p></article>
+        <article class="step"><div class="step-number">4</div><h3>Watch it come to life</h3><p>Your piece is printed, finished, and prepared for pickup or shipping.</p></article>
       </div>
     </div>
   </section>
@@ -634,53 +539,6 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
             <span class="testimonial-name">Tom L.</span>
           </article>
         </div>
-      </div>
-    </div>
-  </section>
-
-
-  <section class="section" id="business">
-    <div class="container">
-      <div class="section-head">
-        <div><h2>Business & PO customers</h2></div>
-        <p>Need a quote for purchasing review, a repeatable part, or a small-batch production request? OliPoly can support a more formal workflow too.</p>
-      </div>
-
-      <div class="business-panel">
-        <article class="business-card">
-          <h3>Professional quote workflow</h3>
-          <p>For companies, buyers, and teams that need clear references before approval.</p>
-          <ul>
-            <li>Detailed quote PDFs</li>
-            <li>PO and part number references</li>
-            <li>Order tracking with OP order numbers</li>
-            <li>Invoice and fulfillment documentation</li>
-          </ul>
-        </article>
-
-        <article class="business-card">
-          <h3>Good fit for</h3>
-          <p>Small production needs where clear communication and practical turnaround matter.</p>
-          <ul>
-            <li>Prototype brackets, fixtures, and test parts</li>
-            <li>Repeat small-batch printed components</li>
-            <li>Custom workplace tools or accessories</li>
-            <li>Local pickup, delivery, or shipping</li>
-          </ul>
-        </article>
-      </div>
-
-      <div class="cta-band">
-        <div>
-          <h2>Have a business or PO request?</h2>
-          <p>Send the part details, quantity, target material, shipping needs, and any purchasing requirements. We’ll follow up with the right quote format.</p>
-          <div class="mini-links">
-            <a class="mini-link" href="#order">Request a quote</a>
-            <a class="mini-link" href="mailto:OliPoly3D@gmail.com?subject=Business%20Quote%20Request%20for%20OliPoly%203D">Email business request</a>
-            <a class="mini-link" href="track.html">Track an OP order</a>
-          </div>
-        </div>
-        <a class="cta" href="#order">Start Business Quote</a>
       </div>
     </div>
   </section>
@@ -775,7 +633,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
   <div class="container">
     <div class="section-head">
       <div><h2>Start your custom print</h2></div>
-      <p>Ready to move forward? Submit your project details, upload references, or start a business quote request.</p>
+      <p>Ready to move forward? Submit your project details.</p>
     </div>
     <div class="contact-grid split-grid">
       <div class="contact-shell">
@@ -826,7 +684,6 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
       <a href="track.html">Track an order <span>→</span></a>
       <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Upload reference files <span>→</span></a>
       <a href="#gallery">Browse recent work <span>→</span></a>
-      <a href="#business">Business / PO customers <span>→</span></a>
     </div>
   </div>
   <button class="poly-helper-toggle" type="button" id="polyHelperToggle" aria-expanded="false" aria-controls="polyHelper">
