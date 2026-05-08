@@ -23,7 +23,7 @@
     .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
     .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
     .summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.summary span,.summary strong,.summary small{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.12rem,2.7vw,1.8rem)}.summary small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
-    .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .75fr .75fr .75fr .75fr auto;align-items:end}
+    .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .7fr .7fr .7fr .7fr .7fr auto;align-items:end}
     label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit;outline:none}
     select option{background:#0a1225;color:#eef4ff} input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)} textarea{min-height:90px;resize:vertical}
     .note,.empty,.message,.stripe-note{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}.message{display:none}
@@ -47,6 +47,11 @@
     .p-invoice-overdue{background:rgba(255,110,145,.12);border-color:rgba(255,110,145,.24);color:#ffd8e3}
     .p-financial-closed{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
     .invoice-status-note{margin-top:12px}
+
+
+    .p-finance-pushed{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
+    .p-finance-not-pushed{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
+    .finance-status-note{margin-top:12px}
 
     @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters,.inline-row{grid-template-columns:1fr}}
   
@@ -113,6 +118,7 @@
         <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
         <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
         <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
+        <div><label for="financeFilter">Finance</label><select id="financeFilter"><option value="all">All Finance States</option><option value="not_pushed">Not Pushed</option><option value="pushed">Finance Pushed</option><option value="ready">Ready to Push</option></select></div>
         <div><label for="sortBy">Sort</label><select id="sortBy"><option value="newest">Newest</option><option value="customer">Customer A–Z</option><option value="total_desc">Highest Total</option></select></div>
         <div><label>&nbsp;</label><button class="btn-ghost" id="clearFiltersBtn" type="button">Clear</button></div>
       </div>
@@ -276,6 +282,66 @@
       note.textContent = parts.join(' • ');
     }
 
+
+    function financeStatusLabel(order){
+      if (!order) return null;
+      if (order.finance_pushed) return 'Finance Pushed';
+      if (['paid','deposit_paid'].includes(order.payment_status) && num(order.order_total) > 0) return 'Not Pushed';
+      return null;
+    }
+
+    function financeStatusClass(order){
+      return order?.finance_pushed ? 'p-finance-pushed' : 'p-finance-not-pushed';
+    }
+
+    function updateFinanceStatusNote(order = null){
+      let note = document.getElementById('financeStatusNote');
+      if (!note) {
+        const invoiceNote = document.getElementById('invoiceStatusNote');
+        const preview = document.getElementById('publicPreview');
+        const anchor = invoiceNote || preview;
+        if (!anchor) return;
+        note = document.createElement('div');
+        note.id = 'financeStatusNote';
+        note.className = 'note finance-status-note';
+        anchor.insertAdjacentElement('beforebegin', note);
+      }
+
+      if (!order) {
+        note.textContent = 'Finance status: no order selected.';
+        return;
+      }
+
+      if (order.finance_pushed) {
+        note.textContent = `Finance status: pushed to Finance Pro${order.finance_pushed_at ? ` • ${formatDateTime(order.finance_pushed_at)}` : ''}.`;
+        return;
+      }
+
+      if (['paid','deposit_paid'].includes(order.payment_status) && num(order.order_total) > 0) {
+        note.textContent = 'Finance status: ready to push to Finance Pro.';
+        return;
+      }
+
+      note.textContent = 'Finance status: not ready to push yet.';
+    }
+
+    function updateFinancePushButton(order = null){
+      const btn = $('pushFinanceBtn');
+      if (!btn) return;
+
+      if (order?.finance_pushed) {
+        btn.textContent = 'Pushed to Finance ✅';
+        btn.title = order.finance_pushed_at ? `Pushed ${formatDateTime(order.finance_pushed_at)}` : 'Already pushed to Finance Pro';
+      } else {
+        btn.textContent = 'Push to Finance';
+        btn.title = '';
+      }
+
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
+
     function setMsg(el,text,isError=false){
       el.style.display='block';
       el.textContent=text;
@@ -435,6 +501,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('publicPreview').textContent = 'No public preview yet.';
       updateCompletionEmailButton(null);
       updateInvoiceStatusNote(null);
+      updateFinanceStatusNote(null);
+      updateFinancePushButton(null);
       clearMsg($('formMessage'));
     }
 
@@ -473,6 +541,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('shippingOrPickupNote').value = o.shipping_or_pickup_note || '';
       updateCompletionEmailButton(o);
       updateInvoiceStatusNote(o);
+      updateFinanceStatusNote(o);
+      updateFinancePushButton(o);
       updatePreview();
     }
 
@@ -524,6 +594,15 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
       const payload = snapshotForm();
       const orderNumber = payload.order_number;
+      const currentOrder = activeId ? orders.find(o => o.id === activeId) : orders.find(o => o.order_number === orderNumber);
+
+      if (currentOrder?.finance_pushed) {
+        const okRepush = confirm(`This order was already pushed to Finance Pro${currentOrder.finance_pushed_at ? ` on ${formatDateTime(currentOrder.finance_pushed_at)}` : ''}.\n\nPush it again anyway?`);
+        if (!okRepush) {
+          setMsg($('formMessage'), `Push cancelled. ${orderNumber} is already marked as pushed to Finance Pro.`, true);
+          return;
+        }
+      }
 
       if (!orderNumber) {
         setMsg($('formMessage'), 'Order number is required before pushing to Finance Pro.', true);
@@ -604,10 +683,36 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         return;
       }
 
+      const pushedAt = new Date().toISOString();
       const note = `Finance Pro entry created ${new Date().toLocaleString()} for ${orderNumber}. Total ${money(split.total)} split as revenue ${money(split.net)} + tax ${money(split.tax)}.`;
       $('internalNotes').value = [$('internalNotes').value.trim(), note].filter(Boolean).join('\n\n');
 
+      const financePatch = {
+        finance_pushed: true,
+        finance_pushed_at: pushedAt,
+        internal_notes: $('internalNotes').value.trim() || null
+      };
+
+      const targetPath = activeId ? `/rest/v1/orders?id=eq.${activeId}` : `/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;
+      const flagRes = await api(targetPath, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(financePatch)
+      });
+
+      if (flagRes.error) {
+        setMsg($('formMessage'), `Finance entry created, but Orders Admin could not save the pushed badge: ${flagRes.error?.message || JSON.stringify(flagRes.error)}`, true);
+        return;
+      }
+
       setMsg($('formMessage'), `Pushed ${orderNumber} to Finance Pro. Revenue ${money(split.net)} + sales tax ${money(split.tax)}.`);
+      await fetchOrders();
+      const saved = orders.find(o => o.order_number === orderNumber);
+      if (saved) {
+        loadIntoForm(saved);
+        updateFinanceStatusNote(saved);
+        updateFinancePushButton(saved);
+      }
     }
 
     function updatePreview(){
@@ -644,6 +749,16 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
           return true;
         });
       }
+      if ($('financeFilter') && $('financeFilter').value !== 'all') {
+        const financeState = $('financeFilter').value;
+        list = list.filter(o => {
+          const ready = ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0;
+          if (financeState === 'pushed') return !!o.finance_pushed;
+          if (financeState === 'not_pushed') return !o.finance_pushed;
+          if (financeState === 'ready') return ready && !o.finance_pushed;
+          return true;
+        });
+      }
       if ($('sortBy').value === 'customer') list.sort((a,b) => String(a.customer_name || '').localeCompare(String(b.customer_name || '')));
       else if ($('sortBy').value === 'total_desc') list.sort((a,b) => num(b.order_total) - num(a.order_total));
       else list.sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
@@ -670,6 +785,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
             <span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>
             <span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>
             ${invoiceStatusLabel(o) ? `<span class="payment-pill ${invoiceStatusClass(o)}">${invoiceStatusLabel(o)}</span>` : ''}
+            ${financeStatusLabel(o) ? `<span class="payment-pill ${financeStatusClass(o)}">${financeStatusLabel(o)}</span>` : ''}
             ${o.status === 'completed' ? `<span class="payment-pill ${o.completion_email_sent ? 'p-paid' : 'p-unpaid'}">${o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email'}</span>` : ''}
           </div>
           <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
@@ -1042,6 +1158,7 @@ if ($('openVenmoBtn')) {
       $('statusFilter').value = 'all';
       $('paymentFilter').value = 'all';
       if ($('invoiceFilter')) $('invoiceFilter').value = 'all';
+      if ($('financeFilter')) $('financeFilter').value = 'all';
       $('sortBy').value = 'newest';
       renderList();
     };
