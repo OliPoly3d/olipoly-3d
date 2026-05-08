@@ -42,6 +42,20 @@
     .hidden{display:none!important}
     @media (max-width:1140px){.grid,.hero,.summary-grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}
     @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters,.inline-row{grid-template-columns:1fr}}
+  
+    .invoice-print-area{display:none}
+    .invoice-sheet{width:8.5in;min-height:10.5in;background:#fff;color:#2f2336;padding:.38in;margin:0 auto;border:1px solid #f0c8df;border-radius:22px;font-family:Arial,Helvetica,sans-serif}
+    .invoice-topbar{height:12px;margin:-.38in -.38in .26in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
+    .invoice-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}
+    .invoice-brand{font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:800;color:#241b2b;letter-spacing:-.04em}.invoice-brand span{color:#b86be8}.invoice-tagline{margin-top:6px;color:#826889;font-size:13px}.invoice-title-box{text-align:right}.invoice-title{font-size:32px;font-weight:900;color:#241b2b;letter-spacing:.08em}.invoice-number{margin-top:6px;color:#7c4a82;font-weight:900}
+    .invoice-meta-grid,.invoice-address-grid,.invoice-bottom-grid{display:grid;gap:12px}.invoice-meta-grid{grid-template-columns:repeat(4,1fr);margin-bottom:14px}.invoice-address-grid{grid-template-columns:1fr 1fr;margin-bottom:16px}.invoice-bottom-grid{grid-template-columns:1.25fr .75fr;align-items:start;margin-top:16px}
+    .invoice-card,.invoice-panel,.invoice-totals,.invoice-remit{border:1px solid #f0c8df;background:linear-gradient(180deg,#fff8fc,#fff);border-radius:16px;padding:12px}.invoice-card small{display:block;color:#826889;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.invoice-card strong{font-size:13px;color:#2f2336}
+    .invoice-chip{display:inline-block;margin-bottom:8px;padding:5px 9px;border-radius:999px;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.invoice-panel{font-size:13px;line-height:1.45;color:#4f4057}
+    .invoice-table{width:100%;border-collapse:collapse;margin-top:10px}.invoice-table th{font-size:11px;color:#826889;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #f0c8df;text-align:left;padding:10px 8px}.invoice-table td{font-size:13px;color:#2f2336;border-bottom:1px solid #f6ddec;padding:12px 8px;vertical-align:top}.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){text-align:center;width:70px}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3),.invoice-table th:nth-child(4),.invoice-table td:nth-child(4){text-align:right;width:110px}
+    .invoice-totals div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f6ddec;color:#4f4057}.invoice-totals div:last-child{border-bottom:none}.invoice-total-due strong,.invoice-total-due span{font-size:18px!important;color:#241b2b!important;font-weight:900}.invoice-remit{margin-top:18px;font-size:12px;line-height:1.45;color:#604d68}.invoice-footer{margin-top:18px;text-align:center;color:#826889;font-size:11px}
+    .email-preview-modal.hidden{display:none!important}.email-preview-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px}.email-preview-backdrop{position:absolute;inset:0;background:rgba(20,12,28,.62);backdrop-filter:blur(8px)}.email-preview-dialog{position:relative;z-index:1;width:min(980px,96vw);max-height:92vh;overflow:hidden;border-radius:28px;background:linear-gradient(180deg,#fff7fb,#fff);border:1px solid rgba(222,111,184,.28);box-shadow:0 28px 90px rgba(45,22,54,.34);display:flex;flex-direction:column}.email-preview-head{display:flex;justify-content:space-between;gap:18px;padding:22px 24px 16px;border-bottom:1px solid rgba(222,111,184,.18);background:#fff7fb}.email-preview-kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(222,111,184,.12);border:1px solid rgba(222,111,184,.20);color:#7c4a82;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.email-preview-head h3{margin:10px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;color:#241b2b}.email-preview-head p{margin:0;color:#725b78;line-height:1.45}.email-preview-close{width:42px;height:42px;border-radius:999px;border:1px solid rgba(222,111,184,.24);background:#fff;color:#8d4e8f;font-size:1.5rem;font-weight:900;cursor:pointer}.email-preview-actions{display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px;border-bottom:1px solid rgba(222,111,184,.14)}.email-preview-note{margin:0 24px 14px;padding:12px 14px;border-radius:16px;background:rgba(157,124,255,.08);border:1px solid rgba(157,124,255,.16);color:#5e4b67;line-height:1.45}.email-preview-frame{flex:1;min-height:420px;overflow:hidden;background:#f7eef5;border-top:1px solid rgba(222,111,184,.14)}.email-preview-frame iframe{width:100%;height:100%;min-height:520px;border:0;background:white}
+    @media print{body *{visibility:hidden!important}#invoicePrintArea,#invoicePrintArea *{visibility:visible!important}#invoicePrintArea{display:block!important;position:absolute;left:0;top:0;width:100%}.invoice-sheet{border:none;border-radius:0;box-shadow:none}@page{size:letter portrait;margin:.25in}}
+
   </style>
 </head>
 <body>
@@ -150,6 +164,14 @@
 </div>
           <div><label for="stripeInvoiceId">Stripe Invoice ID (optional)</label><input id="stripeInvoiceId" placeholder="inv_..." /></div>
           <div><label for="paidDate">Paid Date</label><input id="paidDate" type="date" /></div>
+          <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Customer PO #" /></div>
+          <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="INV-000184" /></div>
+          <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
+          <div><label for="invoiceDueDate">Invoice Due Date</label><input id="invoiceDueDate" type="date" /></div>
+          <div><label for="invoiceTerms">Invoice Terms</label><select id="invoiceTerms"><option value="customer_terms">Customer Standard Terms / PO Terms</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_45">Net 45</option><option value="due_on_receipt">Due on Receipt</option></select></div>
+          <div><label for="apEmail">AP / Billing Email</label><input id="apEmail" type="email" placeholder="Optional accounts payable email" /></div>
+          <div class="full"><label for="billingAddress">Billing Address</label><textarea id="billingAddress" placeholder="Company billing address"></textarea></div>
+          <div class="full"><label for="shippingAddress">Shipping Address</label><textarea id="shippingAddress" placeholder="Ship-to / receiving address"></textarea></div>
           <div class="full"><label for="internalNotes">Internal Notes</label><textarea id="internalNotes"></textarea></div>
           <div class="full"><label for="publicStatusText">Public Status Text</label><textarea id="publicStatusText"></textarea></div>
           <div class="full"><label for="publicNextStep">Public Next Step</label><textarea id="publicNextStep"></textarea></div>
@@ -160,6 +182,9 @@
           <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
           <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Send Completion Email</button>
           <button class="btn-ghost" id="pushFinanceBtn" type="button">Push to Finance</button>
+          <button class="btn-ghost" id="generateInvoicePdfBtn" type="button">Generate Invoice PDF</button>
+          <button class="btn-ghost" id="prepareInvoiceEmailBtn" type="button">Prepare Invoice Email</button>
+          <button class="btn-ghost" id="markInvoiceSentBtn" type="button">Mark Invoice Sent</button>
         </div>
         <div class="message" id="formMessage"></div>
         <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
@@ -274,6 +299,14 @@ payment_link_venmo: $('paymentLinkVenmo')?.value.trim() || null,
 
 stripe_invoice_id: $('stripeInvoiceId').value.trim() || null,
 paid_date: $('paidDate').value || null,
+po_number: $('poNumber')?.value.trim() || null,
+invoice_number: $('invoiceNumber')?.value.trim() || null,
+invoice_date: $('invoiceDate')?.value || null,
+invoice_due_date: $('invoiceDueDate')?.value || null,
+invoice_terms: $('invoiceTerms')?.value || null,
+ap_email: $('apEmail')?.value.trim() || null,
+billing_address: $('billingAddress')?.value.trim() || null,
+shipping_address: $('shippingAddress')?.value.trim() || null,
 internal_notes: $('internalNotes').value.trim() || null,
 public_status_text: $('publicStatusText').value.trim() || null,
 public_next_step: $('publicNextStep').value.trim() || null,
@@ -313,6 +346,7 @@ function publicTrackingPayload(payload) {
   'paymentLinkPaypal',
   'paymentLinkVenmo',
   'stripeInvoiceId',
+  'poNumber','invoiceNumber','invoiceDate','invoiceDueDate','apEmail','billingAddress','shippingAddress',
   'internalNotes',
   'publicStatusText',
   'publicNextStep',
@@ -332,6 +366,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('paymentStatus').value = 'unpaid';
       $('fulfillment').value = 'pickup';
       $('paidDate').value = '';
+      if ($('invoiceTerms')) $('invoiceTerms').value = 'customer_terms';
       $('publicPreview').textContent = 'No public preview yet.';
       updateCompletionEmailButton(null);
       clearMsg($('formMessage'));
@@ -358,6 +393,14 @@ if ($('paymentLinkPaypal')) $('paymentLinkPaypal').value = o.payment_link_paypal
 if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo || '';
       $('stripeInvoiceId').value = o.stripe_invoice_id || '';
       $('paidDate').value = o.paid_date || '';
+      if ($('poNumber')) $('poNumber').value = o.po_number || '';
+      if ($('invoiceNumber')) $('invoiceNumber').value = o.invoice_number || '';
+      if ($('invoiceDate')) $('invoiceDate').value = o.invoice_date || '';
+      if ($('invoiceDueDate')) $('invoiceDueDate').value = o.invoice_due_date || '';
+      if ($('invoiceTerms')) $('invoiceTerms').value = o.invoice_terms || 'customer_terms';
+      if ($('apEmail')) $('apEmail').value = o.ap_email || '';
+      if ($('billingAddress')) $('billingAddress').value = o.billing_address || '';
+      if ($('shippingAddress')) $('shippingAddress').value = o.shipping_address || '';
       $('internalNotes').value = o.internal_notes || '';
       $('publicStatusText').value = o.public_status_text || '';
       $('publicNextStep').value = o.public_next_step || '';
@@ -692,6 +735,43 @@ const payload = snapshotForm();
     }
 
 
+
+    function invoiceTermsLabel(value){return ({customer_terms:'Customer Standard Terms / PO Terms',net_15:'Net 15',net_30:'Net 30',net_45:'Net 45',due_on_receipt:'Due on Receipt'})[value] || value || 'Customer Standard Terms / PO Terms';}
+    function defaultInvoiceNumber(orderNumber){const m=String(orderNumber||'').match(/OP-(\d+)/i);return m?`INV-${m[1]}`:`INV-${String(orderNumber||'').replace(/^OP-/i,'')}`;}
+    function addDaysISO(dateStr,days){const d=dateStr?new Date(`${dateStr}T00:00:00`):new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
+    function invoiceTermsDays(term){return ({net_15:15,net_30:30,net_45:45,due_on_receipt:0})[term] ?? 30;}
+    function ensureInvoiceDefaults(){
+      const orderNumber=$('orderNumber').value.trim(), terms=$('invoiceTerms')?.value||'customer_terms';
+      if($('invoiceNumber')&&!$('invoiceNumber').value.trim()) $('invoiceNumber').value=defaultInvoiceNumber(orderNumber);
+      if($('invoiceDate')&&!$('invoiceDate').value) $('invoiceDate').value=today();
+      if($('invoiceDueDate')&&!$('invoiceDueDate').value) $('invoiceDueDate').value=addDaysISO($('invoiceDate')?.value||today(),invoiceTermsDays(terms));
+      if($('apEmail')&&!$('apEmail').value.trim()&&$('customerEmail').value.trim()) $('apEmail').value=$('customerEmail').value.trim();
+    }
+    function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+    function multilineHtml(s){return esc(s||'').replace(/\n/g,'<br>');}
+    function buildInvoiceData(){ensureInvoiceDefaults();const p=snapshotForm(), subtotal=num(p.order_total), tax=0, total=subtotal+tax, qty=num(p.quantity)||1, unit=qty?subtotal/qty:subtotal;return {...p,invoice_number:p.invoice_number||defaultInvoiceNumber(p.order_number),invoice_date:p.invoice_date||today(),invoice_due_date:p.invoice_due_date||addDaysISO(today(),invoiceTermsDays(p.invoice_terms)),invoice_terms_label:invoiceTermsLabel(p.invoice_terms),subtotal,tax,total,unit};}
+    function fillInvoicePdf(){
+      const d=buildInvoiceData();
+      $('invPdfInvoiceNumber').textContent=d.invoice_number;$('invPdfInvoiceDate').textContent=d.invoice_date||'—';$('invPdfDueDate').textContent=d.invoice_due_date||'—';$('invPdfTerms').textContent=d.invoice_terms_label;$('invPdfPoNumber').textContent=d.po_number||'—';$('invPdfOrderNumber').textContent=d.order_number||'—';
+      $('invPdfBillTo').innerHTML=[d.customer_name?`<strong>${esc(d.customer_name)}</strong>`:'',d.customer_email?esc(d.customer_email):'',d.billing_address?multilineHtml(d.billing_address):''].filter(Boolean).join('<br>')||'—';
+      $('invPdfShipTo').innerHTML=[d.shipping_address?multilineHtml(d.shipping_address):'',`Fulfillment: ${esc(d.fulfillment||'—')}`].filter(Boolean).join('<br>')||'—';
+      $('invPdfDescription').innerHTML=[d.order_title?`<strong>${esc(d.order_title)}</strong>`:'<strong>Custom 3D printed items</strong>',d.po_number?`PO: ${esc(d.po_number)}`:'',d.order_number?`Order: ${esc(d.order_number)}`:''].filter(Boolean).join('<br>');
+      $('invPdfQty').textContent=d.quantity||1;$('invPdfUnitPrice').textContent=money(d.unit);$('invPdfLineTotal').textContent=money(d.subtotal);$('invPdfSubtotal').textContent=money(d.subtotal);$('invPdfTax').textContent=money(d.tax);$('invPdfTotal').textContent=money(d.total);
+      $('invPdfShippingInfo').innerHTML=[d.fulfillment?`Fulfillment: ${esc(d.fulfillment)}`:'',d.tracking_number?`Tracking: ${esc(d.tracking_number)}`:'',d.shipping_or_pickup_note?multilineHtml(d.shipping_or_pickup_note):''].filter(Boolean).join('<br>')||'Tracking/shipment details will be provided as available.';
+      return d;
+    }
+    function generateInvoicePdf(){fillInvoicePdf();window.print();}
+    function buildInvoicePlainEmail(d){return `Hello,\n\nAttached is invoice ${d.invoice_number} for the completed/shipped OliPoly 3D order.\n\nInvoice: ${d.invoice_number}\nOrder: ${d.order_number||'—'}\nPO: ${d.po_number||'—'}\nProject: ${d.order_title||'Custom 3D printed items'}\nTotal Due: ${money(d.total)}\nTerms: ${d.invoice_terms_label}\nDue Date: ${d.invoice_due_date||'—'}\n${d.tracking_number?`Tracking: ${d.tracking_number}\n`:''}\nPlease process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.\n\nThank you,\n\nOliPoly 3D LLC\nCustom 3D Printing • Creative Builds • Prototypes\nOliPoly3D@gmail.com\nhttps://olipoly3d.com`;}
+    function buildInvoiceHtmlEmail(d){return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;"><div style="max-width:700px;margin:0 auto;background:#fff;border:1px solid #f0c8df;border-radius:26px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);"><div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div><div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#fff 100%);border-bottom:1px solid #f6ddec;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div><div style="margin-top:7px;color:#826889;font-size:13px;">Custom 3D Printing • Creative Builds • Prototypes</div></div><div style="padding:28px;"><div style="display:inline-block;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:#f9ecf5;border:1px solid #f2c4df;color:#7c4a82;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">Invoice</div><h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 16px;color:#241b2b;font-weight:700;">Invoice for completed order</h1><p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">Attached is invoice <strong>${esc(d.invoice_number)}</strong> for the completed/shipped OliPoly 3D order.</p><div style="background:linear-gradient(180deg,#fff8fc,#fff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;"><p><strong>Order / PO:</strong> ${esc(d.order_number||'—')} / ${esc(d.po_number||'—')}</p><p><strong>Project:</strong> ${esc(d.order_title||'Custom 3D printed items')}</p><p><strong>Total Due:</strong> ${money(d.total)}</p><p><strong>Terms / Due:</strong> ${esc(d.invoice_terms_label)} • ${esc(d.invoice_due_date||'—')}</p></div><div style="border-left:4px solid #de6fb8;background:#fffafd;padding:14px 16px;border-radius:14px;margin:20px 0;color:#604d68;font-size:14px;line-height:1.6;">Please process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.</div><p style="font-size:15px;line-height:1.6;margin:22px 0 0;color:#4f4057;">Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p></div><div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:18px 28px;color:#826889;font-size:13px;line-height:1.55;"><strong style="color:#4f4057;">OliPoly 3D</strong><br><a href="mailto:OliPoly3D@gmail.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">OliPoly3D@gmail.com</a><span style="color:#c59db9;"> • </span><a href="https://olipoly3d.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">olipoly3d.com</a></div></div></div>`;}
+    let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
+    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);d.close();}
+    function openInvoiceEmailModal(){const d=buildInvoiceData(), html=buildInvoiceHtmlEmail(d), plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`Invoice ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+    function closeInvoiceEmailModal(){$('invoiceEmailModal')?.classList.add('hidden');$('invoiceEmailModal')?.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+    async function copyInvoiceRichEmail(){try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([lastInvoiceEmail.html],{type:'text/html'}),'text/plain':new Blob([lastInvoiceEmail.plain],{type:'text/plain'})})]);}else await navigator.clipboard.writeText(lastInvoiceEmail.html);$('invoiceEmailModalMessage').innerHTML='Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';}catch(err){$('invoiceEmailModalMessage').textContent='Could not copy rich email automatically. Try Download HTML.';}}
+    function openInvoiceGmailDraft(){window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lastInvoiceEmail.to)}&su=${encodeURIComponent(lastInvoiceEmail.subject)}&body=${encodeURIComponent(lastInvoiceEmail.plain)}`,'_blank','noopener,noreferrer');}
+    function downloadInvoiceEmailHtml(){const blob=new Blob([lastInvoiceEmail.html],{type:'text/html'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${($('invoiceNumber')?.value||'invoice').replace(/[^a-z0-9_-]/gi,'-')}-email.html`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),600);}
+    async function markInvoiceSent(){ensureInvoiceDefaults();const orderNumber=$('orderNumber').value.trim();if(!orderNumber)return setMsg($('formMessage'),'Order number required before marking invoice sent.',true);const patchPayload={invoice_number:$('invoiceNumber')?.value.trim()||null,invoice_date:$('invoiceDate')?.value||null,invoice_due_date:$('invoiceDueDate')?.value||null,invoice_terms:$('invoiceTerms')?.value||null,po_number:$('poNumber')?.value.trim()||null,ap_email:$('apEmail')?.value.trim()||null,billing_address:$('billingAddress')?.value.trim()||null,shipping_address:$('shippingAddress')?.value.trim()||null,invoice_sent:true,invoice_sent_at:new Date().toISOString()};const targetPath=activeId?`/rest/v1/orders?id=eq.${activeId}`:`/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;const res=await api(targetPath,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patchPayload)});if(res.error)return setMsg($('formMessage'),res.error.message||JSON.stringify(res.error),true);setMsg($('formMessage'),`Invoice ${patchPayload.invoice_number} marked sent.`);await fetchOrders();const saved=orders.find(o=>o.order_number===orderNumber);if(saved)loadIntoForm(saved);}
+
     function buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
       const fulfillmentLine =
         fulfillment === 'shipping'
@@ -856,6 +936,16 @@ if ($('newBtn')) $('newBtn').onclick = resetForm;
 if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
 if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
 if ($('sendCompleteEmailBtn')) $('sendCompleteEmailBtn').onclick = openGmailCompletionEmail;
+
+if ($('generateInvoicePdfBtn')) $('generateInvoicePdfBtn').onclick = generateInvoicePdf;
+if ($('prepareInvoiceEmailBtn')) $('prepareInvoiceEmailBtn').onclick = openInvoiceEmailModal;
+if ($('markInvoiceSentBtn')) $('markInvoiceSentBtn').onclick = markInvoiceSent;
+if ($('invoiceEmailCloseBtn')) $('invoiceEmailCloseBtn').onclick = closeInvoiceEmailModal;
+if ($('invoiceEmailBackdrop')) $('invoiceEmailBackdrop').onclick = closeInvoiceEmailModal;
+if ($('copyInvoiceEmailRichBtn')) $('copyInvoiceEmailRichBtn').onclick = copyInvoiceRichEmail;
+if ($('openInvoiceGmailBtn')) $('openInvoiceGmailBtn').onclick = openInvoiceGmailDraft;
+if ($('downloadInvoiceEmailHtmlBtn')) $('downloadInvoiceEmailHtmlBtn').onclick = downloadInvoiceEmailHtml;
+
     if ($('openStripeBtn')) {
   $('openStripeBtn').onclick = () => {
     const url = $('paymentLinkStripe')?.value;
@@ -949,5 +1039,42 @@ if ($('openVenmoBtn')) {
     
         $('pushFinanceBtn')?.addEventListener('click', pushCurrentOrderToFinance);
   </script>
+
+  <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true">
+    <div class="invoice-sheet">
+      <div class="invoice-topbar"></div>
+      <div class="invoice-header">
+        <div><div class="invoice-brand">Oli<span>Poly</span> 3D</div><div class="invoice-tagline">Custom 3D Printing • Creative Builds • Prototypes</div></div>
+        <div class="invoice-title-box"><div class="invoice-title">INVOICE</div><div class="invoice-number" id="invPdfInvoiceNumber">INV-000000</div></div>
+      </div>
+      <div class="invoice-meta-grid">
+        <div class="invoice-card"><small>Invoice Date</small><strong id="invPdfInvoiceDate">—</strong></div>
+        <div class="invoice-card"><small>Due Date</small><strong id="invPdfDueDate">—</strong></div>
+        <div class="invoice-card"><small>Payment Terms</small><strong id="invPdfTerms">—</strong></div>
+        <div class="invoice-card"><small>PO / Order</small><strong><span id="invPdfPoNumber">—</span> / <span id="invPdfOrderNumber">—</span></strong></div>
+      </div>
+      <div class="invoice-address-grid">
+        <div class="invoice-panel"><div class="invoice-chip">Bill To</div><div id="invPdfBillTo">—</div></div>
+        <div class="invoice-panel"><div class="invoice-chip">Ship To / Fulfillment</div><div id="invPdfShipTo">—</div></div>
+      </div>
+      <table class="invoice-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead><tbody><tr><td id="invPdfDescription">—</td><td id="invPdfQty">—</td><td id="invPdfUnitPrice">—</td><td id="invPdfLineTotal">—</td></tr></tbody></table>
+      <div class="invoice-bottom-grid">
+        <div class="invoice-panel"><div class="invoice-chip">Shipment / Tracking</div><div id="invPdfShippingInfo">—</div></div>
+        <div class="invoice-totals"><div><span>Subtotal</span><strong id="invPdfSubtotal">$0.00</strong></div><div><span>Sales Tax</span><strong id="invPdfTax">$0.00</strong></div><div class="invoice-total-due"><span>Total Due</span><strong id="invPdfTotal">$0.00</strong></div></div>
+      </div>
+      <div class="invoice-remit"><strong>Remittance / Payment</strong><br>Please remit payment according to the approved purchasing terms listed on this invoice. Include the invoice number and PO number with payment or remittance details.</div>
+      <div class="invoice-footer">OliPoly 3D LLC • OliPoly3D@gmail.com • https://olipoly3d.com</div>
+    </div>
+  </div>
+  <div class="email-preview-modal hidden" id="invoiceEmailModal" aria-hidden="true">
+    <div class="email-preview-backdrop" id="invoiceEmailBackdrop"></div>
+    <div class="email-preview-dialog" role="dialog" aria-modal="true">
+      <div class="email-preview-head"><div><span class="email-preview-kicker">Invoice Email Preview</span><h3>OliPoly 3D invoice email</h3><p>Review the branded email, copy the rich version, then open Gmail and attach the invoice PDF.</p></div><button class="email-preview-close" id="invoiceEmailCloseBtn" type="button">×</button></div>
+      <div class="email-preview-actions"><button class="btn" id="copyInvoiceEmailRichBtn" type="button">Copy Rich Email</button><button class="btn-ghost" id="openInvoiceGmailBtn" type="button">Open Gmail Draft</button><button class="btn-ghost" id="downloadInvoiceEmailHtmlBtn" type="button">Download HTML</button></div>
+      <div class="email-preview-note" id="invoiceEmailModalMessage">Tip: Generate/save the invoice PDF first, then attach it to the Gmail draft.</div>
+      <div class="email-preview-frame"><iframe id="invoiceEmailPreviewFrame" title="Invoice email preview"></iframe></div>
+    </div>
+  </div>
+
 </body>
 </html>
