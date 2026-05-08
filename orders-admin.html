@@ -32,6 +32,10 @@
     .s-quote_sent,.s-awaiting_approval,.s-awaiting_deposit{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
     .s-in_design,.s-in_production,.s-post_processing{background:rgba(126,123,255,.12);border-color:rgba(126,123,255,.24);color:#d9d8ff}
     .s-ready_for_pickup,.s-shipped,.s-completed{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
+
+    .s-ready_to_pack,.s-packed{background:rgba(122,175,157,.16);border-color:rgba(122,175,157,.25);color:#cffff0}
+    .s-delivered{background:rgba(110,240,178,.18);border-color:rgba(110,240,178,.30);color:#ffffff}
+
     .p-unpaid,.p-deposit_due{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
     .p-deposit_paid,.p-paid{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
     .p-refunded{background:rgba(255,110,145,.12);border-color:rgba(255,110,145,.24);color:#ffd8e3}
@@ -419,7 +423,7 @@
       <h3>Find Orders</h3>
       <div class="filters">
         <div><label for="searchInput">Search</label><input id="searchInput" placeholder="Order #, customer, title, email" /></div>
-        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
+        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_to_pack">Ready to Pack</option><option value="packed">Packed</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="completed">Completed</option></select></div>
         <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
         <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
         <div><label for="financeFilter">Finance</label><select id="financeFilter"><option value="all">All Finance States</option><option value="not_pushed">Not Pushed</option><option value="pushed">Finance Pushed</option><option value="ready">Ready to Push</option></select></div>
@@ -447,7 +451,7 @@
           <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
+          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_to_pack">Ready to Pack</option><option value="packed">Packed</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="completed">Completed</option></select></div>
           <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
@@ -523,7 +527,7 @@
     const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
     const today = () => new Date().toISOString().slice(0,10);
 
-    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v] || v;
+    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_to_pack:'Ready to Pack',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Completed'})[v] || v;
     const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v] || v;
 
 
