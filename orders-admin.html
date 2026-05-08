@@ -159,6 +159,7 @@
           <button class="btn" id="saveBtn" type="button">Save Order</button>
           <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
           <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Send Completion Email</button>
+          <button class="btn-ghost" id="pushFinanceBtn" type="button">Push to Finance</button>
         </div>
         <div class="message" id="formMessage"></div>
         <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
@@ -377,6 +378,126 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       btn.title = sent && order?.completion_email_sent_at
         ? `Completion email marked sent ${new Date(order.completion_email_sent_at).toLocaleString()}`
         : '';
+    }
+
+
+    function calculateFinanceSplitFromOrder(payload) {
+      const total = num(payload.order_total);
+      const defaultTaxRate = 7.25;
+
+      // Orders Admin currently stores customer-facing total, but not separate tax/shipping.
+      // This first integration treats order_total as tax-inclusive sales revenue.
+      const net = +(total / (1 + defaultTaxRate / 100)).toFixed(2);
+      const tax = +(total - net).toFixed(2);
+
+      return { total, defaultTaxRate, net, tax };
+    }
+
+    async function financeEntryExists(orderNumber) {
+      if (!orderNumber) return false;
+      const encoded = encodeURIComponent(`%${orderNumber}%`);
+      const { ok, data, error } = await api(`/rest/v1/financial_entries?select=id,title,notes&or=(title.ilike.${encoded},notes.ilike.${encoded})&limit=1`, {
+        method: 'GET'
+      });
+
+      if (!ok) throw new Error(error?.message || 'Could not check Finance Pro for existing entry.');
+      return Array.isArray(data) && data.length > 0;
+    }
+
+    async function pushCurrentOrderToFinance() {
+      clearMsg($('formMessage'));
+
+      if (!currentUser?.id) {
+        setMsg($('formMessage'), 'Log in before pushing an order to Finance Pro.', true);
+        return;
+      }
+
+      const payload = snapshotForm();
+      const orderNumber = payload.order_number;
+
+      if (!orderNumber) {
+        setMsg($('formMessage'), 'Order number is required before pushing to Finance Pro.', true);
+        return;
+      }
+
+      if (!payload.order_total || num(payload.order_total) <= 0) {
+        setMsg($('formMessage'), 'Order total must be greater than $0 before pushing to Finance Pro.', true);
+        return;
+      }
+
+      if (!['paid', 'deposit_paid'].includes(payload.payment_status)) {
+        const okPush = confirm(`This order is not marked paid in full. Push it to Finance Pro anyway?\n\nPayment status: ${paymentLabel(payload.payment_status)}`);
+        if (!okPush) return;
+      }
+
+      let exists = false;
+      try {
+        exists = await financeEntryExists(orderNumber);
+      } catch (err) {
+        const okContinue = confirm(`Could not check for an existing Finance Pro entry.\n\n${err.message || err}\n\nContinue and create the entry anyway?`);
+        if (!okContinue) return;
+      }
+
+      if (exists) {
+        const okDuplicate = confirm(`Finance Pro already appears to have an entry for ${orderNumber}.\n\nCreate another entry anyway?`);
+        if (!okDuplicate) {
+          setMsg($('formMessage'), `Push cancelled. Finance Pro already has an entry for ${orderNumber}.`, true);
+          return;
+        }
+      }
+
+      const split = calculateFinanceSplitFromOrder(payload);
+      const entryDate = payload.paid_date || today();
+
+      const financePayload = {
+        user_id: currentUser.id,
+        type: 'income',
+        entry_date: entryDate,
+        category: 'Sale',
+        tax_category: 'income_sales',
+        title: `Sale - ${orderNumber}${payload.order_title ? ` - ${payload.order_title}` : ''}`,
+        notes: [
+          'Pushed from Orders Admin.',
+          `Order: ${orderNumber}`,
+          payload.customer_name ? `Customer: ${payload.customer_name}` : '',
+          payload.customer_email ? `Email: ${payload.customer_email}` : '',
+          payload.order_title ? `Project: ${payload.order_title}` : '',
+          payload.quantity ? `Quantity: ${payload.quantity}` : '',
+          payload.fulfillment ? `Fulfillment: ${payload.fulfillment}` : '',
+          payload.stripe_invoice_id ? `Stripe Invoice ID: ${payload.stripe_invoice_id}` : ''
+        ].filter(Boolean).join('\n'),
+        amount: split.net,
+        shipping_charged: 0,
+        tax_included: true,
+        sales_tax_rate: split.defaultTaxRate,
+        sales_tax_collected: split.tax,
+        shipping_cost: 0,
+        material_cost: 0,
+        packaging_cost: 0,
+        labor_cost: 0,
+        other_direct_cost: 0,
+        business_use_percent: 100,
+        vendor_name: payload.customer_name || null,
+        payment_method: payload.payment_link_stripe ? 'Stripe' : (payload.payment_link_paypal ? 'PayPal' : (payload.payment_link_venmo ? 'Venmo' : null)),
+        receipt_link: payload.payment_link_stripe || payload.payment_link_paypal || payload.payment_link_venmo || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { ok, data, error } = await api('/rest/v1/financial_entries', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(financePayload)
+      });
+
+      if (!ok) {
+        setMsg($('formMessage'), `Could not push to Finance Pro: ${error?.message || JSON.stringify(error)}`, true);
+        return;
+      }
+
+      const note = `Finance Pro entry created ${new Date().toLocaleString()} for ${orderNumber}. Total ${money(split.total)} split as revenue ${money(split.net)} + tax ${money(split.tax)}.`;
+      $('internalNotes').value = [$('internalNotes').value.trim(), note].filter(Boolean).join('\n\n');
+
+      setMsg($('formMessage'), `Pushed ${orderNumber} to Finance Pro. Revenue ${money(split.net)} + sales tax ${money(split.tax)}.`);
     }
 
     function updatePreview(){
@@ -826,6 +947,7 @@ if ($('openVenmoBtn')) {
   alert('Order loaded from Hub. Review it, then click Save Order.');
 });
     
+        $('pushFinanceBtn')?.addEventListener('click', pushCurrentOrderToFinance);
   </script>
 </body>
 </html>
