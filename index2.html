@@ -506,6 +506,119 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
   .business-details-body{padding:0 15px 15px}
 }
 
+
+/* === index2 visual polish pass === */
+.hero{
+  padding:58px 0 34px;
+}
+.hero h1{
+  margin-bottom:12px;
+}
+.hero-actions{
+  margin-top:22px;
+}
+.trust-row{
+  margin-top:18px;
+}
+.section{
+  position:relative;
+}
+.section:nth-of-type(even){
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.04));
+}
+.section:nth-of-type(even)::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle at 8% 20%,rgba(236,72,153,.05),transparent 26%);
+}
+.section > .container{
+  position:relative;
+  z-index:1;
+}
+.capability-card{
+  min-height:172px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+.capability-card p{
+  max-width:32ch;
+}
+.business-details-card summary{
+  transition:background .2s ease, box-shadow .2s ease;
+}
+.business-details-card summary:hover{
+  background:rgba(255,255,255,.45);
+}
+.business-details-card summary b{
+  transition:transform .22s ease, box-shadow .22s ease, background .22s ease;
+}
+.business-details-card summary:hover b{
+  box-shadow:0 8px 18px rgba(236,72,153,.16);
+  background:linear-gradient(135deg,rgba(236,72,153,.20),rgba(167,139,250,.18));
+}
+.gallery{
+  grid-template-columns:1.08fr .92fr;
+  grid-auto-rows:205px;
+}
+.gallery-item{
+  border-width:8px;
+}
+.gallery-item:nth-child(1){
+  grid-row:span 3;
+}
+.gallery-category{
+  font-size:.96rem;
+}
+.footer-wrap{
+  padding-top:0;
+}
+.footer-links{
+  gap:24px;
+}
+.footer-links h4{
+  padding-bottom:7px;
+  border-bottom:1px solid rgba(236,72,153,.12);
+}
+.footer-links a{
+  margin-bottom:7px;
+}
+@media(max-width:980px){
+  .hero{
+    padding:40px 0 24px;
+  }
+  .gallery{
+    grid-template-columns:1fr 1fr;
+    grid-auto-rows:220px;
+  }
+}
+@media(max-width:680px){
+  .hero{
+    padding:26px 0 16px;
+  }
+  .hero-actions{
+    margin-top:18px;
+  }
+  .trust-row{
+    margin-top:14px;
+  }
+  .capability-card{
+    min-height:auto;
+  }
+  .gallery{
+    grid-template-columns:1fr;
+    grid-auto-rows:auto;
+  }
+  .gallery img{
+    height:250px;
+  }
+  .footer-links h4{
+    padding-bottom:5px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -537,7 +650,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
       <a href="#how-it-works">How It Works</a>
       <a href="faq.html">FAQ</a>
       <a href="#gallery">Gallery</a>
-      <a href="#business">Business / PO</a>
+      <a href="#business">Business Purchases</a>
       <a href="#events">Events</a>
       <a href="track.html">Track Order</a>
       <a href="#contact">Contact</a>
@@ -576,7 +689,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
     <div class="container">
       <div class="section-head">
         <div><h2>How it works</h2></div>
-        <p>A simple, collaborative process for turning an idea, sketch, photo, or file into a finished 3D print.</p>
+        <p>A simple process for turning ideas into finished 3D prints.</p>
       </div>
       <div class="steps">
         <article class="step"><div class="step-number">1</div><h3>Share your idea</h3><p>Tell us what you want made, fixed, customized, or brought to life.</p></article>
@@ -597,15 +710,15 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
       <div class="capability-grid">
         <article class="capability-card">
           <h3>Custom gifts & creative prints</h3>
-          <p>Personalized pieces, themed sets, decorations, fidgets, toys, and memorable one-off creations.</p>
+          <p>Personalized pieces, themed sets, decorations, fidgets, toys, and memorable custom creations.</p>
         </article>
         <article class="capability-card">
           <h3>Functional parts & accessories</h3>
-          <p>Brackets, organizers, adapters, holders, replacement-style pieces, and practical shop or home solutions.</p>
+          <p>Brackets, organizers, adapters, holders, replacement-style pieces, and everyday practical solutions.</p>
         </article>
         <article class="capability-card">
           <h3>Prototypes & small batches</h3>
-          <p>Test-fit parts, concept models, short-run production, business requests, and PO-friendly quoting.</p>
+          <p>Test-fit parts, concept models, short-run production, business requests, and repeatable small batches.</p>
         </article>
       </div>
     </div>
@@ -864,7 +977,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
       <a href="track.html">Track an order <span>→</span></a>
       <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Upload reference files <span>→</span></a>
       <a href="#gallery">Browse recent work <span>→</span></a>
-      <a href="#business">Business / PO customers <span>→</span></a>
+      <a href="#business">Business purchases <span>→</span></a>
     </div>
   </div>
   <button class="poly-helper-toggle" type="button" id="polyHelperToggle" aria-expanded="false" aria-controls="polyHelper">
@@ -935,7 +1048,7 @@ footer{padding:44px 0 48px;color:#7f6c88;background:linear-gradient(180deg,rgba(
         <a href="#gallery">Gallery</a>
         <a href="#events">Events</a>
         <a href="#how-it-works">How It Works</a>
-        <a href="#business">Business / PO</a>
+        <a href="#business">Business Purchases</a>
       </div>
 
       <div>
