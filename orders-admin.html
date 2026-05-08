@@ -62,6 +62,192 @@
     .invoice-meta-grid,.invoice-address-grid,.invoice-bottom-grid{display:grid;gap:12px}.invoice-meta-grid{grid-template-columns:repeat(4,1fr)}.invoice-address-grid{grid-template-columns:1fr 1fr;margin:16px 0}.invoice-bottom-grid{grid-template-columns:1.25fr .75fr;margin-top:16px}.invoice-card,.invoice-panel,.invoice-totals,.invoice-remit{border:1px solid #f0c8df;background:linear-gradient(180deg,#fff8fc,#fff);border-radius:16px;padding:12px}.invoice-card small{display:block;color:#826889;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.invoice-chip{display:inline-block;margin-bottom:8px;padding:5px 9px;border-radius:999px;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
     .invoice-table{width:100%;border-collapse:collapse;margin-top:10px}.invoice-table th{font-size:11px;color:#826889;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #f0c8df;text-align:left;padding:10px 8px}.invoice-table td{font-size:13px;color:#2f2336;border-bottom:1px solid #f6ddec;padding:12px 8px;vertical-align:top}.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){text-align:center;width:70px}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3),.invoice-table th:nth-child(4),.invoice-table td:nth-child(4){text-align:right;width:110px}.invoice-totals div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f6ddec}.invoice-total-due strong,.invoice-total-due span{font-size:18px!important;color:#241b2b!important;font-weight:900}.invoice-remit{margin-top:18px;font-size:12px;line-height:1.45}.invoice-footer{margin-top:18px;text-align:center;color:#826889;font-size:11px}
     .email-preview-modal.hidden{display:none!important}.email-preview-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px}.email-preview-backdrop{position:absolute;inset:0;background:rgba(20,12,28,.62);backdrop-filter:blur(8px)}.email-preview-dialog{position:relative;z-index:1;width:min(980px,96vw);max-height:92vh;overflow:hidden;border-radius:28px;background:linear-gradient(180deg,#fff7fb,#fff);border:1px solid rgba(222,111,184,.28);display:flex;flex-direction:column}.email-preview-head{display:flex;justify-content:space-between;gap:18px;padding:22px 24px 16px;border-bottom:1px solid rgba(222,111,184,.18);background:#fff7fb}.email-preview-kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(222,111,184,.12);color:#7c4a82;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.email-preview-head h3{margin:10px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;color:#241b2b}.email-preview-close{width:42px;height:42px;border-radius:999px;border:1px solid rgba(222,111,184,.24);background:#fff;color:#8d4e8f;font-size:1.5rem;font-weight:900;cursor:pointer}.email-preview-actions{display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px}.email-preview-note{margin:0 24px 14px;padding:12px 14px;border-radius:16px;background:rgba(157,124,255,.08);color:#5e4b67}.email-preview-frame{flex:1;min-height:420px;background:#f7eef5}.email-preview-frame iframe{width:100%;height:100%;min-height:520px;border:0;background:white}
+
+    /* Invoice PDF polish */
+    .invoice-sheet{
+      width:8.5in;
+      min-height:10.5in;
+      padding:.42in;
+      border-radius:0;
+      background:#fff;
+      color:#2f2336;
+      font-family:Arial,Helvetica,sans-serif;
+      position:relative;
+      overflow:hidden;
+    }
+    .invoice-sheet::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at top left,rgba(222,111,184,.08),transparent 32%),
+        radial-gradient(circle at top right,rgba(157,124,255,.07),transparent 28%);
+      pointer-events:none;
+    }
+    .invoice-sheet > *{position:relative;z-index:1}
+    .invoice-topbar{
+      height:14px;
+      margin:-.42in -.42in .28in;
+      background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);
+    }
+    .invoice-header{
+      align-items:flex-start;
+      padding-bottom:16px;
+      border-bottom:1px solid #f0c8df;
+      margin-bottom:16px;
+    }
+    .invoice-brand{
+      font-size:36px;
+      letter-spacing:-.045em;
+      line-height:.95;
+    }
+    .invoice-tagline{
+      margin-top:7px;
+      color:#826889;
+      font-size:12px;
+      letter-spacing:.01em;
+    }
+    .invoice-title{
+      font-size:34px;
+      letter-spacing:.12em;
+      line-height:1;
+    }
+    .invoice-number{
+      margin-top:7px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#fff7fb;
+      border:1px solid #f0c8df;
+      display:inline-block;
+      font-size:13px;
+    }
+    .invoice-meta-grid{
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .invoice-card{
+      border-radius:14px;
+      padding:11px 12px;
+      background:#fffafd;
+      border:1px solid #f0c8df;
+    }
+    .invoice-card small{
+      font-size:9.5px;
+      margin-bottom:5px;
+      color:#826889;
+    }
+    .invoice-card strong{
+      display:block;
+      font-size:12.5px;
+      color:#2f2336;
+      line-height:1.25;
+      overflow-wrap:anywhere;
+    }
+    .invoice-address-grid{
+      gap:12px;
+      margin:14px 0;
+    }
+    .invoice-panel{
+      border-radius:15px;
+      padding:13px 14px;
+      font-size:12px;
+      line-height:1.42;
+      min-height:.98in;
+      background:#fff;
+      border:1px solid #f0c8df;
+    }
+    .invoice-chip{
+      margin-bottom:8px;
+      padding:5px 9px;
+      font-size:9px;
+    }
+    .invoice-table{
+      margin-top:8px;
+      border:1px solid #f0c8df;
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .invoice-table th{
+      background:#fff7fb;
+      padding:9px 10px;
+      font-size:9.5px;
+      border-bottom:1px solid #f0c8df;
+    }
+    .invoice-table td{
+      padding:13px 10px;
+      font-size:12px;
+      line-height:1.42;
+      border-bottom:none;
+    }
+    .invoice-bottom-grid{
+      gap:12px;
+      margin-top:14px;
+    }
+    .invoice-totals{
+      padding:12px 14px;
+      border-radius:15px;
+      background:#fffafd;
+      border:1px solid #f0c8df;
+    }
+    .invoice-totals div{
+      padding:7px 0;
+      font-size:12px;
+    }
+    .invoice-total-due{
+      margin-top:3px;
+      padding-top:10px!important;
+      border-top:2px solid #f0c8df;
+    }
+    .invoice-total-due strong,
+    .invoice-total-due span{
+      font-size:17px!important;
+      color:#241b2b!important;
+    }
+    .invoice-remit{
+      margin-top:14px;
+      border-radius:15px;
+      padding:12px 14px;
+      background:linear-gradient(135deg,#fff7fb,#fbf6ff);
+      border:1px solid #f0c8df;
+      font-size:11.5px;
+      line-height:1.45;
+      color:#604d68;
+    }
+    .invoice-footer{
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid #f0c8df;
+      font-size:10.5px;
+    }
+    .invoice-paid-watermark{
+      display:none;
+      position:absolute;
+      inset:auto .45in 1.05in auto;
+      transform:rotate(-12deg);
+      border:4px solid rgba(22,163,74,.34);
+      color:rgba(22,163,74,.44);
+      font-size:42px;
+      font-weight:950;
+      letter-spacing:.08em;
+      padding:8px 18px;
+      border-radius:14px;
+      z-index:3;
+      pointer-events:none;
+    }
+    .invoice-sheet.is-paid .invoice-paid-watermark{display:block}
+    @media print{
+      .invoice-sheet{
+        width:100%;
+        min-height:auto;
+        padding:.36in;
+      }
+      .invoice-topbar{margin:-.36in -.36in .25in}
+      .invoice-card,.invoice-panel,.invoice-totals,.invoice-remit{
+        break-inside:avoid;
+      }
+    }
+
     @media print{body *{visibility:hidden!important}#invoicePrintArea,#invoicePrintArea *{visibility:visible!important}#invoicePrintArea{display:block!important;position:absolute;left:0;top:0;width:100%}@page{size:letter portrait;margin:.25in}}
     
   </style>
@@ -939,7 +1125,52 @@ const payload = snapshotForm();
     function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
     function multilineHtml(s){return esc(s||'').replace(/\n/g,'<br>');}
     function buildInvoiceData(){ensureInvoiceDefaults();const p=snapshotForm(),subtotal=num(p.order_total),tax=0,total=subtotal+tax,qty=num(p.quantity)||1,unit=qty?subtotal/qty:subtotal;return {...p,invoice_number:p.invoice_number||defaultInvoiceNumber(p.order_number),invoice_date:p.invoice_date||today(),invoice_due_date:p.invoice_due_date||addDaysISO(today(),invoiceTermsDays(p.invoice_terms)),invoice_terms_label:invoiceTermsLabel(p.invoice_terms),subtotal,tax,total,unit};}
-    function fillInvoicePdf(){const d=buildInvoiceData();$('invPdfInvoiceNumber').textContent=d.invoice_number;$('invPdfInvoiceDate').textContent=d.invoice_date||'—';$('invPdfDueDate').textContent=d.invoice_due_date||'—';$('invPdfTerms').textContent=d.invoice_terms_label;$('invPdfPoNumber').textContent=d.po_number||'—';$('invPdfOrderNumber').textContent=d.order_number||'—';$('invPdfBillTo').innerHTML=[d.customer_name?`<strong>${esc(d.customer_name)}</strong>`:'',d.customer_email?esc(d.customer_email):'',d.billing_address?multilineHtml(d.billing_address):''].filter(Boolean).join('<br>')||'—';$('invPdfShipTo').innerHTML=[d.shipping_address?multilineHtml(d.shipping_address):'',`Fulfillment: ${esc(d.fulfillment||'—')}`].filter(Boolean).join('<br>')||'—';$('invPdfDescription').innerHTML=[d.order_title?`<strong>${esc(d.order_title)}</strong>`:'<strong>Custom 3D printed items</strong>',d.po_number?`PO: ${esc(d.po_number)}`:'',d.order_number?`Order: ${esc(d.order_number)}`:''].filter(Boolean).join('<br>');$('invPdfQty').textContent=d.quantity||1;$('invPdfUnitPrice').textContent=money(d.unit);$('invPdfLineTotal').textContent=money(d.subtotal);$('invPdfSubtotal').textContent=money(d.subtotal);$('invPdfTax').textContent=money(d.tax);$('invPdfTotal').textContent=money(d.total);$('invPdfShippingInfo').innerHTML=[d.fulfillment?`Fulfillment: ${esc(d.fulfillment)}`:'',d.tracking_number?`Tracking: ${esc(d.tracking_number)}`:'',d.shipping_or_pickup_note?multilineHtml(d.shipping_or_pickup_note):''].filter(Boolean).join('<br>')||'Tracking/shipment details will be provided as available.';return d;}
+    function fillInvoicePdf(){
+      const d=buildInvoiceData();
+      const sheet = document.querySelector('.invoice-sheet');
+      if (sheet) sheet.classList.toggle('is-paid', d.payment_status === 'paid');
+
+      $('invPdfInvoiceNumber').textContent=d.invoice_number;
+      $('invPdfInvoiceDate').textContent=d.invoice_date||'—';
+      $('invPdfDueDate').textContent=d.invoice_due_date||'—';
+      $('invPdfTerms').textContent=d.invoice_terms_label;
+      $('invPdfPoNumber').textContent=d.po_number||'No PO';
+      $('invPdfOrderNumber').textContent=d.order_number||'—';
+
+      $('invPdfBillTo').innerHTML=[
+        d.customer_name?`<strong>${esc(d.customer_name)}</strong>`:'',
+        d.ap_email?`AP: ${esc(d.ap_email)}`:(d.customer_email?esc(d.customer_email):''),
+        d.billing_address?multilineHtml(d.billing_address):''
+      ].filter(Boolean).join('<br>')||'—';
+
+      $('invPdfShipTo').innerHTML=[
+        d.shipping_address?multilineHtml(d.shipping_address):'',
+        d.fulfillment?`<strong>Fulfillment:</strong> ${esc(d.fulfillment)}`:'',
+        d.tracking_number?`<strong>Tracking:</strong> ${esc(d.tracking_number)}`:''
+      ].filter(Boolean).join('<br>')||'—';
+
+      $('invPdfDescription').innerHTML=[
+        d.order_title?`<strong>${esc(d.order_title)}</strong>`:'<strong>Custom 3D printed items</strong>',
+        d.order_number?`OP Order: ${esc(d.order_number)}`:'',
+        d.po_number?`PO Reference: ${esc(d.po_number)}`:'',
+        d.shipping_or_pickup_note?`<span style="color:#604d68;">${multilineHtml(d.shipping_or_pickup_note)}</span>`:''
+      ].filter(Boolean).join('<br>');
+
+      $('invPdfQty').textContent=d.quantity||1;
+      $('invPdfUnitPrice').textContent=money(d.unit);
+      $('invPdfLineTotal').textContent=money(d.subtotal);
+      $('invPdfSubtotal').textContent=money(d.subtotal);
+      $('invPdfTax').textContent=money(d.tax);
+      $('invPdfTotal').textContent=money(d.total);
+
+      $('invPdfShippingInfo').innerHTML=[
+        d.fulfillment?`Fulfillment: ${esc(d.fulfillment)}`:'',
+        d.tracking_number?`Tracking: ${esc(d.tracking_number)}`:'',
+        d.shipping_or_pickup_note?multilineHtml(d.shipping_or_pickup_note):''
+      ].filter(Boolean).join('<br>')||'Tracking/shipment details will be provided as available.';
+
+      return d;
+    }
     function generateInvoicePdf(){fillInvoicePdf();window.print();}
     function buildInvoicePlainEmail(d){return `Hello,\n\nAttached is invoice ${d.invoice_number} for the completed/shipped OliPoly 3D order.\n\nInvoice: ${d.invoice_number}\nOrder: ${d.order_number||'—'}\nPO: ${d.po_number||'—'}\nProject: ${d.order_title||'Custom 3D printed items'}\nTotal Due: ${money(d.total)}\nTerms: ${d.invoice_terms_label}\nDue Date: ${d.invoice_due_date||'—'}\n${d.tracking_number?`Tracking: ${d.tracking_number}\n`:''}\nPlease process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.\n\nThank you,\n\nOliPoly 3D LLC\nCustom 3D Printing • Creative Builds • Prototypes\nOliPoly3D@gmail.com\nhttps://olipoly3d.com`;}
     function buildInvoiceHtmlEmail(d){return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;"><div style="max-width:700px;margin:0 auto;background:#fff;border:1px solid #f0c8df;border-radius:26px;overflow:hidden;"><div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div><div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#fff 100%);border-bottom:1px solid #f6ddec;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div><div style="margin-top:7px;color:#826889;font-size:13px;">Custom 3D Printing • Creative Builds • Prototypes</div></div><div style="padding:28px;"><h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 16px;color:#241b2b;">Invoice for completed order</h1><p>Attached is invoice <strong>${esc(d.invoice_number)}</strong> for the completed/shipped OliPoly 3D order.</p><div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;"><p><strong>Order / PO:</strong> ${esc(d.order_number||'—')} / ${esc(d.po_number||'—')}</p><p><strong>Project:</strong> ${esc(d.order_title||'Custom 3D printed items')}</p><p><strong>Total Due:</strong> ${money(d.total)}</p><p><strong>Terms / Due:</strong> ${esc(d.invoice_terms_label)} • ${esc(d.invoice_due_date||'—')}</p></div><div style="border-left:4px solid #de6fb8;background:#fffafd;padding:14px 16px;border-radius:14px;margin:20px 0;">Please process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.</div><p>Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p></div></div></div>`;}
@@ -1240,7 +1471,7 @@ if ($('openVenmoBtn')) {
         <div class="invoice-card"><small>Invoice Date</small><strong id="invPdfInvoiceDate">—</strong></div>
         <div class="invoice-card"><small>Due Date</small><strong id="invPdfDueDate">—</strong></div>
         <div class="invoice-card"><small>Payment Terms</small><strong id="invPdfTerms">—</strong></div>
-        <div class="invoice-card"><small>PO / Order</small><strong><span id="invPdfPoNumber">—</span> / <span id="invPdfOrderNumber">—</span></strong></div>
+        <div class="invoice-card"><small>PO / OP Order</small><strong><span id="invPdfPoNumber">—</span> / <span id="invPdfOrderNumber">—</span></strong></div>
       </div>
       <div class="invoice-address-grid">
         <div class="invoice-panel"><div class="invoice-chip">Bill To</div><div id="invPdfBillTo">—</div></div>
