@@ -23,7 +23,7 @@
     .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
     .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
     .summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.summary span,.summary strong,.summary small{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.12rem,2.7vw,1.8rem)}.summary small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
-    .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .8fr .8fr .8fr auto;align-items:end}
+    .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .75fr .75fr .75fr .75fr auto;align-items:end}
     label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700} input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;border:1px solid rgba(151,179,255,.18);background:rgba(255,255,255,.05);color:var(--text);font:inherit;outline:none}
     select option{background:#0a1225;color:#eef4ff} input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)} textarea{min-height:90px;resize:vertical}
     .note,.empty,.message,.stripe-note{border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08);color:var(--muted);line-height:1.6}.message{display:none}
@@ -41,6 +41,13 @@
     .footer{margin-top:18px;color:var(--muted);font-size:.84rem;text-align:center}
     .hidden{display:none!important}
     @media (max-width:1140px){.grid,.hero,.summary-grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}
+
+    .p-invoice-ready{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
+    .p-invoice-sent{background:rgba(126,123,255,.12);border-color:rgba(126,123,255,.24);color:#d9d8ff}
+    .p-invoice-overdue{background:rgba(255,110,145,.12);border-color:rgba(255,110,145,.24);color:#ffd8e3}
+    .p-financial-closed{background:rgba(110,240,178,.12);border-color:rgba(110,240,178,.24);color:#cffff0}
+    .invoice-status-note{margin-top:12px}
+
     @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters,.inline-row{grid-template-columns:1fr}}
   
     .invoice-print-area{display:none}
@@ -105,6 +112,7 @@
         <div><label for="searchInput">Search</label><input id="searchInput" placeholder="Order #, customer, title, email" /></div>
         <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
         <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
+        <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
         <div><label for="sortBy">Sort</label><select id="sortBy"><option value="newest">Newest</option><option value="customer">Customer A–Z</option><option value="total_desc">Highest Total</option></select></div>
         <div><label>&nbsp;</label><button class="btn-ghost" id="clearFiltersBtn" type="button">Clear</button></div>
       </div>
@@ -206,6 +214,67 @@
 
     const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v] || v;
     const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v] || v;
+
+
+    function dateOnly(value){
+      return value ? new Date(`${value}T00:00:00`) : null;
+    }
+
+    function isInvoiceOverdue(order){
+      if (!order?.invoice_due_date || order?.payment_status === 'paid') return false;
+      const due = dateOnly(order.invoice_due_date);
+      const now = dateOnly(today());
+      return due && now && due < now;
+    }
+
+    function invoiceStatusLabel(order){
+      if (!order?.invoice_number) return null;
+      if (order.payment_status === 'paid') return 'Invoice Paid';
+      if (isInvoiceOverdue(order)) return 'Invoice Overdue';
+      if (order.invoice_sent) return 'Invoice Sent';
+      return 'Invoice Ready';
+    }
+
+    function invoiceStatusClass(order){
+      const label = invoiceStatusLabel(order);
+      if (label === 'Invoice Paid') return 'p-financial-closed';
+      if (label === 'Invoice Overdue') return 'p-invoice-overdue';
+      if (label === 'Invoice Sent') return 'p-invoice-sent';
+      return 'p-invoice-ready';
+    }
+
+    function formatDateTime(value){
+      if (!value) return '';
+      try { return new Date(value).toLocaleString(); }
+      catch { return String(value); }
+    }
+
+    function updateInvoiceStatusNote(order = null){
+      let note = document.getElementById('invoiceStatusNote');
+      if (!note) {
+        const preview = document.getElementById('publicPreview');
+        if (!preview) return;
+        note = document.createElement('div');
+        note.id = 'invoiceStatusNote';
+        note.className = 'note invoice-status-note';
+        preview.insertAdjacentElement('beforebegin', note);
+      }
+
+      if (!order || !order.invoice_number) {
+        note.textContent = 'Invoice status: no invoice generated yet.';
+        return;
+      }
+
+      const parts = [
+        `Invoice: ${order.invoice_number}`,
+        `Status: ${invoiceStatusLabel(order) || 'Draft'}`,
+        order.invoice_sent_at ? `Sent: ${formatDateTime(order.invoice_sent_at)}` : '',
+        order.invoice_due_date ? `Due: ${order.invoice_due_date}` : '',
+        order.payment_status === 'paid' ? `Paid: ${order.paid_date || 'marked paid'}` : ''
+      ].filter(Boolean);
+
+      note.textContent = parts.join(' • ');
+    }
 
     function setMsg(el,text,isError=false){
       el.style.display='block';
@@ -365,6 +434,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       if ($('invoiceTerms')) $('invoiceTerms').value = 'customer_terms';
       $('publicPreview').textContent = 'No public preview yet.';
       updateCompletionEmailButton(null);
+      updateInvoiceStatusNote(null);
       clearMsg($('formMessage'));
     }
 
@@ -402,6 +472,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('publicNextStep').value = o.public_next_step || '';
       $('shippingOrPickupNote').value = o.shipping_or_pickup_note || '';
       updateCompletionEmailButton(o);
+      updateInvoiceStatusNote(o);
       updatePreview();
     }
 
@@ -562,6 +633,17 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if (q) list = list.filter(o => `${o.order_number || ''} ${o.customer_name || ''} ${o.customer_email || ''} ${o.order_title || ''}`.toLowerCase().includes(q));
       if ($('statusFilter').value !== 'all') list = list.filter(o => o.status === $('statusFilter').value);
       if ($('paymentFilter').value !== 'all') list = list.filter(o => o.payment_status === $('paymentFilter').value);
+      if ($('invoiceFilter') && $('invoiceFilter').value !== 'all') {
+        const invoiceState = $('invoiceFilter').value;
+        list = list.filter(o => {
+          if (invoiceState === 'none') return !o.invoice_number;
+          if (invoiceState === 'ready') return !!o.invoice_number && !o.invoice_sent && o.payment_status !== 'paid' && !isInvoiceOverdue(o);
+          if (invoiceState === 'sent') return !!o.invoice_number && !!o.invoice_sent && o.payment_status !== 'paid' && !isInvoiceOverdue(o);
+          if (invoiceState === 'overdue') return isInvoiceOverdue(o);
+          if (invoiceState === 'paid') return !!o.invoice_number && o.payment_status === 'paid';
+          return true;
+        });
+      }
       if ($('sortBy').value === 'customer') list.sort((a,b) => String(a.customer_name || '').localeCompare(String(b.customer_name || '')));
       else if ($('sortBy').value === 'total_desc') list.sort((a,b) => num(b.order_total) - num(a.order_total));
       else list.sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
@@ -587,7 +669,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
           <div class="order-meta">
             <span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>
             <span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>
-            ${o.invoice_sent ? `<span class="payment-pill p-paid">Invoice Sent</span>` : (o.invoice_number ? `<span class="payment-pill p-unpaid">Invoice Ready</span>` : '')}
+            ${invoiceStatusLabel(o) ? `<span class="payment-pill ${invoiceStatusClass(o)}">${invoiceStatusLabel(o)}</span>` : ''}
             ${o.status === 'completed' ? `<span class="payment-pill ${o.completion_email_sent ? 'p-paid' : 'p-unpaid'}">${o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email'}</span>` : ''}
           </div>
           <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
@@ -752,7 +834,12 @@ const payload = snapshotForm();
     async function copyInvoiceRichEmail(){try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([lastInvoiceEmail.html],{type:'text/html'}),'text/plain':new Blob([lastInvoiceEmail.plain],{type:'text/plain'})})]);}else await navigator.clipboard.writeText(lastInvoiceEmail.html);$('invoiceEmailModalMessage').innerHTML='Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';}catch(err){$('invoiceEmailModalMessage').textContent='Could not copy rich email automatically. Try Download HTML.';}}
     function openInvoiceGmailDraft(){window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lastInvoiceEmail.to)}&su=${encodeURIComponent(lastInvoiceEmail.subject)}&body=${encodeURIComponent(lastInvoiceEmail.plain)}`,'_blank','noopener,noreferrer');}
     function downloadInvoiceEmailHtml(){const blob=new Blob([lastInvoiceEmail.html],{type:'text/html'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${($('invoiceNumber')?.value||'invoice').replace(/[^a-z0-9_-]/gi,'-')}-email.html`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),600);}
-    async function markInvoiceSent(){ensureInvoiceDefaults();const orderNumber=$('orderNumber').value.trim();if(!orderNumber)return setMsg($('formMessage'),'Order number required before marking invoice sent.',true);const patchPayload={invoice_number:$('invoiceNumber')?.value.trim()||null,invoice_date:$('invoiceDate')?.value||null,invoice_due_date:$('invoiceDueDate')?.value||null,invoice_terms:$('invoiceTerms')?.value||null,po_number:$('poNumber')?.value.trim()||null,ap_email:$('apEmail')?.value.trim()||null,billing_address:$('billingAddress')?.value.trim()||null,shipping_address:$('shippingAddress')?.value.trim()||null,invoice_sent:true,invoice_sent_at:new Date().toISOString()};const targetPath=activeId?`/rest/v1/orders?id=eq.${activeId}`:`/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;const res=await api(targetPath,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patchPayload)});if(res.error)return setMsg($('formMessage'),res.error.message||JSON.stringify(res.error),true);setMsg($('formMessage'),`Invoice ${patchPayload.invoice_number} marked sent.`);await fetchOrders();const saved=orders.find(o=>o.order_number===orderNumber);if(saved){saved.invoice_sent=true;saved.invoice_sent_at=patchPayload.invoice_sent_at;saved.invoice_number=patchPayload.invoice_number;loadIntoForm(saved);}renderList();}
+    async function markInvoiceSent(){ensureInvoiceDefaults();const orderNumber=$('orderNumber').value.trim();
+      const existing = activeId ? orders.find(o => o.id === activeId) : orders.find(o => o.order_number === orderNumber);
+      if (existing?.invoice_sent) {
+        const okAgain = confirm(`Invoice ${existing.invoice_number || $('invoiceNumber')?.value || ''} is already marked sent. Mark it sent again and update the timestamp?`);
+        if (!okAgain) return;
+      }if(!orderNumber)return setMsg($('formMessage'),'Order number required before marking invoice sent.',true);const patchPayload={invoice_number:$('invoiceNumber')?.value.trim()||null,invoice_date:$('invoiceDate')?.value||null,invoice_due_date:$('invoiceDueDate')?.value||null,invoice_terms:$('invoiceTerms')?.value||null,po_number:$('poNumber')?.value.trim()||null,ap_email:$('apEmail')?.value.trim()||null,billing_address:$('billingAddress')?.value.trim()||null,shipping_address:$('shippingAddress')?.value.trim()||null,invoice_sent:true,invoice_sent_at:new Date().toISOString()};const targetPath=activeId?`/rest/v1/orders?id=eq.${activeId}`:`/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;const res=await api(targetPath,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patchPayload)});if(res.error)return setMsg($('formMessage'),res.error.message||JSON.stringify(res.error),true);setMsg($('formMessage'),`Invoice ${patchPayload.invoice_number} marked sent.`);await fetchOrders();const saved=orders.find(o=>o.order_number===orderNumber);if(saved){saved.invoice_sent=true;saved.invoice_sent_at=patchPayload.invoice_sent_at;saved.invoice_number=patchPayload.invoice_number;loadIntoForm(saved);updateInvoiceStatusNote(saved);}renderList();}
 
     function buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
       const fulfillmentLine =
@@ -954,6 +1041,7 @@ if ($('openVenmoBtn')) {
       $('searchInput').value = '';
       $('statusFilter').value = 'all';
       $('paymentFilter').value = 'all';
+      if ($('invoiceFilter')) $('invoiceFilter').value = 'all';
       $('sortBy').value = 'newest';
       renderList();
     };
