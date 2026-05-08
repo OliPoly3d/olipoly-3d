@@ -1172,8 +1172,127 @@ const payload = snapshotForm();
       return d;
     }
     function generateInvoicePdf(){fillInvoicePdf();window.print();}
-    function buildInvoicePlainEmail(d){return `Hello,\n\nAttached is invoice ${d.invoice_number} for the completed/shipped OliPoly 3D order.\n\nInvoice: ${d.invoice_number}\nOrder: ${d.order_number||'—'}\nPO: ${d.po_number||'—'}\nProject: ${d.order_title||'Custom 3D printed items'}\nTotal Due: ${money(d.total)}\nTerms: ${d.invoice_terms_label}\nDue Date: ${d.invoice_due_date||'—'}\n${d.tracking_number?`Tracking: ${d.tracking_number}\n`:''}\nPlease process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.\n\nThank you,\n\nOliPoly 3D LLC\nCustom 3D Printing • Creative Builds • Prototypes\nOliPoly3D@gmail.com\nhttps://olipoly3d.com`;}
-    function buildInvoiceHtmlEmail(d){return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;"><div style="max-width:700px;margin:0 auto;background:#fff;border:1px solid #f0c8df;border-radius:26px;overflow:hidden;"><div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div><div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#fff 100%);border-bottom:1px solid #f6ddec;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div><div style="margin-top:7px;color:#826889;font-size:13px;">Custom 3D Printing • Creative Builds • Prototypes</div></div><div style="padding:28px;"><h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 16px;color:#241b2b;">Invoice for completed order</h1><p>Attached is invoice <strong>${esc(d.invoice_number)}</strong> for the completed/shipped OliPoly 3D order.</p><div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;"><p><strong>Order / PO:</strong> ${esc(d.order_number||'—')} / ${esc(d.po_number||'—')}</p><p><strong>Project:</strong> ${esc(d.order_title||'Custom 3D printed items')}</p><p><strong>Total Due:</strong> ${money(d.total)}</p><p><strong>Terms / Due:</strong> ${esc(d.invoice_terms_label)} • ${esc(d.invoice_due_date||'—')}</p></div><div style="border-left:4px solid #de6fb8;background:#fffafd;padding:14px 16px;border-radius:14px;margin:20px 0;">Please process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.</div><p>Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p></div></div></div>`;}
+    function buildInvoicePlainEmail(d){
+      const paidLine = d.payment_status === 'paid'
+        ? 'This invoice is marked paid in full. Thank you.'
+        : `Please process payment according to the approved purchasing terms. Total due is ${money(d.total)} by ${d.invoice_due_date || 'the listed due date'}.`;
+
+      return `Hello,
+
+Attached is invoice ${d.invoice_number} for the completed/shipped OliPoly 3D order.
+
+Invoice: ${d.invoice_number}
+Order: ${d.order_number || '—'}
+PO: ${d.po_number || '—'}
+Project: ${d.order_title || 'Custom 3D printed items'}
+Total Due: ${money(d.total)}
+Terms: ${d.invoice_terms_label}
+Due Date: ${d.invoice_due_date || '—'}
+${d.tracking_number ? `Tracking: ${d.tracking_number}
+` : ''function buildInvoiceHtmlEmail(d){
+      const isPaid = d.payment_status === 'paid';
+      const statusPill = isPaid
+        ? `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#eafaf1;border:1px solid #bcebd0;color:#147a3f;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Paid</span>`
+        : `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff3fb;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Invoice Due</span>`;
+
+      const trackingBlock = d.tracking_number
+        ? `<div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:14px;line-height:1.55;">
+            <strong style="color:#2f2336;">Shipment / Tracking</strong><br>
+            Tracking: ${esc(d.tracking_number)}
+          </div>`
+        : '';
+
+      const paymentMessage = isPaid
+        ? `This invoice is marked <strong>paid in full</strong>. Thank you.`
+        : `Please process payment according to the approved purchasing terms. Include the invoice number and PO number with payment or remittance details.`;
+
+      return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:26px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
+
+    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+
+    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="vertical-align:middle;">
+            <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">
+              Oli<span style="color:#b86be8;">Poly</span> 3D
+            </div>
+            <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">
+              Custom 3D Printing • Creative Builds • Prototypes
+            </div>
+          </td>
+          <td style="text-align:right;vertical-align:middle;">
+            ${statusPill}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="padding:28px;">
+      <div style="display:inline-block;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:#f9ecf5;border:1px solid #f2c4df;color:#7c4a82;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">
+        Invoice
+      </div>
+
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 14px;color:#241b2b;font-weight:700;">
+        Invoice for completed order
+      </h1>
+
+      <p style="font-size:15px;line-height:1.65;margin:0 0 18px;color:#4f4057;">
+        Attached is invoice <strong>${esc(d.invoice_number)}</strong> for the completed/shipped OliPoly 3D order.
+      </p>
+
+      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">
+          Invoice Summary
+        </div>
+
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">Invoice #</td>
+            <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:900;border-bottom:1px solid #f5dcea;">${esc(d.invoice_number)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">OP Order / PO</td>
+            <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.order_number || '—')} / ${esc(d.po_number || '—')}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Project</td>
+            <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.order_title || 'Custom 3D printed items')}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Terms</td>
+            <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.invoice_terms_label)}${d.invoice_due_date ? ` • Due ${esc(d.invoice_due_date)}` : ''}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0 0;color:#826889;font-size:13px;font-weight:700;">Total Due</td>
+            <td style="padding:10px 0 0;color:#241b2b;font-size:20px;font-weight:950;">${money(d.total)}</td>
+          </tr>
+        </table>
+      </div>
+
+      ${trackingBlock}
+
+      <div style="border-left:4px solid ${isPaid ? '#16a34a' : '#de6fb8'};background:#fffafd;padding:14px 16px;border-radius:14px;margin:20px 0;color:#604d68;font-size:14px;line-height:1.6;">
+        ${paymentMessage}
+      </div>
+
+      <p style="font-size:15px;line-height:1.6;margin:22px 0 0;color:#4f4057;">
+        Thank you,<br>
+        <strong>OliPoly 3D LLC</strong><br>
+        Custom 3D Printing • Creative Builds • Prototypes
+      </p>
+    </div>
+
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:18px 28px;color:#826889;font-size:13px;line-height:1.55;">
+      <strong style="color:#4f4057;">OliPoly 3D</strong><br>
+      <a href="mailto:OliPoly3D@gmail.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">OliPoly3D@gmail.com</a>
+      <span style="color:#c59db9;"> • </span>
+      <a href="https://olipoly3d.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">olipoly3d.com</a>
+    </div>
+  </div>
+</div>`;
+    }roved purchasing terms. Include the invoice number and PO number with payment or remittance details.</div><p>Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p></div></div></div>`;}
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
     function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`Invoice ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
@@ -1491,7 +1610,7 @@ if ($('openVenmoBtn')) {
     <div class="email-preview-dialog" role="dialog" aria-modal="true">
       <div class="email-preview-head"><div><span class="email-preview-kicker">Invoice Email Preview</span><h3>OliPoly 3D invoice email</h3><p>Review the branded email, copy the rich version, then open Gmail and attach the invoice PDF.</p></div><button class="email-preview-close" id="invoiceEmailCloseBtn" type="button">×</button></div>
       <div class="email-preview-actions"><button class="btn" id="copyInvoiceEmailRichBtn" type="button">Copy Rich Email</button><button class="btn-ghost" id="openInvoiceGmailBtn" type="button">Open Gmail Draft</button><button class="btn-ghost" id="downloadInvoiceEmailHtmlBtn" type="button">Download HTML</button></div>
-      <div class="email-preview-note" id="invoiceEmailModalMessage">Tip: Generate/save the invoice PDF first, then attach it to the Gmail draft.</div>
+      <div class="email-preview-note" id="invoiceEmailModalMessage">Tip: Generate/save the invoice PDF first, then attach it to the Gmail draft. Use Copy Rich Email to paste the branded version into Gmail.</div>
       <div class="email-preview-frame"><iframe id="invoiceEmailPreviewFrame" title="Invoice email preview"></iframe></div>
     </div>
   </div>
