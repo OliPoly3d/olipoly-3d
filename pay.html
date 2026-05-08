@@ -328,6 +328,31 @@
       line-height:1.42;
     }
 
+    
+    .help-note{
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(216,107,179,.14);
+      color:#6f5d76;
+      font-size:.9rem;
+      line-height:1.5;
+    }
+
+    .help-note strong{
+      display:block;
+      margin-bottom:6px;
+      color:#4a3550;
+      font-size:.92rem;
+    }
+
+    .help-note a{
+      color:#8f4fbe;
+      font-weight:800;
+    }
+
+
     .mini-grid{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
@@ -353,6 +378,18 @@
       font-size:.84rem;
       line-height:1.32;
     }
+
+    
+    .card,
+    .pay-copy,
+    .pay-copy span,
+    .pay-copy strong,
+    .amount-note,
+    .help-note{
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+
 
     .footer{
       margin-top:16px;
@@ -449,26 +486,17 @@
           message OliPoly 3D before submitting payment.
         </div>
 
-        <div class="mini-grid" aria-label="Payment reminders">
-          <div class="mini">
-            <strong>Card payments</strong>
-            <span>Use Stripe for card, Apple Pay, or Google Pay.</span>
-          </div>
-          <div class="mini">
-            <strong>Order number</strong>
-            <span>Add your OP- or Q- number in the note if available.</span>
-          </div>
-          <div class="mini">
-            <strong>Questions?</strong>
-            <span>Email OliPoly3D@gmail.com before paying.</span>
-          </div>
+        <div class="help-note">
+          <strong>Helpful tip</strong>
+          If you have an order number, include your OP- or Q- reference in the payment notes during checkout to help us match your payment faster.
+          Questions before paying? Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a>.
         </div>
       </section>
 
       <section class="card pay-card">
         <div class="pay-heading">
           <h3>Quick Pay</h3>
-          <span>Craft table friendly</span>
+          
         </div>
 
         <div class="pay-grid">
