@@ -3599,3 +3599,47 @@ https://olipoly3d.com`;
 
   window.buildAndShowQuoteEmailPreview = buildAndShowEmailPreview;
 })();
+
+
+
+/* === OliPoly Retail Email Preview Routing Guard === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function val(id){
+    return ($(id)?.value || "").trim();
+  }
+
+  function isBusinessOrPoQuote(){
+    const type = val("liteQuoteType") || document.body.dataset.liteQuoteType || "retail";
+    return ["po","business","business_bulk"].includes(type) ||
+      val("professionalMode") === "on" ||
+      !!val("poNumber");
+  }
+
+  function bindRetailEmailPreviewOnly(){
+    const btn = $("prepareCustomerEmailBtn");
+    if (!btn || btn.dataset.retailEmailPreviewGuard === "true") return;
+    btn.dataset.retailEmailPreviewGuard = "true";
+
+    const existing = btn.onclick;
+
+    btn.onclick = (event) => {
+      if (!isBusinessOrPoQuote() && typeof window.buildAndShowQuoteEmailPreview === "function") {
+        event.preventDefault();
+        window.buildAndShowQuoteEmailPreview();
+        return;
+      }
+
+      if (typeof existing === "function") {
+        return existing.call(btn, event);
+      }
+    };
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindRetailEmailPreviewOnly);
+  else bindRetailEmailPreviewOnly();
+
+  setTimeout(bindRetailEmailPreviewOnly, 500);
+  setTimeout(bindRetailEmailPreviewOnly, 1500);
+})();
