@@ -1954,6 +1954,33 @@ if ($('openVenmoBtn')) {
 
 
     updateAuthVisibility();
+
+    // Final safety binding for Packing Slip PDF button.
+    window.generatePackingSlipPdf = generatePackingSlipPdf;
+
+    function bindPackingSlipButtonFinal(){
+      const btn = document.getElementById('generatePackingSlipBtn');
+      if (!btn || btn.dataset.finalPackingBound === 'true') return;
+
+      btn.dataset.finalPackingBound = 'true';
+      btn.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+          setMsg($('formMessage'), 'Opening packing slip print window...');
+          generatePackingSlipPdf();
+        } catch (error) {
+          console.error('Packing Slip PDF failed:', error);
+          setMsg($('formMessage'), `Packing Slip failed: ${error?.message || error}`, true);
+        }
+      }, true);
+    }
+
+    bindPackingSlipButtonFinal();
+    setTimeout(bindPackingSlipButtonFinal, 250);
+    setTimeout(bindPackingSlipButtonFinal, 1000);
+
   </script>
 
   <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true">
