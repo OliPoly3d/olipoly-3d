@@ -219,7 +219,223 @@
       .reminder-table td[data-label]::before{content:attr(data-label);display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
       .reminder-group-header{padding:9px 12px}
     }
-  </style>
+  
+/* === OliPoly OS Hub Layout Upgrade === */
+.os-hero{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+.os-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(12px);
+  padding:18px;
+  border-radius:var(--radius-xl);
+}
+.os-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(222,111,184,.10);
+  border:1px solid rgba(222,111,184,.14);
+  color:#9b4c80;
+  font-size:.74rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.os-card h2{
+  margin:0 0 6px;
+  font-size:clamp(1.6rem,3vw,2.35rem);
+  line-height:1.05;
+  color:#2d1f36;
+}
+.os-card p{margin:0;color:var(--muted);line-height:1.55}
+.metrics-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.metric-tile{
+  padding:12px;
+  border-radius:18px;
+  background:rgba(255,255,255,.76);
+  border:1px solid var(--line);
+}
+.metric-tile span{
+  display:block;
+  color:var(--muted);
+  font-size:.74rem;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.metric-tile strong{
+  display:block;
+  font-size:1.38rem;
+  color:#2d1f36;
+}
+.core-tools-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.core-tool{
+  min-height:126px;
+  padding:16px;
+  border-radius:24px;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,244,248,.92));
+  border:1px solid rgba(222,111,184,.14);
+  box-shadow:0 12px 26px rgba(222,111,184,.08);
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:10px;
+  transition:.18s ease;
+}
+.core-tool:hover{
+  transform:translateY(-2px);
+  box-shadow:0 18px 34px rgba(222,111,184,.14);
+}
+.core-tool .tool-icon{
+  width:42px;
+  height:42px;
+  border-radius:16px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  font-size:1.1rem;
+}
+.core-tool strong{
+  display:block;
+  color:#2d1f36;
+  font-size:1rem;
+}
+.core-tool small{
+  display:block;
+  color:var(--muted);
+  line-height:1.35;
+  margin-top:3px;
+}
+.hub-section{
+  background:var(--panel);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(12px);
+  padding:16px;
+  border-radius:var(--radius-xl);
+  margin-bottom:16px;
+}
+.compact-link-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.utility-link{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  min-height:48px;
+  border-radius:16px;
+  text-decoration:none;
+  background:rgba(255,255,255,.76);
+  border:1px solid var(--line);
+  color:var(--text);
+  font-weight:800;
+  transition:.18s ease;
+}
+.utility-link:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 22px rgba(222,111,184,.10);
+}
+.workflow-details{
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:rgba(255,255,255,.82);
+  overflow:hidden;
+}
+.workflow-details summary{
+  list-style:none;
+  cursor:pointer;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  font-weight:900;
+}
+.workflow-details summary::-webkit-details-marker{display:none}
+.workflow-details summary span small{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-weight:700;
+}
+.workflow-details summary b{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  color:#9b4c80;
+  background:rgba(222,111,184,.10);
+  transition:.2s ease;
+}
+.workflow-details[open] summary b{transform:rotate(45deg)}
+.workflow-steps-compact{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  padding:0 16px 16px;
+}
+.workflow-mini{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px 11px;
+  border-radius:15px;
+  background:#fff;
+  border:1px solid rgba(221,159,204,.22);
+  font-size:.9rem;
+  font-weight:800;
+}
+.workflow-mini span{
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:rgba(157,124,255,.12);
+  color:#6b57be;
+  font-size:.78rem;
+  flex:0 0 auto;
+}
+@media(max-width:980px){
+  .os-hero{grid-template-columns:1fr}
+  .core-tools-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .workflow-steps-compact{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .core-tools-grid,.metrics-grid,.workflow-steps-compact{grid-template-columns:1fr}
+  .core-tool{min-height:auto}
+}
+
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -231,13 +447,38 @@
         </div>
         <div>
           <h1>OliPoly 3D Site Hub</h1>
-          <p>Login, reminders, system checks, workflow, and admin tools.</p>
+          <p>Operations, quotes, orders, finance, production, and business tools.</p>
         </div>
       </div>
       <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
     </header>
 
-    <section class="auth-card">
+
+    <section class="os-hero">
+      <div class="os-card">
+        <div class="os-kicker">Today</div>
+        <h2>OliPoly Command Center</h2>
+        <p>Start here for the daily operating flow: quotes, orders, production, payment, shipping, and follow-up.</p>
+        <div class="metrics-grid">
+          <div class="metric-tile"><span>Reminders</span><strong id="metricReminders">—</strong></div>
+          <div class="metric-tile"><span>Overdue</span><strong id="metricOverdue">—</strong></div>
+          <div class="metric-tile"><span>This Week</span><strong id="metricThisWeek">—</strong></div>
+          <div class="metric-tile"><span>System</span><strong id="metricSystem">Ready</strong></div>
+        </div>
+      </div>
+
+      <div class="os-card">
+        <div class="os-kicker">Cloud Sync</div>
+        <h2>Sign in once, work everywhere.</h2>
+        <p>Use Supabase login below to unlock notes, reminders, saved quotes, Orders Admin, and Finance Pro on this device.</p>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+          <a class="ghost" href="#cloud-login">Go to Login</a>
+          <button class="ghost" id="quickHealthBtn" type="button">Run Health Check</button>
+        </div>
+      </div>
+    </section>
+
+<section class="auth-card" id="cloud-login">
       <div class="section-title" style="margin-bottom:10px;">
         <h3>Cloud Sync</h3>
         <p>Sign in to sync notes and reminders across devices.</p>
@@ -266,38 +507,54 @@
       <div id="hubAuthStatus" class="auth-status">Waiting for sign-in.</div>
     </section>
 
-    <section class="card">
+    <section class="hub-section">
       <div class="section-title">
-        <h3>System Status</h3>
-        <p>Quick view of what’s ready to use after signing into Supabase.</p>
+        <span class="os-kicker">Core Operations</span>
+        <h3>Daily tools</h3>
+        <p>Your main OliPoly operating tools — promoted so they are fast to reach.</p>
       </div>
-
-      <div class="checklist-list">
-        <div class="check-row">
-          <span class="check-number">✓</span>
-          <span id="statusAuth">Checking login...</span>
-        </div>
-
-        <div class="check-row">
-          <span class="check-number">✓</span>
-          <span id="statusOrders">Orders Admin ready</span>
-        </div>
-
-        <div class="check-row">
-          <span class="check-number">✓</span>
-          <span id="statusQuote">Quote Tool ready</span>
-        </div>
-
-        <div class="check-row">
-          <span class="check-number">✓</span>
-          <span id="statusFinance">Finance ready</span>
-        </div>
+      <div class="core-tools-grid">
+        <a class="core-tool" href="orders-admin.html">
+          <span class="tool-icon">📦</span>
+          <span><strong>Orders Admin</strong><small>Status, tracking, invoices, packing slips, shipping, Finance push.</small></span>
+        </a>
+        <a class="core-tool" href="quote.html">
+          <span class="tool-icon">🧾</span>
+          <span><strong>Quote Tool</strong><small>Create quotes, professional PDFs, customer approval links.</small></span>
+        </a>
+        <a class="core-tool" href="finance-pro.html">
+          <span class="tool-icon">💰</span>
+          <span><strong>Finance Pro</strong><small>Sales, expenses, tax-inclusive revenue, Schedule C exports.</small></span>
+        </a>
+        <a class="core-tool" href="track.html">
+          <span class="tool-icon">🔎</span>
+          <span><strong>Tracker</strong><small>Customer-safe public order lookup and payment links.</small></span>
+        </a>
+        <a class="core-tool" href="pay.html">
+          <span class="tool-icon">💳</span>
+          <span><strong>Pay Page</strong><small>Quick craft-table and customer payment options.</small></span>
+        </a>
       </div>
     </section>
 
-    <section class="card">
+    <section class="hub-section">
       <div class="section-title">
-        <h3>Reminders</h3>
+        <span class="os-kicker">System Status</span>
+        <h3>Operational readiness</h3>
+        <p>Quick view of login and core system availability.</p>
+      </div>
+      <div class="checklist-list">
+        <div class="check-row"><span class="check-number">✓</span><span id="statusAuth">Checking login...</span></div>
+        <div class="check-row"><span class="check-number">✓</span><span id="statusOrders">Orders Admin ready</span></div>
+        <div class="check-row"><span class="check-number">✓</span><span id="statusQuote">Quote Tool ready</span></div>
+        <div class="check-row"><span class="check-number">✓</span><span id="statusFinance">Finance ready</span></div>
+      </div>
+    </section>
+
+    <section class="hub-section">
+      <div class="section-title">
+        <span class="os-kicker">Reminders</span>
+        <h3>Today & follow-ups</h3>
         <p>Editable recurring reminders that disappear when complete and return on the next occurrence.</p>
       </div>
       <div id="reminderSummary" class="summary-box" style="margin-bottom:10px; font-weight:800;">● 0 overdue &nbsp;&nbsp; ● 0 this week &nbsp;&nbsp; ● 0 upcoming</div>
@@ -316,81 +573,28 @@
       <div id="reminderEmpty" class="reminder-empty hidden">No active reminders right now.</div>
     </section>
 
-    <section class="health-check-card">
-      <div class="health-check-header">
-        <div class="section-title" style="margin-bottom:0;">
-          <h3>Health check</h3>
-          <p class="muted">Check core pages quickly.</p>
-        </div>
-        <button class="btn" id="runHealthCheckBtn" type="button">Run Check</button>
+    <section class="hub-section">
+      <div class="section-title">
+        <span class="os-kicker">Production / Fulfillment</span>
+        <h3>Shop floor tools</h3>
+        <p>Tools and files used for materials, maintenance, packing, shipping, and customer handoff.</p>
       </div>
-      <div id="healthCheckSummary" class="health-check-summary">No check run yet.</div>
-      <div id="healthCheckList" class="health-check-list"></div>
+      <div class="compact-link-grid">
+        <a class="utility-link" href="pm.html">Printer PM <span>→</span></a>
+        <a class="utility-link" href="materials.html">Materials <span>→</span></a>
+        <a class="utility-link" href="orders-admin.html">Packing Slips <span>→</span></a>
+        <a class="utility-link" href="assets/templates/consumer/consumer-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Consumer Label <span>→</span></a>
+        <a class="utility-link" href="assets/templates/business/business-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Business Label <span>→</span></a>
+        <a class="utility-link" href="assets/templates/business/business-packing-slip.pdf" target="_blank" rel="noopener noreferrer">Business Slip <span>→</span></a>
+      </div>
     </section>
 
-
-    <section class="card">
+    <section class="hub-section">
       <div class="section-title">
-        <span class="section-kicker">Files</span>
-        <h3>Packaging, Business Docs & Files</h3>
-        <p>Quick access to consumer inserts, business packing slips, vendor docs, QR codes, and customer-facing graphics.</p>
+        <span class="os-kicker">Business Docs</span>
+        <h3>Vendor, PO & business files</h3>
+        <p>Corporate-facing documents for vendor setup, PO customers, and professional fulfillment.</p>
       </div>
-
-      <div class="section-title" style="margin-top:14px;">
-        <h3>Consumer / Friendly Packaging</h3>
-        <p>Use these for local customers, gifts, custom orders, retail-style shipments, and friendly branded packaging.</p>
-      </div>
-
-      <div class="docs-grid">
-        <div class="doc-card">
-          <strong>Consumer Thank-You Insert</strong>
-          <small>Polished customer insert for repeat orders, care notes, contact info, and friendly OliPoly branding.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/consumer/consumer-thank-you-insert.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-thank-you-insert.pdf')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Consumer Shipping Label</strong>
-          <small>Friendly branded shipping label template for custom and retail-style orders.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/consumer/consumer-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-shipping-label.pdf')">Copy Link</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:22px;">
-        <h3>Business / PO Packaging</h3>
-        <p>Use these for companies, PO orders, prototype shipments, replacement parts, and vendor-style fulfillment.</p>
-      </div>
-
-      <div class="docs-grid">
-        <div class="doc-card">
-          <strong>Business Packing Slip</strong>
-          <small>Professional PO-focused packing slip with part number, quantity, revision, and inspection fields.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/business/business-packing-slip.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/business/business-packing-slip.pdf')">Copy Link</button>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <strong>Business Shipping Label</strong>
-          <small>Clean PO-focused shipping label format for vendor and prototype shipments.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/business/business-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/business/business-shipping-label.pdf')">Copy Link</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:22px;">
-        <h3>Business Docs & Assets</h3>
-        <p>Reusable business documents, QR codes, payment graphics, and vendor support files.</p>
-      </div>
-
       <div class="docs-grid">
         <div class="doc-card">
           <strong>W-9 PDF</strong>
@@ -400,7 +604,6 @@
             <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/w9.pdf')">Copy Link</button>
           </div>
         </div>
-
         <div class="doc-card">
           <strong>Vendor Setup Packet</strong>
           <small>Business information packet for vendor onboarding, purchasing departments, and PO customers.</small>
@@ -409,7 +612,32 @@
             <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/vendor-setup-packet.pdf')">Copy Link</button>
           </div>
         </div>
+        <div class="doc-card">
+          <strong>Business Packing Slip</strong>
+          <small>Professional PO-focused packing slip with part number, quantity, revision, and inspection fields.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/templates/business/business-packing-slip.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/business/business-packing-slip.pdf')">Copy Link</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
+    <section class="hub-section">
+      <div class="section-title">
+        <span class="os-kicker">Marketing / Brand Assets</span>
+        <h3>Customer-facing files</h3>
+        <p>Friendly packaging, QR codes, craft table signage, payment graphics, and branded customer assets.</p>
+      </div>
+      <div class="docs-grid">
+        <div class="doc-card">
+          <strong>Consumer Thank-You Insert</strong>
+          <small>Polished customer insert for repeat orders, care notes, contact info, and friendly OliPoly branding.</small>
+          <div class="doc-actions">
+            <a class="tiny-btn" href="assets/templates/consumer/consumer-thank-you-insert.pdf" target="_blank" rel="noopener noreferrer">Open</a>
+            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-thank-you-insert.pdf')">Copy Link</button>
+          </div>
+        </div>
         <div class="doc-card">
           <strong>Craft Table Payment Sign</strong>
           <small>Branded OliPoly digital payment sign for craft tables, pickup, QR signage, and social posts.</small>
@@ -418,8 +646,6 @@
             <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/brand/payment-sign-event.png')">Copy Link</button>
           </div>
         </div>
-
-        
         <div class="doc-card">
           <strong>Payment Sign PDF</strong>
           <small>Printable PDF version of the OliPoly craft-table digital payment sign.</small>
@@ -428,9 +654,9 @@
             <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/brand/payment-sign-event.pdf')">Copy Link</button>
           </div>
         </div>
-<div class="doc-card">
+        <div class="doc-card">
           <strong>Payment QR Codes</strong>
-          <small>QR code folder for PayPal, Venmo, card payments, website, upload form, and tracker links.</small>
+          <small>QR folder for PayPal, Venmo, card payments, website, upload form, and tracker links.</small>
           <div class="doc-actions">
             <a class="tiny-btn" href="assets/qr/" target="_blank" rel="noopener noreferrer">Open Folder</a>
             <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/qr/')">Copy Link</button>
@@ -439,97 +665,37 @@
       </div>
     </section>
 
-
-    <section class="quick-actions">
+    <section class="hub-section">
       <div class="section-title">
-        <h3>External Links</h3>
-        <p>Fast access to external dashboards and tools.</p>
+        <span class="os-kicker">Workflow</span>
+        <h3>Quote → order → fulfillment process</h3>
+        <p>Collapsed by default so the Hub stays fast to scan.</p>
       </div>
-      <div class="quick-grid">
-        <a class="btn ext" href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe Dashboard</a>
-        <a class="btn ext" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener noreferrer">Stripe Invoices</a>
-        <a class="btn ext" href="https://github.com/olipoly3d/olipoly-3d" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
-        <a class="btn ext" href="orders-admin.html">Orders Admin</a>
-        <a class="btn ext" href="quote.html">Quote Tool</a>
-        <a class="btn ext" href="track.html">Tracker</a>
-        <a class="btn ext" href="finance-pro.html">Finance</a>
-        <a class="btn ext" href="quote-tool.html">Advanced Quote Tool</a>
-        <a class="btn ext" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude" target="_blank" rel="noopener noreferrer">Supabase</a>
-        <a class="btn ext" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal</a>
-        <a class="btn ext" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo</a>
-        <a class="btn ext" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail</a>
-      </div>
+      <details class="workflow-details">
+        <summary><span>Current order process checklist<small>Expand when you want the full step-by-step flow.</small></span><b>+</b></summary>
+        <label class="label" style="padding:0 16px 12px;">
+          Order # / cross-check
+          <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or order number" />
+        </label>
+        <div class="workflow-steps-compact">
+          <div class="workflow-mini"><span>1</span>Receive request</div>
+          <div class="workflow-mini"><span>2</span>Create quote</div>
+          <div class="workflow-mini"><span>3</span>Send quote</div>
+          <div class="workflow-mini"><span>4</span>Customer approves</div>
+          <div class="workflow-mini"><span>5</span>Confirm order</div>
+          <div class="workflow-mini"><span>6</span>Produce order</div>
+          <div class="workflow-mini"><span>7</span>Collect payment</div>
+          <div class="workflow-mini"><span>8</span>Pack / ship</div>
+          <div class="workflow-mini"><span>9</span>Invoice / close out</div>
+        </div>
+      </details>
     </section>
 
-    <section class="checklist-shell">
+    <section class="hub-section">
       <div class="section-title">
-        <h3>Order process checklist</h3>
-        <p>Use this as the current quote → order → payment → completion workflow.</p>
-      </div>
-      <label class="label">
-        Order # / cross-check
-        <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or OP-#####" />
-      </label>
-      <div class="checklist-list">
-        <label class="check-row">
-          <span class="check-number">1</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Receive request</strong><br><small>Message, form, email, or in-person request.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">2</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Build quote in Quote Tool</strong><br><small>Create/save the Q-##### quote and confirm customer details.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">3</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Send quote email</strong><br><small>Click Prepare Customer Email so the customer can review, accept, or decline.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">4</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Customer accepts quote</strong><br><small>System creates OP-##### and the response appears in Quote Tool.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">5</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Send confirmation email</strong><br><small>Click Send Confirmation Email to provide tracker and payment link.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">6</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Produce and update order</strong><br><small>Use Orders Admin to manage payment, status, notes, and tracker updates.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">7</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Customer payment</strong><br><small>Payment can happen through tracker, pay page, digital link, or in person.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">8</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Mark order complete</strong><br><small>Update status to completed once the order is finished.</small></span>
-        </label>
-
-        <label class="check-row">
-          <span class="check-number">9</span>
-          <input type="checkbox" class="process-check" />
-          <span><strong>Send completion email</strong><br><small>Click Send Completion Email for pickup, delivery, or final payment coordination.</small></span>
-        </label>
-      </div>
-    </section>
-    <section class="card">
-      <div class="section-title">
-        <h3>Sales tax quick calc</h3>
-        <p>Use for quick estimates before entering finance tool.</p>
+        <span class="os-kicker">Financial Tools</span>
+        <h3>Sales tax calculator</h3>
+        <p>Use for quick estimates before entering final records in Finance Pro.</p>
       </div>
       <div class="input-grid">
         <label class="label">Sale amount<input id="taxSale" class="tax-input" placeholder="0.00" /></label>
@@ -538,6 +704,38 @@
         <label class="label">Total w/ tax<input id="taxTotal" class="tax-input" disabled /></label>
       </div>
     </section>
+
+    <section class="health-check-card">
+      <div class="health-check-header">
+        <div class="section-title" style="margin-bottom:0;">
+          <span class="os-kicker">Health Check</span>
+          <h3>Core page check</h3>
+          <p class="muted">Check active OliPoly pages quickly.</p>
+        </div>
+        <button class="btn" id="runHealthCheckBtn" type="button">Run Check</button>
+      </div>
+      <div id="healthCheckSummary" class="health-check-summary">No check run yet.</div>
+      <div id="healthCheckList" class="health-check-list"></div>
+    </section>
+
+    <section class="hub-section">
+      <div class="section-title">
+        <span class="os-kicker">Utilities / Admin</span>
+        <h3>External dashboards</h3>
+        <p>Lower-frequency admin tools, dashboards, and external services.</p>
+      </div>
+      <div class="compact-link-grid">
+        <a class="utility-link" href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe <span>→</span></a>
+        <a class="utility-link" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener noreferrer">Stripe Invoices <span>→</span></a>
+        <a class="utility-link" href="https://github.com/olipoly3d/olipoly-3d" target="_blank" rel="noopener noreferrer">GitHub Repo <span>→</span></a>
+        <a class="utility-link" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude" target="_blank" rel="noopener noreferrer">Supabase <span>→</span></a>
+        <a class="utility-link" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal <span>→</span></a>
+        <a class="utility-link" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo <span>→</span></a>
+        <a class="utility-link" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail <span>→</span></a>
+        <a class="utility-link" href="quote-tool.html">Advanced Quote Tool <span>→</span></a>
+      </div>
+    </section>
+
 
     <section class="dashboard-grid">
       <section class="notes-card">
@@ -552,6 +750,9 @@
     </section>
   </div>
 
+
+  </div>
+
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
@@ -564,6 +765,17 @@
       if (!token) throw new Error('No active session token found. Please log in again.');
       return token;
     }
+
+
+    window.copyText = async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const status = document.getElementById('hubAuthStatus');
+        if (status) status.textContent = 'Copied link to clipboard.';
+      } catch {
+        prompt('Copy this link:', text);
+      }
+    };
 
     async function fetchWithTimeout(url, options = {}, ms = 12000) {
       const controller = new AbortController();
@@ -959,6 +1171,28 @@
       return wrapper;
     }
 
+
+    function updateHubMetricsFromReminders() {
+      const active = reminders.filter(r => !r.completed);
+      const today = todayISO();
+      const overdue = active.filter(r => r.due_date && r.due_date < today).length;
+      const thisWeek = active.filter(r => {
+        if (!r.due_date || r.due_date < today) return false;
+        const diffDays = Math.ceil((new Date(r.due_date) - new Date(today)) / (1000 * 60 * 60 * 24));
+        return diffDays <= 7;
+      }).length;
+
+      const metricReminders = document.getElementById('metricReminders');
+      const metricOverdue = document.getElementById('metricOverdue');
+      const metricThisWeek = document.getElementById('metricThisWeek');
+      const metricSystem = document.getElementById('metricSystem');
+
+      if (metricReminders) metricReminders.textContent = active.length;
+      if (metricOverdue) metricOverdue.textContent = overdue;
+      if (metricThisWeek) metricThisWeek.textContent = thisWeek;
+      if (metricSystem) metricSystem.textContent = currentUser ? 'Synced' : 'Local';
+    }
+
     function renderReminders() {
       const active = reminders.filter(r => !r.completed).sort((a, b) => (a.due_date || '9999-12-31').localeCompare(b.due_date || '9999-12-31'));
       els.reminderGroups.innerHTML = '';
@@ -977,12 +1211,14 @@
 
       els.reminderSummary.innerHTML = `<span style="color:#e45a7a;">● ${grouped.overdue.length} overdue</span>&nbsp;&nbsp;<span style="color:#f0b429;">● ${grouped.thisweek.length} this week</span>&nbsp;&nbsp;<span style="color:#9d7cff;">● ${grouped.upcoming.length} upcoming</span>`;
 
+      updateHubMetricsFromReminders();
       if (!active.length) {
         els.reminderEmpty.classList.remove('hidden');
         return;
       }
 
       els.reminderEmpty.classList.add('hidden');
+      updateHubMetricsFromReminders();
       [['Overdue','overdue',grouped.overdue],['This Week','thisweek',grouped.thisweek],['Upcoming','upcoming',grouped.upcoming],['No Date','nodate',grouped.nodate]].forEach(([label, tone, list]) => {
         if (list.length) els.reminderGroups.appendChild(renderReminderGroup(label, tone, list, today));
       });
@@ -1205,6 +1441,7 @@
     els.signupBtn?.addEventListener('click', signup);
     els.logoutBtn?.addEventListener('click', logout);
     els.runHealthCheckBtn?.addEventListener('click', runHealthCheck);
+    document.getElementById('quickHealthBtn')?.addEventListener('click', runHealthCheck);
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       currentSession = session || null;
