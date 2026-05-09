@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://olipoly3d.com/sitemap.xml
