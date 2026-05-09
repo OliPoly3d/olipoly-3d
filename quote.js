@@ -3068,3 +3068,247 @@ https://olipoly3d.com`;
     setTimeout(syncHiddenInvoiceType, 500);
   });
 })();
+
+
+
+/* === OliPoly Quote PDF Direct Print Fix === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function val(id, fallback = ""){
+    return ($(id)?.value || fallback || "").trim();
+  }
+
+  function text(id, fallback = ""){
+    return ($(id)?.textContent || fallback || "").trim();
+  }
+
+  function esc(value){
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[ch]));
+  }
+
+  function moneyNum(textValue){
+    return Number(String(textValue || "").replace(/[^0-9.-]/g, "")) || 0;
+  }
+
+  function toast(message, ms = 2600){
+    let el = $("liteStatusToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "liteStatusToast";
+      el.className = "lite-status-toast";
+      el.setAttribute("aria-live", "polite");
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(el._quotePdfTimer);
+    el._quotePdfTimer = setTimeout(() => el.classList.remove("show"), ms);
+  }
+
+  function ensureRender(){
+    if (typeof window.ensureDocumentNumbers === "function") window.ensureDocumentNumbers(false);
+    if (typeof window.render === "function") window.render();
+  }
+
+  function quoteTotalText(){
+    return text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
+  }
+
+  function quotePerItemText(){
+    return text("sumPerItem") || text("outPerItem") || "";
+  }
+
+  function termsLabel(){
+    const raw = val("paymentTerms");
+    const labels = {
+      deposit_to_start: "Deposit to Start",
+      due_on_receipt: "Due on Receipt",
+      customer_terms: "Customer Standard Terms / PO Terms",
+      net_15: "Net 15",
+      net_30: "Net 30",
+      net_45: "Net 45"
+    };
+    return labels[raw] || raw || "To be confirmed";
+  }
+
+  function pdfCss(){
+    return `
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#2f2336;font-family:Arial,Helvetica,sans-serif}
+      .sheet{width:7.75in;min-height:10in;padding:.32in;background:#fff;position:relative;overflow:hidden}
+      .topbar{height:14px;margin:-.32in -.32in .22in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
+      .header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid #f0c8df;margin-bottom:12px}
+      .brand{font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:800;letter-spacing:-.04em;line-height:.95;color:#241b2b}
+      .brand span{color:#b86be8}
+      .tagline{margin-top:7px;color:#826889;font-size:11px}
+      .title{text-align:right;font-size:28px;font-weight:900;letter-spacing:.12em;color:#241b2b}
+      .docnum{margin-top:7px;padding:6px 9px;border-radius:999px;background:#fff7fb;border:1px solid #f0c8df;display:inline-block;font-size:12px;color:#7c4a82;font-weight:900}
+      .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+      .box{border-radius:12px;padding:10px;background:#fffafd;border:1px solid #f0c8df}
+      .box small{display:block;font-size:8.5px;margin-bottom:4px;color:#826889;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+      .box strong{display:block;font-size:13px;color:#2f2336;line-height:1.22;overflow-wrap:anywhere}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+      .panel{border-radius:13px;padding:11px 12px;font-size:11.5px;line-height:1.42;min-height:.72in;background:#fff;border:1px solid #f0c8df}
+      .chip{display:inline-block;margin-bottom:7px;padding:4px 8px;border-radius:999px;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;font-size:8.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+      table{width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #f0c8df;border-radius:12px;overflow:hidden}
+      th{background:#fff7fb;padding:8px 9px;font-size:8.5px;color:#826889;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #f0c8df;text-align:left}
+      td{padding:11px 9px;font-size:11px;line-height:1.35;color:#2f2336;vertical-align:top;border-bottom:1px solid #f8e4ef}
+      th:nth-child(2),td:nth-child(2){text-align:center;width:65px}
+      th:nth-child(3),td:nth-child(3){text-align:right;width:110px}
+      .totalbox{margin-top:12px;display:grid;grid-template-columns:1.2fr .8fr;gap:10px}
+      .note{border-radius:13px;padding:10px 12px;background:linear-gradient(135deg,#fff7fb,#fbf6ff);border:1px solid #f0c8df;font-size:10.5px;line-height:1.42;color:#604d68}
+      .totals{border-radius:13px;padding:10px 12px;background:#fffafd;border:1px solid #f0c8df}
+      .totals div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:11px;border-bottom:1px solid #f6ddec}
+      .totals .grand{border-top:2px solid #f0c8df;border-bottom:0;margin-top:4px;padding-top:9px}
+      .totals .grand strong,.totals .grand span{font-size:16px;color:#241b2b;font-weight:900}
+      .footer{margin-top:10px;padding-top:9px;border-top:1px solid #f0c8df;font-size:9.5px;text-align:center;color:#826889}
+      @page{size:letter portrait;margin:.25in}
+      @media print{body{margin:0}.sheet{width:7.75in;min-height:auto}}
+    `;
+  }
+
+  function buildQuotePdfHtml(){
+    ensureRender();
+
+    const quoteNumber = val("quoteNumber", "Quote");
+    const quoteDate = val("quoteDate", new Date().toISOString().slice(0,10));
+    const customerName = val("customerName") || val("companyName") || "Customer";
+    const customerEmail = val("customerEmail");
+    const contactName = val("contactName");
+    const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
+    const qty = val("qty") || val("quantity") || "1";
+    const total = quoteTotalText();
+    const perItem = quotePerItemText();
+    const notes = val("customerNotes") || "Quote is based on the information provided and may be updated if scope, quantity, materials, or requirements change.";
+    const assumptions = val("assumptions") || "Final print orientation, finish, delivery timing, and packaging details may be confirmed before production.";
+    const turnaround = val("turnaround") || "To be confirmed at approval";
+
+    const company = val("companyName");
+    const po = val("poNumber");
+    const oliPart = val("olipolyPartNumber");
+    const custPart = val("customerPartNumber");
+
+    const totalNumber = moneyNum(total);
+    const qtyNumber = Number(qty) || 1;
+    const unit = perItem || (totalNumber ? new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(totalNumber / qtyNumber) : "—");
+
+    return `
+      <div class="sheet">
+        <div class="topbar"></div>
+
+        <div class="header">
+          <div>
+            <div class="brand">Oli<span>Poly</span> 3D</div>
+            <div class="tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div>
+            <div class="title">QUOTE</div>
+            <div class="docnum">${esc(quoteNumber)}</div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="box"><small>Total Quote</small><strong>${esc(total)}</strong></div>
+          <div class="box"><small>Payment Terms</small><strong>${esc(termsLabel())}</strong></div>
+          <div class="box"><small>Lead Time</small><strong>${esc(turnaround)}</strong></div>
+        </div>
+
+        <div class="grid">
+          <div class="panel">
+            <span class="chip">Customer</span><br>
+            <strong>${esc(customerName)}</strong><br>
+            ${company && company !== customerName ? `${esc(company)}<br>` : ""}
+            ${contactName ? `Contact: ${esc(contactName)}<br>` : ""}
+            ${customerEmail ? `${esc(customerEmail)}<br>` : ""}
+          </div>
+
+          <div class="panel">
+            <span class="chip">Quote Details</span><br>
+            Quote Date: ${esc(quoteDate)}<br>
+            Status: ${esc(val("quoteStatus","Pending"))}<br>
+            ${po ? `PO Reference: ${esc(po)}<br>` : ""}
+            ${oliPart ? `OliPoly Part #: ${esc(oliPart)}<br>` : ""}
+            ${custPart ? `Customer Part #: ${esc(custPart)}<br>` : ""}
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>Description</th><th>Qty</th><th>Estimated Total</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>${esc(project)}</strong><br>${oliPart ? `OliPoly Part #: ${esc(oliPart)}<br>` : ""}${custPart ? `Customer Part #: ${esc(custPart)}<br>` : ""}</td>
+              <td>${esc(qty)}</td>
+              <td>${esc(total)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="totalbox">
+          <div>
+            <div class="note"><strong>Quote Notes</strong><br>${esc(notes).replace(/\n/g,"<br>")}</div>
+            <div class="note" style="margin-top:10px;"><strong>Assumptions</strong><br>${esc(assumptions).replace(/\n/g,"<br>")}</div>
+          </div>
+          <div class="totals">
+            <div><strong>Quantity</strong><span>${esc(qty)}</span></div>
+            <div><strong>Estimated Unit</strong><span>${esc(unit)}</span></div>
+            <div class="grand"><strong>Total</strong><span>${esc(total)}</span></div>
+          </div>
+        </div>
+
+        <div class="note" style="margin-top:10px;">
+          <strong>Order Tracking</strong><br>
+          Once approved and scheduled, tracking details will be available through the OliPoly order tracker.
+        </div>
+
+        <div class="footer">OliPoly 3D LLC • OliPoly3D@gmail.com • olipoly3d.com</div>
+      </div>
+    `;
+  }
+
+  function openQuotePdf(){
+    try {
+      const html = buildQuotePdfHtml();
+      const win = window.open("", "_blank");
+      if (!win) {
+        toast("Pop-up blocked. Allow pop-ups for this site and try again.", 6000);
+        return;
+      }
+
+      win.document.open();
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(val("quoteNumber","Quote"))}</title><style>${pdfCss()}</style></head><body>${html}</body></html>`);
+      win.document.close();
+
+      toast("Opening quote PDF print window...");
+      setTimeout(() => {
+        win.focus();
+        win.print();
+      }, 350);
+    } catch (error) {
+      console.error("Quote PDF failed:", error);
+      toast(`Quote PDF failed: ${error?.message || error}`, 7000);
+    }
+  }
+
+  function bindQuotePdfButton(){
+    const btn = $("customerPdfBtn");
+    if (!btn || btn.dataset.quotePdfDirectBound === "true") return;
+    btn.dataset.quotePdfDirectBound = "true";
+    btn.onclick = (event) => {
+      event.preventDefault();
+      openQuotePdf();
+    };
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindQuotePdfButton);
+  else bindQuotePdfButton();
+
+  setTimeout(bindQuotePdfButton, 500);
+  setTimeout(bindQuotePdfButton, 1500);
+
+  window.openQuotePdf = openQuotePdf;
+})();
