@@ -999,6 +999,113 @@ body.professional-pdf-mode #pdfPaymentCta{
   .email-preview-frame iframe{min-height:460px}
 }
 
+
+/* === Quote Email Preview Modal === */
+.email-preview-modal.hidden{display:none!important}
+.email-preview-modal{
+  position:fixed;
+  inset:0;
+  z-index:10000;
+  display:grid;
+  place-items:center;
+  padding:18px;
+}
+.email-preview-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(31,26,36,.55);
+  backdrop-filter:blur(8px);
+}
+.email-preview-dialog{
+  position:relative;
+  width:min(940px,calc(100vw - 28px));
+  max-height:calc(100vh - 28px);
+  overflow:auto;
+  border-radius:28px;
+  background:linear-gradient(180deg,#fff7fb,#ffffff);
+  border:1px solid rgba(236,72,153,.18);
+  box-shadow:0 24px 80px rgba(31,26,36,.28);
+  padding:20px;
+}
+.email-preview-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:14px;
+}
+.email-preview-kicker{
+  display:inline-flex;
+  padding:5px 9px;
+  border-radius:999px;
+  background:rgba(236,72,153,.10);
+  color:#9b2f6f;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.email-preview-head h3{
+  margin:0;
+  font-family:"Cormorant Garamond",serif;
+  font-size:clamp(1.7rem,3vw,2.35rem);
+  color:#241b2b;
+}
+.email-preview-head p{
+  margin:5px 0 0;
+  color:#7a6681;
+  line-height:1.45;
+}
+.email-preview-close{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:1px solid rgba(236,72,153,.18);
+  background:rgba(255,255,255,.85);
+  color:#2f2336;
+  font-size:28px;
+  line-height:1;
+  cursor:pointer;
+}
+.email-preview-meta{
+  display:grid;
+  grid-template-columns:1fr 1.2fr;
+  gap:10px;
+  margin:14px 0;
+}
+.email-preview-meta input{
+  background:rgba(255,255,255,.95);
+}
+.email-preview-frame-wrap{
+  border:1px solid rgba(236,72,153,.16);
+  border-radius:22px;
+  overflow:hidden;
+  background:#fff;
+  min-height:420px;
+}
+#quoteEmailPreviewFrame{
+  width:100%;
+  height:520px;
+  border:0;
+  background:#fff;
+  display:block;
+}
+.email-preview-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:flex-end;
+  margin-top:14px;
+}
+@media(max-width:720px){
+  .email-preview-dialog{padding:14px;border-radius:22px}
+  .email-preview-head{align-items:flex-start}
+  .email-preview-meta{grid-template-columns:1fr}
+  #quoteEmailPreviewFrame{height:460px}
+  .email-preview-actions{display:grid;grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -1466,7 +1573,7 @@ body.professional-pdf-mode #pdfPaymentCta{
 </script>
 
 
-  <script src="quote.js?v=quote-pdf-fix-20260508"></script>
+  <script src="quote.js?v=email-preview-modal-20260508"></script>
 
   <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
 
@@ -1507,6 +1614,42 @@ body.professional-pdf-mode #pdfPaymentCta{
       <option value="full">full</option>
     </select>
     <textarea id="invoiceNotes"></textarea>
+  </div>
+
+
+  <div class="email-preview-modal hidden" id="quoteEmailPreviewModal" aria-hidden="true">
+    <div class="email-preview-backdrop" id="quoteEmailPreviewBackdrop"></div>
+    <div class="email-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="quoteEmailPreviewTitle">
+      <div class="email-preview-head">
+        <div>
+          <span class="email-preview-kicker">Customer Email</span>
+          <h3 id="quoteEmailPreviewTitle">Styled quote email preview</h3>
+          <p>Review the branded email, copy the styled HTML, or open Gmail with the plain fallback draft.</p>
+        </div>
+        <button type="button" class="email-preview-close" id="quoteEmailPreviewClose" aria-label="Close email preview">×</button>
+      </div>
+
+      <div class="email-preview-meta">
+        <label>
+          To
+          <input id="quoteEmailPreviewTo" readonly />
+        </label>
+        <label>
+          Subject
+          <input id="quoteEmailPreviewSubject" readonly />
+        </label>
+      </div>
+
+      <div class="email-preview-frame-wrap">
+        <iframe id="quoteEmailPreviewFrame" title="Quote email preview"></iframe>
+      </div>
+
+      <div class="email-preview-actions">
+        <button type="button" class="btn" id="quoteEmailCopyStyledBtn">Copy Styled HTML</button>
+        <button type="button" class="btn-ghost" id="quoteEmailOpenGmailBtn">Open Gmail Fallback</button>
+        <button type="button" class="btn-ghost" id="quoteEmailDownloadHtmlBtn">Download HTML</button>
+      </div>
+    </div>
   </div>
 
 </body>

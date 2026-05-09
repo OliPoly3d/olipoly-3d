@@ -3312,3 +3312,290 @@ https://olipoly3d.com`;
 
   window.openQuotePdf = openQuotePdf;
 })();
+
+
+
+/* === OliPoly Quote Styled Email Preview Modal Fix === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function val(id, fallback = ""){
+    return ($(id)?.value || fallback || "").trim();
+  }
+
+  function text(id, fallback = ""){
+    return ($(id)?.textContent || fallback || "").trim();
+  }
+
+  function esc(value){
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[ch]));
+  }
+
+  function toast(message, ms = 2800){
+    let el = $("liteStatusToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "liteStatusToast";
+      el.className = "lite-status-toast";
+      el.setAttribute("aria-live", "polite");
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(el._emailPreviewTimer);
+    el._emailPreviewTimer = setTimeout(() => el.classList.remove("show"), ms);
+  }
+
+  function ensureRender(){
+    if (typeof window.ensureDocumentNumbers === "function") window.ensureDocumentNumbers(false);
+    if (typeof window.render === "function") window.render();
+  }
+
+  function totalText(){
+    return text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
+  }
+
+  function termsLabel(){
+    const raw = val("paymentTerms");
+    const labels = {
+      deposit_to_start: "Deposit to Start",
+      due_on_receipt: "Due on Receipt",
+      customer_terms: "Customer Standard Terms / PO Terms",
+      net_15: "Net 15",
+      net_30: "Net 30",
+      net_45: "Net 45"
+    };
+    return labels[raw] || raw || "To be confirmed";
+  }
+
+  function quoteLink(){
+    const quoteNumber = val("quoteNumber");
+    // If public token generation succeeds elsewhere later, this can become quote-response.html.
+    // For now this preview remains safe and uses the quote number reference.
+    return `${window.location.origin || "https://olipoly3d.com"}/quote`;
+  }
+
+  function buildPlainEmail(){
+    ensureRender();
+
+    const customer = val("customerName") || val("contactName");
+    const project = val("quoteTitle") || val("projectTitle") || "your custom 3D print";
+    const quoteNumber = val("quoteNumber") || "Quote";
+    const total = totalText();
+    const turnaround = val("turnaround") || "to be confirmed based on approval timing";
+    const notes = val("customerNotes");
+    const assumptions = val("assumptions");
+
+    return `${customer ? `Hello ${customer},` : "Hello,"}
+
+Attached/prepared is the requested OliPoly 3D quote for review.
+
+Quote: ${quoteNumber}
+Project: ${project}
+Estimated total: ${total}
+Payment terms: ${termsLabel()}
+Estimated timing: ${turnaround}
+
+${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please review the quote details and reply with any questions, revisions, or approval to move forward.
+
+Thank you,
+
+OliPoly 3D LLC
+Custom 3D Printing • Creative Builds • Prototypes
+OliPoly3D@gmail.com
+https://olipoly3d.com`;
+  }
+
+  function buildStyledEmail(){
+    ensureRender();
+
+    const customer = val("customerName") || val("contactName");
+    const company = val("companyName");
+    const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
+    const quoteNumber = val("quoteNumber") || "Quote";
+    const total = totalText();
+    const turnaround = val("turnaround") || "To be confirmed";
+    const notes = val("customerNotes");
+    const assumptions = val("assumptions");
+    const oliPart = val("olipolyPartNumber");
+    const custPart = val("customerPartNumber");
+    const po = val("poNumber");
+
+    const businessRows = [
+      company ? `<p style="margin:0 0 8px;"><strong>Company:</strong> ${esc(company)}</p>` : "",
+      po ? `<p style="margin:0 0 8px;"><strong>PO Reference:</strong> ${esc(po)}</p>` : "",
+      oliPart ? `<p style="margin:0 0 8px;"><strong>OliPoly Part #:</strong> ${esc(oliPart)}</p>` : "",
+      custPart ? `<p style="margin:0 0 8px;"><strong>Customer Part #:</strong> ${esc(custPart)}</p>` : ""
+    ].join("");
+
+    return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
+    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+
+    <div style="padding:26px 26px 10px;background:linear-gradient(180deg,#fff7fb,#ffffff);">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;color:#241b2b;">
+        Oli<span style="color:#b86be8;">Poly</span> 3D
+      </div>
+      <div style="margin-top:5px;color:#866a86;font-size:14px;">
+        Custom 3D Printing • Creative Builds • Prototypes
+      </div>
+    </div>
+
+    <div style="padding:12px 26px 28px;">
+      <div style="display:inline-block;margin:8px 0 12px;padding:7px 11px;border-radius:999px;background:#fff0f8;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">
+        Quote Ready
+      </div>
+
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 14px;color:#241b2b;">
+        Your OliPoly quote is ready for review
+      </h1>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
+        ${customer ? `Hello ${esc(customer)},` : "Hello,"}
+      </p>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
+        Attached/prepared is the requested OliPoly 3D quote for review. Please look it over and reply with any questions, revisions, or approval to move forward.
+      </p>
+
+      <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
+        <p style="margin:0 0 8px;"><strong>Quote #:</strong> ${esc(quoteNumber)}</p>
+        ${businessRows}
+        <p style="margin:0 0 8px;"><strong>Project:</strong> ${esc(project)}</p>
+        <p style="margin:0 0 8px;"><strong>Estimated total:</strong> ${esc(total)}</p>
+        <p style="margin:0 0 8px;"><strong>Payment terms:</strong> ${esc(termsLabel())}</p>
+        <p style="margin:0;"><strong>Estimated timing:</strong> ${esc(turnaround)}</p>
+      </div>
+
+      ${notes ? `<div style="background:#fffafc;border:1px solid #f2c4df;border-radius:16px;padding:14px 16px;margin:14px 0;color:#604d68;font-size:15px;line-height:1.55;"><strong style="color:#3f3146;">Notes</strong><br>${esc(notes).replace(/\n/g,"<br>")}</div>` : ""}
+      ${assumptions ? `<div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:16px;padding:14px 16px;margin:14px 0;color:#604d68;font-size:15px;line-height:1.55;"><strong style="color:#3f3146;">Assumptions</strong><br>${esc(assumptions).replace(/\n/g,"<br>")}</div>` : ""}
+
+      <div style="background:#fffafc;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
+        <p style="margin:0 0 8px;font-weight:800;color:#3f3146;">Next step</p>
+        <p style="margin:0;color:#604d68;line-height:1.5;">
+          Reply with approval or requested changes. Once approved, OliPoly 3D will schedule the project and provide tracking/payment details as applicable.
+        </p>
+      </div>
+
+      <p style="font-size:15px;line-height:1.6;margin:20px 0 0;color:#4f4057;">
+        Thank you,<br>
+        <strong>OliPoly 3D LLC</strong><br>
+        Custom 3D Printing • Creative Builds • Prototypes
+      </p>
+    </div>
+
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:16px 26px;color:#866a86;font-size:13px;line-height:1.5;">
+      <strong style="color:#4f4057;">OliPoly 3D</strong><br>
+      <a href="mailto:OliPoly3D@gmail.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">OliPoly3D@gmail.com</a>
+      <span style="color:#c59db9;"> • </span>
+      <a href="https://olipoly3d.com" style="color:#9d4edd;text-decoration:none;font-weight:700;">olipoly3d.com</a>
+    </div>
+  </div>
+</div>`;
+  }
+
+  let lastEmail = null;
+
+  function openGmailFallback(){
+    if (!lastEmail) buildAndShowEmailPreview();
+
+    const url =
+      "https://mail.google.com/mail/?view=cm&fs=1" +
+      `&to=${encodeURIComponent(lastEmail.to || "")}` +
+      `&su=${encodeURIComponent(lastEmail.subject || "")}` +
+      `&body=${encodeURIComponent(lastEmail.plain || "")}`;
+
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async function copyStyledHtml(){
+    if (!lastEmail) buildAndShowEmailPreview();
+    try {
+      await navigator.clipboard.writeText(lastEmail.html);
+      toast("Styled email HTML copied.");
+    } catch {
+      const blob = new Blob([lastEmail.html], { type:"text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      toast("Clipboard blocked — opened HTML preview.");
+    }
+  }
+
+  function downloadHtml(){
+    if (!lastEmail) buildAndShowEmailPreview();
+    const blob = new Blob([lastEmail.html], { type:"text/html" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(val("quoteNumber") || "olipoly-quote-email").replace(/[^a-z0-9_-]+/gi,"-")}-email.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function closeModal(){
+    const modal = $("quoteEmailPreviewModal");
+    if (!modal) return;
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  function buildAndShowEmailPreview(){
+    ensureRender();
+
+    const quoteNumber = val("quoteNumber") || "Quote";
+    const to = val("customerEmail");
+    const subject = `OliPoly 3D Quote ${quoteNumber}`;
+    const html = buildStyledEmail();
+    const plain = buildPlainEmail();
+
+    lastEmail = { to, subject, html, plain };
+
+    const modal = $("quoteEmailPreviewModal");
+    const frame = $("quoteEmailPreviewFrame");
+    if (!modal || !frame) {
+      // Fallback if modal HTML was not uploaded.
+      navigator.clipboard?.writeText(html);
+      openGmailFallback();
+      return;
+    }
+
+    $("quoteEmailPreviewTo").value = to || "";
+    $("quoteEmailPreviewSubject").value = subject;
+
+    frame.srcdoc = html;
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function bindEmailPreview(){
+    const btn = $("prepareCustomerEmailBtn");
+    if (btn && btn.dataset.emailPreviewBound !== "true") {
+      btn.dataset.emailPreviewBound = "true";
+      btn.onclick = (event) => {
+        event.preventDefault();
+        buildAndShowEmailPreview();
+      };
+    }
+
+    $("quoteEmailPreviewClose")?.addEventListener("click", closeModal);
+    $("quoteEmailPreviewBackdrop")?.addEventListener("click", closeModal);
+    $("quoteEmailCopyStyledBtn")?.addEventListener("click", copyStyledHtml);
+    $("quoteEmailOpenGmailBtn")?.addEventListener("click", openGmailFallback);
+    $("quoteEmailDownloadHtmlBtn")?.addEventListener("click", downloadHtml);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeModal();
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindEmailPreview);
+  else bindEmailPreview();
+
+  setTimeout(bindEmailPreview, 500);
+  setTimeout(bindEmailPreview, 1500);
+
+  window.buildAndShowQuoteEmailPreview = buildAndShowEmailPreview;
+})();
