@@ -2603,27 +2603,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function manualOverrideEmailTotal() {
-    const overridePiece = emailNum("manualPiecePriceOverride");
-    if (!overridePiece) return "";
-
-    const qty = Math.max(1, Math.round(emailNum("qty") || 1));
-    const packaging = emailNum("simplePackaging");
-    const shipping = emailNum("simpleShipping");
-    const discount = emailNum("discount");
-    const taxRate = emailNum("salesTax");
-    const rounding = emailNum("roundingMode");
-
-    const itemSubtotal = overridePiece * qty;
-    const beforeTax = Math.max(0, itemSubtotal + packaging + shipping - discount);
-    const roundedBeforeTax = Math.max(0, emailRoundTo(beforeTax, rounding));
-    const tax = roundedBeforeTax * (taxRate / 100);
-    const final = roundedBeforeTax + tax;
-
-    return emailMoney(final);
+    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
+    return totals?.finalText || "";
   }
 
   function quoteTotalText() {
-    return manualOverrideEmailTotal() || textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
+    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
+    return totals?.finalText || textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
   }
 
   function selectedPaymentTermsText() {
@@ -3135,11 +3121,13 @@ https://olipoly3d.com`;
   }
 
   function quoteTotalText(){
-    return text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
+    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
+    return totals?.finalText || text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
   }
 
   function quotePerItemText(){
-    return text("sumPerItem") || text("outPerItem") || "";
+    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
+    return totals?.perItemText || text("sumPerItem") || text("outPerItem") || "";
   }
 
   function termsLabel(){
@@ -3793,10 +3781,13 @@ https://olipoly3d.com`;
 
   function totalAmount() {
     if (typeof window.render === "function") window.render();
-    return moneyNumber(text("sumQuote") || text("outFinal") || text("finalTotal") || val("quoteTotal"));
+    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
+    return totals?.final ?? moneyNumber(text("sumQuote") || text("outFinal") || text("finalTotal") || val("quoteTotal"));
   }
 
   function depositAmount(total) {
+    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
+    if (totals?.deposit > 0) return totals.deposit;
     const shown = moneyNumber(text("sumDeposit") || text("outDeposit") || text("pdfDeposit"));
     if (shown > 0) return shown;
     const pct = Number(val("depositPercent")) || 0;
@@ -4211,5 +4202,96 @@ Open Orders Admin now?`);
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
+})();
+
+
+
+/* === OliPoly Quote Total Sync Helper V1 ===
+   Single source of truth for quote page, PDF, email, and order creation totals.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function raw(id) { return ($(id)?.value ?? "").toString(); }
+  function num(id) { return Number(raw(id).replace(/[^0-9.-]/g, "")) || 0; }
+  function money(value) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+  }
+  function roundFinal(value, increment) {
+    const inc = Number(increment) || 0;
+    if (!inc) return value;
+    return Math.round(value / inc) * inc;
+  }
+  function qty() { return Math.max(1, Math.round(num("qty") || num("quantity") || 1)); }
+  function filamentCost() {
+    const spoolWeight = Math.max(1, num("spoolWeight") || 1000);
+    let total = 0;
+    for (let i = 1; i <= 4; i += 1) {
+      total += num(`filament${i}Cost`) * (num(`filament${i}Used`) / spoolWeight);
+    }
+    return total;
+  }
+
+  window.olipolyGetQuoteTotals = function olipolyGetQuoteTotals() {
+    const q = qty();
+    const manualPiece = num("manualPiecePriceOverride");
+    const material = filamentCost() + num("materialCost");
+    const machine = (num("machineHours") || num("printHours")) * num("machineRate");
+    const design = num("designHours") * num("designRate");
+    const post = (num("postHours") * num("postRate")) + num("laborCost");
+    const packaging = num("simplePackaging") + num("packagingCost");
+    const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
+    const hardware = num("simpleHardware");
+    const taxRate = num("salesTax");
+    const discount = num("discount");
+    const rounding = num("roundingMode");
+    const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
+    const marketplacePercent = Math.max(0, num("marketplacePercent"));
+
+    let direct, base, profit, preDiscount, pricingMode = "calculated";
+
+    if (manualPiece > 0) {
+      pricingMode = "manual";
+      const itemSubtotal = manualPiece * q;
+      direct = itemSubtotal + packaging + shipping + hardware;
+      base = itemSubtotal + packaging + shipping + hardware;
+      profit = 0;
+      preDiscount = base;
+    } else {
+      direct = material + machine + design + post + packaging + shipping + hardware;
+      base = direct;
+      const profitMode = raw("profitMode") || "percent";
+      const profitValue = num("profitValue");
+      profit = profitMode === "flat" ? profitValue : base * (profitValue / 100);
+      preDiscount = base + profit;
+    }
+
+    const marketplaceFee = preDiscount * (marketplacePercent / 100);
+    preDiscount += marketplaceFee;
+
+    const beforeTax = Math.max(0, preDiscount - discount);
+    const tax = beforeTax * (taxRate / 100);
+    const unroundedFinal = beforeTax + tax;
+    const final = Math.max(0, roundFinal(unroundedFinal, rounding));
+    const roundingGain = final - unroundedFinal;
+    const deposit = final * (depositPercent / 100);
+    const balance = Math.max(0, final - deposit);
+    const perItem = final / q;
+    const breakEven = manualPiece > 0 ? material + machine + design + post + packaging + shipping + hardware : direct;
+    const margin = final > 0 ? ((final - breakEven) / final) * 100 : 0;
+
+    return {
+      q, manualPiece, material, machine, design, post, packaging, shipping, hardware,
+      direct, base, profit, marketplaceFee, preDiscount, discount, beforeTax, taxRate, tax,
+      unroundedFinal, rounding, final, roundingGain, deposit, balance, perItem, breakEven,
+      margin, pricingMode,
+      finalText: money(final),
+      perItemText: money(perItem),
+      depositText: money(deposit),
+      balanceText: money(balance)
+    };
+  };
+
+  window.olipolyQuoteMoney = money;
 })();
 
