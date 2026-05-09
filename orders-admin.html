@@ -53,6 +53,14 @@
     .p-finance-not-pushed{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
     .finance-status-note{margin-top:12px}
 
+    
+    .signin-collapsed{
+      display:none!important;
+      margin:0!important;
+      padding:0!important;
+      min-height:0!important;
+    }
+
     @media (max-width:720px){.wrap{width:min(100% - 16px,1280px);padding-top:14px}.topbar{border-radius:24px;flex-direction:column;align-items:flex-start}.hero>.card,.summary,.card,.order-row{padding:18px;border-radius:22px}.form-grid,.order-grid,.filters,.inline-row{grid-template-columns:1fr}}
   
     .invoice-print-area{display:none}
@@ -397,7 +405,7 @@
       </section>
     </div>
 
-    <div class="card" style="margin-bottom:22px;">
+    <div class="card" id="signinCard" style="margin-bottom:22px;">
       <h3>Sign in</h3>
       <div class="form-grid">
         <div><label for="emailInput">Email</label><input id="emailInput" type="email" placeholder="you@example.com" /></div>
@@ -647,6 +655,13 @@
       btn.style.cursor = '';
     }
 
+
+    function updateAuthVisibility(){
+      const signInCard = $('signinCard');
+      if (!signInCard) return;
+      signInCard.classList.toggle('signin-collapsed', !!currentUser);
+    }
+
     function setMsg(el,text,isError=false){
       el.style.display='block';
       el.textContent=text;
@@ -675,6 +690,7 @@
   if (error || !data) {
     currentUser = null;
     accessToken = null;
+    updateAuthVisibility();
     localStorage.removeItem('sb_token');
     return null;
   }
@@ -1131,6 +1147,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       localStorage.setItem('sb_token', accessToken);
       await getCurrentUser();
       setMsg($('authMessage'),`Logged in as ${currentUser?.email || email}`);
+      updateAuthVisibility();
       await fetchOrders();
       $('logoutBtn').classList.remove('hidden');
       $('loginBtn').classList.add('hidden');
@@ -1145,6 +1162,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       localStorage.removeItem('sb_token');
       resetForm();
       renderList();
+      updateAuthVisibility();
       setMsg($('authMessage'),'Logged out');
       $('logoutBtn').classList.add('hidden');
       $('loginBtn').classList.remove('hidden');
@@ -1153,7 +1171,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
     async function fetchOrders(){
       await getCurrentUser();
-      if(!currentUser) return setMsg($('authMessage'),'Login first',true);
+      if(!currentUser){ updateAuthVisibility(); return setMsg($('authMessage'),'Login first',true); }
       const {data,error} = await api(`/rest/v1/orders?select=*&user_id=eq.${currentUser.id}&order=updated_at.desc`);
       if(error) return setMsg($('authMessage'), error.message || 'Load failed', true);
       orders = data || [];
@@ -1816,6 +1834,8 @@ if ($('openVenmoBtn')) {
   setTimeout(bindAuthButtonsSafely, 1000);
 })();
 
+
+    updateAuthVisibility();
   </script>
 
   <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true">
