@@ -3967,3 +3967,42 @@ Open Orders Admin now?`);
   setTimeout(bindAcceptCreateOrder, 500);
   setTimeout(bindAcceptCreateOrder, 1500);
 })();
+
+
+/* === OliPoly Advanced Controls Toggle Fix ===
+   Keeps the Advanced controls/history/internal outputs accordion usable even if
+   other quote helper layers load in a different order.
+*/
+(() => {
+  function bindAdvancedControlsToggle() {
+    const toggle = document.getElementById("advancedToggle");
+    const panel = document.getElementById("advancedPanel");
+    const label = document.getElementById("advancedToggleText");
+
+    if (!toggle || !panel) return;
+    if (toggle.dataset.advancedToggleBound === "true") return;
+
+    toggle.dataset.advancedToggleBound = "true";
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      const isHidden = panel.classList.toggle("hidden");
+      toggle.setAttribute("aria-expanded", String(!isHidden));
+      if (label) label.textContent = isHidden ? "Show details" : "Hide details";
+    });
+
+    toggle.setAttribute("aria-controls", "advancedPanel");
+    toggle.setAttribute("aria-expanded", String(!panel.classList.contains("hidden")));
+    if (label) label.textContent = panel.classList.contains("hidden") ? "Show details" : "Hide details";
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindAdvancedControlsToggle);
+  } else {
+    bindAdvancedControlsToggle();
+  }
+
+  // Extra safety for GitHub Pages/cache timing and merged helper scripts.
+  setTimeout(bindAdvancedControlsToggle, 250);
+  setTimeout(bindAdvancedControlsToggle, 1000);
+})();
+
