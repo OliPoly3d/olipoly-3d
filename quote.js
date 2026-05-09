@@ -3370,14 +3370,69 @@ https://olipoly3d.com`;
     return labels[raw] || raw || "To be confirmed";
   }
 
-  function quoteLink(){
-    const quoteNumber = val("quoteNumber");
-    // If public token generation succeeds elsewhere later, this can become quote-response.html.
-    // For now this preview remains safe and uses the quote number reference.
-    return `${window.location.origin || "https://olipoly3d.com"}/quote`;
+
+  function makePublicToken(){
+    const arr = new Uint8Array(24);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
   }
 
-  function buildPlainEmail(){
+  async function ensureRetailQuoteResponseLink(){
+    ensureRender();
+
+    const quoteNumber = val("quoteNumber");
+    if (!quoteNumber) throw new Error("Quote number is missing. Save or generate a quote number first.");
+
+    // Try the existing direct cloud save first so quote_data is current.
+    if (typeof window.olipolyQuoteDirect?.saveQuoteDirect === "function") {
+      try { await window.olipolyQuoteDirect.saveQuoteDirect(); } catch (_) {}
+    } else if (typeof window.saveQuoteToCloudDirect === "function") {
+      try { await window.saveQuoteToCloudDirect(); } catch (_) {}
+    }
+
+    const encodedQuote = encodeURIComponent(quoteNumber);
+    let publicToken = "";
+
+    if (typeof window.sbApi === "function") {
+      try {
+        const existing = await window.sbApi(`/rest/v1/quotes?select=public_token&quote_number=eq.${encodedQuote}&limit=1`, { method:"GET" });
+        publicToken = Array.isArray(existing.data) && existing.data[0]?.public_token ? existing.data[0].public_token : "";
+      } catch (_) {}
+
+      if (!publicToken) publicToken = makePublicToken();
+
+      try {
+        await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encodedQuote}`, {
+          method:"PATCH",
+          headers:{ Prefer:"return=representation" },
+          body:JSON.stringify({
+            public_token: publicToken,
+            quote_status: val("quoteStatus") || "pending",
+            updated_at: new Date().toISOString()
+          })
+        });
+      } catch (error) {
+        console.warn("Could not save quote public token:", error);
+      }
+    }
+
+    if (!publicToken) publicToken = makePublicToken();
+
+    const origin = window.location.origin && window.location.origin !== "null"
+      ? window.location.origin
+      : "https://olipoly3d.com";
+
+    return `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber)}&token=${encodeURIComponent(publicToken)}`;
+  }
+
+
+  function quoteLink(){
+    const quoteNumber = val("quoteNumber");
+    const origin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "https://olipoly3d.com";
+    return `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber || "")}`;
+  }
+
+  function buildPlainEmail(responseLink){
     ensureRender();
 
     const customer = val("customerName") || val("contactName");
@@ -3398,7 +3453,11 @@ Estimated total: ${total}
 Payment terms: ${termsLabel()}
 Estimated timing: ${turnaround}
 
-${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please review the quote details and reply with any questions, revisions, or approval to move forward.
+${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to review the quote details, approve the quote, or request changes:
+
+${responseLink || quoteLink()}
+
+You can also reply directly with any questions or revisions before moving forward.
 
 Thank you,
 
@@ -3408,7 +3467,7 @@ OliPoly3D@gmail.com
 https://olipoly3d.com`;
   }
 
-  function buildStyledEmail(){
+  function buildStyledEmail(responseLink){
     ensureRender();
 
     const customer = val("customerName") || val("contactName");
@@ -3471,6 +3530,18 @@ https://olipoly3d.com`;
 
       ${notes ? `<div style="background:#fffafc;border:1px solid #f2c4df;border-radius:16px;padding:14px 16px;margin:14px 0;color:#604d68;font-size:15px;line-height:1.55;"><strong style="color:#3f3146;">Notes</strong><br>${esc(notes).replace(/\n/g,"<br>")}</div>` : ""}
       ${assumptions ? `<div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:16px;padding:14px 16px;margin:14px 0;color:#604d68;font-size:15px;line-height:1.55;"><strong style="color:#3f3146;">Assumptions</strong><br>${esc(assumptions).replace(/\n/g,"<br>")}</div>` : ""}
+
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${responseLink || quoteLink()}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:900;padding:14px 24px;border-radius:999px;">
+          Review / Respond to Quote
+        </a>
+      </div>
+
+      <p style="font-size:13px;line-height:1.5;color:#816c88;margin:0 0 16px;">
+        If the button does not work, copy and paste this link:<br>
+        <span style="word-break:break-all;">${responseLink || quoteLink()}</span>
+      </p>
+
 
       <div style="background:#fffafc;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
         <p style="margin:0 0 8px;font-weight:800;color:#3f3146;">Next step</p>
@@ -3542,14 +3613,22 @@ https://olipoly3d.com`;
     modal.setAttribute("aria-hidden", "true");
   }
 
-  function buildAndShowEmailPreview(){
+  async function buildAndShowEmailPreview(){
     ensureRender();
 
     const quoteNumber = val("quoteNumber") || "Quote";
     const to = val("customerEmail");
     const subject = `OliPoly 3D Quote ${quoteNumber}`;
-    const html = buildStyledEmail();
-    const plain = buildPlainEmail();
+    let responseLink = quoteLink();
+    try {
+      responseLink = await ensureRetailQuoteResponseLink();
+    } catch (error) {
+      console.warn("Could not prepare quote response link:", error);
+      toast(`Quote response link warning: ${error?.message || error}`, 6000);
+    }
+
+    const html = buildStyledEmail(responseLink);
+    const plain = buildPlainEmail(responseLink);
 
     lastEmail = { to, subject, html, plain };
 
