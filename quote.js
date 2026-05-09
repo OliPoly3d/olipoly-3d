@@ -1,3 +1,89 @@
+
+/* === OliPoly shared Supabase auth bridge / top button safety patch ===
+   Lets Quote Tool recognize the Orders Admin login token stored as localStorage.sb_token.
+   Also provides fallback sbApi() and getCurrentSbUser() if the base quote script did not.
+*/
+(() => {
+  const SUPABASE_URL = window.SUPABASE_URL || 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+  function sharedAccessToken(){
+    return (
+      localStorage.getItem('sb_token') ||
+      localStorage.getItem('supabase.auth.token') ||
+      null
+    );
+  }
+
+  function showQuoteToast(message){
+    let el = document.getElementById('liteStatusToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'liteStatusToast';
+      el.className = 'lite-status-toast';
+      el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(el._quotePatchTimer);
+    el._quotePatchTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  if (typeof window.sbApi !== 'function') {
+    window.sbApi = async function sbApi(path, options = {}) {
+      const token = sharedAccessToken();
+      const headers = {
+        apikey: SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {})
+      };
+
+      const response = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
+      const data = await response.json().catch(() => null);
+      return {
+        ok: response.ok,
+        data,
+        error: response.ok ? null : data
+      };
+    };
+  }
+
+  if (typeof window.getCurrentSbUser !== 'function') {
+    window.getCurrentSbUser = async function getCurrentSbUser(){
+      const token = sharedAccessToken();
+      if (!token) return null;
+
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.json().catch(() => null);
+    };
+  }
+
+  window.quoteSharedAuthStatus = async function quoteSharedAuthStatus(){
+    try {
+      const user = await window.getCurrentSbUser();
+      return user?.id ? user : null;
+    } catch {
+      return null;
+    }
+  };
+
+  window.quotePatchToast = showQuoteToast;
+})();
+
+
 /* OliPoly 3D Quote Tool Lite - Supabase Saved Quotes V6
    This file is a Lite-only helper layer.
    Load order in quote-tool-lite.html:
@@ -325,7 +411,8 @@
 
   async function currentUser() {
     if (typeof window.getCurrentSbUser === "function") {
-      return await window.getCurrentSbUser();
+      const user = await window.getCurrentSbUser();
+      if (user?.id) return user;
     }
     return null;
   }
@@ -374,7 +461,7 @@
 
     const user = await currentUser();
     if (!user?.id) {
-      throw new Error("Not logged in. Log into orders-admin.html in this browser first to save cloud quotes.");
+      throw new Error("Not logged in. Open Hub or Orders Admin and log in on this browser first, then return to Quote Tool.");
     }
 
     const quoteNumber = $("quoteNumber")?.value?.trim();
@@ -2843,3 +2930,111 @@ https://olipoly3d.com`;
   });
 })();
 
+
+
+/* === Quote Tool final top-button binding safety === */
+(() => {
+  function toast(message){
+    if (typeof window.quotePatchToast === 'function') return window.quotePatchToast(message);
+    alert(message);
+  }
+
+  function bindOnce(id, handler){
+    const btn = document.getElementById(id);
+    if (!btn || btn.dataset.finalQuoteBound === 'true') return;
+    btn.dataset.finalQuoteBound = 'true';
+    btn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      try {
+        await handler();
+      } catch (error) {
+        console.error(`${id} failed:`, error);
+        toast(`${btn.textContent.trim() || id} failed: ${error?.message || error}`);
+      }
+    }, true);
+  }
+
+  async function saveQuoteFallback(){
+    const btn = document.getElementById('saveQuoteBtn');
+    if (btn && typeof btn.onclick === 'function') {
+      btn.onclick(new Event('click'));
+      return;
+    }
+    toast('Save button is loaded, but the quote save handler was not found.');
+  }
+
+  function bindQuoteTopButtons(){
+    bindOnce('saveQuoteBtn', async () => {
+      const oldBound = document.getElementById('saveQuoteBtn')?.dataset.litePatched;
+      const original = document.getElementById('saveQuoteBtn')?.onclick;
+      if (typeof original === 'function') {
+        await original(new Event('click'));
+      } else {
+        toast('Save / Update Quote handler was not found.');
+      }
+    });
+
+    bindOnce('generateQuoteBtn', async () => {
+      if (typeof window.render === 'function') window.render();
+      const notice = document.getElementById('missingInputsNotice');
+      const hasIssues = notice && !notice.classList.contains('hidden') && notice.textContent.trim();
+      toast(hasIssues ? 'Missing inputs highlighted.' : 'Quote check complete.');
+    });
+
+    bindOnce('loadQuoteBtn', async () => {
+      const select = document.getElementById('savedQuotesSelect');
+      if (!select?.value) {
+        toast('Choose a saved quote first.');
+        return;
+      }
+      // Let the existing lite layer onclick do the real work if present.
+      const original = document.getElementById('loadQuoteBtn')?.onclick;
+      if (typeof original === 'function') await original(new Event('click'));
+      else toast('Load selected handler was not found.');
+    });
+
+    bindOnce('deleteQuoteBtn', async () => {
+      const original = document.getElementById('deleteQuoteBtn')?.onclick;
+      if (typeof original === 'function') await original(new Event('click'));
+      else toast('Delete selected handler was not found.');
+    });
+
+    bindOnce('prepareCustomerEmailBtn', async () => {
+      // Existing module also binds this; this capture fallback just avoids dead clicks.
+      toast('Preparing customer email...');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindQuoteTopButtons);
+  } else {
+    bindQuoteTopButtons();
+  }
+  setTimeout(bindQuoteTopButtons, 800);
+  setTimeout(bindQuoteTopButtons, 1800);
+})();
+
+
+
+/* === Quote Tool cloud status indicator === */
+(() => {
+  async function updateQuoteCloudStatus(){
+    const summary = document.getElementById('historySummary') || document.getElementById('savedInlineSummary');
+    if (!summary || typeof window.quoteSharedAuthStatus !== 'function') return;
+
+    const user = await window.quoteSharedAuthStatus();
+    if (user?.id) {
+      if (!summary.dataset.cloudStatusSet) {
+        summary.insertAdjacentHTML('afterbegin', `<span class="saved-source-pill">Cloud login detected</span> `);
+        summary.dataset.cloudStatusSet = 'true';
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateQuoteCloudStatus);
+  } else {
+    updateQuoteCloudStatus();
+  }
+  setTimeout(updateQuoteCloudStatus, 1000);
+})();
