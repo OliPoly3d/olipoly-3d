@@ -1427,7 +1427,46 @@ body.professional-pdf-mode #pdfPaymentCta{
       </div>
     </div>
   </section>
-  <script src="quote.js"></script>
+
+<script>
+/* OliPoly inline Supabase bridge - quote.html no longer depends on quote-tool.js */
+(function(){
+  var SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+  function accessToken(){
+    return localStorage.getItem('sb_token') || null;
+  }
+
+  window.sbApi = window.sbApi || async function sbApi(path, options){
+    options = options || {};
+    var token = accessToken();
+    var headers = Object.assign({
+      apikey: SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }, token ? { Authorization: 'Bearer ' + token } : {}, options.headers || {});
+
+    var response = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers: headers }));
+    var data = null;
+    try { data = await response.json(); } catch(e) {}
+    return {
+      ok: response.ok,
+      data: data,
+      error: response.ok ? null : data
+    };
+  };
+
+  window.getCurrentSbUser = window.getCurrentSbUser || async function getCurrentSbUser(){
+    var token = accessToken();
+    if (!token) return null;
+    var result = await window.sbApi('/auth/v1/user', { method: 'GET' });
+    return result.ok ? result.data : null;
+  };
+})();
+</script>
+
+
+  <script src="quote.js?v=standalone-sb-20260508-2"></script>
 
   <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
 

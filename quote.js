@@ -1,4 +1,44 @@
 
+/* === OliPoly Standalone Supabase Bridge ===
+   quote-tool.js is archived, so quote.js provides sbApi/getCurrentSbUser directly.
+*/
+(() => {
+  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+  function accessToken(){
+    return localStorage.getItem('sb_token') || null;
+  }
+
+  window.sbApi = window.sbApi || async function sbApi(path, options = {}) {
+    const token = accessToken();
+    const headers = {
+      apikey: SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    };
+
+    const response = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
+    const data = await response.json().catch(() => null);
+    return {
+      ok: response.ok,
+      data,
+      error: response.ok ? null : data
+    };
+  };
+
+  window.getCurrentSbUser = window.getCurrentSbUser || async function getCurrentSbUser(){
+    const token = accessToken();
+    if (!token) return null;
+
+    const result = await window.sbApi('/auth/v1/user', { method: 'GET' });
+    return result.ok ? result.data : null;
+  };
+})();
+
+
+
 /* === OliPoly Quote Standalone Base ===
    quote-tool.js was archived, so quote.js now provides the base helpers itself.
 */
@@ -518,7 +558,7 @@
 
   async function api(path, options = {}) {
     if (typeof window.sbApi !== "function") {
-      throw new Error("Supabase helper sbApi() was not found.");
+      throw new Error("Supabase helper sbApi() was not initialized.");
     }
     const res = await window.sbApi(path, options);
     if (!res.ok || res.error) {
@@ -802,7 +842,7 @@
   }
 
   async function liteApi(path, options = {}) {
-    if (typeof window.sbApi !== "function") throw new Error("Supabase helper sbApi() was not found.");
+    if (typeof window.sbApi !== "function") throw new Error("Supabase helper sbApi() was not initialized.");
     const res = await window.sbApi(path, options);
     if (!res.ok || res.error) throw new Error(res.error?.message || JSON.stringify(res.error || res.data || {}));
     return res.data;
