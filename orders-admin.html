@@ -2236,9 +2236,10 @@ if ($('openVenmoBtn')) {
                 </div>
               </div>
 
-              <div class="label-footer">
-                <strong>OliPoly 3D LLC</strong> • Aurora, Ohio<br>
-                Precision printed and packed for business-ready delivery.
+              <div class="label-from">
+                <div class="label-kicker">From / Return Address</div>
+                <div class="from-name">OliPoly 3D LLC</div>
+                <div class="from-address">990 Aurora Hudson Road<br>Aurora, Ohio 44202<br>OliPoly3D.com</div>
               </div>
             </div>
           </div>
@@ -2267,7 +2268,9 @@ if ($('openVenmoBtn')) {
         .ref-grid{display:grid;grid-template-columns:1.05in 1fr;row-gap:.04in;column-gap:.08in;align-items:start}
         .ref-label{font-size:8.8px;font-weight:950;color:#604d68;text-transform:uppercase;letter-spacing:.04em}
         .ref-value{font-size:10.2px;font-weight:900;color:#241b2b;text-align:right;overflow-wrap:anywhere;line-height:1.15}
-        .label-footer{margin-top:auto;border-top:1px solid #ead8f2;padding-top:.08in;font-size:8.8px;line-height:1.32;color:#604d68;font-weight:750;text-align:center}
+        .label-from{margin-top:auto;border-top:1px solid #ead8f2;padding-top:.08in;text-align:left}
+        .from-name{font-size:10px;font-weight:950;color:#241b2b;line-height:1.18}
+        .from-address{margin-top:.025in;font-size:8.8px;font-weight:750;line-height:1.22;color:#604d68}
         @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.label-card{break-inside:avoid}}
       `;
 
