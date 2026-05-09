@@ -21,6 +21,7 @@
     .brand{display:flex;align-items:center;gap:12px}.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
     .brand h1,.brand p,.hero h2,.hero p,.card h3,.sub,.summary h3,.summary p{margin:0}.brand h1{font-size:clamp(1rem,2vw,1.18rem)}.brand p,.sub,.hero p,.muted{color:var(--muted)}
     .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
+    .action-groups{display:grid;gap:14px;margin-top:16px}.action-group{padding:14px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid rgba(126,144,255,.14)}.action-group h4{margin:0 0 10px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.action-group .btn-row{margin:0}.action-group.primary-actions{border-color:rgba(46,230,196,.2);background:rgba(46,230,196,.045)}.action-group.communication-actions{border-color:rgba(126,123,255,.22);background:rgba(126,123,255,.05)}.action-group.document-actions{border-color:rgba(255,201,100,.18);background:rgba(255,201,100,.045)}.action-group.business-actions{border-color:rgba(110,240,178,.18);background:rgba(110,240,178,.04)}
     .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
     .summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.summary span,.summary strong,.summary small{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.12rem,2.7vw,1.8rem)}.summary small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
     .grid{grid-template-columns:420px 1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.full{grid-column:1/-1}.filters{grid-template-columns:1.2fr .7fr .7fr .7fr .7fr .7fr auto;align-items:end}
@@ -511,17 +512,44 @@
           <div class="full"><label for="publicNextStep">Public Next Step</label><textarea id="publicNextStep"></textarea></div>
           <div class="full"><label for="shippingOrPickupNote">Pickup / Shipping Note</label><textarea id="shippingOrPickupNote"></textarea></div>
         </div>
-        <div class="btn-row" style="margin-top:14px;">
-          <button class="btn" id="saveBtn" type="button">Save Order</button>
-          <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
-          <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Prepare Completion Email</button>
-          <button class="btn-ghost hidden" id="unmarkCompleteEmailBtn" type="button">Unmark Completion Sent</button>
-          <button class="btn-ghost" id="pushFinanceBtn" type="button">Push to Finance</button>
-          <button class="btn-ghost" id="generatePackingSlipBtn" type="button">Packing Slip PDF</button>
-          <button class="btn-ghost" id="printShippingLabelBtn" type="button">Print Avery 5168 Label</button>
-          <button class="btn-ghost" id="generateInvoicePdfBtn" type="button">Generate Invoice PDF</button>
-          <button class="btn-ghost" id="prepareInvoiceEmailBtn" type="button">Prepare Invoice Email</button>
-          <button class="btn-ghost" id="markInvoiceSentBtn" type="button">Mark Invoice Sent</button>
+        <div class="action-groups">
+          <div class="action-group primary-actions">
+            <h4>Core Order Actions</h4>
+            <div class="btn-row">
+              <button class="btn" id="saveBtn" type="button">Save Order</button>
+              <button class="btn-ghost" id="newBtnInline" type="button">New Order</button>
+              <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
+            </div>
+          </div>
+
+          <div class="action-group communication-actions">
+            <h4>Customer Communication</h4>
+            <div class="btn-row">
+              <button class="btn-ghost" id="prepareInvoiceEmailBtn" type="button">Prepare Invoice Email</button>
+              <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Prepare Completion Email</button>
+              <button class="btn-ghost" id="orderStartedEmailBtn" type="button">Order Started Email</button>
+              <button class="btn-ghost" id="readyPickupEmailBtn" type="button">Ready for Pickup Email</button>
+              <button class="btn-ghost" id="shippedEmailBtn" type="button">Shipping Confirmation Email</button>
+              <button class="btn-ghost" id="markInvoiceSentBtn" type="button">Mark Invoice Sent</button>
+              <button class="btn-ghost hidden" id="unmarkCompleteEmailBtn" type="button">Unmark Completion Sent</button>
+            </div>
+          </div>
+
+          <div class="action-group document-actions">
+            <h4>Documents & Labels</h4>
+            <div class="btn-row">
+              <button class="btn-ghost" id="generateInvoicePdfBtn" type="button">Generate Invoice PDF</button>
+              <button class="btn-ghost" id="generatePackingSlipBtn" type="button">Packing Slip PDF</button>
+              <button class="btn-ghost" id="printShippingLabelBtn" type="button">Print Avery 5168 Label</button>
+            </div>
+          </div>
+
+          <div class="action-group business-actions">
+            <h4>Business / Finance</h4>
+            <div class="btn-row">
+              <button class="btn-ghost" id="pushFinanceBtn" type="button">Push to Finance</button>
+            </div>
+          </div>
         </div>
         <div class="message" id="formMessage"></div>
         <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
@@ -1784,7 +1812,100 @@ OliPoly 3D`;
 
       const modal = $('completionEmailModal');
       const msg = $('completionEmailModalMessage');
+      const markBtn = $('markCompletionSentBtn');
+      if (markBtn) markBtn.classList.remove('hidden');
       if (msg) msg.innerHTML = 'Tip: Use Copy Rich Email, open the Gmail draft, then paste the branded version into Gmail. Click Mark Sent only after you actually send it.';
+      modal?.classList.remove('hidden');
+      modal?.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+
+    function buildLifecyclePlainEmail(kind, orderNumber, orderTitle, trackLink, fulfillment) {
+      const labels = {
+        started: 'Your OliPoly 3D order has been started and is now moving into production planning.',
+        pickup: 'Your OliPoly 3D order is ready for pickup.',
+        shipped: 'Your OliPoly 3D order has shipped or is ready with shipping details.'
+      };
+      const next = {
+        started: 'You can use the tracker link below to follow progress as the order moves through production.',
+        pickup: 'Reply to coordinate pickup timing, or check the tracker for any final notes.',
+        shipped: 'Use the tracker link below for shipping or fulfillment updates.'
+      };
+      return `Hi — ${labels[kind] || 'Here is an update on your OliPoly 3D order.'}
+
+Order #: ${orderNumber}
+${orderTitle ? `Project: ${orderTitle}\n` : ''}${fulfillment ? `Fulfillment: ${fulfillment}\n` : ''}
+${next[kind] || ''}
+
+Track your order here:
+${trackLink}
+
+Thank you,
+OliPoly 3D LLC
+Custom 3D Printing • Creative Builds • Prototypes
+OliPoly3D@gmail.com
+https://olipoly3d.com`;
+    }
+
+    function buildLifecycleHtmlEmail(kind, orderNumber, orderTitle, trackLink, fulfillment) {
+      const titles = {
+        started: 'Your order is in motion',
+        pickup: 'Your order is ready for pickup',
+        shipped: 'Your order has shipped'
+      };
+      const messages = {
+        started: 'Your OliPoly 3D order has been started and is now moving into production planning.',
+        pickup: 'Your OliPoly 3D order is ready for pickup. Reply to coordinate pickup timing or review any final notes in the tracker.',
+        shipped: 'Your OliPoly 3D order has shipped or is ready with shipping details. Use the tracker for fulfillment updates.'
+      };
+      return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
+    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+    <div style="padding:26px 28px;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:800;color:#241b2b;margin-bottom:8px;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
+      <div style="display:inline-block;margin:8px 0 14px;padding:7px 11px;border-radius:999px;background:#f9ecf5;border:1px solid #f2c4df;color:#7c4a82;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">Order Update</div>
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 14px;color:#241b2b;font-weight:700;">${esc(titles[kind] || 'Order update')}</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 18px;color:#4f4057;">${esc(messages[kind] || 'Here is an update on your OliPoly 3D order.')}</p>
+      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;">
+        <p style="margin:0 0 8px;color:#604d68;"><strong style="color:#2f2336;">Order #:</strong> ${esc(orderNumber)}</p>
+        ${orderTitle ? `<p style="margin:0 0 8px;color:#604d68;"><strong style="color:#2f2336;">Project:</strong> ${esc(orderTitle)}</p>` : ''}
+        ${fulfillment ? `<p style="margin:0;color:#604d68;"><strong style="color:#2f2336;">Fulfillment:</strong> ${esc(fulfillment)}</p>` : ''}
+      </div>
+      <a href="${trackLink}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:800;padding:12px 18px;border-radius:999px;">Track Order</a>
+      <p style="font-size:15px;line-height:1.6;margin:22px 0 0;color:#4f4057;">Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p>
+    </div>
+    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:18px 28px;color:#826889;font-size:13px;line-height:1.55;">OliPoly3D@gmail.com • olipoly3d.com</div>
+  </div>
+</div>`;
+    }
+
+    function openLifecycleEmailModal(kind) {
+      const orderNumber = $('orderNumber').value.trim();
+      const email = $('customerEmail').value.trim();
+      const orderTitle = $('orderTitle').value.trim();
+      const fulfillment = $('fulfillment').value;
+      if (!orderNumber || !email) {
+        alert('Order number and customer email are required.');
+        return;
+      }
+      const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
+      const subjects = {
+        started: `Your OliPoly 3D order has started (${orderNumber})`,
+        pickup: `Your OliPoly 3D order is ready for pickup (${orderNumber})`,
+        shipped: `Your OliPoly 3D order has shipped (${orderNumber})`
+      };
+      const plain = buildLifecyclePlainEmail(kind, orderNumber, orderTitle, trackLink, fulfillment);
+      const html = buildLifecycleHtmlEmail(kind, orderNumber, orderTitle, trackLink, fulfillment);
+      lastCompletionEmail = { html, plain, subject: subjects[kind] || `OliPoly 3D order update (${orderNumber})`, to: email, orderNumber };
+      writeCompletionEmailPreview(html);
+      const modal = $('completionEmailModal');
+      const msg = $('completionEmailModalMessage');
+      const markBtn = $('markCompletionSentBtn');
+      if (markBtn) markBtn.classList.remove('hidden');
+      if (msg) msg.innerHTML = 'Tip: Use Copy Rich Email, open the Gmail draft, then paste the branded version into Gmail.';
+      const markBtn = $('markCompletionSentBtn');
+      if (markBtn) markBtn.classList.toggle('hidden', kind !== 'completion');
       modal?.classList.remove('hidden');
       modal?.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
@@ -1931,10 +2052,14 @@ if ($('loginBtn')) $('loginBtn').onclick = login;
 if ($('logoutBtn')) $('logoutBtn').onclick = logout;
 if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
 if ($('newBtn')) $('newBtn').onclick = resetForm;
+if ($('newBtnInline')) $('newBtnInline').onclick = resetForm;
 if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
 if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
 if ($('sendCompleteEmailBtn')) $('sendCompleteEmailBtn').onclick = openCompletionEmailModal;
 if ($('unmarkCompleteEmailBtn')) $('unmarkCompleteEmailBtn').onclick = unmarkCompletionEmailSent;
+if ($('orderStartedEmailBtn')) $('orderStartedEmailBtn').onclick = () => openLifecycleEmailModal('started');
+if ($('readyPickupEmailBtn')) $('readyPickupEmailBtn').onclick = () => openLifecycleEmailModal('pickup');
+if ($('shippedEmailBtn')) $('shippedEmailBtn').onclick = () => openLifecycleEmailModal('shipped');
 
 if ($('generateInvoicePdfBtn')) $('generateInvoicePdfBtn').onclick = generateInvoicePdf;
 if ($('prepareInvoiceEmailBtn')) $('prepareInvoiceEmailBtn').onclick = openInvoiceEmailModal;

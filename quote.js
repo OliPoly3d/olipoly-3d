@@ -945,6 +945,7 @@ OliPoly 3D`;
         <p style="margin:0 0 8px;"><strong>Project:</strong> ${project}</p>
         ${getField("olipolyPartNumber") ? `<p style="margin:0 0 8px;"><strong>OliPoly Part #:</strong> ${getField("olipolyPartNumber")}</p>` : ""}
         ${getField("customerPartNumber") ? `<p style="margin:0 0 8px;"><strong>Customer Part #:</strong> ${getField("customerPartNumber")}</p>` : ""}
+        ${getField("partRevision") ? `<p style="margin:0 0 8px;"><strong>Revision:</strong> ${getField("partRevision")}</p>` : ""}
         <p style="margin:0 0 8px;"><strong>Estimated total:</strong> ${total}</p>
         <p style="margin:0;"><strong>Estimated timing:</strong> ${turnaround}</p>
       </div>
@@ -2321,7 +2322,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function bind() {
-    ["paymentTerms", "liteQuoteType", "professionalMode", "poNumber", "customerPartNumber", "olipolyPartNumber"].forEach((id) => {
+    ["paymentTerms", "liteQuoteType", "professionalMode", "poNumber", "customerPartNumber", "olipolyPartNumber", "partRevision"].forEach((id) => {
       const el = $(id);
       if (!el || el._customerTermsBound) return;
       el._customerTermsBound = true;
@@ -2633,6 +2634,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const poNumber = getField("poNumber");
     const oliPart = getField("olipolyPartNumber");
     const customerPart = getField("customerPartNumber");
+    const partRevision = getField("partRevision");
     const customerEmail = getField("customerEmail");
     const manualOverridePiece = emailNum("manualPiecePriceOverride");
     const manualOverrideQty = Math.max(1, Math.round(emailNum("qty") || 1));
@@ -2653,6 +2655,7 @@ document.addEventListener("DOMContentLoaded", () => {
       poNumber,
       oliPart,
       customerPart,
+      partRevision,
       customerEmail
     };
   }
@@ -2669,7 +2672,8 @@ document.addEventListener("DOMContentLoaded", () => {
       d.leadTime ? `Lead time: ${d.leadTime}` : "",
       d.poNumber ? `PO reference: ${d.poNumber}` : "",
       d.oliPart ? `OliPoly Part #: ${d.oliPart}` : "",
-      d.customerPart ? `Customer Part #: ${d.customerPart}` : ""
+      d.customerPart ? `Customer Part #: ${d.customerPart}` : "",
+      d.partRevision ? `Revision: ${d.partRevision}` : ""
     ].filter(Boolean).join("\n");
 
     return `${d.greetingName ? `Hello ${d.greetingName},` : "Hello,"}
@@ -2768,6 +2772,7 @@ https://olipoly3d.com`;
           ${detailRow("PO Reference", d.poNumber)}
           ${detailRow("OliPoly Part #", d.oliPart)}
           ${detailRow("Customer Part #", d.customerPart)}
+          ${detailRow("Revision", d.partRevision)}
         </table>
       </div>
 
@@ -3190,6 +3195,7 @@ https://olipoly3d.com`;
     const po = val("poNumber");
     const oliPart = val("olipolyPartNumber");
     const custPart = val("customerPartNumber");
+    const partRevision = val("partRevision");
 
     const totalNumber = moneyNum(total);
     const qtyNumber = Number(qty) || 1;
@@ -3232,6 +3238,7 @@ https://olipoly3d.com`;
             ${po ? `PO Reference: ${esc(po)}<br>` : ""}
             ${oliPart ? `OliPoly Part #: ${esc(oliPart)}<br>` : ""}
             ${custPart ? `Customer Part #: ${esc(custPart)}<br>` : ""}
+            ${partRevision ? `Revision: ${esc(partRevision)}<br>` : ""}
           </div>
         </div>
 
@@ -3241,7 +3248,7 @@ https://olipoly3d.com`;
           </thead>
           <tbody>
             <tr>
-              <td><strong>${esc(project)}</strong><br>${oliPart ? `OliPoly Part #: ${esc(oliPart)}<br>` : ""}${custPart ? `Customer Part #: ${esc(custPart)}<br>` : ""}</td>
+              <td><strong>${esc(project)}</strong><br>${oliPart ? `OliPoly Part #: ${esc(oliPart)}<br>` : ""}${custPart ? `Customer Part #: ${esc(custPart)}<br>` : ""}${partRevision ? `Revision: ${esc(partRevision)}<br>` : ""}</td>
               <td>${esc(qty)}</td>
               <td>${esc(total)}</td>
             </tr>
@@ -3480,13 +3487,15 @@ https://olipoly3d.com`;
     const assumptions = val("assumptions");
     const oliPart = val("olipolyPartNumber");
     const custPart = val("customerPartNumber");
+    const partRevision = val("partRevision");
     const po = val("poNumber");
 
     const businessRows = [
       company ? `<p style="margin:0 0 8px;"><strong>Company:</strong> ${esc(company)}</p>` : "",
       po ? `<p style="margin:0 0 8px;"><strong>PO Reference:</strong> ${esc(po)}</p>` : "",
       oliPart ? `<p style="margin:0 0 8px;"><strong>OliPoly Part #:</strong> ${esc(oliPart)}</p>` : "",
-      custPart ? `<p style="margin:0 0 8px;"><strong>Customer Part #:</strong> ${esc(custPart)}</p>` : ""
+      custPart ? `<p style="margin:0 0 8px;"><strong>Customer Part #:</strong> ${esc(custPart)}</p>` : "",
+      val("partRevision") ? `<p style="margin:0 0 8px;"><strong>Revision:</strong> ${esc(val("partRevision"))}</p>` : ""
     ].join("");
 
     return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
@@ -3721,4 +3730,212 @@ https://olipoly3d.com`;
 
   setTimeout(bindRetailEmailPreviewOnly, 500);
   setTimeout(bindRetailEmailPreviewOnly, 1500);
+})();
+
+/* === OliPoly Quote → Orders Admin bridge V1 ===
+   Adds a reliable Accept + Create Order action that carries PO / customer part /
+   OliPoly part / revision references into the orders table.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const val = (id) => ($(id)?.value || "").trim();
+  const text = (id) => ($(id)?.textContent || "").trim();
+  const moneyNumber = (value) => Number(String(value || "").replace(/[^0-9.-]/g, "")) || 0;
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  function toast(message) {
+    if (typeof window.quotePatchToast === "function") return window.quotePatchToast(message);
+    let el = $("liteStatusToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "liteStatusToast";
+      el.className = "lite-status-toast";
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  function quoteNumber() {
+    return val("quoteNumber") || text("quoteNumber");
+  }
+
+  function orderNumberFromQuote() {
+    const q = quoteNumber();
+    if (!q) return "";
+    return q.replace(/^Q-/i, "OP-");
+  }
+
+  function selectedInvoiceTerms() {
+    const terms = val("paymentTerms");
+    if (["net_15", "net_30", "net_45", "due_on_receipt", "customer_terms"].includes(terms)) return terms;
+    if (terms === "due_on_completion") return "due_on_receipt";
+    return val("liteQuoteType") === "po" || val("professionalMode") === "on" ? "customer_terms" : "due_on_receipt";
+  }
+
+  function totalAmount() {
+    if (typeof window.render === "function") window.render();
+    return moneyNumber(text("sumQuote") || text("outFinal") || text("finalTotal") || val("quoteTotal"));
+  }
+
+  function depositAmount(total) {
+    const shown = moneyNumber(text("sumDeposit") || text("outDeposit") || text("pdfDeposit"));
+    if (shown > 0) return shown;
+    const pct = Number(val("depositPercent")) || 0;
+    return pct > 0 ? +(total * pct / 100).toFixed(2) : 0;
+  }
+
+  async function api(path, options = {}) {
+    if (typeof window.sbApi !== "function") throw new Error("Supabase helper is not available.");
+    const res = await window.sbApi(path, options);
+    if (!res.ok || res.error) {
+      throw new Error(res.error?.message || res.error?.error_description || JSON.stringify(res.error || res.data || {}));
+    }
+    return res.data;
+  }
+
+  async function currentUser() {
+    if (typeof window.getCurrentSbUser === "function") return await window.getCurrentSbUser();
+    return null;
+  }
+
+  function buildOrderPayload(userId) {
+    const total = totalAmount();
+    const deposit = depositAmount(total);
+    const balance = Math.max(0, total - deposit);
+    const orderNumber = orderNumberFromQuote();
+    const company = val("companyName");
+    const contact = val("contactName") || val("customerName");
+    const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
+    const qty = Math.max(1, Math.round(Number(val("qty") || val("quantity") || 1) || 1));
+    const paymentTerms = val("paymentTerms");
+    const professional = val("liteQuoteType") === "po" || val("professionalMode") === "on" || !!val("poNumber");
+
+    return {
+      user_id: userId,
+      order_number: orderNumber,
+      order_date: today(),
+      customer_name: contact || company || null,
+      customer_email: val("customerEmail") || null,
+      order_title: project,
+      quantity: qty,
+      order_total: total,
+      deposit_amount: deposit,
+      balance_amount: balance,
+      status: deposit > 0 ? "awaiting_deposit" : "awaiting_approval",
+      payment_status: deposit > 0 ? "deposit_due" : "unpaid",
+      fulfillment: "pickup",
+      po_number: val("poNumber") || null,
+      po_part_number: val("customerPartNumber") || null,
+      olipoly_part_number: val("olipolyPartNumber") || null,
+      part_revision: val("partRevision") || null,
+      shipping_contact_name: contact || null,
+      shipping_company: company || null,
+      shipping_address: val("shippingAddress") || null,
+      billing_address: val("billingAddress") || null,
+      invoice_number: val("invoiceNumber") || null,
+      invoice_date: val("invoiceDate") || null,
+      invoice_terms: selectedInvoiceTerms(),
+      internal_notes: [
+        `Created from quote ${quoteNumber() || ""}.`,
+        professional ? "Professional / PO quote workflow." : "Retail/customer quote workflow.",
+        val("quoteNotes") ? `Quote notes: ${val("quoteNotes")}` : "",
+        val("assumptions") ? `Assumptions: ${val("assumptions")}` : ""
+      ].filter(Boolean).join("\n\n"),
+      public_status_text: "Order created from accepted quote.",
+      public_next_step: deposit > 0
+        ? "Deposit/payment is the next step before production begins."
+        : "OliPoly 3D will review and schedule the order.",
+      shipping_or_pickup_note: val("turnaround") ? `Estimated timing: ${val("turnaround")}` : null
+    };
+  }
+
+  async function upsertOrder(payload) {
+    const encoded = encodeURIComponent(payload.order_number);
+    const existing = await api(`/rest/v1/orders?select=id&order_number=eq.${encoded}&limit=1`, { method: "GET" });
+    if (Array.isArray(existing) && existing[0]?.id) {
+      return await api(`/rest/v1/orders?id=eq.${existing[0].id}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(payload)
+      });
+    }
+    return await api("/rest/v1/orders", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function updateQuoteAccepted(orderNumber) {
+    const q = quoteNumber();
+    if (!q) return;
+    const encoded = encodeURIComponent(q);
+    await api(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        quote_status: "accepted",
+        converted_order_number: orderNumber,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }
+
+  async function acceptAndCreateOrder() {
+    const btn = $("acceptCreateBtn");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Creating Order...";
+    }
+
+    try {
+      if (typeof window.ensureDocumentNumbers === "function") await window.ensureDocumentNumbers(false);
+      if (typeof window.saveCurrentQuote === "function") {
+        try { await window.saveCurrentQuote(); } catch (_) {}
+      }
+
+      const user = await currentUser();
+      if (!user?.id) throw new Error("Log into Orders Admin in this browser first, then return here and try again.");
+      if (!quoteNumber()) throw new Error("Quote number is required before creating an order.");
+
+      const payload = buildOrderPayload(user.id);
+      if (!payload.order_number) throw new Error("Could not derive an OP order number from the quote number.");
+      if (!payload.order_title) throw new Error("Project / item title is required.");
+
+      await upsertOrder(payload);
+      await updateQuoteAccepted(payload.order_number);
+
+      const statusEl = $("quoteStatus");
+      if (statusEl) statusEl.value = "accepted";
+      toast(`Created ${payload.order_number} in Orders Admin.`);
+
+      const openOrders = confirm(`${payload.order_number} was created/updated in Orders Admin. Open Orders Admin now?`);
+      if (openOrders) window.open("orders-admin.html", "_blank", "noopener,noreferrer");
+    } catch (err) {
+      alert(`Could not create order:\n\n${err.message || err}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Accept + Create Order";
+      }
+    }
+  }
+
+  function bindAcceptCreateOrder() {
+    const btn = $("acceptCreateBtn");
+    if (!btn || btn.dataset.acceptCreateBridgeBound === "true") return;
+    btn.dataset.acceptCreateBridgeBound = "true";
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      acceptAndCreateOrder();
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindAcceptCreateOrder);
+  else bindAcceptCreateOrder();
+  setTimeout(bindAcceptCreateOrder, 500);
+  setTimeout(bindAcceptCreateOrder, 1500);
 })();
