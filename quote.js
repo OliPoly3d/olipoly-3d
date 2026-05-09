@@ -4005,4 +4005,211 @@ Open Orders Admin now?`);
   setTimeout(bindAdvancedControlsToggle, 250);
   setTimeout(bindAdvancedControlsToggle, 1000);
 })();
+/* === OliPoly Quote Calculation + Final Rounding Fix V1 ===
+   Fixes normal quote calculation display and applies rounding to the FINAL quote total
+   so Nearest $1/$5/$10 does not leave cents after tax.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function raw(id) { return ($(id)?.value ?? "").toString(); }
+  function num(id) { return Number(raw(id).replace(/[^0-9.-]/g, "")) || 0; }
+  function text(id) { return ($(id)?.textContent || "").trim(); }
+  function money(value) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+  }
+  function pct(value) { return `${(Number(value) || 0).toFixed(1)}%`; }
+  function setAll(id, value) {
+    document.querySelectorAll(`#${id}`).forEach((el) => { el.textContent = value; });
+  }
+  function roundFinal(value, increment) {
+    const inc = Number(increment) || 0;
+    if (!inc) return value;
+    return Math.round(value / inc) * inc;
+  }
+  function qty() { return Math.max(1, Math.round(num("qty") || num("quantity") || 1)); }
+
+  function filamentCost() {
+    const spoolWeight = Math.max(1, num("spoolWeight") || 1000);
+    let total = 0;
+    for (let i = 1; i <= 4; i += 1) {
+      const roll = num(`filament${i}Cost`);
+      const used = num(`filament${i}Used`);
+      total += roll * (used / spoolWeight);
+    }
+    return total;
+  }
+
+  function calcQuote() {
+    const q = qty();
+    const manualPiece = num("manualPiecePriceOverride");
+    const material = filamentCost() + num("materialCost");
+    const machine = (num("machineHours") || num("printHours")) * num("machineRate");
+    const design = num("designHours") * num("designRate");
+    const post = (num("postHours") * num("postRate")) + num("laborCost");
+    const packaging = num("simplePackaging") + num("packagingCost");
+    const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
+    const hardware = num("simpleHardware");
+    const taxRate = num("salesTax");
+    const discount = num("discount");
+    const rounding = num("roundingMode");
+    const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
+    const marketplacePercent = Math.max(0, num("marketplacePercent"));
+
+    let direct;
+    let base;
+    let profit;
+    let preDiscount;
+    let pricingMode = "calculated";
+
+    if (manualPiece > 0) {
+      pricingMode = "manual";
+      const itemSubtotal = manualPiece * q;
+      direct = itemSubtotal + packaging + shipping + hardware;
+      base = itemSubtotal + packaging + shipping + hardware;
+      profit = 0;
+      preDiscount = base;
+    } else {
+      direct = material + machine + design + post + packaging + shipping + hardware;
+      base = direct;
+      const profitMode = raw("profitMode") || "percent";
+      const profitValue = num("profitValue");
+      profit = profitMode === "flat" ? profitValue : base * (profitValue / 100);
+      preDiscount = base + profit;
+    }
+
+    const marketplaceFee = preDiscount * (marketplacePercent / 100);
+    preDiscount += marketplaceFee;
+
+    const beforeTax = Math.max(0, preDiscount - discount);
+    const tax = beforeTax * (taxRate / 100);
+    const unroundedFinal = beforeTax + tax;
+    const final = Math.max(0, roundFinal(unroundedFinal, rounding));
+    const roundingGain = final - unroundedFinal;
+    const deposit = final * (depositPercent / 100);
+    const balance = Math.max(0, final - deposit);
+    const perItem = final / q;
+    const breakEven = manualPiece > 0 ? material + machine + design + post + packaging + shipping + hardware : direct;
+    const margin = final > 0 ? ((final - breakEven) / final) * 100 : 0;
+
+    return {
+      q, manualPiece, material, machine, design, post, packaging, shipping, hardware,
+      direct, base, profit, marketplaceFee, preDiscount, discount, beforeTax, taxRate, tax,
+      unroundedFinal, rounding, final, roundingGain, deposit, balance, perItem, breakEven,
+      margin, pricingMode
+    };
+  }
+
+  function updateSimpleSummary(v) {
+    const el = $("simpleSummary");
+    if (!el) return;
+    el.textContent = `Simple inputs: ${money(v.material)} material, ${money(v.packaging)} packaging, ${money(v.shipping)} shipping, ${money(v.hardware)} hardware, ${money(v.design)} design labor, ${money(v.machine)} machine time, ${money(v.post)} post-process labor.`;
+  }
+
+  function applyQuoteCalculationFix() {
+    const v = calcQuote();
+
+    setAll("sumQuote", money(v.final));
+    setAll("sumPerItem", money(v.perItem));
+    setAll("sumDeposit", money(v.deposit));
+    setAll("sumBalance", money(v.balance));
+    setAll("sumDirect", money(v.direct));
+    setAll("sumOverhead", money(v.marketplaceFee));
+    setAll("sumProfit", v.pricingMode === "manual" ? "Manual" : money(v.profit));
+    setAll("sumBreakEven", money(v.breakEven));
+    setAll("batchUnitCost", money(v.breakEven / Math.max(1, v.q)));
+
+    setAll("outDirect", money(v.direct));
+    setAll("outOverhead", money(v.marketplaceFee));
+    setAll("outBase", money(v.base));
+    setAll("outProfit", v.pricingMode === "manual" ? "Manual" : money(v.profit));
+    setAll("outPerItem", money(v.perItem));
+    setAll("outBreakEven", money(v.breakEven));
+    setAll("outMargin", v.pricingMode === "manual" ? "Manual" : pct(v.margin));
+    setAll("outPreDiscount", money(v.preDiscount));
+    setAll("outDiscount", money(v.discount));
+    setAll("outBeforeTax", money(v.beforeTax));
+    setAll("outRoundedBeforeTax", money(v.beforeTax));
+    setAll("outRoundingGain", money(v.roundingGain));
+    setAll("outTax", money(v.tax));
+    setAll("outDeposit", money(v.deposit));
+    setAll("outBalance", money(v.balance));
+    setAll("outFinal", money(v.final));
+
+    setAll("pdfQty", String(v.q));
+    setAll("pdfPerItem", money(v.perItem));
+    setAll("pdfSubtotal", money(v.beforeTax));
+    setAll("pdfTax", money(v.tax));
+    setAll("pdfTotal", money(v.final));
+    setAll("pdfDeposit", money(v.deposit));
+    setAll("pdfBalance", money(v.balance));
+    setAll("pdfInvoiceAmount", money(v.final));
+    setAll("pdfHeroTotal", money(v.final));
+
+    const guardrail = $("profitGuardrail");
+    if (guardrail) guardrail.textContent = v.pricingMode === "manual" ? "Manual Price" : (v.margin >= 20 ? "OK" : "Review");
+
+    const confidence = $("quoteConfidence");
+    if (confidence) {
+      confidence.textContent = v.pricingMode === "manual" ? "Manual Override" : (v.margin >= 20 ? "Good" : "Review");
+      confidence.className = v.margin >= 20 || v.pricingMode === "manual" ? "confidence-ok" : "confidence-warn";
+    }
+
+    const summary = $("quoteSummary");
+    if (summary) {
+      summary.textContent = v.rounding
+        ? `Final quote ${money(v.final)}. Rounding is applied to the final after-tax total, so the customer total stays clean.`
+        : `Final quote ${money(v.final)}. Per item: ${money(v.perItem)}.`;
+    }
+
+    updateSimpleSummary(v);
+    return v;
+  }
+
+  function applySoon(times = [0, 40, 120, 300, 700]) {
+    times.forEach((ms) => setTimeout(applyQuoteCalculationFix, ms));
+  }
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._olipolyCalculationFixV1) return;
+    const original = window.render;
+    window.render = function fixedQuoteRender(...args) {
+      const result = original.apply(this, args);
+      applySoon();
+      return result;
+    };
+    window.render._olipolyCalculationFixV1 = true;
+  }
+
+  function bindInputs() {
+    document.querySelectorAll("input[id], select[id], textarea[id]").forEach((el) => {
+      if (el.dataset.olipolyCalculationFixBound === "true") return;
+      el.dataset.olipolyCalculationFixBound = "true";
+      el.addEventListener("input", () => applySoon([0, 60, 180]));
+      el.addEventListener("change", () => applySoon([0, 60, 180]));
+    });
+
+    ["customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn", "saveQuoteBtn", "prepareCustomerEmailBtn", "createOrderFromQuoteBtn"].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.olipolyCalculationFixButtonBound === "true") return;
+      btn.dataset.olipolyCalculationFixButtonBound = "true";
+      btn.addEventListener("click", () => applySoon([0, 80, 200, 500, 1000]), { capture: true });
+    });
+  }
+
+  function init() {
+    bindInputs();
+    patchRender();
+    applySoon();
+    const timer = setInterval(() => {
+      bindInputs();
+      patchRender();
+      applyQuoteCalculationFix();
+    }, 300);
+    setTimeout(() => clearInterval(timer), 7000);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
 
