@@ -1,89 +1,3 @@
-
-/* === OliPoly shared Supabase auth bridge / top button safety patch ===
-   Lets Quote Tool recognize the Orders Admin login token stored as localStorage.sb_token.
-   Also provides fallback sbApi() and getCurrentSbUser() if the base quote script did not.
-*/
-(() => {
-  const SUPABASE_URL = window.SUPABASE_URL || 'https://alffoktlwhpfothieude.supabase.co';
-  const SUPABASE_KEY = window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-
-  function sharedAccessToken(){
-    return (
-      localStorage.getItem('sb_token') ||
-      localStorage.getItem('supabase.auth.token') ||
-      null
-    );
-  }
-
-  function showQuoteToast(message){
-    let el = document.getElementById('liteStatusToast');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'liteStatusToast';
-      el.className = 'lite-status-toast';
-      el.setAttribute('aria-live', 'polite');
-      document.body.appendChild(el);
-    }
-    el.textContent = message;
-    el.classList.add('show');
-    clearTimeout(el._quotePatchTimer);
-    el._quotePatchTimer = setTimeout(() => el.classList.remove('show'), 2800);
-  }
-
-  if (typeof window.sbApi !== 'function') {
-    window.sbApi = async function sbApi(path, options = {}) {
-      const token = sharedAccessToken();
-      const headers = {
-        apikey: SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {})
-      };
-
-      const response = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
-      const data = await response.json().catch(() => null);
-      return {
-        ok: response.ok,
-        data,
-        error: response.ok ? null : data
-      };
-    };
-  }
-
-  if (typeof window.getCurrentSbUser !== 'function') {
-    window.getCurrentSbUser = async function getCurrentSbUser(){
-      const token = sharedAccessToken();
-      if (!token) return null;
-
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        method: 'GET',
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      return await response.json().catch(() => null);
-    };
-  }
-
-  window.quoteSharedAuthStatus = async function quoteSharedAuthStatus(){
-    try {
-      const user = await window.getCurrentSbUser();
-      return user?.id ? user : null;
-    } catch {
-      return null;
-    }
-  };
-
-  window.quotePatchToast = showQuoteToast;
-})();
-
-
 /* OliPoly 3D Quote Tool Lite - Supabase Saved Quotes V6
    This file is a Lite-only helper layer.
    Load order in quote-tool-lite.html:
@@ -411,8 +325,7 @@
 
   async function currentUser() {
     if (typeof window.getCurrentSbUser === "function") {
-      const user = await window.getCurrentSbUser();
-      if (user?.id) return user;
+      return await window.getCurrentSbUser();
     }
     return null;
   }
@@ -461,7 +374,7 @@
 
     const user = await currentUser();
     if (!user?.id) {
-      throw new Error("Not logged in. Open Hub or Orders Admin and log in on this browser first, then return to Quote Tool.");
+      throw new Error("Not logged in. Log into orders-admin.html in this browser first to save cloud quotes.");
     }
 
     const quoteNumber = $("quoteNumber")?.value?.trim();
@@ -2768,7 +2681,7 @@ https://olipoly3d.com`;
     if (!isProfessionalQuote()) return;
 
     event.preventDefault();
-    /* no stopPropagation */
+    event.stopPropagation();
     event.stopImmediatePropagation();
 
     try {
@@ -2932,83 +2845,80 @@ https://olipoly3d.com`;
 
 
 
-/* === Quote Tool cloud status indicator === */
-(() => {
-  async function updateQuoteCloudStatus(){
-    const summary = document.getElementById('historySummary') || document.getElementById('savedInlineSummary');
-    if (!summary || typeof window.quoteSharedAuthStatus !== 'function') return;
-
-    const user = await window.quoteSharedAuthStatus();
-    if (user?.id) {
-      if (!summary.dataset.cloudStatusSet) {
-        summary.insertAdjacentHTML('afterbegin', `<span class="saved-source-pill">Cloud login detected</span> `);
-        summary.dataset.cloudStatusSet = 'true';
-      }
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateQuoteCloudStatus);
-  } else {
-    updateQuoteCloudStatus();
-  }
-  setTimeout(updateQuoteCloudStatus, 1000);
-})();
-
-
-
-/* === OliPoly Quote Cloud Save + Non-Interfering Button Repair V2 === */
+/* === OliPoly Quote Tool DIRECT TOP BUTTON RESCUE V3 ===
+   This layer intentionally owns the top buttons because previous handlers were not firing.
+   It saves to Supabase using the same sb_token created by Orders Admin / Hub login.
+*/
 (() => {
   const $ = (id) => document.getElementById(id);
-  const SUPABASE_URL = window.SUPABASE_URL || 'https://alffoktlwhpfothieude.supabase.co';
-  const SUPABASE_KEY = window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
   const LOCAL_KEY = "olipoly_quote_history_v3";
 
-  function token(){
-    return localStorage.getItem('sb_token') || null;
-  }
-
   function toast(message, ms = 3200){
-    let el = $('liteStatusToast');
+    let el = $("liteStatusToast");
     if (!el) {
-      el = document.createElement('div');
-      el.id = 'liteStatusToast';
-      el.className = 'lite-status-toast';
-      el.setAttribute('aria-live', 'polite');
+      el = document.createElement("div");
+      el.id = "liteStatusToast";
+      el.className = "lite-status-toast";
+      el.setAttribute("aria-live", "polite");
       document.body.appendChild(el);
     }
     el.textContent = message;
-    el.classList.add('show');
-    clearTimeout(el._repairTimer);
-    el._repairTimer = setTimeout(() => el.classList.remove('show'), ms);
+    el.classList.add("show");
+    clearTimeout(el._directRescueTimer);
+    el._directRescueTimer = setTimeout(() => el.classList.remove("show"), ms);
+  }
+
+  function token(){
+    return localStorage.getItem("sb_token") || null;
   }
 
   async function rest(path, options = {}){
     const accessToken = token();
     const headers = {
       apikey: SUPABASE_KEY,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(options.headers || {})
     };
+
     const response = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
     const data = await response.json().catch(() => null);
     return { ok: response.ok, status: response.status, data, error: response.ok ? null : data };
   }
 
-  async function currentUserDirect(){
+  async function currentUser(){
     if (!token()) return null;
-    const res = await rest('/auth/v1/user', { method: 'GET' });
+    const res = await rest("/auth/v1/user", { method: "GET" });
     return res.ok ? res.data : null;
   }
 
-  function safeMoneyNumber(text) {
+  function moneyNumber(text){
     return Number(String(text || "").replace(/[^0-9.-]/g, "")) || 0;
   }
 
-  function collectFieldsDirect(){
+  function esc(value){
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[ch]));
+  }
+
+  function setVal(id, value){
+    const el = $(id);
+    if (!el) return;
+    el.value = value ?? "";
+    el.dispatchEvent(new Event("input", { bubbles:true }));
+    el.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  function getVal(id){
+    return ($(id)?.value || "").trim();
+  }
+
+  function collectFields(){
     const fields = {};
-    document.querySelectorAll("input[id], select[id], textarea[id]").forEach((el) => {
+    document.querySelectorAll("input[id], select[id], textarea[id]").forEach(el => {
       if (!el.id || el.id === "savedQuotesSelect") return;
       if (el.type === "button" || el.type === "submit") return;
       fields[el.id] = el.type === "checkbox" ? !!el.checked : (el.value ?? "");
@@ -3017,196 +2927,443 @@ https://olipoly3d.com`;
     return fields;
   }
 
-  function buildQuoteDataDirect(){
-    return {
-      version: "quote-tool-lite-direct-cloud-v2",
-      saved_at: new Date().toISOString(),
-      source: "quote-tool-direct-cloud-save",
-      lite_quote_type: $("liteQuoteType")?.value || "retail",
-      fields: collectFieldsDirect()
-    };
+  function populateFields(fields = {}){
+    Object.entries(fields).forEach(([id, value]) => {
+      const el = $(id);
+      if (!el) return;
+      if (el.type === "checkbox") el.checked = !!value;
+      else el.value = value ?? "";
+      el.dispatchEvent(new Event("input", { bubbles:true }));
+      el.dispatchEvent(new Event("change", { bubbles:true }));
+    });
+    if (typeof window.render === "function") window.render();
+    else calculateFallback();
   }
 
-  function localBackupDirect(record){
-    try {
-      const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
-      const idx = list.findIndex(q => q.quoteNumber === record.quoteNumber);
-      if (idx >= 0) list[idx] = { ...list[idx], ...record };
-      else list.unshift(record);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
-    } catch (error) {
-      console.warn("Local backup failed:", error);
-    }
+  function calculateFallback(){
+    const qty = Number($("qty")?.value || 1) || 1;
+    const f1 = (Number($("filament1Cost")?.value || 0) || 0) * (Number($("filament1Used")?.value || 0) || 0) / 1000;
+    const f2 = (Number($("filament2Cost")?.value || 0) || 0) * (Number($("filament2Used")?.value || 0) || 0) / 1000;
+    const f3 = (Number($("filament3Cost")?.value || 0) || 0) * (Number($("filament3Used")?.value || 0) || 0) / 1000;
+    const f4 = (Number($("filament4Cost")?.value || 0) || 0) * (Number($("filament4Used")?.value || 0) || 0) / 1000;
+    const machine = (Number($("machineHours")?.value || 0) || 0) * (Number($("machineRate")?.value || 0) || 0);
+    const design = (Number($("designHours")?.value || 0) || 0) * (Number($("designRate")?.value || 0) || 0);
+    const post = (Number($("postHours")?.value || 0) || 0) * (Number($("postRate")?.value || 0) || 0);
+    const subtotal = f1 + f2 + f3 + f4 + machine + design + post;
+    const taxRate = Number($("salesTax")?.value || $("taxPreset")?.value || 0) || 0;
+    const tax = subtotal * taxRate / 100;
+    const total = subtotal + tax;
+
+    const fmt = new Intl.NumberFormat("en-US", { style:"currency", currency:"USD" });
+    if ($("sumQuote")) $("sumQuote").textContent = fmt.format(total);
+    if ($("outFinal")) $("outFinal").textContent = fmt.format(total);
+    if ($("sumPerItem")) $("sumPerItem").textContent = fmt.format(total / Math.max(1, qty));
+    return { subtotal, tax, total };
   }
 
-  async function ensureQuoteNumberDirect(){
+  async function ensureQuoteNumber(){
     if (typeof window.ensureDocumentNumbers === "function") {
       await window.ensureDocumentNumbers(false);
       await new Promise(resolve => setTimeout(resolve, 80));
     }
-    if (typeof window.render === "function") window.render();
 
-    const quoteNumber = $("quoteNumber")?.value?.trim();
-    if (!quoteNumber) throw new Error("Quote number is missing.");
-    return quoteNumber;
-  }
-
-  async function saveQuoteToCloudDirect(){
-    const user = await currentUserDirect();
-    if (!user?.id) {
-      throw new Error("Cloud login not found. Open Hub/Orders Admin, log in, then return to Quote Tool.");
+    if (!$("quoteNumber")?.value?.trim()) {
+      const n = String(Math.floor(Date.now() / 1000)).slice(-6);
+      setVal("quoteNumber", `Q-${n}`);
     }
 
-    const quoteNumber = await ensureQuoteNumberDirect();
-    const data = buildQuoteDataDirect();
+    if (!$("quoteDate")?.value) {
+      setVal("quoteDate", new Date().toISOString().slice(0,10));
+    }
 
-    const payload = {
-      user_id: user.id,
-      quote_number: quoteNumber,
-      invoice_number: $("invoiceNumber")?.value?.trim() || null,
-      quote_status: $("quoteStatus")?.value || "pending",
-      customer_name: ($("customerName")?.value?.trim() || $("companyName")?.value?.trim() || null),
-      customer_email: $("customerEmail")?.value?.trim() || null,
-      quote_title: $("quoteTitle")?.value?.trim() || null,
-      quote_total: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
-      quote_data: data,
-      updated_at: new Date().toISOString()
+    if (typeof window.render === "function") window.render();
+    else calculateFallback();
+
+    return getVal("quoteNumber");
+  }
+
+  function quoteTotal(){
+    if (typeof window.render === "function") window.render();
+    else calculateFallback();
+    return moneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent);
+  }
+
+  function buildQuoteData(){
+    return {
+      version: "quote-tool-direct-rescue-v3",
+      saved_at: new Date().toISOString(),
+      source: "direct-rescue-layer",
+      lite_quote_type: $("liteQuoteType")?.value || "retail",
+      fields: collectFields()
     };
+  }
 
-    // Prefer upsert. If Supabase does not have quote_number conflict support, fall back to PATCH then POST.
-    let res = await rest('/rest/v1/quotes?on_conflict=quote_number', {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify(payload)
-    });
+  function localRows(){
+    try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); }
+    catch { return []; }
+  }
 
-    if (!res.ok) {
-      const firstError = res.error?.message || res.error?.hint || JSON.stringify(res.error || {});
-      // fallback: see if it exists, then patch or insert
-      const lookup = await rest(`/rest/v1/quotes?select=id&quote_number=eq.${encodeURIComponent(quoteNumber)}&limit=1`, { method: 'GET' });
-      if (lookup.ok && Array.isArray(lookup.data) && lookup.data[0]?.id) {
-        res = await rest(`/rest/v1/quotes?id=eq.${encodeURIComponent(lookup.data[0].id)}`, {
-          method: 'PATCH',
-          headers: { Prefer: 'return=representation' },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        res = await rest('/rest/v1/quotes', {
-          method: 'POST',
-          headers: { Prefer: 'return=representation' },
-          body: JSON.stringify(payload)
-        });
+  function writeLocalRows(list){
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+  }
+
+  function saveLocalBackup(record){
+    const list = localRows();
+    const idx = list.findIndex(q => q.quoteNumber === record.quoteNumber);
+    if (idx >= 0) list[idx] = { ...list[idx], ...record };
+    else list.unshift(record);
+    writeLocalRows(list);
+  }
+
+  function quoteRecordFromForm(quoteNumber){
+    const data = buildQuoteData();
+    return {
+      quoteNumber,
+      invoiceNumber: getVal("invoiceNumber"),
+      quoteStatus: getVal("quoteStatus") || "pending",
+      customerName: getVal("customerName") || getVal("companyName"),
+      customerEmail: getVal("customerEmail"),
+      quoteTitle: getVal("quoteTitle"),
+      quoteTotal: quoteTotal(),
+      quoteData: data,
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  async function saveQuoteDirect(){
+    const saveBtn = $("saveQuoteBtn");
+    const oldText = saveBtn?.textContent || "Save / Update Quote";
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+    }
+
+    try {
+      const quoteNumber = await ensureQuoteNumber();
+      const record = quoteRecordFromForm(quoteNumber);
+      saveLocalBackup(record);
+
+      const user = await currentUser();
+      if (!user?.id) {
+        toast("Saved browser backup only — cloud login not found.", 5200);
+        await refreshSavedQuotesDirect();
+        return;
+      }
+
+      const payload = {
+        user_id: user.id,
+        quote_number: quoteNumber,
+        invoice_number: getVal("invoiceNumber") || null,
+        quote_status: getVal("quoteStatus") || "pending",
+        customer_name: getVal("customerName") || getVal("companyName") || null,
+        customer_email: getVal("customerEmail") || null,
+        quote_title: getVal("quoteTitle") || null,
+        quote_total: record.quoteTotal,
+        quote_data: record.quoteData,
+        updated_at: new Date().toISOString()
+      };
+
+      let res = await rest("/rest/v1/quotes?on_conflict=quote_number", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const lookup = await rest(`/rest/v1/quotes?select=id&quote_number=eq.${encodeURIComponent(quoteNumber)}&limit=1`, { method:"GET" });
+        if (lookup.ok && Array.isArray(lookup.data) && lookup.data[0]?.id) {
+          res = await rest(`/rest/v1/quotes?id=eq.${encodeURIComponent(lookup.data[0].id)}`, {
+            method: "PATCH",
+            headers: { Prefer: "return=representation" },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await rest("/rest/v1/quotes", {
+            method: "POST",
+            headers: { Prefer: "return=representation" },
+            body: JSON.stringify(payload)
+          });
+        }
       }
 
       if (!res.ok) {
-        const secondError = res.error?.message || res.error?.hint || JSON.stringify(res.error || {});
-        throw new Error(`${secondError || firstError || 'Supabase save failed'}`);
+        const msg = res.error?.message || res.error?.hint || JSON.stringify(res.error || {});
+        toast(`Cloud save failed: ${msg}`, 7000);
+        await refreshSavedQuotesDirect();
+        return;
+      }
+
+      toast(`${quoteNumber} saved to cloud.`);
+      await refreshSavedQuotesDirect();
+    } catch (error) {
+      console.error("Direct quote save failed:", error);
+      toast(`Save failed: ${error?.message || error}`, 7000);
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = oldText;
       }
     }
-
-    const localRecord = {
-      quoteNumber,
-      invoiceNumber: payload.invoice_number || "",
-      quoteStatus: payload.quote_status,
-      customerName: payload.customer_name || "",
-      customerEmail: payload.customer_email || "",
-      quoteTitle: payload.quote_title || "",
-      quoteTotal: payload.quote_total,
-      quoteData: data,
-      updatedAt: payload.updated_at
-    };
-    localBackupDirect(localRecord);
-
-    if (typeof window.quotePatchToast === "function") window.quotePatchToast(`${quoteNumber} saved to cloud.`);
-    else toast(`${quoteNumber} saved to cloud.`);
-
-    // Refresh saved quote dropdown using existing function if available.
-    setTimeout(() => {
-      const refreshBtn = $("loadQuoteBtn");
-      // existing lite layer refreshes after save in its own path; if not, reload page dropdown on next open.
-    }, 100);
-
-    return res.data;
   }
 
-  function bindDirectCloudSave(){
-    const save = $("saveQuoteBtn");
-    if (!save || save.dataset.directCloudSaveBound === "true") return;
-    save.dataset.directCloudSaveBound = "true";
-
-    save.onclick = async (event) => {
-      event?.preventDefault?.();
-      const oldText = save.textContent;
-      save.disabled = true;
-      save.textContent = "Saving...";
-      try {
-        await saveQuoteToCloudDirect();
-      } catch (error) {
-        console.error("Quote cloud save failed:", error);
-        toast(`Cloud save failed: ${error?.message || error}`, 6000);
-
-        // Keep a browser backup, but be clear that cloud failed.
-        try {
-          const quoteNumber = $("quoteNumber")?.value?.trim();
-          if (quoteNumber) {
-            const data = buildQuoteDataDirect();
-            localBackupDirect({
-              quoteNumber,
-              invoiceNumber: $("invoiceNumber")?.value?.trim() || "",
-              quoteStatus: $("quoteStatus")?.value || "pending",
-              customerName: $("customerName")?.value?.trim() || $("companyName")?.value?.trim() || "",
-              customerEmail: $("customerEmail")?.value?.trim() || "",
-              quoteTitle: $("quoteTitle")?.value?.trim() || "",
-              quoteTotal: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
-              quoteData: data,
-              updatedAt: new Date().toISOString()
-            });
-          }
-        } catch (_) {}
-      } finally {
-        save.disabled = false;
-        save.textContent = oldText || "Save / Update Quote";
-      }
-    };
+  function optionLabel(q, source){
+    const parts = [
+      q.quote_number || q.quoteNumber || "Quote",
+      q.quote_title || q.quoteTitle || "",
+      q.customer_name || q.customerName || "",
+      q.quote_status || q.quoteStatus || ""
+    ].filter(Boolean);
+    return `${parts.join(" • ")} — ${source === "cloud" ? "☁️" : "Browser"}`;
   }
 
-  function bindNonInterferingDiagnostics(){
-    // Do NOT stopPropagation here. These only report dead buttons if no handler responds.
-    ["generateQuoteBtn","loadQuoteBtn","deleteQuoteBtn","prepareCustomerEmailBtn","customerPdfBtn","printBtn"].forEach(id => {
-      const btn = $(id);
-      if (!btn || btn.dataset.quoteDiagBound === "true") return;
-      btn.dataset.quoteDiagBound = "true";
-      btn.addEventListener("click", () => {
-        setTimeout(() => {
-          // Just lightweight confirmation, no behavior takeover.
-          console.debug(`${id} clicked`);
-        }, 0);
-      }, false);
-    });
-  }
-
-  function updateCloudBadge(){
+  async function refreshSavedQuotesDirect(){
+    const select = $("savedQuotesSelect");
     const summary = $("historySummary") || $("savedInlineSummary");
-    if (!summary || summary.dataset.directCloudBadge === "true") return;
-    currentUserDirect().then(user => {
-      if (user?.id) {
-        summary.insertAdjacentHTML("afterbegin", `<span class="saved-source-pill">Cloud login detected</span> `);
-        summary.dataset.directCloudBadge = "true";
+    if (!select) return;
+
+    const local = localRows();
+    let cloud = [];
+    let cloudError = "";
+
+    const user = await currentUser();
+    if (user?.id) {
+      const res = await rest("/rest/v1/quotes?select=id,quote_number,invoice_number,quote_status,customer_name,customer_email,quote_title,quote_total,updated_at&order=updated_at.desc", { method:"GET" });
+      if (res.ok && Array.isArray(res.data)) cloud = res.data;
+      else cloudError = res.error?.message || res.error?.hint || JSON.stringify(res.error || {});
+    }
+
+    const current = select.value;
+    select.innerHTML = `<option value="">Select a saved quote</option>`;
+
+    cloud.forEach(q => {
+      const opt = document.createElement("option");
+      opt.value = `cloud:${q.quote_number}`;
+      opt.textContent = optionLabel(q, "cloud");
+      select.appendChild(opt);
+    });
+
+    local.forEach(q => {
+      if (cloud.some(c => c.quote_number === q.quoteNumber)) return;
+      const opt = document.createElement("option");
+      opt.value = `local:${q.quoteNumber}`;
+      opt.textContent = optionLabel(q, "local");
+      select.appendChild(opt);
+    });
+
+    if ([...select.options].some(o => o.value === current)) select.value = current;
+
+    if (summary) {
+      if (user?.id && !cloudError) {
+        summary.innerHTML = `<span class="saved-source-pill">Cloud active</span><div class="saved-cloud-status">${cloud.length} cloud quote${cloud.length === 1 ? "" : "s"} loaded. ${local.length} browser backup${local.length === 1 ? "" : "s"} available.</div>`;
+      } else if (user?.id && cloudError) {
+        summary.innerHTML = `<span class="saved-source-pill local">Cloud error</span><div class="saved-cloud-status">${esc(cloudError)}</div>`;
+      } else {
+        summary.innerHTML = `<span class="saved-source-pill local">Browser fallback</span><div class="saved-cloud-status">${local.length} browser backup${local.length === 1 ? "" : "s"} available. Log into Hub or Orders Admin for cloud sync.</div>`;
       }
-    }).catch(() => {});
+    }
   }
 
-  function initRepair(){
-    bindDirectCloudSave();
-    bindNonInterferingDiagnostics();
-    updateCloudBadge();
+  async function loadSelectedDirect(){
+    const select = $("savedQuotesSelect");
+    if (!select?.value) return toast("Choose a saved quote first.");
+
+    const [source, quoteNumber] = select.value.split(":");
+    try {
+      let data;
+      if (source === "cloud") {
+        const res = await rest(`/rest/v1/quotes?select=*&quote_number=eq.${encodeURIComponent(quoteNumber)}&limit=1`, { method:"GET" });
+        if (!res.ok || !Array.isArray(res.data) || !res.data[0]) throw new Error(res.error?.message || "Cloud quote not found.");
+        data = res.data[0].quote_data;
+      } else {
+        const local = localRows().find(q => q.quoteNumber === quoteNumber);
+        data = local?.quoteData || local?.quote_data;
+      }
+
+      if (!data?.fields) throw new Error("Saved quote data is missing fields.");
+      populateFields(data.fields);
+      toast(`Loaded ${quoteNumber}`);
+    } catch (error) {
+      console.error("Load selected failed:", error);
+      toast(`Load failed: ${error?.message || error}`, 7000);
+    }
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initRepair);
-  else initRepair();
+  async function deleteSelectedDirect(){
+    const select = $("savedQuotesSelect");
+    if (!select?.value) return toast("Choose a saved quote first.");
 
-  setTimeout(initRepair, 700);
-  setTimeout(initRepair, 1800);
+    const [source, quoteNumber] = select.value.split(":");
+    if (!confirm(`Delete saved quote ${quoteNumber}?`)) return;
 
-  window.saveQuoteToCloudDirect = saveQuoteToCloudDirect;
+    try {
+      if (source === "cloud") {
+        const res = await rest(`/rest/v1/quotes?quote_number=eq.${encodeURIComponent(quoteNumber)}`, { method:"DELETE" });
+        if (!res.ok) throw new Error(res.error?.message || JSON.stringify(res.error || {}));
+      }
+      writeLocalRows(localRows().filter(q => q.quoteNumber !== quoteNumber));
+      await refreshSavedQuotesDirect();
+      toast(`Deleted ${quoteNumber}`);
+    } catch (error) {
+      console.error("Delete selected failed:", error);
+      toast(`Delete failed: ${error?.message || error}`, 7000);
+    }
+  }
+
+  function loadDemoDirect(){
+    const n = String(Math.floor(Date.now() / 1000)).slice(-6);
+    const demo = {
+      liteQuoteType: "po",
+      customerName: "Demo Customer",
+      customerEmail: "customer@example.com",
+      quoteTitle: "Demo custom 3D printed parts",
+      qty: "25",
+      filamentCount: "1",
+      filament1Cost: "23",
+      filament1Used: "350",
+      machineHours: "6",
+      machineRate: "3.75",
+      designHours: "1",
+      designRate: "50",
+      postHours: ".5",
+      postRate: "35",
+      depositPercent: "0",
+      salesTax: "7.25",
+      taxPreset: "7.25",
+      quoteNumber: `Q-${n}`,
+      quoteDate: new Date().toISOString().slice(0,10),
+      quoteStatus: "pending",
+      customerNotes: "Demo quote for testing cloud save, PDF, and customer email workflow.",
+      assumptions: "Demo pricing is for testing only.",
+      turnaround: "To be confirmed at approval",
+      paymentTerms: "customer_terms",
+      professionalMode: "on"
+    };
+
+    Object.entries(demo).forEach(([id, value]) => setVal(id, value));
+    if (typeof window.render === "function") window.render();
+    else calculateFallback();
+    toast("Demo loaded.");
+  }
+
+  function checkMissingDirect(){
+    const required = ["customerName","customerEmail","quoteTitle","qty"];
+    const missing = required.filter(id => !getVal(id));
+    required.forEach(id => $(id)?.classList.toggle("field-missing", missing.includes(id)));
+    if (typeof window.render === "function") window.render();
+    else calculateFallback();
+    toast(missing.length ? `Missing: ${missing.join(", ")}` : "Quote check complete.");
+  }
+
+  function buildSimplePdfHtml(){
+    if (typeof window.render === "function") window.render();
+    else calculateFallback();
+
+    const total = $("sumQuote")?.textContent || $("outFinal")?.textContent || "$0.00";
+    return `
+      <div style="font-family:Arial,sans-serif;color:#2f2336;padding:.35in;">
+        <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);margin:-.35in -.35in .25in;"></div>
+        <div style="display:flex;justify-content:space-between;gap:24px;border-bottom:1px solid #f0c8df;padding-bottom:18px;margin-bottom:18px;">
+          <div>
+            <div style="font-family:Georgia,serif;font-size:34px;font-weight:800;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
+            <div style="color:#826889;font-size:13px;margin-top:6px;">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:30px;font-weight:900;letter-spacing:.12em;color:#241b2b;">QUOTE</div>
+            <div style="margin-top:8px;color:#7c4a82;font-weight:900;">${esc(getVal("quoteNumber") || "Quote")}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="border:1px solid #f0c8df;border-radius:14px;padding:12px;background:#fffafd;"><strong>Customer</strong><br>${esc(getVal("customerName") || "—")}<br>${esc(getVal("customerEmail") || "")}</div>
+          <div style="border:1px solid #f0c8df;border-radius:14px;padding:12px;background:#fffafd;"><strong>Project</strong><br>${esc(getVal("quoteTitle") || "—")}<br>Qty: ${esc(getVal("qty") || "1")}</div>
+        </div>
+        <div style="border:1px solid #f0c8df;border-radius:16px;padding:16px;background:#fffafd;margin-bottom:16px;">
+          <div style="font-size:14px;color:#826889;font-weight:800;text-transform:uppercase;letter-spacing:.08em;">Estimated Total</div>
+          <div style="font-size:32px;font-weight:900;color:#241b2b;margin-top:6px;">${esc(total)}</div>
+        </div>
+        <div style="border:1px solid #f0c8df;border-radius:14px;padding:12px;margin-bottom:12px;">
+          <strong>Notes</strong><br>${esc(getVal("customerNotes") || "Quote is based on the information provided.").replace(/\n/g,"<br>")}
+        </div>
+        <div style="border:1px solid #f0c8df;border-radius:14px;padding:12px;">
+          <strong>Assumptions</strong><br>${esc(getVal("assumptions") || "Final details may be confirmed before production.").replace(/\n/g,"<br>")}
+        </div>
+      </div>
+    `;
+  }
+
+  function pdfDirect(){
+    const win = window.open("", "_blank");
+    if (!win) return toast("Pop-up blocked. Allow pop-ups for this site and try again.", 7000);
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(getVal("quoteNumber") || "Quote")}</title><style>@page{size:letter portrait;margin:.25in}body{margin:0;background:#fff}</style></head><body>${buildSimplePdfHtml()}</body></html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); }, 300);
+  }
+
+  async function prepareEmailDirect(){
+    const quoteNumber = await ensureQuoteNumber();
+    await saveQuoteDirect();
+    const customerEmail = getVal("customerEmail");
+    const project = getVal("quoteTitle") || "your custom 3D print";
+    const total = $("sumQuote")?.textContent || $("outFinal")?.textContent || "See quote";
+    const body = `Hi ${getVal("customerName") || ""},
+
+Thanks for reaching out! Your OliPoly project quote is ready to review.
+
+Quote: ${quoteNumber}
+Project: ${project}
+Estimated total: ${total}
+
+Please reply with any questions or approval to move forward.
+
+Thank you!
+OliPoly 3D`;
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(customerEmail)}&su=${encodeURIComponent(`OliPoly 3D Quote ${quoteNumber}`)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    toast("Opening Gmail draft.");
+  }
+
+  function ownButton(id, handler){
+    const btn = $(id);
+    if (!btn) return;
+    btn.onclick = async (event) => {
+      event?.preventDefault?.();
+      try { await handler(event); }
+      catch (error) {
+        console.error(`${id} failed:`, error);
+        toast(`${btn.textContent.trim() || id} failed: ${error?.message || error}`, 7000);
+      }
+    };
+  }
+
+  function bindDirectButtons(){
+    ownButton("demoBtn", loadDemoDirect);
+    ownButton("saveQuoteBtn", saveQuoteDirect);
+    ownButton("loadQuoteBtn", loadSelectedDirect);
+    ownButton("deleteQuoteBtn", deleteSelectedDirect);
+    ownButton("generateQuoteBtn", checkMissingDirect);
+    ownButton("customerPdfBtn", pdfDirect);
+    ownButton("prepareCustomerEmailBtn", prepareEmailDirect);
+
+    // Keep internal access for console testing.
+    window.olipolyQuoteDirect = {
+      saveQuoteDirect,
+      refreshSavedQuotesDirect,
+      loadDemoDirect,
+      loadSelectedDirect,
+      deleteSelectedDirect
+    };
+  }
+
+  function initDirectRescue(){
+    bindDirectButtons();
+    refreshSavedQuotesDirect();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDirectRescue);
+  else initDirectRescue();
+
+  // Re-own the buttons after older scripts try to attach/overwrite handlers.
+  setTimeout(initDirectRescue, 300);
+  setTimeout(initDirectRescue, 1000);
+  setTimeout(initDirectRescue, 2500);
 })();
