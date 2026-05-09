@@ -374,29 +374,24 @@
       line-height:1.5;
     }
 
-@media print{
+
+    
+  
+    @media print{
       body *{visibility:hidden!important}
-      body.print-invoice #invoicePrintArea,
-      body.print-invoice #invoicePrintArea *,
-      body.print-packing #packingPrintArea,
-      body.print-packing #packingPrintArea *{
-        visibility:visible!important;
-      }
-      body.print-invoice #invoicePrintArea,
-      body.print-packing #packingPrintArea{
+      .active-print-area,
+      .active-print-area *{visibility:visible!important}
+      .active-print-area{
         display:block!important;
-        position:absolute;
-        left:0;
-        top:0;
-        width:100%;
-      }
-      body.print-packing #invoicePrintArea,
-      body.print-invoice #packingPrintArea{
-        display:none!important;
+        position:absolute!important;
+        left:0!important;
+        top:0!important;
+        width:100%!important;
+        background:#fff!important;
       }
       @page{size:letter portrait;margin:.25in}
     }
-    
+
   </style>
 </head>
 <body>
@@ -1332,31 +1327,33 @@ const payload = snapshotForm();
       ].filter(Boolean).join('<br>');
 
       $('packQty').textContent = d.quantity || 1;
-
-      $('packNotes').innerHTML = d.shipping_or_pickup_note
-        ? multilineHtml(d.shipping_or_pickup_note)
-        : 'No additional notes provided.';
+      $('packNotes').innerHTML = d.shipping_or_pickup_note ? multilineHtml(d.shipping_or_pickup_note) : 'No additional notes provided.';
     }
 
-    function generatePackingSlipPdf(){
-      fillPackingSlip();
-      const area = $('packingPrintArea');
+    function printAreaById(areaId, fillFn){
+      if (typeof fillFn === 'function') fillFn();
+
+      const area = $(areaId);
       if (!area) {
-        setMsg($('formMessage'), 'Packing slip print area was not found.', true);
+        setMsg($('formMessage'), `${areaId} was not found.`, true);
         return;
       }
 
-      document.body.classList.remove('print-invoice');
-      document.body.classList.add('print-packing');
+      document.querySelectorAll('.active-print-area').forEach(el => el.classList.remove('active-print-area'));
+      area.classList.add('active-print-area');
       area.style.display = 'block';
 
       setTimeout(() => {
         window.print();
         setTimeout(() => {
+          area.classList.remove('active-print-area');
           area.style.display = 'none';
-          document.body.classList.remove('print-packing');
-        }, 650);
-      }, 80);
+        }, 700);
+      }, 100);
+    }
+
+    function generatePackingSlipPdf(){
+      printAreaById('packingPrintArea', fillPackingSlip);
     }
 
     function invoiceTermsLabel(value){return ({customer_terms:'Customer Standard Terms / PO Terms',net_15:'Net 15',net_30:'Net 30',net_45:'Net 45',due_on_receipt:'Due on Receipt'})[value] || value || 'Customer Standard Terms / PO Terms';}
