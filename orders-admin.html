@@ -514,7 +514,8 @@
         <div class="btn-row" style="margin-top:14px;">
           <button class="btn" id="saveBtn" type="button">Save Order</button>
           <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
-          <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Send Completion Email</button>
+          <button class="btn-ghost" id="sendCompleteEmailBtn" type="button">Prepare Completion Email</button>
+          <button class="btn-ghost hidden" id="unmarkCompleteEmailBtn" type="button">Unmark Completion Sent</button>
           <button class="btn-ghost" id="pushFinanceBtn" type="button">Push to Finance</button>
           <button class="btn-ghost" id="generatePackingSlipBtn" type="button">Packing Slip PDF</button>
           <button class="btn-ghost" id="printShippingLabelBtn" type="button">Print Avery 5168 Label</button>
@@ -929,16 +930,23 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
     function updateCompletionEmailButton(order = null) {
       const btn = $('sendCompleteEmailBtn');
+      const unmarkBtn = $('unmarkCompleteEmailBtn');
       if (!btn) return;
 
       const sent = !!order?.completion_email_sent;
-      btn.textContent = sent ? 'Completion Email Sent ✅' : 'Send Completion Email';
-      btn.disabled = sent;
-      btn.style.opacity = sent ? '0.68' : '';
-      btn.style.cursor = sent ? 'not-allowed' : '';
+      btn.textContent = sent ? 'Preview Completion Email' : 'Prepare Completion Email';
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
       btn.title = sent && order?.completion_email_sent_at
-        ? `Completion email marked sent ${new Date(order.completion_email_sent_at).toLocaleString()}`
-        : '';
+        ? `Previously marked sent ${new Date(order.completion_email_sent_at).toLocaleString()}`
+        : 'Preview the branded completion email before opening Gmail.';
+
+      if (unmarkBtn) {
+        unmarkBtn.classList.toggle('hidden', !sent);
+        unmarkBtn.disabled = !sent;
+        unmarkBtn.title = sent ? 'Clear the completion-email-sent flag if it was marked by mistake.' : '';
+      }
     }
 
 
@@ -1743,7 +1751,18 @@ OliPoly 3D`;
 </div>`;
     }
 
-    async function openGmailCompletionEmail() {
+    let lastCompletionEmail = { html: '', plain: '', subject: '', to: '', orderNumber: '' };
+
+    function writeCompletionEmailPreview(html) {
+      const frame = $('completionEmailPreviewFrame');
+      if (!frame) return;
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      doc.open();
+      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);
+      doc.close();
+    }
+
+    function openCompletionEmailModal() {
       const orderNumber = $('orderNumber').value.trim();
       const email = $('customerEmail').value.trim();
       const orderTitle = $('orderTitle').value.trim();
@@ -1757,23 +1776,92 @@ OliPoly 3D`;
 
       const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
       const subject = `Your order is ready – OliPoly 3D (${orderNumber})`;
-      const body = buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
-      const htmlEmail = buildCompletionHtmlEmail(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
+      const plain = buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
+      const html = buildCompletionHtmlEmail(esc(orderNumber), esc(orderTitle), trackLink, paymentStatus, fulfillment);
 
+      lastCompletionEmail = { html, plain, subject, to: email, orderNumber };
+      writeCompletionEmailPreview(html);
+
+      const modal = $('completionEmailModal');
+      const msg = $('completionEmailModalMessage');
+      if (msg) msg.innerHTML = 'Tip: Use Copy Rich Email, open the Gmail draft, then paste the branded version into Gmail. Click Mark Sent only after you actually send it.';
+      modal?.classList.remove('hidden');
+      modal?.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeCompletionEmailModal() {
+      $('completionEmailModal')?.classList.add('hidden');
+      $('completionEmailModal')?.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    async function copyCompletionRichEmail() {
+      const msg = $('completionEmailModalMessage');
       try {
-        await navigator.clipboard.writeText(htmlEmail);
-        alert('Styled completion email copied to your clipboard. Gmail will open with a plain prefilled draft for review. After Gmail opens, this order will be marked as completion email sent.');
-      } catch (_) {
-        alert('Gmail will open with a plain prefilled draft. Styled copy was not available from this browser. After Gmail opens, this order will be marked as completion email sent.');
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': new Blob([lastCompletionEmail.html], { type: 'text/html' }),
+              'text/plain': new Blob([lastCompletionEmail.plain], { type: 'text/plain' })
+            })
+          ]);
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(lastCompletionEmail.html);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = lastCompletionEmail.plain;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        if (msg) msg.innerHTML = 'Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';
+      } catch (err) {
+        console.error('Completion email copy failed:', err);
+        if (msg) msg.innerHTML = 'Copy did not work in this browser. Use Download HTML, or open Gmail and copy from the preview manually.';
       }
+    }
+
+    function openCompletionGmailDraft() {
+      const email = lastCompletionEmail.html ? lastCompletionEmail : (() => {
+        openCompletionEmailModal();
+        return lastCompletionEmail;
+      })();
 
       const gmailUrl =
-        `https://mail.google.com/mail/?view=cm&fs=1` +
-        `&to=${encodeURIComponent(email)}` +
-        `&su=${encodeURIComponent(subject)}` +
-        `&body=${encodeURIComponent(body)}`;
+        'https://mail.google.com/mail/?view=cm&fs=1' +
+        `&to=${encodeURIComponent(email.to || '')}` +
+        `&su=${encodeURIComponent(email.subject || 'Your order is ready – OliPoly 3D')}` +
+        `&body=${encodeURIComponent(email.plain || '')}`;
 
       window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    function downloadCompletionEmailHtml() {
+      const email = lastCompletionEmail.html ? lastCompletionEmail : (() => {
+        openCompletionEmailModal();
+        return lastCompletionEmail;
+      })();
+
+      const blob = new Blob([email.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const orderNumber = (email.orderNumber || $('orderNumber')?.value || 'completion-email').replace(/[^a-z0-9_-]/gi, '-');
+      a.href = url;
+      a.download = `${orderNumber}-completion-email.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 800);
+    }
+
+    async function markCompletionEmailSent() {
+      const orderNumber = lastCompletionEmail.orderNumber || $('orderNumber').value.trim();
+      if (!orderNumber) return setMsg($('formMessage'), 'Order number required before marking completion email sent.', true);
 
       try {
         const patchPayload = {
@@ -1791,18 +1879,50 @@ OliPoly 3D`;
           body: JSON.stringify(patchPayload)
         });
 
-        if (markRes.error) {
-          throw new Error(markRes.error.message || JSON.stringify(markRes.error));
-        }
+        if (markRes.error) throw new Error(markRes.error.message || JSON.stringify(markRes.error));
 
         setMsg($('formMessage'), 'Completion email marked sent.');
+        closeCompletionEmailModal();
         await fetchOrders();
         const saved = orders.find(o => o.order_number === orderNumber);
         if (saved) loadIntoForm(saved);
       } catch (err) {
-        alert(`Gmail opened, but the sent status could not be saved:
+        alert(`The sent status could not be saved:\n\n${err.message || err}`);
+      }
+    }
 
-${err.message || err}`);
+    async function unmarkCompletionEmailSent() {
+      const orderNumber = $('orderNumber').value.trim();
+      if (!orderNumber) return setMsg($('formMessage'), 'Order number required before unmarking completion email.', true);
+
+      const ok = confirm(`Unmark completion email as sent for ${orderNumber}?`);
+      if (!ok) return;
+
+      try {
+        const patchPayload = {
+          completion_email_sent: false,
+          completion_email_sent_at: null
+        };
+
+        const targetPath = activeId
+          ? `/rest/v1/orders?id=eq.${activeId}`
+          : `/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;
+
+        const res = await api(targetPath, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(patchPayload)
+        });
+
+        if (res.error) throw new Error(res.error.message || JSON.stringify(res.error));
+
+        setMsg($('formMessage'), 'Completion email unmarked.');
+        await fetchOrders();
+        const saved = orders.find(o => o.order_number === orderNumber);
+        if (saved) loadIntoForm(saved);
+        else updateCompletionEmailButton(null);
+      } catch (err) {
+        alert(`Could not unmark completion email:\n\n${err.message || err}`);
       }
     }
 
@@ -1813,7 +1933,8 @@ if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
 if ($('newBtn')) $('newBtn').onclick = resetForm;
 if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
 if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
-if ($('sendCompleteEmailBtn')) $('sendCompleteEmailBtn').onclick = openGmailCompletionEmail;
+if ($('sendCompleteEmailBtn')) $('sendCompleteEmailBtn').onclick = openCompletionEmailModal;
+if ($('unmarkCompleteEmailBtn')) $('unmarkCompleteEmailBtn').onclick = unmarkCompletionEmailSent;
 
 if ($('generateInvoicePdfBtn')) $('generateInvoicePdfBtn').onclick = generateInvoicePdf;
 if ($('prepareInvoiceEmailBtn')) $('prepareInvoiceEmailBtn').onclick = openInvoiceEmailModal;
@@ -1825,6 +1946,30 @@ if ($('openInvoiceGmailBtn')) $('openInvoiceGmailBtn').onclick = openInvoiceGmai
 if ($('downloadInvoiceEmailHtmlBtn')) $('downloadInvoiceEmailHtmlBtn').onclick = downloadInvoiceEmailHtml;
 document.addEventListener('click', e => { if(e.target?.id === 'invoiceEmailCloseBtn' || e.target?.id === 'invoiceEmailBackdrop') closeInvoiceEmailModal(); }, true);
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeInvoiceEmailModal(); });
+document.addEventListener('click', e => {
+  if (e.target?.id === 'completionEmailCloseBtn' || e.target?.id === 'completionEmailBackdrop') closeCompletionEmailModal();
+}, true);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeCompletionEmailModal(); });
+document.addEventListener('click', function(event){
+  const id = event.target?.id;
+  if (id === 'copyCompletionEmailRichBtn') {
+    event.preventDefault();
+    copyCompletionRichEmail();
+  }
+  if (id === 'openCompletionGmailBtn') {
+    event.preventDefault();
+    openCompletionGmailDraft();
+  }
+  if (id === 'downloadCompletionEmailHtmlBtn') {
+    event.preventDefault();
+    downloadCompletionEmailHtml();
+  }
+  if (id === 'markCompletionSentBtn') {
+    event.preventDefault();
+    markCompletionEmailSent();
+  }
+}, true);
+
 
     if ($('openStripeBtn')) {
   $('openStripeBtn').onclick = () => {
@@ -2445,6 +2590,28 @@ if ($('openVenmoBtn')) {
       <div class="email-preview-actions"><button class="btn" id="copyInvoiceEmailRichBtn" type="button">Copy Rich Email</button><button class="btn-ghost" id="openInvoiceGmailBtn" type="button">Open Gmail Draft</button><button class="btn-ghost" id="downloadInvoiceEmailHtmlBtn" type="button">Download HTML</button></div>
       <div class="email-preview-note" id="invoiceEmailModalMessage">Tip: Generate/save the invoice PDF first, then attach it to the Gmail draft. Use Copy Rich Email to paste the branded version into Gmail.</div>
       <div class="email-preview-frame"><iframe id="invoiceEmailPreviewFrame" title="Invoice email preview"></iframe></div>
+    </div>
+  </div>
+
+  <div class="email-preview-modal hidden" id="completionEmailModal" aria-hidden="true">
+    <div class="email-preview-backdrop" id="completionEmailBackdrop"></div>
+    <div class="email-preview-dialog" role="dialog" aria-modal="true">
+      <div class="email-preview-head">
+        <div>
+          <span class="email-preview-kicker">Completion Email Preview</span>
+          <h3>OliPoly 3D completion email</h3>
+          <p>Review the branded completion email, copy the rich version, then open Gmail. Mark sent only after sending.</p>
+        </div>
+        <button class="email-preview-close" id="completionEmailCloseBtn" type="button">×</button>
+      </div>
+      <div class="email-preview-actions">
+        <button class="btn" id="copyCompletionEmailRichBtn" type="button">Copy Rich Email</button>
+        <button class="btn-ghost" id="openCompletionGmailBtn" type="button">Open Gmail Draft</button>
+        <button class="btn-ghost" id="downloadCompletionEmailHtmlBtn" type="button">Download HTML</button>
+        <button class="btn-ghost" id="markCompletionSentBtn" type="button">Mark Sent</button>
+      </div>
+      <div class="email-preview-note" id="completionEmailModalMessage">Tip: Use Copy Rich Email, open Gmail, then paste the branded version into the draft.</div>
+      <div class="email-preview-frame"><iframe id="completionEmailPreviewFrame" title="Completion email preview"></iframe></div>
     </div>
   </div>
 
