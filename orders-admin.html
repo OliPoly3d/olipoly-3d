@@ -374,7 +374,28 @@
       line-height:1.5;
     }
 
-@media print{body *{visibility:hidden!important}#invoicePrintArea,#invoicePrintArea *{visibility:visible!important}#invoicePrintArea{display:block!important;position:absolute;left:0;top:0;width:100%}@page{size:letter portrait;margin:.25in}}
+@media print{
+      body *{visibility:hidden!important}
+      body.print-invoice #invoicePrintArea,
+      body.print-invoice #invoicePrintArea *,
+      body.print-packing #packingPrintArea,
+      body.print-packing #packingPrintArea *{
+        visibility:visible!important;
+      }
+      body.print-invoice #invoicePrintArea,
+      body.print-packing #packingPrintArea{
+        display:block!important;
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+      }
+      body.print-packing #invoicePrintArea,
+      body.print-invoice #packingPrintArea{
+        display:none!important;
+      }
+      @page{size:letter portrait;margin:.25in}
+    }
     
   </style>
 </head>
@@ -516,6 +537,36 @@
 
     <p class="footer">This page saves private order data to <code>orders</code> and customer-safe tracking data to <code>order_tracking_public</code>.</p>
   </div>
+
+
+  <div class="packing-print-area" id="packingPrintArea">
+    <div class="packing-sheet" id="packingSheet">
+      <div class="packing-topbar"></div>
+      <div class="packing-header">
+        <div>
+          <div class="packing-brand">Oli<span>Poly</span> 3D</div>
+          <div style="margin-top:6px;color:#826889;font-size:12px;">Custom 3D Printing • Creative Builds • Prototypes</div>
+        </div>
+        <div><div class="packing-title">PACKING SLIP</div></div>
+      </div>
+      <div class="packing-grid">
+        <div class="packing-card"><small>Order</small><strong id="packOrderNumber">—</strong></div>
+        <div class="packing-card"><small>PO Number</small><strong id="packPoNumber">—</strong></div>
+        <div class="packing-card"><small>Ship Date</small><strong id="packShipDate">—</strong></div>
+        <div class="packing-card"><small>Tracking</small><strong id="packTracking">—</strong></div>
+      </div>
+      <div class="packing-addresses">
+        <div class="packing-panel"><div class="packing-chip">Ship To</div><div id="packShipTo">—</div></div>
+        <div class="packing-panel"><div class="packing-chip">Fulfillment Notes</div><div id="packFulfillment">—</div></div>
+      </div>
+      <table class="packing-table">
+        <thead><tr><th>Description</th><th style="width:100px;text-align:center;">Qty</th></tr></thead>
+        <tbody><tr><td id="packDescription">—</td><td id="packQty" style="text-align:center;">1</td></tr></tbody>
+      </table>
+      <div class="packing-footer"><strong>Receiving / Packaging Notes</strong><br><div id="packNotes">No additional notes provided.</div></div>
+    </div>
+  </div>
+
 
   <script>
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
@@ -1160,7 +1211,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       orders = [];
       activeId = null;
       localStorage.removeItem('sb_token');
-      resetForm();
+      $('generatePackingSlipBtn')?.addEventListener('click', generatePackingSlipPdf);
+    resetForm();
       renderList();
       updateAuthVisibility();
       setMsg($('authMessage'),'Logged out');
@@ -1276,7 +1328,7 @@ const payload = snapshotForm();
       $('packDescription').innerHTML = [
         d.order_title ? `<strong>${esc(d.order_title)}</strong>` : 'Custom 3D printed items',
         d.po_number ? `PO: ${esc(d.po_number)}` : '',
-        d.order_number ? `OP: ${esc(d.order_number)}` : ''
+        d.order_number ? `Order: ${esc(d.order_number)}` : ''
       ].filter(Boolean).join('<br>');
 
       $('packQty').textContent = d.quantity || 1;
@@ -1289,12 +1341,23 @@ const payload = snapshotForm();
     function generatePackingSlipPdf(){
       fillPackingSlip();
       const area = $('packingPrintArea');
-      if (!area) return;
-      area.style.display = 'block';
-      window.print();
-      setTimeout(() => area.style.display = 'none', 500);
-    }
+      if (!area) {
+        setMsg($('formMessage'), 'Packing slip print area was not found.', true);
+        return;
+      }
 
+      document.body.classList.remove('print-invoice');
+      document.body.classList.add('print-packing');
+      area.style.display = 'block';
+
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          area.style.display = 'none';
+          document.body.classList.remove('print-packing');
+        }, 650);
+      }, 80);
+    }
 
     function invoiceTermsLabel(value){return ({customer_terms:'Customer Standard Terms / PO Terms',net_15:'Net 15',net_30:'Net 30',net_45:'Net 45',due_on_receipt:'Due on Receipt'})[value] || value || 'Customer Standard Terms / PO Terms';}
     function defaultInvoiceNumber(orderNumber){const m=String(orderNumber||'').match(/OP-(\d+)/i);return m?`INV-${m[1]}`:`INV-${String(orderNumber||'').replace(/^OP-/i,'')}`;}
