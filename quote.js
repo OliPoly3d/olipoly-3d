@@ -443,6 +443,13 @@
     showField("companyName", cfg.showBusinessFields);
     showField("contactName", cfg.showBusinessFields);
     showField("poNumber", cfg.showPo);
+    showField("customerPartNumber", cfg.showBusinessFields || cfg.showPo);
+    showField("olipolyPartNumber", cfg.showBusinessFields || cfg.showPo);
+    showField("partRevision", cfg.showBusinessFields || cfg.showPo);
+    showField("shippingContactName", cfg.showBusinessFields || cfg.showPo);
+    showField("shippingCompany", cfg.showBusinessFields || cfg.showPo);
+    showField("shippingAddress", cfg.showBusinessFields || cfg.showPo);
+    showField("billingAddress", cfg.showBusinessFields || cfg.showPo);
 
     if (allowAutofill) {
       setAutoText("assumptions", cfg.assumptions);
@@ -581,7 +588,7 @@
 
   async function fetchCloudQuotes() {
     await currentUser(); // returns null if not logged in; RLS/api will also protect
-    const rows = await api("/rest/v1/quotes?select=id,quote_number,invoice_number,quote_status,customer_name,customer_email,quote_title,quote_total,updated_at&order=updated_at.desc", {
+    const rows = await api("/rest/v1/quotes?select=id,quote_number,invoice_number,quote_status,customer_name,customer_email,quote_title,quote_total,po_number,customer_part_number,po_part_number,olipoly_part_number,part_revision,converted_order_number,updated_at&order=updated_at.desc", {
       method: "GET"
     });
     return Array.isArray(rows) ? rows : [];
@@ -616,6 +623,15 @@
       customer_email: $("customerEmail")?.value?.trim() || null,
       quote_title: $("quoteTitle")?.value?.trim() || null,
       quote_total: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
+      po_number: $("poNumber")?.value?.trim() || null,
+      customer_part_number: $("customerPartNumber")?.value?.trim() || null,
+      po_part_number: $("customerPartNumber")?.value?.trim() || null,
+      olipoly_part_number: $("olipolyPartNumber")?.value?.trim() || null,
+      part_revision: $("partRevision")?.value?.trim() || null,
+      shipping_contact_name: $("shippingContactName")?.value?.trim() || $("contactName")?.value?.trim() || null,
+      shipping_company: $("shippingCompany")?.value?.trim() || $("companyName")?.value?.trim() || null,
+      shipping_address: $("shippingAddress")?.value?.trim() || null,
+      billing_address: $("billingAddress")?.value?.trim() || null,
       quote_data: data,
       updated_at: new Date().toISOString()
     };
@@ -3824,15 +3840,18 @@ https://olipoly3d.com`;
       order_total: total,
       deposit_amount: deposit,
       balance_amount: balance,
-      status: deposit > 0 ? "awaiting_deposit" : "awaiting_approval",
+      status: deposit > 0 ? "awaiting_deposit" : "in_design",
       payment_status: deposit > 0 ? "deposit_due" : "unpaid",
-      fulfillment: "pickup",
+      fulfillment: val("shippingAddress") ? "shipping" : "pickup",
+      source_quote_number: quoteNumber() || null,
+      created_from_quote: true,
+      accepted_date: new Date().toISOString(),
       po_number: val("poNumber") || null,
       po_part_number: val("customerPartNumber") || null,
       olipoly_part_number: val("olipolyPartNumber") || null,
       part_revision: val("partRevision") || null,
-      shipping_contact_name: contact || null,
-      shipping_company: company || null,
+      shipping_contact_name: val("shippingContactName") || contact || null,
+      shipping_company: val("shippingCompany") || company || null,
       shipping_address: val("shippingAddress") || null,
       billing_address: val("billingAddress") || null,
       invoice_number: val("invoiceNumber") || null,
@@ -3877,8 +3896,11 @@ https://olipoly3d.com`;
       method: "PATCH",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        quote_status: "accepted",
+        quote_status: "converted_to_order",
+        customer_response: "accepted",
+        converted_to_order: true,
         converted_order_number: orderNumber,
+        accepted_date: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
     });
@@ -3912,7 +3934,13 @@ https://olipoly3d.com`;
       if (statusEl) statusEl.value = "accepted";
       toast(`Created ${payload.order_number} in Orders Admin.`);
 
-      const openOrders = confirm(`${payload.order_number} was created/updated in Orders Admin. Open Orders Admin now?`);
+      const openOrders = confirm(`Your project has officially entered the OliPoly production workflow.
+
+Order Number: ${payload.order_number}
+
+PO, part number, revision, shipping, and quote references were preserved for production and future reorders.
+
+Open Orders Admin now?`);
       if (openOrders) window.open("orders-admin.html", "_blank", "noopener,noreferrer");
     } catch (err) {
       alert(`Could not create order:\n\n${err.message || err}`);

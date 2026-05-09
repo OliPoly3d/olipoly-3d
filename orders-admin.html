@@ -21,6 +21,8 @@
     .brand{display:flex;align-items:center;gap:12px}.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(126,123,255,.28);font-size:20px}
     .brand h1,.brand p,.hero h2,.hero p,.card h3,.sub,.summary h3,.summary p{margin:0}.brand h1{font-size:clamp(1rem,2vw,1.18rem)}.brand p,.sub,.hero p,.muted{color:var(--muted)}
     .btn-row{display:flex;flex-wrap:wrap;gap:10px}.btn,.btn-ghost,.btn-danger{border:none;border-radius:999px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.btn-ghost{color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--line)}.btn-danger{color:#fff;background:linear-gradient(135deg,#f45f85,#ffa46a)}
+
+    .catalog-note{margin-top:10px;padding:12px 14px;border-radius:18px;background:rgba(46,230,196,.055);border:1px solid rgba(46,230,196,.16);color:#cffff0;line-height:1.5;font-size:.9rem}
     .action-groups{display:grid;gap:14px;margin-top:16px}.action-group{padding:14px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid rgba(126,144,255,.14)}.action-group h4{margin:0 0 10px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.action-group .btn-row{margin:0}.action-group.primary-actions{border-color:rgba(46,230,196,.2);background:rgba(46,230,196,.045)}.action-group.communication-actions{border-color:rgba(126,123,255,.22);background:rgba(126,123,255,.05)}.action-group.document-actions{border-color:rgba(255,201,100,.18);background:rgba(255,201,100,.045)}.action-group.business-actions{border-color:rgba(110,240,178,.18);background:rgba(110,240,178,.04)}
     .hero,.grid,.summary-grid,.form-grid,.filters,.order-grid,.info-grid{display:grid;gap:18px}.hero{grid-template-columns:1.1fr .9fr;margin-bottom:22px}.hero>.card,.summary,.card{padding:22px;border-radius:26px}.hero h2{font-size:clamp(1.8rem,4vw,2.8rem);margin-bottom:10px;line-height:1.04}.hero p,.sub{line-height:1.65}.sub{margin-top:6px;margin-bottom:16px}
     .summary-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:22px}.summary span,.summary strong,.summary small{display:block}.summary span{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}.summary strong{font-size:clamp(1.12rem,2.7vw,1.8rem)}.summary small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
@@ -500,6 +502,15 @@
           <div><label for="partRevision">Revision</label><input id="partRevision" placeholder="Rev A" /></div>
           <div><label for="shippingContactName">Shipping Contact</label><input id="shippingContactName" placeholder="Receiving contact" /></div>
           <div><label for="shippingCompany">Shipping Company</label><input id="shippingCompany" placeholder="Receiving company" /></div>
+          <div><label for="catalogMaterial">Catalog Material</label><input id="catalogMaterial" placeholder="PETG, PLA, ASA, etc." /></div>
+          <div><label for="catalogColor">Catalog Color</label><input id="catalogColor" placeholder="Black, white, custom color" /></div>
+          <div><label for="catalogPrinterProfile">Printer / Profile</label><input id="catalogPrinterProfile" placeholder="P1S/P2S profile, nozzle, filament profile" /></div>
+          <div><label for="catalogLayerHeight">Layer Height</label><input id="catalogLayerHeight" placeholder="0.20 mm" /></div>
+          <div><label for="catalogNozzleSize">Nozzle Size</label><input id="catalogNozzleSize" placeholder="0.4 mm" /></div>
+          <div><label for="catalogEstimatedPrintTime">Est. Print Time</label><input id="catalogEstimatedPrintTime" placeholder="Example: 4h 51m per plate" /></div>
+          <div><label for="catalogEstimatedPiecePrice">Est. Piece Price</label><input id="catalogEstimatedPiecePrice" type="number" min="0" step="0.01" placeholder="0.81" /></div>
+          <div class="full"><label for="catalogProductionNotes">Production Notes</label><textarea id="catalogProductionNotes" placeholder="Orientation, supports, flow tweaks, quality notes, print settings, repeat-order notes"></textarea></div>
+          <div class="full"><label for="catalogPostProcessingNotes">Post-Processing / Packing Notes</label><textarea id="catalogPostProcessingNotes" placeholder="Cleanup, sanding, inserts, packaging, receiving notes"></textarea></div>
           <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="INV-000184" /></div>
           <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
           <div><label for="invoiceDueDate">Invoice Due Date</label><input id="invoiceDueDate" type="date" /></div>
@@ -548,7 +559,9 @@
             <h4>Business / Finance</h4>
             <div class="btn-row">
               <button class="btn-ghost" id="pushFinanceBtn" type="button">Push to Finance</button>
+              <button class="btn-ghost" id="saveCatalogPartBtn" type="button">Save as Catalog Part</button>
             </div>
+            <div class="catalog-note">Catalog parts are internal production memory for repeat orders. They save OliPoly Part #, customer part #, revision, material/profile notes, last order, and pricing reference.</div>
           </div>
         </div>
         <div class="message" id="formMessage"></div>
@@ -836,6 +849,15 @@ olipoly_part_number: $('olipolyPartNumber')?.value.trim() || null,
 part_revision: $('partRevision')?.value.trim() || null,
 shipping_contact_name: $('shippingContactName')?.value.trim() || null,
 shipping_company: $('shippingCompany')?.value.trim() || null,
+material: $('catalogMaterial')?.value.trim() || null,
+color: $('catalogColor')?.value.trim() || null,
+printer_profile: $('catalogPrinterProfile')?.value.trim() || null,
+layer_height: $('catalogLayerHeight')?.value.trim() || null,
+nozzle_size: $('catalogNozzleSize')?.value.trim() || null,
+estimated_print_time: $('catalogEstimatedPrintTime')?.value.trim() || null,
+estimated_piece_price: num($('catalogEstimatedPiecePrice')?.value),
+production_notes: $('catalogProductionNotes')?.value.trim() || null,
+post_processing_notes: $('catalogPostProcessingNotes')?.value.trim() || null,
 invoice_number: $('invoiceNumber')?.value.trim() || null,
 invoice_date: $('invoiceDate')?.value || null,
 invoice_due_date: $('invoiceDueDate')?.value || null,
@@ -882,7 +904,7 @@ function publicTrackingPayload(payload) {
   'paymentLinkPaypal',
   'paymentLinkVenmo',
   'stripeInvoiceId',
-  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','invoiceNumber','invoiceDate','invoiceDueDate','apEmail','billingAddress','shippingAddress',
+  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','apEmail','billingAddress','shippingAddress',
   'internalNotes',
   'publicStatusText',
   'publicNextStep',
@@ -938,6 +960,15 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('partRevision')) $('partRevision').value = o.part_revision || '';
       if ($('shippingContactName')) $('shippingContactName').value = o.shipping_contact_name || '';
       if ($('shippingCompany')) $('shippingCompany').value = o.shipping_company || '';
+      if ($('catalogMaterial')) $('catalogMaterial').value = o.material || '';
+      if ($('catalogColor')) $('catalogColor').value = o.color || '';
+      if ($('catalogPrinterProfile')) $('catalogPrinterProfile').value = o.printer_profile || '';
+      if ($('catalogLayerHeight')) $('catalogLayerHeight').value = o.layer_height || '';
+      if ($('catalogNozzleSize')) $('catalogNozzleSize').value = o.nozzle_size || '';
+      if ($('catalogEstimatedPrintTime')) $('catalogEstimatedPrintTime').value = o.estimated_print_time || '';
+      if ($('catalogEstimatedPiecePrice')) $('catalogEstimatedPiecePrice').value = o.estimated_piece_price || '';
+      if ($('catalogProductionNotes')) $('catalogProductionNotes').value = o.production_notes || '';
+      if ($('catalogPostProcessingNotes')) $('catalogPostProcessingNotes').value = o.post_processing_notes || '';
       if ($('invoiceNumber')) $('invoiceNumber').value = o.invoice_number || '';
       if ($('invoiceDate')) $('invoiceDate').value = o.invoice_date || '';
       if ($('invoiceDueDate')) $('invoiceDueDate').value = o.invoice_due_date || '';
@@ -1130,6 +1161,88 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         updateFinanceStatusNote(saved);
         updateFinancePushButton(saved);
       }
+    }
+
+
+
+    function buildCatalogPartPayload(payload){
+      const partNumber = payload.olipoly_part_number || payload.po_part_number || payload.order_number;
+      return {
+        user_id: currentUser?.id,
+        olipoly_part_number: payload.olipoly_part_number || null,
+        customer_part_number: payload.po_part_number || null,
+        customer_name: payload.customer_name || null,
+        company_name: payload.shipping_company || null,
+        part_name: payload.order_title || partNumber || 'Catalog part',
+        part_description: payload.order_title || null,
+        revision: payload.part_revision || 'Rev A',
+        material: payload.material || null,
+        color: payload.color || null,
+        printer_profile: payload.printer_profile || null,
+        layer_height: payload.layer_height || null,
+        nozzle_size: payload.nozzle_size || null,
+        estimated_piece_price: payload.estimated_piece_price || (payload.quantity ? +(num(payload.order_total) / Math.max(1, num(payload.quantity))).toFixed(2) : null),
+        estimated_print_time: payload.estimated_print_time || null,
+        last_order_number: payload.order_number || null,
+        last_quote_number: payload.source_quote_number || null,
+        production_notes: payload.production_notes || payload.internal_notes || null,
+        post_processing_notes: payload.post_processing_notes || payload.shipping_or_pickup_note || null,
+        active: true,
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    async function saveCurrentOrderAsCatalogPart(){
+      await getCurrentUser();
+      clearMsg($('formMessage'));
+      if(!currentUser) return setMsg($('formMessage'),'Log in before saving a catalog part.',true);
+
+      const payload = snapshotForm();
+      if(!payload.order_number && !payload.olipoly_part_number && !payload.po_part_number) {
+        return setMsg($('formMessage'),'Add an order number, OliPoly Part #, or Customer Part # before saving to catalog.', true);
+      }
+      if(!payload.order_title) {
+        return setMsg($('formMessage'),'Project / item is required before saving to catalog.', true);
+      }
+
+      const catalogPayload = buildCatalogPartPayload(payload);
+      const partKey = catalogPayload.olipoly_part_number || catalogPayload.customer_part_number || catalogPayload.last_order_number;
+      const rev = catalogPayload.revision || 'Rev A';
+
+      let existing = [];
+      try {
+        const partQuery = encodeURIComponent(partKey || '');
+        const revQuery = encodeURIComponent(rev);
+        const path = catalogPayload.olipoly_part_number
+          ? `/rest/v1/parts_catalog?select=id&olipoly_part_number=eq.${partQuery}&revision=eq.${revQuery}&limit=1`
+          : `/rest/v1/parts_catalog?select=id&last_order_number=eq.${encodeURIComponent(catalogPayload.last_order_number || '')}&limit=1`;
+        const found = await api(path, { method:'GET' });
+        existing = found.data || [];
+      } catch (_) {
+        existing = [];
+      }
+
+      const savePath = existing[0]?.id ? `/rest/v1/parts_catalog?id=eq.${existing[0].id}` : '/rest/v1/parts_catalog';
+      const method = existing[0]?.id ? 'PATCH' : 'POST';
+      const res = await api(savePath, {
+        method,
+        headers:{Prefer:'return=representation'},
+        body: JSON.stringify(catalogPayload)
+      });
+
+      if(res.error) return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Catalog save failed.', true);
+
+      const saved = res.data?.[0];
+      if(saved?.id && activeId) {
+        await api(`/rest/v1/orders?id=eq.${activeId}`, {
+          method:'PATCH',
+          headers:{Prefer:'return=representation'},
+          body: JSON.stringify({ catalog_part_id: saved.id })
+        });
+      }
+
+      setMsg($('formMessage'), `${method === 'PATCH' ? 'Updated' : 'Saved'} catalog part ${catalogPayload.olipoly_part_number || catalogPayload.customer_part_number || catalogPayload.part_name}.`);
+      await fetchOrders();
     }
 
     function updatePreview(){
@@ -2188,6 +2301,7 @@ if ($('openVenmoBtn')) {
 });
     
         $('pushFinanceBtn')?.addEventListener('click', pushCurrentOrderToFinance);
+        $('saveCatalogPartBtn')?.addEventListener('click', saveCurrentOrderAsCatalogPart);
   
 /* Orders Admin login safety patch
    Ensures topbar auth buttons are wired even if earlier event binding is interrupted.
