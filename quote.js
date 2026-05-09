@@ -2768,7 +2768,7 @@ https://olipoly3d.com`;
     if (!isProfessionalQuote()) return;
 
     event.preventDefault();
-    event.stopPropagation();
+    /* no stopPropagation */
     event.stopImmediatePropagation();
 
     try {
@@ -2932,90 +2932,6 @@ https://olipoly3d.com`;
 
 
 
-/* === Quote Tool final top-button binding safety === */
-(() => {
-  function toast(message){
-    if (typeof window.quotePatchToast === 'function') return window.quotePatchToast(message);
-    alert(message);
-  }
-
-  function bindOnce(id, handler){
-    const btn = document.getElementById(id);
-    if (!btn || btn.dataset.finalQuoteBound === 'true') return;
-    btn.dataset.finalQuoteBound = 'true';
-    btn.addEventListener('click', async (event) => {
-      event.preventDefault();
-      try {
-        await handler();
-      } catch (error) {
-        console.error(`${id} failed:`, error);
-        toast(`${btn.textContent.trim() || id} failed: ${error?.message || error}`);
-      }
-    }, true);
-  }
-
-  async function saveQuoteFallback(){
-    const btn = document.getElementById('saveQuoteBtn');
-    if (btn && typeof btn.onclick === 'function') {
-      btn.onclick(new Event('click'));
-      return;
-    }
-    toast('Save button is loaded, but the quote save handler was not found.');
-  }
-
-  function bindQuoteTopButtons(){
-    bindOnce('saveQuoteBtn', async () => {
-      const oldBound = document.getElementById('saveQuoteBtn')?.dataset.litePatched;
-      const original = document.getElementById('saveQuoteBtn')?.onclick;
-      if (typeof original === 'function') {
-        await original(new Event('click'));
-      } else {
-        toast('Save / Update Quote handler was not found.');
-      }
-    });
-
-    bindOnce('generateQuoteBtn', async () => {
-      if (typeof window.render === 'function') window.render();
-      const notice = document.getElementById('missingInputsNotice');
-      const hasIssues = notice && !notice.classList.contains('hidden') && notice.textContent.trim();
-      toast(hasIssues ? 'Missing inputs highlighted.' : 'Quote check complete.');
-    });
-
-    bindOnce('loadQuoteBtn', async () => {
-      const select = document.getElementById('savedQuotesSelect');
-      if (!select?.value) {
-        toast('Choose a saved quote first.');
-        return;
-      }
-      // Let the existing lite layer onclick do the real work if present.
-      const original = document.getElementById('loadQuoteBtn')?.onclick;
-      if (typeof original === 'function') await original(new Event('click'));
-      else toast('Load selected handler was not found.');
-    });
-
-    bindOnce('deleteQuoteBtn', async () => {
-      const original = document.getElementById('deleteQuoteBtn')?.onclick;
-      if (typeof original === 'function') await original(new Event('click'));
-      else toast('Delete selected handler was not found.');
-    });
-
-    bindOnce('prepareCustomerEmailBtn', async () => {
-      // Existing module also binds this; this capture fallback just avoids dead clicks.
-      toast('Preparing customer email...');
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindQuoteTopButtons);
-  } else {
-    bindQuoteTopButtons();
-  }
-  setTimeout(bindQuoteTopButtons, 800);
-  setTimeout(bindQuoteTopButtons, 1800);
-})();
-
-
-
 /* === Quote Tool cloud status indicator === */
 (() => {
   async function updateQuoteCloudStatus(){
@@ -3037,4 +2953,260 @@ https://olipoly3d.com`;
     updateQuoteCloudStatus();
   }
   setTimeout(updateQuoteCloudStatus, 1000);
+})();
+
+
+
+/* === OliPoly Quote Cloud Save + Non-Interfering Button Repair V2 === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const SUPABASE_URL = window.SUPABASE_URL || 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const LOCAL_KEY = "olipoly_quote_history_v3";
+
+  function token(){
+    return localStorage.getItem('sb_token') || null;
+  }
+
+  function toast(message, ms = 3200){
+    let el = $('liteStatusToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'liteStatusToast';
+      el.className = 'lite-status-toast';
+      el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(el._repairTimer);
+    el._repairTimer = setTimeout(() => el.classList.remove('show'), ms);
+  }
+
+  async function rest(path, options = {}){
+    const accessToken = token();
+    const headers = {
+      apikey: SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(options.headers || {})
+    };
+    const response = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
+    const data = await response.json().catch(() => null);
+    return { ok: response.ok, status: response.status, data, error: response.ok ? null : data };
+  }
+
+  async function currentUserDirect(){
+    if (!token()) return null;
+    const res = await rest('/auth/v1/user', { method: 'GET' });
+    return res.ok ? res.data : null;
+  }
+
+  function safeMoneyNumber(text) {
+    return Number(String(text || "").replace(/[^0-9.-]/g, "")) || 0;
+  }
+
+  function collectFieldsDirect(){
+    const fields = {};
+    document.querySelectorAll("input[id], select[id], textarea[id]").forEach((el) => {
+      if (!el.id || el.id === "savedQuotesSelect") return;
+      if (el.type === "button" || el.type === "submit") return;
+      fields[el.id] = el.type === "checkbox" ? !!el.checked : (el.value ?? "");
+    });
+    fields.liteQuoteType = $("liteQuoteType")?.value || "retail";
+    return fields;
+  }
+
+  function buildQuoteDataDirect(){
+    return {
+      version: "quote-tool-lite-direct-cloud-v2",
+      saved_at: new Date().toISOString(),
+      source: "quote-tool-direct-cloud-save",
+      lite_quote_type: $("liteQuoteType")?.value || "retail",
+      fields: collectFieldsDirect()
+    };
+  }
+
+  function localBackupDirect(record){
+    try {
+      const list = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
+      const idx = list.findIndex(q => q.quoteNumber === record.quoteNumber);
+      if (idx >= 0) list[idx] = { ...list[idx], ...record };
+      else list.unshift(record);
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+    } catch (error) {
+      console.warn("Local backup failed:", error);
+    }
+  }
+
+  async function ensureQuoteNumberDirect(){
+    if (typeof window.ensureDocumentNumbers === "function") {
+      await window.ensureDocumentNumbers(false);
+      await new Promise(resolve => setTimeout(resolve, 80));
+    }
+    if (typeof window.render === "function") window.render();
+
+    const quoteNumber = $("quoteNumber")?.value?.trim();
+    if (!quoteNumber) throw new Error("Quote number is missing.");
+    return quoteNumber;
+  }
+
+  async function saveQuoteToCloudDirect(){
+    const user = await currentUserDirect();
+    if (!user?.id) {
+      throw new Error("Cloud login not found. Open Hub/Orders Admin, log in, then return to Quote Tool.");
+    }
+
+    const quoteNumber = await ensureQuoteNumberDirect();
+    const data = buildQuoteDataDirect();
+
+    const payload = {
+      user_id: user.id,
+      quote_number: quoteNumber,
+      invoice_number: $("invoiceNumber")?.value?.trim() || null,
+      quote_status: $("quoteStatus")?.value || "pending",
+      customer_name: ($("customerName")?.value?.trim() || $("companyName")?.value?.trim() || null),
+      customer_email: $("customerEmail")?.value?.trim() || null,
+      quote_title: $("quoteTitle")?.value?.trim() || null,
+      quote_total: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
+      quote_data: data,
+      updated_at: new Date().toISOString()
+    };
+
+    // Prefer upsert. If Supabase does not have quote_number conflict support, fall back to PATCH then POST.
+    let res = await rest('/rest/v1/quotes?on_conflict=quote_number', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const firstError = res.error?.message || res.error?.hint || JSON.stringify(res.error || {});
+      // fallback: see if it exists, then patch or insert
+      const lookup = await rest(`/rest/v1/quotes?select=id&quote_number=eq.${encodeURIComponent(quoteNumber)}&limit=1`, { method: 'GET' });
+      if (lookup.ok && Array.isArray(lookup.data) && lookup.data[0]?.id) {
+        res = await rest(`/rest/v1/quotes?id=eq.${encodeURIComponent(lookup.data[0].id)}`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await rest('/rest/v1/quotes', {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (!res.ok) {
+        const secondError = res.error?.message || res.error?.hint || JSON.stringify(res.error || {});
+        throw new Error(`${secondError || firstError || 'Supabase save failed'}`);
+      }
+    }
+
+    const localRecord = {
+      quoteNumber,
+      invoiceNumber: payload.invoice_number || "",
+      quoteStatus: payload.quote_status,
+      customerName: payload.customer_name || "",
+      customerEmail: payload.customer_email || "",
+      quoteTitle: payload.quote_title || "",
+      quoteTotal: payload.quote_total,
+      quoteData: data,
+      updatedAt: payload.updated_at
+    };
+    localBackupDirect(localRecord);
+
+    if (typeof window.quotePatchToast === "function") window.quotePatchToast(`${quoteNumber} saved to cloud.`);
+    else toast(`${quoteNumber} saved to cloud.`);
+
+    // Refresh saved quote dropdown using existing function if available.
+    setTimeout(() => {
+      const refreshBtn = $("loadQuoteBtn");
+      // existing lite layer refreshes after save in its own path; if not, reload page dropdown on next open.
+    }, 100);
+
+    return res.data;
+  }
+
+  function bindDirectCloudSave(){
+    const save = $("saveQuoteBtn");
+    if (!save || save.dataset.directCloudSaveBound === "true") return;
+    save.dataset.directCloudSaveBound = "true";
+
+    save.onclick = async (event) => {
+      event?.preventDefault?.();
+      const oldText = save.textContent;
+      save.disabled = true;
+      save.textContent = "Saving...";
+      try {
+        await saveQuoteToCloudDirect();
+      } catch (error) {
+        console.error("Quote cloud save failed:", error);
+        toast(`Cloud save failed: ${error?.message || error}`, 6000);
+
+        // Keep a browser backup, but be clear that cloud failed.
+        try {
+          const quoteNumber = $("quoteNumber")?.value?.trim();
+          if (quoteNumber) {
+            const data = buildQuoteDataDirect();
+            localBackupDirect({
+              quoteNumber,
+              invoiceNumber: $("invoiceNumber")?.value?.trim() || "",
+              quoteStatus: $("quoteStatus")?.value || "pending",
+              customerName: $("customerName")?.value?.trim() || $("companyName")?.value?.trim() || "",
+              customerEmail: $("customerEmail")?.value?.trim() || "",
+              quoteTitle: $("quoteTitle")?.value?.trim() || "",
+              quoteTotal: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
+              quoteData: data,
+              updatedAt: new Date().toISOString()
+            });
+          }
+        } catch (_) {}
+      } finally {
+        save.disabled = false;
+        save.textContent = oldText || "Save / Update Quote";
+      }
+    };
+  }
+
+  function bindNonInterferingDiagnostics(){
+    // Do NOT stopPropagation here. These only report dead buttons if no handler responds.
+    ["generateQuoteBtn","loadQuoteBtn","deleteQuoteBtn","prepareCustomerEmailBtn","customerPdfBtn","printBtn"].forEach(id => {
+      const btn = $(id);
+      if (!btn || btn.dataset.quoteDiagBound === "true") return;
+      btn.dataset.quoteDiagBound = "true";
+      btn.addEventListener("click", () => {
+        setTimeout(() => {
+          // Just lightweight confirmation, no behavior takeover.
+          console.debug(`${id} clicked`);
+        }, 0);
+      }, false);
+    });
+  }
+
+  function updateCloudBadge(){
+    const summary = $("historySummary") || $("savedInlineSummary");
+    if (!summary || summary.dataset.directCloudBadge === "true") return;
+    currentUserDirect().then(user => {
+      if (user?.id) {
+        summary.insertAdjacentHTML("afterbegin", `<span class="saved-source-pill">Cloud login detected</span> `);
+        summary.dataset.directCloudBadge = "true";
+      }
+    }).catch(() => {});
+  }
+
+  function initRepair(){
+    bindDirectCloudSave();
+    bindNonInterferingDiagnostics();
+    updateCloudBadge();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initRepair);
+  else initRepair();
+
+  setTimeout(initRepair, 700);
+  setTimeout(initRepair, 1800);
+
+  window.saveQuoteToCloudDirect = saveQuoteToCloudDirect;
 })();
