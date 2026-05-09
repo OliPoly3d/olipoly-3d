@@ -1338,6 +1338,8 @@ const payload = snapshotForm();
         ? 'This invoice is marked paid in full. Thank you.'
         : `Please process payment according to the approved purchasing terms. Total due is ${money(d.total)} by ${d.invoice_due_date || 'the listed due date'}.`;
 
+      const trackingLine = d.tracking_number ? `Tracking: ${d.tracking_number}\n` : '';
+
       return `Hello,
 
 Attached is invoice ${d.invoice_number} for the completed/shipped OliPoly 3D order.
@@ -1349,8 +1351,20 @@ Project: ${d.order_title || 'Custom 3D printed items'}
 Total Due: ${money(d.total)}
 Terms: ${d.invoice_terms_label}
 Due Date: ${d.invoice_due_date || '—'}
-${d.tracking_number ? `Tracking: ${d.tracking_number}
-` : ''function buildInvoiceHtmlEmail(d){
+${trackingLine}
+${paidLine}
+
+Please include the invoice number and PO number with payment or remittance details.
+
+Thank you,
+
+OliPoly 3D LLC
+Custom 3D Printing • Creative Builds • Prototypes
+OliPoly3D@gmail.com
+https://olipoly3d.com`;
+    }
+
+    function buildInvoiceHtmlEmail(d){
       const isPaid = d.payment_status === 'paid';
       const statusPill = isPaid
         ? `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#eafaf1;border:1px solid #bcebd0;color:#147a3f;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Paid</span>`
@@ -1414,7 +1428,7 @@ ${d.tracking_number ? `Tracking: ${d.tracking_number}
             <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:900;border-bottom:1px solid #f5dcea;">${esc(d.invoice_number)}</td>
           </tr>
           <tr>
-            <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">OP Order / PO</td>
+            <td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Order / PO</td>
             <td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.order_number || '—')} / ${esc(d.po_number || '—')}</td>
           </tr>
           <tr>
@@ -1453,7 +1467,8 @@ ${d.tracking_number ? `Tracking: ${d.tracking_number}
     </div>
   </div>
 </div>`;
-    }roved purchasing terms. Include the invoice number and PO number with payment or remittance details.</div><p>Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p></div></div></div>`;}
+    }
+
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
     function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`Invoice ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
