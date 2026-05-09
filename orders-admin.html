@@ -71,6 +71,11 @@
     .invoice-table{width:100%;border-collapse:collapse;margin-top:10px}.invoice-table th{font-size:11px;color:#826889;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #f0c8df;text-align:left;padding:10px 8px}.invoice-table td{font-size:13px;color:#2f2336;border-bottom:1px solid #f6ddec;padding:12px 8px;vertical-align:top}.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){text-align:center;width:70px}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3),.invoice-table th:nth-child(4),.invoice-table td:nth-child(4){text-align:right;width:110px}.invoice-totals div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f6ddec}.invoice-total-due strong,.invoice-total-due span{font-size:18px!important;color:#241b2b!important;font-weight:900}.invoice-remit{margin-top:18px;font-size:12px;line-height:1.45}.invoice-footer{margin-top:18px;text-align:center;color:#826889;font-size:11px}
     .email-preview-modal.hidden{display:none!important}.email-preview-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px}.email-preview-backdrop{position:absolute;inset:0;background:rgba(20,12,28,.62);backdrop-filter:blur(8px)}.email-preview-dialog{position:relative;z-index:1;width:min(980px,96vw);max-height:92vh;overflow:hidden;border-radius:28px;background:linear-gradient(180deg,#fff7fb,#fff);border:1px solid rgba(222,111,184,.28);display:flex;flex-direction:column}.email-preview-head{display:flex;justify-content:space-between;gap:18px;padding:22px 24px 16px;border-bottom:1px solid rgba(222,111,184,.18);background:#fff7fb}.email-preview-kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(222,111,184,.12);color:#7c4a82;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.email-preview-head h3{margin:10px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;color:#241b2b}.email-preview-close{width:42px;height:42px;border-radius:999px;border:1px solid rgba(222,111,184,.24);background:#fff;color:#8d4e8f;font-size:1.5rem;font-weight:900;cursor:pointer}.email-preview-actions{display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px}.email-preview-note{margin:0 24px 14px;padding:12px 14px;border-radius:16px;background:rgba(157,124,255,.08);color:#5e4b67}.email-preview-frame{flex:1;min-height:420px;background:#f7eef5}.email-preview-frame iframe{width:100%;height:100%;min-height:520px;border:0;background:white}
 
+
+    .email-preview-actions .btn{color:#fff!important;opacity:1!important;pointer-events:auto!important;}
+    .email-preview-actions .btn-ghost{color:#7c4a82!important;background:#fff!important;border:1px solid rgba(157,124,255,.28)!important;opacity:1!important;pointer-events:auto!important;}
+    .email-preview-actions button:disabled{opacity:.45!important;cursor:not-allowed!important;}
+
     /* Invoice PDF polish */
     .invoice-sheet{
       width:8.5in;
@@ -2309,6 +2314,101 @@ if ($('openVenmoBtn')) {
     bindShippingLabelButtonFinal();
     setTimeout(bindShippingLabelButtonFinal, 250);
     setTimeout(bindShippingLabelButtonFinal, 1000);
+
+
+
+    // Robust invoice email modal actions — added so buttons work even though the modal HTML is after the main script.
+    function ensureInvoiceEmailPrepared(){
+      if (!lastInvoiceEmail || !lastInvoiceEmail.html) {
+        const d = buildInvoiceData();
+        const html = buildInvoiceHtmlEmail(d);
+        const plain = buildInvoicePlainEmail(d);
+        lastInvoiceEmail = {
+          html,
+          plain,
+          subject: `Invoice ${d.invoice_number} - OliPoly 3D (${d.order_number || 'Order'})`,
+          to: d.ap_email || d.customer_email || ''
+        };
+      }
+      return lastInvoiceEmail;
+    }
+
+    async function copyInvoiceRichEmailSafe(){
+      const msg = $('invoiceEmailModalMessage');
+      const email = ensureInvoiceEmailPrepared();
+      try {
+        if (navigator.clipboard && window.ClipboardItem && window.isSecureContext) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': new Blob([email.html], { type: 'text/html' }),
+              'text/plain': new Blob([email.plain], { type: 'text/plain' })
+            })
+          ]);
+          if (msg) msg.innerHTML = 'Copied rich email. Open Gmail, click in the message body, and paste. Then attach the invoice PDF.';
+          return;
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(email.plain);
+          if (msg) msg.innerHTML = 'Copied plain email text. Rich clipboard was not available in this browser.';
+          return;
+        }
+
+        const ta = document.createElement('textarea');
+        ta.value = email.plain;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        if (msg) msg.innerHTML = 'Copied plain email text. Rich clipboard was not available in this browser.';
+      } catch (err) {
+        console.error('Invoice email copy failed:', err);
+        if (msg) msg.innerHTML = 'Copy did not work in this browser. Use Download HTML, or open the Gmail draft and paste manually from the preview.';
+      }
+    }
+
+    function openInvoiceGmailDraftSafe(){
+      const email = ensureInvoiceEmailPrepared();
+      const gmailUrl =
+        'https://mail.google.com/mail/?view=cm&fs=1' +
+        `&to=${encodeURIComponent(email.to || '')}` +
+        `&su=${encodeURIComponent(email.subject || 'OliPoly 3D Invoice')}` +
+        `&body=${encodeURIComponent(email.plain || '')}`;
+      window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    function downloadInvoiceEmailHtmlSafe(){
+      const email = ensureInvoiceEmailPrepared();
+      const blob = new Blob([email.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const invoice = ($('invoiceNumber')?.value || 'invoice').replace(/[^a-z0-9_-]/gi, '-');
+      a.href = url;
+      a.download = `${invoice}-olipoly-email.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 800);
+    }
+
+    document.addEventListener('click', function(event){
+      const id = event.target?.id;
+      if (id === 'copyInvoiceEmailRichBtn') {
+        event.preventDefault();
+        copyInvoiceRichEmailSafe();
+      }
+      if (id === 'openInvoiceGmailBtn') {
+        event.preventDefault();
+        openInvoiceGmailDraftSafe();
+      }
+      if (id === 'downloadInvoiceEmailHtmlBtn') {
+        event.preventDefault();
+        downloadInvoiceEmailHtmlSafe();
+      }
+    }, true);
 
   </script>
 
