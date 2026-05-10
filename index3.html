@@ -920,6 +920,82 @@ footer{
   }
 }
 
+
+/* === final mobile header adjustment: compact horizontal pill nav, not tall grid === */
+@media(max-width:680px){
+  .site-header{
+    position:relative;
+  }
+
+  .nav-wrap{
+    flex-direction:column;
+    align-items:flex-start;
+    text-align:left;
+    gap:10px;
+    padding:12px 0;
+  }
+
+  .brand{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  nav{
+    width:100%;
+    display:flex;
+    grid-template-columns:none;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    gap:8px;
+    padding:0 2px 3px 0;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  nav::-webkit-scrollbar{
+    display:none;
+  }
+
+  nav a{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:40px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.78);
+    border:1px solid rgba(0,0,0,.05);
+    font-size:.84rem;
+    line-height:1;
+    white-space:nowrap;
+    text-align:center;
+  }
+
+  nav a.cta{
+    grid-column:auto;
+    min-height:40px;
+    min-width:auto;
+    padding:8px 14px;
+    font-size:.84rem;
+  }
+
+  .brand-name{
+    font-size:1.55rem;
+  }
+
+  .brand-tag{
+    font-size:.78rem;
+    line-height:1.45;
+  }
+
+  .logo{
+    width:54px;
+    height:54px;
+  }
+}
+
 </style>
 </head>
 <body>
