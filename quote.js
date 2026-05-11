@@ -4563,3 +4563,294 @@ Open Orders Admin now?`);
   setTimeout(bindForcePdf, 1500);
 })();
 
+
+
+/* === Quote PDF v2: shared document-theme professional quote print path === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const moneyText = (...ids) => {
+    for (const id of ids.flat()) {
+      const text = $(id)?.textContent?.trim() || $(id)?.value?.trim();
+      if (text) return text;
+    }
+    return "$0.00";
+  };
+
+  const field = (id, fallback = "") => ($(id)?.value || "").trim() || fallback;
+
+  const numberValue = (id) => Number(String($(id)?.value || "").replace(/[^0-9.-]/g, "")) || 0;
+
+  const clean = (value, fallback = "—") => {
+    const text = String(value ?? "").trim();
+    return text || fallback;
+  };
+
+  function quoteTypeLabel() {
+    const type = field("liteQuoteType", "retail");
+    return ({
+      retail: "Retail / Individual Quote",
+      custom: "Custom Design Quote",
+      business: "Business / Bulk Quote",
+      repeat: "Repeat Customer Quote",
+      craft: "Craft Show / Pre-Made Quote",
+      po: "Professional / PO Quote"
+    })[type] || "OliPoly 3D Quote";
+  }
+
+  function paymentTermsLabel() {
+    const value = field("paymentTerms", "");
+    return ({
+      deposit_to_start: "Deposit to Start",
+      due_on_receipt: "Due on Receipt",
+      customer_terms: "Customer Standard Terms / PO Terms",
+      net_15: "Net 15",
+      net_30: "Net 30",
+      net_45: "Net 45",
+      split_50_50: "50% Deposit / 50% Completion"
+    })[value] || clean(value, "Quoted Terms");
+  }
+
+  function professionalMode() {
+    return field("professionalMode", "off") === "on" || field("liteQuoteType") === "po" || field("liteQuoteType") === "business";
+  }
+
+  function quoteToOrderNumber(q) {
+    const digits = String(q || "").match(/\d+/)?.[0] || "";
+    return digits ? `OP-${digits.padStart(6, "0").slice(-6)}` : "OP-######";
+  }
+
+  function collectQuotePdfData(mode = "quote") {
+    if (typeof window.render === "function") window.render();
+
+    const quoteNumber = field("quoteNumber", "Q-######");
+    const qty = numberValue("qty") || numberValue("quantity") || 1;
+    const total = moneyText("sumQuote", "outFinal", "finalTotal");
+    const subtotal = moneyText("sumSubtotal", "outSubtotal");
+    const tax = moneyText("sumTax", "outTax");
+    const perItem = moneyText("sumPerItem", "outPerItem");
+    const deposit = moneyText("sumDeposit", "outDeposit");
+    const balance = moneyText("sumBalance", "outBalance");
+    const project = field("quoteTitle", field("projectTitle", "Custom 3D Printed Project"));
+
+    return {
+      mode,
+      quoteNumber,
+      invoiceNumber: field("invoiceNumber", `INV-${quoteNumber.replace(/^Q-/, "")}`),
+      orderNumber: quoteToOrderNumber(quoteNumber),
+      quoteType: quoteTypeLabel(),
+      professional: professionalMode(),
+      customerName: field("customerName", field("companyName", "Customer")),
+      customerEmail: field("customerEmail", ""),
+      companyName: field("companyName", ""),
+      contactName: field("contactName", ""),
+      quoteTitle: project,
+      qty,
+      total,
+      subtotal,
+      tax,
+      perItem,
+      deposit,
+      balance,
+      paymentTerms: paymentTermsLabel(),
+      turnaround: field("turnaround", "To be confirmed at approval"),
+      quoteDate: field("quoteDate", new Date().toISOString().slice(0,10)),
+      poNumber: field("poNumber", ""),
+      customerPartNumber: field("customerPartNumber", ""),
+      olipolyPartNumber: field("olipolyPartNumber", ""),
+      partRevision: field("partRevision", "Rev A"),
+      notes: field("customerNotes", "Includes the printed item(s) described and standard print preparation."),
+      assumptions: field("assumptions", "Quote is based on the listed scope, quantity, materials, and production assumptions. Scope changes may require an updated quote."),
+      shippingAddress: field("shippingAddress", ""),
+      billingAddress: field("billingAddress", ""),
+      shippingCompany: field("shippingCompany", field("companyName", "")),
+      shippingContactName: field("shippingContactName", field("contactName", ""))
+    };
+  }
+
+  function buildQuotePdfV2Html(data) {
+    const T = window.OliPolyDocumentTheme;
+    const title = data.mode === "invoice" ? "Quote Invoice" : (data.professional ? "Professional Quote" : "Quote");
+
+    const businessBlock = data.professional
+      ? `
+        <div class="op-grid-4" style="margin-bottom:12px;">
+          ${T.card("PO Number", data.poNumber || "Pending")}
+          ${T.card("Customer Part #", data.customerPartNumber || "—")}
+          ${T.card("OliPoly Part #", data.olipolyPartNumber || "—")}
+          ${T.card("Revision", data.partRevision || "Rev A")}
+        </div>
+      `
+      : "";
+
+    const customerBlock = data.professional
+      ? `
+        ${T.panel("Prepared For", `
+          <strong>${T.esc(data.companyName || data.customerName)}</strong><br>
+          ${data.contactName ? `${T.esc(data.contactName)}<br>` : ""}
+          ${data.customerEmail ? `${T.esc(data.customerEmail)}<br>` : ""}
+          ${(data.billingAddress || data.shippingAddress || "").replace(/\n/g, "<br>") || "Customer details on file."}
+        `)}
+      `
+      : `
+        ${T.panel("Prepared For", `
+          <strong>${T.esc(data.customerName)}</strong><br>
+          ${data.customerEmail ? `${T.esc(data.customerEmail)}<br>` : ""}
+          ${data.companyName ? `${T.esc(data.companyName)}<br>` : ""}
+          ${data.shippingAddress ? data.shippingAddress.replace(/\n/g, "<br>") : "Customer details on file."}
+        `)}
+      `;
+
+    const ctaText = data.mode === "invoice"
+      ? "This invoice-style quote summary is based on the accepted quote details."
+      : "Approve this quote using your secure quote review link. Once accepted, OliPoly will create an OP order number and tracking will be available through the public tracker.";
+
+    return `
+      <div class="op-doc quote-v2-doc ${data.professional ? "quote-v2-pro" : "quote-v2-standard"}">
+        ${T.header(title, data.mode === "invoice" ? data.invoiceNumber : data.quoteNumber)}
+
+        <div class="quote-v2-hero">
+          <div>
+            <span>${data.mode === "invoice" ? "Invoice Amount" : "Estimated Total"}</span>
+            <strong>${T.esc(data.total)}</strong>
+            <small>${T.esc(data.paymentTerms)} • ${T.esc(data.turnaround)}</small>
+          </div>
+          <div>
+            <span>Project</span>
+            <strong>${T.esc(data.quoteTitle)}</strong>
+            <small>${T.esc(data.quoteType)} • Qty ${T.esc(data.qty)}</small>
+          </div>
+        </div>
+
+        <div class="op-grid-4" style="margin-bottom:12px;">
+          ${T.card(data.mode === "invoice" ? "Invoice #" : "Quote #", data.mode === "invoice" ? data.invoiceNumber : data.quoteNumber)}
+          ${T.card("Quote Date", data.quoteDate)}
+          ${T.card("Quantity", data.qty)}
+          ${T.card("Per Item", data.perItem)}
+        </div>
+
+        ${businessBlock}
+
+        <div class="op-grid-2" style="margin-bottom:12px;">
+          ${customerBlock}
+          ${T.panel("Acceptance / Tracking", `
+            ${T.esc(ctaText)}<br><br>
+            <strong>Expected order number after approval:</strong> ${T.esc(data.orderNumber)}<br>
+            <strong>Tracker:</strong> olipoly3d.com/track.html
+          `)}
+        </div>
+
+        <table class="op-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th style="width:80px;text-align:center;">Qty</th>
+              <th style="width:120px;text-align:right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>${T.esc(data.quoteTitle)}</strong>
+                <div class="op-muted" style="margin-top:6px;font-size:11px;line-height:1.45;">
+                  ${T.esc(data.notes).replace(/\n/g, "<br>")}
+                </div>
+              </td>
+              <td style="text-align:center;">${T.esc(data.qty)}</td>
+              <td style="text-align:right;">${T.esc(data.total)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="quote-v2-bottom">
+          <div>
+            ${T.panel("Quote Notes", T.esc(data.assumptions).replace(/\n/g, "<br>"))}
+            <div class="op-note">
+              <strong>Next Step</strong><br>
+              Review the quote details and approve using the secure quote response link. If anything needs adjusted, reply or request changes before approval.
+            </div>
+          </div>
+
+          <div class="quote-v2-totals">
+            <div><span>Subtotal</span><strong>${T.esc(data.subtotal)}</strong></div>
+            <div><span>Sales Tax</span><strong>${T.esc(data.tax)}</strong></div>
+            <div><span>Deposit</span><strong>${T.esc(data.deposit || "Per terms")}</strong></div>
+            <div class="quote-v2-total"><span>Total</span><strong>${T.esc(data.total)}</strong></div>
+          </div>
+        </div>
+
+        ${T.footer(data.professional ? "Professional quote prepared by OliPoly 3D" : "Quote prepared by OliPoly 3D")}
+      </div>
+    `;
+  }
+
+  function quotePdfV2Css() {
+    return `
+      .quote-v2-doc{position:relative}
+      .quote-v2-hero{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+      .quote-v2-hero>div{border-radius:16px;padding:14px;border:1px solid #f0c8df;background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10))}
+      .quote-v2-pro .quote-v2-hero>div{background:linear-gradient(135deg,rgba(36,27,43,.05),rgba(157,124,255,.09))}
+      .quote-v2-hero span{display:block;color:#826889;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+      .quote-v2-hero strong{display:block;font-size:22px;line-height:1.04;color:#241b2b;font-weight:950;overflow-wrap:anywhere}
+      .quote-v2-hero small{display:block;margin-top:6px;color:#604d68;line-height:1.3}
+      .quote-v2-bottom{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
+      .quote-v2-totals{border:1px solid #f0c8df;background:#fffafd;border-radius:14px;padding:12px 14px;align-self:start}
+      .quote-v2-totals div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f6ddec;font-size:12px}
+      .quote-v2-totals div:last-child{border-bottom:none}
+      .quote-v2-totals span{color:#826889}.quote-v2-totals strong{color:#241b2b}
+      .quote-v2-total{margin-top:4px;padding-top:10px!important;border-top:2px solid #f0c8df}
+      .quote-v2-total span,.quote-v2-total strong{font-size:17px!important;color:#241b2b!important;font-weight:950!important}
+      @media print{.quote-v2-hero,.quote-v2-bottom{break-inside:avoid}}
+    `;
+  }
+
+  function openQuotePdfV2(mode = "quote") {
+    const T = window.OliPolyDocumentTheme;
+    if (!T) {
+      alert("Document theme failed to load. Make sure js/document-theme.js is in the repo.");
+      return;
+    }
+
+    if (typeof window.ensureDocumentNumbers === "function") window.ensureDocumentNumbers(false);
+    if (typeof window.render === "function") window.render();
+
+    const data = collectQuotePdfData(mode);
+    const html = buildQuotePdfV2Html(data);
+    const title = `${mode === "invoice" ? data.invoiceNumber : data.quoteNumber} - OliPoly 3D`;
+    T.openPrintWindow(title, html, T.basePrintCss() + quotePdfV2Css());
+  }
+
+  function bindQuotePdfV2Buttons() {
+    const bindings = [
+      ["customerPdfBtn", "quote"],
+      ["invoicePdfBtn", "invoice"]
+    ];
+
+    bindings.forEach(([id, mode]) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.quotePdfV2Bound === "true") return;
+
+      const cleanBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(cleanBtn, btn);
+      cleanBtn.dataset.quotePdfV2Bound = "true";
+
+      cleanBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openQuotePdfV2(mode);
+      });
+    });
+  }
+
+  window.openQuotePdfV2 = openQuotePdfV2;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindQuotePdfV2Buttons);
+  } else {
+    bindQuotePdfV2Buttons();
+  }
+
+  setTimeout(bindQuotePdfV2Buttons, 600);
+  setTimeout(bindQuotePdfV2Buttons, 1600);
+})();
+
