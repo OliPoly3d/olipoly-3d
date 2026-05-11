@@ -501,6 +501,162 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
   .reminder-toolbar{gap:8px}
 }
 
+
+/* === Hub workflow architecture refinement === */
+.workflow-playbook-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.playbook-details{
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:rgba(255,255,255,.82);
+  overflow:hidden;
+}
+.playbook-details summary{
+  list-style:none;
+  cursor:pointer;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  font-weight:900;
+}
+.playbook-details summary::-webkit-details-marker{display:none}
+.playbook-details summary span small{
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+  font-weight:700;
+  line-height:1.35;
+}
+.playbook-details summary b{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  color:#9b4c80;
+  background:rgba(222,111,184,.10);
+  transition:.2s ease;
+  flex:0 0 auto;
+}
+.playbook-details[open] summary b{transform:rotate(45deg)}
+.playbook-body{
+  padding:0 16px 16px;
+}
+.playbook-steps{
+  display:grid;
+  gap:8px;
+}
+.playbook-step{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:9px;
+  align-items:start;
+  padding:10px 11px;
+  border-radius:15px;
+  background:#fff;
+  border:1px solid rgba(221,159,204,.22);
+  font-size:.9rem;
+  font-weight:800;
+  line-height:1.3;
+}
+.playbook-step span{
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:rgba(157,124,255,.12);
+  color:#6b57be;
+  font-size:.78rem;
+  flex:0 0 auto;
+}
+.playbook-note{
+  margin-top:10px;
+  padding:11px 12px;
+  border-radius:16px;
+  background:rgba(222,111,184,.08);
+  border:1px solid rgba(222,111,184,.13);
+  color:var(--muted);
+  font-size:.88rem;
+  line-height:1.45;
+}
+.workflow-source-card{
+  margin-top:12px;
+  padding:14px;
+  border-radius:20px;
+  background:linear-gradient(135deg,rgba(222,111,184,.10),rgba(157,124,255,.10)),rgba(255,255,255,.78);
+  border:1px solid rgba(222,111,184,.14);
+  color:var(--muted);
+  line-height:1.5;
+}
+.workflow-source-card strong{
+  color:#2d1f36;
+}
+.quiet-seo-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.quiet-seo-card{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:132px;
+  gap:10px;
+  padding:16px;
+  border-radius:22px;
+  text-decoration:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,246,251,.72));
+  border:1px solid var(--line);
+  box-shadow:0 10px 22px rgba(222,111,184,.06);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.quiet-seo-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 16px 30px rgba(222,111,184,.12);
+  border-color:rgba(222,111,184,.22);
+}
+.quiet-seo-card strong{
+  color:#2d1f36;
+  line-height:1.15;
+}
+.quiet-seo-card small{
+  color:var(--muted);
+  line-height:1.35;
+}
+.quiet-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(157,124,255,.10);
+  border:1px solid rgba(157,124,255,.16);
+  color:#6b57be;
+  font-size:.68rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+@media(max-width:860px){
+  .workflow-playbook-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .playbook-details summary{padding:14px 12px}
+  .playbook-body{padding:0 12px 12px}
+  .playbook-step{font-size:.86rem}
+  .quiet-seo-grid{grid-template-columns:1fr}
+  .quiet-seo-card{min-height:auto}
+}
+
 </style>
 </head>
 <body>
@@ -582,7 +738,7 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       <div class="core-tools-grid">
         <a class="core-tool" href="orders-admin.html">
           <span class="tool-icon">📦</span>
-          <span><strong>Orders Admin</strong><small>Quotes, converted orders, tracking, payment links, packing slips, shipping.</small></span>
+          <span><strong>Orders Admin</strong><small>Live OP orders, tracking, invoices, packing slips, travelers, lifecycle emails.</small></span>
         </a>
         <a class="core-tool" href="quote.html">
           <span class="tool-icon">🧾</span>
@@ -671,17 +827,23 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
 
     <section class="hub-section">
       <div class="section-title">
-        <span class="os-kicker">Production / Fulfillment</span>
-        <h3>Shop floor tools</h3>
-        <p>Tools and files used for materials, maintenance, packing, shipping, and customer handoff.</p>
+        <span class="os-kicker">Fulfillment Workflow</span>
+        <h3>Live order documents & shop-floor tools</h3>
+        <p>Generated documents now come from Orders Admin using live customer/order data. Static label/slip templates are no longer the source of truth.</p>
       </div>
+
+      <div class="workflow-source-card">
+        <strong>Source of truth:</strong> open the order in Orders Admin, confirm the customer/order fields, then generate the Packing Slip, Manufacturing Traveler, Invoice PDF, and lifecycle emails from the live OP order.
+      </div>
+
       <div class="compact-link-grid">
-        <a class="utility-link" href="pm.html">Printer PM <span>→</span></a>
+        <a class="utility-link" href="orders-admin.html">Orders Admin / Live Docs <span>→</span></a>
+        <a class="utility-link" href="orders-admin.html">Generate Packing Slip <span>→</span></a>
+        <a class="utility-link" href="orders-admin.html">Generate Traveler <span>→</span></a>
+        <a class="utility-link" href="track.html">Customer Tracker <span>→</span></a>
+        <a class="utility-link" href="pay.html">Payment Page <span>→</span></a>
         <a class="utility-link" href="materials.html">Materials <span>→</span></a>
-        <a class="utility-link" href="orders-admin.html">Packing Slips <span>→</span></a>
-        <a class="utility-link" href="assets/templates/consumer/consumer-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Consumer Label <span>→</span></a>
-        <a class="utility-link" href="assets/templates/business/business-shipping-label.pdf" target="_blank" rel="noopener noreferrer">Business Label <span>→</span></a>
-        <a class="utility-link" href="assets/templates/business/business-packing-slip.pdf" target="_blank" rel="noopener noreferrer">Business Slip <span>→</span></a>
+        <a class="utility-link" href="pm.html">Printer PM <span>→</span></a>
       </div>
     </section>
 
@@ -689,7 +851,7 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       <div class="section-title">
         <span class="os-kicker">Business Docs</span>
         <h3>Vendor, PO & business files</h3>
-        <p>Corporate-facing documents for vendor setup, PO customers, and professional fulfillment.</p>
+        <p>Static corporate-facing documents for vendor setup and purchasing departments. Order-specific slips and invoices are generated from Orders Admin.</p>
       </div>
       <div class="docs-grid">
         <div class="doc-card">
@@ -709,17 +871,16 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
           </div>
         </div>
         <div class="doc-card">
-          <strong>Business Packing Slip</strong>
-          <small>Professional PO-focused packing slip with part number, quantity, revision, and inspection fields.</small>
+          <strong>Generated Order Documents</strong>
+          <small>Packing slips, manufacturing travelers, invoice PDFs, and lifecycle emails now live inside Orders Admin.</small>
           <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/business/business-packing-slip.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/business/business-packing-slip.pdf')">Copy Link</button>
+            <a class="tiny-btn" href="orders-admin.html">Open Orders Admin</a>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="hub-section">
+<section class="hub-section">
       <div class="section-title">
         <span class="os-kicker">Marketing / Brand Assets</span>
         <h3>Customer-facing files</h3>
@@ -761,33 +922,125 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       </div>
     </section>
 
-    <section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Workflow</span>
-        <h3>Quote → order → fulfillment process</h3>
-        <p>Current operating flow for quote approvals, converted OP orders, tracking, payment, delivery, and closeout.</p>
-      </div>
-      <details class="workflow-details">
-        <summary><span>Current quote-to-order checklist<small>Expand when you want the full step-by-step flow.</small></span><b>+</b></summary>
-        <label class="label" style="padding:0 16px 12px;">
-          Order # / cross-check
-          <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or order number" />
-        </label>
-        <div class="workflow-steps-compact">
-          <div class="workflow-mini"><span>1</span>Receive request</div>
-          <div class="workflow-mini"><span>2</span>Create quote</div>
-          <div class="workflow-mini"><span>3</span>Send approval link</div>
-          <div class="workflow-mini"><span>4</span>Customer accepts</div>
-          <div class="workflow-mini"><span>5</span>Quote converts to OP order</div>
-          <div class="workflow-mini"><span>6</span>Payment links appear</div>
-          <div class="workflow-mini"><span>7</span>Produce order</div>
-          <div class="workflow-mini"><span>8</span>Update tracker / deliver</div>
-          <div class="workflow-mini"><span>9</span>Close out in Finance</div>
-        </div>
-      </details>
-    </section>
+    
 
     <section class="hub-section">
+      <div class="section-title">
+        <span class="os-kicker">Quiet SEO / Showcase Pages</span>
+        <h3>Landing pages to review and build out</h3>
+        <p>Internal preview links for the new quiet landing pages. These are not in the public main nav yet, but they can be reviewed, improved, and filled with real examples over time.</p>
+      </div>
+      <div class="quiet-seo-grid">
+        <a class="quiet-seo-card" href="business-3d-printing.html">
+          <span class="quiet-badge">SEO Staging</span>
+          <strong>Business 3D Printing</strong>
+          <small>PO-friendly, production support, repeat parts, business buyers.</small>
+        </a>
+        <a class="quiet-seo-card" href="prototype-printing.html">
+          <span class="quiet-badge">SEO Staging</span>
+          <strong>Prototype Printing</strong>
+          <small>Concepts, iteration, test-fit parts, product development.</small>
+        </a>
+        <a class="quiet-seo-card" href="custom-brackets.html">
+          <span class="quiet-badge">SEO Staging</span>
+          <strong>Custom Brackets</strong>
+          <small>Functional parts, spacers, mounts, adapters, replacements.</small>
+        </a>
+        <a class="quiet-seo-card" href="ohio-3d-printing.html">
+          <span class="quiet-badge">SEO Staging</span>
+          <strong>Ohio 3D Printing</strong>
+          <small>Local custom printing, fabrication support, pickup/shipping.</small>
+        </a>
+        <a class="quiet-seo-card" href="creative-learning-tools.html">
+          <span class="quiet-badge">SEO Staging</span>
+          <strong>Creative Learning Tools</strong>
+          <small>Educational prints, STEM helpers, classroom tools, playful learning.</small>
+        </a>
+      </div>
+    </section>
+
+<section class="hub-section">
+      <div class="section-title">
+        <span class="os-kicker">Workflow Playbooks</span>
+        <h3>Customer-type operating flows</h3>
+        <p>Use these playbooks as the current operating guide for retail, business/PO, craft-show, and repeat/catalog work.</p>
+      </div>
+
+      <div class="workflow-playbook-grid">
+        <details class="playbook-details" open>
+          <summary><span>Retail / custom customer<small>Standard quote approval, payment, production, pickup or shipping.</small></span><b>+</b></summary>
+          <div class="playbook-body">
+            <div class="playbook-steps">
+              <div class="playbook-step"><span>1</span>Receive inquiry or custom request.</div>
+              <div class="playbook-step"><span>2</span>Create quote in Quote Tool.</div>
+              <div class="playbook-step"><span>3</span>Generate Quote PDF v2 and prepare Quote Email v2.</div>
+              <div class="playbook-step"><span>4</span>Send approval link to customer.</div>
+              <div class="playbook-step"><span>5</span>Customer approves quote on Quote Response page.</div>
+              <div class="playbook-step"><span>6</span>Quote converts to OP order and activates Tracker.</div>
+              <div class="playbook-step"><span>7</span>Confirm payment link/status in Orders Admin.</div>
+              <div class="playbook-step"><span>8</span>Produce item; generate traveler/packing slip if helpful.</div>
+              <div class="playbook-step"><span>9</span>Send ready, pickup, shipped, or completion lifecycle email.</div>
+              <div class="playbook-step"><span>10</span>Record sale/tax/costs in Finance Pro.</div>
+            </div>
+            <div class="playbook-note">Best for one-off custom jobs, gifts, small creative builds, local pickup, and normal customer requests.</div>
+          </div>
+        </details>
+
+        <details class="playbook-details">
+          <summary><span>Business / PO customer<small>Professional quote, vendor docs, PO, live order docs, invoice.</small></span><b>+</b></summary>
+          <div class="playbook-body">
+            <div class="playbook-steps">
+              <div class="playbook-step"><span>1</span>Receive RFQ, drawings, part details, or print files.</div>
+              <div class="playbook-step"><span>2</span>Create professional/business quote with PO, part, and revision fields.</div>
+              <div class="playbook-step"><span>3</span>Send Quote PDF v2 + Quote Email v2; include W-9/vendor packet if requested.</div>
+              <div class="playbook-step"><span>4</span>Customer approves quote or issues PO.</div>
+              <div class="playbook-step"><span>5</span>Convert quote to OP order and confirm PO/part/revision data.</div>
+              <div class="playbook-step"><span>6</span>Generate Manufacturing Traveler for production.</div>
+              <div class="playbook-step"><span>7</span>Generate Packing Slip from Orders Admin for fulfillment.</div>
+              <div class="playbook-step"><span>8</span>Ship/deliver and send shipping or ready-for-pickup email.</div>
+              <div class="playbook-step"><span>9</span>Generate/send Invoice PDF v2 or invoice email as required.</div>
+              <div class="playbook-step"><span>10</span>Close out in Finance Pro and save catalog part if repeatable.</div>
+            </div>
+            <div class="playbook-note">Best for PO customers, repeat production, part-numbered jobs, business invoices, and purchasing department workflows.</div>
+          </div>
+        </details>
+
+        <details class="playbook-details">
+          <summary><span>Craft show / in-person sale<small>Fast payment, handoff, optional follow-up, Finance Pro entry.</small></span><b>+</b></summary>
+          <div class="playbook-body">
+            <div class="playbook-steps">
+              <div class="playbook-step"><span>1</span>Customer selects premade item or asks about a custom idea.</div>
+              <div class="playbook-step"><span>2</span>Open Pay Page or QR/payment sign.</div>
+              <div class="playbook-step"><span>3</span>Accept card, PayPal, Venmo, or other approved payment.</div>
+              <div class="playbook-step"><span>4</span>Bag item with thank-you insert or QR card.</div>
+              <div class="playbook-step"><span>5</span>For custom follow-up, direct customer to quote form/site.</div>
+              <div class="playbook-step"><span>6</span>Record sale, tax collected, and costs in Finance Pro.</div>
+              <div class="playbook-step"><span>7</span>Add reminder if follow-up/custom quote is needed.</div>
+            </div>
+            <div class="playbook-note">Best for events, quick local purchases, impulse sales, and converting in-person ideas into later quote requests.</div>
+          </div>
+        </details>
+
+        <details class="playbook-details">
+          <summary><span>Repeat / catalog production<small>Saved part memory, revision control, repeat job setup.</small></span><b>+</b></summary>
+          <div class="playbook-body">
+            <div class="playbook-steps">
+              <div class="playbook-step"><span>1</span>Open Orders Admin and search saved catalog parts.</div>
+              <div class="playbook-step"><span>2</span>Load the catalog part into the order form for reference.</div>
+              <div class="playbook-step"><span>3</span>Confirm revision, material, color, quantity, and prior pricing.</div>
+              <div class="playbook-step"><span>4</span>Create quote or order using current quantity/pricing.</div>
+              <div class="playbook-step"><span>5</span>Generate traveler and packing slip from live order data.</div>
+              <div class="playbook-step"><span>6</span>Produce batch and update Tracker.</div>
+              <div class="playbook-step"><span>7</span>Send lifecycle email and close out in Finance Pro.</div>
+              <div class="playbook-step"><span>8</span>Update catalog part notes/revision if anything changed.</div>
+            </div>
+            <div class="playbook-note">The Create Reorder Quote automation is intentionally on the backlog; for now, use catalog search/load as the memory layer.</div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+<section class="hub-section">
       <div class="section-title">
         <span class="os-kicker">Financial Tools</span>
         <h3>Sales tax calculator</h3>
@@ -1004,7 +1257,12 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       { name: 'Finance Tool', url: 'finance-pro.html' },
       { name: 'Printer PM', url: 'pm.html' },
       { name: 'Materials', url: 'materials.html' },
-      { name: 'Pay Page', url: 'pay.html' }
+      { name: 'Pay Page', url: 'pay.html' },
+      { name: 'Business 3D Printing', url: 'business-3d-printing.html' },
+      { name: 'Prototype Printing', url: 'prototype-printing.html' },
+      { name: 'Custom Brackets', url: 'custom-brackets.html' },
+      { name: 'Ohio 3D Printing', url: 'ohio-3d-printing.html' },
+      { name: 'Creative Learning Tools', url: 'creative-learning-tools.html' }
     ];
 
     function setAuthUi() {
