@@ -80,6 +80,45 @@
     .payment-badge.refunded{background:#ffd6df;color:#b34f72}
     @media (max-width:900px){.info-grid,.timeline{grid-template-columns:1fr 1fr}.result-hero{grid-template-columns:1fr}.status-stack{grid-template-columns:1fr 1fr;min-width:0}}
     @media (max-width:720px){.wrap{width:min(100% - 16px,1160px);padding-top:14px}.topbar{flex-direction:column;align-items:flex-start;padding:14px 16px}.card,.mini{padding:18px;border-radius:22px}.lookup-card{padding:22px}.lookup-copy h1{font-size:2.35rem}.info-grid,.info-grid.compact,.timeline,.search-row,.status-stack{grid-template-columns:1fr}.brand-tag{white-space:normal;font-size:.92rem}.brand-wordmark{font-size:1.8rem}.payment-btn,.btn{width:100%}.result-shell{padding:16px}.result-hero{padding:18px}.timeline{gap:12px}.timeline::before,.timeline-fill{display:none}.step{grid-template-columns:auto 1fr;justify-items:start;text-align:left}.step-label{max-width:none}}
+  
+/* === Tracker v2 premium customer experience layer === */
+.topbar{backdrop-filter:blur(14px);box-shadow:0 8px 24px rgba(189,132,176,.08)}
+.lookup-card,.result-shell{overflow:hidden}
+.result-hero{position:relative;overflow:hidden}
+.result-hero::after{content:"";position:absolute;inset:auto -90px -120px auto;width:240px;height:240px;border-radius:999px;background:radial-gradient(circle,rgba(155,123,255,.14),transparent 68%);pointer-events:none}
+.result-hero>*{position:relative;z-index:1}
+.status-spotlight{margin-top:18px;padding:18px;border-radius:24px;background:radial-gradient(circle at 10% 0%,rgba(216,107,179,.13),transparent 38%),linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,251,.82));border:1px solid rgba(216,107,179,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 14px 30px rgba(216,107,179,.08)}
+.spotlight-kicker{display:inline-flex;margin-bottom:8px;padding:5px 9px;border-radius:999px;background:rgba(216,107,179,.10);border:1px solid rgba(216,107,179,.16);color:#9b4c80;font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.status-spotlight strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2rem,5vw,3.4rem);line-height:.95;color:#241b2b;letter-spacing:-.04em}
+.status-spotlight small{display:block;margin-top:8px;color:var(--muted);font-weight:600;line-height:1.45}
+.customer-confidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:-4px 0 22px}
+.confidence-card{padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,246,251,.92));border:1px solid rgba(216,107,179,.14);box-shadow:0 10px 24px rgba(216,107,179,.07)}
+.confidence-card span{display:block;margin-bottom:6px;font-size:.72rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.confidence-card strong{display:block;color:#241b2b;font-size:1.05rem}
+.confidence-card small{display:block;margin-top:5px;color:var(--muted);line-height:1.45}
+.confidence-card a{color:#9b5cd8;font-weight:800;text-decoration:none}
+.confidence-card a:hover{text-decoration:underline}
+.next-explainer-card{padding:18px;border-radius:24px;background:linear-gradient(135deg,rgba(155,123,255,.09),rgba(216,107,179,.08)),rgba(255,255,255,.86);border:1px solid rgba(155,123,255,.18);box-shadow:0 14px 28px rgba(155,123,255,.08)}
+.next-explainer-card strong{display:block;margin-bottom:7px;font-family:'Cormorant Garamond',Georgia,serif;color:#241b2b;font-size:1.45rem;letter-spacing:-.01em}
+.next-explainer-card span{display:block;color:#6f5d76;line-height:1.6}
+.timeline{margin:8px 0 4px}
+.timeline::before{top:21px;height:6px;left:8%;right:8%;background:linear-gradient(90deg,rgba(216,107,179,.10),rgba(155,123,255,.12))}
+.timeline-fill{top:21px;height:6px;left:8%;box-shadow:0 0 18px rgba(216,107,179,.16)}
+.step{gap:12px;font-weight:700}.step-dot{width:24px;height:24px;position:relative;border-width:3px}
+.step.active .step-dot::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:900}
+.step.active .step-dot{transform:scale(1.04)}.step-label{font-weight:800}
+.payment-card{position:relative;overflow:hidden;padding:22px;border-radius:26px;background:radial-gradient(circle at 12% 0%,rgba(216,107,179,.11),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,244,250,.96));border-color:rgba(216,107,179,.22)}
+.payment-card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent)}
+.payment-head strong{font-family:'Cormorant Garamond',Georgia,serif;color:#241b2b;font-size:1.6rem}
+.payment-buttons{gap:12px}.payment-btn{min-height:52px;font-size:1rem}.cash-option{border-style:solid}
+.support-card{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-top:18px;padding:24px;border-radius:30px;background:radial-gradient(circle at 12% 0%,rgba(216,107,179,.12),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,247,251,.94));border:1px solid var(--line);box-shadow:var(--shadow)}
+.support-card h3{margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;color:#241b2b;font-size:1.85rem;line-height:1}
+.support-card p{margin:0;color:var(--muted);line-height:1.55}
+.result-shell.is-complete{border-color:rgba(122,175,157,.32);box-shadow:0 18px 45px rgba(122,175,157,.14)}
+.result-shell.is-complete .status-spotlight{background:radial-gradient(circle at 10% 0%,rgba(122,175,157,.16),transparent 38%),linear-gradient(135deg,rgba(255,255,255,.94),rgba(240,255,248,.82));border-color:rgba(122,175,157,.24)}
+@media(max-width:900px){.customer-confidence-grid{grid-template-columns:1fr}.support-card{grid-template-columns:1fr}.support-card .btn{width:100%}}
+@media(max-width:720px){.status-spotlight{padding:15px;border-radius:21px}.status-spotlight strong{font-size:2.15rem}.customer-confidence-grid{gap:10px;margin-bottom:16px}.confidence-card,.next-explainer-card,.payment-card{border-radius:21px;padding:15px}.timeline .step.active .step-dot::after{font-size:.68rem}.payment-btn{min-height:50px}.support-card{padding:18px;border-radius:24px}}
+
   </style>
 </head>
 <body>
@@ -122,6 +161,11 @@
           <span class="eyebrow">Current Project</span>
           <h2 id="viewProject">—</h2>
           <p class="order-ref">Order <strong id="viewOrderNumber">—</strong></p>
+          <div class="status-spotlight" id="statusSpotlight">
+            <span class="spotlight-kicker">Current Status</span>
+            <strong id="viewStatusHeadline">—</strong>
+            <small id="viewStatusHelper">We’ll show the latest public update here once your order is found.</small>
+          </div>
         </div>
         <div class="status-stack">
           <div><span>Status</span><strong id="viewStatus">—</strong></div>
@@ -132,6 +176,19 @@
       <div class="info-grid compact">
         <div class="mini"><span>Total</span><strong id="viewTotal">—</strong></div>
         <div class="mini"><span>Next milestone</span><strong id="viewMilestone">—</strong></div>
+      </div>
+
+      <div class="customer-confidence-grid">
+        <div class="confidence-card">
+          <span>Last checked</span>
+          <strong id="viewLastChecked">Just now</strong>
+          <small>Showing the latest customer-safe tracking record.</small>
+        </div>
+        <div class="confidence-card">
+          <span>Need help?</span>
+          <strong>We’re here</strong>
+          <small>Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a> with your order number.</small>
+        </div>
       </div>
 
       <div class="progress">
@@ -146,6 +203,10 @@
       </div>
 
       <div class="detail">
+        <div class="next-explainer-card" id="nextExplainerCard">
+          <strong>What happens next?</strong>
+          <span id="viewAutoNext">We’ll show the next step once your order is found.</span>
+        </div>
         <div class="note update-card"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
         <div class="note" id="nextStepWrap"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
         <div class="note" id="fulfillmentWrap"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
@@ -171,7 +232,15 @@
         </div>
       </div>
     </section>
-    <p class="footer">Questions about your order? Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a>.</p>
+    <section class="support-card">
+      <div>
+        <span class="eyebrow">Need help?</span>
+        <h3>Questions about your order?</h3>
+        <p>Email us with your quote or order number and we’ll help confirm the latest status.</p>
+      </div>
+      <a class="btn" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
+    </section>
+    <p class="footer">OliPoly 3D customer-safe order tracking.</p>
   </div>
 
   <script>
@@ -191,7 +260,11 @@
       cashMessage:$('cashMessage'),
       paymentBtnStripe:$('paymentBtnStripe'),
       paymentBtnPaypal:$('paymentBtnPaypal'),
-      paymentBtnVenmo:$('paymentBtnVenmo')
+      paymentBtnVenmo:$('paymentBtnVenmo'),
+      viewStatusHeadline:$('viewStatusHeadline'),
+      viewStatusHelper:$('viewStatusHelper'),
+      viewLastChecked:$('viewLastChecked'),
+      viewAutoNext:$('viewAutoNext')
     };
 
     function setMessage(text,isError=false){
@@ -209,7 +282,21 @@
 
     function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_to_pack:'Ready to Pack',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Completed'})[v]||v;}
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
-    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_for_pickup:5,shipped:5,completed:5})[status]||1;}
+    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_to_pack:4,packed:5,ready_for_pickup:5,shipped:5,delivered:5,completed:5})[status]||1;}
+
+    function statusHeadline(status){
+      return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'In Design',in_production:'Currently Printing',post_processing:'Finishing Touches',ready_to_pack:'Ready to Pack',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Order Complete'})[status] || statusLabel(status) || 'Status Update';
+    }
+    function statusHelper(status){
+      return ({quote_sent:'Your quote or order details are being reviewed.',awaiting_approval:'Your project is waiting for approval before production begins.',awaiting_deposit:'A deposit is needed before production can begin.',in_design:'Your project is being prepared for printing.',in_production:'Your parts are actively being printed or queued on a machine.',post_processing:'Your print is off the machine and being cleaned, checked, or finished.',ready_to_pack:'Your project is ready for final packing.',packed:'Your order is packed and ready for handoff.',ready_for_pickup:'Your order is ready for pickup or local handoff.',shipped:'Your order has shipped. Tracking details will appear when available.',delivered:'Your order has been delivered.',completed:'Your order has been completed. Thank you for choosing OliPoly 3D!'})[status] || 'This is the latest customer-safe update from OliPoly 3D.';
+    }
+    function autoNextText(status){
+      return ({quote_sent:'Next, OliPoly 3D will confirm the details and move the project toward approval or production.',awaiting_approval:'Next, approve the quote or confirm any requested details so production can move forward.',awaiting_deposit:'Next, submit the deposit using the available payment options so production can begin.',in_design:'Next, we’ll finish prep work, confirm print settings, and move the project into production.',in_production:'Next, we’ll finish printing, inspect the parts, and move them into cleanup or finishing.',post_processing:'Next, we’ll complete final cleanup, quality checks, and prepare your order for pickup or shipping.',ready_to_pack:'Next, we’ll package your order and prepare it for pickup, delivery, or shipping.',packed:'Next, your order will be handed off, picked up, delivered, or shipped.',ready_for_pickup:'Next, arrange pickup or follow the provided pickup instructions.',shipped:'Next, watch for tracking updates while your package is on the way.',delivered:'Next, check your package and contact OliPoly 3D if anything needs attention.',completed:'Your order is complete. Save your order number if you need a future reorder or matching project.'})[status] || 'We’ll keep this page updated as your order moves forward.';
+    }
+    function formatLastChecked(){
+      return new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    }
+
     function normalizeLookupNumber(value){
     const raw = String(value || '').trim().toUpperCase();
     if (!raw) return '';
@@ -317,6 +404,12 @@ if(venmo && canShowPaymentButtons){
       els.viewProject.textContent=o.order_title||'—';
       els.viewStatus.innerHTML=`<span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>`;
       els.viewPayment.innerHTML=`<span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>`;
+      els.viewStatusHeadline.textContent = statusHeadline(o.status);
+      els.viewStatusHelper.textContent = statusHelper(o.status);
+      els.viewAutoNext.textContent = autoNextText(o.status);
+      els.viewLastChecked.textContent = formatLastChecked();
+      els.resultCard.classList.toggle('is-complete', ['completed','delivered'].includes(o.status));
+
       els.viewTotal.textContent = o.order_total
   ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(o.order_total)
   : '—';
@@ -370,7 +463,7 @@ if(venmo && canShowPaymentButtons){
         if (typedId.toUpperCase().startsWith('Q-')) {
   return setMessage(`We could not find an accepted order for ${typedId} yet. If this quote was just accepted, try again in a moment using ${id}.`, true);
 }
-return setMessage('We could not find that order number yet. Double-check it and try again.',true);
+return setMessage('We could not find that order number yet. It may not be active in tracking yet, or the number may need double-checking.',true);
       }
       renderOrder(data[0]);
     }
