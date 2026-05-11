@@ -695,41 +695,8 @@ body{font-family:Inter,Arial,sans-serif}
   </div>
 
 
-  <div class="print-template-hidden" id="packingPrintArea">
-    <div id="packingSheet">
-      <div class="packing-topbar"></div>
-      <div class="packing-header">
-        <div>
-          <div class="packing-brand">Oli<span>Poly</span> 3D</div>
-          <div class="packing-tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
-        </div>
-        <div class="packing-title">PACKING SLIP</div>
-      </div>
-
-      <div class="packing-grid">
-        <div class="packing-card"><small>Order</small><strong id="packOrderNumber">—</strong></div>
-        <div class="packing-card"><small>PO Number</small><strong id="packPoNumber">—</strong></div>
-        <div class="packing-card"><small>Customer Part</small><strong id="packPoPartNumber">—</strong></div>
-        <div class="packing-card"><small>OliPoly Part</small><strong id="packOliPolyPartNumber">—</strong></div>
-        <div class="packing-card"><small>Revision</small><strong id="packPartRevision">—</strong></div>
-        <div class="packing-card"><small>Ship Date</small><strong id="packShipDate">—</strong></div>
-        <div class="packing-card"><small>Tracking</small><strong id="packTracking">—</strong></div>
-      </div>
-
-      <div class="packing-addresses">
-        <div class="packing-panel"><div class="packing-chip">Ship To</div><div id="packShipTo">—</div></div>
-        <div class="packing-panel"><div class="packing-chip">Fulfillment Notes</div><div id="packFulfillment">—</div></div>
-      </div>
-
-      <table class="packing-table">
-        <thead><tr><th>Description</th><th style="width:100px;text-align:center;">Qty</th></tr></thead>
-        <tbody><tr><td id="packDescription">—</td><td id="packQty" style="text-align:center;">1</td></tr></tbody>
-      </table>
-
-      <div class="packing-footer"><strong>Receiving / Packaging Notes</strong><br><div id="packNotes">No additional notes provided.</div></div>
-    </div>
-  </div>
-
+  
+  <div class="print-template-hidden" id="packingPrintArea"></div>
 
   <script src="js/document-theme.js"></script>
 
@@ -886,6 +853,126 @@ body{font-family:Inter,Arial,sans-serif}
       el.style.color=isError?'#ffd7e1':'#cffff0';
     }
     function clearMsg(el){ el.style.display='none'; el.textContent=''; }
+
+
+    function buildPackingSlipHTML(order){
+      const T = window.OliPolyDocumentTheme;
+      if(!T) return '';
+
+      const businessMode = !!(order.po_number || order.po_part_number || order.shipping_company);
+
+      const packedDate = order.paid_date || order.order_date || today();
+
+      return `
+        <div class="op-doc">
+          ${T.header(businessMode ? 'Packing Slip' : 'Order Packing Slip', order.order_number || 'Order')}
+
+          <div class="op-grid-4" style="margin-bottom:12px;">
+            ${T.card('Order #', order.order_number)}
+            ${T.card('PO Number', order.po_number || '—')}
+            ${T.card('Revision', order.part_revision || 'Rev A')}
+            ${T.card('Fulfillment', statusLabel(order.fulfillment || 'pickup'))}
+            ${T.card('Customer Part #', order.po_part_number || '—')}
+            ${T.card('OliPoly Part #', order.olipoly_part_number || '—')}
+            ${T.card('Quantity', order.quantity || 1)}
+            ${T.card('Packed Date', T.formatDate(packedDate))}
+          </div>
+
+          <div class="op-grid-2" style="margin-bottom:12px;">
+            ${T.panel(
+              businessMode ? 'Ship To / Receiving' : 'Customer',
+              `
+                <strong>${T.esc(order.customer_name || 'Customer')}</strong><br>
+                ${order.shipping_company ? `${T.esc(order.shipping_company)}<br>` : ''}
+                ${order.shipping_contact_name ? `${T.esc(order.shipping_contact_name)}<br>` : ''}
+                ${(order.shipping_address || '').replace(/\n/g,'<br>') || 'No shipping address provided.'}
+              `
+            )}
+
+            ${T.panel(
+              'Fulfillment Notes',
+              `
+                ${T.esc(order.shipping_or_pickup_note || 'No special fulfillment notes provided.')}<br><br>
+                <strong>Tracking:</strong> ${T.esc(order.tracking_number || 'Pending / N/A')}
+              `
+            )}
+          </div>
+
+          <table class="op-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="width:90px;text-align:center;">Qty</th>
+                <th style="width:140px;">Material / Color</th>
+                <th style="width:120px;">Revision</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <strong>${T.esc(order.order_title || 'Custom 3D Printed Part')}</strong>
+                  <div class="op-muted" style="margin-top:6px;font-size:11px;line-height:1.45;">
+                    ${T.esc(order.production_notes || 'No production notes provided.')}
+                  </div>
+                </td>
+                <td style="text-align:center;">${T.esc(order.quantity || 1)}</td>
+                <td>${T.esc([order.material, order.color].filter(Boolean).join(' / ') || '—')}</td>
+                <td>${T.esc(order.part_revision || 'Rev A')}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="op-grid-2" style="margin-top:12px;">
+            ${T.panel(
+              'Quality Checklist',
+              T.checklist([
+                'Part count verified',
+                'Visual inspection completed',
+                'Packaging checked',
+                'Label / paperwork included',
+                'Customer notes reviewed',
+                'Ready for pickup or shipment'
+              ])
+            )}
+
+            ${T.panel(
+              'Production Reference',
+              `
+                <strong>Printer/Profile:</strong> ${T.esc(order.printer_profile || '—')}<br>
+                <strong>Layer Height:</strong> ${T.esc(order.layer_height || '—')}<br>
+                <strong>Nozzle:</strong> ${T.esc(order.nozzle_size || '—')}<br>
+                <strong>Est. Print Time:</strong> ${T.esc(order.estimated_print_time || '—')}
+              `
+            )}
+          </div>
+
+          <div class="op-note">
+            <strong>Reorder Reminder</strong><br>
+            Save your order number and part revision for future repeat orders or matching production runs.
+          </div>
+
+          ${T.footer(businessMode
+            ? 'Business fulfillment document generated by OliPoly 3D'
+            : 'Thank you for supporting OliPoly 3D')}
+        </div>
+      `;
+    }
+
+    function generatePackingSlipPDF(order){
+      const T = window.OliPolyDocumentTheme;
+      if(!T){
+        alert('Document theme failed to load.');
+        return;
+      }
+
+      const html = buildPackingSlipHTML(order);
+      T.openPrintWindow(
+        `Packing Slip - ${order.order_number || 'Order'}`,
+        html,
+        T.basePrintCss()
+      );
+    }
+
 
     async function api(path, options={}){
       const headers = {
