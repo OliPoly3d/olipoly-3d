@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Site Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{
       --panel:rgba(255,255,255,.92);
@@ -435,6 +436,71 @@
   .core-tool{min-height:auto}
 }
 
+
+/* === OliPoly Hub production polish pass === */
+body{font-family:Inter,system-ui,-apple-system,sans-serif}
+.brand h1,.os-card h2,.section-title h3,.notes-card h3{font-family:"Cormorant Garamond",serif;letter-spacing:-.015em}
+.topbar{border-radius:28px;padding:11px 14px;box-shadow:0 14px 34px rgba(189,132,176,.13)}
+.logo-wrap{width:46px;height:46px;border-radius:16px}
+.brand{gap:12px}
+.brand h1{font-size:1.28rem;line-height:1;color:#2d1f36}
+.brand p{display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:.86rem;line-height:1.35}
+.brand-mini-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;background:rgba(222,111,184,.10);border:1px solid rgba(222,111,184,.14);color:#9b4c80;font:900 .68rem/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.topbar .ext{min-height:40px;padding:9px 14px;flex:0 0 auto}
+.os-card h2,.section-title h3{color:#2d1f36}
+.os-card{overflow:hidden;position:relative}
+.os-card::before,.hub-section::before,.auth-card::before,.health-check-card::before,.notes-card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);pointer-events:none}
+.hub-section,.auth-card,.health-check-card,.notes-card,.os-card{position:relative}
+.quick-action-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}
+.quick-action-card{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-height:108px;padding:15px;border-radius:22px;text-decoration:none;background:rgba(255,255,255,.78);border:1px solid var(--line);box-shadow:0 10px 22px rgba(222,111,184,.06);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.quick-action-card.primary{background:linear-gradient(135deg,rgba(222,111,184,.16),rgba(157,124,255,.14)),rgba(255,255,255,.86);border-color:rgba(222,111,184,.18)}
+.quick-action-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(222,111,184,.12);border-color:rgba(222,111,184,.22)}
+.quick-action-card strong{color:#2d1f36;line-height:1.15}
+.quick-action-card small{color:var(--muted);line-height:1.35}
+.core-tool{min-height:118px}
+.core-tool .tool-icon{width:40px;height:40px}
+.core-tool small{font-size:.84rem}
+.workflow-mini{align-items:flex-start;line-height:1.25;min-height:48px}
+.workflow-mini span{margin-top:-1px}
+.compact-link-grid{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
+.utility-link{min-height:46px}
+@media(max-width:980px){.quick-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){
+  .wrap{width:min(100% - 18px,1120px);padding-top:10px}
+  .topbar{position:relative;top:auto;border-radius:22px;padding:12px;gap:10px;margin-bottom:12px}
+  .logo-wrap{width:42px;height:42px;border-radius:15px}
+  .brand{gap:10px;align-items:center}
+  .brand h1{font-size:1.14rem}
+  .brand p{font-size:.78rem;gap:5px}
+  .brand-mini-badge{font-size:.62rem;padding:3px 7px}
+  .topbar .ext{width:100%;min-height:38px;padding:8px 12px}
+  .os-hero{gap:12px;margin-bottom:12px}
+  .os-card,.hub-section,.auth-card,.health-check-card,.notes-card{padding:14px;border-radius:22px;margin-bottom:12px}
+  .os-card h2{font-size:1.55rem}
+  .section-title h3{font-size:1.42rem;line-height:1.05}
+  .section-title p,.os-card p{font-size:.9rem;line-height:1.45}
+  .metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .metric-tile{padding:10px;border-radius:16px}
+  .metric-tile strong{font-size:1.18rem}
+  .core-tools-grid{gap:9px}
+  .core-tool{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;min-height:auto;padding:12px;border-radius:19px}
+  .core-tool .tool-icon{width:38px;height:38px;border-radius:14px}
+  .core-tool strong{font-size:.96rem}
+  .core-tool small{font-size:.78rem;line-height:1.3}
+  .quick-action-grid{grid-template-columns:1fr;gap:8px}
+  .quick-action-card{min-height:auto;padding:12px 13px;border-radius:18px}
+  .quick-action-card small{font-size:.82rem}
+  .workflow-steps-compact{gap:7px;padding:0 12px 12px}
+  .workflow-mini{min-height:auto;padding:9px 10px;font-size:.86rem}
+  .workflow-details summary{padding:14px 12px}
+  .compact-link-grid{gap:8px}
+  .utility-link{min-height:42px;padding:10px 12px;font-size:.9rem}
+  .docs-grid{gap:9px}
+  .doc-card{padding:13px;border-radius:19px}
+  .doc-card small{font-size:.84rem}
+  .reminder-toolbar{gap:8px}
+}
+
 </style>
 </head>
 <body>
@@ -446,11 +512,11 @@
           <div class="icon-fallback" style="display:none; width:100%; height:100%; place-items:center;">3D</div>
         </div>
         <div>
-          <h1>OliPoly 3D Site Hub</h1>
-          <p>Operations, quotes, orders, finance, production, and business tools.</p>
+          <h1>OliPoly Command Center</h1>
+          <p><span class="brand-mini-badge">Internal OS</span> Quotes • Orders • Finance • Production</p>
         </div>
       </div>
-      <a class="btn ext" href="https://olipoly3d.github.io/olipoly-3d/index.html">Open Main Site</a>
+      <a class="ghost ext" href="index.html">Open Main Site</a>
     </header>
 
 
@@ -516,7 +582,7 @@
       <div class="core-tools-grid">
         <a class="core-tool" href="orders-admin.html">
           <span class="tool-icon">📦</span>
-          <span><strong>Orders Admin</strong><small>Status, tracking, invoices, packing slips, shipping, Finance push.</small></span>
+          <span><strong>Orders Admin</strong><small>Quotes, converted orders, tracking, payment links, packing slips, shipping.</small></span>
         </a>
         <a class="core-tool" href="quote.html">
           <span class="tool-icon">🧾</span>
@@ -533,6 +599,36 @@
         <a class="core-tool" href="pay.html">
           <span class="tool-icon">💳</span>
           <span><strong>Pay Page</strong><small>Quick craft-table and customer payment options.</small></span>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub-section quick-action-section">
+      <div class="section-title">
+        <span class="os-kicker">Quick Actions</span>
+        <h3>Jump straight into the next task</h3>
+        <p>Fast links for the things you’re most likely to need during a normal OliPoly work session.</p>
+      </div>
+      <div class="quick-action-grid">
+        <a class="quick-action-card primary" href="quote.html">
+          <strong>+ New Quote</strong>
+          <small>Create a customer quote, PDF, and approval link.</small>
+        </a>
+        <a class="quick-action-card" href="orders-admin.html">
+          <strong>Lookup / Update Order</strong>
+          <small>Check status, payment, shipping, and tracker details.</small>
+        </a>
+        <a class="quick-action-card" href="finance-pro.html">
+          <strong>Add Sale or Expense</strong>
+          <small>Record revenue, costs, tax, or Schedule C items.</small>
+        </a>
+        <a class="quick-action-card" href="track.html">
+          <strong>Open Customer Tracker</strong>
+          <small>Preview what customers see for Q or OP numbers.</small>
+        </a>
+        <a class="quick-action-card" href="pay.html">
+          <strong>Open Payment Page</strong>
+          <small>Use for craft shows, pickups, or quick payment handoff.</small>
         </a>
       </div>
     </section>
@@ -669,10 +765,10 @@
       <div class="section-title">
         <span class="os-kicker">Workflow</span>
         <h3>Quote → order → fulfillment process</h3>
-        <p>Collapsed by default so the Hub stays fast to scan.</p>
+        <p>Current operating flow for quote approvals, converted OP orders, tracking, payment, delivery, and closeout.</p>
       </div>
       <details class="workflow-details">
-        <summary><span>Current order process checklist<small>Expand when you want the full step-by-step flow.</small></span><b>+</b></summary>
+        <summary><span>Current quote-to-order checklist<small>Expand when you want the full step-by-step flow.</small></span><b>+</b></summary>
         <label class="label" style="padding:0 16px 12px;">
           Order # / cross-check
           <input id="checkOrderNumber" class="check-input" placeholder="Q-##### or order number" />
@@ -680,13 +776,13 @@
         <div class="workflow-steps-compact">
           <div class="workflow-mini"><span>1</span>Receive request</div>
           <div class="workflow-mini"><span>2</span>Create quote</div>
-          <div class="workflow-mini"><span>3</span>Send quote</div>
-          <div class="workflow-mini"><span>4</span>Customer approves</div>
-          <div class="workflow-mini"><span>5</span>Confirm order</div>
-          <div class="workflow-mini"><span>6</span>Produce order</div>
-          <div class="workflow-mini"><span>7</span>Collect payment</div>
-          <div class="workflow-mini"><span>8</span>Pack / ship</div>
-          <div class="workflow-mini"><span>9</span>Invoice / close out</div>
+          <div class="workflow-mini"><span>3</span>Send approval link</div>
+          <div class="workflow-mini"><span>4</span>Customer accepts</div>
+          <div class="workflow-mini"><span>5</span>Quote converts to OP order</div>
+          <div class="workflow-mini"><span>6</span>Payment links appear</div>
+          <div class="workflow-mini"><span>7</span>Produce order</div>
+          <div class="workflow-mini"><span>8</span>Update tracker / deliver</div>
+          <div class="workflow-mini"><span>9</span>Close out in Finance</div>
         </div>
       </details>
     </section>
@@ -732,7 +828,7 @@
         <a class="utility-link" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal <span>→</span></a>
         <a class="utility-link" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo <span>→</span></a>
         <a class="utility-link" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail <span>→</span></a>
-        <a class="utility-link" href="quote-tool.html">Advanced Quote Tool <span>→</span></a>
+        <a class="utility-link" href="quote-tool.html">Legacy Quote Tool <span>→</span></a>
       </div>
     </section>
 
@@ -748,9 +844,6 @@
         </div>
       </section>
     </section>
-  </div>
-
-
   </div>
 
   <script type="module">
@@ -904,6 +997,7 @@
 
     const HEALTH_TARGETS = [
       { name: 'Main Site', url: 'index.html' },
+      { name: 'Hub', url: 'hub.html' },
       { name: 'Orders Admin', url: 'orders-admin.html' },
       { name: 'Tracker', url: 'track.html' },
       { name: 'Quote Tool', url: 'quote.html' },
