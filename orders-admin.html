@@ -1016,13 +1016,11 @@ body{font-family:Inter,Arial,sans-serif}
           <div class="traveler-notes-grid">
             <div class="traveler-note-box">
               <div class="traveler-chip">Production Notes</div>
-              <div>${T.esc(order.production_notes || 'No production notes provided.').replace(/
-/g,'<br>')}</div>
+              <div>${T.esc(order.production_notes || 'No production notes provided.').replace(/\n/g,'<br>')}</div>
             </div>
             <div class="traveler-note-box">
               <div class="traveler-chip">Post-Processing / Packing</div>
-              <div>${T.esc(order.post_processing_notes || order.shipping_or_pickup_note || 'No post-processing notes provided.').replace(/
-/g,'<br>')}</div>
+              <div>${T.esc(order.post_processing_notes || order.shipping_or_pickup_note || 'No post-processing notes provided.').replace(/\n/g,'<br>')}</div>
             </div>
           </div>
 
