@@ -2110,97 +2110,156 @@ https://olipoly3d.com`;
         if (!okAgain) return;
       }if(!orderNumber)return setMsg($('formMessage'),'Order number required before marking invoice sent.',true);const patchPayload={invoice_number:$('invoiceNumber')?.value.trim()||null,invoice_date:$('invoiceDate')?.value||null,invoice_due_date:$('invoiceDueDate')?.value||null,invoice_terms:$('invoiceTerms')?.value||null,po_number:$('poNumber')?.value.trim()||null,ap_email:$('apEmail')?.value.trim()||null,billing_address:$('billingAddress')?.value.trim()||null,shipping_address:$('shippingAddress')?.value.trim()||null,invoice_sent:true,invoice_sent_at:new Date().toISOString()};const targetPath=activeId?`/rest/v1/orders?id=eq.${activeId}`:`/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;const res=await api(targetPath,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patchPayload)});if(res.error)return setMsg($('formMessage'),res.error.message||JSON.stringify(res.error),true);setMsg($('formMessage'),`Invoice ${patchPayload.invoice_number} marked sent.`);await fetchOrders();const saved=orders.find(o=>o.order_number===orderNumber);if(saved){saved.invoice_sent=true;saved.invoice_sent_at=patchPayload.invoice_sent_at;saved.invoice_number=patchPayload.invoice_number;loadIntoForm(saved);updateInvoiceStatusNote(saved);}renderList();}
 
-    function buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
-      const fulfillmentLine =
-        fulfillment === 'shipping'
-          ? 'If this order is being shipped, tracking or shipping details will be provided as available.'
-          : fulfillment === 'delivery'
-            ? 'If this order is being delivered, reply to coordinate final details.'
-            : "If you're picking up, just reply to coordinate a time.";
+    function lifecyclePaymentLine(paymentStatus) {
+      return paymentStatus === 'paid'
+        ? 'Payment is marked paid in full.'
+        : 'Payment options are available from the tracker link below.';
+    }
 
-      const paymentLine =
-        paymentStatus === 'paid'
-          ? 'Payment is marked paid in full.'
-          : 'You can view payment options or complete payment from the tracker link below.';
+    function lifecycleFulfillmentLine(kind, fulfillment, trackingNumber='') {
+      if (kind === 'shipped') {
+        return trackingNumber
+          ? `Your tracking number is ${trackingNumber}.`
+          : 'Shipping or tracking details will be provided as available.';
+      }
 
-      return `Hi — your order is complete and ready.
+      if (kind === 'pickup') {
+        return 'Reply to coordinate pickup timing, or check the tracker for any final pickup notes.';
+      }
+
+      if (kind === 'started') {
+        return 'We’ll update the tracker as your order moves through production.';
+      }
+
+      if (fulfillment === 'delivery') return 'Reply to coordinate final delivery details.';
+      if (fulfillment === 'shipping') return 'Shipping or tracking details will be provided as available.';
+      return "If you're picking up, just reply to coordinate a time.";
+    }
+
+    function buildLifecyclePlainEmail(kind, orderNumber, orderTitle, trackLink, fulfillment, paymentStatus='unpaid', trackingNumber='') {
+      const titles = {
+        completion: 'Your OliPoly 3D order is complete and ready.',
+        started: 'Your OliPoly 3D order has started.',
+        pickup: 'Your OliPoly 3D order is ready for pickup.',
+        shipped: 'Your OliPoly 3D order has shipped.'
+      };
+
+      const next = {
+        completion: lifecycleFulfillmentLine('completion', fulfillment, trackingNumber),
+        started: lifecycleFulfillmentLine('started', fulfillment, trackingNumber),
+        pickup: lifecycleFulfillmentLine('pickup', fulfillment, trackingNumber),
+        shipped: lifecycleFulfillmentLine('shipped', fulfillment, trackingNumber)
+      };
+
+      return `Hi — ${titles[kind] || 'Here is an update on your OliPoly 3D order.'}
 
 Order #: ${orderNumber}
-${orderTitle ? `Project: ${orderTitle}
-` : ''}
-View your order details and payment options:
+${orderTitle ? `Project: ${orderTitle}\n` : ''}${fulfillment ? `Fulfillment: ${fulfillment}\n` : ''}${trackingNumber ? `Tracking: ${trackingNumber}\n` : ''}
+${next[kind] || ''}
+
+${lifecyclePaymentLine(paymentStatus)}
+
+Track your order:
 ${trackLink}
 
-${paymentLine}
+Thank you,
+OliPoly 3D LLC
+Custom 3D Printing • Creative Builds • Prototypes
+OliPoly3D@gmail.com
+https://olipoly3d.com`;
+    }
 
-${fulfillmentLine}
+    function buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
+      return buildLifecyclePlainEmail('completion', orderNumber, orderTitle, trackLink, fulfillment, paymentStatus, $('trackingNumber')?.value.trim() || '');
+    }
 
-Thanks!
-OliPoly 3D`;
+    function buildLifecycleHtmlEmail(kind, orderNumber, orderTitle, trackLink, fulfillment, paymentStatus='unpaid', trackingNumber='') {
+      const titles = {
+        completion: 'Your order is ready',
+        started: 'Your order is in motion',
+        pickup: 'Ready for pickup',
+        shipped: 'Your order has shipped'
+      };
+
+      const badge = {
+        completion: 'Order Complete',
+        started: 'Production Started',
+        pickup: 'Ready for Pickup',
+        shipped: 'Shipping Update'
+      };
+
+      const messages = {
+        completion: 'Your OliPoly 3D order is complete and ready.',
+        started: 'Your OliPoly 3D order has been started and is now moving into production.',
+        pickup: 'Your OliPoly 3D order is ready for pickup. Reply to coordinate timing or review any final notes in the tracker.',
+        shipped: trackingNumber ? `Your order has shipped. Tracking number: ${trackingNumber}.` : 'Your order has shipped or is ready with shipping details.'
+      };
+
+      const stepRows = {
+        completion: ['Review final pickup/shipping details', 'Complete payment if still due', 'Save this order number for future reorders'],
+        started: ['Production has started', 'Tracker will be updated as work progresses', 'Reply if anything needs to change'],
+        pickup: ['Reply to coordinate pickup', 'Check payment status in the tracker', 'Bring your order number if helpful'],
+        shipped: ['Watch tracking for delivery updates', 'Check the tracker for order notes', 'Contact us if anything needs attention']
+      }[kind] || ['Check the tracker for the latest order update'];
+
+      const paid = paymentStatus === 'paid';
+      const paymentBox = paid
+        ? `<div style="background:#effaf4;border:1px solid #bcebd0;border-radius:18px;padding:14px 16px;color:#166534;font-size:14px;line-height:1.55;"><strong>Payment:</strong> Paid in full.</div>`
+        : `<div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;color:#604d68;font-size:14px;line-height:1.55;"><strong style="color:#2f2336;">Payment:</strong> Payment options are available from the tracker.</div>`;
+
+      return `<div style="margin:0;background:#fff7fb;padding:26px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:28px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
+    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+
+    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+      <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
+        <td style="vertical-align:middle;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
+          <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">Custom 3D Printing • Creative Builds • Prototypes</div>
+        </td>
+        <td style="text-align:right;vertical-align:middle;">
+          <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff3fb;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">${esc(badge[kind] || 'Order Update')}</span>
+        </td>
+      </tr></table>
+    </div>
+
+    <div style="padding:28px;">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#241b2b;font-weight:700;">${esc(titles[kind] || 'Order update')}</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">${esc(messages[kind] || 'Here is an update on your OliPoly 3D order.')}</p>
+
+      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">Order Summary</div>
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">Order #</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:900;border-bottom:1px solid #f5dcea;">${esc(orderNumber)}</td></tr>
+          ${orderTitle ? `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Project</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(orderTitle)}</td></tr>` : ''}
+          ${fulfillment ? `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Fulfillment</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(fulfillment)}</td></tr>` : ''}
+          ${trackingNumber ? `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;">Tracking</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;">${esc(trackingNumber)}</td></tr>` : ''}
+        </table>
+      </div>
+
+      <div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:20px;padding:16px 18px;margin:20px 0;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:8px;">What happens next?</div>
+        <ul style="margin:0;padding-left:20px;color:#604d68;font-size:14px;line-height:1.65;">
+          ${stepRows.map(s => `<li>${esc(s)}</li>`).join('')}
+        </ul>
+      </div>
+
+      ${paymentBox}
+
+      <div style="margin:20px 0;">
+        <a href="${trackLink}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Track Order</a>
+      </div>
+
+      <p style="margin:22px 0 0;color:#4f4057;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
+    </div>
+
+    <div style="padding:18px 28px;background:#fff7fb;border-top:1px solid #f6ddec;text-align:center;color:#826889;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
+  </div>
+</div>`;
     }
 
     function buildCompletionHtmlEmail(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment) {
-      const fulfillmentLine =
-        fulfillment === 'shipping'
-          ? 'If this order is being shipped, tracking or shipping details will be provided as available.'
-          : fulfillment === 'delivery'
-            ? 'If this order is being delivered, reply to coordinate final details.'
-            : "If you're picking up, just reply to coordinate a time.";
-
-      const paymentLine =
-        paymentStatus === 'paid'
-          ? 'Payment is marked paid in full.'
-          : 'You can view payment options or complete payment from the tracker link below.';
-
-      return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,sans-serif;color:#3f3146;">
-  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
-    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff);"></div>
-
-    <div style="padding:26px 26px 10px;">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;letter-spacing:-.03em;color:#241b2b;">
-        Oli<span style="color:#b86be8;">Poly</span> 3D
-      </div>
-      <div style="margin-top:4px;color:#866a86;font-size:14px;">
-        Custom prints • Creative builds • Prototypes
-      </div>
-    </div>
-
-    <div style="padding:12px 26px 26px;">
-      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:8px 0 14px;color:#241b2b;">
-        Your order is ready
-      </h1>
-
-      <p style="font-size:16px;line-height:1.6;margin:0 0 18px;">
-        Hi — your order is complete and ready.
-      </p>
-
-      <div style="background:#fff7fb;border:1px solid #f2c4df;border-radius:18px;padding:16px 18px;margin:18px 0;">
-        <p style="margin:0 0 8px;"><strong>Order #:</strong> ${orderNumber}</p>
-        ${orderTitle ? `<p style="margin:0 0 8px;"><strong>Project:</strong> ${orderTitle}</p>` : ""}
-        <p style="margin:0;"><strong>Payment:</strong> ${paymentLine}</p>
-      </div>
-
-      <p style="font-size:16px;line-height:1.6;margin:18px 0 20px;">
-        ${fulfillmentLine}
-      </p>
-
-      <div style="text-align:center;margin:26px 0;">
-        <a href="${trackLink}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#ffffff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:999px;">
-          View Order & Payment Options
-        </a>
-      </div>
-
-      <p style="font-size:14px;line-height:1.55;color:#816c88;margin:0;">
-        If you have questions, just reply to this email.
-      </p>
-    </div>
-
-    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:16px 26px;color:#866a86;font-size:13px;line-height:1.5;">
-      OliPoly 3D • Custom 3D printing<br>
-      OliPoly3D@gmail.com • olipoly3d.com
-    </div>
-  </div>
-</div>`;
+      return buildLifecycleHtmlEmail('completion', orderNumber, orderTitle, trackLink, fulfillment, paymentStatus, $('trackingNumber')?.value.trim() || '');
     }
 
     let lastCompletionEmail = { html: '', plain: '', subject: '', to: '', orderNumber: '' };
@@ -2220,6 +2279,7 @@ OliPoly 3D`;
       const orderTitle = $('orderTitle').value.trim();
       const paymentStatus = $('paymentStatus').value;
       const fulfillment = $('fulfillment').value;
+      const trackingNumber = $('trackingNumber')?.value.trim() || '';
 
       if (!orderNumber || !email) {
         alert('Order number and customer email are required.');
@@ -2227,9 +2287,9 @@ OliPoly 3D`;
       }
 
       const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
-      const subject = `Your order is ready – OliPoly 3D (${orderNumber})`;
-      const plain = buildCompletionPlainEmailBody(orderNumber, orderTitle, trackLink, paymentStatus, fulfillment);
-      const html = buildCompletionHtmlEmail(esc(orderNumber), esc(orderTitle), trackLink, paymentStatus, fulfillment);
+      const subject = `Your OliPoly 3D order is ready (${orderNumber})`;
+      const plain = buildLifecyclePlainEmail('completion', orderNumber, orderTitle, trackLink, fulfillment, paymentStatus, trackingNumber);
+      const html = buildLifecycleHtmlEmail('completion', orderNumber, orderTitle, trackLink, fulfillment, paymentStatus, trackingNumber);
 
       lastCompletionEmail = { html, plain, subject, to: email, orderNumber };
       writeCompletionEmailPreview(html);
@@ -2244,85 +2304,32 @@ OliPoly 3D`;
       document.body.style.overflow = 'hidden';
     }
 
-
-    function buildLifecyclePlainEmail(kind, orderNumber, orderTitle, trackLink, fulfillment) {
-      const labels = {
-        started: 'Your OliPoly 3D order has been started and is now moving into production planning.',
-        pickup: 'Your OliPoly 3D order is ready for pickup.',
-        shipped: 'Your OliPoly 3D order has shipped or is ready with shipping details.'
-      };
-      const next = {
-        started: 'You can use the tracker link below to follow progress as the order moves through production.',
-        pickup: 'Reply to coordinate pickup timing, or check the tracker for any final notes.',
-        shipped: 'Use the tracker link below for shipping or fulfillment updates.'
-      };
-      return `Hi — ${labels[kind] || 'Here is an update on your OliPoly 3D order.'}
-
-Order #: ${orderNumber}
-${orderTitle ? `Project: ${orderTitle}\n` : ''}${fulfillment ? `Fulfillment: ${fulfillment}\n` : ''}
-${next[kind] || ''}
-
-Track your order here:
-${trackLink}
-
-Thank you,
-OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
-OliPoly3D@gmail.com
-https://olipoly3d.com`;
-    }
-
-    function buildLifecycleHtmlEmail(kind, orderNumber, orderTitle, trackLink, fulfillment) {
-      const titles = {
-        started: 'Your order is in motion',
-        pickup: 'Your order is ready for pickup',
-        shipped: 'Your order has shipped'
-      };
-      const messages = {
-        started: 'Your OliPoly 3D order has been started and is now moving into production planning.',
-        pickup: 'Your OliPoly 3D order is ready for pickup. Reply to coordinate pickup timing or review any final notes in the tracker.',
-        shipped: 'Your OliPoly 3D order has shipped or is ready with shipping details. Use the tracker for fulfillment updates.'
-      };
-      return `<div style="margin:0;background:#fff7fb;padding:24px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
-  <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #f2c4df;border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(222,111,184,.14);">
-    <div style="height:10px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
-    <div style="padding:26px 28px;">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:800;color:#241b2b;margin-bottom:8px;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
-      <div style="display:inline-block;margin:8px 0 14px;padding:7px 11px;border-radius:999px;background:#f9ecf5;border:1px solid #f2c4df;color:#7c4a82;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">Order Update</div>
-      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;margin:0 0 14px;color:#241b2b;font-weight:700;">${esc(titles[kind] || 'Order update')}</h1>
-      <p style="font-size:15px;line-height:1.65;margin:0 0 18px;color:#4f4057;">${esc(messages[kind] || 'Here is an update on your OliPoly 3D order.')}</p>
-      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;">
-        <p style="margin:0 0 8px;color:#604d68;"><strong style="color:#2f2336;">Order #:</strong> ${esc(orderNumber)}</p>
-        ${orderTitle ? `<p style="margin:0 0 8px;color:#604d68;"><strong style="color:#2f2336;">Project:</strong> ${esc(orderTitle)}</p>` : ''}
-        ${fulfillment ? `<p style="margin:0;color:#604d68;"><strong style="color:#2f2336;">Fulfillment:</strong> ${esc(fulfillment)}</p>` : ''}
-      </div>
-      <a href="${trackLink}" style="display:inline-block;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:800;padding:12px 18px;border-radius:999px;">Track Order</a>
-      <p style="font-size:15px;line-height:1.6;margin:22px 0 0;color:#4f4057;">Thank you,<br><strong>OliPoly 3D LLC</strong><br>Custom 3D Printing • Creative Builds • Prototypes</p>
-    </div>
-    <div style="background:#fff7fb;border-top:1px solid #f2c4df;padding:18px 28px;color:#826889;font-size:13px;line-height:1.55;">OliPoly3D@gmail.com • olipoly3d.com</div>
-  </div>
-</div>`;
-    }
-
     function openLifecycleEmailModal(kind) {
       const orderNumber = $('orderNumber').value.trim();
       const email = $('customerEmail').value.trim();
       const orderTitle = $('orderTitle').value.trim();
       const fulfillment = $('fulfillment').value;
+      const paymentStatus = $('paymentStatus')?.value || 'unpaid';
+      const trackingNumber = $('trackingNumber')?.value.trim() || '';
+
       if (!orderNumber || !email) {
         alert('Order number and customer email are required.');
         return;
       }
+
       const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
       const subjects = {
-        started: `Your OliPoly 3D order has started (${orderNumber})`,
+        started: `Production started for your OliPoly 3D order (${orderNumber})`,
         pickup: `Your OliPoly 3D order is ready for pickup (${orderNumber})`,
-        shipped: `Your OliPoly 3D order has shipped (${orderNumber})`
+        shipped: `Shipping update for your OliPoly 3D order (${orderNumber})`
       };
-      const plain = buildLifecyclePlainEmail(kind, orderNumber, orderTitle, trackLink, fulfillment);
-      const html = buildLifecycleHtmlEmail(kind, orderNumber, orderTitle, trackLink, fulfillment);
+
+      const plain = buildLifecyclePlainEmail(kind, orderNumber, orderTitle, trackLink, fulfillment, paymentStatus, trackingNumber);
+      const html = buildLifecycleHtmlEmail(kind, orderNumber, orderTitle, trackLink, fulfillment, paymentStatus, trackingNumber);
+
       lastCompletionEmail = { html, plain, subject: subjects[kind] || `OliPoly 3D order update (${orderNumber})`, to: email, orderNumber };
       writeCompletionEmailPreview(html);
+
       const modal = $('completionEmailModal');
       const msg = $('completionEmailModalMessage');
       const markBtn = $('markCompletionSentBtn');
