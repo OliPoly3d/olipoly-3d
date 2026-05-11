@@ -479,7 +479,85 @@ body{font-family:Inter,Arial,sans-serif}
   .action-group .btn,.action-group .btn-ghost,.action-group .btn-danger{width:100%}
 }
 
-  </style>
+  
+/* === Catalog / Reorder Phase 1A === */
+.catalog-workspace{
+  margin-top:18px;
+  padding:20px;
+  border-radius:26px;
+  background:
+    radial-gradient(circle at 8% 0%,rgba(222,111,184,.10),transparent 40%),
+    linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,246,251,.92));
+  border:1px solid rgba(236,72,153,.15);
+  box-shadow:var(--shadow,0 18px 42px rgba(56,24,64,.10));
+}
+.catalog-workspace h3,.catalog-panel h4{margin:0}
+.catalog-status-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  align-self:flex-start;
+  padding:7px 11px;
+  border-radius:999px;
+  background:rgba(236,72,153,.10);
+  border:1px solid rgba(236,72,153,.16);
+  color:#7a2f5e;
+  font-size:.78rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.catalog-grid{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:14px;
+  margin-top:14px;
+}
+.catalog-panel{
+  padding:16px;
+  border-radius:22px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(236,72,153,.13);
+}
+.catalog-panel h4{
+  font-size:1rem;
+  margin-bottom:10px;
+}
+.catalog-help{
+  margin:0 0 12px;
+  color:var(--muted,#76657f);
+  line-height:1.5;
+}
+.catalog-kv{
+  display:grid;
+  grid-template-columns:minmax(120px,.75fr) 1fr;
+  gap:8px 12px;
+  font-size:.92rem;
+}
+.catalog-kv span{
+  color:var(--muted,#76657f);
+  font-weight:800;
+}
+.catalog-kv strong{
+  color:var(--text,#221827);
+  overflow-wrap:anywhere;
+}
+#catalogMessage{
+  margin-top:12px;
+  min-height:0;
+}
+@media(max-width:900px){
+  .catalog-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .catalog-workspace{padding:15px;border-radius:22px}
+  .catalog-panel{padding:14px;border-radius:18px}
+  .catalog-kv{grid-template-columns:1fr}
+  .catalog-panel .btn-row{display:grid;grid-template-columns:1fr}
+  .catalog-panel .btn,.catalog-panel .btn-ghost{width:100%}
+}
+
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -687,6 +765,40 @@ body{font-family:Inter,Arial,sans-serif}
             <div class="catalog-note">Catalog parts are internal production memory for repeat orders. They save OliPoly Part #, customer part #, revision, material/profile notes, last order, and pricing reference.</div>
           </div>
         </div>
+
+        <div class="catalog-workspace card" id="catalogWorkspace">
+          <div class="section-title-row">
+            <div>
+              <h3>Catalog / Reorder Memory</h3>
+              <p class="sub">Save repeatable parts from this order so future reorders can start from a known part, revision, material, and production reference.</p>
+            </div>
+            <div class="catalog-status-pill" id="catalogStatusPill">Internal catalog</div>
+          </div>
+
+          <div class="catalog-grid">
+            <div class="catalog-panel">
+              <h4>Current Part Snapshot</h4>
+              <div class="catalog-kv">
+                <span>OliPoly Part #</span><strong id="catalogPreviewOliPart">—</strong>
+                <span>Customer Part #</span><strong id="catalogPreviewCustomerPart">—</strong>
+                <span>Revision</span><strong id="catalogPreviewRevision">—</strong>
+                <span>Material / Color</span><strong id="catalogPreviewMaterial">—</strong>
+                <span>Last Qty / Price</span><strong id="catalogPreviewPricing">—</strong>
+              </div>
+            </div>
+
+            <div class="catalog-panel">
+              <h4>Catalog Actions</h4>
+              <p class="catalog-help">Use this for repeatable jobs, business parts, brackets, spacers, fixtures, or anything likely to be ordered again.</p>
+              <div class="btn-row">
+                <button class="btn" id="saveCatalogPartBtnV2" type="button">Save / Update Catalog Part</button>
+                <button class="btn-ghost" id="showCatalogJsonBtn" type="button">Preview Catalog Data</button>
+              </div>
+              <div class="message" id="catalogMessage"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="message" id="formMessage"></div>
         <div class="note" id="publicPreview" style="margin-top:12px;">No public preview yet.</div>
       </section>
@@ -3201,6 +3313,211 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
       generatePackingSlipPDFFallback(order);
     }
+
+
+
+    /* === Catalog / Reorder Phase 1A === */
+    function catalogFieldValue(...ids){
+      for (const id of ids) {
+        const el = $(id);
+        const value = el?.value?.trim?.() || el?.textContent?.trim?.() || '';
+        if (value) return value;
+      }
+      return '';
+    }
+
+    function buildCatalogPartSnapshot(){
+      const order = activeId ? orders.find(o => o.id === activeId) : null;
+      const form = snapshotForm();
+
+      const source = { ...(order || {}), ...form };
+
+      const orderNumber = source.order_number || catalogFieldValue('orderNumber');
+      const partName = source.order_title || catalogFieldValue('orderTitle') || 'Custom 3D Printed Part';
+      const customerName = source.customer_name || catalogFieldValue('customerName');
+      const companyName = source.shipping_company || source.company_name || catalogFieldValue('shippingCompany');
+      const oliPart = source.olipoly_part_number || catalogFieldValue('olipolyPartNumber');
+      const customerPart = source.po_part_number || source.customer_part_number || catalogFieldValue('customerPartNumber','poPartNumber');
+      const revision = source.part_revision || catalogFieldValue('partRevision') || 'Rev A';
+
+      return {
+        catalog_version: 'catalog-phase-1a',
+        saved_at: new Date().toISOString(),
+        active: true,
+        reorder_eligible: true,
+
+        part_key: [oliPart || customerPart || orderNumber || partName, revision].filter(Boolean).join(' :: '),
+        part_name: partName,
+        olipoly_part_number: oliPart || null,
+        customer_part_number: customerPart || null,
+        part_revision: revision,
+        customer_name: customerName || null,
+        company_name: companyName || null,
+
+        source_order_number: orderNumber || null,
+        source_quote_number: source.source_quote_number || catalogFieldValue('quoteNumber') || null,
+        po_number: source.po_number || catalogFieldValue('poNumber') || null,
+
+        default_material: source.material || catalogFieldValue('material') || null,
+        default_color: source.color || catalogFieldValue('color') || null,
+        printer_profile: source.printer_profile || catalogFieldValue('printerProfile') || null,
+        layer_height: source.layer_height || catalogFieldValue('layerHeight') || null,
+        nozzle_size: source.nozzle_size || catalogFieldValue('nozzleSize') || null,
+
+        last_quantity: source.quantity || catalogFieldValue('quantity') || null,
+        last_order_total: source.order_total || catalogFieldValue('orderTotal') || null,
+        estimated_piece_price: source.estimated_piece_price || catalogFieldValue('estimatedPiecePrice') || null,
+
+        production_notes: source.production_notes || catalogFieldValue('productionNotes') || null,
+        post_processing_notes: source.post_processing_notes || catalogFieldValue('postProcessingNotes') || null,
+        packing_notes: source.shipping_or_pickup_note || catalogFieldValue('shippingOrPickupNote') || null,
+        internal_notes: source.internal_notes || catalogFieldValue('internalNotes') || null
+      };
+    }
+
+    function catalogStorageKey(){
+      return 'olipoly_catalog_parts_v1';
+    }
+
+    function readLocalCatalogParts(){
+      try { return JSON.parse(localStorage.getItem(catalogStorageKey()) || '[]'); }
+      catch { return []; }
+    }
+
+    function writeLocalCatalogParts(parts){
+      localStorage.setItem(catalogStorageKey(), JSON.stringify(parts));
+    }
+
+    function upsertLocalCatalogPart(part){
+      const parts = readLocalCatalogParts();
+      const match = (p) =>
+        (part.olipoly_part_number && p.olipoly_part_number === part.olipoly_part_number && p.part_revision === part.part_revision) ||
+        (part.customer_part_number && p.customer_part_number === part.customer_part_number && p.part_revision === part.part_revision) ||
+        (part.source_order_number && p.source_order_number === part.source_order_number);
+
+      const idx = parts.findIndex(match);
+      if (idx >= 0) parts[idx] = { ...parts[idx], ...part, updated_at: new Date().toISOString() };
+      else parts.unshift({ id: crypto.randomUUID?.() || String(Date.now()), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...part });
+
+      writeLocalCatalogParts(parts);
+      return { part: idx >= 0 ? parts[idx] : parts[0], updated: idx >= 0, count: parts.length };
+    }
+
+    async function saveCatalogPart(){
+      const part = buildCatalogPartSnapshot();
+
+      if (!part.part_name || (!part.olipoly_part_number && !part.customer_part_number && !part.source_order_number)) {
+        setMsg($('catalogMessage'), 'Add an OliPoly Part #, Customer Part #, or save/select an order before saving a catalog part.', true);
+        return;
+      }
+
+      let cloudSaved = false;
+      let cloudError = null;
+
+      // Phase 1A: local catalog memory is guaranteed. If a catalog_parts table exists later, this will also save to Supabase.
+      if (typeof api === 'function') {
+        try {
+          const payload = {
+            part_key: part.part_key,
+            part_name: part.part_name,
+            olipoly_part_number: part.olipoly_part_number,
+            customer_part_number: part.customer_part_number,
+            part_revision: part.part_revision,
+            customer_name: part.customer_name,
+            company_name: part.company_name,
+            source_order_number: part.source_order_number,
+            source_quote_number: part.source_quote_number,
+            po_number: part.po_number,
+            default_material: part.default_material,
+            default_color: part.default_color,
+            printer_profile: part.printer_profile,
+            layer_height: part.layer_height,
+            nozzle_size: part.nozzle_size,
+            last_quantity: part.last_quantity,
+            last_order_total: part.last_order_total,
+            estimated_piece_price: part.estimated_piece_price,
+            production_notes: part.production_notes,
+            post_processing_notes: part.post_processing_notes,
+            packing_notes: part.packing_notes,
+            internal_notes: part.internal_notes,
+            reorder_eligible: part.reorder_eligible,
+            active: part.active,
+            catalog_data: part,
+            updated_at: new Date().toISOString()
+          };
+
+          const res = await api('/rest/v1/catalog_parts?on_conflict=part_key', {
+            method: 'POST',
+            headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.error) cloudSaved = true;
+          else cloudError = res.error;
+        } catch (error) {
+          cloudError = error;
+        }
+      }
+
+      const local = upsertLocalCatalogPart(part);
+      updateCatalogPreview();
+
+      const label = part.olipoly_part_number || part.customer_part_number || part.source_order_number || part.part_name;
+      const status = cloudSaved
+        ? `Catalog part saved to Supabase and browser backup: ${label}`
+        : `Catalog part saved to browser catalog: ${label}${cloudError ? ' (Supabase catalog table not active yet.)' : ''}`;
+
+      setMsg($('catalogMessage'), status, !cloudSaved && !!cloudError);
+    }
+
+    function showCatalogJsonPreview(){
+      const part = buildCatalogPartSnapshot();
+      const text = JSON.stringify(part, null, 2);
+      try {
+        navigator.clipboard?.writeText(text);
+        setMsg($('catalogMessage'), 'Catalog data copied to clipboard.');
+      } catch {
+        setMsg($('catalogMessage'), 'Catalog data preview generated.');
+      }
+      console.log('Catalog Part Snapshot:', part);
+      alert(`Catalog Part Preview:\n\n${text.slice(0, 1800)}${text.length > 1800 ? '\n\n…truncated in alert; full version logged to console.' : ''}`);
+    }
+
+    function updateCatalogPreview(){
+      const part = buildCatalogPartSnapshot();
+      const set = (id, value) => { const el = $(id); if (el) el.textContent = value || '—'; };
+
+      set('catalogPreviewOliPart', part.olipoly_part_number);
+      set('catalogPreviewCustomerPart', part.customer_part_number);
+      set('catalogPreviewRevision', part.part_revision);
+      set('catalogPreviewMaterial', [part.default_material, part.default_color].filter(Boolean).join(' / '));
+      set('catalogPreviewPricing', [part.last_quantity ? `Qty ${part.last_quantity}` : '', part.last_order_total ? money(part.last_order_total) : ''].filter(Boolean).join(' • '));
+    }
+
+    function bindCatalogPhase1A(){
+      $('saveCatalogPartBtnV2')?.addEventListener('click', saveCatalogPart);
+      $('showCatalogJsonBtn')?.addEventListener('click', showCatalogJsonPreview);
+
+      [
+        'orderNumber','orderTitle','customerName','olipolyPartNumber','customerPartNumber','poPartNumber',
+        'partRevision','material','color','quantity','orderTotal','productionNotes','postProcessingNotes',
+        'shippingOrPickupNote','internalNotes'
+      ].forEach(id => {
+        $(id)?.addEventListener('input', updateCatalogPreview);
+        $(id)?.addEventListener('change', updateCatalogPreview);
+      });
+
+      document.addEventListener('click', event => {
+        if (event.target.closest?.('.order-row') || ['newBtn','newBtnInline','refreshBtn','saveBtn'].includes(event.target?.id)) {
+          setTimeout(updateCatalogPreview, 180);
+        }
+      });
+
+      updateCatalogPreview();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindCatalogPhase1A);
+    else bindCatalogPhase1A();
 
 
     /* === Orders Admin v2 safe additive helpers === */
