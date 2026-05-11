@@ -36,6 +36,16 @@
     "email": "OliPoly3D@gmail.com"
   }
 }
+
+const showTallyBtn = document.getElementById("showTallyEmbedBtn");
+const tallyWrap = document.getElementById("tallyEmbedWrap");
+showTallyBtn?.addEventListener("click", () => {
+  tallyWrap?.classList.toggle("active");
+  const active = tallyWrap?.classList.contains("active");
+  showTallyBtn.textContent = active ? "Hide Form" : "Show Form Here";
+  if (active) tallyWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 </script>
 
 <style>
@@ -520,6 +530,18 @@ input:focus,select:focus,textarea:focus{
   .file-pill{grid-template-columns:1fr}
 }
 
+
+/* === Start Project v3 Tally upload path === */
+.tally-panel{margin-top:18px;padding:22px;border-radius:30px;background:radial-gradient(circle at 12% 0%,rgba(236,72,153,.13),transparent 36%),linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,246,251,.76));border:1px solid rgba(236,72,153,.15);box-shadow:var(--shadow)}
+.tally-panel h2{margin:0 0 8px;font-family:"Cormorant Garamond",Georgia,serif;font-size:2rem;line-height:1;color:#241b2b}
+.tally-panel p{margin:0;color:var(--muted);line-height:1.55}
+.tally-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.tally-embed-wrap{display:none;margin-top:16px;border-radius:24px;overflow:hidden;background:rgba(255,255,255,.84);border:1px solid rgba(236,72,153,.13);box-shadow:0 12px 28px rgba(236,72,153,.08)}
+.tally-embed-wrap.active{display:block}
+.tally-embed-wrap iframe{width:100%;min-height:720px;border:0;display:block}
+.dual-intake-note{margin-top:12px;padding:12px 13px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(236,72,153,.12);color:#806b87;font-size:.9rem;line-height:1.45}
+@media(max-width:640px){.tally-panel{padding:18px;border-radius:24px}.tally-actions{display:grid;grid-template-columns:1fr}.tally-embed-wrap iframe{min-height:780px}}
+
 </style>
 </head>
 
@@ -536,7 +558,7 @@ input:focus,select:focus,textarea:focus{
     <nav class="navlinks" aria-label="Main navigation">
       <a class="btn-ghost" href="/">Home</a>
       <a class="btn-ghost" href="/track.html">Track Order</a>
-      <a class="btn" href="#intake">Start Intake</a>
+      <a class="btn" href="#upload-intake">Upload Intake</a>
     </nav>
   </div>
 </header>
@@ -550,6 +572,7 @@ input:focus,select:focus,textarea:focus{
         <p>Tell us what you want to make, fix, prototype, personalize, or produce. This guided intake helps route your idea without sending you into internal quoting tools.</p>
         <div class="hero-actions">
           <a class="btn" href="#project-type">Choose Project Type</a>
+          <a class="btn-ghost" href="#upload-intake">Upload Files</a>
           <a class="btn-ghost" href="mailto:OliPoly3D@gmail.com">Email OliPoly</a>
         </div>
       </div>
@@ -625,7 +648,7 @@ input:focus,select:focus,textarea:focus{
 
         <section class="form-panel">
           <span class="eyebrow">Project Details</span>
-          <h2>Send the starting details</h2>
+          <h2>Quick project message</h2>
           <form id="projectForm" action="https://formspree.io/f/xojplkjw" method="POST" enctype="multipart/form-data">
             <div class="form-grid">
               <label>
@@ -677,16 +700,12 @@ input:focus,select:focus,textarea:focus{
               </label>
 
               <div class="upload-shell" id="uploadShell">
-                <h3>Attach reference files</h3>
-                <p>Upload photos, screenshots, sketches, STL/3MF files, PDFs, drawings, or measurement references that help explain the project.</p>
+                <h3>File uploads use Tally</h3>
+                <p>For dependable file uploads, use the dedicated Tally intake below. This quick form is best for text-only project notes.</p>
                 <div class="upload-zone">
-                  <label class="upload-drop" for="projectFiles">
-                    <strong>Tap to choose files or drag them here</strong>
-                    <span>Mobile photos, STL, 3MF, STEP/STP, PDF, PNG, JPG, SVG, ZIP and similar references are welcome.</span>
-                  </label>
-                  <input id="projectFiles" class="file-input" name="attachments" type="file" multiple accept=".stl,.3mf,.step,.stp,.obj,.pdf,.png,.jpg,.jpeg,.webp,.svg,.zip,.txt,.doc,.docx,.heic,.heif,image/*,application/pdf" />
+                  <a class="btn full" href="https://tally.so/r/xX4vJk" target="_blank" rel="noopener noreferrer">Open Upload Intake</a>
                   <div class="file-list" id="fileList"></div>
-                  <span class="upload-note">Large files may take longer to submit. If uploads fail, send the form anyway and reply to the follow-up email with files attached.</span>
+                  <span class="upload-note">Tally should redirect completed upload submissions to OliPoly’s branded project received page.</span>
                 </div>
               </div>
             </div>
@@ -696,16 +715,37 @@ input:focus,select:focus,textarea:focus{
             <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off" />
 
             <div class="helper">
-              Attach helpful files now, or submit the intake first and send files later by email if needed.
+              For file-heavy projects, use the Tally upload intake below. This quick form remains available for simple text-only messages.
             </div>
 
             <div class="form-actions">
               <button class="btn" type="submit">Send Project Intake</button>
               <a class="btn-ghost" href="mailto:OliPoly3D@gmail.com">Email Instead</a>
             </div>
-            <div class="status" id="formStatus">This sends a customer-facing project intake message, not an internal quote-tool submission.</div>
+            <div class="status" id="formStatus">Use this for quick text-only project messages. For real file uploads, use the Tally upload intake below.</div>
           </form>
         </section>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="section" id="upload-intake">
+    <div class="container">
+      <div class="tally-panel">
+        <span class="eyebrow">Upload Intake</span>
+        <h2>Need to send files?</h2>
+        <p>Use the dedicated Tally intake for photos, STL/3MF files, drawings, PDFs, sketches, screenshots, measurements, and other project references. This is the preferred path for most real project requests.</p>
+        <div class="tally-actions">
+          <a class="btn" href="https://tally.so/r/xX4vJk" target="_blank" rel="noopener noreferrer">Open Upload Intake</a>
+          <button class="btn-ghost" id="showTallyEmbedBtn" type="button">Show Form Here</button>
+        </div>
+        <div class="dual-intake-note">
+          In Tally, set <strong>Redirect to custom URL</strong> to <strong>https://olipoly3d.com/project-received.html</strong>.
+        </div>
+        <div class="tally-embed-wrap" id="tallyEmbedWrap">
+          <iframe src="https://tally.so/r/xX4vJk?transparentBackground=1" title="OliPoly Start Project Upload Intake" loading="lazy"></iframe>
+        </div>
       </div>
     </div>
   </section>
@@ -899,6 +939,16 @@ document.getElementById("projectForm").addEventListener("submit", async event =>
     }
   }
 });
+
+const showTallyBtn = document.getElementById("showTallyEmbedBtn");
+const tallyWrap = document.getElementById("tallyEmbedWrap");
+showTallyBtn?.addEventListener("click", () => {
+  tallyWrap?.classList.toggle("active");
+  const active = tallyWrap?.classList.contains("active");
+  showTallyBtn.textContent = active ? "Hide Form" : "Show Form Here";
+  if (active) tallyWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 </script>
 </body>
 </html>
