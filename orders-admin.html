@@ -2588,7 +2588,123 @@ input:disabled{
   }
 }
 
-  </style></head><body>${bodyHtml}</body></html>`);
+  </style></head><body>${bodyHtml}
+  <script>
+    /* === Orders Admin v2 safe UI helpers: runs after original admin script === */
+    window.addEventListener('DOMContentLoaded', () => {
+      const byId = id => document.getElementById(id);
+
+      const statusText = value => ({
+        quote_sent:'Quote Sent',
+        awaiting_approval:'Awaiting Approval',
+        awaiting_deposit:'Awaiting Deposit',
+        in_design:'In Design',
+        in_production:'In Production',
+        post_processing:'Post-Processing',
+        ready_for_pickup:'Ready for Pickup',
+        shipped:'Shipped',
+        completed:'Completed'
+      })[value] || value || '—';
+
+      const paymentText = value => ({
+        unpaid:'Unpaid',
+        deposit_due:'Deposit Due',
+        deposit_paid:'Deposit Paid',
+        paid:'Paid in Full',
+        refunded:'Refunded'
+      })[value] || value || '—';
+
+      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
+      const timelineStepMap = {
+        quote_sent:'quote_sent',
+        awaiting_approval:'quote_sent',
+        awaiting_deposit:'awaiting_deposit',
+        in_design:'in_design',
+        in_production:'in_production',
+        post_processing:'post_processing',
+        ready_for_pickup:'ready_for_pickup',
+        shipped:'ready_for_pickup',
+        completed:'completed'
+      };
+
+      function refreshWorkspaceUi(){
+        const orderNumber = byId('orderNumber')?.value?.trim() || '';
+        const customer = byId('customerName')?.value?.trim() || '';
+        const title = byId('orderTitle')?.value?.trim() || '';
+        const status = byId('status')?.value || '';
+        const payment = byId('paymentStatus')?.value || '';
+
+        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
+        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
+        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
+        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
+
+        const mapped = timelineStepMap[status] || status || 'quote_sent';
+        const activeIndex = timelineOrder.indexOf(mapped);
+        document.querySelectorAll('.timeline-step').forEach(step => {
+          const stepValue = step.dataset.step;
+          const stepIndex = timelineOrder.indexOf(stepValue);
+          step.classList.toggle('is-active', stepValue === mapped);
+          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        });
+      }
+
+      function showFormMessage(text, isError=false){
+        const el = byId('formMessage');
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = text;
+        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+        el.style.color = isError ? '#ffd7e1' : '#cffff0';
+      }
+
+      function copyTrackerLink(){
+        const orderNumber = byId('orderNumber')?.value?.trim();
+        if (!orderNumber) {
+          showFormMessage('Select or enter an order number before copying a tracker link.', true);
+          return;
+        }
+        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url));
+        } else {
+          prompt('Copy tracker link:', url);
+        }
+      }
+
+      function markPaidInForm(){
+        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
+        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
+        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
+        refreshWorkspaceUi();
+        showFormMessage('Marked this order paid in the form. Click Save to store it.');
+      }
+
+      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
+        byId(id)?.addEventListener('input', refreshWorkspaceUi);
+        byId(id)?.addEventListener('change', refreshWorkspaceUi);
+      });
+
+      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
+      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
+      byId('quickPackingBtn')?.addEventListener('click', () => byId('generatePackingSlipBtn')?.click());
+      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
+
+      document.addEventListener('click', event => {
+        const row = event.target.closest?.('.order-row');
+        if (row) setTimeout(refreshWorkspaceUi, 75);
+      });
+
+      ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].forEach(id => {
+        byId(id)?.addEventListener('click', () => setTimeout(refreshWorkspaceUi, 120));
+      });
+
+      refreshWorkspaceUi();
+    });
+  </script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
@@ -2825,7 +2941,123 @@ https://olipoly3d.com`;
     }
 
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
-    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);d.close();}
+    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
+  <script>
+    /* === Orders Admin v2 safe UI helpers: runs after original admin script === */
+    window.addEventListener('DOMContentLoaded', () => {
+      const byId = id => document.getElementById(id);
+
+      const statusText = value => ({
+        quote_sent:'Quote Sent',
+        awaiting_approval:'Awaiting Approval',
+        awaiting_deposit:'Awaiting Deposit',
+        in_design:'In Design',
+        in_production:'In Production',
+        post_processing:'Post-Processing',
+        ready_for_pickup:'Ready for Pickup',
+        shipped:'Shipped',
+        completed:'Completed'
+      })[value] || value || '—';
+
+      const paymentText = value => ({
+        unpaid:'Unpaid',
+        deposit_due:'Deposit Due',
+        deposit_paid:'Deposit Paid',
+        paid:'Paid in Full',
+        refunded:'Refunded'
+      })[value] || value || '—';
+
+      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
+      const timelineStepMap = {
+        quote_sent:'quote_sent',
+        awaiting_approval:'quote_sent',
+        awaiting_deposit:'awaiting_deposit',
+        in_design:'in_design',
+        in_production:'in_production',
+        post_processing:'post_processing',
+        ready_for_pickup:'ready_for_pickup',
+        shipped:'ready_for_pickup',
+        completed:'completed'
+      };
+
+      function refreshWorkspaceUi(){
+        const orderNumber = byId('orderNumber')?.value?.trim() || '';
+        const customer = byId('customerName')?.value?.trim() || '';
+        const title = byId('orderTitle')?.value?.trim() || '';
+        const status = byId('status')?.value || '';
+        const payment = byId('paymentStatus')?.value || '';
+
+        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
+        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
+        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
+        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
+
+        const mapped = timelineStepMap[status] || status || 'quote_sent';
+        const activeIndex = timelineOrder.indexOf(mapped);
+        document.querySelectorAll('.timeline-step').forEach(step => {
+          const stepValue = step.dataset.step;
+          const stepIndex = timelineOrder.indexOf(stepValue);
+          step.classList.toggle('is-active', stepValue === mapped);
+          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        });
+      }
+
+      function showFormMessage(text, isError=false){
+        const el = byId('formMessage');
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = text;
+        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+        el.style.color = isError ? '#ffd7e1' : '#cffff0';
+      }
+
+      function copyTrackerLink(){
+        const orderNumber = byId('orderNumber')?.value?.trim();
+        if (!orderNumber) {
+          showFormMessage('Select or enter an order number before copying a tracker link.', true);
+          return;
+        }
+        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url));
+        } else {
+          prompt('Copy tracker link:', url);
+        }
+      }
+
+      function markPaidInForm(){
+        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
+        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
+        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
+        refreshWorkspaceUi();
+        showFormMessage('Marked this order paid in the form. Click Save to store it.');
+      }
+
+      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
+        byId(id)?.addEventListener('input', refreshWorkspaceUi);
+        byId(id)?.addEventListener('change', refreshWorkspaceUi);
+      });
+
+      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
+      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
+      byId('quickPackingBtn')?.addEventListener('click', () => byId('generatePackingSlipBtn')?.click());
+      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
+
+      document.addEventListener('click', event => {
+        const row = event.target.closest?.('.order-row');
+        if (row) setTimeout(refreshWorkspaceUi, 75);
+      });
+
+      ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].forEach(id => {
+        byId(id)?.addEventListener('click', () => setTimeout(refreshWorkspaceUi, 120));
+      });
+
+      refreshWorkspaceUi();
+    });
+  </script>
+
+</body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`Invoice ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
     function closeInvoiceEmailModal(){$('invoiceEmailModal')?.classList.add('hidden');$('invoiceEmailModal')?.setAttribute('aria-hidden','true');document.body.style.overflow='';}
     async function copyInvoiceRichEmail(){try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([lastInvoiceEmail.html],{type:'text/html'}),'text/plain':new Blob([lastInvoiceEmail.plain],{type:'text/plain'})})]);}else await navigator.clipboard.writeText(lastInvoiceEmail.html);$('invoiceEmailModalMessage').innerHTML='Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';}catch(err){$('invoiceEmailModalMessage').textContent='Could not copy rich email automatically. Try Download HTML.';}}
@@ -2938,7 +3170,123 @@ OliPoly 3D`;
       if (!frame) return;
       const doc = frame.contentDocument || frame.contentWindow?.document;
       doc.open();
-      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);
+      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
+  <script>
+    /* === Orders Admin v2 safe UI helpers: runs after original admin script === */
+    window.addEventListener('DOMContentLoaded', () => {
+      const byId = id => document.getElementById(id);
+
+      const statusText = value => ({
+        quote_sent:'Quote Sent',
+        awaiting_approval:'Awaiting Approval',
+        awaiting_deposit:'Awaiting Deposit',
+        in_design:'In Design',
+        in_production:'In Production',
+        post_processing:'Post-Processing',
+        ready_for_pickup:'Ready for Pickup',
+        shipped:'Shipped',
+        completed:'Completed'
+      })[value] || value || '—';
+
+      const paymentText = value => ({
+        unpaid:'Unpaid',
+        deposit_due:'Deposit Due',
+        deposit_paid:'Deposit Paid',
+        paid:'Paid in Full',
+        refunded:'Refunded'
+      })[value] || value || '—';
+
+      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
+      const timelineStepMap = {
+        quote_sent:'quote_sent',
+        awaiting_approval:'quote_sent',
+        awaiting_deposit:'awaiting_deposit',
+        in_design:'in_design',
+        in_production:'in_production',
+        post_processing:'post_processing',
+        ready_for_pickup:'ready_for_pickup',
+        shipped:'ready_for_pickup',
+        completed:'completed'
+      };
+
+      function refreshWorkspaceUi(){
+        const orderNumber = byId('orderNumber')?.value?.trim() || '';
+        const customer = byId('customerName')?.value?.trim() || '';
+        const title = byId('orderTitle')?.value?.trim() || '';
+        const status = byId('status')?.value || '';
+        const payment = byId('paymentStatus')?.value || '';
+
+        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
+        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
+        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
+        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
+
+        const mapped = timelineStepMap[status] || status || 'quote_sent';
+        const activeIndex = timelineOrder.indexOf(mapped);
+        document.querySelectorAll('.timeline-step').forEach(step => {
+          const stepValue = step.dataset.step;
+          const stepIndex = timelineOrder.indexOf(stepValue);
+          step.classList.toggle('is-active', stepValue === mapped);
+          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        });
+      }
+
+      function showFormMessage(text, isError=false){
+        const el = byId('formMessage');
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = text;
+        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+        el.style.color = isError ? '#ffd7e1' : '#cffff0';
+      }
+
+      function copyTrackerLink(){
+        const orderNumber = byId('orderNumber')?.value?.trim();
+        if (!orderNumber) {
+          showFormMessage('Select or enter an order number before copying a tracker link.', true);
+          return;
+        }
+        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url));
+        } else {
+          prompt('Copy tracker link:', url);
+        }
+      }
+
+      function markPaidInForm(){
+        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
+        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
+        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
+        refreshWorkspaceUi();
+        showFormMessage('Marked this order paid in the form. Click Save to store it.');
+      }
+
+      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
+        byId(id)?.addEventListener('input', refreshWorkspaceUi);
+        byId(id)?.addEventListener('change', refreshWorkspaceUi);
+      });
+
+      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
+      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
+      byId('quickPackingBtn')?.addEventListener('click', () => byId('generatePackingSlipBtn')?.click());
+      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
+
+      document.addEventListener('click', event => {
+        const row = event.target.closest?.('.order-row');
+        if (row) setTimeout(refreshWorkspaceUi, 75);
+      });
+
+      ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].forEach(id => {
+        byId(id)?.addEventListener('click', () => setTimeout(refreshWorkspaceUi, 120));
+      });
+
+      refreshWorkspaceUi();
+    });
+  </script>
+
+</body></html>`);
       doc.close();
     }
 
@@ -4071,7 +4419,123 @@ input:disabled{
   }
 }
 
-  </style></head><body>${invoiceHtml}</body></html>`);
+  </style></head><body>${invoiceHtml}
+  <script>
+    /* === Orders Admin v2 safe UI helpers: runs after original admin script === */
+    window.addEventListener('DOMContentLoaded', () => {
+      const byId = id => document.getElementById(id);
+
+      const statusText = value => ({
+        quote_sent:'Quote Sent',
+        awaiting_approval:'Awaiting Approval',
+        awaiting_deposit:'Awaiting Deposit',
+        in_design:'In Design',
+        in_production:'In Production',
+        post_processing:'Post-Processing',
+        ready_for_pickup:'Ready for Pickup',
+        shipped:'Shipped',
+        completed:'Completed'
+      })[value] || value || '—';
+
+      const paymentText = value => ({
+        unpaid:'Unpaid',
+        deposit_due:'Deposit Due',
+        deposit_paid:'Deposit Paid',
+        paid:'Paid in Full',
+        refunded:'Refunded'
+      })[value] || value || '—';
+
+      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
+      const timelineStepMap = {
+        quote_sent:'quote_sent',
+        awaiting_approval:'quote_sent',
+        awaiting_deposit:'awaiting_deposit',
+        in_design:'in_design',
+        in_production:'in_production',
+        post_processing:'post_processing',
+        ready_for_pickup:'ready_for_pickup',
+        shipped:'ready_for_pickup',
+        completed:'completed'
+      };
+
+      function refreshWorkspaceUi(){
+        const orderNumber = byId('orderNumber')?.value?.trim() || '';
+        const customer = byId('customerName')?.value?.trim() || '';
+        const title = byId('orderTitle')?.value?.trim() || '';
+        const status = byId('status')?.value || '';
+        const payment = byId('paymentStatus')?.value || '';
+
+        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
+        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
+        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
+        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
+
+        const mapped = timelineStepMap[status] || status || 'quote_sent';
+        const activeIndex = timelineOrder.indexOf(mapped);
+        document.querySelectorAll('.timeline-step').forEach(step => {
+          const stepValue = step.dataset.step;
+          const stepIndex = timelineOrder.indexOf(stepValue);
+          step.classList.toggle('is-active', stepValue === mapped);
+          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        });
+      }
+
+      function showFormMessage(text, isError=false){
+        const el = byId('formMessage');
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = text;
+        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+        el.style.color = isError ? '#ffd7e1' : '#cffff0';
+      }
+
+      function copyTrackerLink(){
+        const orderNumber = byId('orderNumber')?.value?.trim();
+        if (!orderNumber) {
+          showFormMessage('Select or enter an order number before copying a tracker link.', true);
+          return;
+        }
+        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url));
+        } else {
+          prompt('Copy tracker link:', url);
+        }
+      }
+
+      function markPaidInForm(){
+        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
+        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
+        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
+        refreshWorkspaceUi();
+        showFormMessage('Marked this order paid in the form. Click Save to store it.');
+      }
+
+      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
+        byId(id)?.addEventListener('input', refreshWorkspaceUi);
+        byId(id)?.addEventListener('change', refreshWorkspaceUi);
+      });
+
+      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
+      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
+      byId('quickPackingBtn')?.addEventListener('click', () => byId('generatePackingSlipBtn')?.click());
+      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
+
+      document.addEventListener('click', event => {
+        const row = event.target.closest?.('.order-row');
+        if (row) setTimeout(refreshWorkspaceUi, 75);
+      });
+
+      ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].forEach(id => {
+        byId(id)?.addEventListener('click', () => setTimeout(refreshWorkspaceUi, 120));
+      });
+
+      refreshWorkspaceUi();
+    });
+  </script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
@@ -4732,7 +5196,123 @@ input:disabled{
   }
 }
 
-  </style></head><body>${labelHtml}</body></html>`);
+  </style></head><body>${labelHtml}
+  <script>
+    /* === Orders Admin v2 safe UI helpers: runs after original admin script === */
+    window.addEventListener('DOMContentLoaded', () => {
+      const byId = id => document.getElementById(id);
+
+      const statusText = value => ({
+        quote_sent:'Quote Sent',
+        awaiting_approval:'Awaiting Approval',
+        awaiting_deposit:'Awaiting Deposit',
+        in_design:'In Design',
+        in_production:'In Production',
+        post_processing:'Post-Processing',
+        ready_for_pickup:'Ready for Pickup',
+        shipped:'Shipped',
+        completed:'Completed'
+      })[value] || value || '—';
+
+      const paymentText = value => ({
+        unpaid:'Unpaid',
+        deposit_due:'Deposit Due',
+        deposit_paid:'Deposit Paid',
+        paid:'Paid in Full',
+        refunded:'Refunded'
+      })[value] || value || '—';
+
+      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
+      const timelineStepMap = {
+        quote_sent:'quote_sent',
+        awaiting_approval:'quote_sent',
+        awaiting_deposit:'awaiting_deposit',
+        in_design:'in_design',
+        in_production:'in_production',
+        post_processing:'post_processing',
+        ready_for_pickup:'ready_for_pickup',
+        shipped:'ready_for_pickup',
+        completed:'completed'
+      };
+
+      function refreshWorkspaceUi(){
+        const orderNumber = byId('orderNumber')?.value?.trim() || '';
+        const customer = byId('customerName')?.value?.trim() || '';
+        const title = byId('orderTitle')?.value?.trim() || '';
+        const status = byId('status')?.value || '';
+        const payment = byId('paymentStatus')?.value || '';
+
+        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
+        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
+        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
+        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
+
+        const mapped = timelineStepMap[status] || status || 'quote_sent';
+        const activeIndex = timelineOrder.indexOf(mapped);
+        document.querySelectorAll('.timeline-step').forEach(step => {
+          const stepValue = step.dataset.step;
+          const stepIndex = timelineOrder.indexOf(stepValue);
+          step.classList.toggle('is-active', stepValue === mapped);
+          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        });
+      }
+
+      function showFormMessage(text, isError=false){
+        const el = byId('formMessage');
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = text;
+        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+        el.style.color = isError ? '#ffd7e1' : '#cffff0';
+      }
+
+      function copyTrackerLink(){
+        const orderNumber = byId('orderNumber')?.value?.trim();
+        if (!orderNumber) {
+          showFormMessage('Select or enter an order number before copying a tracker link.', true);
+          return;
+        }
+        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url));
+        } else {
+          prompt('Copy tracker link:', url);
+        }
+      }
+
+      function markPaidInForm(){
+        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
+        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
+        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
+        refreshWorkspaceUi();
+        showFormMessage('Marked this order paid in the form. Click Save to store it.');
+      }
+
+      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
+        byId(id)?.addEventListener('input', refreshWorkspaceUi);
+        byId(id)?.addEventListener('change', refreshWorkspaceUi);
+      });
+
+      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
+      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
+      byId('quickPackingBtn')?.addEventListener('click', () => byId('generatePackingSlipBtn')?.click());
+      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
+
+      document.addEventListener('click', event => {
+        const row = event.target.closest?.('.order-row');
+        if (row) setTimeout(refreshWorkspaceUi, 75);
+      });
+
+      ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].forEach(id => {
+        byId(id)?.addEventListener('click', () => setTimeout(refreshWorkspaceUi, 120));
+      });
+
+      refreshWorkspaceUi();
+    });
+  </script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
@@ -4856,107 +5436,6 @@ input:disabled{
         downloadInvoiceEmailHtmlSafe();
       }
     }, true);
-
-
-    /* === Orders Admin v2 UI helpers === */
-    const timelineOrder = ['quote_sent','awaiting_approval','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','shipped','completed'];
-    const timelineStepMap = {
-      quote_sent:'quote_sent',
-      awaiting_approval:'quote_sent',
-      awaiting_deposit:'awaiting_deposit',
-      in_design:'in_design',
-      in_production:'in_production',
-      post_processing:'post_processing',
-      ready_for_pickup:'ready_for_pickup',
-      shipped:'ready_for_pickup',
-      completed:'completed'
-    };
-
-    function updateWorkspaceUi(order = null){
-      const payload = order || snapshotForm?.() || {};
-      const orderNumber = payload.order_number || $('orderNumber')?.value?.trim() || '';
-      const customer = payload.customer_name || $('customerName')?.value?.trim() || '';
-      const title = payload.order_title || $('orderTitle')?.value?.trim() || '';
-      const status = payload.status || $('status')?.value || '';
-      const payment = payload.payment_status || $('paymentStatus')?.value || '';
-
-      const n = $('workspaceOrderNumber');
-      const m = $('workspaceMeta');
-      const s = $('workspaceStatusPill');
-      const p = $('workspacePaymentPill');
-
-      if (n) n.textContent = orderNumber || 'No order selected';
-      if (m) m.textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
-      if (s) s.textContent = `Status: ${status ? statusLabel(status) : '—'}`;
-      if (p) p.textContent = `Payment: ${payment ? paymentLabel(payment) : '—'}`;
-
-      updateTimeline(status);
-    }
-
-    function updateTimeline(statusValue){
-      const mapped = timelineStepMap[statusValue] || statusValue || 'quote_sent';
-      const activeIndex = timelineOrder.indexOf(mapped);
-      document.querySelectorAll('.timeline-step').forEach(step => {
-        const stepValue = step.dataset.step;
-        const stepIndex = timelineOrder.indexOf(stepValue);
-        step.classList.toggle('is-active', stepValue === mapped);
-        step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
-      });
-    }
-
-    function copyTrackerLink(){
-      const orderNumber = $('orderNumber')?.value?.trim();
-      if (!orderNumber) {
-        setMsg($('formMessage'), 'Select or enter an order number before copying a tracker link.', true);
-        return;
-      }
-      const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
-      navigator.clipboard?.writeText(url).then(() => {
-        setMsg($('formMessage'), `Copied tracker link for ${orderNumber}.`);
-      }).catch(() => {
-        prompt('Copy tracker link:', url);
-      });
-    }
-
-    function markCurrentOrderPaid(){
-      if ($('paymentStatus')) $('paymentStatus').value = 'paid';
-      if ($('balanceAmount')) $('balanceAmount').value = '0.00';
-      if ($('paidDate') && !$('paidDate').value) $('paidDate').value = today();
-      updateWorkspaceUi();
-      updatePreview?.();
-      setMsg($('formMessage'), 'Marked this order paid in the form. Click Save to store it.');
-    }
-
-    document.addEventListener('input', event => {
-      if (['orderNumber','customerName','orderTitle','status','paymentStatus'].includes(event.target?.id)) {
-        updateWorkspaceUi();
-      }
-    });
-    document.addEventListener('change', event => {
-      if (['status','paymentStatus','orderNumber','customerName','orderTitle'].includes(event.target?.id)) {
-        updateWorkspaceUi();
-      }
-    });
-
-    $('quickSaveBtn')?.addEventListener('click', () => $('saveBtn')?.click());
-    $('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
-    $('quickPackingBtn')?.addEventListener('click', () => $('generatePackingSlipBtn')?.click());
-    $('quickPaidBtn')?.addEventListener('click', markCurrentOrderPaid);
-
-    const originalResetFormV2 = resetForm;
-    resetForm = function(){
-      originalResetFormV2();
-      updateWorkspaceUi(null);
-    };
-
-    const originalLoadIntoFormV2 = loadIntoForm;
-    loadIntoForm = function(order){
-      originalLoadIntoFormV2(order);
-      updateWorkspaceUi(order);
-    };
-
-    updateWorkspaceUi(null);
-
   </script>
 
   <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true">
@@ -5016,6 +5495,122 @@ input:disabled{
       <div class="email-preview-frame"><iframe id="completionEmailPreviewFrame" title="Completion email preview"></iframe></div>
     </div>
   </div>
+
+
+  <script>
+    /* === Orders Admin v2 safe UI helpers: runs after original admin script === */
+    window.addEventListener('DOMContentLoaded', () => {
+      const byId = id => document.getElementById(id);
+
+      const statusText = value => ({
+        quote_sent:'Quote Sent',
+        awaiting_approval:'Awaiting Approval',
+        awaiting_deposit:'Awaiting Deposit',
+        in_design:'In Design',
+        in_production:'In Production',
+        post_processing:'Post-Processing',
+        ready_for_pickup:'Ready for Pickup',
+        shipped:'Shipped',
+        completed:'Completed'
+      })[value] || value || '—';
+
+      const paymentText = value => ({
+        unpaid:'Unpaid',
+        deposit_due:'Deposit Due',
+        deposit_paid:'Deposit Paid',
+        paid:'Paid in Full',
+        refunded:'Refunded'
+      })[value] || value || '—';
+
+      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
+      const timelineStepMap = {
+        quote_sent:'quote_sent',
+        awaiting_approval:'quote_sent',
+        awaiting_deposit:'awaiting_deposit',
+        in_design:'in_design',
+        in_production:'in_production',
+        post_processing:'post_processing',
+        ready_for_pickup:'ready_for_pickup',
+        shipped:'ready_for_pickup',
+        completed:'completed'
+      };
+
+      function refreshWorkspaceUi(){
+        const orderNumber = byId('orderNumber')?.value?.trim() || '';
+        const customer = byId('customerName')?.value?.trim() || '';
+        const title = byId('orderTitle')?.value?.trim() || '';
+        const status = byId('status')?.value || '';
+        const payment = byId('paymentStatus')?.value || '';
+
+        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
+        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Choose an order or start a new one.';
+        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
+        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
+
+        const mapped = timelineStepMap[status] || status || 'quote_sent';
+        const activeIndex = timelineOrder.indexOf(mapped);
+        document.querySelectorAll('.timeline-step').forEach(step => {
+          const stepValue = step.dataset.step;
+          const stepIndex = timelineOrder.indexOf(stepValue);
+          step.classList.toggle('is-active', stepValue === mapped);
+          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        });
+      }
+
+      function showFormMessage(text, isError=false){
+        const el = byId('formMessage');
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = text;
+        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
+        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
+        el.style.color = isError ? '#ffd7e1' : '#cffff0';
+      }
+
+      function copyTrackerLink(){
+        const orderNumber = byId('orderNumber')?.value?.trim();
+        if (!orderNumber) {
+          showFormMessage('Select or enter an order number before copying a tracker link.', true);
+          return;
+        }
+        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url));
+        } else {
+          prompt('Copy tracker link:', url);
+        }
+      }
+
+      function markPaidInForm(){
+        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
+        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
+        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
+        refreshWorkspaceUi();
+        showFormMessage('Marked this order paid in the form. Click Save to store it.');
+      }
+
+      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
+        byId(id)?.addEventListener('input', refreshWorkspaceUi);
+        byId(id)?.addEventListener('change', refreshWorkspaceUi);
+      });
+
+      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
+      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
+      byId('quickPackingBtn')?.addEventListener('click', () => byId('generatePackingSlipBtn')?.click());
+      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
+
+      document.addEventListener('click', event => {
+        const row = event.target.closest?.('.order-row');
+        if (row) setTimeout(refreshWorkspaceUi, 75);
+      });
+
+      ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].forEach(id => {
+        byId(id)?.addEventListener('click', () => setTimeout(refreshWorkspaceUi, 120));
+      });
+
+      refreshWorkspaceUi();
+    });
+  </script>
 
 </body>
 </html
