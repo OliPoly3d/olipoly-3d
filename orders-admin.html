@@ -3356,14 +3356,23 @@ if ($('openVenmoBtn')) {
       ordersAdminV2Wire();
     }
 
+    // Final Packing Slip v2 override: replaces the old hidden-template function that expected removed IDs.
+    if (typeof generatePackingSlipPDFFallback === 'function') {
+      generatePackingSlipPDF = generatePackingSlipPDFFallback;
+    }
 
     window.addEventListener('load', () => {
       const packingBtn = document.getElementById('generatePackingSlipBtn');
-      if (!packingBtn || packingBtn.dataset.packingSlipFinalBound === 'true') return;
-      packingBtn.dataset.packingSlipFinalBound = 'true';
+      if (!packingBtn) return;
       packingBtn.onclick = (event) => {
         event.preventDefault();
-        openPackingSlipFromCurrentOrder();
+        event.stopPropagation();
+        const order = activeId ? orders.find(o => o.id === activeId) : snapshotForm();
+        if (!order || !order.order_number) {
+          alert('Select or save an order first.');
+          return;
+        }
+        generatePackingSlipPDFFallback(order);
       };
     });
 
