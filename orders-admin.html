@@ -1707,12 +1707,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       orders = [];
       activeId = null;
       localStorage.removeItem('sb_token');
-document.getElementById('generateInvoicePdfBtn')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      generateInvoicePdf();
-    });
-
-    resetForm();
+resetForm();
       renderList();
       updateAuthVisibility();
       setMsg($('authMessage'),'Logged out');
@@ -3342,6 +3337,266 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
         }
 
         generatePackingSlipPDFFallback(order);
+      });
+    });
+
+
+    function invoiceTermsLabelV2(value){
+      return ({
+        customer_terms:'Customer Standard Terms / PO Terms',
+        net_15:'Net 15',
+        net_30:'Net 30',
+        net_45:'Net 45',
+        due_on_receipt:'Due on Receipt'
+      })[value] || value || 'Customer Terms';
+    }
+
+    function buildInvoiceV2HTML(order){
+      const T = window.OliPolyDocumentTheme;
+      if(!T) return '';
+
+      const subtotal = num(order.order_total);
+      const deposit = num(order.deposit_amount);
+      const balance = order.payment_status === 'paid' ? 0 : Math.max(0, num(order.balance_amount) || (subtotal - deposit));
+      const isPaid = order.payment_status === 'paid';
+
+      const invoiceNumber = order.invoice_number || `INV-${(order.order_number || 'ORDER').replace(/^OP-/,'')}`;
+      const invoiceDate = order.invoice_date || order.order_date || today();
+      const dueDate = order.invoice_due_date || '';
+      const businessMode = !!(order.po_number || order.ap_email || order.billing_address || order.shipping_company);
+
+      return `
+        <div class="op-doc invoice-v2-doc ${isPaid ? 'invoice-v2-paid' : ''}">
+          ${T.header('Invoice', invoiceNumber)}
+
+          ${isPaid ? '<div class="invoice-v2-watermark">PAID</div>' : ''}
+
+          <div class="invoice-v2-hero">
+            <div>
+              <span>${isPaid ? 'Payment Status' : 'Amount Due'}</span>
+              <strong>${isPaid ? 'Paid in Full' : T.money(balance)}</strong>
+              <small>${dueDate ? `Due ${T.formatDate(dueDate)}` : invoiceTermsLabelV2(order.invoice_terms)}</small>
+            </div>
+            <div>
+              <span>Order</span>
+              <strong>${T.esc(order.order_number || '—')}</strong>
+              <small>${T.esc(order.order_title || 'Custom 3D printed project')}</small>
+            </div>
+          </div>
+
+          <div class="op-grid-4" style="margin-bottom:12px;">
+            ${T.card('Invoice Date', T.formatDate(invoiceDate))}
+            ${T.card('Due Date', dueDate ? T.formatDate(dueDate) : 'Per terms')}
+            ${T.card('Terms', invoiceTermsLabelV2(order.invoice_terms))}
+            ${T.card('Payment', paymentLabel(order.payment_status || 'unpaid'))}
+            ${T.card('PO Number', order.po_number || '—')}
+            ${T.card('Customer Part #', order.po_part_number || '—')}
+            ${T.card('OliPoly Part #', order.olipoly_part_number || '—')}
+            ${T.card('Revision', order.part_revision || 'Rev A')}
+          </div>
+
+          <div class="op-grid-2" style="margin-bottom:12px;">
+            ${T.panel(
+              businessMode ? 'Bill To / Accounts Payable' : 'Bill To',
+              `
+                <strong>${T.esc(order.customer_name || 'Customer')}</strong><br>
+                ${order.customer_email ? `${T.esc(order.customer_email)}<br>` : ''}
+                ${order.ap_email ? `<strong>AP:</strong> ${T.esc(order.ap_email)}<br>` : ''}
+                ${(order.billing_address || '').replace(/\n/g,'<br>') || 'No billing address provided.'}
+              `
+            )}
+
+            ${T.panel(
+              'Fulfillment / Ship To',
+              `
+                ${order.shipping_company ? `<strong>${T.esc(order.shipping_company)}</strong><br>` : ''}
+                ${order.shipping_contact_name ? `${T.esc(order.shipping_contact_name)}<br>` : ''}
+                ${(order.shipping_address || '').replace(/\n/g,'<br>') || T.esc(order.shipping_or_pickup_note || 'Pickup / shipping details to be confirmed.')}<br><br>
+                <strong>Tracking:</strong> ${T.esc(order.tracking_number || 'Pending / N/A')}
+              `
+            )}
+          </div>
+
+          <table class="op-table invoice-v2-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="width:70px;text-align:center;">Qty</th>
+                <th style="width:120px;text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <strong>${T.esc(order.order_title || 'Custom 3D Printed Project')}</strong>
+                  <div class="op-muted" style="margin-top:6px;font-size:11px;line-height:1.45;">
+                    ${T.esc(order.public_status_text || order.internal_notes || 'Custom 3D printing work by OliPoly 3D.').replace(/\n/g,'<br>')}
+                  </div>
+                </td>
+                <td style="text-align:center;">${T.esc(order.quantity || 1)}</td>
+                <td style="text-align:right;">${T.money(subtotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="invoice-v2-bottom">
+            <div>
+              ${T.panel(
+                'Payment / Remittance',
+                `
+                  <strong>${isPaid ? 'This invoice is marked paid.' : 'Please process payment according to the approved purchasing terms.'}</strong><br>
+                  ${order.payment_link_stripe || order.payment_link ? `Card / hosted invoice: ${T.esc(order.payment_link_stripe || order.payment_link)}<br>` : ''}
+                  ${order.payment_link_paypal ? `PayPal: ${T.esc(order.payment_link_paypal)}<br>` : ''}
+                  ${order.payment_link_venmo ? `Venmo: ${T.esc(order.payment_link_venmo)}<br>` : ''}
+                  Please include invoice number ${T.esc(invoiceNumber)}${order.po_number ? ` and PO ${T.esc(order.po_number)}` : ''} with payment or remittance details.
+                `
+              )}
+
+              <div class="op-note">
+                <strong>Track this order</strong><br>
+                Visit https://olipoly3d.com/track.html and enter ${T.esc(order.order_number || 'your order number')} for the latest customer-safe update.
+              </div>
+            </div>
+
+            <div class="invoice-v2-totals">
+              <div><span>Subtotal</span><strong>${T.money(subtotal)}</strong></div>
+              <div><span>Deposit / Paid</span><strong>${T.money(isPaid ? subtotal : deposit)}</strong></div>
+              <div class="invoice-v2-total"><span>${isPaid ? 'Balance' : 'Amount Due'}</span><strong>${T.money(balance)}</strong></div>
+            </div>
+          </div>
+
+          ${T.footer(businessMode ? 'Business invoice generated by OliPoly 3D' : 'Thank you for choosing OliPoly 3D')}
+        </div>
+      `;
+    }
+
+    function generateInvoicePdfV2(order){
+      const T = window.OliPolyDocumentTheme;
+      if(!T){
+        alert('Document theme failed to load. Make sure js/document-theme.js is in the repo.');
+        return;
+      }
+
+      const invoiceCss = `
+        .invoice-v2-doc{position:relative}
+        .invoice-v2-hero{
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:12px;
+          margin-bottom:12px;
+        }
+        .invoice-v2-hero>div{
+          border-radius:16px;
+          padding:14px;
+          border:1px solid #f0c8df;
+          background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));
+        }
+        .invoice-v2-hero span{
+          display:block;
+          color:#826889;
+          font-size:10px;
+          font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+          margin-bottom:4px;
+        }
+        .invoice-v2-hero strong{
+          display:block;
+          font-size:24px;
+          line-height:1;
+          color:#241b2b;
+          font-weight:950;
+          overflow-wrap:anywhere;
+        }
+        .invoice-v2-hero small{
+          display:block;
+          margin-top:6px;
+          color:#604d68;
+          line-height:1.3;
+        }
+        .invoice-v2-bottom{
+          display:grid;
+          grid-template-columns:1.2fr .8fr;
+          gap:12px;
+          margin-top:12px;
+        }
+        .invoice-v2-totals{
+          border:1px solid #f0c8df;
+          background:#fffafd;
+          border-radius:14px;
+          padding:12px 14px;
+          align-self:start;
+        }
+        .invoice-v2-totals div{
+          display:flex;
+          justify-content:space-between;
+          gap:12px;
+          padding:7px 0;
+          border-bottom:1px solid #f6ddec;
+          font-size:12px;
+        }
+        .invoice-v2-totals div:last-child{border-bottom:none}
+        .invoice-v2-totals span{color:#826889}
+        .invoice-v2-totals strong{color:#241b2b}
+        .invoice-v2-total{
+          margin-top:4px;
+          padding-top:10px!important;
+          border-top:2px solid #f0c8df;
+        }
+        .invoice-v2-total span,.invoice-v2-total strong{
+          font-size:17px!important;
+          color:#241b2b!important;
+          font-weight:950!important;
+        }
+        .invoice-v2-watermark{
+          position:absolute;
+          right:.45in;
+          bottom:.88in;
+          transform:rotate(-12deg);
+          border:4px solid rgba(22,163,74,.34);
+          color:rgba(22,163,74,.44);
+          font-size:42px;
+          font-weight:950;
+          letter-spacing:.08em;
+          padding:8px 18px;
+          border-radius:14px;
+          z-index:3;
+          pointer-events:none;
+        }
+        .invoice-v2-table td{min-height:.55in}
+        @media print{
+          .invoice-v2-hero,.invoice-v2-bottom{break-inside:avoid}
+        }
+      `;
+
+      T.openPrintWindow(
+        `Invoice - ${order.invoice_number || order.order_number || 'Order'}`,
+        buildInvoiceV2HTML(order),
+        T.basePrintCss() + invoiceCss
+      );
+    }
+
+    function openInvoiceV2FromCurrentOrder(){
+      const order = activeId ? orders.find(o => o.id === activeId) : snapshotForm();
+      if(!order || !order.order_number){
+        alert('Select or save an order first.');
+        return;
+      }
+      generateInvoicePdfV2(order);
+    }
+
+
+    window.addEventListener('load', () => {
+      const invoiceBtn = document.getElementById('generateInvoicePdfBtn');
+      if (!invoiceBtn) return;
+
+      const cleanInvoiceBtn = invoiceBtn.cloneNode(true);
+      invoiceBtn.parentNode.replaceChild(cleanInvoiceBtn, invoiceBtn);
+
+      cleanInvoiceBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openInvoiceV2FromCurrentOrder();
       });
     });
 
