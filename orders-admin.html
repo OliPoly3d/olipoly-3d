@@ -1707,14 +1707,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       orders = [];
       activeId = null;
       localStorage.removeItem('sb_token');
-  
-    document.getElementById('generatePackingSlipBtn')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      generatePackingSlipPdf();
-    });
-
-
-    document.getElementById('generateInvoicePdfBtn')?.addEventListener('click', (event) => {
+document.getElementById('generateInvoicePdfBtn')?.addEventListener('click', (event) => {
       event.preventDefault();
       generateInvoicePdf();
     });
@@ -2864,33 +2857,7 @@ if ($('openVenmoBtn')) {
 
 
     // Final safety binding for Packing Slip PDF button.
-    window.generatePackingSlipPdf = generatePackingSlipPdf;
-
-    function bindPackingSlipButtonFinal(){
-      const btn = document.getElementById('generatePackingSlipBtn');
-      if (!btn || btn.dataset.finalPackingBound === 'true') return;
-
-      btn.dataset.finalPackingBound = 'true';
-      btn.addEventListener('click', function(event){
-        event.preventDefault();
-        event.stopPropagation();
-
-        try {
-          setMsg($('formMessage'), 'Opening packing slip print window...');
-          generatePackingSlipPdf();
-        } catch (error) {
-          console.error('Packing Slip PDF failed:', error);
-          setMsg($('formMessage'), `Packing Slip failed: ${error?.message || error}`, true);
-        }
-      }, true);
-    }
-
-    bindPackingSlipButtonFinal();
-    setTimeout(bindPackingSlipButtonFinal, 250);
-    setTimeout(bindPackingSlipButtonFinal, 1000);
-
-
-    // Final safety binding for Invoice PDF button.
+// Final safety binding for Invoice PDF button.
     window.generateInvoicePdfStandalone = generateInvoicePdfStandalone;
 
     function bindInvoicePdfButtonFinal(){
@@ -3129,23 +3096,7 @@ if ($('openVenmoBtn')) {
         downloadInvoiceEmailHtmlSafe();
       }
     }, true);
-
-  
-
-    
-
-
-
-    $('generatePackingSlipBtn')?.addEventListener('click',()=>{
-      const order = activeId ? orders.find(o=>o.id===activeId) : snapshotForm();
-      if(!order || !order.order_number){
-        alert('Select or save an order first.');
-        return;
-      }
-      generatePackingSlipPDF(order);
-    });
-
-    $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
+$('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       const order = activeId ? orders.find(o=>o.id===activeId) : snapshotForm();
       if(!order || !order.order_number){
         alert('Select or save an order first.');
@@ -3356,17 +3307,9 @@ if ($('openVenmoBtn')) {
       ordersAdminV2Wire();
     }
 
-    // Final Packing Slip v2 override: replaces the old hidden-template function that expected removed IDs.
+    
     if (typeof generatePackingSlipPDFFallback === 'function') {
-      generatePackingSlipPDF = generatePackingSlipPDFFallback;
-    }
-
-    window.addEventListener('load', () => {
-      const packingBtn = document.getElementById('generatePackingSlipBtn');
-      if (!packingBtn) return;
-      packingBtn.onclick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+      window.generatePackingSlipPdf = function(){
         const order = activeId ? orders.find(o => o.id === activeId) : snapshotForm();
         if (!order || !order.order_number) {
           alert('Select or save an order first.');
@@ -3374,6 +3317,32 @@ if ($('openVenmoBtn')) {
         }
         generatePackingSlipPDFFallback(order);
       };
+    }
+
+// Clean Packing Slip v2 binding: remove reliance on legacy hidden-template IDs.
+    if (typeof generatePackingSlipPDFFallback === 'function') {
+      generatePackingSlipPDF = generatePackingSlipPDFFallback;
+    }
+
+    window.addEventListener('load', () => {
+      const packingBtn = document.getElementById('generatePackingSlipBtn');
+      if (!packingBtn) return;
+
+      const cleanBtn = packingBtn.cloneNode(true);
+      packingBtn.parentNode.replaceChild(cleanBtn, packingBtn);
+
+      cleanBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const order = activeId ? orders.find(o => o.id === activeId) : snapshotForm();
+        if (!order || !order.order_number) {
+          alert('Select or save an order first.');
+          return;
+        }
+
+        generatePackingSlipPDFFallback(order);
+      });
     });
 
 </script>
