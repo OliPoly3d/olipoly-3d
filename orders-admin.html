@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Orders Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{
       --bg:#08101f; --panel:rgba(12,19,40,.88); --panel2:rgba(17,26,52,.92); --line:rgba(126,144,255,.18);
@@ -387,112 +386,12 @@
     
   
     .print-template-hidden{display:none!important}
-  
-/* === Orders Admin v2-lite safe polish: preserves original buttons, JS, PDFs, and email preview logic === */
-body{font-family:Inter,Arial,sans-serif}
-.brand h1,.hero h2,.card h3,.summary strong{font-family:"Cormorant Garamond",serif;letter-spacing:-.012em}
-.topbar{border-radius:28px;top:10px;z-index:50;padding:12px 14px}
-.brand p{display:flex;flex-wrap:wrap;gap:7px;align-items:center;line-height:1.35}
-.mini-badge,.workspace-kicker{
-  display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;
-  background:rgba(46,230,196,.09);border:1px solid rgba(46,230,196,.18);color:#cffff0;
-  font:900 .68rem/1 Inter,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase
-}
-.topbar .btn-row{gap:8px}
-.topbar .btn,.topbar .btn-ghost,.topbar .btn-danger{min-height:40px;padding:9px 13px}
-.hero{grid-template-columns:1fr .82fr}
-.hero>.card,.card,.summary{position:relative;overflow:hidden}
-.hero>.card::before,.card::before,.summary::before{
-  content:"";position:absolute;inset:0 0 auto 0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.20),transparent);pointer-events:none
-}
-.workspace-bar{
-  position:sticky;top:86px;z-index:45;display:grid;grid-template-columns:minmax(220px,1fr) auto auto;align-items:center;gap:14px;
-  margin-bottom:18px;padding:12px 14px;border-radius:24px;border:1px solid rgba(46,230,196,.20);
-  background:linear-gradient(135deg,rgba(11,20,43,.92),rgba(12,26,45,.86));
-  backdrop-filter:blur(16px);box-shadow:0 18px 46px rgba(0,0,0,.26),0 0 0 1px rgba(46,230,196,.04)
-}
-.workspace-id{min-width:0;display:grid;gap:3px}
-.workspace-id strong{font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.workspace-id small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.workspace-pills{display:flex;gap:8px;flex-wrap:wrap}
-.workspace-pill{
-  display:inline-flex;align-items:center;min-height:34px;padding:7px 10px;border-radius:999px;
-  background:rgba(255,255,255,.055);border:1px solid rgba(126,144,255,.18);color:#d9e4ff;font-weight:850;font-size:.78rem;white-space:nowrap
-}
-.workspace-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.workspace-actions .btn,.workspace-actions .btn-ghost{min-height:36px;padding:8px 11px;font-size:.84rem}
-.order-timeline{
-  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:14px 0 16px;padding:12px;
-  border-radius:22px;border:1px solid rgba(126,144,255,.14);background:rgba(255,255,255,.035)
-}
-.timeline-step{
-  display:grid;gap:4px;justify-items:center;text-align:center;padding:10px 6px;border-radius:17px;
-  border:1px solid rgba(126,144,255,.14);background:rgba(255,255,255,.035);color:var(--muted);min-height:92px
-}
-.timeline-step span{
-  width:28px;height:28px;display:grid;place-items:center;border-radius:999px;
-  background:rgba(126,123,255,.12);border:1px solid rgba(126,123,255,.20);color:#d9d8ff;font-weight:900
-}
-.timeline-step strong{color:#d9e4ff;font-size:.86rem}
-.timeline-step small{font-size:.72rem;line-height:1.25}
-.timeline-step.is-done{background:rgba(110,240,178,.07);border-color:rgba(110,240,178,.18)}
-.timeline-step.is-done span{background:rgba(110,240,178,.16);border-color:rgba(110,240,178,.25);color:#cffff0}
-.timeline-step.is-active{
-  background:linear-gradient(135deg,rgba(126,123,255,.18),rgba(46,230,196,.11));
-  border-color:rgba(46,230,196,.34);box-shadow:0 0 0 1px rgba(46,230,196,.08),0 16px 30px rgba(0,0,0,.18)
-}
-.timeline-step.is-active span{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
-.action-groups{grid-template-columns:1fr 1fr;gap:12px}
-.action-group.primary-actions{grid-column:1/-1}
-.action-group{margin:0}
-.action-group .btn,.action-group .btn-ghost,.action-group .btn-danger{min-height:40px;padding:9px 13px;font-size:.88rem}
-.list{max-height:1100px}
-.order-row{transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
-.order-row:hover{transform:translateY(-1px);border-color:rgba(126,123,255,.30)}
-
-/* Force hidden templates/modals to stay hidden unless original JS opens them */
-.print-template-hidden{display:none!important}
-.invoice-print-area{display:none!important}
-.packing-print-area{display:none!important}
-.email-preview-modal.hidden{display:none!important}
-.email-preview-modal:not(.hidden){display:grid}
-
-@media(max-width:1180px){
-  .workspace-bar{grid-template-columns:1fr;top:78px}
-  .workspace-actions{justify-content:flex-start}
-  .order-timeline{grid-template-columns:repeat(4,minmax(0,1fr))}
-}
-@media(max-width:1140px){.hero{grid-template-columns:1fr}}
-@media(max-width:720px){
-  .wrap{width:min(100% - 16px,1280px);padding-top:10px}
-  .topbar{position:relative;top:auto;border-radius:22px;align-items:stretch;gap:12px}
-  .brand{align-items:center}.brand h1{font-size:1.15rem}.brand p{font-size:.8rem}.icon{width:40px;height:40px;border-radius:14px}
-  .topbar .btn-row{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:8px}
-  .topbar .btn-row>*{width:100%;min-height:38px;padding:8px 10px;font-size:.82rem}
-  .workspace-bar{position:relative;top:auto;border-radius:22px;margin-bottom:14px;padding:12px;gap:10px}
-  .workspace-id strong,.workspace-id small{white-space:normal}
-  .workspace-pills,.workspace-actions{display:grid;grid-template-columns:1fr 1fr}
-  .workspace-pill{justify-content:center;font-size:.73rem;min-height:32px}
-  .workspace-actions .btn,.workspace-actions .btn-ghost{width:100%;min-height:38px;font-size:.8rem}
-  .hero>.card,.summary,.card,.order-row{padding:15px;border-radius:21px}
-  .hero h2{font-size:1.6rem}
-  .order-timeline{grid-template-columns:1fr;padding:10px;gap:7px}
-  .timeline-step{min-height:auto;grid-template-columns:auto 1fr;justify-items:start;text-align:left;align-items:center;padding:9px 10px}
-  .timeline-step small{grid-column:2}
-  .action-groups{grid-template-columns:1fr}
-  .action-group.primary-actions{grid-column:auto}
-  .action-group{padding:12px;border-radius:18px}
-  .action-group .btn-row{display:grid;grid-template-columns:1fr}
-  .action-group .btn,.action-group .btn-ghost,.action-group .btn-danger{width:100%}
-}
-
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
-      <div class="brand"><div class="icon">📦</div><div><h1>Orders Admin</h1><p><span class="mini-badge">OliPoly OS</span> Quotes • OP Orders • Tracking • Payment • Fulfillment</p></div></div>
+      <div class="brand"><div class="icon">📦</div><div><h1>OliPoly 3D Orders Admin</h1><p>Internal dashboard for status, notes, payment, and customer tracking updates.</p></div></div>
       <div class="btn-row">
         <button class="btn-ghost" id="refreshBtn" type="button">Refresh</button>
         <button class="btn-ghost" id="loginBtn" type="button">Log In</button>
@@ -506,8 +405,8 @@ body{font-family:Inter,Arial,sans-serif}
 
     <div class="hero">
       <section class="card">
-        <h2>Manage quote-to-order production from one internal dashboard.</h2>
-        <p>Create and update orders, record payment progress, manage fulfillment, and keep the public tracker fields customer-safe and current.</p>
+        <h2>Manage all orders from one internal dashboard.</h2>
+        <p>Use this page to create and update orders, add internal notes, record payment progress, and store the public tracking fields your customer-facing tracking page will read.</p>
       </section>
       <section class="card">
         <h3>Stripe invoice workflow</h3>
@@ -523,24 +422,6 @@ body{font-family:Inter,Arial,sans-serif}
         <div><label for="passwordInput">Password</label><input id="passwordInput" type="password" placeholder="Password" /></div>
       </div>
       <div class="message" id="authMessage"></div>
-    </div>
-
-
-    <div class="workspace-bar" id="workspaceBar">
-      <div class="workspace-id">
-        <span class="workspace-kicker">Active Order</span>
-        <strong id="workspaceOrderNumber">No order selected</strong>
-        <small id="workspaceMeta">Select an order or start a new one.</small>
-      </div>
-      <div class="workspace-pills">
-        <span class="workspace-pill" id="workspaceStatusPill">Status: —</span>
-        <span class="workspace-pill" id="workspacePaymentPill">Payment: —</span>
-      </div>
-      <div class="workspace-actions">
-        <button class="btn" id="quickSaveBtn" type="button">Save</button>
-        <button class="btn-ghost" id="quickTrackerBtn" type="button">Copy Tracker</button>
-        <button class="btn-ghost" id="quickPaidBtn" type="button">Mark Paid</button>
-      </div>
     </div>
 
     <div class="summary-grid">
@@ -574,17 +455,6 @@ body{font-family:Inter,Arial,sans-serif}
 
       <section class="card">
         <h3 id="detailTitle">Order Details</h3>
-
-        <div class="order-timeline" id="orderTimeline" aria-label="Order production timeline">
-          <div class="timeline-step" data-step="quote_sent"><span>1</span><strong>Quote</strong><small>Sent / pending</small></div>
-          <div class="timeline-step" data-step="awaiting_deposit"><span>2</span><strong>Deposit</strong><small>Payment setup</small></div>
-          <div class="timeline-step" data-step="in_design"><span>3</span><strong>Design</strong><small>Prep / CAD</small></div>
-          <div class="timeline-step" data-step="in_production"><span>4</span><strong>Printing</strong><small>On machine</small></div>
-          <div class="timeline-step" data-step="post_processing"><span>5</span><strong>Finishing</strong><small>QC / cleanup</small></div>
-          <div class="timeline-step" data-step="ready_for_pickup"><span>6</span><strong>Ready</strong><small>Pickup / ship</small></div>
-          <div class="timeline-step" data-step="completed"><span>7</span><strong>Complete</strong><small>Closed out</small></div>
-        </div>
-
         <div class="form-grid">
           <div><label for="orderNumber">Order Number</label><input id="orderNumber" /></div>
           <div><label for="orderDate">Order Date</label><input id="orderDate" type="date" /></div>
@@ -1679,85 +1549,7 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const byId = id => document.getElementById(id);
-      const statusText = value => ({
-        quote_sent:'Quote Sent', awaiting_approval:'Awaiting Approval', awaiting_deposit:'Awaiting Deposit',
-        in_design:'In Design', in_production:'In Production', post_processing:'Post-Processing',
-        ready_for_pickup:'Ready for Pickup', shipped:'Shipped', completed:'Completed'
-      })[value] || value || '—';
-      const paymentText = value => ({
-        unpaid:'Unpaid', deposit_due:'Deposit Due', deposit_paid:'Deposit Paid', paid:'Paid in Full', refunded:'Refunded'
-      })[value] || value || '—';
-      const timelineOrder = ['quote_sent','awaiting_deposit','in_design','in_production','post_processing','ready_for_pickup','completed'];
-      const timelineStepMap = {
-        quote_sent:'quote_sent', awaiting_approval:'quote_sent', awaiting_deposit:'awaiting_deposit',
-        in_design:'in_design', in_production:'in_production', post_processing:'post_processing',
-        ready_for_pickup:'ready_for_pickup', shipped:'ready_for_pickup', completed:'completed'
-      };
-      function refreshWorkspaceUi(){
-        const orderNumber = byId('orderNumber')?.value?.trim() || '';
-        const customer = byId('customerName')?.value?.trim() || '';
-        const title = byId('orderTitle')?.value?.trim() || '';
-        const status = byId('status')?.value || '';
-        const payment = byId('paymentStatus')?.value || '';
-        if (byId('workspaceOrderNumber')) byId('workspaceOrderNumber').textContent = orderNumber || 'No order selected';
-        if (byId('workspaceMeta')) byId('workspaceMeta').textContent = [customer, title].filter(Boolean).join(' • ') || 'Select an order or start a new one.';
-        if (byId('workspaceStatusPill')) byId('workspaceStatusPill').textContent = `Status: ${statusText(status)}`;
-        if (byId('workspacePaymentPill')) byId('workspacePaymentPill').textContent = `Payment: ${paymentText(payment)}`;
-        const mapped = timelineStepMap[status] || status || 'quote_sent';
-        const activeIndex = timelineOrder.indexOf(mapped);
-        document.querySelectorAll('.timeline-step').forEach(step => {
-          const stepValue = step.dataset.step;
-          const stepIndex = timelineOrder.indexOf(stepValue);
-          step.classList.toggle('is-active', stepValue === mapped);
-          step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
-        });
-      }
-      function showFormMessage(text, isError=false){
-        const el = byId('formMessage');
-        if (!el) return;
-        el.style.display = 'block';
-        el.textContent = text;
-        el.style.borderColor = isError ? 'rgba(255,110,145,.22)' : 'rgba(79,224,163,.18)';
-        el.style.background = isError ? 'rgba(255,110,145,.1)' : 'rgba(79,224,163,.1)';
-        el.style.color = isError ? '#ffd7e1' : '#cffff0';
-      }
-      function copyTrackerLink(){
-        const orderNumber = byId('orderNumber')?.value?.trim();
-        if (!orderNumber) {
-          showFormMessage('Select or enter an order number before copying a tracker link.', true);
-          return;
-        }
-        const url = `${location.origin}${location.pathname.replace(/orders-admin\.html$/,'track.html')}?order=${encodeURIComponent(orderNumber)}`;
-        navigator.clipboard?.writeText ? navigator.clipboard.writeText(url).then(() => showFormMessage(`Copied tracker link for ${orderNumber}.`)).catch(() => prompt('Copy tracker link:', url)) : prompt('Copy tracker link:', url);
-      }
-      function markPaidInForm(){
-        if (byId('paymentStatus')) byId('paymentStatus').value = 'paid';
-        if (byId('balanceAmount')) byId('balanceAmount').value = '0.00';
-        if (byId('paidDate') && !byId('paidDate').value) byId('paidDate').value = new Date().toISOString().slice(0,10);
-        refreshWorkspaceUi();
-        showFormMessage('Marked this order paid in the form. Click Save to store it.');
-      }
-      ['orderNumber','customerName','orderTitle','status','paymentStatus'].forEach(id => {
-        byId(id)?.addEventListener('input', refreshWorkspaceUi);
-        byId(id)?.addEventListener('change', refreshWorkspaceUi);
-      });
-      byId('quickSaveBtn')?.addEventListener('click', () => byId('saveBtn')?.click());
-      byId('quickTrackerBtn')?.addEventListener('click', copyTrackerLink);
-      byId('quickPaidBtn')?.addEventListener('click', markPaidInForm);
-      document.addEventListener('click', event => {
-        if (event.target.closest?.('.order-row') || ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn'].includes(event.target?.id)) {
-          setTimeout(refreshWorkspaceUi, 150);
-        }
-      });
-      refreshWorkspaceUi();
-    });
-  </script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
