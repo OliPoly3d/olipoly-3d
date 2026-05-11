@@ -4854,3 +4854,341 @@ Open Orders Admin now?`);
   setTimeout(bindQuotePdfV2Buttons, 1600);
 })();
 
+
+
+/* === Quote Email v2: unified proposal email preview === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const val = (id, fallback = "") => ($(id)?.value || fallback || "").trim();
+  const text = (id, fallback = "") => ($(id)?.textContent || fallback || "").trim();
+  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[ch]));
+
+  function toast(message, ms = 2800){
+    let el = $("liteStatusToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "liteStatusToast";
+      el.className = "lite-status-toast";
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(el._quoteEmailV2Timer);
+    el._quoteEmailV2Timer = setTimeout(() => el.classList.remove("show"), ms);
+  }
+
+  function totalText(){
+    return text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
+  }
+
+  function termsLabel(){
+    const raw = val("paymentTerms");
+    return ({
+      deposit_to_start: "Deposit to Start",
+      due_on_receipt: "Due on Receipt",
+      customer_terms: "Customer Standard Terms / PO Terms",
+      net_15: "Net 15",
+      net_30: "Net 30",
+      net_45: "Net 45",
+      split_50_50: "50% Deposit / 50% Completion"
+    })[raw] || raw || "To be confirmed";
+  }
+
+  function quoteTypeLabel(){
+    const type = val("liteQuoteType", "retail");
+    return ({
+      retail: "Retail / Individual Quote",
+      custom: "Custom Design Project",
+      business: "Business / Bulk Quote",
+      repeat: "Repeat Customer Quote",
+      craft: "Craft Show / Pre-Made Quote",
+      po: "Professional / PO Quote"
+    })[type] || "OliPoly Quote";
+  }
+
+  function makePublicToken(){
+    const arr = new Uint8Array(24);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function ensureQuoteResponseLinkV2(){
+    if (typeof window.ensureDocumentNumbers === "function") await window.ensureDocumentNumbers(false);
+    if (typeof window.render === "function") window.render();
+
+    const quoteNumber = val("quoteNumber");
+    if (!quoteNumber) throw new Error("Quote number is missing. Save or generate a quote number first.");
+
+    try {
+      if (typeof window.olipolyQuoteDirect?.saveQuoteDirect === "function") {
+        await window.olipolyQuoteDirect.saveQuoteDirect();
+      } else if (typeof window.saveQuoteToCloudDirect === "function") {
+        await window.saveQuoteToCloudDirect();
+      }
+    } catch (error) {
+      console.warn("Quote save before email link failed:", error);
+    }
+
+    const origin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "https://olipoly3d.com";
+
+    if (typeof window.sbApi !== "function") {
+      return `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber)}`;
+    }
+
+    const encodedQuote = encodeURIComponent(quoteNumber);
+    let publicToken = "";
+
+    try {
+      const existing = await window.sbApi(`/rest/v1/quotes?select=public_token&quote_number=eq.${encodedQuote}&limit=1`, { method:"GET" });
+      publicToken = Array.isArray(existing.data) && existing.data[0]?.public_token ? existing.data[0].public_token : "";
+    } catch (error) {
+      console.warn("Could not read quote token:", error);
+    }
+
+    if (!publicToken) publicToken = makePublicToken();
+
+    try {
+      await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encodedQuote}`, {
+        method:"PATCH",
+        headers:{ Prefer:"return=representation" },
+        body:JSON.stringify({
+          public_token: publicToken,
+          quote_status: val("quoteStatus") || "pending",
+          updated_at: new Date().toISOString()
+        })
+      });
+    } catch (error) {
+      console.warn("Could not save public token:", error);
+      return `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber)}`;
+    }
+
+    return `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber)}&token=${encodeURIComponent(publicToken)}`;
+  }
+
+  function buildQuotePlainEmailV2(responseLink){
+    const customer = val("customerName") || val("contactName");
+    const project = val("quoteTitle") || val("projectTitle") || "your custom 3D print";
+    const quoteNumber = val("quoteNumber") || "Quote";
+    const total = totalText();
+    const turnaround = val("turnaround") || "to be confirmed based on approval timing";
+    const notes = val("customerNotes");
+    const assumptions = val("assumptions");
+    const po = val("poNumber");
+    const oliPart = val("olipolyPartNumber");
+    const custPart = val("customerPartNumber");
+    const revision = val("partRevision");
+
+    return `${customer ? `Hello ${customer},` : "Hello,"}
+
+Your OliPoly 3D quote is ready to review.
+
+Quote: ${quoteNumber}
+Project: ${project}
+Quote type: ${quoteTypeLabel()}
+Estimated total: ${total}
+Payment terms: ${termsLabel()}
+Estimated timing: ${turnaround}
+${po ? `PO reference: ${po}\n` : ""}${oliPart ? `OliPoly Part #: ${oliPart}\n` : ""}${custPart ? `Customer Part #: ${custPart}\n` : ""}${revision ? `Revision: ${revision}\n` : ""}
+${notes ? `Notes: ${notes}\n\n` : ""}${assumptions ? `Assumptions: ${assumptions}\n\n` : ""}Please use this secure link to review the quote, approve it, or request changes:
+
+${responseLink}
+
+After approval, your quote becomes an OP- order and tracking/payment details will be available through the OliPoly tracker.
+
+Thank you,
+
+OliPoly 3D LLC
+Custom 3D Printing • Creative Builds • Prototypes
+OliPoly3D@gmail.com
+https://olipoly3d.com`;
+  }
+
+  function buildQuoteStyledEmailV2(responseLink){
+    const customer = val("customerName") || val("contactName");
+    const company = val("companyName");
+    const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
+    const quoteNumber = val("quoteNumber") || "Quote";
+    const total = totalText();
+    const turnaround = val("turnaround") || "To be confirmed";
+    const notes = val("customerNotes");
+    const assumptions = val("assumptions");
+    const oliPart = val("olipolyPartNumber");
+    const custPart = val("customerPartNumber");
+    const partRevision = val("partRevision");
+    const po = val("poNumber");
+    const pro = val("professionalMode") === "on" || ["po","business"].includes(val("liteQuoteType"));
+
+    const referenceRows = [
+      company ? ["Company", company] : null,
+      po ? ["PO Reference", po] : null,
+      oliPart ? ["OliPoly Part #", oliPart] : null,
+      custPart ? ["Customer Part #", custPart] : null,
+      partRevision ? ["Revision", partRevision] : null
+    ].filter(Boolean).map(([label,value]) =>
+      `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">${esc(label)}</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(value)}</td></tr>`
+    ).join("");
+
+    return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:28px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
+    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+
+    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+      <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
+        <td style="vertical-align:middle;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
+          <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">Custom 3D Printing • Creative Builds • Prototypes</div>
+        </td>
+        <td style="text-align:right;vertical-align:middle;">
+          <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff3fb;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Quote Ready</span>
+        </td>
+      </tr></table>
+    </div>
+
+    <div style="padding:28px;">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#241b2b;font-weight:700;">Your quote is ready</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">
+        ${customer ? `Hello ${esc(customer)}, ` : ""}your OliPoly 3D quote has been prepared and is ready to review${pro ? " for purchasing approval" : ""}.
+      </p>
+
+      <div style="background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));border:1px solid #f2c4df;border-radius:22px;padding:20px;margin:20px 0;">
+        <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
+          <td style="vertical-align:top;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#826889;margin-bottom:6px;">Estimated Total</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:800;line-height:1;color:#241b2b;">${esc(total)}</div><div style="margin-top:7px;color:#604d68;font-size:13px;">${esc(termsLabel())} • ${esc(turnaround)}</div></td>
+          <td style="vertical-align:top;text-align:right;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#826889;margin-bottom:6px;">Quote</div><div style="font-size:17px;font-weight:900;color:#241b2b;">${esc(quoteNumber)}</div><div style="margin-top:7px;color:#604d68;font-size:13px;">${esc(quoteTypeLabel())}</div></td>
+        </tr></table>
+      </div>
+
+      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">Quote Summary</div>
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">Project</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(project)}</td></tr>
+          ${referenceRows}
+          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;">Timing</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;">${esc(turnaround)}</td></tr>
+        </table>
+      </div>
+
+      ${notes ? `<div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;"><strong style="color:#2f2336;">Notes</strong><br>${esc(notes)}</div>` : ""}
+      ${assumptions ? `<div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;"><strong style="color:#2f2336;">Assumptions</strong><br>${esc(assumptions)}</div>` : ""}
+
+      <div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;">
+        <strong style="color:#2f2336;">After approval</strong><br>
+        Your quote becomes an OP- order, and tracking/payment details will be available through the OliPoly tracker.
+      </div>
+
+      <div style="margin:22px 0;">
+        <a href="${esc(responseLink)}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Review & Approve Quote</a>
+      </div>
+
+      <p style="font-size:13px;line-height:1.55;color:#816c88;margin:0;">If the button does not work, copy and paste this link:<br>${esc(responseLink)}</p>
+      <p style="margin:22px 0 0;color:#4f4057;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
+    </div>
+
+    <div style="padding:18px 28px;background:#fff7fb;border-top:1px solid #f6ddec;text-align:center;color:#826889;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
+  </div>
+</div>`;
+  }
+
+  let quoteEmailV2Last = null;
+
+  function writePreview(html){
+    const modal = $("quoteEmailPreviewModal");
+    const frame = $("quoteEmailPreviewFrame");
+    if (!modal || !frame) return false;
+
+    $("quoteEmailPreviewTo").value = quoteEmailV2Last?.to || "";
+    $("quoteEmailPreviewSubject").value = quoteEmailV2Last?.subject || "";
+    frame.srcdoc = html;
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    return true;
+  }
+
+  function gmailFallback(){
+    if (!quoteEmailV2Last) return;
+    const url =
+      "https://mail.google.com/mail/?view=cm&fs=1" +
+      `&to=${encodeURIComponent(quoteEmailV2Last.to || "")}` +
+      `&su=${encodeURIComponent(quoteEmailV2Last.subject || "")}` +
+      `&body=${encodeURIComponent(quoteEmailV2Last.plain || "")}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async function openQuoteEmailV2(){
+    const btn = $("prepareCustomerEmailBtn");
+    try {
+      if (btn) { btn.disabled = true; btn.textContent = "Preparing..."; }
+
+      const link = await ensureQuoteResponseLinkV2();
+      const quoteNumber = val("quoteNumber") || "Quote";
+      const to = val("customerEmail");
+      const subject = `Quote Ready: ${quoteNumber} - OliPoly 3D`;
+      const html = buildQuoteStyledEmailV2(link);
+      const plain = buildQuotePlainEmailV2(link);
+      quoteEmailV2Last = { to, subject, html, plain };
+
+      window._quoteEmailV2Last = quoteEmailV2Last;
+
+      if (!writePreview(html)) {
+        await navigator.clipboard?.writeText(html);
+        gmailFallback();
+      }
+    } catch (error) {
+      alert(`Could not prepare quote email:\n\n${error?.message || error}`);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Prepare Customer Email"; }
+    }
+  }
+
+  function bindQuoteEmailV2(){
+    const btn = $("prepareCustomerEmailBtn");
+    if (!btn || btn.dataset.quoteEmailV2Bound === "true") return;
+
+    const cleanBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(cleanBtn, btn);
+    cleanBtn.dataset.quoteEmailV2Bound = "true";
+    cleanBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openQuoteEmailV2();
+    });
+
+    $("quoteEmailCopyStyledBtn")?.addEventListener("click", async () => {
+      const last = window._quoteEmailV2Last;
+      if (!last) return;
+      try {
+        await navigator.clipboard.writeText(last.html);
+        toast("Styled quote email copied.");
+      } catch {
+        toast("Clipboard blocked. Use Download HTML instead.", 5000);
+      }
+    });
+
+    $("quoteEmailOpenGmailBtn")?.addEventListener("click", () => {
+      quoteEmailV2Last = window._quoteEmailV2Last || quoteEmailV2Last;
+      gmailFallback();
+    });
+
+    $("quoteEmailDownloadHtmlBtn")?.addEventListener("click", () => {
+      const last = window._quoteEmailV2Last;
+      if (!last) return;
+      const blob = new Blob([last.html], { type:"text/html" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(val("quoteNumber") || "olipoly-quote-email").replace(/[^a-z0-9_-]+/gi,"-")}-email-v2.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+  }
+
+  window.buildAndShowQuoteEmailPreview = openQuoteEmailV2;
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindQuoteEmailV2);
+  else bindQuoteEmailV2();
+
+  setTimeout(bindQuoteEmailV2, 700);
+  setTimeout(bindQuoteEmailV2, 1800);
+})();
+
