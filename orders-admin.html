@@ -557,6 +557,88 @@ body{font-family:Inter,Arial,sans-serif}
   .catalog-panel .btn,.catalog-panel .btn-ghost{width:100%}
 }
 
+
+.catalog-browser{
+  margin-top:16px;
+  padding:16px;
+  border-radius:22px;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(236,72,153,.13);
+}
+.catalog-browser h4{margin:0}
+.catalog-search-grid{
+  display:grid;
+  grid-template-columns:1fr 240px;
+  gap:12px;
+  margin:14px 0;
+  align-items:end;
+}
+.catalog-list{
+  display:grid;
+  gap:10px;
+  max-height:520px;
+  overflow:auto;
+  padding-right:3px;
+}
+.catalog-part-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:14px;
+  border-radius:18px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(236,72,153,.13);
+}
+.catalog-part-row:hover{border-color:rgba(236,72,153,.30);box-shadow:0 10px 24px rgba(56,24,64,.08)}
+.catalog-part-main strong{
+  display:block;
+  color:var(--text,#221827);
+  font-size:1rem;
+  margin-bottom:4px;
+}
+.catalog-part-main span{
+  display:block;
+  color:var(--muted,#76657f);
+  font-size:.86rem;
+  line-height:1.45;
+}
+.catalog-part-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+.catalog-tag{
+  display:inline-flex;
+  padding:4px 7px;
+  border-radius:999px;
+  background:rgba(236,72,153,.08);
+  border:1px solid rgba(236,72,153,.12);
+  color:#7a2f5e;
+  font-size:.72rem;
+  font-weight:850;
+}
+.catalog-part-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.catalog-part-actions .btn,
+.catalog-part-actions .btn-ghost,
+.catalog-part-actions .btn-danger{
+  padding:8px 10px;
+  min-height:36px;
+  font-size:.8rem;
+}
+@media(max-width:760px){
+  .catalog-search-grid{grid-template-columns:1fr}
+  .catalog-part-row{grid-template-columns:1fr}
+  .catalog-part-actions{justify-content:stretch;display:grid;grid-template-columns:1fr}
+  .catalog-part-actions .btn,.catalog-part-actions .btn-ghost,.catalog-part-actions .btn-danger{width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -795,6 +877,38 @@ body{font-family:Inter,Arial,sans-serif}
                 <button class="btn-ghost" id="showCatalogJsonBtn" type="button">Preview Catalog Data</button>
               </div>
               <div class="message" id="catalogMessage"></div>
+            </div>
+          </div>
+
+          <div class="catalog-browser" id="catalogBrowser">
+            <div class="section-title-row">
+              <div>
+                <h4>Saved Catalog Parts</h4>
+                <p class="sub">Search saved parts, then load one into the current order form as a reorder starting point.</p>
+              </div>
+              <div class="btn-row">
+                <button class="btn-ghost" id="refreshCatalogBtn" type="button">Refresh Catalog</button>
+                <button class="btn-ghost" id="clearCatalogSearchBtn" type="button">Clear Search</button>
+              </div>
+            </div>
+
+            <div class="catalog-search-grid">
+              <div>
+                <label for="catalogSearchInput">Search catalog</label>
+                <input id="catalogSearchInput" placeholder="Search part #, customer, company, revision, material, source order..." />
+              </div>
+              <div>
+                <label for="catalogSourceFilter">Source</label>
+                <select id="catalogSourceFilter">
+                  <option value="all">Cloud + browser backup</option>
+                  <option value="cloud">Cloud only</option>
+                  <option value="local">Browser backup only</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="catalog-list" id="catalogList">
+              <div class="empty">No catalog parts loaded yet. Save a part or click Refresh Catalog.</div>
             </div>
           </div>
         </div>
@@ -3518,6 +3632,234 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindCatalogPhase1A);
     else bindCatalogPhase1A();
+
+
+
+    /* === Catalog / Reorder Phase 1B: Browser + Load === */
+    let catalogPartsCache = [];
+
+    function normalizeCatalogPart(row, source='cloud'){
+      const data = row.catalog_data || row;
+      return {
+        id: row.id || data.id || '',
+        source,
+        part_key: row.part_key || data.part_key || '',
+        part_name: row.part_name || data.part_name || 'Catalog Part',
+        olipoly_part_number: row.olipoly_part_number || data.olipoly_part_number || '',
+        customer_part_number: row.customer_part_number || data.customer_part_number || '',
+        part_revision: row.part_revision || data.part_revision || 'Rev A',
+        customer_name: row.customer_name || data.customer_name || '',
+        company_name: row.company_name || data.company_name || '',
+        source_order_number: row.source_order_number || data.source_order_number || '',
+        source_quote_number: row.source_quote_number || data.source_quote_number || '',
+        po_number: row.po_number || data.po_number || '',
+        default_material: row.default_material || data.default_material || '',
+        default_color: row.default_color || data.default_color || '',
+        printer_profile: row.printer_profile || data.printer_profile || '',
+        layer_height: row.layer_height || data.layer_height || '',
+        nozzle_size: row.nozzle_size || data.nozzle_size || '',
+        last_quantity: row.last_quantity || data.last_quantity || '',
+        last_order_total: row.last_order_total || data.last_order_total || '',
+        estimated_piece_price: row.estimated_piece_price || data.estimated_piece_price || '',
+        production_notes: row.production_notes || data.production_notes || '',
+        post_processing_notes: row.post_processing_notes || data.post_processing_notes || '',
+        packing_notes: row.packing_notes || data.packing_notes || '',
+        internal_notes: row.internal_notes || data.internal_notes || '',
+        updated_at: row.updated_at || data.updated_at || data.saved_at || ''
+      };
+    }
+
+    async function fetchCloudCatalogParts(){
+      if (typeof api !== 'function') return [];
+      try {
+        const res = await api('/rest/v1/catalog_parts?select=*&active=is.true&order=updated_at.desc', { method:'GET' });
+        if (res.error) throw res.error;
+        return Array.isArray(res) ? res.map(row => normalizeCatalogPart(row, 'cloud')) : [];
+      } catch (error) {
+        console.warn('Cloud catalog load failed:', error);
+        return [];
+      }
+    }
+
+    function fetchLocalCatalogParts(){
+      return readLocalCatalogParts().map(row => normalizeCatalogPart(row, 'local'));
+    }
+
+    function dedupeCatalogParts(parts){
+      const seen = new Set();
+      const output = [];
+      for (const part of parts) {
+        const key = [
+          part.olipoly_part_number || '',
+          part.customer_part_number || '',
+          part.part_revision || '',
+          part.source_order_number || '',
+          part.part_key || ''
+        ].join('|').toLowerCase();
+
+        if (seen.has(key)) continue;
+        seen.add(key);
+        output.push(part);
+      }
+      return output;
+    }
+
+    async function refreshCatalogBrowser(){
+      const sourceFilter = $('catalogSourceFilter')?.value || 'all';
+      const cloud = sourceFilter === 'local' ? [] : await fetchCloudCatalogParts();
+      const local = sourceFilter === 'cloud' ? [] : fetchLocalCatalogParts();
+
+      catalogPartsCache = dedupeCatalogParts([...cloud, ...local]);
+      renderCatalogBrowser();
+
+      const sourceText = cloud.length ? `${cloud.length} cloud` : '0 cloud';
+      const localText = local.length ? `${local.length} browser` : '0 browser';
+      setMsg($('catalogMessage'), `Catalog loaded: ${sourceText}, ${localText}.`);
+    }
+
+    function catalogSearchText(part){
+      return [
+        part.part_name,
+        part.olipoly_part_number,
+        part.customer_part_number,
+        part.part_revision,
+        part.customer_name,
+        part.company_name,
+        part.source_order_number,
+        part.source_quote_number,
+        part.po_number,
+        part.default_material,
+        part.default_color,
+        part.printer_profile
+      ].filter(Boolean).join(' ').toLowerCase();
+    }
+
+    function renderCatalogBrowser(){
+      const list = $('catalogList');
+      if (!list) return;
+
+      const q = ($('catalogSearchInput')?.value || '').trim().toLowerCase();
+      const parts = catalogPartsCache.filter(part => !q || catalogSearchText(part).includes(q));
+
+      if (!parts.length) {
+        list.innerHTML = `<div class="empty">${catalogPartsCache.length ? 'No catalog parts match that search.' : 'No catalog parts loaded yet. Save a part or click Refresh Catalog.'}</div>`;
+        return;
+      }
+
+      list.innerHTML = parts.map((part, index) => {
+        const title = part.part_name || part.olipoly_part_number || part.customer_part_number || 'Catalog Part';
+        const ref = [
+          part.olipoly_part_number ? `OliPoly: ${part.olipoly_part_number}` : '',
+          part.customer_part_number ? `Customer: ${part.customer_part_number}` : '',
+          part.part_revision ? `Rev: ${part.part_revision}` : ''
+        ].filter(Boolean).join(' • ');
+
+        const meta = [
+          part.customer_name || part.company_name || '',
+          part.source_order_number ? `Source ${part.source_order_number}` : '',
+          part.last_quantity ? `Last qty ${part.last_quantity}` : '',
+          part.last_order_total ? `Last total ${money(part.last_order_total)}` : ''
+        ].filter(Boolean).join(' • ');
+
+        const tags = [
+          part.source === 'cloud' ? 'Cloud' : 'Browser',
+          part.default_material,
+          part.default_color,
+          part.printer_profile
+        ].filter(Boolean).map(t => `<span class="catalog-tag">${escHtml(t)}</span>`).join('');
+
+        return `
+          <div class="catalog-part-row">
+            <div class="catalog-part-main">
+              <strong>${escHtml(title)}</strong>
+              <span>${escHtml(ref || 'No part reference saved')}</span>
+              <span>${escHtml(meta || 'No customer/source metadata saved')}</span>
+              <div class="catalog-part-tags">${tags}</div>
+            </div>
+            <div class="catalog-part-actions">
+              <button class="btn" type="button" data-catalog-load="${index}">Load Part</button>
+              <button class="btn-ghost" type="button" data-catalog-preview="${index}">Preview</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escHtml(value){
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[ch]));
+    }
+
+    function setFieldIfExists(id, value){
+      const el = $(id);
+      if (!el) return;
+      el.value = value ?? '';
+      el.dispatchEvent(new Event('input', { bubbles:true }));
+      el.dispatchEvent(new Event('change', { bubbles:true }));
+    }
+
+    function loadCatalogPartIntoForm(part){
+      if (!part) return;
+
+      setFieldIfExists('orderTitle', part.part_name || '');
+      setFieldIfExists('olipolyPartNumber', part.olipoly_part_number || '');
+      setFieldIfExists('customerPartNumber', part.customer_part_number || '');
+      setFieldIfExists('poPartNumber', part.customer_part_number || '');
+      setFieldIfExists('partRevision', part.part_revision || 'Rev A');
+      setFieldIfExists('poNumber', part.po_number || '');
+
+      setFieldIfExists('customerName', part.customer_name || '');
+      setFieldIfExists('shippingCompany', part.company_name || '');
+      setFieldIfExists('material', part.default_material || '');
+      setFieldIfExists('color', part.default_color || '');
+      setFieldIfExists('printerProfile', part.printer_profile || '');
+      setFieldIfExists('layerHeight', part.layer_height || '');
+      setFieldIfExists('nozzleSize', part.nozzle_size || '');
+      setFieldIfExists('quantity', part.last_quantity || '');
+
+      setFieldIfExists('productionNotes', part.production_notes || '');
+      setFieldIfExists('postProcessingNotes', part.post_processing_notes || '');
+      setFieldIfExists('shippingOrPickupNote', part.packing_notes || '');
+      setFieldIfExists('internalNotes', [
+        part.internal_notes || '',
+        part.source_order_number ? `Loaded from catalog source order ${part.source_order_number}.` : '',
+        part.source_quote_number ? `Source quote ${part.source_quote_number}.` : ''
+      ].filter(Boolean).join('\\n'));
+
+      updateCatalogPreview();
+      setMsg($('catalogMessage'), `Loaded catalog part: ${part.olipoly_part_number || part.customer_part_number || part.part_name}. Review quantity/pricing before saving a new order.`);
+    }
+
+    function previewCatalogPart(part){
+      if (!part) return;
+      const text = JSON.stringify(part, null, 2);
+      console.log('Catalog part preview:', part);
+      try { navigator.clipboard?.writeText(text); } catch {}
+      alert(`Catalog Part Preview:\\n\\n${text.slice(0,1800)}${text.length > 1800 ? '\\n\\n…truncated in alert; full version logged to console.' : ''}`);
+    }
+
+    function bindCatalogPhase1B(){
+      $('refreshCatalogBtn')?.addEventListener('click', refreshCatalogBrowser);
+      $('catalogSourceFilter')?.addEventListener('change', refreshCatalogBrowser);
+      $('catalogSearchInput')?.addEventListener('input', renderCatalogBrowser);
+      $('clearCatalogSearchBtn')?.addEventListener('click', () => {
+        if ($('catalogSearchInput')) $('catalogSearchInput').value = '';
+        renderCatalogBrowser();
+      });
+
+      $('catalogList')?.addEventListener('click', event => {
+        const loadBtn = event.target.closest?.('[data-catalog-load]');
+        const previewBtn = event.target.closest?.('[data-catalog-preview]');
+        if (loadBtn) loadCatalogPartIntoForm(catalogPartsCache[Number(loadBtn.dataset.catalogLoad)]);
+        if (previewBtn) previewCatalogPart(catalogPartsCache[Number(previewBtn.dataset.catalogPreview)]);
+      });
+
+      setTimeout(refreshCatalogBrowser, 500);
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindCatalogPhase1B);
+    else bindCatalogPhase1B();
 
 
     /* === Orders Admin v2 safe additive helpers === */
