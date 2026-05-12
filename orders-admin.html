@@ -639,6 +639,44 @@ body{font-family:Inter,Arial,sans-serif}
   .catalog-part-actions .btn,.catalog-part-actions .btn-ghost,.catalog-part-actions .btn-danger{width:100%}
 }
 
+
+/* === Customer tracker message helper === */
+.customer-tracker-box{
+  grid-column:1/-1;
+  padding:14px;
+  border-radius:22px;
+  border:1px solid rgba(46,230,196,.18);
+  background:rgba(46,230,196,.045);
+}
+.customer-tracker-box h4{
+  margin:0 0 6px;
+  font-size:.8rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.customer-tracker-box p{
+  margin:0 0 12px;
+  color:var(--muted);
+  line-height:1.55;
+  font-size:.9rem;
+}
+.customer-tracker-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 12px;
+}
+.customer-tracker-actions .btn-ghost{
+  padding:9px 12px;
+  font-size:.86rem;
+}
+.customer-tracker-fields{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
 </style>
 </head>
 <body>
@@ -4326,6 +4364,94 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       <div class="email-preview-frame"><iframe id="completionEmailPreviewFrame" title="Completion email preview"></iframe></div>
     </div>
   </div>
+
+
+<script>
+/* === OliPoly Customer Tracker Message Autofill V1 - final body only === */
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const DEFAULTS = {
+    quote_sent: ["Quote sent.", "Please review the quote and approve it when you are ready to move forward.", ""],
+    awaiting_approval: ["Awaiting approval.", "Please review the quote details and approve or reply with any questions.", ""],
+    awaiting_deposit: ["Awaiting deposit/payment.", "Payment or deposit is the next step before production begins.", ""],
+    in_design: ["Design/setup is in progress.", "OliPoly 3D is preparing the design, setup, or production details.", ""],
+    in_production: ["Your order is in production.", "Your item is being printed or prepared. We will update the tracker as it moves forward.", ""],
+    post_processing: ["Your order is in finishing.", "Your item is being cleaned up, checked, packed, or prepared for pickup/shipping.", ""],
+    ready_for_pickup: ["Your order is ready for pickup.", "Please watch for pickup details or reach out to coordinate pickup timing.", "Pickup details will be confirmed directly."],
+    shipped: ["Your order has shipped.", "Please use the tracking information when available.", ""],
+    completed: ["Order completed.", "Thank you for choosing OliPoly 3D.", ""]
+  };
+
+  function currentDefaults(){
+    const status = $("status")?.value || "quote_sent";
+    const payment = $("paymentStatus")?.value || "";
+    const fulfillment = $("fulfillment")?.value || "";
+    const tracking = $("trackingNumber")?.value?.trim() || "";
+    const base = DEFAULTS[status] || DEFAULTS.quote_sent;
+    const d = { status: base[0], next: base[1], note: base[2] };
+
+    if (payment === "paid" && ["quote_sent","awaiting_approval","awaiting_deposit"].includes(status)) {
+      d.status = "Payment received.";
+      d.next = "OliPoly 3D will review and schedule the order for production.";
+    }
+    if (status === "shipped" && tracking) d.note = `Tracking #: ${tracking}`;
+    if (status === "ready_for_pickup" && fulfillment === "pickup") d.note = d.note || "Pickup details will be confirmed directly.";
+    return d;
+  }
+
+  function apply(force){
+    const d = currentDefaults();
+    const pairs = [
+      ["publicStatusText", d.status],
+      ["publicNextStep", d.next],
+      ["shippingOrPickupNote", d.note || ""]
+    ];
+    pairs.forEach(([id, value]) => {
+      const el = $(id);
+      if (!el) return;
+      if (force || !el.value.trim()) {
+        el.value = value;
+        el.dispatchEvent(new Event("input", { bubbles:true }));
+        el.dispatchEvent(new Event("change", { bubbles:true }));
+      }
+    });
+  }
+
+  function clear(){
+    ["publicStatusText","publicNextStep","shippingOrPickupNote"].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.value = "";
+      el.dispatchEvent(new Event("input", { bubbles:true }));
+      el.dispatchEvent(new Event("change", { bubbles:true }));
+    });
+  }
+
+  function bind(){
+    const autoBtn = $("autoFillTrackerBtn");
+    if (autoBtn && autoBtn.dataset.bound !== "true") {
+      autoBtn.dataset.bound = "true";
+      autoBtn.addEventListener("click", () => apply(true));
+    }
+    const clearBtn = $("clearTrackerTextBtn");
+    if (clearBtn && clearBtn.dataset.bound !== "true") {
+      clearBtn.dataset.bound = "true";
+      clearBtn.addEventListener("click", clear);
+    }
+    ["status","paymentStatus","fulfillment","trackingNumber"].forEach(id => {
+      const el = $(id);
+      if (!el || el.dataset.trackerAutofillBound === "true") return;
+      el.dataset.trackerAutofillBound = "true";
+      el.addEventListener("change", () => apply(false));
+      el.addEventListener("input", () => apply(false));
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+})();
+</script>
 
 </body>
 </html>
