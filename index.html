@@ -1096,6 +1096,200 @@ section[id*="business"] .section-head p{
   justify-content:flex-start;
 }
 
+
+
+/* === OliPoly mobile UX + calm premium polish pass === */
+body::before{
+  background-image:
+    linear-gradient(rgba(236,72,153,.026) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(167,139,250,.022) 1px,transparent 1px),
+    radial-gradient(circle at 28% 18%,rgba(255,255,255,.46),transparent 18%);
+  background-size:72px 72px,72px 72px,100% 100%;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.16) 55%,transparent 92%);
+}
+.section-head p{line-height:1.55;max-width:620px}
+.capability-card p,.business-card p,.contact-shell p,.testimonial p{line-height:1.5}
+.capability-card,.business-card,.contact-shell,.testimonial,.customer-photo-card{box-shadow:0 12px 26px rgba(236,72,153,.065),inset 0 1px 0 rgba(255,255,255,.72)}
+.business-panel{gap:16px}
+.business-card ul{margin-top:10px;line-height:1.5}
+.business-card li{margin:6px 0}
+.business-details-card summary small{line-height:1.35}
+.compact-business-cta{padding:16px 18px}
+.compact-business-cta h2{font-size:1.62rem;margin-bottom:4px}
+.mini-links{gap:8px;margin-top:12px}
+#contact .section-head h2{white-space:nowrap}
+#contact .section-head p{font-size:.98rem}
+#contact .contact-shell{padding:18px}
+#contact .contact-shell h3{font-size:1.34rem;margin-bottom:6px}
+#contact .contact-shell p{font-size:.96rem;line-height:1.5}
+#contact .helper{font-size:.9rem;line-height:1.4;color:#7a6b80}
+#contact .upload-shell{padding:14px 15px;border-radius:18px}
+#contact .upload-shell h3{font-size:1.18rem;margin-bottom:4px}
+#contact .upload-shell p{font-size:.92rem;line-height:1.45}
+@media(max-width:980px){
+  #contact .section-head h2{white-space:normal}
+  .section-head p{text-align:left!important;margin-left:0!important}
+}
+@media(max-width:680px){
+  body::before{opacity:.55;background-size:86px 86px,86px 86px,100% 100%}
+  .section{padding:21px 0 10px}
+  .section-head{margin-bottom:12px}
+  .section-head h2{font-size:1.56rem;line-height:1.08}
+  .section-head p{font-size:.91rem;line-height:1.45}
+  .hero p{font-size:.93rem;line-height:1.5}
+  .trust-row{font-size:.82rem;line-height:1.35}
+  .capability-card,.business-card,.contact-shell,.testimonial,.customer-photo-card,.cta-band{border-radius:18px;padding:14px}
+  .capability-card h3,.business-card h3{font-size:1.18rem;margin-bottom:5px}
+  .capability-card p,.business-card p{font-size:.9rem;line-height:1.42;max-width:none}
+  .business-details-card{border-radius:18px}
+  .business-details-card summary{padding:13px 14px}
+  .business-details-card summary strong{font-size:1.12rem}
+  .business-details-card summary small{font-size:.84rem}
+  .business-details-body{padding:0 13px 13px}
+  .compact-business-cta{padding:14px;border-radius:17px}
+  .compact-business-cta h2{font-size:1.42rem}
+  .mini-link{font-size:.84rem;padding:8px 11px}
+  #contact .contact-grid{gap:12px}
+  #contact .contact-shell{padding:15px}
+  #contact .contact-shell h3{font-size:1.16rem}
+  #contact .contact-shell p{font-size:.9rem;line-height:1.42}
+  #contact .helper{font-size:.84rem}
+  #contact .upload-shell{padding:12px;margin-top:12px}
+  #contact .upload-shell p{font-size:.86rem}
+  .footer-wrap{font-size:.95rem}
+}
+
+
+/* === Footer refinement pass === */
+footer{
+  margin-top:28px;
+  padding:34px 0 42px;
+  background:
+    radial-gradient(circle at 12% 0%,rgba(236,72,153,.07),transparent 34%),
+    linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.48));
+  border-top:1px solid rgba(236,72,153,.08);
+}
+.footer-wrap{
+  display:grid;
+  grid-template-columns:1.45fr .75fr .9fr;
+  gap:18px;
+  align-items:stretch;
+  font-family:Inter,sans-serif;
+}
+.footer-branding,
+.footer-links > div{
+  background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,247,251,.76));
+  border:1px solid rgba(236,72,153,.12);
+  border-radius:24px;
+  box-shadow:0 10px 24px rgba(236,72,153,.055);
+}
+.footer-branding{
+  padding:18px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:14px;
+  align-items:start;
+}
+.footer-branding img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+  border-radius:14px;
+  background:rgba(255,255,255,.76);
+  padding:4px;
+}
+.footer-branding h3{
+  margin:0;
+  font:700 1.75rem/1 "Cormorant Garamond",serif;
+  color:#241b2b;
+}
+.footer-branding p{
+  margin:7px 0 0;
+  max-width:56ch;
+  font:500 .95rem/1.55 Inter,sans-serif;
+  color:#6e5d78;
+}
+.footer-links{
+  display:contents;
+}
+.footer-links > div{
+  padding:18px;
+}
+.footer-links h4{
+  margin:0 0 12px;
+  padding:0 0 9px;
+  border-bottom:1px solid rgba(236,72,153,.12);
+  font:.72rem Inter,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:#a07cac;
+}
+.footer-links a{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 0 9px;
+  padding:9px 11px;
+  border-radius:14px;
+  background:rgba(255,255,255,.58);
+  border:1px solid rgba(236,72,153,.08);
+  font:700 .9rem/1.2 Inter,sans-serif;
+  color:#4c3f57;
+}
+.footer-links a:hover{
+  color:var(--p);
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(236,72,153,.10);
+}
+.footer-links a::after{
+  content:"›";
+  color:rgba(236,72,153,.72);
+  font-weight:900;
+}
+@media(max-width:900px){
+  .footer-wrap{
+    grid-template-columns:1fr;
+  }
+  .footer-links{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+}
+@media(max-width:680px){
+  footer{
+    padding:26px 0 34px;
+  }
+  .footer-branding{
+    grid-template-columns:auto 1fr;
+    padding:15px;
+    border-radius:22px;
+  }
+  .footer-branding img{
+    width:38px;
+    height:38px;
+  }
+  .footer-branding h3{
+    font-size:1.45rem;
+  }
+  .footer-branding p{
+    font-size:.88rem;
+    line-height:1.5;
+  }
+  .footer-links{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .footer-links > div{
+    padding:15px;
+    border-radius:22px;
+  }
+  .footer-links a{
+    min-height:42px;
+  }
+}
+
 </style>
 
 <link rel="canonical" href="https://olipoly3d.com/" />
@@ -1250,7 +1444,7 @@ section[id*="business"] .section-head p{
         </article>
         <article class="capability-card">
           <h3>Prototypes & small batches</h3>
-          <p>Test-fit parts, concept models, short-run production, business requests, and repeatable small batches.</p>
+          <p>Prototype parts, fit checks, business requests, small batches, and repeatable production runs.</p>
         </article>
       </div>
     </div>
@@ -1311,7 +1505,7 @@ section[id*="business"] .section-head p{
           <article class="testimonial">
             <span class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</span>
             <span class="quote-mark">“</span>
-            <p>Communication was incredibly easy from start to finish, and OliPoly’s design ability really stood out in bringing ideas to life. Whether it was refining concepts or scaling up for larger business orders, everything was handled smoothly and professionally. Highly recommend for both custom and production-level needs.</p>
+            <p>Communication was easy from start to finish, and OliPoly’s design help really stood out. From refining ideas to scaling up larger orders, everything felt smooth and professional.</p>
             <span class="testimonial-name">Tom L.</span>
           </article>
           </div>
@@ -1363,10 +1557,10 @@ section[id*="business"] .section-head p{
 
           <div class="cta-band compact-business-cta">
             <div>
-              <h2>Have a business or PO request?</h2>
+              <h2>Business or PO request?</h2>
               <p>Send the part details, quantity, target material, shipping needs, and any purchasing requirements. We’ll follow up with the right quote format.</p>
               <div class="mini-links">
-                <a class="mini-link" href="start-project.html">Request a quote</a>
+                <a class="mini-link" href="start-project.html">Start business request</a>
                 <a class="mini-link" href="mailto:OliPoly3D@gmail.com?subject=Business%20Quote%20Request%20for%20OliPoly%203D">Email business request</a>
                 <a class="mini-link" href="track.html">Track an order</a>
               </div>
@@ -1462,13 +1656,13 @@ section[id*="business"] .section-head p{
 
       <div class="contact-shell">
         <h3>Start a guided request</h3>
-        <p>The best place for custom ideas, uploads, prototypes, replacement parts, and business projects.</p>
+        <p>Use the guided form for uploads, custom ideas, prototypes, replacement parts, and business projects.</p>
         <div class="hero-actions" style="margin-top:16px;">
           <a class="cta" href="start-project.html">Start Your Project</a>
         </div>
         <div class="upload-shell" style="margin-top:16px;">
           <h3>What helps us quote faster</h3>
-          <p>Photos, measurements, files, quantity, colors, timing, and reference links are all helpful.</p>
+          <p>Files, photos, measurements, quantity, colors, timing, and reference links are helpful.</p>
           <a class="btn-secondary" href="start-project.html">Open Start Project</a>
         </div>
       </div>
@@ -1546,8 +1740,8 @@ section[id*="business"] .section-head p{
 <section class="section seo-service-summary" aria-label="OliPoly 3D services">
   <div class="container">
     <div class="section-head">
-      <h2>Custom 3D printing services in Ohio</h2>
-      <p>OliPoly 3D helps customers with custom 3D printed gifts, functional replacement parts, prototypes, small-batch production, business parts, creative builds, and local fabrication projects.</p>
+      <h2>Built for creative ideas and functional parts</h2>
+      <p>From playful gifts to practical parts, OliPoly helps turn sketches, files, repairs, and prototypes into finished 3D printed projects.</p>
     </div>
   </div>
 </section>
@@ -1562,7 +1756,7 @@ section[id*="business"] .section-head p{
           <p>Creative 3D printing brought to life in Ohio.</p>
         </div>
       </div>
-      <p class="footer-note">Custom prints, prototypes, creative gifts, and small-batch parts made with a friendly maker-first process.</p>
+      <p class="footer-note">Custom prints, prototypes, creative gifts, and small-batch parts with a friendly, polished process.</p>
     </div>
 
     <div class="footer-links footer-link-cards">

@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>OliPoly 3D | FAQ</title>
-  <meta name="description" content="Frequently asked questions about OliPoly 3D custom printing, quotes, materials, turnaround time, pickup, shipping, prototypes, and order tracking." />
+  <title>FAQ | OliPoly 3D</title>
+  <meta name="description" content="Helpful answers about OliPoly 3D custom printing, project requests, quotes, materials, business orders, pickup, shipping, and order tracking." />
 
   <style>
     :root{
@@ -325,6 +325,56 @@
       .btn,.btn-ghost{width:100%}
       .note-card{margin:16px 6px 6px;padding:22px 18px}
     }
+  
+
+    /* === FAQ mobile + trust polish pass === */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:-1;
+      background-image:linear-gradient(rgba(216,107,179,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(157,124,255,.016) 1px,transparent 1px);
+      background-size:68px 68px;
+      mask-image:linear-gradient(180deg,rgba(0,0,0,.45),transparent 78%);
+    }
+    .shell{border-radius:28px}
+    .hero{padding:32px 32px 22px}
+    .intro{line-height:1.6;max-width:720px}
+    .friendly-note{padding:19px 20px;margin:8px 8px 14px}
+    .friendly-note h2{font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;letter-spacing:-.02em}
+    .friendly-note p,.answer p,.answer ul,.note-card p{line-height:1.58}
+    .faq-group{margin:16px 0 6px}
+    .faq-group h2{padding-left:2px}
+    details{border-radius:20px;margin:10px 0;background:linear-gradient(180deg,#fff,#fffafd)}
+    summary{padding:16px 18px;font-size:1rem;line-height:1.3}
+    .answer{padding:0 18px 17px}
+    .answer p{margin:12px 0 0}
+    .note-card{padding:23px;margin-top:18px}
+    @media(max-width:720px){
+      .wrap{padding:14px 10px 30px}
+      .shell{border-radius:22px}
+      .hero{padding:22px 18px 18px}
+      h1{font-size:2.35rem;margin-bottom:8px}
+      .intro{font-size:.96rem;line-height:1.52}
+      .quicknav{display:grid;grid-template-columns:1fr 1fr;padding:12px 12px 0;gap:7px}
+      .quicknav a{font-size:.8rem;padding:9px 10px}
+      .content{padding:8px}
+      .friendly-note{padding:15px;margin:6px 4px 12px;border-radius:18px}
+      .friendly-note h2{font-size:1.28rem;margin-bottom:6px}
+      .friendly-note p{font-size:.92rem;line-height:1.5}
+      .faq-group{margin:14px 0 6px;padding:0 2px}
+      .faq-group h2{font-size:1.35rem;margin-bottom:9px}
+      details{border-radius:17px;margin:8px 0}
+      summary{padding:14px;font-size:.94rem;gap:12px}
+      .chev{width:28px;height:28px;flex-basis:28px;font-size:.96rem}
+      .answer{padding:0 14px 14px}
+      .answer p,.answer ul{font-size:.91rem;line-height:1.48}
+      .note-card{padding:18px 15px;border-radius:20px}
+      .note-card h2{font-size:1.48rem}
+      .footer{font-size:.78rem;padding:6px 14px 22px}
+    }
+
   </style>
 </head>
 
@@ -344,11 +394,11 @@
         <h1>FAQ</h1>
 
         <p class="intro">
-          New to custom 3D printing? No problem. Here are quick, practical answers about starting a project, getting a quote, materials, timing, pickup, shipping, business orders, and what to expect from OliPoly 3D.
+          Quick answers about starting a project, quotes, materials, timing, business orders, pickup, shipping, and what to expect from OliPoly 3D.
         </p>
 
         <div class="hero-actions">
-          <a class="btn" href="index.html#order">Start a Project</a>
+          <a class="btn" href="start-project.html">Start a Project</a>
           <a class="btn-ghost" href="track.html">Track an Order</a>
           <a class="btn-ghost" href="index.html">Back to Home</a>
         </div>
@@ -368,7 +418,7 @@
         <section class="friendly-note">
           <h2>Custom printing should feel easy.</h2>
           <p>
-            You do not need to know all the technical details before reaching out. Send your idea, a photo, a sketch, a broken part, a file, or even just a rough description — we’ll help figure out the next step.
+            You do not need perfect files or technical wording. Send the idea, photo, sketch, broken part, file, or rough description — we’ll help determine the next step.
           </p>
         </section>
 
@@ -382,10 +432,10 @@
             </summary>
             <div class="answer">
               <p>
-                Start by using the project request form on the homepage. Share what you want made, how it will be used, any size or quantity details, and whether you have a file, photo, sketch, or example.
+                Use the Start Project page. Share what you want made, how it will be used, size or quantity details, and any file, photo, sketch, drawing, or example that helps explain it.
               </p>
               <p>
-                You can start here: <a href="index.html#order">Start Your Project</a>.
+                You can start here: <a href="start-project.html">Start Your Project</a>.
               </p>
             </div>
           </details>
@@ -397,7 +447,7 @@
             </summary>
             <div class="answer">
               <p>
-                No. A 3D file helps, but it is not required. You can send a photo, drawing, rough idea, broken part, measurement, inspiration image, or description and we’ll help determine whether it can be designed or printed.
+                No. A 3D file helps, but you can also send a photo, drawing, broken part, measurement, inspiration image, or plain description. We’ll help determine what is realistic.
               </p>
             </div>
           </details>
@@ -409,7 +459,7 @@
             </summary>
             <div class="answer">
               <p>
-                Yes, depending on the project. Some ideas may need design time, measurements, test prints, or revisions before the final piece is ready. Design work may affect the quote.
+                Yes, depending on the project. Some ideas need design time, measurements, test prints, or revisions. Any design work will be reflected in the quote.
               </p>
             </div>
           </details>
@@ -421,10 +471,10 @@
             </summary>
             <div class="answer">
               <p>
-                Yes. After submitting a project request, you can upload sketches, photos, STL/3MF files, screenshots, or reference images using the upload form linked on the homepage.
+                Yes. The Start Project page accepts helpful project details and reference uploads, including photos, sketches, STL/3MF files, screenshots, drawings, and PDFs.
               </p>
               <p>
-                Upload here: <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>.
+                Start here: <a href="start-project.html">Start Your Project</a>.
               </p>
             </div>
           </details>
@@ -440,7 +490,7 @@
             </summary>
             <div class="answer">
               <p>
-                Pricing depends on material, print time, size, complexity, design work, quantity, finishing, packaging, shipping, and any special requirements. Custom projects are usually quoted before production begins.
+                Pricing depends on material, print time, size, complexity, design work, quantity, finishing, packaging, shipping, and special requirements. Custom work is quoted before production begins.
               </p>
             </div>
           </details>
@@ -452,7 +502,7 @@
             </summary>
             <div class="answer">
               <p>
-                Some custom orders may require a deposit before production begins. The quote will explain whether a deposit is required and when the remaining balance is due.
+                Some custom orders require a deposit before production. Your quote will clearly state the deposit, balance, and payment timing.
               </p>
             </div>
           </details>
@@ -476,7 +526,7 @@
             </summary>
             <div class="answer">
               <p>
-                Once accepted, your quote can become an order number beginning with OP-. You’ll be able to track progress through the order tracker and complete payment using the available payment options.
+                Once accepted, your quote can become an OP- order number. You can then track progress, payment status, and customer-safe updates through the tracker.
               </p>
               <p>
                 Track here: <a href="track.html">Track Order</a>.
@@ -495,7 +545,7 @@
             </summary>
             <div class="answer">
               <p>
-                Timing depends on design complexity, print time, material availability, current order volume, and whether revisions or test prints are needed. Typical timing will be included in your quote when possible.
+                Timing depends on design complexity, print time, materials, order volume, and whether test prints or revisions are needed. Expected timing is included when possible.
               </p>
             </div>
           </details>
@@ -507,7 +557,7 @@
             </summary>
             <div class="answer">
               <p>
-                Common materials may include PLA, PETG, and other specialty filaments depending on the project. If you are not sure what material you need, OliPoly can recommend an option based on how the item will be used.
+                Common materials may include PLA, PETG, and specialty filaments depending on the project. If you are unsure, OliPoly can recommend a material based on use.
               </p>
             </div>
           </details>
@@ -519,7 +569,7 @@
             </summary>
             <div class="answer">
               <p>
-                Not usually. 3D printed items may show layer lines, small texture differences, seams, or slight variation in color and finish. That is normal for printed parts and handmade/custom production.
+                Not usually. Layer lines, seams, texture, and small color or finish variations are normal for custom 3D printed parts.
               </p>
             </div>
           </details>
@@ -547,7 +597,7 @@
             </summary>
             <div class="answer">
               <p>
-                Yes, local pickup may be available depending on the order and arrangement. Pickup details will be confirmed before completion or delivery.
+                Yes. Local pickup may be available by arrangement. Pickup details are confirmed before completion or handoff.
               </p>
             </div>
           </details>
@@ -559,7 +609,7 @@
             </summary>
             <div class="answer">
               <p>
-                Shipping may be available depending on item size, durability, packaging needs, and destination. Shipping costs and timing can be included with your quote or final order details.
+                Shipping may be available depending on size, durability, packaging needs, and destination. Costs and timing can be included with the quote or order details.
               </p>
             </div>
           </details>
@@ -571,7 +621,7 @@
             </summary>
             <div class="answer">
               <p>
-                Accepted orders may receive an OP- order number. You can enter that number on the tracker page to view customer-safe order status updates, payment status, next steps, and pickup/shipping notes.
+                Accepted orders may receive an OP- order number. Enter it on the tracker to view customer-safe status, next steps, payment status, and pickup/shipping notes.
               </p>
               <p>
                 Go to: <a href="track.html">Track Order</a>.
@@ -581,7 +631,7 @@
         </section>
 
         <section class="faq-group" id="business">
-          <h2>Business, Prototypes & Replacement Parts</h2>
+          <h2>Business, PO Work & Production</h2>
 
           <details>
             <summary>
@@ -590,7 +640,7 @@
             </summary>
             <div class="answer">
               <p>
-                Often, yes. Replacement parts depend on size, function, material needs, measurements, and whether the part can be reasonably recreated. Some parts may require test fitting or revisions.
+                Often, yes. Fit, function, material, measurements, and testing needs all matter. Some replacement parts may require revisions or test fitting.
               </p>
             </div>
           </details>
@@ -602,7 +652,7 @@
             </summary>
             <div class="answer">
               <p>
-                Yes. OliPoly can help with concept models, fit checks, small prototype parts, mockups, and early design iterations. Customers are responsible for validating final suitability for technical, commercial, safety, or production use.
+                Yes. OliPoly can help with concept models, fit checks, mockups, prototype parts, and early design iterations. Final suitability should be validated by the customer for the intended use.
               </p>
             </div>
           </details>
@@ -614,19 +664,43 @@
             </summary>
             <div class="answer">
               <p>
-                Small batch or repeat production may be available depending on the part, quantity, timeline, material, and printer capacity. Bulk pricing may be quoted separately.
+                Yes, when the part and timeline are a good fit. Repeat runs, small batches, part numbers, and quantity pricing can be discussed during quoting.
               </p>
             </div>
           </details>
 
           <details>
             <summary>
-              Can businesses request quotes or purchase-order support?
+              Do you support purchase orders and business invoices?
               <span class="chev">+</span>
             </summary>
             <div class="answer">
               <p>
-                Yes. For business projects, OliPoly can provide formal quotes and may support vendor paperwork, W-9 requests, and purchase-order style workflows when appropriate.
+                Yes. Business projects can use formal quotes, PO numbers, invoices, agreed payment terms, W-9 requests, and vendor setup support when appropriate.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Do you support tax-exempt customers?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes. A completed tax exemption certificate should be provided before tax is removed from a qualifying business order. OliPoly keeps the certificate on file with the customer record.
+              </p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Can businesses reorder parts later?
+              <span class="chev">+</span>
+            </summary>
+            <div class="answer">
+              <p>
+                Yes. If files, specs, and production notes are saved from the original order, repeat orders can usually be handled more efficiently. Include the prior quote, order, invoice, or PO number when reaching out.
               </p>
             </div>
           </details>
@@ -642,7 +716,7 @@
             </summary>
             <div class="answer">
               <p>
-                Unless specifically stated in writing, OliPoly 3D printed items should not be assumed to be food-safe. Layer lines, material type, coating, cleaning method, and use conditions all matter.
+                Unless specifically stated in writing, OliPoly 3D printed items should not be assumed to be food-safe. Material, coating, cleaning, layer lines, and use conditions all matter.
               </p>
             </div>
           </details>
@@ -654,7 +728,7 @@
             </summary>
             <div class="answer">
               <p>
-                Unless specifically agreed in writing, prints are not guaranteed for structural, load-bearing, safety-critical, or high-stress applications. Customers are responsible for evaluating suitability for the intended use.
+                Unless specifically agreed in writing, prints are not guaranteed for structural, load-bearing, safety-critical, or high-stress use. Customers are responsible for evaluating suitability.
               </p>
             </div>
           </details>
@@ -666,7 +740,7 @@
             </summary>
             <div class="answer">
               <p>
-                Customers are responsible for ensuring they have the right to use any submitted designs, logos, artwork, models, or requested content. OliPoly 3D may decline projects that appear to raise ownership or intellectual property concerns.
+                Customers are responsible for having the right to use submitted designs, logos, artwork, models, or requested content. OliPoly may decline projects with ownership or IP concerns.
               </p>
             </div>
           </details>
@@ -690,9 +764,9 @@
         <section class="note-card">
           <h2>Still unsure?</h2>
           <p>
-            Send the idea anyway. Whether it is a custom gift, functional part, prototype, model, or something unusual, OliPoly can help figure out whether it is a good fit.
+            Send the idea anyway. Whether it is a custom gift, functional part, prototype, business request, or something unusual, OliPoly can help decide the next step.
           </p>
-          <a class="btn" href="index.html#order">Start Your Project</a>
+          <a class="btn" href="start-project.html">Start Your Project</a>
         </section>
 
       </main>
@@ -703,5 +777,18 @@
 
     </div>
   </div>
+
+  <script>
+    // Keep FAQ easy to scan on mobile: opening one answer closes the others.
+    document.querySelectorAll('.faq-group details').forEach((item) => {
+      item.addEventListener('toggle', () => {
+        if (!item.open) return;
+        document.querySelectorAll('.faq-group details').forEach((other) => {
+          if (other !== item) other.open = false;
+        });
+      });
+    });
+  </script>
+
 </body>
 </html>
