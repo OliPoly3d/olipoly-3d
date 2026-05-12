@@ -1008,6 +1008,94 @@ footer{
   border:1px solid rgba(236,72,153,.10);
 }
 
+
+
+/* === Homepage section header consistency polish === */
+#contact .section-head,
+#business .section-head,
+section[id*="business"] .section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:32px;
+}
+#contact .section-head h2,
+#business .section-head h2,
+section[id*="business"] .section-head h2{
+  max-width:620px;
+}
+#contact .section-head p,
+#business .section-head p,
+section[id*="business"] .section-head p{
+  max-width:560px;
+  text-align:right;
+  margin-left:auto;
+}
+#contact .contact-shell h3{
+  font-size:1.42rem;
+}
+#contact .contact-shell p,
+#contact .upload-shell p{
+  font-size:1rem;
+  line-height:1.55;
+}
+#contact .upload-shell h3{
+  font-size:1.28rem;
+}
+@media(max-width:980px){
+  #contact .section-head,
+  #business .section-head,
+  section[id*="business"] .section-head{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+  #contact .section-head p,
+  #business .section-head p,
+  section[id*="business"] .section-head p{
+    text-align:left;
+    margin-left:0;
+    max-width:720px;
+  }
+}
+@media(max-width:680px){
+  #contact .contact-shell h3{
+    font-size:1.22rem;
+  }
+  #contact .upload-shell{
+    padding:13px;
+  }
+}
+
+
+/* === Balanced question/start cards === */
+#contact .contact-grid{
+  align-items:stretch;
+}
+#contact .contact-shell{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+#contact .contact-shell .upload-shell{
+  margin-top:auto;
+}
+#contact #questionForm{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+}
+#contact #questionForm .helper{
+  margin-top:auto;
+  padding-top:10px;
+}
+#contact .upload-shell{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+
 </style>
 
 <link rel="canonical" href="https://olipoly3d.com/" />
@@ -1098,7 +1186,7 @@ footer{
       <a href="#events">Events</a>
       <a href="track.html">Track Order</a>
       <a href="#contact">Contact</a>
-      <a href="#order" class="cta">Start Your Project</a>
+      <a href="start-project.html" class="cta">Start Your Project</a>
     </nav>
   </div>
 </header>
@@ -1110,7 +1198,7 @@ footer{
         <h1>Custom 3D printing that feels <span class="accent">creative</span>, personal, and easy to start.</h1>
         <p>OliPoly 3D helps turn ideas into real parts, prototypes, and custom creations with thoughtful design support, clean communication, and a maker-first approach.</p>
         <div class="hero-actions">
-          <a class="cta" href="#order">Start Your Project</a>
+          <a class="cta" href="start-project.html">Start Your Project</a>
           <a class="btn-secondary" href="#gallery">View Recent Work</a>
         </div>
         <div class="trust-row">
@@ -1278,7 +1366,7 @@ footer{
               <h2>Have a business or PO request?</h2>
               <p>Send the part details, quantity, target material, shipping needs, and any purchasing requirements. We’ll follow up with the right quote format.</p>
               <div class="mini-links">
-                <a class="mini-link" href="#order">Request a quote</a>
+                <a class="mini-link" href="start-project.html">Request a quote</a>
                 <a class="mini-link" href="mailto:OliPoly3D@gmail.com?subject=Business%20Quote%20Request%20for%20OliPoly%203D">Email business request</a>
                 <a class="mini-link" href="track.html">Track an order</a>
               </div>
@@ -1347,71 +1435,41 @@ footer{
     </div>
   </section>
 
-  <section class="section" id="contact">
+  
+
+
+<section class="section" id="contact">
   <div class="container">
     <div class="section-head">
-      <div><h2>Have a question first?</h2></div>
-      <p>Ask anything before starting your project.</p>
+      <h2>Questions or ready to start?</h2>
+      <p>Ask a quick question, or start a guided project request when you’re ready.</p>
     </div>
+
     <div class="contact-grid split-grid">
       <div class="contact-shell">
-        <p>If you are still figuring out your idea, reach out here. A short message is enough to start the conversation, and we’ll get back to you within 24 hours.</p>
-      </div>
-      <div class="contact-shell">
-        <div data-fs-success></div>
-        <div data-fs-error></div>
-        <form id="contact-form" action="https://formspree.io/f/xojplkjw" method="POST">
-          <input type="hidden" name="_subject" value="Inquiry">
-          <input type="text" name="name" placeholder="Your name" required>
-          <span data-fs-error="name"></span>
-          <input type="email" name="email" placeholder="Your email" required>
-          <span data-fs-error="email"></span>
-          <textarea name="message" placeholder="How can OliPoly 3D help?" required></textarea>
-          <span data-fs-error="message"></span>
-          <button class="cta" type="submit">Send Message</button>
+        <h3>Ask a Question</h3>
+        <p>Use this for general questions, simple clarifications, event follow-ups, or early ideas you want to talk through first.</p>
+
+        <form id="questionForm" action="https://formspree.io/f/xojplkjw" method="POST">
+          <input type="hidden" name="_subject" value="OliPoly General Question" />
+          <input name="name" autocomplete="name" placeholder="Your name" required />
+          <input name="email" type="email" autocomplete="email" placeholder="Email address" required />
+          <textarea name="message" placeholder="What would you like to ask?" required></textarea>
+          <button class="cta" type="submit">Send Question</button>
+          <div class="helper">Have files or measurements? Start your project here.</div>
         </form>
       </div>
-    </div>
-  </div>
-</section>
 
-<section class="section" id="order">
-  <div class="container">
-    <div class="section-head">
-      <div><h2>Start your custom print</h2></div>
-      <p>Ready to move forward? Submit your project details.</p>
-    </div>
-    <div class="contact-grid split-grid">
       <div class="contact-shell">
-        <h3>What to include</h3>
-        <p>Briefly describe your idea, how it will be used, size, and any timeline.</p>
-        <p>If you have files, sketches, or reference images, you can send them after submitting.</p>
-        <h3 style="margin-top:14px;">After you submit</h3>
-        <p>We’ll review your request and follow up with options and next steps—usually within 24 hours.</p>
-      </div>
-      <div class="contact-shell">
-        <form id="order-form" action="https://formspree.io/f/xojplkjw" method="POST">
-          <input type="hidden" name="_subject" value="Order Request">
-          <input type="text" name="name" placeholder="Your name" required>
-          <input type="email" name="email" placeholder="Your email" required>
-          <input type="number" name="quantity" placeholder="Quantity needed" min="1">
-          <select name="material">
-            <option value="">Preferred material</option>
-            <option>PLA</option>
-            <option>PETG</option>
-            <option>ABS</option>
-            <option>Not sure yet</option>
-          </select>
-          <textarea name="details" placeholder="Tell us about your project" required></textarea>
-          
-          <button class="cta" type="submit">Submit Order Request →</button>
-        </form>
-
-        <div class="upload-shell">
-          <h3>Upload reference files</h3>
-          <p>Add a sketch, photo, or file after submitting your request.</p>
-          <a class="cta" href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Open Upload Form</a>
-          
+        <h3>Start a guided request</h3>
+        <p>The best place for custom ideas, uploads, prototypes, replacement parts, and business projects.</p>
+        <div class="hero-actions" style="margin-top:16px;">
+          <a class="cta" href="start-project.html">Start Your Project</a>
+        </div>
+        <div class="upload-shell" style="margin-top:16px;">
+          <h3>What helps us quote faster</h3>
+          <p>Photos, measurements, files, quantity, colors, timing, and reference links are all helpful.</p>
+          <a class="btn-secondary" href="start-project.html">Open Start Project</a>
         </div>
       </div>
     </div>
@@ -1426,7 +1484,7 @@ footer{
     <h3>Need a hand?</h3>
     <p>Poly can help you jump to the right spot.</p>
     <div class="poly-helper-links">
-      <a href="#order">Start a custom print <span>→</span></a>
+      <a href="start-project.html">Start a custom print <span>→</span></a>
       <a href="faq.html">FAQ / Common Questions <span>→</span></a>
       <a href="track.html">Track an order <span>→</span></a>
       <a href="https://tally.so/r/gDZY6N" target="_blank" rel="noopener">Upload reference files <span>→</span></a>
@@ -1459,13 +1517,13 @@ footer{
 
 <div class="success-popup" id="orderSuccessPopup" aria-hidden="true">
   <div class="success-card">
-    <h3>Request received</h3>
+    <h3>Message received</h3>
     <p>Thanks for reaching out — we got your project request.</p>
     <ul class="success-steps">
       <li>We’ll review your details.</li>
       <li>We’ll follow up with next steps.</li>
       <li>You can expect a response within 24 hours.</li>
-      <li>Upload files below to help your request.</li>
+      <li>Start Project uploads below to help your request.</li>
     </ul>
     <div class="success-actions"><button class="cta" type="button" id="closeOrderSuccess">Close</button></div>
   </div>
@@ -1639,5 +1697,34 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.poly-helper-links a').forEach(link=>link.addEventListener('click',()=>setPolyOpen(false)));
 });
 </script>
+
+<script>
+(function(){
+  const form = document.getElementById('questionForm');
+  if (!form || form.dataset.boundQuestionForm) return;
+  form.dataset.boundQuestionForm = 'true';
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const oldText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' }
+      });
+      if (!response.ok) throw new Error('Could not send message right now.');
+      form.reset();
+      alert('Thanks! Your question was sent to OliPoly.');
+    } catch (err) {
+      alert((err && err.message) || 'Could not send message right now. Please email OliPoly3D@gmail.com.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = oldText || 'Send Question'; }
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
