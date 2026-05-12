@@ -1159,6 +1159,275 @@ body::before{
   .footer-wrap{font-size:.95rem}
 }
 
+
+/* === Footer refinement pass === */
+footer{
+  margin-top:28px;
+  padding:34px 0 42px;
+  background:
+    radial-gradient(circle at 12% 0%,rgba(236,72,153,.07),transparent 34%),
+    linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.48));
+  border-top:1px solid rgba(236,72,153,.08);
+}
+.footer-wrap{
+  display:grid;
+  grid-template-columns:1.45fr .75fr .9fr;
+  gap:18px;
+  align-items:stretch;
+  font-family:Inter,sans-serif;
+}
+.footer-branding,
+.footer-links > div{
+  background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,247,251,.76));
+  border:1px solid rgba(236,72,153,.12);
+  border-radius:24px;
+  box-shadow:0 10px 24px rgba(236,72,153,.055);
+}
+.footer-branding{
+  padding:18px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:14px;
+  align-items:start;
+}
+.footer-branding img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+  border-radius:14px;
+  background:rgba(255,255,255,.76);
+  padding:4px;
+}
+.footer-branding h3{
+  margin:0;
+  font:700 1.75rem/1 "Cormorant Garamond",serif;
+  color:#241b2b;
+}
+.footer-branding p{
+  margin:7px 0 0;
+  max-width:56ch;
+  font:500 .95rem/1.55 Inter,sans-serif;
+  color:#6e5d78;
+}
+.footer-links{
+  display:contents;
+}
+.footer-links > div{
+  padding:18px;
+}
+.footer-links h4{
+  margin:0 0 12px;
+  padding:0 0 9px;
+  border-bottom:1px solid rgba(236,72,153,.12);
+  font:.72rem Inter,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:#a07cac;
+}
+.footer-links a{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 0 9px;
+  padding:9px 11px;
+  border-radius:14px;
+  background:rgba(255,255,255,.58);
+  border:1px solid rgba(236,72,153,.08);
+  font:700 .9rem/1.2 Inter,sans-serif;
+  color:#4c3f57;
+}
+.footer-links a:hover{
+  color:var(--p);
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(236,72,153,.10);
+}
+.footer-links a::after{
+  content:"›";
+  color:rgba(236,72,153,.72);
+  font-weight:900;
+}
+@media(max-width:900px){
+  .footer-wrap{
+    grid-template-columns:1fr;
+  }
+  .footer-links{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+}
+@media(max-width:680px){
+  footer{
+    padding:26px 0 34px;
+  }
+  .footer-branding{
+    grid-template-columns:auto 1fr;
+    padding:15px;
+    border-radius:22px;
+  }
+  .footer-branding img{
+    width:38px;
+    height:38px;
+  }
+  .footer-branding h3{
+    font-size:1.45rem;
+  }
+  .footer-branding p{
+    font-size:.88rem;
+    line-height:1.5;
+  }
+  .footer-links{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .footer-links > div{
+    padding:15px;
+    border-radius:22px;
+  }
+  .footer-links a{
+    min-height:42px;
+  }
+}
+
+
+/* === Mobile-only homepage reduction pass === */
+.mobile-home-copy{display:none;}
+.mobile-gallery-cta{display:none;}
+
+@media(max-width:720px){
+  .desktop-home-copy{display:none!important;}
+  .mobile-home-copy{display:inline!important;}
+
+  /* Hide capability explainer cards on mobile only */
+  .mobile-hide-capabilities{
+    display:none!important;
+  }
+
+  /* Reduce vertical exhaustion */
+  .section{
+    padding:18px 0 8px!important;
+  }
+  .section-head{
+    margin-bottom:12px!important;
+  }
+  .section-head h2{
+    font-size:1.65rem!important;
+    line-height:1.06!important;
+  }
+  .section-head p{
+    font-size:.94rem!important;
+    line-height:1.45!important;
+  }
+  .capability-card,
+  .business-card,
+  .business-details-card,
+  .contact-shell,
+  .testimonial,
+  .customer-photo-card,
+  .cta-band{
+    padding:14px!important;
+    border-radius:20px!important;
+  }
+
+  /* Mobile recent-work gallery becomes a swipe teaser */
+  .mobile-swipe-gallery{
+    display:flex!important;
+    gap:14px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    padding:2px 2px 12px!important;
+    grid-template-columns:none!important;
+    grid-auto-rows:auto!important;
+  }
+  .mobile-swipe-gallery::-webkit-scrollbar{
+    display:none;
+  }
+  .mobile-swipe-gallery .gallery-item,
+  .mobile-swipe-gallery > *{
+    min-width:82%!important;
+    flex:0 0 auto!important;
+    scroll-snap-align:start;
+  }
+  .mobile-swipe-gallery img{
+    width:100%!important;
+    height:230px!important;
+    aspect-ratio:4/3;
+    object-fit:cover!important;
+  }
+  .mobile-gallery-cta{
+    display:flex!important;
+    justify-content:center;
+    margin:10px 0 0;
+  }
+  .mobile-gallery-cta .btn-secondary{
+    width:100%;
+    max-width:320px;
+  }
+
+  /* Mobile footer: make it a compact finish, not another whole page */
+  footer{
+    margin-top:16px!important;
+    padding:22px 0 30px!important;
+  }
+  .footer-wrap{
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+  .footer-branding{
+    display:grid!important;
+    grid-template-columns:auto 1fr!important;
+    text-align:left!important;
+    padding:13px!important;
+    border-radius:20px!important;
+  }
+  .footer-branding img{
+    width:34px!important;
+    height:34px!important;
+  }
+  .footer-branding h3{
+    font-size:1.35rem!important;
+  }
+  .footer-branding p{
+    font-size:.84rem!important;
+    line-height:1.4!important;
+    margin-top:4px!important;
+  }
+  .footer-links{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+  .footer-links > div{
+    padding:12px!important;
+    border-radius:20px!important;
+  }
+  .footer-links h4{
+    margin-bottom:8px!important;
+    padding-bottom:7px!important;
+    font-size:.68rem!important;
+  }
+  .footer-links a{
+    min-height:38px!important;
+    padding:8px 10px!important;
+    margin-bottom:7px!important;
+    font-size:.88rem!important;
+  }
+
+  /* Keep Poly helper from covering too much content */
+  .poly-helper-toggle{
+    padding:8px 12px!important;
+    font-size:.86rem!important;
+  }
+  .poly-helper-toggle img{
+    width:32px!important;
+    height:32px!important;
+  }
+}
+
+
 </style>
 
 <link rel="canonical" href="https://olipoly3d.com/" />
@@ -1296,7 +1565,7 @@ body::before{
   </section>
 
 
-  <section class="section" id="capabilities">
+  <section class="section mobile-hide-capabilities" id="capabilities">
     <div class="container">
       <div class="section-head">
         <div><h2>What OliPoly can help with</h2></div>
@@ -1324,12 +1593,16 @@ body::before{
       <div class="section-head">
         <div><h2>Recent work</h2></div>
       </div>
-      <div class="gallery">
+      <div class="gallery mobile-swipe-gallery">
         <div class="gallery-item"><img data-base="images/print2" alt="Detailed blue and silver 3D printed model semi truck"><span class="gallery-category">Precision Models</span></div>
         <div class="gallery-item"><img data-base="images/print1" alt="Custom 3D printed signs, logos, and wall accessories"><span class="gallery-category">Custom Signs &amp; Logos</span></div>
         <div class="gallery-item"><img data-base="images/print3" alt="Custom 3D printed espresso dosing funnels and functional accessories"><span class="gallery-category">Functional Accessories</span></div>
         <div class="gallery-item"><img data-base="images/print4" alt="Colorful 3D printed toys, fidgets, and playful geometric prints"><span class="gallery-category">Toys &amp; Fidgets</span></div>
-      </div>
+ 
+        <div class="mobile-gallery-cta">
+          <a class="btn-secondary" href="gallery.html">View Full Gallery</a>
+        </div>
+     </div>
 </div>
   </section>
 
@@ -1609,8 +1882,8 @@ body::before{
 <section class="section seo-service-summary" aria-label="OliPoly 3D services">
   <div class="container">
     <div class="section-head">
-      <h2>Custom 3D printing services in Ohio</h2>
-      <p>OliPoly 3D helps customers with custom 3D printed gifts, functional replacement parts, prototypes, small-batch production, business parts, creative builds, and local fabrication projects.</p>
+      <h2>Built for creative ideas and functional parts</h2>
+      <p><span class="desktop-home-copy">From playful gifts to practical parts, OliPoly helps turn sketches, files, repairs, and prototypes into finished 3D printed projects.</span><span class="mobile-home-copy">Custom prints, prototypes, replacement parts, and small-batch production.</span></p>
     </div>
   </div>
 </section>
@@ -1625,7 +1898,7 @@ body::before{
           <p>Creative 3D printing brought to life in Ohio.</p>
         </div>
       </div>
-      <p class="footer-note">Custom prints, prototypes, creative gifts, and small-batch parts made with a friendly maker-first process.</p>
+      <p class="footer-note">Custom prints, prototypes, creative gifts, and small-batch parts with a friendly, polished process.</p>
     </div>
 
     <div class="footer-links footer-link-cards">

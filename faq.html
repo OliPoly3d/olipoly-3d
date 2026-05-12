@@ -375,20 +375,7 @@
       .footer{font-size:.78rem;padding:6px 14px 22px}
     }
 
-  
-    /* === FAQ content cleanup polish === */
-    .answer p{max-width:78ch}
-    .faq-group h2{display:flex;align-items:center;gap:10px}
-    .faq-group h2::after{content:"";height:2px;flex:1;background:linear-gradient(90deg,rgba(216,107,179,.22),transparent);border-radius:999px}
-    @media(max-width:720px){
-      .intro{line-height:1.55;font-size:.96rem}
-      .friendly-note p,.answer p,.answer ul{line-height:1.58}
-      summary{font-size:.96rem;line-height:1.28}
-      .faq-group h2{font-size:1.45rem}
-      .answer p{margin-top:12px}
-    }
-
-</style>
+  </style>
 </head>
 
 <body>
@@ -411,7 +398,7 @@
         </p>
 
         <div class="hero-actions">
-          <a class="btn" href="start-project.html">Start Your Project</a>
+          <a class="btn" href="start-project.html">Start a Project</a>
           <a class="btn-ghost" href="track.html">Track an Order</a>
           <a class="btn-ghost" href="index.html">Back to Home</a>
         </div>
@@ -717,42 +704,6 @@
               </p>
             </div>
           </details>
-          <details>
-            <summary>
-              Do you accept purchase orders?
-              <span class="chev">+</span>
-            </summary>
-            <div class="answer">
-              <p>
-                Yes. Business customers can provide a PO number, and OliPoly can reference that PO on the order, tracker, invoice, and related documents.
-              </p>
-            </div>
-          </details>
-
-          <details>
-            <summary>
-              Can you support tax exempt customers?
-              <span class="chev">+</span>
-            </summary>
-            <div class="answer">
-              <p>
-                Yes, when a completed exemption certificate is provided and kept on file. Tax exempt business orders can be marked accordingly so sales tax is not charged on the quote/invoice.
-              </p>
-            </div>
-          </details>
-
-          <details>
-            <summary>
-              Can businesses reorder the same part later?
-              <span class="chev">+</span>
-            </summary>
-            <div class="answer">
-              <p>
-                Yes. For repeatable business parts, it helps to keep the PO number, part number, revision, material, color, and approved production files together so future reorders are easier and more consistent.
-              </p>
-            </div>
-          </details>
-
         </section>
 
         <section class="faq-group" id="general">
@@ -834,21 +785,6 @@
         if (!item.open) return;
         document.querySelectorAll('.faq-group details').forEach((other) => {
           if (other !== item) other.open = false;
-        });
-      });
-    });
-  </script>
-
-
-  <script>
-    // Keep FAQ mobile-friendly by allowing one open item at a time.
-    document.querySelectorAll('.faq-group details').forEach((item) => {
-      item.addEventListener('toggle', () => {
-        if (!item.open) return;
-        const group = item.closest('.faq-group');
-        if (!group) return;
-        group.querySelectorAll('details').forEach((other) => {
-          if (other !== item) other.removeAttribute('open');
         });
       });
     });
