@@ -119,7 +119,28 @@
 @media(max-width:900px){.customer-confidence-grid{grid-template-columns:1fr}.support-card{grid-template-columns:1fr}.support-card .btn{width:100%}}
 @media(max-width:720px){.status-spotlight{padding:15px;border-radius:21px}.status-spotlight strong{font-size:2.15rem}.customer-confidence-grid{gap:10px;margin-bottom:16px}.confidence-card,.next-explainer-card,.payment-card{border-radius:21px;padding:15px}.timeline .step.active .step-dot::after{font-size:.68rem}.payment-btn{min-height:50px}.support-card{padding:18px;border-radius:24px}}
 
-  </style>
+  
+/* === PO / Business Terms payment card === */
+.payment-card.business-terms{
+  border-color:rgba(155,123,255,.24);
+  background:radial-gradient(circle at 12% 0%,rgba(155,123,255,.12),transparent 42%),linear-gradient(180deg,rgba(255,255,255,.96),rgba(245,239,255,.94));
+}
+.business-terms-note{
+  margin:12px 0 0;
+  padding:14px 16px;
+  border-radius:18px;
+  border:1px solid rgba(155,123,255,.18);
+  background:rgba(255,255,255,.76);
+  color:#6f5d76;
+  line-height:1.55;
+}
+.business-terms-note strong{
+  display:block;
+  color:#5f4468;
+  margin-bottom:4px;
+}
+
+</style>
 </head>
 <body>
   <div class="topbar">
@@ -219,6 +240,11 @@
           </div>
           <p id="paymentMessage" class="payment-text">Your secure payment options are ready below.</p>
 
+          <div id="businessTermsNote" class="business-terms-note hidden">
+            <strong>Business purchasing terms</strong>
+            <span id="businessTermsMessage">Payment will be handled according to the agreed purchasing terms.</span>
+          </div>
+
           <div id="cashOption" class="cash-option hidden">
             <strong>Cash available</strong>
             <span id="cashMessage">Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.</span>
@@ -261,6 +287,8 @@
       paymentBtnStripe:$('paymentBtnStripe'),
       paymentBtnPaypal:$('paymentBtnPaypal'),
       paymentBtnVenmo:$('paymentBtnVenmo'),
+      businessTermsNote:$('businessTermsNote'),
+      businessTermsMessage:$('businessTermsMessage'),
       viewStatusHeadline:$('viewStatusHeadline'),
       viewStatusHelper:$('viewStatusHelper'),
       viewLastChecked:$('viewLastChecked'),
@@ -311,19 +339,60 @@
       return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
     }
 
+
+    function isBusinessTermsOrder(o){
+      const terms = String(o.invoice_terms || '').toLowerCase();
+      return !!(
+        o.po_number ||
+        o.invoice_number ||
+        ['customer_terms','net_15','net_30','net_45','due_on_receipt'].includes(terms)
+      );
+    }
+
+    function businessTermsMessage(o){
+      const refs = [
+        o.invoice_number ? `invoice ${o.invoice_number}` : '',
+        o.po_number ? `PO ${o.po_number}` : ''
+      ].filter(Boolean).join(' and ');
+
+      if(o.payment_status === 'paid'){
+        return refs
+          ? `Payment has been recorded under the approved purchasing terms for ${refs}.`
+          : 'Payment has been recorded under the approved purchasing terms.';
+      }
+
+      return refs
+        ? `Payment will be handled according to the agreed purchasing terms. Please reference ${refs} with remittance or internal processing.`
+        : 'Payment will be handled according to the agreed purchasing terms. No Stripe, PayPal, or Venmo payment is needed on this tracker.';
+    }
+
     function renderPayment(o){
       const status = o.payment_status || 'unpaid';
-      const stripe = o.payment_link_stripe || o.payment_link || '';
-      const paypal = o.payment_link_paypal || '';
-      const venmo = o.payment_link_venmo || '';
-      const showCash = status === 'unpaid' || status === 'deposit_due' || status === 'deposit_paid';
+      const businessTerms = isBusinessTermsOrder(o);
+      const stripe = businessTerms ? '' : (o.payment_link_stripe || o.payment_link || '');
+      const paypal = businessTerms ? '' : (o.payment_link_paypal || '');
+      const venmo = businessTerms ? '' : (o.payment_link_venmo || '');
+      const showCash = !businessTerms && (status === 'unpaid' || status === 'deposit_due' || status === 'deposit_paid');
 
-      els.paymentBadge.textContent = paymentLabel(status);
-      els.paymentBadge.className = `payment-badge ${status}`;
+      els.paymentBadge.textContent = businessTerms ? 'Business Terms' : paymentLabel(status);
+      els.paymentBadge.className = `payment-badge ${businessTerms ? 'deposit_paid' : status}`;
+      els.paymentWrap.classList.toggle('business-terms', businessTerms);
       els.cashOption.classList.add('hidden');
+      if (els.businessTermsNote) els.businessTermsNote.classList.add('hidden');
       els.cashMessage.textContent = status === 'deposit_paid'
         ? 'Cash can be used for any remaining balance at pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.'
         : 'Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.';
+
+      if (businessTerms) {
+        els.paymentWrap.classList.remove('hidden');
+        els.paymentBtnStripe.classList.add('hidden');
+        els.paymentBtnPaypal.classList.add('hidden');
+        els.paymentBtnVenmo.classList.add('hidden');
+        if (els.businessTermsNote) els.businessTermsNote.classList.remove('hidden');
+        if (els.businessTermsMessage) els.businessTermsMessage.textContent = businessTermsMessage(o);
+        els.paymentMessage.textContent = 'This is a PO/business order. Online consumer payment buttons are not needed for this tracker.';
+        return;
+      }
 
       if(o.paid_date){
         els.paidDateWrap.classList.remove('hidden');
@@ -414,7 +483,7 @@ if(venmo && canShowPaymentButtons){
   ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(o.order_total)
   : '—';
       els.viewPublicStatus.textContent=o.public_status_text||'No public update yet.';
-      const nextText = (o.public_next_step || '').trim();
+      const nextText = (o.public_next_step || (isBusinessTermsOrder(o) ? businessTermsMessage(o) : '') || '').trim();
       const fulfillmentText = (o.shipping_or_pickup_note || '').trim();
       if(nextText){
         els.nextStepWrap.classList.remove('hidden');
@@ -451,7 +520,7 @@ if(venmo && canShowPaymentButtons){
 
       const id = normalizeLookupNumber(typedId);
       const safeId = encodeURIComponent(id);
-      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,order_total,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link,payment_link_stripe,payment_link_paypal,payment_link_venmo,paid_date&order_number=eq.${safeId}&limit=1`;
+      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,order_total,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link,payment_link_stripe,payment_link_paypal,payment_link_venmo,paid_date,po_number,invoice_number,invoice_terms&order_number=eq.${safeId}&limit=1`;
       const {data,error}=await api(path);
 
       if(error){
