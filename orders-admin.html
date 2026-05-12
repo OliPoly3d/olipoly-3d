@@ -1476,7 +1476,7 @@ function publicTrackingPayload(payload) {
   'paymentLinkPaypal',
   'paymentLinkVenmo',
   'stripeInvoiceId',
-  'poNumber','taxExemptReason','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','apEmail','billingAddress','shippingAddress',
+  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','apEmail','billingAddress','shippingAddress',
   'internalNotes',
   'publicStatusText',
   'publicNextStep',
@@ -2117,101 +2117,7 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
-<script>
-/* === OliPoly Orders Admin Tax Exempt + PO Workflow V1 === */
-(function(){
-  const $ = (id) => document.getElementById(id);
-
-  function yesNo(value){ return value ? "yes" : "no"; }
-
-  function ensureTaxExemptFields(){
-    if ($("taxExempt")) return;
-    const po = $("poNumber");
-    if (!po) return;
-    const parent = po.closest("div") || po.parentElement;
-    if (!parent) return;
-    parent.insertAdjacentHTML("afterend", `
-      <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
-      <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
-      <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
-      <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
-    `);
-  }
-
-  function buildTaxNote(){
-    const taxExempt = ($("taxExempt")?.value || "no") === "yes";
-    const cert = ($("certificateOnFile")?.value || "no") === "yes";
-    const poStored = ($("poFileOnFile")?.value || "no") === "yes";
-    const reason = $("taxExemptReason")?.value?.trim() || "";
-    const po = $("poNumber")?.value?.trim() || "";
-    let note = $("taxExemptAdminNote");
-    const anchor = $("poFileOnFile")?.closest("div") || $("taxExempt")?.closest("div");
-    if (!anchor) return;
-    if (!note) {
-      note = document.createElement("div");
-      note.id = "taxExemptAdminNote";
-      note.className = "note full";
-      note.style.marginTop = "10px";
-      anchor.insertAdjacentElement("afterend", note);
-    }
-    const bits = [];
-    if (po) bits.push(`PO #: ${po}`);
-    if (taxExempt) bits.push(`Tax Exempt${cert ? " — certificate on file" : " — certificate needed/on file status not confirmed"}`);
-    if (reason) bits.push(`Reason: ${reason}`);
-    if (poStored) bits.push("PO file stored externally");
-    if (!bits.length) {
-      note.classList.add("hidden");
-      return;
-    }
-    note.textContent = bits.join(" • ");
-    note.classList.remove("hidden");
-  }
-
-  function bindTaxNote(){
-    ensureTaxExemptFields();
-    ["poNumber","taxExempt","taxExemptReason","certificateOnFile","poFileOnFile"].forEach(id => {
-      const el = $(id);
-      if (!el || el.dataset.taxAdminBound === "true") return;
-      el.dataset.taxAdminBound = "true";
-      el.addEventListener("input", buildTaxNote);
-      el.addEventListener("change", buildTaxNote);
-    });
-    buildTaxNote();
-  }
-
-  function setFromOrder(order){
-    if (!order) return;
-    if ($("taxExempt")) $("taxExempt").value = yesNo(order.tax_exempt);
-    if ($("taxExemptReason")) $("taxExemptReason").value = order.tax_exempt_reason || "";
-    if ($("certificateOnFile")) $("certificateOnFile").value = yesNo(order.exemption_certificate_on_file);
-    if ($("poFileOnFile")) $("poFileOnFile").value = yesNo(order.po_file_on_file);
-    buildTaxNote();
-  }
-
-  // If app exposes active row through click, pick up values after the existing handler fills the form.
-  document.addEventListener("click", () => {
-    setTimeout(() => {
-      try {
-        if (!window.orders || !window.activeId) return;
-        const order = window.orders.find(o => o.id === window.activeId);
-        setFromOrder(order);
-      } catch (_) {}
-      buildTaxNote();
-    }, 120);
-  }, true);
-
-  function init(){
-    bindTaxNote();
-    setTimeout(bindTaxNote, 500);
-    setTimeout(bindTaxNote, 1500);
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
-})();
-</script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
