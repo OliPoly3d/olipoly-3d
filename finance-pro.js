@@ -28,7 +28,7 @@ const standardOhioDueDate = ym => {
 const ids = [
   'startupTotal','loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn',
   'emailInput','passwordInput','showPasswordToggle','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryTypeHint',
-  'entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','salesTaxRate','salesTaxCollected',
+  'entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','taxExemptSale','salesTaxRate','salesTaxCollected',
   'netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes',
   'productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid',
   'tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap',
@@ -169,6 +169,11 @@ function updateTaxPreview() {
     els.netRevenuePreview.value = '';
     return;
   }
+  if (els.taxExemptSale?.value === 'yes') {
+    els.salesTaxCollected.value = '';
+    els.netRevenuePreview.value = total ? total.toFixed(2) : '';
+    return;
+  }
   if (els.taxIncluded.value === 'yes') {
     const { tax, net } = computeTaxExclusive(total, rate);
     els.salesTaxCollected.value = tax ? tax.toFixed(2) : '';
@@ -216,7 +221,7 @@ function updateEntryTypeHint() {
   if (els.entryType.value === 'income') {
     setPanel(
       els.entryTypeHint,
-      'Income entry: if Amount Includes Sales Tax = Yes, the tracker backs tax out automatically so only pre-tax revenue feeds revenue totals. Shipping charged stays separate.',
+      'Income entry: if Tax Exempt Sale = Yes, sales tax collected stays $0 and the full amount is treated as net revenue. Otherwise, tax-inclusive mode backs tax out automatically.',
       false,
       'amber'
     );
@@ -876,7 +881,13 @@ async function saveEntry(e) {
       ? defaultTax(els.entryType.value, category)
       : els.taxCategory.value;
 
-    if (isIncome && els.taxIncluded.value === 'yes') {
+    const taxExemptSale = isIncome && els.taxExemptSale?.value === 'yes';
+
+    if (taxExemptSale) {
+      salesTaxCollected = 0;
+      amount = originalAmount;
+      if (!notes.toLowerCase().includes('tax exempt')) notes = `[Tax Exempt Sale] ${notes}`.trim();
+    } else if (isIncome && els.taxIncluded.value === 'yes') {
       if (num(els.salesTaxRate.value) <= 0) {
         return setMsg('Enter a sales tax rate when tax-inclusive mode is on.', true);
       }
@@ -945,6 +956,7 @@ async function saveEntry(e) {
       trip_to: isMileage ? els.tripTo.value.trim() : '',
       round_trip: isMileage ? !!els.roundTripToggle.checked : false,
       sales_tax_collected: salesTaxCollected,
+      tax_exempt_sale: !!taxExemptSale,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
       tax_included: isIncome ? els.taxIncluded.value : 'no',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
@@ -1204,3 +1216,48 @@ if (els.clearFiltersBtn) {
 });
 
 init();
+
+
+/* === OliPoly Finance Pro Tax Exempt Sale Helper V1 === */
+(function(){
+  const $ = (id) => document.getElementById(id);
+  function ensureField(){
+    if ($("taxExemptSale")) return;
+    const taxIncluded = $("taxIncluded");
+    if (!taxIncluded) return;
+    const parent = taxIncluded.closest("div") || taxIncluded.parentElement;
+    parent?.insertAdjacentHTML("afterend", `
+      <div>
+        <label for="taxExemptSale">Tax Exempt Sale?</label>
+        <select id="taxExemptSale">
+          <option value="no">No</option>
+          <option value="yes">Yes — Tax Exempt</option>
+        </select>
+      </div>
+    `);
+  }
+  function sync(){
+    const taxExempt = $("taxExemptSale")?.value === "yes";
+    if (taxExempt) {
+      if ($("taxIncluded")) $("taxIncluded").value = "no";
+      if ($("salesTaxRate")) $("salesTaxRate").value = "0";
+      if ($("salesTaxCollected")) $("salesTaxCollected").value = "";
+      if ($("netRevenuePreview") && $("entryAmount")) $("netRevenuePreview").value = $("entryAmount").value || "";
+    }
+  }
+  function bind(){
+    ensureField();
+    ["taxExemptSale","entryAmount","taxIncluded","salesTaxRate"].forEach(id => {
+      const el = $(id);
+      if (!el || el.dataset.taxExemptSaleBound === "true") return;
+      el.dataset.taxExemptSaleBound = "true";
+      el.addEventListener("input", sync);
+      el.addEventListener("change", sync);
+    });
+    sync();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+})();

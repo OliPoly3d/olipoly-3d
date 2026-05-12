@@ -1266,6 +1266,10 @@ body.professional-pdf-mode #pdfPaymentCta{
             <div><label for="companyName">Company / Client Name</label><input id="companyName" placeholder="Optional for business orders" /></div>
             <div><label for="contactName">Contact Person</label><input id="contactName" placeholder="Optional" /></div>
             <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Optional" /></div>
+            <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
+            <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
+            <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
+            <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
             <div class="professional-part-field"><label for="olipolyPartNumber">OliPoly Part Number</label><input id="olipolyPartNumber" placeholder="Example: OPP-000123" /></div>
             <div class="professional-part-field"><label for="customerPartNumber">Customer Part Number</label><input id="customerPartNumber" placeholder="Customer SKU / part # / reference" /></div>
             <div class="professional-part-field"><label for="partRevision">Part Revision</label><input id="partRevision" placeholder="Rev A / Rev B" /></div>
@@ -1307,7 +1311,7 @@ body.professional-pdf-mode #pdfPaymentCta{
             <div><label for="manualPiecePriceOverride">Manual Piece Price Override ($ / piece)</label><input id="manualPiecePriceOverride" type="number" min="0" step="0.01" placeholder="Blank = calculated pricing" /></div>
             <div><label for="manualPiecePriceReason">Override Reason / Notes</label><input id="manualPiecePriceReason" placeholder="Optional: bulk price, strategic quote, matched price..." /></div>
             <div><label for="discount">Discount</label><input id="discount" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="taxPreset">Tax Preset</label><select id="taxPreset"><option value="custom">Custom</option><option value="portage">Portage 7.25%</option><option value="summit">Summit 6.75%</option><option value="cuyahoga">Cuyahoga 8%</option><option value="franklin">Franklin 7.5%</option><option value="out_of_state">Out of State / No Tax</option></select></div>
+            <div><label for="taxPreset">Tax Preset</label><select id="taxPreset"><option value="custom">Custom</option><option value="portage">Portage 7.25%</option><option value="summit">Summit 6.75%</option><option value="cuyahoga">Cuyahoga 8%</option><option value="franklin">Franklin 7.5%</option><option value="out_of_state">Out of State / No Tax</option><option value="tax_exempt">Tax Exempt</option></select></div>
             <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="0" /></div>
             <div><label for="roundingMode">Rounding</label><select id="roundingMode"><option value="0">No Rounding</option><option value="1">Nearest $1</option><option value="5">Nearest $5</option><option value="10">Nearest $10</option></select></div>
             <div><label for="marketplacePercent">Marketplace / Processing %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>

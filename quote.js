@@ -45,6 +45,10 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
+  function isTaxExemptCustomer(){
+    return ($("taxExempt")?.value || "no") === "yes";
+  }
+
   const fmtMoney = (value) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
 
@@ -89,7 +93,7 @@
       ? overridePiece * qty
       : materialCost + machineCost + designCost + laborCost + shipping;
 
-    const taxRate = num("salesTax") || num("taxPreset") || 0;
+    const taxRate = isTaxExemptCustomer() ? 0 : (num("salesTax") || num("taxPreset") || 0);
     const tax = subtotal * taxRate / 100;
     const total = subtotal + tax;
 
@@ -588,7 +592,7 @@
 
   async function fetchCloudQuotes() {
     await currentUser(); // returns null if not logged in; RLS/api will also protect
-    const rows = await api("/rest/v1/quotes?select=id,quote_number,invoice_number,quote_status,customer_name,customer_email,quote_title,quote_total,po_number,customer_part_number,po_part_number,olipoly_part_number,part_revision,converted_order_number,updated_at&order=updated_at.desc", {
+    const rows = await api("/rest/v1/quotes?select=id,quote_number,invoice_number,quote_status,customer_name,customer_email,quote_title,quote_total,po_number,tax_exempt,tax_exempt_reason,exemption_certificate_on_file,po_file_on_file,customer_part_number,po_part_number,olipoly_part_number,part_revision,converted_order_number,updated_at&order=updated_at.desc", {
       method: "GET"
     });
     return Array.isArray(rows) ? rows : [];
@@ -624,6 +628,10 @@
       quote_title: $("quoteTitle")?.value?.trim() || null,
       quote_total: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
       po_number: $("poNumber")?.value?.trim() || null,
+      tax_exempt: ($("taxExempt")?.value || "no") === "yes",
+      tax_exempt_reason: $("taxExemptReason")?.value?.trim() || null,
+      exemption_certificate_on_file: ($("certificateOnFile")?.value || "no") === "yes",
+      po_file_on_file: ($("poFileOnFile")?.value || "no") === "yes",
       customer_part_number: $("customerPartNumber")?.value?.trim() || null,
       po_part_number: $("customerPartNumber")?.value?.trim() || null,
       olipoly_part_number: $("olipolyPartNumber")?.value?.trim() || null,
@@ -2000,7 +2008,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const packaging = num("simplePackaging");
     const shipping = num("simpleShipping");
     const discount = num("discount");
-    const taxRate = num("salesTax");
+    const taxRate = (document.getElementById("taxExempt")?.value || "no") === "yes" ? 0 : num("salesTax");
     const rounding = num("roundingMode");
     const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
 
@@ -3838,6 +3846,10 @@ https://olipoly3d.com`;
       created_from_quote: true,
       accepted_date: new Date().toISOString(),
       po_number: val("poNumber") || null,
+      tax_exempt: val("taxExempt") === "yes",
+      tax_exempt_reason: val("taxExemptReason") || null,
+      exemption_certificate_on_file: val("certificateOnFile") === "yes",
+      po_file_on_file: val("poFileOnFile") === "yes",
       po_part_number: val("customerPartNumber") || null,
       olipoly_part_number: val("olipolyPartNumber") || null,
       part_revision: val("partRevision") || null,
@@ -3851,6 +3863,9 @@ https://olipoly3d.com`;
       internal_notes: [
         `Created from quote ${quoteNumber() || ""}.`,
         professional ? "Professional / PO quote workflow." : "Retail/customer quote workflow.",
+        val("taxExempt") === "yes" ? `Tax Exempt: yes${val("certificateOnFile") === "yes" ? " — certificate on file" : " — certificate status not confirmed"}` : "",
+        val("taxExemptReason") ? `Tax exemption notes: ${val("taxExemptReason")}` : "",
+        val("poFileOnFile") === "yes" ? "PO file stored externally." : "",
         val("quoteNotes") ? `Quote notes: ${val("quoteNotes")}` : "",
         val("assumptions") ? `Assumptions: ${val("assumptions")}` : ""
       ].filter(Boolean).join("\n\n"),
@@ -3891,6 +3906,10 @@ https://olipoly3d.com`;
         customer_response: "accepted",
         converted_to_order: true,
         converted_order_number: orderNumber,
+        tax_exempt: (document.getElementById("taxExempt")?.value || "no") === "yes",
+        tax_exempt_reason: document.getElementById("taxExemptReason")?.value?.trim() || null,
+        exemption_certificate_on_file: (document.getElementById("certificateOnFile")?.value || "no") === "yes",
+        po_file_on_file: (document.getElementById("poFileOnFile")?.value || "no") === "yes",
         accepted_date: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -4041,7 +4060,7 @@ Open Orders Admin now?`);
     const packaging = num("simplePackaging") + num("packagingCost");
     const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
     const hardware = num("simpleHardware");
-    const taxRate = num("salesTax");
+    const taxRate = (document.getElementById("taxExempt")?.value || "no") === "yes" ? 0 : num("salesTax");
     const discount = num("discount");
     const rounding = num("roundingMode");
     const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
@@ -4242,7 +4261,7 @@ Open Orders Admin now?`);
     const packaging = num("simplePackaging") + num("packagingCost");
     const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
     const hardware = num("simpleHardware");
-    const taxRate = num("salesTax");
+    const taxRate = (document.getElementById("taxExempt")?.value || "no") === "yes" ? 0 : num("salesTax");
     const discount = num("discount");
     const rounding = num("roundingMode");
     const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
@@ -4346,7 +4365,7 @@ Open Orders Admin now?`);
     const packaging = num("simplePackaging") + num("packagingCost");
     const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
     const hardware = num("simpleHardware");
-    const taxRate = num("salesTax");
+    const taxRate = (document.getElementById("taxExempt")?.value || "no") === "yes" ? 0 : num("salesTax");
     const discount = num("discount");
     const rounding = num("roundingMode");
     const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
@@ -5192,3 +5211,124 @@ https://olipoly3d.com`;
   setTimeout(bindQuoteEmailV2, 1800);
 })();
 
+
+
+/* === OliPoly Tax Exempt + PO Workflow V1 === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const yesNo = (id) => ($(id)?.value || "no") === "yes";
+  const val = (id) => ($(id)?.value || "").trim();
+  const setVal = (id, value) => {
+    const el = $(id);
+    if (!el) return;
+    el.value = value;
+    el.dispatchEvent(new Event("input", { bubbles:true }));
+    el.dispatchEvent(new Event("change", { bubbles:true }));
+  };
+
+  function syncTaxExemptUi(){
+    const preset = $("taxPreset");
+    const taxExempt = $("taxExempt");
+    const salesTax = $("salesTax");
+
+    if (preset && preset.value === "tax_exempt" && taxExempt && taxExempt.value !== "yes") {
+      taxExempt.value = "yes";
+    }
+
+    if (taxExempt?.value === "yes") {
+      if (salesTax) salesTax.value = "0";
+      if (preset && preset.value !== "tax_exempt") preset.value = "tax_exempt";
+    }
+  }
+
+  function addTaxExemptSummary(){
+    const taxExempt = yesNo("taxExempt");
+    const certificate = yesNo("certificateOnFile");
+    const poStored = yesNo("poFileOnFile");
+    const poNumber = val("poNumber");
+    const reason = val("taxExemptReason");
+
+    let panel = $("taxExemptWorkflowNote");
+    const anchor = $("sumTax")?.closest(".summary") || $("sumTax")?.parentElement || $("finalTotal")?.parentElement;
+    if (!anchor) return;
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "taxExemptWorkflowNote";
+      panel.className = "note full";
+      panel.style.marginTop = "10px";
+      anchor.insertAdjacentElement("afterend", panel);
+    }
+
+    if (!taxExempt && !poNumber && !certificate && !poStored) {
+      panel.classList.add("hidden");
+      return;
+    }
+
+    const bits = [];
+    if (poNumber) bits.push(`PO #: ${poNumber}`);
+    if (taxExempt) bits.push(`Tax Exempt${certificate ? " — certificate on file" : " — certificate needed/on file status not confirmed"}`);
+    if (reason) bits.push(`Exemption notes: ${reason}`);
+    if (poStored) bits.push("PO file stored externally");
+    panel.textContent = bits.join(" • ");
+    panel.classList.remove("hidden");
+
+    const taxSummary = $("sumTax");
+    if (taxSummary && taxExempt) taxSummary.textContent = "Tax Exempt";
+  }
+
+  function bindTaxWorkflow(){
+    ["taxExempt","taxExemptReason","certificateOnFile","poFileOnFile","poNumber","taxPreset","salesTax"].forEach((id) => {
+      const el = $(id);
+      if (!el || el.dataset.taxExemptWorkflowBound === "true") return;
+      el.dataset.taxExemptWorkflowBound = "true";
+      el.addEventListener("input", () => setTimeout(() => { syncTaxExemptUi(); addTaxExemptSummary(); if (typeof window.render === "function") window.render(); }, 0));
+      el.addEventListener("change", () => setTimeout(() => { syncTaxExemptUi(); addTaxExemptSummary(); if (typeof window.render === "function") window.render(); }, 0));
+    });
+    syncTaxExemptUi();
+    addTaxExemptSummary();
+  }
+
+  const oldRender = window.render;
+  if (typeof oldRender === "function" && oldRender.datasetTaxExemptWrapped !== "true") {
+    const wrapped = function(...args){
+      syncTaxExemptUi();
+      const result = oldRender.apply(this, args);
+      addTaxExemptSummary();
+      return result;
+    };
+    wrapped.datasetTaxExemptWrapped = "true";
+    window.render = wrapped;
+  }
+
+  // Add missing fields if an older cached quote.html is still loaded.
+  function ensureFields(){
+    if ($("taxExempt")) return;
+    const po = $("poNumber");
+    if (!po) return;
+    const parent = po.closest("div") || po.parentElement;
+    if (!parent) return;
+    parent.insertAdjacentHTML("afterend", `
+      <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
+      <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
+      <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
+      <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
+    `);
+  }
+
+  function init(){
+    ensureFields();
+    bindTaxWorkflow();
+    setTimeout(bindTaxWorkflow, 300);
+    setTimeout(bindTaxWorkflow, 1200);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+
+  window.olipolyTaxExemptWorkflow = {
+    isTaxExempt: () => yesNo("taxExempt"),
+    certificateOnFile: () => yesNo("certificateOnFile"),
+    poFileOnFile: () => yesNo("poFileOnFile"),
+    taxExemptReason: () => val("taxExemptReason")
+  };
+})();
