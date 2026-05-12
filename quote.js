@@ -5212,123 +5212,36 @@ https://olipoly3d.com`;
 })();
 
 
-
-/* === OliPoly Tax Exempt + PO Workflow V1 === */
+/* === OliPoly Tax Exempt + PO Workflow V2 Carryover Fix === */
 (() => {
   const $ = (id) => document.getElementById(id);
-  const yesNo = (id) => ($(id)?.value || "no") === "yes";
-  const val = (id) => ($(id)?.value || "").trim();
-  const setVal = (id, value) => {
-    const el = $(id);
-    if (!el) return;
-    el.value = value;
-    el.dispatchEvent(new Event("input", { bubbles:true }));
-    el.dispatchEvent(new Event("change", { bubbles:true }));
-  };
+  const yes = (id) => ($(id)?.value || "no") === "yes";
 
   function syncTaxExemptUi(){
-    const preset = $("taxPreset");
     const taxExempt = $("taxExempt");
+    const preset = $("taxPreset");
     const salesTax = $("salesTax");
-
-    if (preset && preset.value === "tax_exempt" && taxExempt && taxExempt.value !== "yes") {
-      taxExempt.value = "yes";
-    }
-
+    if (preset && preset.value === "tax_exempt" && taxExempt) taxExempt.value = "yes";
     if (taxExempt?.value === "yes") {
       if (salesTax) salesTax.value = "0";
       if (preset && preset.value !== "tax_exempt") preset.value = "tax_exempt";
     }
+    if ($("sumTax") && yes("taxExempt")) $("sumTax").textContent = "Tax Exempt";
   }
 
-  function addTaxExemptSummary(){
-    const taxExempt = yesNo("taxExempt");
-    const certificate = yesNo("certificateOnFile");
-    const poStored = yesNo("poFileOnFile");
-    const poNumber = val("poNumber");
-    const reason = val("taxExemptReason");
-
-    let panel = $("taxExemptWorkflowNote");
-    const anchor = $("sumTax")?.closest(".summary") || $("sumTax")?.parentElement || $("finalTotal")?.parentElement;
-    if (!anchor) return;
-
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.id = "taxExemptWorkflowNote";
-      panel.className = "note full";
-      panel.style.marginTop = "10px";
-      anchor.insertAdjacentElement("afterend", panel);
-    }
-
-    if (!taxExempt && !poNumber && !certificate && !poStored) {
-      panel.classList.add("hidden");
-      return;
-    }
-
-    const bits = [];
-    if (poNumber) bits.push(`PO #: ${poNumber}`);
-    if (taxExempt) bits.push(`Tax Exempt${certificate ? " — certificate on file" : " — certificate needed/on file status not confirmed"}`);
-    if (reason) bits.push(`Exemption notes: ${reason}`);
-    if (poStored) bits.push("PO file stored externally");
-    panel.textContent = bits.join(" • ");
-    panel.classList.remove("hidden");
-
-    const taxSummary = $("sumTax");
-    if (taxSummary && taxExempt) taxSummary.textContent = "Tax Exempt";
-  }
-
-  function bindTaxWorkflow(){
-    ["taxExempt","taxExemptReason","certificateOnFile","poFileOnFile","poNumber","taxPreset","salesTax"].forEach((id) => {
+  function bind(){
+    ["taxExempt","taxExemptReason","certificateOnFile","poFileOnFile","poNumber","taxPreset","salesTax"].forEach(id => {
       const el = $(id);
-      if (!el || el.dataset.taxExemptWorkflowBound === "true") return;
-      el.dataset.taxExemptWorkflowBound = "true";
-      el.addEventListener("input", () => setTimeout(() => { syncTaxExemptUi(); addTaxExemptSummary(); if (typeof window.render === "function") window.render(); }, 0));
-      el.addEventListener("change", () => setTimeout(() => { syncTaxExemptUi(); addTaxExemptSummary(); if (typeof window.render === "function") window.render(); }, 0));
+      if (!el || el.dataset.taxCarryoverBound === "true") return;
+      el.dataset.taxCarryoverBound = "true";
+      el.addEventListener("input", () => setTimeout(syncTaxExemptUi, 0));
+      el.addEventListener("change", () => setTimeout(syncTaxExemptUi, 0));
     });
     syncTaxExemptUi();
-    addTaxExemptSummary();
   }
 
-  const oldRender = window.render;
-  if (typeof oldRender === "function" && oldRender.datasetTaxExemptWrapped !== "true") {
-    const wrapped = function(...args){
-      syncTaxExemptUi();
-      const result = oldRender.apply(this, args);
-      addTaxExemptSummary();
-      return result;
-    };
-    wrapped.datasetTaxExemptWrapped = "true";
-    window.render = wrapped;
-  }
-
-  // Add missing fields if an older cached quote.html is still loaded.
-  function ensureFields(){
-    if ($("taxExempt")) return;
-    const po = $("poNumber");
-    if (!po) return;
-    const parent = po.closest("div") || po.parentElement;
-    if (!parent) return;
-    parent.insertAdjacentHTML("afterend", `
-      <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
-      <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
-      <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
-      <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
-    `);
-  }
-
-  function init(){
-    ensureFields();
-    bindTaxWorkflow();
-    setTimeout(bindTaxWorkflow, 300);
-    setTimeout(bindTaxWorkflow, 1200);
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
-
-  window.olipolyTaxExemptWorkflow = {
-    isTaxExempt: () => yesNo("taxExempt"),
-    certificateOnFile: () => yesNo("certificateOnFile"),
-    poFileOnFile: () => yesNo("poFileOnFile"),
-    taxExemptReason: () => val("taxExemptReason")
-  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
 })();
