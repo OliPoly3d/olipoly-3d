@@ -1482,22 +1482,75 @@ shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
       };
     }
 
+function isBusinessTermsOrder(payload = {}) {
+  const terms = String(payload.invoice_terms || '').toLowerCase();
+  return !!(
+    payload.po_number ||
+    payload.ap_email ||
+    payload.billing_address ||
+    payload.shipping_company ||
+    ['customer_terms','net_15','net_30','net_45','due_on_receipt'].includes(terms)
+  );
+}
+
+function businessTermsStatusText(payload = {}) {
+  if (payload.payment_status === 'paid') return 'Payment recorded under approved business purchasing terms.';
+  if (payload.invoice_number) return 'This order is being processed under approved PO/invoice terms.';
+  return 'This order is being processed under approved business purchasing terms.';
+}
+
+function businessTermsNextStep(payload = {}) {
+  if (payload.payment_status === 'paid') {
+    return 'Thank you for your business. No online payment action is needed on this tracker.';
+  }
+
+  const refs = [
+    payload.invoice_number ? `invoice ${payload.invoice_number}` : '',
+    payload.po_number ? `PO ${payload.po_number}` : ''
+  ].filter(Boolean).join(' and ');
+
+  return refs
+    ? `Payment will be handled according to the agreed purchasing terms. Please reference ${refs} with remittance or internal processing.`
+    : 'Payment will be handled according to the agreed purchasing terms. No Stripe, PayPal, or Venmo payment is needed on this tracker.';
+}
+
+function businessTermsShippingNote(payload = {}) {
+  if (payload.shipping_or_pickup_note) return payload.shipping_or_pickup_note;
+  if (payload.po_number && payload.invoice_number) {
+    return `Business order reference: PO ${payload.po_number} / Invoice ${payload.invoice_number}.`;
+  }
+  if (payload.po_number) return `Business order reference: PO ${payload.po_number}.`;
+  if (payload.invoice_number) return `Business order reference: Invoice ${payload.invoice_number}.`;
+  return null;
+}
+
 function publicTrackingPayload(payload) {
+  const businessTerms = isBusinessTermsOrder(payload);
+
   return {
     order_number: payload.order_number,
     user_id: payload.user_id,
     order_title: payload.order_title || null,
     status: payload.status,
     payment_status: payload.payment_status,
-    public_status_text: payload.public_status_text || null,
-    public_next_step: payload.public_next_step || null,
-    shipping_or_pickup_note: payload.shipping_or_pickup_note || null,
+    public_status_text: businessTerms
+      ? (payload.public_status_text || businessTermsStatusText(payload))
+      : (payload.public_status_text || null),
+    public_next_step: businessTerms
+      ? (payload.public_next_step || businessTermsNextStep(payload))
+      : (payload.public_next_step || null),
+    shipping_or_pickup_note: businessTerms
+      ? businessTermsShippingNote(payload)
+      : (payload.shipping_or_pickup_note || null),
     tracking_number: payload.tracking_number || null,
-    payment_link: payload.payment_link || null,
-    payment_link_stripe: payload.payment_link_stripe || null,
-    payment_link_paypal: payload.payment_link_paypal || null,
-    payment_link_venmo: payload.payment_link_venmo || null,
-    paid_date: payload.paid_date || null
+    payment_link: businessTerms ? null : (payload.payment_link || null),
+    payment_link_stripe: businessTerms ? null : (payload.payment_link_stripe || null),
+    payment_link_paypal: businessTerms ? null : (payload.payment_link_paypal || null),
+    payment_link_venmo: businessTerms ? null : (payload.payment_link_venmo || null),
+    paid_date: payload.paid_date || null,
+    po_number: payload.po_number || null,
+    invoice_number: payload.invoice_number || null,
+    invoice_terms: payload.invoice_terms || null
   };
 }
     function resetForm(){
@@ -2204,6 +2257,25 @@ const payload = snapshotForm();
       openPrintWindow(`Packing Slip ${$('orderNumber').value || ''}`, sheet.outerHTML, standalonePackingCss());
     }
 
+    function isPoBusinessInvoice(order = {}) {
+      const terms = String(order.invoice_terms || '').toLowerCase();
+      return !!(
+        order.po_number ||
+        order.ap_email ||
+        order.billing_address ||
+        order.shipping_company ||
+        ['customer_terms','net_15','net_30','net_45','due_on_receipt'].includes(terms)
+      );
+    }
+    function poBusinessRemittanceText(order = {}) {
+      const refs = [
+        order.invoice_number ? `invoice ${order.invoice_number}` : '',
+        order.po_number ? `PO ${order.po_number}` : ''
+      ].filter(Boolean).join(' and ');
+      return refs
+        ? `Payment will be handled according to the approved purchasing terms. Please reference ${refs} with remittance or internal processing.`
+        : 'Payment will be handled according to the approved purchasing terms. No PayPal, Venmo, or consumer payment link is needed for this invoice.';
+    }
     function invoiceTermsLabel(value){return ({customer_terms:'Customer Standard Terms / PO Terms',net_15:'Net 15',net_30:'Net 30',net_45:'Net 45',due_on_receipt:'Due on Receipt'})[value] || value || 'Customer Standard Terms / PO Terms';}
     function defaultInvoiceNumber(orderNumber){const m=String(orderNumber||'').match(/OP-(\d+)/i);return m?`INV-${m[1]}`:`INV-${String(orderNumber||'').replace(/^OP-/i,'')}`;}
     function addDaysISO(dateStr,days){const d=dateStr?new Date(`${dateStr}T00:00:00`):new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
@@ -2211,7 +2283,7 @@ const payload = snapshotForm();
     function ensureInvoiceDefaults(){const orderNumber=$('orderNumber').value.trim(),terms=$('invoiceTerms')?.value||'customer_terms';if($('invoiceNumber')&&!$('invoiceNumber').value.trim())$('invoiceNumber').value=defaultInvoiceNumber(orderNumber);if($('invoiceDate')&&!$('invoiceDate').value)$('invoiceDate').value=today();if($('invoiceDueDate')&&!$('invoiceDueDate').value)$('invoiceDueDate').value=addDaysISO($('invoiceDate')?.value||today(),invoiceTermsDays(terms));if($('apEmail')&&!$('apEmail').value.trim()&&$('customerEmail').value.trim())$('apEmail').value=$('customerEmail').value.trim();}
     function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
     function multilineHtml(s){return esc(s||'').replace(/\n/g,'<br>');}
-    function buildInvoiceData(){ensureInvoiceDefaults();const p=snapshotForm(),subtotal=num(p.order_total),tax=0,total=subtotal+tax,qty=num(p.quantity)||1,unit=qty?subtotal/qty:subtotal;return {...p,invoice_number:p.invoice_number||defaultInvoiceNumber(p.order_number),invoice_date:p.invoice_date||today(),invoice_due_date:p.invoice_due_date||addDaysISO(today(),invoiceTermsDays(p.invoice_terms)),invoice_terms_label:invoiceTermsLabel(p.invoice_terms),subtotal,tax,total,unit};}
+    function buildInvoiceData(){ensureInvoiceDefaults();const p=snapshotForm(),subtotal=num(p.order_total),tax=0,total=subtotal+tax,qty=num(p.quantity)||1,unit=qty?subtotal/qty:subtotal;return {...p,invoice_number:p.invoice_number||defaultInvoiceNumber(p.order_number),invoice_date:p.invoice_date||today(),invoice_due_date:p.invoice_due_date||addDaysISO(today(),invoiceTermsDays(p.invoice_terms)),invoice_terms_label:invoiceTermsLabel(p.invoice_terms),subtotal,tax,total,unit,business_invoice:isPoBusinessInvoice(p)};}
     function fillInvoicePdf(){
       const d=buildInvoiceData();
       const sheet = document.querySelector('.invoice-sheet');
@@ -2247,7 +2319,7 @@ const payload = snapshotForm();
       $('invPdfUnitPrice').textContent=money(d.unit);
       $('invPdfLineTotal').textContent=money(d.subtotal);
       $('invPdfSubtotal').textContent=money(d.subtotal);
-      $('invPdfTax').textContent=money(d.tax);
+      $('invPdfTax').textContent=d.tax_exempt ? 'Tax Exempt' : money(d.tax);
       $('invPdfTotal').textContent=money(d.total);
 
       $('invPdfShippingInfo').innerHTML=[
@@ -2261,7 +2333,7 @@ const payload = snapshotForm();
     function generateInvoicePdf(){fillInvoicePdf();window.print();}
     function buildInvoicePlainEmail(d){
       const amountDue = d.payment_status === 'paid' ? 0 : (num(d.balance_amount) || d.total || 0);
-      const invoiceUrl = d.payment_link_stripe || d.payment_link || '';
+      const invoiceUrl = d.business_invoice ? '' : (d.payment_link_stripe || d.payment_link || '');
       const trackLink = d.order_number ? `https://olipoly3d.com/track.html?order=${encodeURIComponent(d.order_number)}` : 'https://olipoly3d.com/track.html';
       const isPaid = d.payment_status === 'paid';
 
@@ -2301,11 +2373,11 @@ https://olipoly3d.com`;
     function buildInvoiceHtmlEmail(d){
       const isPaid = d.payment_status === 'paid';
       const amountDue = isPaid ? 0 : (num(d.balance_amount) || d.total || 0);
-      const invoiceUrl = d.payment_link_stripe || d.payment_link || '';
-      const paypalUrl = d.payment_link_paypal || '';
-      const venmoUrl = d.payment_link_venmo || '';
+      const businessMode = !!(d.business_invoice || d.po_number || d.ap_email || d.billing_address || d.shipping_company);
+      const invoiceUrl = businessMode ? '' : (d.payment_link_stripe || d.payment_link || '');
+      const paypalUrl = businessMode ? '' : (d.payment_link_paypal || '');
+      const venmoUrl = businessMode ? '' : (d.payment_link_venmo || '');
       const trackLink = d.order_number ? `https://olipoly3d.com/track.html?order=${encodeURIComponent(d.order_number)}` : 'https://olipoly3d.com/track.html';
-      const businessMode = !!(d.po_number || d.ap_email || d.billing_address || d.shipping_company);
 
       const statusPill = isPaid
         ? `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#eafaf1;border:1px solid #bcebd0;color:#147a3f;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Paid in Full</span>`
@@ -4152,13 +4224,19 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
             <div>
               ${T.panel(
                 'Payment / Remittance',
-                `
-                  <strong>${isPaid ? 'This invoice is marked paid.' : 'Please process payment according to the approved purchasing terms.'}</strong><br>
-                  ${order.payment_link_stripe || order.payment_link ? `Card / hosted invoice: ${T.esc(order.payment_link_stripe || order.payment_link)}<br>` : ''}
-                  ${order.payment_link_paypal ? `PayPal: ${T.esc(order.payment_link_paypal)}<br>` : ''}
-                  ${order.payment_link_venmo ? `Venmo: ${T.esc(order.payment_link_venmo)}<br>` : ''}
-                  Please include invoice number ${T.esc(invoiceNumber)}${order.po_number ? ` and PO ${T.esc(order.po_number)}` : ''} with payment or remittance details.
-                `
+                businessMode
+                  ? `
+                    <strong>${isPaid ? 'This invoice is marked paid.' : 'Payment will be handled according to the approved purchasing terms.'}</strong><br>
+                    ${order.po_number ? `PO: ${T.esc(order.po_number)}<br>` : ''}
+                    Please include invoice number ${T.esc(invoiceNumber)}${order.po_number ? ` and PO ${T.esc(order.po_number)}` : ''} with remittance or internal processing.
+                  `
+                  : `
+                    <strong>${isPaid ? 'This invoice is marked paid.' : 'Please process payment using the available payment method.'}</strong><br>
+                    ${order.payment_link_stripe || order.payment_link ? `Card / hosted invoice: ${T.esc(order.payment_link_stripe || order.payment_link)}<br>` : ''}
+                    ${order.payment_link_paypal ? `PayPal: ${T.esc(order.payment_link_paypal)}<br>` : ''}
+                    ${order.payment_link_venmo ? `Venmo: ${T.esc(order.payment_link_venmo)}<br>` : ''}
+                    Please include invoice number ${T.esc(invoiceNumber)} with payment details.
+                  `
               )}
 
               <div class="op-note">
@@ -4386,9 +4464,31 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     completed: ["Order completed.", "Thank you for choosing OliPoly 3D.", ""]
   };
 
+
+  function businessTermsOrderForTracker(){
+    const po = $("poNumber")?.value?.trim() || "";
+    const terms = $("invoiceTerms")?.value || "";
+    return !!(po || ["customer_terms","net_15","net_30","net_45","due_on_receipt"].includes(terms));
+  }
+
+  function businessTermsTrackerDefaults(){
+    const po = $("poNumber")?.value?.trim() || "";
+    const inv = $("invoiceNumber")?.value?.trim() || "";
+    const refs = [inv ? `invoice ${inv}` : "", po ? `PO ${po}` : ""].filter(Boolean).join(" and ");
+    return {
+      status: inv ? "This order is being processed under approved PO/invoice terms." : "This order is being processed under approved business purchasing terms.",
+      next: refs
+        ? `Payment will be handled according to the agreed purchasing terms. Please reference ${refs} with remittance or internal processing.`
+        : "Payment will be handled according to the agreed purchasing terms. No online payment is needed on this tracker.",
+      note: po && inv ? `Business order reference: PO ${po} / Invoice ${inv}.` : (po ? `Business order reference: PO ${po}.` : "")
+    };
+  }
+
   function currentDefaults(){
+    if (businessTermsOrderForTracker()) return businessTermsTrackerDefaults();
+
     const status = $("status")?.value || "quote_sent";
-    const payment = $("paymentStatus")?.value || "";
+    const payment = $("paymentStatus")?.value || ""; 
     const fulfillment = $("fulfillment")?.value || "";
     const tracking = $("trackingNumber")?.value?.trim() || "";
     const base = DEFAULTS[status] || DEFAULTS.quote_sent;
