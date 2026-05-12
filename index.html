@@ -1428,6 +1428,49 @@ footer{
 }
 
 
+
+/* === Mobile swipe gallery crop/zoom fix === */
+@media(max-width:720px){
+  .mobile-swipe-gallery{
+    gap:12px!important;
+    padding-bottom:8px!important;
+  }
+  .mobile-swipe-gallery .gallery-item,
+  .mobile-swipe-gallery > *{
+    min-width:78%!important;
+    max-width:78%!important;
+  }
+  .mobile-swipe-gallery img{
+    height:190px!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+    background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,247,251,.86))!important;
+    padding:8px!important;
+    border-radius:14px!important;
+  }
+  .mobile-swipe-gallery .gallery-category{
+    left:12px!important;
+    right:12px!important;
+    bottom:12px!important;
+    transform:none!important;
+    text-align:center;
+    white-space:normal!important;
+    font-size:.82rem!important;
+    line-height:1.15!important;
+    padding:7px 10px!important;
+  }
+}
+@media(max-width:390px){
+  .mobile-swipe-gallery .gallery-item,
+  .mobile-swipe-gallery > *{
+    min-width:84%!important;
+    max-width:84%!important;
+  }
+  .mobile-swipe-gallery img{
+    height:175px!important;
+  }
+}
+
 </style>
 
 <link rel="canonical" href="https://olipoly3d.com/" />
