@@ -5745,3 +5745,58 @@ https://olipoly3d.com`;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncProjectImage);
   else syncProjectImage();
 })();
+
+/* === FINAL PDF SINGLE-RENDERER BINDING V6 ===
+   Ensures the quote PDF buttons open only the final Option B / v2 quote renderer.
+   This removes older PDF click handlers left over from quote-tool-lite iterations.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function finalPdfHandler(mode) {
+    return function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
+      if (typeof window.render === "function") window.render();
+
+      if (typeof window.openQuotePdfV2 === "function") {
+        window.openQuotePdfV2(mode);
+      } else if (typeof window.openQuotePdf === "function") {
+        window.openQuotePdf(mode);
+      } else {
+        alert("Quote PDF renderer is not ready yet. Please wait a moment and try again.");
+      }
+
+      return false;
+    };
+  }
+
+  function replaceButtonHandler(id, mode) {
+    const btn = $(id);
+    if (!btn) return;
+    if (btn.dataset.olipolyFinalSinglePdfRenderer === "true") return;
+
+    const clone = btn.cloneNode(true);
+    clone.dataset.olipolyFinalSinglePdfRenderer = "true";
+    clone.addEventListener("click", finalPdfHandler(mode), true);
+    clone.onclick = null;
+    btn.parentNode.replaceChild(clone, btn);
+  }
+
+  function bindFinalSingleRenderer() {
+    replaceButtonHandler("customerPdfBtn", "quote");
+    replaceButtonHandler("generateQuoteBtn", "quote");
+    replaceButtonHandler("invoicePdfBtn", "invoice");
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindFinalSingleRenderer);
+  else bindFinalSingleRenderer();
+
+  setTimeout(bindFinalSingleRenderer, 250);
+  setTimeout(bindFinalSingleRenderer, 900);
+  setTimeout(bindFinalSingleRenderer, 1800);
+  setTimeout(bindFinalSingleRenderer, 3200);
+})();
