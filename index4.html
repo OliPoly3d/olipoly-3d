@@ -271,10 +271,18 @@
     }
 
     .hero-actions{
-      display:flex;
-      flex-wrap:wrap;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(190px,1fr));
       gap:14px;
       align-items:center;
+      max-width:475px;
+    }
+
+    .hero-actions .button-primary,
+    .hero-actions .button-secondary{
+      width:100%;
+      min-height:52px;
+      text-align:center;
     }
 
     .trust-row{
@@ -399,16 +407,74 @@
       position:relative;
     }
 
+    .rail-topper{
+      width:min(var(--max),calc(100% - 32px));
+      margin:0 auto 14px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+    }
+
+    .rail-hint{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 13px;
+      border-radius:999px;
+      background:rgba(255,255,255,.82);
+      border:1px solid rgba(104,59,123,.14);
+      color:#6b4c76;
+      font-size:.78rem;
+      font-weight:900;
+      box-shadow:0 12px 26px rgba(54,24,66,.08);
+    }
+
+    .rail-button{
+      width:42px;
+      height:42px;
+      border:0;
+      border-radius:999px;
+      cursor:pointer;
+      color:white;
+      font-size:1.15rem;
+      font-weight:900;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      box-shadow:0 12px 26px rgba(214,73,186,.24);
+      transition:transform .2s ease,box-shadow .2s ease;
+    }
+
+    .rail-button:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(214,73,186,.3)}
+
     .showcase-rail{
       display:grid;
       grid-auto-flow:column;
       grid-auto-columns:minmax(280px,420px);
       gap:20px;
       overflow-x:auto;
-      padding:0 max(16px,calc((100vw - var(--max)) / 2)) 22px;
+      padding:0 max(16px,calc((100vw - var(--max)) / 2)) 26px;
       scroll-snap-type:x mandatory;
-      scrollbar-width:thin;
+      scrollbar-width:auto;
+      scrollbar-color:#d94db9 rgba(112,64,128,.14);
+      cursor:grab;
     }
+
+    .showcase-rail:active{cursor:grabbing}
+
+    .showcase-rail::-webkit-scrollbar{height:16px}
+    .showcase-rail::-webkit-scrollbar-track{
+      background:rgba(112,64,128,.13);
+      border-radius:999px;
+      margin-inline:max(16px,calc((100vw - var(--max)) / 2));
+      border:4px solid rgba(255,247,253,.9);
+    }
+    .showcase-rail::-webkit-scrollbar-thumb{
+      background:linear-gradient(90deg,var(--pink),var(--purple));
+      border-radius:999px;
+      border:3px solid rgba(255,247,253,.96);
+      min-width:88px;
+    }
+    .showcase-rail::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,#d934a4,#8755df)}
 
     .showcase-card{
       scroll-snap-align:start;
@@ -609,7 +675,7 @@
     .cta-band{
       width:min(var(--max),calc(100% - 32px));
       margin:30px auto 80px;
-      padding:clamp(34px,6vw,74px);
+      padding:clamp(34px,6vw,70px);
       border-radius:44px;
       background:
         radial-gradient(circle at 90% 15%,rgba(99,215,255,.32),transparent 24rem),
@@ -617,26 +683,27 @@
       color:white;
       box-shadow:0 32px 90px rgba(90,36,112,.28);
       display:grid;
-      grid-template-columns:minmax(0,1fr) auto;
-      gap:28px;
+      grid-template-columns:minmax(0,1fr) minmax(210px,260px);
+      gap:clamp(28px,5vw,58px);
       align-items:center;
     }
 
     .cta-band h2{
-      margin:0 0 12px;
+      margin:0 0 14px;
       font-family:"Playfair Display",serif;
-      font-size:clamp(2.35rem,6vw,5rem);
+      font-size:clamp(2.35rem,5.2vw,4.7rem);
       line-height:.92;
       letter-spacing:-.06em;
+      max-width:760px;
     }
     .cta-band p{
       margin:0;
-      color:rgba(255,255,255,.82);
-      font-size:1.08rem;
-      line-height:1.65;
-      max-width:720px;
+      color:rgba(255,255,255,.84);
+      font-size:1.06rem;
+      line-height:1.62;
+      max-width:680px;
     }
-    .cta-band .button-secondary{background:white;color:#5d2670}
+    .cta-band .button-secondary{background:white;color:#5d2670;min-height:54px;width:100%;text-align:center}
 
     .poly-story-popup{
       position:fixed;
@@ -975,11 +1042,12 @@
       .hero{width:min(100% - 22px,1220px);margin-top:14px;border-radius:30px}
       .hero h1{font-size:clamp(3rem,15vw,4.55rem)}
       .hero-copy{font-size:1rem;line-height:1.58}
-      .hero-actions{display:grid;grid-template-columns:1fr}
+      .hero-actions{display:grid;grid-template-columns:1fr;max-width:none}
       .button-primary,.button-secondary{width:100%}
       .trust-row{gap:8px}
       .trust-row span{font-size:.76rem;padding:8px 10px}
-      .showcase-rail{grid-auto-columns:84vw;gap:14px}
+      .rail-topper{display:none}
+      .showcase-rail{grid-auto-columns:84vw;gap:14px;scrollbar-width:thin;padding-bottom:20px}
       .showcase-card{height:390px;border-radius:28px;border-width:6px}
       .showcase-label{display:block}
       .showcase-label .pill{display:inline-flex;margin-top:12px}
@@ -1258,7 +1326,7 @@
       <div>
         <div class="eyebrow">OliPoly 3D • Ohio</div>
         <h1 id="hero-title">Custom 3D printing with a creative <span class="gradient-word">buzz.</span></h1>
-        <p class="hero-copy">From polished keepsakes and branded pieces to functional PETG components, OliPoly blends creative design, modern 3D printing, and a guided project process that makes custom work easy to start.</p>
+        <p class="hero-copy">From polished keepsakes and branded pieces to functional parts and prototypes, OliPoly works across PLA, PETG, nylon, flexible, wood-filled, carbon-fiber-filled, and specialty filaments to match the project, finish, and use case.</p>
         <div class="hero-actions">
           <a class="button-primary" href="start-project.html">Start My Project</a>
           <a class="button-secondary" href="#work">Explore the Work</a>
@@ -1286,7 +1354,12 @@
       <p class="section-intro">Explore a curated mix of finished pieces, useful parts, branded work, keepsakes, and studio process.</p>
 
       <div class="showcase-rail-wrap">
-        <div class="showcase-rail" aria-label="Featured OliPoly work">
+        <div class="rail-topper" aria-hidden="false">
+          <span class="rail-hint">Drag the gallery or use arrows</span>
+          <button class="rail-button" type="button" onclick="scrollShowcase(-1)" aria-label="Scroll featured showcase left">‹</button>
+          <button class="rail-button" type="button" onclick="scrollShowcase(1)" aria-label="Scroll featured showcase right">›</button>
+        </div>
+        <div class="showcase-rail" id="showcaseRail" aria-label="Featured OliPoly work">
           <article class="showcase-card">
             <img src="images/poly_livingroom.png" alt="Poly mascot creative build" />
             <div class="showcase-label"><div><strong>Creative builds</strong><span>Polished characters, decor, and conversation pieces.</span></div><span class="pill">Decor</span></div>
@@ -1403,8 +1476,8 @@
 
     <section class="cta-band" id="contact">
       <div>
-        <h2>Have an idea? Let’s make it real.</h2>
-        <p>Send the basics, attach inspiration or dimensions when you have them, and OliPoly will help turn the idea into a quote-ready custom project.</p>
+        <h2>Ready to make something custom?</h2>
+        <p>Send the basics, share a photo, sketch, dimensions, or inspiration, and OliPoly will help shape the project into a clear next step or quote-ready request.</p>
       </div>
       <a class="button-secondary" href="start-project.html">Start Your Project</a>
     </section>
@@ -1492,6 +1565,13 @@
       document.getElementById('polyHelper').classList.toggle('active');
     }
 
+    function scrollShowcase(direction){
+      const rail = document.getElementById('showcaseRail');
+      if(!rail) return;
+      const amount = Math.min(rail.clientWidth * 0.82, 520);
+      rail.scrollBy({ left: direction * amount, behavior: 'smooth' });
+    }
+
     document.getElementById('year').textContent = new Date().getFullYear();
 
     document.querySelectorAll('.nav-links a').forEach((link)=>{
@@ -1505,6 +1585,29 @@
     window.addEventListener('keydown',(event)=>{
       if(event.key === 'Escape') closePolyStory();
     });
+
+    const showcaseRail = document.getElementById('showcaseRail');
+    if(showcaseRail){
+      let isDown = false;
+      let startX = 0;
+      let scrollLeft = 0;
+
+      showcaseRail.addEventListener('pointerdown',(event)=>{
+        isDown = true;
+        startX = event.pageX - showcaseRail.offsetLeft;
+        scrollLeft = showcaseRail.scrollLeft;
+        showcaseRail.setPointerCapture(event.pointerId);
+      });
+
+      showcaseRail.addEventListener('pointerup',()=>{ isDown = false; });
+      showcaseRail.addEventListener('pointerleave',()=>{ isDown = false; });
+      showcaseRail.addEventListener('pointermove',(event)=>{
+        if(!isDown) return;
+        const x = event.pageX - showcaseRail.offsetLeft;
+        const walk = (x - startX) * 1.35;
+        showcaseRail.scrollLeft = scrollLeft - walk;
+      });
+    }
   </script>
 </body>
 </html>
