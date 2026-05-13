@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Active Projects</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--panel:rgba(255,255,255,.92);--line:rgba(221,159,204,.28);--text:#3f3146;--muted:#816c88;--accent:#de6fb8;--accent2:#9d7cff;--danger:#e45a7a;--ok:#4caf50;--warn:#f0b429;--shadow:0 20px 44px rgba(189,132,176,.16);--r:24px;--tap:46px}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--text);background:radial-gradient(circle at 8% 10%,rgba(222,111,184,.16),transparent 28%),radial-gradient(circle at 88% 8%,rgba(157,124,255,.14),transparent 24%),linear-gradient(180deg,#fffafd 0%,#fff5fb 46%,#fff8fc 100%)}
+    a{color:inherit} button,input,textarea,select{font:inherit} .wrap{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:20px 0 80px}.topbar,.card,.project-card{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 18px;border-radius:999px;margin-bottom:16px;position:sticky;top:12px;z-index:30;background:rgba(255,252,254,.88)}.brand{display:flex;align-items:center;gap:14px;min-width:0}.logo{width:52px;height:52px;border-radius:18px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 26px rgba(222,111,184,.24);flex:0 0 auto}.brand h1,.brand p,.section-title h2,.section-title p{margin:0}.brand h1{font-family:"Cormorant Garamond",serif;font-size:1.55rem;line-height:1}.brand p,.section-title p,.muted{color:var(--muted);line-height:1.5}
+    .btn,.ghost{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:999px;font-weight:900;cursor:pointer;min-height:var(--tap);padding:12px 16px;border:1px solid transparent;transition:.18s ease}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 24px rgba(222,111,184,.22)}.ghost{background:rgba(255,255,255,.76);border-color:var(--line);color:var(--text)}.btn:hover,.ghost:hover{transform:translateY(-1px)}.small{min-height:38px;padding:8px 12px;font-size:.86rem}.danger{color:#b33857}.hidden{display:none!important}
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-bottom:16px}.card{border-radius:var(--r);padding:18px}.kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(222,111,184,.10);border:1px solid rgba(222,111,184,.14);color:#9b4c80;font-size:.74rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}.section-title h2{font-family:"Cormorant Garamond",serif;font-size:clamp(1.9rem,4vw,3rem);line-height:1.02;color:#2d1f36}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.metric{padding:12px;border-radius:18px;background:rgba(255,255,255,.76);border:1px solid var(--line)}.metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}.metric strong{font-size:1.5rem;color:#2d1f36}.next-print{display:grid;gap:4px;padding:14px;border-radius:18px;background:linear-gradient(135deg,rgba(222,111,184,.1),rgba(157,124,255,.1));border:1px solid rgba(222,111,184,.18)}.next-print strong{color:#2d1f36}.next-print span{color:var(--muted);font-size:.92rem}
+    .auth-grid,.filters{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end}.auth-status{margin-top:10px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:.9rem;color:var(--muted)}label{display:grid;gap:6px;font-weight:800;font-size:.9rem}input,select,textarea{width:100%;border-radius:16px;border:1px solid var(--line);padding:12px 13px;background:rgba(255,255,255,.84);color:var(--text);outline:none;min-height:44px}textarea{min-height:116px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:rgba(157,124,255,.42);box-shadow:0 0 0 4px rgba(157,124,255,.10)}.form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.full{grid-column:1 / -1}.span2{grid-column:span 2}.form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .toolbar{display:grid;grid-template-columns:1fr .8fr .8fr .8fr auto;gap:10px;align-items:end;margin-bottom:14px}.project-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.project-card{border-radius:24px;padding:16px;display:grid;gap:12px;position:relative;overflow:hidden}.project-card::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--accent2)}.project-card.priority-urgent::before{background:var(--danger)}.project-card.priority-high::before{background:var(--warn)}.project-card.priority-low::before{background:#b8a7be}.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.chip{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:.72rem;font-weight:900;border:1px solid var(--line);background:#fff;color:#6b5574}.chip.status{background:rgba(157,124,255,.10);color:#5e4ba2}.chip.priority{background:rgba(222,111,184,.09);color:#9b4c80}.project-card h3{margin:0 0 4px;font-size:1.15rem;color:#2d1f36}.project-card p{margin:0;color:var(--muted);font-size:.9rem}.due-pill{white-space:nowrap;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid var(--line);font-weight:900;font-size:.78rem;color:#6b5574}.info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.info-grid div{padding:10px;border-radius:15px;background:rgba(255,255,255,.68);border:1px solid rgba(221,159,204,.20)}.info-grid span{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900}.info-grid strong{display:block;margin-top:3px;color:#2d1f36;overflow-wrap:anywhere}.notes-preview{padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.6);border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.45;font-size:.9rem;white-space:pre-wrap}.card-links,.card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.card-links a,.card-links span{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.76);border:1px solid var(--line);font-weight:900;font-size:.82rem;text-decoration:none}.empty{padding:18px;border-radius:22px;background:rgba(255,255,255,.74);border:1px dashed var(--line);color:var(--muted);grid-column:1/-1}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;padding:11px 16px;border-radius:999px;background:rgba(31,26,36,.94);color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.22);font-weight:800;font-size:.92rem;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+    @media (max-width:960px){.topbar{border-radius:28px;align-items:flex-start;flex-direction:column}.hero,.project-list{grid-template-columns:1fr}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.auth-grid,.toolbar{grid-template-columns:1fr 1fr}.topbar .ghost{width:100%}}
+    @media (max-width:640px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.card{padding:14px}.auth-grid,.toolbar,.form-grid,.metric-grid{grid-template-columns:1fr}.span2{grid-column:1}.btn,.ghost{width:100%}.card-head{display:grid}.info-grid{grid-template-columns:1fr 1fr}.toast{width:calc(100% - 28px);text-align:center}.topbar{top:8px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand"><div class="logo">OP</div><div><h1>Active Projects</h1><p>Requests, show stock, PO work, and what to print next.</p></div></div>
+      <a class="ghost" href="hub.html">← Back to Hub</a>
+    </header>
+
+    <section class="hero">
+      <div class="card section-title">
+        <span class="kicker">OliPoly queue</span>
+        <h2>Know what needs printed, quoted, followed up, or planned.</h2>
+        <p>Use this as the active project tracker before something becomes a formal quote or OP order. Ready items can be pushed into Quote Tool as draft Q-numbers.</p>
+        <div class="metric-grid">
+          <div class="metric"><span>Active</span><strong id="metricActive">0</strong></div>
+          <div class="metric"><span>Ready to Quote</span><strong id="metricQuote">0</strong></div>
+          <div class="metric"><span>Open Print Hrs</span><strong id="metricHours">0</strong></div>
+          <div class="metric"><span>Show Stock</span><strong id="metricShow">0</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="kicker">Next best item</span>
+        <div id="nextPrint" class="next-print"><strong>No active queue items</strong><span>Add a project to start planning.</span></div>
+        <p class="muted" style="margin-top:12px">Smart sort favors urgent/high priority, due dates, and active production statuses.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <span class="kicker">Cloud login</span>
+      <div class="auth-grid">
+        <label>Email<input id="email" type="email" autocomplete="email" placeholder="OliPoly login email"></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label>
+        <button class="btn" id="loginBtn" type="button">Log In</button>
+        <button class="ghost" id="signupBtn" type="button">Create</button>
+      </div>
+      <button class="ghost hidden" id="logoutBtn" type="button" style="margin-top:10px">Log Out</button>
+      <div id="authStatus" class="auth-status">Checking sign-in.</div>
+    </section>
+
+    <section class="card">
+      <span class="kicker">Add / edit project</span>
+      <form id="projectForm">
+        <div class="form-grid">
+          <label class="span2">Project Title<input id="projectTitle" placeholder="Example: Blue dragon eggs for May craft show" required></label>
+          <label>Type<select id="projectType"><option value="customer_request">Customer Request</option><option value="needs_quote">Needs Quote</option><option value="active_quote">Active Quote</option><option value="po_order">PO / Large Order</option><option value="craft_stock">Craft Show Stock</option><option value="internal_idea">Internal Idea</option><option value="reorder_candidate">Reorder Candidate</option></select></label>
+          <label>Status<select id="projectStatus"><option value="idea">Idea / Requested</option><option value="need_details">Need Details</option><option value="ready_to_quote">Ready to Quote</option><option value="pushed_to_quote">Pushed to Quote</option><option value="quoted">Quoted</option><option value="approved">Approved</option><option value="printing">Printing</option><option value="post_processing">Post-Processing</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="on_hold">On Hold</option><option value="declined">Declined / Cancelled</option></select></label>
+          <label>Priority<select id="priority"><option value="urgent">Urgent</option><option value="high">High</option><option value="normal" selected>Normal</option><option value="low">Low</option></select></label>
+          <label>Customer / Contact<input id="customerName" placeholder="Name or company"></label>
+          <label>Email<input id="customerEmail" type="email" placeholder="Optional"></label>
+          <label>Phone / DM<input id="customerPhone" placeholder="Optional"></label>
+          <label>Source<input id="source" placeholder="Facebook, show, email, repeat customer"></label>
+          <label>Quantity<input id="quantity" type="number" min="1" step="1" value="1"></label>
+          <label>Material<input id="material" placeholder="PLA, PETG, TPU..."></label>
+          <label>Color<input id="color" placeholder="Pink, blue sparkle, black..."></label>
+          <label>Est. Print Hours<input id="estimatedPrintHours" type="number" min="0" step="0.01" placeholder="0.00"></label>
+          <label>Machine<select id="machinePreference"><option value="either">Either</option><option value="P1S">P1S</option><option value="P2S">P2S</option><option value="both">Both / split plates</option></select></label>
+          <label>Due / Event Date<input id="dueDate" type="date"></label>
+          <label>Event Name<input id="eventName" placeholder="Craft show or deadline"></label>
+          <label>Est. Price<input id="estimatedPrice" type="number" min="0" step="0.01" placeholder="Optional"></label>
+          <label>Quote Number<input id="quoteNumber" placeholder="Filled after push"></label>
+          <label>Order Number<input id="orderNumber" placeholder="OP-###### if accepted"></label>
+          <label class="full">Notes<textarea id="notes" placeholder="Customer request, colors, sizing, follow-up, print settings, packaging, design needs..."></textarea></label>
+        </div>
+        <div class="form-actions"><button class="btn" id="saveBtn" type="submit">Save Project</button><button class="ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <span class="kicker">Queue view</span>
+      <div class="toolbar">
+        <label>Search<input id="searchBox" placeholder="Search project, customer, color, quote..."></label>
+        <label>Status<select id="filterStatus"><option value="all">All statuses</option><option value="idea">Idea / Requested</option><option value="need_details">Need Details</option><option value="ready_to_quote">Ready to Quote</option><option value="pushed_to_quote">Pushed to Quote</option><option value="quoted">Quoted</option><option value="approved">Approved</option><option value="printing">Printing</option><option value="post_processing">Post-Processing</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="on_hold">On Hold</option><option value="declined">Declined / Cancelled</option></select></label>
+        <label>Type<select id="filterType"><option value="all">All types</option><option value="customer_request">Customer Request</option><option value="needs_quote">Needs Quote</option><option value="active_quote">Active Quote</option><option value="po_order">PO / Large Order</option><option value="craft_stock">Craft Show Stock</option><option value="internal_idea">Internal Idea</option><option value="reorder_candidate">Reorder Candidate</option></select></label>
+        <label>Sort<select id="sortMode"><option value="smart">Smart queue</option><option value="due">Due date</option><option value="updated">Recently updated</option><option value="hours">Print hours</option></select></label>
+        <button class="ghost" id="refreshBtn" type="button">Refresh</button>
+      </div>
+      <p class="muted" id="countLabel">0 shown / 0 total</p>
+      <div id="projectsList" class="project-list"></div>
+    </section>
+  </div>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <script src="projects.js?v=active-projects-20260513"></script>
+</body>
+</html>

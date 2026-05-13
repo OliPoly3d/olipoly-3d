@@ -5800,3 +5800,70 @@ https://olipoly3d.com`;
   setTimeout(bindFinalSingleRenderer, 1800);
   setTimeout(bindFinalSingleRenderer, 3200);
 })();
+/* Active Projects handoff loader
+   Opens quote.html?quote=Q-###### and fills the form from quote_data.fields.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  function toast(message){
+    if (typeof window.quotePatchToast === 'function') return window.quotePatchToast(message);
+    const el = $('liteStatusToast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(el._projectLoaderTimer);
+    el._projectLoaderTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  async function api(path, options = {}){
+    if (typeof window.sbApi !== 'function') throw new Error('Supabase helper sbApi() was not initialized.');
+    const res = await window.sbApi(path, options);
+    if (!res.ok || res.error) {
+      const msg = res.error?.message || res.error?.error_description || JSON.stringify(res.error || res.data || {});
+      throw new Error(msg || 'Supabase request failed');
+    }
+    return res.data;
+  }
+
+  function setField(id, value){
+    const el = $(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = !!value;
+    else el.value = value ?? '';
+    el.dispatchEvent(new Event('input', { bubbles:true }));
+    el.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+
+  function applyFields(fields = {}){
+    Object.entries(fields).forEach(([id, value]) => setField(id, value));
+    if (fields.liteQuoteType) setField('liteQuoteType', fields.liteQuoteType);
+    if (typeof window.render === 'function') window.render();
+  }
+
+  async function loadQuoteFromUrl(){
+    const params = new URLSearchParams(window.location.search);
+    const quoteNumber = params.get('quote') || params.get('quote_number') || params.get('q');
+    if (!quoteNumber || window.__activeProjectQuoteLoaded) return;
+    window.__activeProjectQuoteLoaded = true;
+
+    await sleep(900);
+    try {
+      const encoded = encodeURIComponent(quoteNumber);
+      const rows = await api(`/rest/v1/quotes?select=*&quote_number=eq.${encoded}&limit=1`, { method:'GET' });
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (!row?.quote_data?.fields) throw new Error('Quote found, but quote_data.fields was missing.');
+      applyFields(row.quote_data.fields);
+      const select = $('savedQuotesSelect');
+      if (select) select.value = `cloud:${quoteNumber}`;
+      toast(`${quoteNumber} loaded from Active Projects.`);
+    } catch (err) {
+      console.warn('Active Projects quote URL load failed:', err);
+      toast(`Could not auto-load ${quoteNumber}. Use Saved Quote Library if needed.`);
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadQuoteFromUrl);
+  else loadQuoteFromUrl();
+})();
