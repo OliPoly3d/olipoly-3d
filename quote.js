@@ -4643,13 +4643,17 @@ Open Orders Admin now?`);
     if (typeof window.render === "function") window.render();
 
     const quoteNumber = field("quoteNumber", "Q-######");
-    const qty = numberValue("qty") || numberValue("quantity") || 1;
-    const total = moneyText("sumQuote", "outFinal", "finalTotal");
-    const subtotal = moneyText("sumSubtotal", "outSubtotal");
-    const tax = moneyText("sumTax", "outTax");
-    const perItem = moneyText("sumPerItem", "outPerItem");
-    const deposit = moneyText("sumDeposit", "outDeposit");
-    const balance = moneyText("sumBalance", "outBalance");
+    const totals = typeof window.olipolySyncQuoteTotals === "function"
+      ? window.olipolySyncQuoteTotals()
+      : (typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null);
+
+    const qty = totals?.q || numberValue("qty") || numberValue("quantity") || 1;
+    const total = totals?.finalText || moneyText("sumQuote", "outFinal", "finalTotal");
+    const subtotal = totals?.subtotalText || moneyText("sumSubtotal", "outSubtotal");
+    const tax = totals?.taxText || moneyText("sumTax", "outTax");
+    const perItem = totals?.perItemText || moneyText("sumPerItem", "outPerItem");
+    const deposit = totals?.depositText || moneyText("sumDeposit", "outDeposit");
+    const balance = totals?.balanceText || moneyText("sumBalance", "outBalance");
     const project = field("quoteTitle", field("projectTitle", "Custom 3D Printed Project"));
 
     return {
@@ -4805,21 +4809,39 @@ Open Orders Admin now?`);
 
   function quotePdfV2Css() {
     return `
-      .quote-v2-doc{position:relative}
-      .quote-v2-hero{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-      .quote-v2-hero>div{border-radius:16px;padding:14px;border:1px solid #f0c8df;background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10))}
-      .quote-v2-pro .quote-v2-hero>div{background:linear-gradient(135deg,rgba(36,27,43,.05),rgba(157,124,255,.09))}
-      .quote-v2-hero span{display:block;color:#826889;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-      .quote-v2-hero strong{display:block;font-size:22px;line-height:1.04;color:#241b2b;font-weight:950;overflow-wrap:anywhere}
-      .quote-v2-hero small{display:block;margin-top:6px;color:#604d68;line-height:1.3}
-      .quote-v2-bottom{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
-      .quote-v2-totals{border:1px solid #f0c8df;background:#fffafd;border-radius:14px;padding:12px 14px;align-self:start}
-      .quote-v2-totals div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f6ddec;font-size:12px}
-      .quote-v2-totals div:last-child{border-bottom:none}
-      .quote-v2-totals span{color:#826889}.quote-v2-totals strong{color:#241b2b}
-      .quote-v2-total{margin-top:4px;padding-top:10px!important;border-top:2px solid #f0c8df}
-      .quote-v2-total span,.quote-v2-total strong{font-size:17px!important;color:#241b2b!important;font-weight:950!important}
-      @media print{.quote-v2-hero,.quote-v2-bottom{break-inside:avoid}}
+      @page{size:letter portrait;margin:.18in!important;}
+      html,body{background:#ffffff!important;}
+      .op-doc.quote-v2-doc{position:relative;width:100%!important;max-width:none!important;min-height:auto!important;padding:.20in!important;margin:0!important;page-break-after:auto!important;break-after:auto!important;overflow:visible!important;}
+      .quote-v2-doc .op-header{margin-bottom:7px!important;padding-bottom:7px!important;}
+      .quote-v2-doc .op-brand h1,.quote-v2-doc h1{font-size:21px!important;line-height:1!important;}
+      .quote-v2-doc .op-brand p,.quote-v2-doc .op-muted{font-size:8.4px!important;line-height:1.22!important;}
+      .quote-v2-hero{display:grid;grid-template-columns:1fr 1fr;gap:7px!important;margin-bottom:7px!important;}
+      .quote-v2-hero>div{border-radius:12px!important;padding:8px 10px!important;border:1px solid #f0c8df;background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));}
+      .quote-v2-pro .quote-v2-hero>div{background:linear-gradient(135deg,rgba(36,27,43,.05),rgba(157,124,255,.09));}
+      .quote-v2-hero span{display:block;color:#826889;font-size:7.8px!important;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px!important;}
+      .quote-v2-hero strong{display:block;font-size:15.5px!important;line-height:1.03!important;color:#241b2b;font-weight:950;overflow-wrap:anywhere;}
+      .quote-v2-hero small{display:block;margin-top:3px!important;color:#604d68;line-height:1.22!important;font-size:8.2px!important;}
+      .quote-v2-doc .op-grid-4{gap:6px!important;margin-bottom:7px!important;}
+      .quote-v2-doc .op-grid-2{gap:7px!important;margin-bottom:7px!important;}
+      .quote-v2-doc .op-card{padding:7px 8px!important;border-radius:11px!important;}
+      .quote-v2-doc .op-card span{font-size:7.4px!important;letter-spacing:.06em!important;}
+      .quote-v2-doc .op-card strong{font-size:10.2px!important;line-height:1.12!important;}
+      .quote-v2-doc .op-panel{padding:8px 10px!important;border-radius:12px!important;font-size:9.2px!important;line-height:1.25!important;min-height:0!important;}
+      .quote-v2-doc .op-chip{font-size:7.3px!important;padding:3px 7px!important;margin-bottom:5px!important;}
+      .quote-v2-doc .op-table{margin-top:5px!important;font-size:9.2px!important;}
+      .quote-v2-doc .op-table th{padding:5px 7px!important;font-size:7.3px!important;}
+      .quote-v2-doc .op-table td{padding:7px!important;font-size:9.2px!important;line-height:1.22!important;}
+      .quote-v2-doc .op-table .op-muted{font-size:8.1px!important;line-height:1.22!important;}
+      .quote-v2-bottom{display:grid!important;grid-template-columns:1fr .55fr!important;gap:8px!important;margin-top:8px!important;break-inside:auto!important;page-break-inside:auto!important;}
+      .quote-v2-totals{border:1px solid #f0c8df;background:#fffafd;border-radius:12px!important;padding:8px 10px!important;align-self:start;}
+      .quote-v2-totals div{display:flex;justify-content:space-between;gap:12px;padding:4px 0!important;border-bottom:1px solid #f6ddec;font-size:9.2px!important;}
+      .quote-v2-totals div:last-child{border-bottom:none;}
+      .quote-v2-totals span{color:#826889}.quote-v2-totals strong{color:#241b2b;}
+      .quote-v2-total{margin-top:2px!important;padding-top:6px!important;border-top:2px solid #f0c8df;}
+      .quote-v2-total span,.quote-v2-total strong{font-size:12.8px!important;color:#241b2b!important;font-weight:950!important;}
+      .quote-v2-doc .op-note{padding:7px 9px!important;border-radius:11px!important;font-size:8.8px!important;line-height:1.2!important;margin-top:7px!important;}
+      .quote-v2-doc .op-footer{margin-top:7px!important;padding-top:6px!important;font-size:7.8px!important;}
+      @media print{.quote-v2-hero,.quote-v2-bottom{break-inside:auto!important;page-break-inside:auto!important;}.op-doc.quote-v2-doc{transform:scale(.96);transform-origin:top left;width:104.16%!important;}}
     `;
   }
 
@@ -4832,6 +4854,7 @@ Open Orders Admin now?`);
 
     if (typeof window.ensureDocumentNumbers === "function") window.ensureDocumentNumbers(false);
     if (typeof window.render === "function") window.render();
+    if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
 
     const data = collectQuotePdfData(mode);
     const html = buildQuotePdfV2Html(data);
@@ -5400,4 +5423,272 @@ https://olipoly3d.com`;
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
   else bind();
+})();
+
+
+/* === OliPoly Final PDF + Manual Override Fix V4 ===
+   Purpose:
+   - Makes the manual piece price override the immediate source of truth for page totals and quote PDFs.
+   - Supports 3-decimal piece prices like 0.975 for bulk spacer quotes.
+   - Compacts the Quote PDF so professional/PO quotes are much more likely to stay on one page.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+  const raw = (id) => ($(id)?.value ?? "").toString();
+  const num = (id) => Number(raw(id).replace(/[^0-9.-]/g, "")) || 0;
+  const firstNum = (...ids) => {
+    for (const id of ids) {
+      const value = num(id);
+      if (value > 0) return value;
+    }
+    return 0;
+  };
+  const setAll = (id, value) => document.querySelectorAll(`#${id}`).forEach((el) => { el.textContent = value; });
+  const roundFinal = (value, increment) => {
+    const inc = Number(increment) || 0;
+    if (!inc) return value;
+    return Math.round(value / inc) * inc;
+  };
+  const qty = () => Math.max(1, Math.round(num("qty") || num("quantity") || 1));
+
+  function filamentCost() {
+    const spoolWeight = Math.max(1, num("spoolWeight") || 1000);
+    let total = 0;
+    for (let i = 1; i <= 4; i += 1) {
+      total += num(`filament${i}Cost`) * (num(`filament${i}Used`) / spoolWeight);
+    }
+    return total;
+  }
+
+  function getTotals() {
+    const q = qty();
+    const manualPiece = firstNum("manualPiecePriceOverride", "manualPiecePrice", "pricePerItem");
+    const material = filamentCost() + num("materialCost");
+    const machine = (num("machineHours") || num("printHours")) * num("machineRate");
+    const design = num("designHours") * num("designRate");
+    const post = (num("postHours") * num("postRate")) + num("laborCost");
+    const packaging = num("simplePackaging") + num("packagingCost");
+    const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
+    const hardware = num("simpleHardware");
+    const discount = num("discount");
+    const taxRate = (($("taxExempt")?.value || "no") === "yes") ? 0 : num("salesTax");
+    const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
+    const rounding = num("roundingMode");
+    const marketplacePercent = Math.max(0, num("marketplacePercent"));
+
+    let direct;
+    let base;
+    let profit;
+    let preDiscount;
+    let pricingMode = "calculated";
+
+    if (manualPiece > 0) {
+      pricingMode = "manual";
+      const itemSubtotal = manualPiece * q;
+      direct = itemSubtotal + packaging + shipping + hardware;
+      base = direct;
+      profit = 0;
+      preDiscount = base;
+    } else {
+      direct = material + machine + design + post + packaging + shipping + hardware;
+      base = direct;
+      const profitMode = raw("profitMode") || "percent";
+      const profitValue = num("profitValue");
+      profit = profitMode === "flat" ? profitValue : base * (profitValue / 100);
+      preDiscount = base + profit;
+    }
+
+    const marketplaceFee = preDiscount * (marketplacePercent / 100);
+    preDiscount += marketplaceFee;
+    const beforeTax = Math.max(0, preDiscount - discount);
+    const tax = beforeTax * (taxRate / 100);
+    const unroundedFinal = beforeTax + tax;
+    const final = Math.max(0, roundFinal(unroundedFinal, rounding));
+    const roundingGain = final - unroundedFinal;
+    const deposit = final * (depositPercent / 100);
+    const balance = Math.max(0, final - deposit);
+    const perItem = q ? final / q : 0;
+    const breakEven = manualPiece > 0 ? material + machine + design + post + packaging + shipping + hardware : direct;
+    const margin = final > 0 ? ((final - breakEven) / final) * 100 : 0;
+
+    return {
+      q, manualPiece, material, machine, design, post, packaging, shipping, hardware,
+      direct, base, profit, marketplaceFee, preDiscount, discount, beforeTax, taxRate, tax,
+      unroundedFinal, rounding, roundingGain, final, deposit, balance, perItem, breakEven, margin,
+      pricingMode,
+      finalText: money(final), subtotalText: money(beforeTax), taxText: money(tax),
+      perItemText: money(perItem), depositText: money(deposit), balanceText: money(balance)
+    };
+  }
+
+  function syncTotals() {
+    const v = getTotals();
+
+    setAll("sumQuote", v.finalText);
+    setAll("sumSubtotal", v.subtotalText);
+    setAll("sumTax", v.taxText);
+    setAll("sumPerItem", v.perItemText);
+    setAll("sumDeposit", v.depositText);
+    setAll("sumBalance", v.balanceText);
+    setAll("sumDirect", money(v.direct));
+    setAll("sumOverhead", money(v.marketplaceFee));
+    setAll("sumProfit", v.pricingMode === "manual" ? "Manual" : money(v.profit));
+    setAll("sumBreakEven", money(v.breakEven));
+    setAll("batchUnitCost", money(v.breakEven / Math.max(1, v.q)));
+
+    setAll("outDirect", money(v.direct));
+    setAll("outOverhead", money(v.marketplaceFee));
+    setAll("outBase", money(v.base));
+    setAll("outProfit", v.pricingMode === "manual" ? "Manual" : money(v.profit));
+    setAll("outPerItem", v.perItemText);
+    setAll("outBreakEven", money(v.breakEven));
+    setAll("outMargin", v.pricingMode === "manual" ? "Manual" : `${v.margin.toFixed(1)}%`);
+    setAll("outPreDiscount", money(v.preDiscount));
+    setAll("outDiscount", money(v.discount));
+    setAll("outBeforeTax", v.subtotalText);
+    setAll("outRoundedBeforeTax", v.subtotalText);
+    setAll("outRoundingGain", money(v.roundingGain));
+    setAll("outTax", v.taxText);
+    setAll("outDeposit", v.depositText);
+    setAll("outBalance", v.balanceText);
+    setAll("outFinal", v.finalText);
+    setAll("finalTotal", v.finalText);
+
+    setAll("pdfQty", String(v.q));
+    setAll("pdfPerItem", v.perItemText);
+    setAll("pdfSubtotal", v.subtotalText);
+    setAll("pdfTax", v.taxText);
+    setAll("pdfTotal", v.finalText);
+    setAll("pdfDeposit", v.depositText);
+    setAll("pdfBalance", v.balanceText);
+    setAll("pdfInvoiceAmount", v.finalText);
+    setAll("pdfHeroTotal", v.finalText);
+
+    const notice = $("manualPiecePriceNotice");
+    if (notice && v.manualPiece > 0) {
+      notice.classList.remove("hidden");
+      notice.classList.add("manual-override-active");
+      notice.innerHTML = `<strong>Manual piece price override applied:</strong> ${money(v.manualPiece)} × ${v.q} = ${money(v.manualPiece * v.q)}`;
+    }
+
+    window.olipolyLastSyncedQuoteTotals = v;
+    return v;
+  }
+
+  window.olipolyGetQuoteTotals = getTotals;
+  window.olipolySyncQuoteTotals = syncTotals;
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._olipolyFinalSyncV4) return;
+    const original = window.render;
+    window.render = function olipolyFinalSyncedRender(...args) {
+      const result = original.apply(this, args);
+      try { syncTotals(); } catch (err) { console.warn("OliPoly total sync failed:", err); }
+      return result;
+    };
+    window.render._olipolyFinalSyncV4 = true;
+  }
+
+  function injectCompactPdfCss() {
+    if (document.getElementById("olipolyCompactQuotePdfCss")) return;
+    const style = document.createElement("style");
+    style.id = "olipolyCompactQuotePdfCss";
+    style.textContent = `
+      @media print{
+        @page{size:letter portrait;margin:.2in!important;}
+        .op-doc.quote-v2-doc{padding:.24in!important;min-height:auto!important;page-break-after:auto!important;break-after:auto!important;}
+        .quote-v2-doc .op-header{margin-bottom:8px!important;padding-bottom:8px!important;}
+        .quote-v2-doc .op-brand h1,.quote-v2-doc h1{font-size:22px!important;line-height:1!important;}
+        .quote-v2-doc .op-brand p,.quote-v2-doc .op-muted{font-size:9px!important;line-height:1.25!important;}
+        .quote-v2-hero{gap:7px!important;margin-bottom:7px!important;}
+        .quote-v2-hero>div{padding:8px 10px!important;border-radius:12px!important;}
+        .quote-v2-hero span{font-size:8px!important;margin-bottom:2px!important;}
+        .quote-v2-hero strong{font-size:16px!important;line-height:1.05!important;}
+        .quote-v2-hero small{font-size:8.5px!important;margin-top:3px!important;}
+        .quote-v2-doc .op-grid-4{gap:6px!important;margin-bottom:7px!important;}
+        .quote-v2-doc .op-grid-2{gap:7px!important;margin-bottom:7px!important;}
+        .quote-v2-doc .op-card{padding:7px 8px!important;border-radius:11px!important;}
+        .quote-v2-doc .op-card span{font-size:7.5px!important;letter-spacing:.06em!important;}
+        .quote-v2-doc .op-card strong{font-size:10.5px!important;line-height:1.15!important;}
+        .quote-v2-doc .op-panel{padding:8px 10px!important;border-radius:12px!important;font-size:9.5px!important;line-height:1.28!important;min-height:0!important;}
+        .quote-v2-doc .op-chip{font-size:7.5px!important;padding:3px 7px!important;margin-bottom:5px!important;}
+        .quote-v2-doc .op-table{margin-top:6px!important;font-size:9.5px!important;}
+        .quote-v2-doc .op-table th{padding:5px 7px!important;font-size:7.5px!important;}
+        .quote-v2-doc .op-table td{padding:7px!important;font-size:9.5px!important;line-height:1.25!important;}
+        .quote-v2-doc .op-table .op-muted{font-size:8.5px!important;line-height:1.25!important;}
+        .quote-v2-bottom{display:grid!important;grid-template-columns:1fr .55fr!important;gap:8px!important;margin-top:8px!important;break-inside:auto!important;page-break-inside:auto!important;}
+        .quote-v2-totals{padding:8px 10px!important;border-radius:12px!important;}
+        .quote-v2-totals div{padding:4px 0!important;font-size:9.5px!important;}
+        .quote-v2-total{padding-top:6px!important;margin-top:2px!important;}
+        .quote-v2-total span,.quote-v2-total strong{font-size:13px!important;}
+        .quote-v2-doc .op-note{padding:7px 9px!important;border-radius:11px!important;font-size:9px!important;line-height:1.22!important;margin-top:7px!important;}
+        .quote-v2-doc .op-footer{margin-top:8px!important;padding-top:6px!important;font-size:8px!important;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function bindSyncTriggers() {
+    document.querySelectorAll("input[id], select[id], textarea[id]").forEach((el) => {
+      if (el.dataset.olipolyFinalSyncV4Bound === "true") return;
+      el.dataset.olipolyFinalSyncV4Bound = "true";
+      el.addEventListener("input", syncTotals);
+      el.addEventListener("change", syncTotals);
+    });
+
+    ["customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn", "prepareCustomerEmailBtn", "createOrderFromQuoteBtn", "saveQuoteBtn"].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.olipolyFinalSyncV4ButtonBound === "true") return;
+      btn.dataset.olipolyFinalSyncV4ButtonBound = "true";
+      btn.addEventListener("click", () => {
+        syncTotals();
+        setTimeout(syncTotals, 20);
+        setTimeout(syncTotals, 120);
+      }, { capture:true });
+    });
+  }
+
+  function init() {
+    injectCompactPdfCss();
+    patchRender();
+    bindSyncTriggers();
+    syncTotals();
+    const timer = setInterval(() => {
+      injectCompactPdfCss();
+      patchRender();
+      bindSyncTriggers();
+      syncTotals();
+    }, 300);
+    setTimeout(() => clearInterval(timer), 3500);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+
+
+/* === OliPoly Emergency Quote PDF Override V5 ===
+   Keeps PDF totals sourced from the final totals engine and sends compact CSS into the print window itself.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function bindFinalQuotePdfButtons(){
+    if (typeof window.openQuotePdfV2 !== "function") return;
+    [["customerPdfBtn","quote"],["invoicePdfBtn","invoice"]].forEach(([id, mode]) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.olipolyEmergencyPdfV5 === "true") return;
+      btn.dataset.olipolyEmergencyPdfV5 = "true";
+      btn.addEventListener("click", (event) => {
+        if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
+        setTimeout(() => { if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals(); }, 25);
+      }, { capture:true });
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindFinalQuotePdfButtons);
+  else bindFinalQuotePdfButtons();
+  setTimeout(bindFinalQuotePdfButtons, 500);
+  setTimeout(bindFinalQuotePdfButtons, 1500);
 })();
