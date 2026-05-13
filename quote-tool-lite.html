@@ -1106,7 +1106,29 @@ body.professional-pdf-mode #pdfPaymentCta{
   .email-preview-actions{display:grid;grid-template-columns:1fr}
 }
 
-</style>
+
+
+/* === Quote PDF optional project image support === */
+.pdf-project-preview{
+  position:absolute;
+  right:24px;
+  top:24px;
+  width:260px;
+  height:150px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(216,107,179,.18);
+  background:#fff;
+  box-shadow:0 14px 30px rgba(216,107,179,.10);
+}
+.pdf-project-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+.pdf-hero.has-project-preview{position:relative;padding-right:310px;min-height:205px;}
+@media print{
+  .pdf-project-preview{right:12px!important;top:10px!important;width:1.95in!important;height:1.18in!important;border-radius:10px!important;box-shadow:none!important;}
+  .pdf-hero.has-project-preview{padding-right:2.15in!important;min-height:1.42in!important;}
+}
+
+  </style>
 </head>
 <body>
 <!-- QUOTE_TOOL_LITE_SUPABASE_QUOTES_V6 -->
@@ -1203,6 +1225,7 @@ body.professional-pdf-mode #pdfPaymentCta{
           <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="email@example.com" /></div>
           <div class="full"><label for="quoteTitle">Project / Quote Title</label><input id="quoteTitle" placeholder="Example: Custom name sign, replacement clip, beach toy set" /></div>
+          <div class="full"><label for="projectImageUrl">Project Image URL <span style="font-weight:600;color:#9b8b9a;">(optional)</span></label><input id="projectImageUrl" placeholder="Optional: paste a JPG/PNG/WebP URL, CAD screenshot URL, or leave blank for OliPoly placeholder" /><p class="hint" style="margin:6px 0 0;font-size:.82rem;line-height:1.4;">Leave blank to use the built-in OliPoly project preview placeholder in quote PDFs.</p></div>
           <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
           <div><label for="turnaround">Turnaround</label><input id="turnaround" placeholder="Example: 5–7 business days" /></div>
           <div><label for="shippingMode">Fulfillment</label><select id="shippingMode"><option value="pickup">Local Pickup</option><option value="delivery">Local Delivery</option><option value="ship_estimated">Shipped Order (Estimated Shipping)</option><option value="ship_customer_label">Customer-Provided Label</option></select></div>
@@ -1438,7 +1461,7 @@ body.professional-pdf-mode #pdfPaymentCta{
   <section class="pdf-sheet" id="pdfSheet" aria-hidden="true">
     <div class="pdf-shell">
       <div class="pdf-card standard-look" id="pdfCard">
-        <div class="pdf-hero">
+        <div class="pdf-hero has-project-preview">
           <div class="doc-chip"><span id="pdfDocType">Quote</span></div>
           <div class="pdf-brand">
             <div class="pdf-icon">✦</div>
@@ -1449,6 +1472,7 @@ body.professional-pdf-mode #pdfPaymentCta{
           </div>
           <h1 id="pdfTitle">Customer Quote</h1>
           <p id="pdfSubtitle" class="hidden"></p>
+          <div class="pdf-project-preview"><img id="pdfProjectImage" src="images/quote-placeholder.png" alt="Project preview" /></div>
         </div>
 
         <div class="pdf-hero-summary" id="pdfHeroSummary">

@@ -4597,6 +4597,18 @@ Open Orders Admin now?`);
   };
 
   const field = (id, fallback = "") => ($(id)?.value || "").trim() || fallback;
+  const quotePlaceholderImage = "images/quote-placeholder.png";
+
+  function absoluteAssetUrl(url) {
+    const raw = String(url || "").trim() || quotePlaceholderImage;
+    try { return new URL(raw, window.location.href).href; }
+    catch { return quotePlaceholderImage; }
+  }
+
+  function projectImageUrl() {
+    return absoluteAssetUrl(field("projectImageUrl", quotePlaceholderImage));
+  }
+
 
   const numberValue = (id) => Number(String($(id)?.value || "").replace(/[^0-9.-]/g, "")) || 0;
 
@@ -4668,6 +4680,7 @@ Open Orders Admin now?`);
       companyName: field("companyName", ""),
       contactName: field("contactName", ""),
       quoteTitle: project,
+      projectImage: projectImageUrl(),
       qty,
       total,
       subtotal,
@@ -4732,7 +4745,7 @@ Open Orders Admin now?`);
       <div class="op-doc quote-v2-doc ${data.professional ? "quote-v2-pro" : "quote-v2-standard"}">
         ${T.header(title, data.mode === "invoice" ? data.invoiceNumber : data.quoteNumber)}
 
-        <div class="quote-v2-hero">
+        <div class="quote-v2-hero quote-v2-hero-with-image">
           <div>
             <span>${data.mode === "invoice" ? "Invoice Amount" : "Estimated Total"}</span>
             <strong>${T.esc(data.total)}</strong>
@@ -4742,6 +4755,9 @@ Open Orders Admin now?`);
             <span>Project</span>
             <strong>${T.esc(data.quoteTitle)}</strong>
             <small>${T.esc(data.quoteType)} • Qty ${T.esc(data.qty)}</small>
+          </div>
+          <div class="quote-v2-image-card">
+            <img src="${T.esc(data.projectImage)}" alt="Project preview" onerror="this.onerror=null;this.src='${T.esc(absoluteAssetUrl(quotePlaceholderImage))}';" />
           </div>
         </div>
 
@@ -4816,6 +4832,9 @@ Open Orders Admin now?`);
       .quote-v2-doc .op-brand h1,.quote-v2-doc h1{font-size:21px!important;line-height:1!important;}
       .quote-v2-doc .op-brand p,.quote-v2-doc .op-muted{font-size:8.4px!important;line-height:1.22!important;}
       .quote-v2-hero{display:grid;grid-template-columns:1fr 1fr;gap:7px!important;margin-bottom:7px!important;}
+      .quote-v2-hero-with-image{grid-template-columns:.78fr .88fr 1.05fr!important;align-items:stretch;}
+      .quote-v2-image-card{padding:0!important;overflow:hidden;border-radius:12px!important;border:1px solid #f0c8df;background:#fff;min-height:1.08in;}
+      .quote-v2-image-card img{display:block;width:100%;height:100%;object-fit:cover;}
       .quote-v2-hero>div{border-radius:12px!important;padding:8px 10px!important;border:1px solid #f0c8df;background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));}
       .quote-v2-pro .quote-v2-hero>div{background:linear-gradient(135deg,rgba(36,27,43,.05),rgba(157,124,255,.09));}
       .quote-v2-hero span{display:block;color:#826889;font-size:7.8px!important;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px!important;}
@@ -4841,7 +4860,7 @@ Open Orders Admin now?`);
       .quote-v2-total span,.quote-v2-total strong{font-size:12.8px!important;color:#241b2b!important;font-weight:950!important;}
       .quote-v2-doc .op-note{padding:7px 9px!important;border-radius:11px!important;font-size:8.8px!important;line-height:1.2!important;margin-top:7px!important;}
       .quote-v2-doc .op-footer{margin-top:7px!important;padding-top:6px!important;font-size:7.8px!important;}
-      @media print{.quote-v2-hero,.quote-v2-bottom{break-inside:auto!important;page-break-inside:auto!important;}.op-doc.quote-v2-doc{transform:scale(.96);transform-origin:top left;width:104.16%!important;}}
+      @media print{.quote-v2-hero,.quote-v2-bottom{break-inside:auto!important;page-break-inside:auto!important;}.op-doc.quote-v2-doc{transform:scale(.94);transform-origin:top left;width:106.38%!important;}.quote-v2-image-card{min-height:1.00in!important;}}
     `;
   }
 
@@ -5691,4 +5710,38 @@ https://olipoly3d.com`;
   else bindFinalQuotePdfButtons();
   setTimeout(bindFinalQuotePdfButtons, 500);
   setTimeout(bindFinalQuotePdfButtons, 1500);
+})();
+
+
+/* === Quote project image fallback support === */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const FALLBACK = "images/quote-placeholder.png";
+
+  function abs(url) {
+    const raw = String(url || "").trim() || FALLBACK;
+    try { return new URL(raw, window.location.href).href; }
+    catch { return FALLBACK; }
+  }
+
+  function syncProjectImage() {
+    const img = $("pdfProjectImage");
+    if (!img) return;
+    img.src = abs($("projectImageUrl")?.value || FALLBACK);
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = abs(FALLBACK);
+    };
+  }
+
+  ["projectImageUrl", "customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener(id === "projectImageUrl" ? "input" : "click", () => setTimeout(syncProjectImage, 40), { capture: true });
+    el.addEventListener(id === "projectImageUrl" ? "change" : "click", () => setTimeout(syncProjectImage, 120), { capture: true });
+  });
+
+  window.addEventListener("beforeprint", syncProjectImage, { capture: true });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncProjectImage);
+  else syncProjectImage();
 })();
