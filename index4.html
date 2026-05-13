@@ -823,6 +823,86 @@
     }
 
 
+
+
+    /* V4.3 final mobile polish: header fit, readable image text, balanced pills, Poly motion */
+    .brand-text{min-width:0;display:block;}
+    .mobile-short-sub{display:none;}
+
+    .text-safe-card .cap-body,
+    .text-safe-card .split-copy{
+      background:rgba(255,255,255,.88);
+      border-radius:26px;
+      box-shadow:0 14px 34px rgba(45,24,55,.08);
+    }
+
+    .cap-panel.overlay-card{
+      position:relative;
+      display:block;
+      min-height:520px;
+      isolation:isolate;
+    }
+    .cap-panel.overlay-card img{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      min-height:0;
+      object-fit:cover;
+      z-index:0;
+    }
+    .cap-panel.overlay-card::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:1;
+      background:
+        linear-gradient(180deg,rgba(20,8,24,.05) 0%,rgba(20,8,24,.08) 38%,rgba(20,8,24,.82) 100%),
+        linear-gradient(90deg,rgba(20,8,24,.40),transparent 62%);
+    }
+    .cap-panel.overlay-card .cap-body{
+      position:absolute;
+      left:20px;
+      right:20px;
+      bottom:20px;
+      z-index:2;
+      color:white;
+      padding:18px;
+      border-radius:24px;
+      background:linear-gradient(180deg,rgba(38,20,47,.36),rgba(38,20,47,.72));
+      border:1px solid rgba(255,255,255,.22);
+      backdrop-filter:blur(12px);
+      text-shadow:0 2px 18px rgba(0,0,0,.35);
+    }
+    .cap-panel.overlay-card .cap-body h3{color:#fff;}
+    .cap-panel.overlay-card .cap-body p{color:rgba(255,255,255,.92);}
+
+    .mini-tags{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      align-items:stretch;
+    }
+    .mini-tags span{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      min-height:38px;
+      line-height:1.1;
+    }
+
+    .poly-helper-toggle img{
+      animation:helperBeeBuzz 3.8s ease-in-out infinite;
+      transform-origin:center;
+    }
+    @keyframes helperBeeBuzz{
+      0%,100%{transform:translateY(0) rotate(0deg)}
+      12%{transform:translateY(-2px) rotate(-5deg)}
+      24%{transform:translateY(1px) rotate(4deg)}
+      36%{transform:translateY(-1px) rotate(-2deg)}
+      48%{transform:translateY(0) rotate(0deg)}
+    }
+
     /* V4.1 cleanup: overlay contrast, mobile hero rhythm, image framing */
     .showcase-card img[src*="custom-company-logo-coasters"]{object-position:center 54%}
     .showcase-card img[src*="top_down_spacerplateview"]{object-position:center center}
@@ -976,6 +1056,167 @@
       .poly-story-card{padding:24px 18px 20px;border-radius:24px}
     }
 
+
+
+    @media(max-width:640px){
+      .nav{
+        width:100%;
+        min-height:64px;
+        padding:8px 12px;
+        gap:8px;
+      }
+      .brand{
+        flex:1 1 auto;
+        min-width:0;
+        gap:9px;
+        overflow:hidden;
+      }
+      .brand-mark{
+        width:40px;
+        height:40px;
+        border-radius:13px;
+      }
+      .brand-name{
+        font-size:1.78rem;
+        letter-spacing:-.055em;
+      }
+      .brand-sub-full{display:none;}
+      .mobile-short-sub{
+        display:block;
+        max-width:calc(100vw - 168px);
+        font-size:.58rem;
+        letter-spacing:.025em;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      .mobile-menu-button{
+        flex:0 0 auto;
+        padding:10px 14px;
+        border-radius:16px;
+        font-size:.9rem;
+        box-shadow:0 8px 24px rgba(54,24,66,.07);
+      }
+
+      .capabilities{
+        gap:18px;
+      }
+      .cap-panel.overlay-card{
+        min-height:390px;
+        border-radius:30px;
+        border:7px solid rgba(255,255,255,.86);
+      }
+      .cap-panel.overlay-card::after{
+        background:
+          linear-gradient(180deg,rgba(20,8,24,.02) 0%,rgba(20,8,24,.18) 34%,rgba(20,8,24,.92) 100%);
+      }
+      .cap-panel.overlay-card .cap-body{
+        left:12px;
+        right:12px;
+        bottom:12px;
+        padding:16px;
+        border-radius:22px;
+        background:linear-gradient(180deg,rgba(37,24,45,.52),rgba(37,24,45,.82));
+      }
+      .cap-panel.overlay-card .cap-body h3{
+        font-size:1.78rem;
+        margin-bottom:8px;
+      }
+      .cap-panel.overlay-card .cap-body p{
+        font-size:.96rem;
+        line-height:1.48;
+      }
+
+      .mini-tags{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+      }
+      .mini-tags span{
+        min-height:36px;
+        padding:9px 10px;
+        font-size:.75rem;
+      }
+      .mini-tags span:nth-child(3):last-child{
+        grid-column:1 / -1;
+        width:62%;
+        justify-self:start;
+      }
+
+      .showcase-card::after{
+        background:linear-gradient(180deg,rgba(21,9,25,.02) 0%,rgba(21,9,25,.12) 35%,rgba(21,9,25,.93) 100%);
+      }
+      .showcase-label{
+        padding:12px;
+        border-radius:20px;
+        background:linear-gradient(180deg,rgba(28,13,35,.32),rgba(28,13,35,.72));
+        border:1px solid rgba(255,255,255,.18);
+        backdrop-filter:blur(8px);
+      }
+      .showcase-label strong{font-size:1.25rem;}
+      .showcase-label span:not(.pill){font-size:.8rem;}
+      .pill{
+        min-width:82px;
+        text-align:center;
+        justify-content:center;
+      }
+
+      .poly-helper-toggle{
+        padding:10px 16px 10px 12px;
+        gap:10px;
+        min-height:58px;
+        font-size:1rem;
+      }
+      .poly-helper-toggle img{
+        width:44px;
+        height:44px;
+        margin-left:-2px;
+      }
+      .poly-helper-panel{
+        border-radius:24px;
+        background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,241,250,.96));
+        box-shadow:0 20px 56px rgba(43,24,52,.24);
+      }
+
+      .poly-story-popup{
+        align-items:flex-end;
+        padding:14px;
+        background:rgba(31,26,36,.38);
+      }
+      .poly-story-card{
+        width:100%;
+        max-width:390px;
+        margin:0 auto 10px;
+        padding:22px 18px 18px;
+        border-radius:28px;
+        background:
+          radial-gradient(circle at 88% 0%,rgba(232,79,183,.18),transparent 14rem),
+          linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,244,253,.97));
+      }
+      .poly-story-card h3{font-size:1.72rem;}
+      .poly-story-card p{font-size:.92rem;line-height:1.5;}
+      .poly-story-mini{
+        width:86px;
+        height:86px;
+        border-radius:20px;
+        margin-bottom:12px;
+      }
+      .poly-story-note{
+        font-size:.86rem;
+        line-height:1.4;
+      }
+    }
+
+    @media(max-width:390px){
+      .brand-name{font-size:1.55rem;}
+      .mobile-short-sub{
+        max-width:calc(100vw - 152px);
+        font-size:.53rem;
+      }
+      .mobile-menu-button{
+        padding:9px 12px;
+        font-size:.84rem;
+      }
+    }
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{
         animation:none!important;
@@ -991,9 +1232,10 @@
     <nav class="nav" id="nav">
       <a class="brand" href="index.html" aria-label="OliPoly 3D home">
         <span class="brand-mark"><img src="images/poly-head.png" alt="Poly mascot" /></span>
-        <span>
+        <span class="brand-text">
           <span class="brand-name">Oli<span>Poly</span> 3D</span>
-          <span class="brand-sub">Custom printing • Creative builds • Prototypes</span>
+          <span class="brand-sub brand-sub-full">Custom printing • Creative builds • Prototypes</span>
+          <span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
         </span>
       </a>
 
@@ -1084,7 +1326,7 @@
       <p class="section-intro">Whether you need one special piece or a repeatable run of parts, OliPoly helps shape the project around how it will actually be used.</p>
 
       <div class="capabilities">
-        <article class="cap-panel">
+        <article class="cap-panel overlay-card">
           <img src="images/pocket_door_bracket_actual.png" alt="Pocket door bracket printed part" />
           <div class="cap-body">
             <h3>Functional parts</h3>
@@ -1092,7 +1334,7 @@
           </div>
         </article>
 
-        <article class="cap-panel">
+        <article class="cap-panel overlay-card">
           <img src="images/custom-nail-powder-organizer-stackable.png" alt="Custom stackable nail powder organizer" />
           <div class="cap-body">
             <h3>Custom organization</h3>
@@ -1100,7 +1342,7 @@
           </div>
         </article>
 
-        <article class="cap-panel">
+        <article class="cap-panel overlay-card">
           <img src="images/poly_outside.png" alt="Poly mascot photographed outdoors" />
           <div class="cap-body">
             <h3>Creative gifts</h3>
