@@ -3,60 +3,745 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>FAQ | OliPoly 3D</title>
   <meta name="description" content="Helpful answers about OliPoly 3D custom printing, project requests, quotes, materials, business orders, pickup, shipping, order tracking, customer files, production expectations, and intended use." />
+
   <style>
-    :root{--bg:#fff8fc;--panel:#ffffff;--line:rgba(216,107,179,.18);--line-strong:rgba(216,107,179,.28);--text:#4a3550;--muted:#6b5a6f;--soft:#9b8b9a;--accent:#d86bb3;--accent2:#9d7cff;--success:#16a34a;--shadow:0 20px 50px rgba(216,107,179,.12)}
-    *{box-sizing:border-box} html{scroll-behavior:smooth}
-    body{margin:0;font-family:'Inter','Poppins',system-ui,-apple-system,sans-serif;color:var(--text);background:radial-gradient(circle at 12% 10%,rgba(216,107,179,.14),transparent 28%),radial-gradient(circle at 88% 8%,rgba(157,124,255,.12),transparent 26%),linear-gradient(180deg,#fffafd 0%,#fff5fb 48%,#fff8fc 100%)}
-    a{color:var(--accent);text-decoration:none;font-weight:700}.wrap{max-width:1040px;margin:0 auto;padding:40px 20px 60px}.shell{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,249,252,.98));border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow);overflow:hidden}.hero{padding:36px 34px 24px;background:radial-gradient(circle at top right,rgba(157,124,255,.16),transparent 32%),linear-gradient(135deg,rgba(255,247,252,.96) 0%,rgba(255,239,251,.96) 45%,rgba(247,242,255,.96) 100%);border-bottom:1px solid var(--line)}
-    .brand{display:flex;align-items:center;gap:12px;margin-bottom:16px}.brand img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(216,107,179,.16))}.wordmark{font-family:Georgia,'Times New Roman',serif;font-size:1.9rem;font-weight:700;line-height:1;color:#241b2b;letter-spacing:-.03em}.wordmark span{background:linear-gradient(135deg,#de6fb8,#9d7cff);-webkit-background-clip:text;background-clip:text;color:transparent}.tag{color:var(--soft);font-size:.95rem;margin-top:3px}
-    h1{margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.3rem,5vw,3.6rem);line-height:1.02;color:#2d1f36;letter-spacing:-.04em}.intro{margin:0;color:var(--muted);line-height:1.75;max-width:780px;font-size:1.02rem}.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.btn,.btn-ghost{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;font-weight:800;transition:.2s ease}.btn{color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);box-shadow:0 10px 22px rgba(222,111,184,.22)}.btn-ghost{color:#4a3550;background:rgba(255,255,255,.72);border:1px solid rgba(216,107,179,.14)}.btn:hover,.btn-ghost:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(216,107,179,.14)}
-    .quicknav{display:flex;flex-wrap:wrap;gap:10px;padding:18px 24px 0}.quicknav a{display:inline-flex;align-items:center;justify-content:center;padding:10px 15px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,245,251,.95));border:1px solid var(--line);color:#6f5d76;font-size:.9rem;font-weight:800;transition:.2s ease}.quicknav a:hover{transform:translateY(-1px);border-color:rgba(216,107,179,.28);box-shadow:0 10px 24px rgba(216,107,179,.08)}.content{padding:18px}.friendly-note{margin:8px 8px 18px;padding:22px;border-radius:24px;background:linear-gradient(135deg,rgba(255,247,252,.96),rgba(247,242,255,.96));border:1px solid rgba(216,107,179,.14);box-shadow:0 14px 28px rgba(216,107,179,.06)}.friendly-note h2{margin:0 0 10px;color:#2d1f36;font-size:1.3rem}.friendly-note p{margin:0;color:var(--muted);line-height:1.7}.faq-group{margin:18px 0 8px;padding:0 8px}.faq-group h2{margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:1.65rem;color:#2d1f36;letter-spacing:-.02em}details{background:#fff;border:1px solid var(--line);border-radius:22px;margin:12px 0;overflow:hidden}details[open]{border-color:var(--line-strong);box-shadow:0 10px 26px rgba(216,107,179,.08)}summary{list-style:none;cursor:pointer;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:18px;font-weight:850;color:#2d1f36;font-size:1.02rem}summary::-webkit-details-marker{display:none}.chev{width:32px;height:32px;flex:0 0 32px;border-radius:999px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(255,244,250,.95),rgba(247,242,255,.95));border:1px solid var(--line);color:var(--accent);font-size:1.05rem;transition:transform .2s ease}details[open] .chev{transform:rotate(45deg)}.answer{padding:0 20px 20px;border-top:1px solid rgba(216,107,179,.1)}.answer p{margin:14px 0 0;color:var(--muted);line-height:1.75}.answer ul{margin:12px 0 0 18px;padding:0;color:var(--muted);line-height:1.7}.note-card{margin:22px 8px 8px;padding:26px;border-radius:26px;text-align:center;background:linear-gradient(135deg,rgba(255,247,252,.96),rgba(247,242,255,.96));border:1px solid rgba(216,107,179,.14)}.note-card h2{margin:0 0 10px;color:#2d1f36;font-family:Georgia,'Times New Roman',serif;font-size:1.7rem}.note-card p{max-width:650px;margin:0 auto 18px;color:var(--muted);line-height:1.7}.footer{padding:8px 22px 28px;color:var(--soft);font-size:.88rem;text-align:center}
-    @media (max-width:720px){.wrap{padding:20px 12px 36px}.hero{padding:26px 20px 20px}.brand{align-items:flex-start}.brand img{width:40px;height:40px}.wordmark{font-size:1.55rem}.content{padding:10px}.quicknav{padding:14px 14px 0;gap:8px}.quicknav a{font-size:.84rem;padding:9px 13px}.friendly-note{margin:6px;padding:18px;border-radius:20px}.faq-group{padding:0 4px}summary{padding:16px;align-items:flex-start}.answer{padding:0 16px 16px}.hero-actions{display:grid;grid-template-columns:1fr}.btn,.btn-ghost{width:100%}.note-card{margin:16px 6px 6px;padding:22px 18px}}
+    :root{
+      --bg:#fff8fc;
+      --panel:#ffffff;
+      --line:rgba(216,107,179,.18);
+      --line-strong:rgba(216,107,179,.26);
+      --text:#4a3550;
+      --muted:#6b5a6f;
+      --soft:#9b8b9a;
+      --accent:#d86bb3;
+      --accent2:#9d7cff;
+      --success:#16a34a;
+      --shadow:0 20px 50px rgba(216,107,179,.12);
+    }
+
+    *{box-sizing:border-box}
+
+    html{scroll-behavior:smooth}
+
+    body{
+      margin:0;
+      font-family:'Inter','Poppins',system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 10%,rgba(216,107,179,.14),transparent 28%),
+        radial-gradient(circle at 88% 8%,rgba(157,124,255,.12),transparent 26%),
+        linear-gradient(180deg,#fffafd 0%,#fff5fb 48%,#fff8fc 100%);
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(216,107,179,.026) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(157,124,255,.024) 1px,transparent 1px);
+      background-size:56px 56px;
+      mask-image:linear-gradient(180deg,rgba(0,0,0,.68),transparent 78%);
+    }
+
+    a{
+      color:var(--accent);
+      text-decoration:none;
+      font-weight:700;
+    }
+
+    .wrap{
+      max-width:1040px;
+      margin:0 auto;
+      padding:40px 20px 60px;
+    }
+
+    .shell{
+      background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,249,252,.98));
+      border:1px solid var(--line);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .hero{
+      padding:36px 34px 24px;
+      background:
+        radial-gradient(circle at top right,rgba(157,124,255,.16),transparent 32%),
+        linear-gradient(135deg,rgba(255,247,252,.96) 0%,rgba(255,239,251,.96) 45%,rgba(247,242,255,.96) 100%);
+      border-bottom:1px solid var(--line);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .brand img{
+      width:46px;
+      height:46px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 10px rgba(216,107,179,.16));
+    }
+
+    .wordmark{
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:1.9rem;
+      font-weight:700;
+      line-height:1;
+      color:#241b2b;
+      letter-spacing:-.03em;
+    }
+
+    .wordmark span{
+      background:linear-gradient(135deg,#de6fb8,#9d7cff);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+
+    .tag{
+      color:var(--soft);
+      font-size:.95rem;
+      margin-top:3px;
+    }
+
+    h1{
+      margin:0 0 12px;
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:clamp(2.3rem,5vw,3.6rem);
+      line-height:1.02;
+      color:#2d1f36;
+      letter-spacing:-.04em;
+    }
+
+    .intro{
+      margin:0;
+      color:var(--muted);
+      line-height:1.75;
+      max-width:790px;
+      font-size:1.02rem;
+    }
+
+    .hero-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:22px;
+    }
+
+    .btn,
+    .btn-ghost{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px 18px;
+      border-radius:999px;
+      font-weight:800;
+      transition:.2s ease;
+    }
+
+    .btn{
+      color:#fff;
+      background:linear-gradient(135deg,#de6fb8,#9d7cff);
+      box-shadow:0 10px 22px rgba(222,111,184,.22);
+    }
+
+    .btn-ghost{
+      color:#4a3550;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(216,107,179,.14);
+    }
+
+    .btn:hover,
+    .btn-ghost:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(216,107,179,.14);
+    }
+
+    .trust-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:20px;
+      max-width:880px;
+    }
+
+    .trust-row span{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      min-height:38px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.70);
+      border:1px solid rgba(216,107,179,.13);
+      color:#62536b;
+      font-size:.86rem;
+      font-weight:650;
+      letter-spacing:.01em;
+      box-shadow:0 8px 18px rgba(216,107,179,.045);
+      backdrop-filter:blur(8px);
+    }
+
+    .trust-row span::before{
+      content:"✓";
+      color:var(--success);
+      font-weight:900;
+    }
+
+    .quicknav{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      padding:18px 24px 0;
+    }
+
+    .quicknav a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 15px;
+      border-radius:999px;
+      background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,245,251,.95));
+      border:1px solid var(--line);
+      color:#6f5d76;
+      font-size:.9rem;
+      font-weight:800;
+      transition:.2s ease;
+    }
+
+    .quicknav a:hover{
+      transform:translateY(-1px);
+      border-color:rgba(216,107,179,.28);
+      box-shadow:0 10px 24px rgba(216,107,179,.08);
+    }
+
+    .content{
+      padding:18px;
+    }
+
+    .friendly-note{
+      margin:8px 8px 18px;
+      padding:22px;
+      border-radius:24px;
+      background:linear-gradient(135deg,rgba(255,247,252,.96),rgba(247,242,255,.96));
+      border:1px solid rgba(216,107,179,.14);
+      box-shadow:0 14px 28px rgba(216,107,179,.06);
+    }
+
+    .friendly-note h2{
+      margin:0 0 10px;
+      color:#2d1f36;
+      font-size:1.3rem;
+    }
+
+    .friendly-note p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .friendly-note strong{
+      color:#4a3550;
+    }
+
+    .faq-group{
+      margin:18px 0 8px;
+      padding:0 8px;
+    }
+
+    .faq-group h2{
+      margin:0 0 12px;
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:1.65rem;
+      color:#2d1f36;
+      letter-spacing:-.02em;
+    }
+
+    details{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:22px;
+      margin:12px 0;
+      overflow:hidden;
+    }
+
+    details[open]{
+      border-color:var(--line-strong);
+      box-shadow:0 10px 26px rgba(216,107,179,.08);
+    }
+
+    summary{
+      list-style:none;
+      cursor:pointer;
+      padding:18px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      font-weight:760;
+      color:#2d1f36;
+      font-size:1.02rem;
+    }
+
+    summary::-webkit-details-marker{display:none}
+
+    .chev{
+      width:32px;
+      height:32px;
+      flex:0 0 32px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,rgba(255,244,250,.95),rgba(247,242,255,.95));
+      border:1px solid var(--line);
+      color:var(--accent);
+      font-size:1.05rem;
+      transition:transform .2s ease;
+    }
+
+    details[open] .chev{transform:rotate(45deg)}
+
+    .answer{
+      padding:0 20px 20px;
+      border-top:1px solid rgba(216,107,179,.1);
+    }
+
+    .answer p{
+      margin:14px 0 0;
+      color:var(--muted);
+      line-height:1.75;
+    }
+
+    .answer ul{
+      margin:12px 0 0 18px;
+      padding:0;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .note-card{
+      margin:22px 8px 8px;
+      padding:26px;
+      border-radius:26px;
+      text-align:center;
+      background:linear-gradient(135deg,rgba(255,247,252,.96),rgba(247,242,255,.96));
+      border:1px solid rgba(216,107,179,.14);
+    }
+
+    .note-card h2{
+      margin:0 0 10px;
+      color:#2d1f36;
+      font-family:Georgia,'Times New Roman',serif;
+      font-size:1.7rem;
+    }
+
+    .note-card p{
+      max-width:680px;
+      margin:0 auto 18px;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .footer{
+      padding:8px 22px 28px;
+      color:var(--soft);
+      font-size:.88rem;
+      text-align:center;
+    }
+
+    @media (max-width:720px){
+      .wrap{padding:20px 12px 36px}
+      .hero{padding:26px 20px 20px}
+      .brand{align-items:flex-start}
+      .brand img{width:40px;height:40px}
+      .wordmark{font-size:1.55rem}
+      .content{padding:10px}
+      .quicknav{padding:14px 14px 0;gap:8px}
+      .quicknav a{font-size:.84rem;padding:9px 13px}
+      .friendly-note{margin:6px;padding:18px;border-radius:20px}
+      .faq-group{padding:0 4px}
+      summary{padding:16px;align-items:flex-start}
+      .answer{padding:0 16px 16px}
+      .hero-actions{display:grid;grid-template-columns:1fr}
+      .btn,.btn-ghost{width:100%}
+      .trust-row span{width:100%;justify-content:center}
+      .note-card{margin:16px 6px 6px;padding:22px 18px}
+    }
   </style>
 </head>
-<body><div class="wrap"><div class="shell"><header class="hero"><div class="brand"><img src="images/poly-head.png" alt="Poly mascot icon" onerror="this.style.display='none'"><div><div class="wordmark">Oli<span>Poly</span> 3D</div><div class="tag">Creative 3D printing brought to life in Ohio</div></div></div><h1>FAQ</h1><p class="intro">Quick answers about starting a project, quotes, materials, timing, business orders, pickup, shipping, order tracking, customer files, production expectations, and what to expect from OliPoly 3D.</p><div class="hero-actions"><a class="btn" href="start-project.html">Start a Project</a><a class="btn-ghost" href="track.html">Track an Order</a><a class="btn-ghost" href="index.html">Back to Home</a></div></header>
-<nav class="quicknav" aria-label="FAQ sections"><a href="#ordering">Ordering</a><a href="#pricing">Pricing</a><a href="#production">Production</a><a href="#pickup-shipping">Pickup & Shipping</a><a href="#business">Business Work</a><a href="#general">General</a></nav>
-<main class="content"><section class="friendly-note"><h2>Custom printing should feel easy.</h2><p>You do not need perfect files or technical wording. Send the idea, photo, sketch, broken part, file, or rough description — we’ll help determine the next step. For business, prototype, or repeat work, we can also quote more formally with part numbers, PO details, and production notes.</p></section>
-<section class="faq-group" id="ordering"><h2>Ordering</h2>
-<details open><summary>How do I start a custom project?<span class="chev">+</span></summary><div class="answer"><p>Use the Start Project page. Share what you want made, how it will be used, size or quantity details, and any file, photo, sketch, drawing, or example that helps explain it.</p><p>You can start here: <a href="start-project.html">Start Your Project</a>.</p></div></details>
-<details><summary>Do I need a 3D file already?<span class="chev">+</span></summary><div class="answer"><p>No. A 3D file helps, but you can also send a photo, drawing, broken part, measurement, inspiration image, or plain description. If you provide STL, 3MF, CAD, drawing, or reference files, those files are treated as customer-supplied specifications unless separate design review is requested.</p></div></details>
-<details><summary>Can OliPoly help design something from an idea?<span class="chev">+</span></summary><div class="answer"><p>Yes, depending on the project. Some ideas need design time, measurements, test prints, or revisions. Any design work will be reflected in the quote. Final fit, use, and performance should still be confirmed by the customer.</p></div></details>
-<details><summary>Can I upload reference files or photos?<span class="chev">+</span></summary><div class="answer"><p>Yes. The Start Project page accepts helpful project details and reference uploads, including photos, sketches, STL/3MF files, screenshots, drawings, and PDFs.</p><p>Start here: <a href="start-project.html">Start Your Project</a>.</p></div></details>
-<details><summary>What happens after I approve a quote?<span class="chev">+</span></summary><div class="answer"><p>Once a quote is approved and any required deposit, payment, PO, or customer documentation is received, the project can move into scheduling and production. Accepted quotes may convert from a Q- quote number into an OP- order number for tracking.</p></div></details>
-</section>
-<section class="faq-group" id="pricing"><h2>Pricing & Quotes</h2>
-<details><summary>How are prices calculated?<span class="chev">+</span></summary><div class="answer"><p>Pricing can include material, print time, machine time, design work, post-processing, packaging, shipping, quantity, complexity, and timeline. Business or repeat orders may include quantity pricing, part references, tax-exempt handling, or PO terms.</p></div></details>
-<details><summary>How long is a quote valid?<span class="chev">+</span></summary><div class="answer"><p>Unless otherwise stated, quotes are generally valid for 30 days. Material availability, scope changes, quantity changes, rush timing, or new requirements may require an updated quote.</p></div></details>
-<details><summary>Can the price change after approval?<span class="chev">+</span></summary><div class="answer"><p>The approved price is based on the scope, quantity, files, materials, finish, and assumptions listed at the time of quoting. Changes after approval may affect price, timing, or feasibility.</p></div></details>
-<details><summary>Do custom orders require a deposit?<span class="chev">+</span></summary><div class="answer"><p>Some custom orders require a deposit before production begins, especially design-heavy, large, bulk, material-heavy, or business orders. Any deposit or payment requirement will be shown on the quote or invoice.</p></div></details>
-</section>
-<section class="faq-group" id="production"><h2>Production & Materials</h2>
-<details><summary>What materials do you print with?<span class="chev">+</span></summary><div class="answer"><p>Material options vary by project and availability. Common options may include PLA, PETG, specialty colors, and other materials when appropriate. Material choice depends on appearance, durability, temperature exposure, flexibility, and intended use.</p></div></details>
-<details><summary>Will 3D printed parts look perfectly smooth?<span class="chev">+</span></summary><div class="answer"><p>3D printed parts are layer-manufactured, so visible layer lines, small surface variation, texture differences, support marks, seam locations, and slight color/finish variation are normal unless special finishing is quoted separately.</p></div></details>
-<details><summary>How accurate are the parts?<span class="chev">+</span></summary><div class="answer"><p>Accuracy depends on geometry, material, printer settings, orientation, scale, wall thickness, and the file provided. If a tight fit or critical dimension matters, tell us before quoting so test fitting, tolerance discussion, or revisions can be planned.</p></div></details>
-<details><summary>Are customer-supplied files checked for issues?<span class="chev">+</span></summary><div class="answer"><p>Basic printability issues may be noticed during setup, but customer-supplied files are generally manufactured as provided. OliPoly 3D is not responsible for design flaws, incorrect scale, fitment issues, functional failure, or bad geometry from customer-provided files unless separate design review or redesign work is agreed to.</p></div></details>
-<details><summary>Can you guarantee a part will work for my exact use?<span class="chev">+</span></summary><div class="answer"><p>Unless specifically agreed in writing, the customer is responsible for confirming fit, function, installation, safety, and suitability for the intended use. Prototype and replacement parts may require testing or revisions.</p></div></details>
-</section>
-<section class="faq-group" id="pickup-shipping"><h2>Pickup, Delivery & Shipping</h2>
-<details><summary>Do you offer local pickup?<span class="chev">+</span></summary><div class="answer"><p>Local pickup may be available by arrangement. Pickup details are confirmed before completion or handoff.</p></div></details>
-<details><summary>Do you ship orders?<span class="chev">+</span></summary><div class="answer"><p>Shipping may be available depending on size, durability, packaging needs, and destination. Costs and timing can be included with the quote or order details. Carrier delays, weather disruptions, and carrier handling are outside of OliPoly 3D’s control once shipped.</p></div></details>
-<details><summary>How does order tracking work?<span class="chev">+</span></summary><div class="answer"><p>Accepted orders may receive an OP- order number. Enter it on the tracker to view customer-safe status, next steps, payment status, and pickup/shipping notes.</p><p>Go to: <a href="track.html">Track Order</a>.</p></div></details>
-</section>
-<section class="faq-group" id="business"><h2>Business, PO Work & Production</h2>
-<details><summary>Can you make replacement parts?<span class="chev">+</span></summary><div class="answer"><p>Often, yes. Fit, function, material, measurements, and testing needs all matter. Some replacement parts may require revisions, test fitting, or customer validation before regular use.</p></div></details>
-<details><summary>Can you help with prototypes?<span class="chev">+</span></summary><div class="answer"><p>Yes. OliPoly can help with concept models, fit checks, mockups, prototype parts, and early design iterations. Final suitability should be validated by the customer for the intended use.</p></div></details>
-<details><summary>Can you handle small production runs?<span class="chev">+</span></summary><div class="answer"><p>Yes, when the part and timeline are a good fit. Repeat runs, small batches, part numbers, revision tracking, packaging requirements, and quantity pricing can be discussed during quoting.</p></div></details>
-<details><summary>Do you support purchase orders and business invoices?<span class="chev">+</span></summary><div class="answer"><p>Yes. Business projects can use formal quotes, PO numbers, invoices, agreed payment terms, W-9 requests, tax-exempt documentation, and vendor setup support when appropriate.</p></div></details>
-<details><summary>Do you support tax-exempt customers?<span class="chev">+</span></summary><div class="answer"><p>Yes. A completed tax exemption certificate should be provided before tax is removed from a qualifying business order. OliPoly keeps the certificate on file with the customer record when applicable.</p></div></details>
-<details><summary>Can businesses reorder parts later?<span class="chev">+</span></summary><div class="answer"><p>Yes. If files, specs, and production notes are saved from the original order, repeat orders can usually be handled more efficiently. Include the prior quote, order, invoice, PO number, part number, or revision when reaching out.</p></div></details>
-<details><summary>Are parts certified for structural or safety-critical use?<span class="chev">+</span></summary><div class="answer"><p>Unless specifically stated in writing, OliPoly 3D parts are not certified for life-safety, medical, aerospace, automotive safety, pressure, high-heat, or structural load-bearing applications. Customers are responsible for validation and testing for the intended use.</p></div></details>
-</section>
-<section class="faq-group" id="general"><h2>General Questions</h2>
-<details><summary>Are 3D printed items food-safe?<span class="chev">+</span></summary><div class="answer"><p>Unless specifically stated in writing, OliPoly 3D printed items should not be assumed to be food-safe. Material, coating, cleaning, layer lines, and use conditions all matter.</p></div></details>
-<details><summary>Are prints safe for heavy loads or structural use?<span class="chev">+</span></summary><div class="answer"><p>Unless specifically agreed in writing, prints are not guaranteed for structural, load-bearing, safety-critical, or high-stress use. Customers are responsible for evaluating suitability.</p></div></details>
-<details><summary>Can you print copyrighted characters, logos, or designs?<span class="chev">+</span></summary><div class="answer"><p>Customers are responsible for having the right to use submitted designs, logos, artwork, models, or requested content. OliPoly may decline projects with ownership or IP concerns.</p></div></details>
-<details><summary>Where can I read the full terms and policies?<span class="chev">+</span></summary><div class="answer"><p>You can review the full terms, privacy policy, refund language, payment details, and custom-order notes on the <a href="legal.html">Legal page</a>.</p></div></details>
-</section>
-<section class="note-card"><h2>Still unsure?</h2><p>Send the idea anyway. We can help figure out whether it is best treated as a simple custom print, a design project, a prototype, a repeat order, or a business/PO quote.</p><a class="btn" href="start-project.html">Start a Project</a></section></main><div class="footer">© OliPoly 3D · FAQ for custom printing, business orders, and project expectations</div></div></div></body></html>
+
+<body>
+<div class="wrap">
+  <div class="shell">
+
+    <header class="hero">
+      <div class="brand">
+        <img src="images/poly-head.png" alt="Poly mascot icon" onerror="this.style.display='none'">
+        <div>
+          <div class="wordmark">Oli<span>Poly</span> 3D</div>
+          <div class="tag">Creative 3D printing brought to life in Ohio</div>
+        </div>
+      </div>
+
+      <h1>FAQ</h1>
+
+      <p class="intro">
+        Quick answers about starting a project, quotes, materials, timing, customer files, pickup, shipping, order tracking, business work, production expectations, and what to expect from OliPoly 3D.
+      </p>
+
+      <div class="trust-row" aria-label="OliPoly project support highlights">
+        <span>PO-friendly workflows</span>
+        <span>Customer file uploads</span>
+        <span>Repeat production support</span>
+        <span>Custom & business projects welcome</span>
+      </div>
+
+      <div class="hero-actions">
+        <a class="btn" href="start-project.html">Start a Project</a>
+        <a class="btn-ghost" href="track.html">Track an Order</a>
+        <a class="btn-ghost" href="index.html">Back to Home</a>
+      </div>
+    </header>
+
+    <nav class="quicknav" aria-label="FAQ sections">
+      <a href="#ordering">Ordering</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#production">Production</a>
+      <a href="#pickup-shipping">Pickup & Shipping</a>
+      <a href="#business">Business & Production</a>
+      <a href="#general">General</a>
+    </nav>
+
+    <main class="content">
+
+      <section class="friendly-note">
+        <h2>Custom printing should feel easy.</h2>
+        <p>
+          You do not need perfect files or technical wording to start. Send the idea, photo, sketch, broken part, file, or rough description — we’ll help determine the next step. For business, prototype, or repeat work, OliPoly can also quote more formally with part numbers, PO details, and production notes.
+        </p>
+      </section>
+
+      <section class="faq-group" id="ordering">
+        <h2>Ordering</h2>
+
+        <details open>
+          <summary>How do I start a custom project?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Use the Start Project page. Share what you want made, how it will be used, size or quantity details, and any file, photo, sketch, drawing, or example that helps explain it.
+            </p>
+            <p>You can start here: <a href="start-project.html">Start Your Project</a>.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Do I need a 3D file already?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              No. A 3D file helps, but you can also send a photo, drawing, broken part, measurement, inspiration image, or plain description. STL, 3MF, CAD, drawing, or reference files may be used as the starting point for the quote and build plan.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can OliPoly help design something from an idea?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes, depending on the project. Some ideas need design time, measurements, test prints, or revisions. Any design work will be reflected in the quote, and fit or use requirements should be shared before approval whenever possible.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can I upload reference files or photos?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes. The Start Project page accepts helpful project details and reference uploads, including photos, sketches, STL/3MF files, screenshots, drawings, and PDFs.
+            </p>
+            <p>Start here: <a href="start-project.html">Start Your Project</a>.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>What happens after I approve a quote?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Once a quote is approved and any required payment, PO, tax-exempt documentation, or customer confirmation is received, the project can move into scheduling and production. Accepted quotes may convert from a Q- quote number into an OP- order number for tracking.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <section class="faq-group" id="pricing">
+        <h2>Pricing & Quotes</h2>
+
+        <details>
+          <summary>How are prices calculated?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Pricing can include material, print time, machine time, design work, post-processing, packaging, shipping, quantity, complexity, and timeline. Business or repeat orders may also include quantity pricing, part references, tax-exempt handling, or PO details.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>How long is a quote valid?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Unless otherwise stated, quotes are generally valid for 30 days. Material availability, scope changes, quantity changes, rush timing, or new requirements may require an updated quote.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can the price change after approval?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              The approved price is based on the scope, quantity, files, materials, finish, and assumptions listed at the time of quoting. Changes after approval may affect price, timing, or feasibility.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>When is payment due?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Most projects are due upon completion unless otherwise agreed. Some custom, material-heavy, design-heavy, bulk, or business orders may require payment, a deposit, or PO approval before production begins. Any payment requirement will be shown on the quote or invoice.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Are custom orders returnable?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Custom-manufactured items are generally non-returnable. Returns, refunds, replacements, or adjustments are handled at the discretion of OliPoly 3D based on the situation, project details, and whether there is a confirmed production issue.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <section class="faq-group" id="production">
+        <h2>Production & Materials</h2>
+
+        <details>
+          <summary>What materials do you print with?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Material options vary by project and availability. Common options may include PLA, PETG, specialty colors, and other materials when appropriate. Material choice depends on appearance, durability, temperature exposure, flexibility, and intended use.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Will 3D printed parts look perfectly smooth?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              3D printed parts are layer-manufactured, so visible layer lines, small surface variation, texture differences, support marks, seam locations, and slight color or finish variation are normal unless special finishing is quoted separately.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>How accurate are the parts?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Accuracy depends on geometry, material, printer settings, orientation, scale, wall thickness, and the file provided. If a tight fit or critical dimension matters, please mention it before quoting so tolerance discussion, test fitting, or revisions can be planned.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Are customer-supplied files checked for issues?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Basic printability issues may be noticed during setup, but customer-supplied files are generally treated as the customer’s approved starting point. OliPoly 3D is not responsible for design flaws, incorrect scale, fitment issues, functional failure, or bad geometry from customer-provided files unless separate design review or redesign work is agreed to.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can you guarantee a part will work for my exact use?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              3D printing can be excellent for prototypes, replacement parts, fixtures, creative items, and small-batch work, but final fit, function, installation, safety, and suitability for the intended use should be confirmed by the customer.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <section class="faq-group" id="pickup-shipping">
+        <h2>Pickup, Delivery & Shipping</h2>
+
+        <details>
+          <summary>Do you offer local pickup?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Local pickup may be available by arrangement. Pickup details are confirmed before completion or handoff.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Do you ship orders?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Shipping may be available depending on size, durability, packaging needs, and destination. Costs and timing can be included with the quote or order details. Carrier delays, weather disruptions, and carrier handling are outside of OliPoly 3D’s control once shipped.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>How does order tracking work?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Accepted orders may receive an OP- order number. Enter it on the tracker to view customer-safe status, next steps, payment status, and pickup/shipping notes.
+            </p>
+            <p>Go to: <a href="track.html">Track Order</a>.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="faq-group" id="business">
+        <h2>Business, PO Work & Production</h2>
+
+        <details>
+          <summary>Can you make replacement parts?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Often, yes. Fit, function, material, measurements, and testing needs all matter. Some replacement parts may require revisions, test fitting, or customer validation before regular use.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can you help with prototypes?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes. OliPoly can help with concept models, fit checks, mockups, prototype parts, and early design iterations. Prototype work is especially useful when a part needs testing before a final version or repeat run.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can you handle small production runs?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes, when the part and timeline are a good fit. Repeat runs, small batches, part numbers, revision tracking, packaging requirements, and quantity pricing can be discussed during quoting.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Do you support purchase orders and business invoices?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes. Business projects can use formal quotes, PO numbers, invoices, agreed payment terms, W-9 requests, tax-exempt documentation, and vendor setup support when appropriate.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Do you support tax-exempt customers?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes. A completed tax exemption certificate should be provided before tax is removed from a qualifying order. OliPoly can keep the certificate on file with the customer record when applicable.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can businesses reorder parts later?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Yes. If files, specs, and production notes are saved from the original order, repeat orders can usually be handled more efficiently. Include the prior quote, order, invoice, PO number, part number, or revision when reaching out. Future reorder tools may also support simplified repeat-order requests.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Are parts certified for structural or safety-critical use?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Unless specifically stated in writing, OliPoly 3D parts are not certified for life-safety, medical, aerospace, automotive safety, pressure, high-heat, or structural load-bearing applications. Customers are responsible for validation and testing for the intended use.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>What projects might not be a good fit?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Some projects may not be a good fit for OliPoly 3D, including work that requires certified engineering, regulated safety approval, extremely tight machining-level tolerances, hazardous use, restricted items, or production volumes beyond current capacity. When a project is not a good fit, we’ll try to be upfront about it.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <section class="faq-group" id="general">
+        <h2>General Questions</h2>
+
+        <details>
+          <summary>Are 3D printed items food-safe?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Unless specifically stated in writing, OliPoly 3D printed items should not be assumed to be food-safe. Material, coating, cleaning, layer lines, and use conditions all matter.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Are prints safe for heavy loads or structural use?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Unless specifically agreed in writing, prints are not guaranteed for structural, load-bearing, safety-critical, or high-stress use. Customers are responsible for evaluating suitability.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Can you print copyrighted characters, logos, or designs?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              Customers are responsible for having the right to use submitted designs, logos, artwork, models, or requested content. OliPoly may decline projects with ownership or IP concerns.
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Where can I read the full terms and policies?<span class="chev">+</span></summary>
+          <div class="answer">
+            <p>
+              You can review the full terms, privacy policy, refund language, payment details, and custom-order notes on the <a href="legal.html">Legal page</a>.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <section class="note-card">
+        <h2>Still unsure?</h2>
+        <p>
+          Send the idea anyway. We can help figure out whether it is best treated as a simple custom print, a design project, a prototype, a repeat order, or a business/PO quote.
+        </p>
+        <a class="btn" href="start-project.html">Start a Project</a>
+      </section>
+
+    </main>
+
+    <div class="footer">
+      © OliPoly 3D · FAQ for custom printing, business orders, and project expectations
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
