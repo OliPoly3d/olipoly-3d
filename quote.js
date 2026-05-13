@@ -5245,3 +5245,159 @@ https://olipoly3d.com`;
   setTimeout(bind, 500);
   setTimeout(bind, 1500);
 })();
+
+/* === OliPoly Commercial Terms + Manufacturing Protection Layer V1 ===
+   Adds clear, friendly quote/PDF protection language without making retail quotes feel corporate.
+   Safe to paste at the end of quote.js.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function val(id){ return ($(id)?.value || "").trim(); }
+  function text(el){ return (el?.innerText || el?.textContent || "").replace(/\s+/g," ").trim(); }
+  function quoteType(){ return val("liteQuoteType") || document.body.dataset.liteQuoteType || "retail"; }
+  function isProfessional(){
+    const type = quoteType();
+    return ["business","business_bulk","po"].includes(type) || val("professionalMode") === "on" || !!val("poNumber") || val("paymentTerms") === "customer_terms";
+  }
+  function isCraft(){ return quoteType() === "craft"; }
+
+  function shouldReplaceField(el){
+    if (!el) return false;
+    const raw = (el.value || "").trim();
+    const auto = el.dataset?.liteAutoFilled === "true" || el.dataset?.olipolyTermsAuto === "true";
+    if (!raw || auto) return true;
+    return /final color|final output|standard print preparation|quote is based on|bulk pricing is based|prepared for business purchasing/i.test(raw);
+  }
+
+  function setAuto(id, value){
+    const el = $(id);
+    if (!el || !shouldReplaceField(el)) return;
+    el.value = value;
+    el.dataset.olipolyTermsAuto = "true";
+    el.dispatchEvent(new Event("input", { bubbles:true }));
+    el.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  function manufacturingNotes(){
+    if (isCraft()) {
+      return "Pre-made/event inventory may vary slightly in color, finish, and availability. Pickup, event purchase, or shipping details are confirmed separately.";
+    }
+    if (isProfessional()) {
+      return "Quote is based on the listed scope, quantity, materials, files, and production assumptions. 3D printed parts may show normal layer lines, surface variation, and minor dimensional variance depending on material, geometry, orientation, and print process. Customer-supplied STL/CAD/3MF files are assumed approved for manufacturing unless design review is requested separately. Customer is responsible for confirming fit, function, intended use, and any required testing. Scope, file, quantity, material, finish, tolerance, or delivery changes after approval may require updated pricing and lead time.";
+    }
+    return "Quote is based on the details shared so far. Custom 3D printed items may vary slightly in color, finish, layer appearance, and final fit depending on material, geometry, and print process. Customer is responsible for confirming the item is suitable for the intended use. Design changes after approval may affect price or timing.";
+  }
+
+  function customerFacingNotes(){
+    if (isCraft()) {
+      return "Includes the available or planned pre-made item(s) described. Inventory and pickup/shipping details can be confirmed separately.";
+    }
+    if (isProfessional()) {
+      return "Prepared for business purchasing review. Please confirm any PO requirements, delivery instructions, tax-exempt documentation, part numbers, packaging requirements, and vendor setup needs before approval.";
+    }
+    return "Includes the custom printed item(s) described, standard print preparation, and normal finishing unless otherwise noted. Please review color, size, quantity, and intended use before approval.";
+  }
+
+  function commercialTermsHtml(){
+    const professional = isProfessional();
+    const quoteNo = val("quoteNumber") || "Q-######";
+    const orderNo = quoteNo.replace(/^Q-/i,"OP-");
+    const base = [
+      "Quote valid for 30 days unless otherwise stated.",
+      "Lead times are estimates and begin after approval and any required deposit, payment, PO, or customer documentation is received.",
+      "Customer-supplied files/specifications are manufactured as provided unless design review is separately requested.",
+      "3D printed parts may show normal layer lines, finish variation, and minor dimensional variance.",
+      "Changes after approval may require updated pricing, lead time, or production review.",
+      "Custom-manufactured items are generally non-returnable once production has started.",
+      "Customer is responsible for verifying fit, function, installation, and suitability for intended use."
+    ];
+    if (professional) base.push("Unless otherwise agreed in writing, parts are not certified for safety-critical, medical, aerospace, automotive safety, or structural load-bearing applications.");
+    return `<strong>Commercial Terms</strong><br>${base.map(item => `• ${item}`).join("<br>")}<br><br><strong>Tracking</strong><br>After acceptance, this quote may convert from <strong>${quoteNo}</strong> to order number <strong>${orderNo || "OP-######"}</strong> for status tracking.`;
+  }
+
+  function invoiceTermsHtml(){
+    const terms = val("paymentTerms");
+    const intro = terms === "customer_terms"
+      ? "Payment will follow approved customer PO/vendor terms unless otherwise agreed in writing."
+      : "Payment is due according to the payment terms shown on this document.";
+    return `<strong>Invoice Terms</strong><br>${intro}<br>Custom-manufactured items are generally non-returnable once production has started. Any order issue should be reported promptly for review.`;
+  }
+
+  function intendedUseHtml(){
+    return `<strong>Manufacturing & Intended Use Notes</strong><br>${manufacturingNotes()}`;
+  }
+
+  function enhanceEditableDefaults(){
+    setAuto("assumptions", manufacturingNotes());
+    setAuto("customerNotes", customerFacingNotes());
+    if (isProfessional()) {
+      setAuto("invoiceNotes", "Please reference the invoice number, quote number, and PO number when applicable. Shipping, receiving, labeling, tax exemption, and vendor setup requirements should be confirmed before fulfillment.");
+    }
+  }
+
+  function applyPdfTerms(){
+    const assumptions = $("pdfAssumptions");
+    const customer = $("pdfCustomerNotes");
+    const quoteTerms = $("pdfQuoteTerms");
+    const invoiceTerms = $("pdfInvoiceTerms");
+    const poPanel = $("pdfProfessionalPoInstructions");
+
+    if (assumptions) {
+      assumptions.innerHTML = intendedUseHtml();
+      assumptions.classList.remove("hidden","pdf-empty","force-hide");
+    }
+
+    if (customer && !/specific customer note|customer supplied/i.test(text(customer))) {
+      customer.innerHTML = `<strong>Quote Notes</strong><br>${customerFacingNotes()}`;
+      customer.classList.remove("hidden","pdf-empty","force-hide");
+    }
+
+    if (quoteTerms) {
+      quoteTerms.innerHTML = commercialTermsHtml();
+      quoteTerms.classList.remove("hidden","pdf-empty","force-hide");
+    }
+
+    if (invoiceTerms && !invoiceTerms.classList.contains("hidden")) {
+      invoiceTerms.innerHTML = invoiceTermsHtml();
+      invoiceTerms.classList.remove("pdf-empty","force-hide");
+    }
+
+    if (poPanel && isProfessional()) {
+      poPanel.classList.remove("hidden","pdf-empty","force-hide");
+    }
+  }
+
+  function runEnhancedTerms(){
+    enhanceEditableDefaults();
+    applyPdfTerms();
+  }
+
+  function bind(){
+    ["liteQuoteType","professionalMode","paymentTerms","poNumber","quoteNumber"].forEach(id => {
+      const el = $(id);
+      if (el && el.dataset.olipolyTermsBound !== "true") {
+        el.dataset.olipolyTermsBound = "true";
+        el.addEventListener("change", () => setTimeout(runEnhancedTerms, 80));
+        el.addEventListener("input", () => setTimeout(runEnhancedTerms, 120));
+      }
+    });
+
+    ["customerPdfBtn","invoicePdfBtn","printBtn"].forEach(id => {
+      const btn = $(id);
+      if (btn && btn.dataset.olipolyTermsPdfBound !== "true") {
+        btn.dataset.olipolyTermsPdfBound = "true";
+        btn.addEventListener("click", () => {
+          [50,150,350,700,1100].forEach(ms => setTimeout(applyPdfTerms, ms));
+        }, { capture:true });
+      }
+    });
+
+    window.addEventListener("beforeprint", applyPdfTerms);
+    setTimeout(runEnhancedTerms, 300);
+    setTimeout(runEnhancedTerms, 1000);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+})();
