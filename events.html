@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Events & Pop-Ups | OliPoly 3D</title>
+  <meta name="description" content="Find OliPoly 3D at local Ohio markets, craft shows, pop-ups, and community events." />
+  <meta name="theme-color" content="#fff7fb" />
+
+  <meta property="og:title" content="Events & Pop-Ups | OliPoly 3D" />
+  <meta property="og:description" content="See where OliPoly 3D will be popping up next with custom 3D printed gifts, creative builds, and local maker pieces." />
+  <meta property="og:image" content="https://olipoly3d.com/images/logo-preview.png" />
+  <meta property="og:url" content="https://olipoly3d.com/events.html" />
+  <meta property="og:type" content="website" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Events & Pop-Ups | OliPoly 3D" />
+  <meta name="twitter:description" content="See where OliPoly 3D will be popping up next with custom 3D printed gifts, creative builds, and local maker pieces." />
+  <meta name="twitter:image" content="https://olipoly3d.com/images/logo-preview.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root{
+      --ink:#25182d;
+      --muted:#74617d;
+      --pink:#e84fb7;
+      --purple:#9d6df3;
+      --line:rgba(101,60,120,.15);
+      --shadow:0 28px 80px rgba(95,36,112,.18);
+      --max:1120px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:90px}
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 14% -4%,rgba(255,142,213,.34),transparent 32rem),
+        radial-gradient(circle at 93% 3%,rgba(162,113,255,.24),transparent 31rem),
+        linear-gradient(180deg,#fff5fc 0%,#fff 46%,#fff8fd 100%);
+      overflow-x:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);
+      background-size:56px 56px;
+      mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%);
+    }
+
+    img{max-width:100%;display:block}
+    a{color:inherit;text-decoration:none}
+    button{font-family:inherit}
+
+    .site-header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:rgba(255,250,254,.84);
+      backdrop-filter:blur(18px);
+      border-bottom:1px solid var(--line);
+    }
+
+    .nav{
+      width:min(var(--max),calc(100% - 32px));
+      margin:0 auto;
+      min-height:74px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:22px;
+      position:relative;
+    }
+
+    .brand{display:flex;align-items:center;gap:12px;min-width:0}
+    .brand-text{min-width:0;display:block}
+    .brand-mark{
+      width:48px;height:48px;border-radius:16px;
+      background:linear-gradient(135deg,#fff,#ffe1f6);
+      box-shadow:0 10px 30px rgba(219,74,176,.22);
+      display:grid;place-items:center;overflow:hidden;flex:0 0 auto;
+    }
+    .brand-mark img{width:46px;height:46px;object-fit:contain;transform:translateY(3px)}
+    .brand-name{
+      display:block;
+      font-family:"Playfair Display",serif;
+      font-size:clamp(1.5rem,3.6vw,2.15rem);
+      line-height:.9;
+      letter-spacing:-.04em;
+      white-space:nowrap;
+    }
+    .brand-name span{color:var(--pink)}
+    .brand-sub{
+      display:block;margin-top:5px;color:var(--muted);
+      font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
+    }
+    .mobile-short-sub{display:none}
+
+    .nav-links{
+      display:flex;align-items:center;gap:18px;color:#604966;
+      font-family:"Playfair Display",serif;font-weight:700;font-size:1rem;
+    }
+    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease}
+    .nav-links a:hover{opacity:1;transform:translateY(-1px)}
+
+    .nav-cta,.button-primary,.button-secondary{
+      border:0;border-radius:999px;cursor:pointer;font-weight:900;letter-spacing:-.01em;
+      display:inline-flex;align-items:center;justify-content:center;gap:9px;
+      transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+    }
+    .nav-cta,.button-primary{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 16px 40px rgba(214,73,186,.28)}
+    .nav-cta{padding:13px 18px;white-space:nowrap}
+    .button-primary,.button-secondary{padding:15px 22px}
+    .button-secondary{background:rgba(255,255,255,.78);color:#5f456a;border:1px solid rgba(104,59,123,.15);box-shadow:0 14px 34px rgba(54,24,66,.08)}
+    .nav-cta:hover,.button-primary:hover,.button-secondary:hover{transform:translateY(-2px)}
+    .mobile-menu-button{display:none;border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:14px;padding:10px 12px;color:var(--ink);font-weight:900;cursor:pointer}
+
+    .hero{
+      width:min(1220px,calc(100% - 32px));
+      margin:28px auto 0;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(280px,.78fr);
+      gap:clamp(26px,5vw,62px);
+      align-items:center;
+      padding:clamp(28px,5vw,58px);
+      border:1px solid rgba(255,255,255,.75);
+      border-radius:clamp(30px,4vw,54px);
+      background:
+        radial-gradient(circle at 88% 10%,rgba(255,118,206,.22),transparent 22rem),
+        radial-gradient(circle at 50% 85%,rgba(161,111,255,.16),transparent 30rem),
+        linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.72));
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);color:#a93f8a;font-weight:900;font-size:.77rem;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(142,69,150,.1)}
+    h1{margin:22px 0 18px;font-family:"Playfair Display",serif;font-size:clamp(3rem,8vw,6.1rem);line-height:.88;letter-spacing:-.075em;max-width:760px}
+    .gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .hero-copy{max-width:620px;color:#6f5c78;font-size:clamp(1.02rem,1.7vw,1.16rem);line-height:1.64;margin:0 0 26px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+
+    .hero-card{border-radius:38px;overflow:hidden;background:#fff;box-shadow:0 30px 90px rgba(83,41,97,.18);border:8px solid rgba(255,255,255,.8)}
+    .hero-card img{width:100%;aspect-ratio:4/4.6;object-fit:cover;object-position:center}
+
+    .section{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:70px 0}
+    .section-kicker{color:#a03c87;font-weight:900;letter-spacing:.1em;text-transform:uppercase;font-size:.77rem;margin-bottom:12px}
+    .section-title{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.4rem);line-height:.95;letter-spacing:-.055em}
+    .section-intro{margin:16px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.65;max-width:720px}
+
+    .event-feature{
+      margin-top:34px;
+      display:grid;
+      grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);
+      gap:24px;
+      align-items:stretch;
+    }
+
+    .event-main,.event-side,.info-card{
+      border-radius:34px;
+      background:rgba(255,255,255,.78);
+      border:1px solid rgba(255,255,255,.82);
+      box-shadow:0 24px 70px rgba(84,38,94,.14);
+    }
+
+    .event-main{padding:clamp(24px,4vw,38px)}
+    .event-main h3,.event-side h3,.info-card h3{margin:0 0 10px;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.6vw,2.65rem);line-height:1;letter-spacing:-.045em}
+    .event-main p,.event-side p,.info-card p{margin:0;color:#6f5c78;line-height:1.6}
+    .event-note{margin-top:20px;padding:16px 18px;border-radius:22px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.12);font-weight:850;color:#604966;line-height:1.5}
+    .event-side{overflow:hidden;display:grid;grid-template-rows:1fr auto}
+    .event-side img{width:100%;height:100%;min-height:260px;object-fit:cover}
+    .event-side div{padding:22px}
+
+    .info-grid{margin-top:26px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+    .info-card{padding:24px}
+    .info-card h3{font-size:1.65rem}
+    .tag-row{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+    .tag-row span{display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border-radius:999px;background:rgba(244,220,255,.64);color:#6f4b7e;font-size:.78rem;font-weight:900}
+
+    .cta-band{width:min(var(--max),calc(100% - 32px));margin:18px auto 78px;padding:clamp(34px,6vw,66px);border-radius:44px;background:radial-gradient(circle at 90% 15%,rgba(99,215,255,.32),transparent 24rem),linear-gradient(135deg,#2d1837,#6c2b82 52%,#e84fb7);color:white;box-shadow:0 32px 90px rgba(90,36,112,.28);display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,260px);gap:clamp(28px,5vw,58px);align-items:center}
+    .cta-band h2{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2.35rem,5.2vw,4.7rem);line-height:.92;letter-spacing:-.06em;max-width:760px}
+    .cta-band p{margin:0;color:rgba(255,255,255,.84);font-size:1.06rem;line-height:1.62;max-width:680px}
+    .cta-band .button-secondary{background:white;color:#5d2670;min-height:54px;width:100%;text-align:center}
+
+    footer{border-top:1px solid var(--line);background:rgba(255,255,255,.58)}
+    .footer-inner{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:36px 0;display:grid;grid-template-columns:1.15fr .85fr;gap:26px;color:#765f80;font-size:.92rem}
+    .footer-brand h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:#25182d}
+    .footer-brand p{margin:0;color:#765f80;line-height:1.6;max-width:520px}
+    .footer-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .footer-links h4{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:#9b7ca6}
+    .footer-links a{display:block;margin-bottom:8px;font-weight:900;color:#6e4a80}
+    .copyright{grid-column:1/-1;border-top:1px solid rgba(101,60,120,.11);padding-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+    @media(max-width:920px){
+      .nav-links{display:none}
+      .mobile-menu-button{display:inline-flex}
+      .nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:82px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}
+      .nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}
+      .hero,.event-feature,.cta-band{grid-template-columns:1fr}
+      .info-grid{grid-template-columns:1fr}
+      .footer-inner{grid-template-columns:1fr}
+    }
+
+    @media(max-width:720px){
+      .nav{width:min(100% - 20px,var(--max));min-height:64px;gap:8px}
+      .brand{gap:8px;min-width:0;flex:1}
+      .brand-mark{width:42px;height:42px;border-radius:14px}
+      .brand-mark img{width:40px;height:40px}
+      .brand-name{font-size:1.68rem}
+      .brand-sub-full{display:none}
+      .mobile-short-sub{display:block;max-width:calc(100vw - 150px);overflow:hidden;text-overflow:ellipsis;font-size:.58rem;letter-spacing:.065em;margin-top:4px}
+      .nav-cta{display:none}
+      .mobile-menu-button{padding:9px 13px;font-size:.86rem}
+      .hero{width:min(100% - 20px,1220px);margin:16px auto 0;padding:25px 18px 22px;border-radius:32px;gap:20px}
+      h1{font-size:clamp(3rem,18vw,4.65rem);line-height:.88;margin:18px 0 14px;letter-spacing:-.07em}
+      .hero-copy,.section-intro{font-size:.96rem;line-height:1.55}
+      .section{width:min(100% - 24px,var(--max));padding:48px 0}
+      .section-title{font-size:clamp(2.1rem,13vw,3.25rem)}
+      .event-feature{margin-top:24px;gap:16px}
+      .event-main,.event-side,.info-card{border-radius:28px}
+      .event-main,.info-card{padding:20px}
+      .event-side div{padding:18px}
+      .cta-band{width:min(100% - 24px,var(--max));margin:8px auto 52px;padding:28px 20px;border-radius:32px;gap:20px}
+      .cta-band h2{font-size:clamp(2.1rem,12vw,3rem)}
+      .cta-band p{font-size:.96rem;line-height:1.5}
+      .footer-inner{width:min(100% - 24px,var(--max));padding:28px 0;gap:20px}
+      .footer-links{grid-template-columns:1fr 1fr;gap:12px}
+      .copyright{font-size:.78rem}
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="nav" id="nav">
+      <a class="brand" href="index.html" aria-label="OliPoly 3D home">
+        <span class="brand-mark"><img src="images/poly-head.png" alt="Poly mascot" /></span>
+        <span class="brand-text">
+          <span class="brand-name">Oli<span>Poly</span> 3D</span>
+          <span class="brand-sub brand-sub-full">Custom printing • Creative builds • Prototypes</span>
+          <span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
+        </span>
+      </a>
+
+      <div class="nav-links" id="navLinks">
+        <a href="index.html#work">Work</a>
+        <a href="index.html#capabilities">Capabilities</a>
+        <a href="index.html#process">Process</a>
+        <a href="index.html#studio">Studio</a>
+        <a href="faq.html">FAQ</a>
+        <a href="track.html">Track Order</a>
+      </div>
+
+      <a class="nav-cta" href="start-project.html">Start Your Project</a>
+      <button class="mobile-menu-button" type="button" aria-label="Open menu" onclick="toggleMenu()">Menu</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="events-title">
+      <div>
+        <div class="eyebrow">Events & local pop-ups</div>
+        <h1 id="events-title">Catch the creative <span class="gradient-word">buzz</span> in person.</h1>
+        <p class="hero-copy">OliPoly occasionally pops up at local markets, craft shows, and community events with finished pieces, gift ideas, small-batch prints, and a peek at what custom 3D printing can become.</p>
+        <div class="hero-actions">
+          <a class="button-primary" href="start-project.html">Request a Custom Project</a>
+          <a class="button-secondary" href="mailto:OliPoly3D@gmail.com">Ask About Events</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <img src="images/poly_livingroom.png" alt="Poly the bee 3D print in a flower display" />
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Where to find OliPoly</div>
+      <h2 class="section-title">Upcoming local dates.</h2>
+      <p class="section-intro">Confirmed shows, markets, and pop-ups can be posted here as they are scheduled, so the homepage can stay clean while this page carries the event details.</p>
+
+      <div class="event-feature">
+        <div class="event-main">
+          <h3>Upcoming events will be posted here.</h3>
+          <p>When a new market or craft show is confirmed, this section can show the date, time, location, booth notes, payment options, and what kinds of pieces OliPoly plans to bring.</p>
+          <div class="event-note">For now, the best next step is to follow OliPoly updates or reach out directly if you want to ask about a local event, custom order, or in-person pickup.</div>
+          <div class="tag-row" aria-label="Event highlights">
+            <span>Local Ohio maker</span>
+            <span>Custom gift ideas</span>
+            <span>Finished pieces</span>
+            <span>Easy digital payments</span>
+          </div>
+        </div>
+        <div class="event-side">
+          <img src="images/custom-company-logo-coasters.png" alt="Custom printed logo coasters displayed as finished work" />
+          <div>
+            <h3>What to expect</h3>
+            <p>A mix of creative prints, giftable pieces, branded examples, and simple ways to start a custom request after the event.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Event-friendly work</div>
+      <h2 class="section-title">Great for gifts, booths, teams, and small batches.</h2>
+      <p class="section-intro">Events are a simple way to see the finish, scale, texture, and personality of printed pieces before starting something custom.</p>
+      <div class="info-grid">
+        <article class="info-card">
+          <h3>Ready-to-gift pieces</h3>
+          <p>Seasonal decor, playful display pieces, keepsakes, and conversation starters that show the creative side of 3D printing.</p>
+        </article>
+        <article class="info-card">
+          <h3>Custom request ideas</h3>
+          <p>Bring a rough idea, photo, broken part, sketch, or inspiration and OliPoly can help turn it into a quote-ready request.</p>
+        </article>
+        <article class="info-card">
+          <h3>Business-friendly examples</h3>
+          <p>Logo pieces, branded gifts, batch parts, and prototype examples help show what is possible for teams and local businesses.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div>
+        <h2>Planning a local event?</h2>
+        <p>If you are organizing a market, craft show, school event, or community pop-up, reach out to see whether OliPoly could be a good fit.</p>
+      </div>
+      <a class="button-secondary" href="mailto:OliPoly3D@gmail.com">Email OliPoly</a>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h3>OliPoly 3D</h3>
+        <p>Custom 3D printing, creative builds, prototypes, branded pieces, personalized gifts, and small-batch parts made in Ohio.</p>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Explore</h4>
+          <a href="index.html#work">Featured Work</a>
+          <a href="index.html#capabilities">Capabilities</a>
+          <a href="index.html#process">Project Stories</a>
+          <a href="index.html#studio">Inside the Studio</a>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <a href="start-project.html">Start Project</a>
+          <a href="track.html">Track Order</a>
+          <a href="faq.html">FAQ</a>
+          <a href="legal.html">Legal & Policies</a>
+          <a href="mailto:OliPoly3D@gmail.com">Email OliPoly</a>
+        </div>
+      </div>
+      <div class="copyright">
+        <span>© <span id="year"></span> OliPoly 3D LLC • Ohio</span>
+        <span>Custom printing • Creative builds • Prototypes</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMenu(){
+      document.getElementById('nav').classList.toggle('open');
+    }
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    document.querySelectorAll('.nav-links a').forEach((link)=>{
+      link.addEventListener('click',()=>document.getElementById('nav').classList.remove('open'));
+    });
+  </script>
+</body>
+</html>
