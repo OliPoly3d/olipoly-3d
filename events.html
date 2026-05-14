@@ -177,7 +177,7 @@
     .event-main{padding:clamp(24px,4vw,38px)}
     .event-main h3,.event-side h3,.info-card h3{margin:0 0 10px;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.6vw,2.65rem);line-height:1;letter-spacing:-.045em}
     .event-main p,.event-side p,.info-card p{margin:0;color:#6f5c78;line-height:1.6}
-    .event-note{margin-top:20px;padding:16px 18px;border-radius:22px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.12);font-weight:850;color:#604966;line-height:1.5}
+    .event-note{margin-top:20px;padding:16px 18px;border-radius:22px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.12);font-weight:650;color:#604966;line-height:1.58;font-size:.96rem}
     .event-side{overflow:hidden;display:grid;grid-template-rows:1fr auto}
     .event-side img{width:100%;height:100%;min-height:260px;object-fit:cover}
     .event-side div{padding:22px}
@@ -190,13 +190,15 @@
     .no-events p{margin:0;color:#6f5c78;line-height:1.6}
     body.no-upcoming-events .no-events{display:block}
     body.no-upcoming-events .js-event{display:none}
-    .table-collage{min-height:430px;padding:14px;background:radial-gradient(circle at 80% 8%,rgba(255,127,207,.22),transparent 16rem),linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.86));display:grid;grid-template-columns:1.04fr .96fr;grid-template-rows:1.05fr .95fr;gap:10px}
-    .table-shot{border-radius:22px;overflow:hidden;box-shadow:0 16px 34px rgba(54,24,66,.12);background:white;position:relative}
+    .table-collage{min-height:520px;padding:14px;background:radial-gradient(circle at 82% 10%,rgba(255,127,207,.22),transparent 16rem),linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.86));display:grid;grid-template-columns:1.15fr .85fr;grid-template-rows:1fr 1fr;gap:12px}
+    .table-shot{border-radius:24px;overflow:hidden;box-shadow:0 16px 34px rgba(54,24,66,.12);background:white;position:relative;border:6px solid rgba(255,255,255,.72)}
     .table-shot img{width:100%;height:100%;min-height:0;object-fit:cover}
     .table-shot.large{grid-row:1 / span 2}
     .table-shot.poly-shot{grid-column:2;grid-row:1}
     .table-shot.dragon-shot{grid-column:2;grid-row:2}
-    .table-shot .shot-label{position:absolute;left:10px;right:10px;bottom:10px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(232,79,183,.14);font-size:.72rem;font-weight:800;color:#6a4a75;text-align:center;backdrop-filter:blur(10px)}
+    .table-shot.wide-shot{grid-column:1 / -1;min-height:230px}
+    .table-shot .shot-label{position:absolute;left:12px;right:12px;bottom:12px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.9);border:1px solid rgba(232,79,183,.14);font-size:.72rem;font-weight:750;color:#6a4a75;text-align:center;backdrop-filter:blur(10px)}
+    .event-side .table-preview-copy{padding:24px 26px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,247,253,.86));border-top:1px solid rgba(232,79,183,.1)}
 
     .info-grid{margin-top:26px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
     .info-card{padding:24px}
@@ -250,13 +252,14 @@
       .event-meta{grid-template-columns:1fr;gap:9px}
       .event-meta span{padding:12px 13px;border-radius:18px}
       .event-card-actions{display:grid;grid-template-columns:1fr;gap:10px}
-      .table-collage{min-height:420px;grid-template-columns:1fr 1fr;grid-template-rows:1.15fr .85fr .85fr;gap:8px;padding:10px}
-      .table-shot{border-radius:18px}
-      .table-shot.large{grid-row:1;grid-column:1 / -1;min-height:175px}
+      .table-collage{min-height:0;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto;gap:8px;padding:10px}
+      .table-shot{border-radius:18px;border-width:4px;min-height:155px}
+      .table-shot.large{grid-row:1;grid-column:1 / -1;min-height:215px}
       .table-shot.poly-shot{grid-column:1;grid-row:2}
       .table-shot.dragon-shot{grid-column:2;grid-row:2}
-      .table-shot:last-child{grid-column:1 / -1;grid-row:3}
+      .table-shot.wide-shot{grid-column:1 / -1;grid-row:3;min-height:190px}
       .table-shot .shot-label{font-size:.66rem;padding:7px 8px}
+      .event-side .table-preview-copy{padding:18px}
       .cta-band{width:min(100% - 24px,var(--max));margin:8px auto 52px;padding:28px 20px;border-radius:32px;gap:20px}
       .cta-band h2{font-size:clamp(2.1rem,12vw,3rem)}
       .cta-band p{font-size:.96rem;line-height:1.5}
@@ -338,14 +341,14 @@
         </div>
         <div class="event-side">
           <div class="table-collage" aria-label="Sample OliPoly table preview collage">
-            <div class="table-shot large"><img src="images/event-booth-1.png" alt="OliPoly market table with keychains, small gifts, and colorful printed pieces" /><span class="shot-label">Market table favorites</span></div>
-            <div class="table-shot poly-shot"><img src="images/poly_livingroom.png" alt="Poly mascot display piece for the OliPoly table" /><span class="shot-label">Poly says hi</span></div>
+            <div class="table-shot large"><img src="images/event-booth-1.png" alt="OliPoly market table with keychains, small gifts, and colorful printed pieces" /><span class="shot-label">Giftable table favorites</span></div>
+            <div class="table-shot poly-shot"><img src="images/poly_livingroom.png" alt="Poly mascot display piece for the OliPoly table" /><span class="shot-label">Meet Poly</span></div>
             <div class="table-shot dragon-shot"><img src="images/event-booth-3.png" alt="Colorful articulated dragon prints on a market display table" /><span class="shot-label">Dragons & display pieces</span></div>
-            <div class="table-shot"><img src="images/event-booth-2.png" alt="OliPoly tabletop display with bold red and gray printed pieces and coasters" /><span class="shot-label">Bold custom pieces</span></div>
+            <div class="table-shot wide-shot"><img src="images/event-booth-2.png" alt="OliPoly tabletop display with bold red and gray printed pieces and coasters" /><span class="shot-label">Bold custom pieces</span></div>
           </div>
-          <div>
+          <div class="table-preview-copy">
             <h3>Table preview</h3>
-            <p>A polished mix of table-ready gifts, colorful display pieces, mascot charm, and custom-order inspiration — styled to feel like OliPoly, not a generic vendor table.</p>
+            <p>Browse ready-to-take-home pieces, colorful desk and display items, playful keychains, and examples that can spark a custom gift or quote request.</p>
           </div>
         </div>
       </div>
