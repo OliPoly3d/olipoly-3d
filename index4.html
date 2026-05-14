@@ -219,12 +219,14 @@
     .mini-tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:9px}
     .mini-tags span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:38px;line-height:1.1;padding:8px 11px;border-radius:999px;background:rgba(244,220,255,.64);color:#6f4b7e;font-size:.78rem;font-weight:900;white-space:normal}
 
-    .studio-grid{margin-top:38px;display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:stretch}
-    .studio-main,.studio-stack>*{border-radius:34px;overflow:hidden;box-shadow:0 24px 70px rgba(84,38,94,.14);border:8px solid rgba(255,255,255,.76);background:white}
-    .studio-main img{width:100%;height:100%;min-height:600px;object-fit:cover;object-position:center center}
-    .studio-stack{display:grid;gap:22px}
-    .studio-stack img,.studio-stack video{width:100%;height:100%;min-height:190px;object-fit:cover;object-position:center center}
-    .studio-note{padding:26px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,244,253,.86));border:1px solid rgba(255,255,255,.8);border-radius:34px;box-shadow:0 24px 70px rgba(84,38,94,.14);display:flex;flex-direction:column;justify-content:center}
+    .studio-grid{margin-top:38px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:stretch}
+    .studio-tile{border-radius:34px;overflow:hidden;box-shadow:0 24px 70px rgba(84,38,94,.14);border:8px solid rgba(255,255,255,.76);background:white;aspect-ratio:4/3}
+    .studio-tile img,.studio-tile video{width:100%;height:100%;object-fit:cover;object-position:center center}
+    .studio-printer img{object-position:center 48%}
+    .studio-spacers img{object-position:center center}
+    .studio-stones img{object-position:center center}
+    .studio-macro img{object-position:center center}
+    .studio-note{margin-top:22px;padding:24px;border-radius:34px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,244,253,.86));border:1px solid rgba(255,255,255,.8);box-shadow:0 24px 70px rgba(84,38,94,.14);display:flex;flex-direction:column;justify-content:center}
     .studio-note h3{font-family:"Playfair Display",serif;font-size:2.15rem;line-height:.98;letter-spacing:-.045em;margin:0 0 12px}
     .studio-note p{margin:0;color:#6f5c78;line-height:1.6}
 
@@ -275,7 +277,6 @@
 
     .showcase-card img[src*="rex-paint"]{object-position:center center}
     .cap-panel img[src*="ohio-led-outline-wall-art"]{object-position:center center}
-    .studio-stack img[src*="calibration_firstlayer"]{object-position:center center}
 
     @media(max-width:980px){
       .nav-links{display:none}
@@ -287,9 +288,9 @@
       .capabilities{grid-template-columns:1fr}
       .split-feature,.split-feature:nth-of-type(even){grid-template-columns:1fr;gap:18px}
       .split-feature:nth-of-type(even) .split-image{order:0}
-      .studio-grid{grid-template-columns:1fr}
-      .studio-main img{min-height:420px}
-      .studio-stack{grid-template-columns:1fr 1fr}
+      .studio-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+      .studio-tile{aspect-ratio:4/3}
+      .studio-printer img{object-position:center 48%}
       .footer-inner{grid-template-columns:1fr}
     }
 
@@ -349,13 +350,11 @@
       .mini-tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
       .mini-tags span{min-height:32px;padding:7px 5px;font-size:clamp(.62rem,2.35vw,.74rem);line-height:1.04;white-space:normal;border-radius:999px}
 
-      /* Mobile studio polish: no computer screenshots; printer + batch image stack cleanly. */
-      .studio-grid{margin-top:24px;gap:14px}
-      .studio-main,.studio-stack>*{border-width:6px;border-radius:28px}
-      .studio-main img{min-height:0;height:auto;aspect-ratio:4/3.25;object-fit:cover;object-position:center center}
-      .studio-stack{grid-template-columns:1fr;gap:14px}
-      .studio-stack img{min-height:0;height:auto;aspect-ratio:4/3.05;object-fit:cover;object-position:center center}
-      .studio-note{padding:18px;border-radius:26px}
+      /* Mobile studio polish: clean 4-image collage. */
+      .studio-grid{margin-top:24px;grid-template-columns:1fr;gap:14px}
+      .studio-tile{border-width:6px;border-radius:28px;aspect-ratio:4/3}
+      .studio-printer img{object-position:center 48%}
+      .studio-note{margin-top:14px;padding:18px;border-radius:26px}
       .studio-note h3{font-size:1.72rem}
       .studio-note p{font-size:.92rem;line-height:1.5}
 
@@ -555,17 +554,22 @@
       <p class="section-intro">Modern printers, slicing workflows, calibration, and hands-on finishing all work together to keep custom projects moving from idea to finished piece.</p>
 
       <div class="studio-grid">
-        <div class="studio-main">
+        <div class="studio-tile studio-printer">
           <img src="images/p2s-ams2.png" alt="OliPoly Bambu P2S printer and AMS setup in the studio" />
         </div>
-        <div class="studio-stack">
+        <div class="studio-tile studio-spacers">
           <img src="images/multipart-spacers.png" alt="Small batch 3D printed parts arranged for production checking" />
-          <img src="images/calibration_firstlayer.png" alt="Close-up macro texture of a 3D printed surface finish" />
-          <div class="studio-note">
-            <h3>Built for consistent results.</h3>
-            <p>Real equipment, calibrated workflows, batch checks, and hands-on finishing help each project move from idea to polished, practical, or production-ready piece.</p>
-          </div>
         </div>
+        <div class="studio-tile studio-stones">
+          <img src="images/stones_coasters.png" alt="Rolling Stones inspired printed coasters showing polished color and detail" />
+        </div>
+        <div class="studio-tile studio-macro">
+          <img src="images/calibration_firstlayer.png" alt="Close-up macro texture of a 3D printed surface finish" />
+        </div>
+      </div>
+      <div class="studio-note">
+        <h3>Built for consistent results.</h3>
+        <p>Real equipment, calibrated workflows, batch checks, and hands-on finishing help each project move from idea to polished, practical, or production-ready piece.</p>
       </div>
     </section>
 
