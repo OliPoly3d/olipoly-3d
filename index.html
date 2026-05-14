@@ -177,6 +177,10 @@
     .section-title{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.4rem);line-height:.95;letter-spacing:-.055em}
     .section-intro{margin:16px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.65;max-width:720px}
 
+    .showcase-section-action{margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .showcase-pill-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 16px;border-radius:999px;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,244,253,.84));border:1px solid rgba(104,59,123,.16);box-shadow:0 14px 34px rgba(54,24,66,.08);color:#64436d;font-size:.86rem;font-weight:900;letter-spacing:.01em;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+    .showcase-pill-link:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(84,38,94,.12);border-color:rgba(232,79,183,.22)}
+
     .showcase-rail-wrap{padding:46px 0 16px;width:100vw;margin-left:calc(50% - 50vw);position:relative}
     .rail-topper{width:min(var(--max),calc(100% - 32px));margin:0 auto 14px;display:flex;align-items:center;justify-content:flex-end;gap:10px}
     .rail-hint{display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border-radius:999px;background:rgba(255,255,255,.82);border:1px solid rgba(104,59,123,.14);color:#6b4c76;font-size:.78rem;font-weight:900;box-shadow:0 12px 26px rgba(54,24,66,.08)}
@@ -324,6 +328,9 @@
 
       .section-title{font-size:clamp(2.1rem,13vw,3.25rem)}
       .section-intro{font-size:.96rem;line-height:1.55}
+
+      .showcase-section-action{margin-top:14px}
+      .showcase-pill-link{width:100%;min-height:44px;font-size:.82rem}
       .showcase-rail-wrap{padding-top:28px}
       .rail-topper{justify-content:space-between;width:min(100% - 24px,var(--max));margin-bottom:12px}
       .rail-hint{font-size:.7rem;padding:8px 10px}
@@ -452,6 +459,7 @@ img{max-width:100%}
 
       <div class="nav-links" id="navLinks">
         <a href="#work">Work</a>
+        <a href="showcase.html">Showcase</a>
         <a href="#capabilities">Capabilities</a>
         <a href="#process">Process</a>
         <a href="#studio">Studio</a>
@@ -496,6 +504,9 @@ img{max-width:100%}
       <div class="section-kicker">Featured showcase</div>
       <h2 class="section-title">A little practical. A little playful. All custom.</h2>
       <p class="section-intro">Browse finished pieces, useful parts, branded work, keepsakes, and process shots from the OliPoly studio.</p>
+      <div class="showcase-section-action">
+        <a class="showcase-pill-link" href="showcase.html" aria-label="Open the full OliPoly showcase gallery">View Full Showcase →</a>
+      </div>
 
       <div class="showcase-rail-wrap">
         <div class="rail-topper" aria-hidden="false">
@@ -654,6 +665,7 @@ img{max-width:100%}
       <p>Poly can point you toward the most useful next step.</p>
       <div class="poly-helper-links">
         <a href="start-project.html">Start a project <span>→</span></a>
+        <a href="showcase.html">View the showcase <span>→</span></a>
         <a href="track.html">Track an order <span>→</span></a>
         <a href="events.html">Events & pop-ups <span>→</span></a>
         <a href="faq.html">Read the FAQ <span>→</span></a>
@@ -676,6 +688,7 @@ img{max-width:100%}
         <div>
           <h4>Explore</h4>
           <a href="#work">Featured Work</a>
+          <a href="showcase.html">Full Showcase</a>
           <a href="#capabilities">Capabilities</a>
           <a href="#process">Project Stories</a>
           <a href="#studio">Inside the Studio</a>
