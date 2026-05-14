@@ -350,10 +350,38 @@
       .mini-tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
       .mini-tags span{min-height:32px;padding:7px 5px;font-size:clamp(.62rem,2.35vw,.74rem);line-height:1.04;white-space:normal;border-radius:999px}
 
-      /* Mobile studio polish: clean 4-image collage. */
-      .studio-grid{margin-top:24px;grid-template-columns:1fr;gap:14px}
-      .studio-tile{border-width:6px;border-radius:28px;aspect-ratio:4/3}
-      .studio-printer img{object-position:center 48%}
+/* Mobile studio polish: clean 4-image collage. */
+.studio-grid{
+  margin-top:24px;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+
+.studio-tile{
+  border-width:6px;
+  border-radius:28px;
+  aspect-ratio:4/3;
+}
+
+.studio-printer{
+  order:1;
+}
+
+.studio-macro{
+  order:2;
+}
+
+.studio-spacers{
+  order:3;
+}
+
+.studio-stones{
+  order:4;
+}
+
+.studio-printer img{
+  object-position:center 48%;
+}
       .studio-note{margin-top:14px;padding:18px;border-radius:26px}
       .studio-note h3{font-size:1.72rem}
       .studio-note p{font-size:.92rem;line-height:1.5}
