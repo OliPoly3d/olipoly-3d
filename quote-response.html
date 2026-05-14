@@ -134,6 +134,29 @@ label{display:block;margin:20px 0 7px;font-weight:900;color:var(--muted);letter-
 @media(max-width:900px){.hero-grid,.next-box,.success-grid,.support-strip{grid-template-columns:1fr}.project-visual{text-align:left}.project-visual img{margin:0 0 12px}.grid,.quote-ref-grid{grid-template-columns:1fr 1fr}.support-strip .btn-secondary{width:100%}}
 @media(max-width:720px){html{scroll-padding-top:76px}.nav{width:min(100% - 20px,var(--max));min-height:64px}.brand-mark{width:42px;height:42px;border-radius:14px}.brand-mark img{width:40px;height:40px}.brand-name{font-size:1.68rem}.brand-sub{font-size:.62rem;letter-spacing:.06em;white-space:normal}.track-link{padding:11px 14px;min-height:42px;font-size:.84rem}.wrap{width:min(100% - 22px,980px);padding-top:20px}.card,.hero-card{padding:20px;border-radius:28px}h1{font-size:clamp(2.65rem,14vw,3.65rem)}.sub{font-size:.96rem}.grid,.quote-ref-grid{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.btn,.btn-secondary,.track-link,.pay-link{width:100%;padding:13px 16px}.quote-status-hero{padding:17px;border-radius:23px}.quote-status-hero strong{font-size:2.25rem}.next-step{padding:14px}.note strong{font-size:1.25rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* === Global ecosystem polish pass === */
+html,body{overflow-x:hidden}
+*{-webkit-tap-highlight-color:transparent}
+.btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{min-height:48px}
+img{max-width:100%}
+@media (max-width:720px){
+  body{overflow-x:hidden}
+  .wrap,.container{width:min(100% - 18px,1200px)!important}
+  h1{line-height:1.02!important}
+  p{line-height:1.68!important}
+  .hero-actions,.actions{gap:12px!important}
+  .card,.hero-card,.shell,.cta-band{box-shadow:0 10px 28px rgba(216,107,179,.10)!important}
+  .quicknav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px!important;-ms-overflow-style:none;scrollbar-width:none}
+  .quicknav::-webkit-scrollbar{display:none}
+  .quicknav a{white-space:nowrap}
+}
+@media (max-width:560px){
+  .brand img{width:42px!important;height:42px!important}
+  .wordmark{font-size:1.6rem!important}
+  .btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{width:100%;justify-content:center}
+}
+
 </style>
 </head>
 <body>

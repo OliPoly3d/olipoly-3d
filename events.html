@@ -291,7 +291,30 @@
       .tag-row span{font-size:.69rem;padding:7px 9px}
     }
 
-  </style>
+  
+/* === Global ecosystem polish pass === */
+html,body{overflow-x:hidden}
+*{-webkit-tap-highlight-color:transparent}
+.btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{min-height:48px}
+img{max-width:100%}
+@media (max-width:720px){
+  body{overflow-x:hidden}
+  .wrap,.container{width:min(100% - 18px,1200px)!important}
+  h1{line-height:1.02!important}
+  p{line-height:1.68!important}
+  .hero-actions,.actions{gap:12px!important}
+  .card,.hero-card,.shell,.cta-band{box-shadow:0 10px 28px rgba(216,107,179,.10)!important}
+  .quicknav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px!important;-ms-overflow-style:none;scrollbar-width:none}
+  .quicknav::-webkit-scrollbar{display:none}
+  .quicknav a{white-space:nowrap}
+}
+@media (max-width:560px){
+  .brand img{width:42px!important;height:42px!important}
+  .wordmark{font-size:1.6rem!important}
+  .btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{width:100%;justify-content:center}
+}
+
+</style>
 </head>
 
 <body>
