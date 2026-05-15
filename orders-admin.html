@@ -877,6 +877,7 @@ body{font-family:Inter,Arial,sans-serif}
               <button class="btn-ghost" id="generatePackingSlipBtn" type="button">Packing Slip PDF</button>
               <button class="btn-ghost" id="generateTravelerPdfBtn" type="button">Manufacturing Traveler PDF</button>
               <button class="btn-ghost" id="printShippingLabelBtn" type="button">Print Avery 5168 Label</button>
+              <button class="btn-ghost" id="printInnerPackLabelBtn" type="button">Print Avery 5366 Inner Pack Labels</button>
             </div>
           </div>
 
@@ -3344,6 +3345,264 @@ if ($('openVenmoBtn')) {
     bindShippingLabelButtonFinal();
     setTimeout(bindShippingLabelButtonFinal, 250);
     setTimeout(bindShippingLabelButtonFinal, 1000);
+
+
+
+    // Avery 5366 inner packaging label generator.
+    // Avery 5366: 30 labels per letter sheet, landscape, each label is 3-7/16" x 2/3".
+    function printAvery5366InnerPackLabels(){
+      const d = snapshotForm();
+      const escLabel = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+      }[ch]));
+
+      const defaultPart = d.olipoly_part_number || d.po_part_number || d.order_title || '';
+      const defaultQty = d.quantity || '1';
+      const defaultMaterial = [d.catalog_material, d.catalog_color].filter(Boolean).join(' / ');
+      const defaultRev = d.part_revision || '';
+
+      const partNumber = prompt('Inner pack label — Part / item / part number:', defaultPart) ?? defaultPart;
+      const packQty = prompt('Quantity per inner package:', defaultQty) ?? defaultQty;
+      const labelCountRaw = prompt('How many inner pack labels should print? Max 30 per sheet.', '30') ?? '30';
+      const qcInitials = prompt('QC initials or packed-by initials:', '') ?? '';
+      const materialLot = prompt('Material / color / lot note:', defaultMaterial) ?? defaultMaterial;
+      const revision = prompt('Revision:', defaultRev) ?? defaultRev;
+      const packDate = prompt('Pack date:', today()) ?? today();
+      const labelNote = prompt('Short label note (optional):', '') ?? '';
+
+      const labelCount = Math.max(1, Math.min(30, parseInt(labelCountRaw, 10) || 30));
+      const orderNumber = d.order_number || '';
+      const customerPart = d.po_part_number || '';
+      const olipolyPart = d.olipoly_part_number || '';
+      const projectTitle = d.order_title || '';
+      const title = `Inner Pack Labels ${orderNumber || ''}`.trim();
+
+      const labelCards = Array.from({ length: 30 }, (_, index) => {
+        if (index >= labelCount) return '<div class="inner-label blank-label"></div>';
+        return `
+          <div class="inner-label">
+            <div class="inner-band"></div>
+            <div class="inner-content">
+              <div class="inner-top">
+                <div class="inner-brand">Oli<span>Poly</span> 3D</div>
+                <div class="inner-badge">INNER PACK</div>
+              </div>
+              <div class="inner-main">
+                <div class="inner-part">${escLabel(partNumber || projectTitle || 'Part')}</div>
+                <div class="inner-qty">QTY ${escLabel(packQty || '—')}</div>
+              </div>
+              <div class="inner-grid">
+                <div><b>Order</b><span>${escLabel(orderNumber || '—')}</span></div>
+                <div><b>QC</b><span>${escLabel(qcInitials || '—')}</span></div>
+                <div><b>Rev</b><span>${escLabel(revision || '—')}</span></div>
+                <div><b>Date</b><span>${escLabel(packDate || '—')}</span></div>
+              </div>
+              <div class="inner-bottom">
+                <span>${escLabel(materialLot || customerPart || olipolyPart || 'Material / lot: —')}</span>
+                ${labelNote ? `<em>${escLabel(labelNote)}</em>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      const css = `
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;background:#fff;color:#241b2b;font-family:Inter,Arial,Helvetica,sans-serif}
+        @page{size:letter landscape;margin:.25in .34in}
+        .avery5366-sheet{
+          width:10.3125in;
+          display:grid;
+          grid-template-columns:repeat(3,3.4375in);
+          grid-template-rows:repeat(10,.6667in);
+          gap:0;
+          align-items:stretch;
+          justify-content:start;
+        }
+        .inner-label{
+          width:3.4375in;
+          height:.6667in;
+          overflow:hidden;
+          border:1px solid rgba(234,216,242,.72);
+          background:linear-gradient(135deg,rgba(255,247,251,.96),rgba(255,255,255,.98));
+          color:#241b2b;
+          position:relative;
+          display:flex;
+        }
+        .blank-label{
+          border-color:transparent;
+          background:#fff;
+        }
+        .inner-band{
+          width:.055in;
+          flex:0 0 .055in;
+          background:linear-gradient(180deg,#de6fb8,#9d7cff,#65d6c4);
+        }
+        .inner-content{
+          flex:1;
+          min-width:0;
+          padding:.035in .055in .032in .055in;
+          display:grid;
+          grid-template-rows:auto auto auto 1fr;
+          gap:.018in;
+        }
+        .inner-top{
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:.04in;
+          min-width:0;
+        }
+        .inner-brand{
+          font-family:Georgia,'Times New Roman',serif;
+          font-weight:900;
+          font-size:10.5px;
+          line-height:1;
+          letter-spacing:-.035em;
+          color:#241b2b;
+          white-space:nowrap;
+        }
+        .inner-brand span{color:#b86be8}
+        .inner-badge{
+          border:1px solid rgba(157,124,255,.24);
+          background:#fff;
+          border-radius:999px;
+          padding:.012in .045in;
+          font-size:5.4px;
+          line-height:1;
+          letter-spacing:.09em;
+          font-weight:950;
+          color:#7c4a82;
+          white-space:nowrap;
+        }
+        .inner-main{
+          display:grid;
+          grid-template-columns:1fr auto;
+          gap:.06in;
+          align-items:center;
+          min-width:0;
+        }
+        .inner-part{
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          font-size:9.2px;
+          line-height:1;
+          font-weight:950;
+          color:#241b2b;
+        }
+        .inner-qty{
+          font-size:10.4px;
+          line-height:1;
+          font-weight:950;
+          color:#ffffff;
+          border-radius:999px;
+          padding:.025in .06in;
+          background:linear-gradient(135deg,#de6fb8,#9d7cff);
+          white-space:nowrap;
+        }
+        .inner-grid{
+          display:grid;
+          grid-template-columns:1.2fr .72fr .72fr .9fr;
+          gap:.026in;
+        }
+        .inner-grid div{
+          min-width:0;
+          border:1px solid rgba(234,216,242,.72);
+          border-radius:.035in;
+          padding:.012in .026in;
+          background:rgba(255,255,255,.70);
+          display:grid;
+          grid-template-columns:auto 1fr;
+          gap:.024in;
+          align-items:center;
+        }
+        .inner-grid b{
+          font-size:5.2px;
+          line-height:1;
+          letter-spacing:.08em;
+          text-transform:uppercase;
+          color:#7c4a82;
+          white-space:nowrap;
+        }
+        .inner-grid span{
+          min-width:0;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          font-size:6.8px;
+          line-height:1;
+          font-weight:900;
+          color:#2f2336;
+          text-align:right;
+        }
+        .inner-bottom{
+          display:grid;
+          grid-template-columns:1fr auto;
+          gap:.05in;
+          align-items:end;
+          min-width:0;
+          border-top:1px solid rgba(234,216,242,.58);
+          padding-top:.012in;
+        }
+        .inner-bottom span,
+        .inner-bottom em{
+          min-width:0;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          font-size:6.3px;
+          line-height:1;
+          color:#604d68;
+          font-weight:800;
+          font-style:normal;
+        }
+        .inner-bottom em{
+          color:#7c4a82;
+          max-width:1.05in;
+          text-align:right;
+        }
+        @media print{
+          body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+          .inner-label{break-inside:avoid}
+        }
+      `;
+
+      const html = `<div class="avery5366-sheet">${labelCards}</div>`;
+      const win = window.open('', '_blank');
+      if (!win) {
+        setMsg($('formMessage'), 'Pop-up blocked. Allow pop-ups for this site and try again.', true);
+        return;
+      }
+      win.document.open();
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}</body></html>`);
+      win.document.close();
+      setTimeout(() => { win.focus(); win.print(); }, 350);
+    }
+
+    window.printAvery5366InnerPackLabels = printAvery5366InnerPackLabels;
+
+    function bindInnerPackLabelButtonFinal(){
+      const btn = document.getElementById('printInnerPackLabelBtn');
+      if (!btn || btn.dataset.finalInnerPackLabelBound === 'true') return;
+
+      btn.dataset.finalInnerPackLabelBound = 'true';
+      btn.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+          setMsg($('formMessage'), 'Opening Avery 5366 inner pack label print window...');
+          printAvery5366InnerPackLabels();
+        } catch (error) {
+          console.error('Inner pack label print failed:', error);
+          setMsg($('formMessage'), `Inner pack label failed: ${error?.message || error}`, true);
+        }
+      }, true);
+    }
+
+    bindInnerPackLabelButtonFinal();
+    setTimeout(bindInnerPackLabelButtonFinal, 250);
+    setTimeout(bindInnerPackLabelButtonFinal, 1000);
 
 
 
