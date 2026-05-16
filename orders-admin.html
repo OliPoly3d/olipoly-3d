@@ -3230,24 +3230,35 @@ if ($('openVenmoBtn')) {
 
 
     // Avery 5168 branded business shipping label generator.
+    // Updated for safer print output: long addresses/reference values wrap instead of overlapping,
+    // and fonts tighten automatically when the ship-to block is long.
     function printAvery5168Label(){
       const d = snapshotForm();
       const escLabel = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
         '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
       }[ch]));
       const lines = value => escLabel(value || '').replace(/\n/g, '<br>');
-      const shipName = d.shipping_contact_name || d.customer_name || 'Receiving Contact';
-      const shipCompany = d.shipping_company || '';
-      const shipAddress = d.shipping_address || '';
+      const rawShipName = d.shipping_contact_name || d.customer_name || 'Receiving Contact';
+      const rawShipCompany = d.shipping_company || '';
+      const rawShipAddress = d.shipping_address || '';
+      const shipName = rawShipName.trim();
+      const shipCompany = rawShipCompany.trim();
+      const shipAddress = rawShipAddress.trim();
       const title = `Shipping Label ${d.order_number || ''}`.trim();
+
+      const shipLineCount = [shipName, shipCompany, ...shipAddress.split(/\n+/).filter(Boolean)].filter(Boolean).length;
+      const shipTextLength = `${shipName} ${shipCompany} ${shipAddress}`.length;
+      const refsTextLength = [d.order_number, d.po_number, d.po_part_number, d.olipoly_part_number, d.part_revision].join(' ').length;
+      const shipDensityClass = shipLineCount >= 7 || shipTextLength > 165 ? 'dense-ship' : shipLineCount >= 5 || shipTextLength > 115 ? 'medium-ship' : 'normal-ship';
+      const refsDensityClass = refsTextLength > 90 ? 'dense-refs' : 'normal-refs';
 
       const labelHtml = `
         <div class="avery-sheet">
-          <div class="label-card">
+          <div class="label-card ${shipDensityClass} ${refsDensityClass}">
             <div class="brand-band"></div>
             <div class="label-inner">
               <div class="label-brand-row">
-                <div>
+                <div class="brand-copy">
                   <div class="label-brand">Oli<span>Poly</span> 3D</div>
                   <div class="label-tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
                 </div>
@@ -3286,28 +3297,52 @@ if ($('openVenmoBtn')) {
         html,body{margin:0;padding:0;background:#fff;color:#241b2b;font-family:Inter,Arial,Helvetica,sans-serif}
         @page{size:letter;margin:.5in}
         .avery-sheet{width:7.5in;display:grid;grid-template-columns:3.5in 3.5in;grid-auto-rows:5in;gap:.5in;align-items:start}
-        .label-card{width:3.5in;height:5in;border:1px solid #ded7ea;border-radius:16px;overflow:hidden;background:radial-gradient(circle at top left,rgba(222,111,184,.18),transparent 42%),radial-gradient(circle at top right,rgba(101,214,196,.16),transparent 34%),#fffafd;color:#241b2b}
+        .label-card{
+          width:3.5in;height:5in;overflow:hidden;color:#241b2b;
+          border:1px solid #d9c1ec;border-radius:18px;
+          background:radial-gradient(circle at top left,rgba(222,111,184,.18),transparent 42%),radial-gradient(circle at top right,rgba(101,214,196,.16),transparent 34%),#fffafd;
+        }
         .brand-band{height:.12in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
-        .label-inner{height:calc(5in - .12in);padding:.17in;display:flex;flex-direction:column;gap:.12in}
-        .label-brand-row{display:flex;justify-content:space-between;gap:.12in;align-items:flex-start;padding-bottom:.11in;border-bottom:1px solid #ead8f2}
-        .label-brand{font-family:Georgia,'Times New Roman',serif;font-size:25px;font-weight:900;line-height:.95;letter-spacing:-.04em;color:#241b2b}
+        .label-inner{
+          height:calc(5in - .12in);
+          padding:.14in .15in .13in;
+          display:grid;
+          grid-template-rows:auto minmax(1.56in,auto) minmax(1.12in,auto) 1fr;
+          gap:.10in;
+        }
+        .label-brand-row{display:grid;grid-template-columns:minmax(0,1fr) .74in;gap:.10in;align-items:start;padding-bottom:.10in;border-bottom:1px solid #ead8f2;min-width:0}
+        .brand-copy{min-width:0;overflow:hidden}
+        .label-brand{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:900;line-height:.92;letter-spacing:-.055em;color:#241b2b;white-space:nowrap}
         .label-brand span{color:#b86be8}
-        .label-tagline{margin-top:.04in;font-size:8.5px;font-weight:800;color:#735d7d;line-height:1.25}
-        .label-badge{min-width:.72in;text-align:center;border:1px solid #ead8f2;border-radius:999px;padding:.07in .08in;background:#fff;font-size:7.5px;line-height:1.1;font-weight:950;letter-spacing:.08em;color:#7c4a82}
-        .label-section{border:1px solid #ead8f2;border-radius:14px;background:rgba(255,255,255,.72);padding:.12in}
-        .label-kicker{font-size:8px;font-weight:950;letter-spacing:.13em;text-transform:uppercase;color:#7c4a82;margin-bottom:.05in}
-        .ship-section{min-height:1.34in}
-        .ship-name{font-size:15px;font-weight:950;line-height:1.16;color:#241b2b}
-        .ship-company{font-size:11px;font-weight:850;line-height:1.25;color:#3b3042;margin-top:.02in}
-        .ship-address{font-size:10.3px;font-weight:700;line-height:1.27;color:#3d3245;margin-top:.06in;white-space:normal}
-        .refs-section{min-height:1.34in}
-        .ref-grid{display:grid;grid-template-columns:1.05in 1fr;row-gap:.04in;column-gap:.08in;align-items:start}
-        .ref-label{font-size:8.8px;font-weight:950;color:#604d68;text-transform:uppercase;letter-spacing:.04em}
-        .ref-value{font-size:10.2px;font-weight:900;color:#241b2b;text-align:right;overflow-wrap:anywhere;line-height:1.15}
-        .label-from{margin-top:auto;border-top:1px solid #ead8f2;padding-top:.08in;text-align:left}
-        .from-name{font-size:10px;font-weight:950;color:#241b2b;line-height:1.18}
-        .from-address{margin-top:.025in;font-size:8.8px;font-weight:750;line-height:1.22;color:#604d68}
-        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.label-card{break-inside:avoid}}
+        .label-tagline{margin-top:.04in;font-size:7.5px;font-weight:850;color:#735d7d;line-height:1.18;max-width:2.38in;overflow-wrap:anywhere}
+        .label-badge{text-align:center;border:1px solid #ead8f2;border-radius:999px;padding:.065in .06in;background:#fff;font-size:6.9px;line-height:1.08;font-weight:950;letter-spacing:.07em;color:#7c4a82;white-space:normal}
+        .label-section{border:1px solid #ead8f2;border-radius:14px;background:rgba(255,255,255,.74);padding:.105in .115in;min-width:0;overflow:hidden}
+        .label-kicker{font-size:7.2px;font-weight:950;letter-spacing:.13em;text-transform:uppercase;color:#7c4a82;margin-bottom:.045in;line-height:1.1}
+        .ship-section{min-height:1.56in;max-height:1.72in}
+        .ship-name{font-size:13.8px;font-weight:950;line-height:1.08;color:#241b2b;overflow-wrap:anywhere;word-break:normal}
+        .ship-company{font-size:9.9px;font-weight:850;line-height:1.15;color:#3b3042;margin-top:.025in;overflow-wrap:anywhere;word-break:normal}
+        .ship-address{font-size:9.15px;font-weight:760;line-height:1.16;color:#3d3245;margin-top:.045in;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+        .medium-ship .ship-name{font-size:12.8px;line-height:1.04}
+        .medium-ship .ship-company{font-size:9.15px;line-height:1.08}
+        .medium-ship .ship-address{font-size:8.55px;line-height:1.08;margin-top:.035in}
+        .dense-ship .ship-section{max-height:1.80in;padding:.095in .105in}
+        .dense-ship .ship-name{font-size:11.7px;line-height:1.0}
+        .dense-ship .ship-company{font-size:8.45px;line-height:1.02}
+        .dense-ship .ship-address{font-size:7.85px;line-height:1.02;margin-top:.03in}
+        .refs-section{min-height:1.12in;max-height:1.32in;padding:.095in .105in}
+        .ref-grid{display:grid;grid-template-columns:minmax(.94in,auto) minmax(0,1fr);row-gap:.032in;column-gap:.06in;align-items:start;min-width:0}
+        .ref-label{font-size:7.7px;font-weight:950;color:#604d68;text-transform:uppercase;letter-spacing:.035em;line-height:1.1;min-width:0;overflow-wrap:anywhere}
+        .ref-value{font-size:8.95px;font-weight:900;color:#241b2b;text-align:right;overflow-wrap:anywhere;word-break:break-word;line-height:1.08;min-width:0}
+        .dense-refs .ref-grid{grid-template-columns:minmax(.88in,auto) minmax(0,1fr);row-gap:.025in;column-gap:.045in}
+        .dense-refs .ref-label{font-size:7.1px;letter-spacing:.02em}
+        .dense-refs .ref-value{font-size:8.15px;line-height:1.02}
+        .label-from{align-self:end;border-top:1px solid #ead8f2;padding-top:.075in;text-align:left;min-height:.74in;overflow:hidden}
+        .from-name{font-size:9.3px;font-weight:950;color:#241b2b;line-height:1.08}
+        .from-address{margin-top:.025in;font-size:7.85px;font-weight:750;line-height:1.12;color:#604d68;overflow-wrap:anywhere}
+        @media print{
+          body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+          .label-card{break-inside:avoid;page-break-inside:avoid}
+        }
       `;
 
       const win = window.open('', '_blank');
