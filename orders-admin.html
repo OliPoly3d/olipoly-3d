@@ -5043,7 +5043,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
    - Adds a real popup/options modal before printing so label contents, qty, start slot, and fine alignment can be adjusted.
    ============================================================================ */
 (function(){
-  const VERSION = 'AVERY PRINT OPTIONS v2026-05-17L';
+  const VERSION = 'AVERY PRINT OPTIONS v2026-05-17M';
 
   const $op = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -5126,7 +5126,8 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       {key:'brand',label:'OliPoly brand'}, {key:'orderNumber',label:'Order #'}, {key:'fulfillment',label:'Fulfillment'},
       {key:'customer',label:'Customer / contact'}, {key:'company',label:'Company'}, {key:'address',label:'Address'},
       {key:'project',label:'Project/item'}, {key:'qty',label:'Quantity'}, {key:'po',label:'PO #'},
-      {key:'tracking',label:'Tracking #'}, {key:'part',label:'Part #'}, {key:'note',label:'Pickup/shipping note'}
+      {key:'customerPart',label:'Customer part #'}, {key:'part',label:'OliPoly part #'}, {key:'tracking',label:'Tracking #'},
+      {key:'returnAddress',label:'Return address'}, {key:'note',label:'Pickup/shipping note'}
     ] : [
       {key:'brand',label:'OliPoly brand'}, {key:'orderNumber',label:'Order #'}, {key:'part',label:'Part/item'},
       {key:'qty',label:'Quantity'}, {key:'po',label:'PO #'}, {key:'customerPart',label:'Customer part #'},
@@ -5134,7 +5135,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       {key:'profile',label:'Printer/profile'}, {key:'qc',label:'QC initials'}, {key:'count',label:'Label count'}
     ];
     const defaults = is5168
-      ? ['brand','orderNumber','fulfillment','customer','company','address','project','qty','po','tracking','note']
+      ? ['brand','orderNumber','fulfillment','customer','company','address','project','qty','po','customerPart','part','returnAddress','note']
       : ['brand','orderNumber','part','qty','customerPart','opPart','revision','material','qc','count'];
     const qtyDefault = is5168 ? 1 : Math.max(1, Math.min(30, clampInt(d.quantity, 1, 1, 999)));
     const html = `
@@ -5246,17 +5247,37 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   const has = (opts, key) => opts.fields.includes(key);
 
   function shippingContent(d, o){
-    const addr = d.shippingLines.length ? d.shippingLines.map(esc).join('<br>') : '<span class="muted">No shipping address entered</span>';
+    const addrLines = d.shippingLines.length ? d.shippingLines : [];
+    const cityStateZip = addrLines.length >= 2 ? addrLines[addrLines.length - 1] : '';
+    const streetLines = addrLines.length >= 2 ? addrLines.slice(0, -1) : addrLines;
+    const displayName = d.shippingContactName || d.customerName || 'Receiving Contact';
+    const displayCompany = d.shippingCompany || '';
     const info = [];
-    if (has(o,'project')) info.push(`<div><b>Project</b><span>${esc(o.partText || d.orderTitle)}</span></div>`);
-    if (has(o,'qty')) info.push(`<div><b>Qty</b><span>${esc(o.qtyText || d.quantity)}</span></div>`);
-    if (has(o,'po') && o.poText) info.push(`<div><b>PO</b><span>${esc(o.poText)}</span></div>`);
-    if (has(o,'tracking') && o.trackingText) info.push(`<div><b>Tracking</b><span>${esc(o.trackingText)}</span></div>`);
-    if (has(o,'part') && (o.opPartText || o.customerPartText)) info.push(`<div><b>Part</b><span>${esc(o.opPartText || o.customerPartText)}</span></div>`);
+    if (has(o,'project') && (o.partText || d.orderTitle)) info.push(`<div><b>Project</b><span>${esc(o.partText || d.orderTitle)}</span></div>`);
+    if (has(o,'qty')) info.push(`<div><b>Quantity</b><span>${esc(o.qtyText || d.quantity || '1')}</span></div>`);
+    if (has(o,'po') && o.poText) info.push(`<div><b>PO #</b><span>${esc(o.poText)}</span></div>`);
+    if (has(o,'customerPart') && o.customerPartText) info.push(`<div><b>Customer Part #</b><span>${esc(o.customerPartText)}</span></div>`);
+    if (has(o,'part') && o.opPartText) info.push(`<div><b>OliPoly Part #</b><span>${esc(o.opPartText)}</span></div>`);
+    if (has(o,'tracking') && o.trackingText) info.push(`<div><b>Tracking #</b><span>${esc(o.trackingText)}</span></div>`);
+    const returnBlock = has(o,'returnAddress') ? `<div class="return-block"><b>From / Return Address</b><span>OliPoly 3D LLC</span><span>988 Aurora Hudson Road</span><span>Aurora, OH 44202</span><span>OliPoly3D@gmail.com</span></div>` : '';
     return `<div class="ship-card">
-      <div class="ship-top"><div>${has(o,'brand') ? `<div class="brand">OliPoly <span>3D</span></div><div class="tag">Custom 3D Printing • Creative Builds • Prototypes</div>` : ''}</div><div class="ship-order">${has(o,'orderNumber') ? `<b>${esc(d.orderNumber)}</b>` : ''}${has(o,'fulfillment') ? `<span>${esc(d.fulfillment)}</span>` : ''}</div></div>
-      <div class="ship-main"><div class="ship-to"><div class="kicker">Ship / Deliver To</div>${has(o,'customer') ? `<strong>${esc(d.shippingContactName || d.customerName || 'Customer')}</strong>` : ''}${has(o,'company') && d.shippingCompany ? `<em>${esc(d.shippingCompany)}</em>` : ''}${has(o,'address') ? `<p>${addr}</p>` : ''}</div><div class="ship-info">${info.join('')}</div></div>
-      ${has(o,'note') ? `<div class="ship-bottom"><span>olipoly3d.com • OliPoly3D@gmail.com</span><span>${esc(o.noteText || 'Thank you for your order!')}</span></div>` : ''}
+      <div class="ship-top">
+        <div>${has(o,'brand') ? `<div class="brand">OliPoly <span>3D</span></div><div class="tag">Custom 3D Printing • Creative Builds • Prototypes</div>` : ''}</div>
+        <div class="ship-order">${has(o,'orderNumber') ? `<b>${esc(d.orderNumber)}</b>` : ''}${has(o,'fulfillment') ? `<span>${esc(d.fulfillment || 'shipping')}</span>` : ''}</div>
+      </div>
+      <div class="ship-main">
+        <div class="ship-to">
+          <div class="kicker">Ship / Deliver To</div>
+          ${has(o,'customer') ? `<strong>${esc(displayName)}</strong>` : ''}
+          ${has(o,'company') && displayCompany ? `<em>${esc(displayCompany)}</em>` : ''}
+          ${has(o,'address') ? `<div class="addr">${streetLines.map(s=>`<span>${esc(s)}</span>`).join('')}${cityStateZip ? `<strong>${esc(cityStateZip)}</strong>` : ''}</div>` : ''}
+        </div>
+        <div class="ship-info">${info.join('')}</div>
+      </div>
+      <div class="ship-footer">
+        ${returnBlock}
+        ${has(o,'note') ? `<div class="ship-note"><b>Note</b><span>${esc(o.noteText || 'Thank you for your order!')}</span></div>` : ''}
+      </div>
     </div>`;
   }
 
@@ -5284,7 +5305,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       const p = base[idx];
       labels += `<section class="label ${o.outline ? 'test-outline' : ''}" style="left:${p.left + o.offsetX}in;top:${p.top + o.offsetY}in;width:3.5in;height:5in;">${shippingContent(d,o)}</section>`;
     }
-    const css = commonCss() + `.ship-card{width:100%;height:100%;padding:.18in .2in;border-radius:.08in;font-family:Arial,Helvetica,sans-serif;display:grid;grid-template-rows:auto 1fr auto;gap:.12in}.ship-top{display:flex;justify-content:space-between;gap:.12in;align-items:flex-start;border-bottom:1px solid #ead8f2;padding-bottom:.10in}.brand{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:24px;line-height:1;color:#241b2b;letter-spacing:-.02em}.brand span{color:#9d4edd}.tag{font-size:8.5px;color:#6f5a78;margin-top:.04in;line-height:1.2}.ship-order{text-align:right;display:grid;gap:.04in;justify-items:end}.ship-order b{font-size:14px;color:#241b2b;line-height:1}.ship-order span{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#fff;background:#9d7cff;border-radius:999px;padding:.035in .07in;font-weight:900}.ship-main{display:grid;grid-template-columns:1.15fr .85fr;gap:.14in;min-height:0}.kicker{font-size:8px;letter-spacing:.10em;text-transform:uppercase;color:#7c4a82;font-weight:900;margin-bottom:.05in}.ship-to strong{display:block;font-size:18px;line-height:1.05;color:#241b2b;overflow-wrap:anywhere}.ship-to em{display:block;font-style:normal;font-size:12px;font-weight:700;color:#604d68;margin-top:.025in;overflow-wrap:anywhere}.ship-to p{margin:.08in 0 0;font-size:14px;line-height:1.24;color:#241b2b;overflow-wrap:anywhere}.ship-info{display:grid;align-content:start;gap:.07in}.ship-info div{border:1px solid #ead8f2;border-radius:.08in;padding:.055in .07in;background:#fffafd;min-width:0}.ship-info b{display:block;font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#7c4a82;margin-bottom:.025in}.ship-info span{display:block;font-size:11px;line-height:1.15;font-weight:800;color:#241b2b;overflow-wrap:anywhere}.ship-bottom{border-top:1px solid #ead8f2;padding-top:.08in;display:grid;gap:.04in}.ship-bottom span{font-size:8.5px;line-height:1.15;color:#604d68;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`;
+    const css = commonCss() + `.ship-card{width:100%;height:100%;padding:.18in .20in .16in;border-radius:.10in;font-family:Inter,Arial,Helvetica,sans-serif;display:grid;grid-template-rows:auto 1fr auto;gap:.10in;background:linear-gradient(180deg,#fff,#fff9fe);border:1px solid rgba(234,216,242,.92);color:#241b2b}.ship-top{display:flex;justify-content:space-between;gap:.14in;align-items:flex-start;border-bottom:1px solid #ead8f2;padding-bottom:.085in}.brand{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:23px;line-height:.95;color:#241b2b;letter-spacing:-.025em}.brand span{color:#9d4edd}.tag{font-size:7.6px;color:#6f5a78;margin-top:.035in;line-height:1.15;white-space:nowrap}.ship-order{text-align:right;display:grid;gap:.04in;justify-items:end;min-width:.88in}.ship-order b{font-size:13px;color:#241b2b;line-height:1}.ship-order span{font-size:7.4px;text-transform:uppercase;letter-spacing:.08em;color:#fff;background:linear-gradient(135deg,#de6fb8,#9d7cff);border-radius:999px;padding:.035in .075in;font-weight:900}.ship-main{display:grid;grid-template-columns:1.08fr .92fr;gap:.13in;min-height:0}.kicker{font-size:7.4px;letter-spacing:.11em;text-transform:uppercase;color:#7c4a82;font-weight:900;margin-bottom:.05in}.ship-to{min-width:0}.ship-to strong{display:block;font-size:15px;line-height:1.05;color:#241b2b;overflow-wrap:anywhere}.ship-to em{display:block;font-style:normal;font-size:11px;line-height:1.12;font-weight:850;color:#604d68;margin-top:.035in;overflow-wrap:anywhere}.addr{margin-top:.075in;display:grid;gap:.018in}.addr span{display:block;font-size:11.7px;line-height:1.15;color:#241b2b;overflow-wrap:anywhere}.addr strong{display:block;font-size:11.7px;line-height:1.15;color:#241b2b;font-weight:900;margin-top:.015in;overflow-wrap:anywhere}.ship-info{display:grid;align-content:start;gap:.055in;min-width:0}.ship-info div{border:1px solid #ead8f2;border-radius:.075in;padding:.047in .06in;background:#fff;min-width:0;box-shadow:0 5px 14px rgba(157,124,255,.045)}.ship-info b{display:block;font-size:6.6px;letter-spacing:.09em;text-transform:uppercase;color:#7c4a82;margin-bottom:.020in;white-space:nowrap}.ship-info span{display:block;font-size:10px;line-height:1.12;font-weight:850;color:#241b2b;overflow-wrap:anywhere}.ship-footer{border-top:1px solid #ead8f2;padding-top:.070in;display:grid;grid-template-columns:1fr 1fr;gap:.12in;align-items:start}.return-block,.ship-note{min-width:0}.return-block b,.ship-note b{display:block;font-size:6.8px;letter-spacing:.09em;text-transform:uppercase;color:#7c4a82;margin-bottom:.025in}.return-block span,.ship-note span{display:block;font-size:7.7px;line-height:1.13;color:#604d68;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ship-note span{white-space:normal;max-height:.34in;overflow:hidden}`;
     printDoc(`${VERSION} - 5168`, css, `<div class="note"><strong>${VERSION} — Avery 5168</strong>Letter, Portrait, 100% / Actual Size, Margins None, headers/footers off.</div><main class="sheet">${labels}</main>`, o.autoPrint);
   }
 
