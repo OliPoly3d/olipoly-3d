@@ -3230,14 +3230,20 @@ if ($('openVenmoBtn')) {
 
 
     // Avery 5168 branded business shipping label generator.
-    // Updated for safer print output: long addresses/reference values wrap instead of overlapping,
-    // and fonts tighten automatically when the ship-to block is long.
+    // Avery 5168: 4 labels per letter sheet, portrait, each label is 3.5" x 5".
+    // Includes quantity + start-position controls so partially-used sheets can still be used.
     function printAvery5168Label(){
       const d = snapshotForm();
       const escLabel = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
         '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
       }[ch]));
       const lines = value => escLabel(value || '').replace(/\n/g, '<br>');
+      const clampInt = (value, min, max, fallback) => {
+        const parsed = parseInt(value, 10);
+        if (!Number.isFinite(parsed)) return fallback;
+        return Math.max(min, Math.min(max, parsed));
+      };
+
       const rawShipName = d.shipping_contact_name || d.customer_name || 'Receiving Contact';
       const rawShipCompany = d.shipping_company || '';
       const rawShipAddress = d.shipping_address || '';
@@ -3246,14 +3252,27 @@ if ($('openVenmoBtn')) {
       const shipAddress = rawShipAddress.trim();
       const title = `Shipping Label ${d.order_number || ''}`.trim();
 
+      const labelCountRaw = prompt('Avery 5168 shipping labels — how many labels should print? Max 4 per sheet.', '1');
+      if (labelCountRaw === null) return;
+      const startPositionRaw = prompt('Start at which Avery 5168 label position? 1 = top-left, 2 = top-right, 3 = bottom-left, 4 = bottom-right.', '1');
+      if (startPositionRaw === null) return;
+      const labelCount = clampInt(labelCountRaw, 1, 4, 1);
+      const startPosition = clampInt(startPositionRaw, 1, 4, 1);
+      const printableSlots = Math.max(0, 5 - startPosition);
+      const labelsToPrint = Math.min(labelCount, printableSlots);
+
+      if (labelsToPrint < 1) {
+        setMsg($('formMessage'), 'No Avery 5168 labels available from that start position. Choose positions 1–4.', true);
+        return;
+      }
+
       const shipLineCount = [shipName, shipCompany, ...shipAddress.split(/\n+/).filter(Boolean)].filter(Boolean).length;
       const shipTextLength = `${shipName} ${shipCompany} ${shipAddress}`.length;
       const refsTextLength = [d.order_number, d.po_number, d.po_part_number, d.olipoly_part_number, d.part_revision].join(' ').length;
       const shipDensityClass = shipLineCount >= 7 || shipTextLength > 165 ? 'dense-ship' : shipLineCount >= 5 || shipTextLength > 115 ? 'medium-ship' : 'normal-ship';
       const refsDensityClass = refsTextLength > 90 ? 'dense-refs' : 'normal-refs';
 
-      const labelHtml = `
-        <div class="avery-sheet">
+      const oneLabel = () => `
           <div class="label-card ${shipDensityClass} ${refsDensityClass}">
             <div class="brand-band"></div>
             <div class="label-inner">
@@ -3289,19 +3308,37 @@ if ($('openVenmoBtn')) {
                 <div class="from-address">990 Aurora Hudson Road<br>Aurora, Ohio 44202<br>OliPoly3D.com</div>
               </div>
             </div>
-          </div>
-        </div>`;
+          </div>`;
+
+      const labelCards = Array.from({ length: 4 }, (_, index) => {
+        const position = index + 1;
+        const shouldPrint = position >= startPosition && position < startPosition + labelsToPrint;
+        return shouldPrint ? oneLabel() : '<div class="label-card blank-label" aria-hidden="true"></div>';
+      }).join('');
 
       const css = `
         *{box-sizing:border-box}
         html,body{margin:0;padding:0;background:#fff;color:#241b2b;font-family:Inter,Arial,Helvetica,sans-serif}
-        @page{size:letter;margin:.5in}
-        .avery-sheet{width:7.5in;display:grid;grid-template-columns:3.5in 3.5in;grid-auto-rows:5in;gap:.5in;align-items:start}
+        @page{size:letter portrait;margin:0}
+        .avery-sheet{
+          width:8.5in;
+          height:11in;
+          padding:.5in .75in;
+          display:grid;
+          grid-template-columns:3.5in 3.5in;
+          grid-template-rows:5in 5in;
+          gap:0;
+          align-items:start;
+          justify-content:start;
+          background:#fff;
+        }
         .label-card{
           width:3.5in;height:5in;overflow:hidden;color:#241b2b;
           border:1px solid #d9c1ec;border-radius:18px;
           background:radial-gradient(circle at top left,rgba(222,111,184,.18),transparent 42%),radial-gradient(circle at top right,rgba(101,214,196,.16),transparent 34%),#fffafd;
+          position:relative;
         }
+        .blank-label{border-color:transparent!important;background:#fff!important;border-radius:0!important}
         .brand-band{height:.12in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
         .label-inner{
           height:calc(5in - .12in);
@@ -3341,17 +3378,19 @@ if ($('openVenmoBtn')) {
         .from-address{margin-top:.025in;font-size:7.85px;font-weight:750;line-height:1.12;color:#604d68;overflow-wrap:anywhere}
         @media print{
           body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+          .avery-sheet{break-inside:avoid;page-break-inside:avoid}
           .label-card{break-inside:avoid;page-break-inside:avoid}
         }
       `;
 
+      const html = `<div class="avery-sheet">${labelCards}</div>`;
       const win = window.open('', '_blank');
       if (!win) {
         setMsg($('formMessage'), 'Pop-up blocked. Allow pop-ups for this site and try again.', true);
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${labelHtml}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
