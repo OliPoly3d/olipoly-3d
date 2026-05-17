@@ -2213,198 +2213,7 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
-<script>
-(function(){
-  "use strict";
-
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
-    });
-    return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
-      shipName: name,
-      shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
-    };
-  }
-
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
-    win.document.close();
-    try { win.focus(); } catch(e) {}
-  }
-
-  function card(label, value){
-    if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
-  }
-
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
-  }
-
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
-  }
-
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
-  }
-
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
-  }
-
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
-    if (!btn) return;
-    btn.id = id;
-    btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
-  }
-
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
-</script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
@@ -2645,198 +2454,7 @@ https://olipoly3d.com`;
     }
 
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
-    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
-<script>
-(function(){
-  "use strict";
-
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
-    });
-    return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
-      shipName: name,
-      shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
-    };
-  }
-
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
-    win.document.close();
-    try { win.focus(); } catch(e) {}
-  }
-
-  function card(label, value){
-    if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
-  }
-
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
-  }
-
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
-  }
-
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
-  }
-
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
-  }
-
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
-    if (!btn) return;
-    btn.id = id;
-    btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
-  }
-
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
-</script>
-
-</body></html>`);d.close();}
+    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`${d.payment_status === 'paid' ? 'Payment Received' : 'Invoice Ready'}: ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
     function closeInvoiceEmailModal(){$('invoiceEmailModal')?.classList.add('hidden');$('invoiceEmailModal')?.setAttribute('aria-hidden','true');document.body.style.overflow='';}
     async function copyInvoiceRichEmail(){try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([lastInvoiceEmail.html],{type:'text/html'}),'text/plain':new Blob([lastInvoiceEmail.plain],{type:'text/plain'})})]);}else await navigator.clipboard.writeText(lastInvoiceEmail.html);$('invoiceEmailModalMessage').innerHTML='Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';}catch(err){$('invoiceEmailModalMessage').textContent='Could not copy rich email automatically. Try Download HTML.';}}
@@ -3008,198 +2626,7 @@ https://olipoly3d.com`;
       if (!frame) return;
       const doc = frame.contentDocument || frame.contentWindow?.document;
       doc.open();
-      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
-<script>
-(function(){
-  "use strict";
-
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
-    });
-    return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
-      shipName: name,
-      shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
-    };
-  }
-
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
-    win.document.close();
-    try { win.focus(); } catch(e) {}
-  }
-
-  function card(label, value){
-    if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
-  }
-
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
-  }
-
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
-  }
-
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
-  }
-
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
-  }
-
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
-    if (!btn) return;
-    btn.id = id;
-    btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
-  }
-
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
-</script>
-
-</body></html>`);
+      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);
       doc.close();
     }
 
@@ -3767,198 +3194,7 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}</style></head><body>${invoiceHtml}
-<script>
-(function(){
-  "use strict";
-
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
-    });
-    return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
-      shipName: name,
-      shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
-    };
-  }
-
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
-    win.document.close();
-    try { win.focus(); } catch(e) {}
-  }
-
-  function card(label, value){
-    if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
-  }
-
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
-  }
-
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
-  }
-
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
-  }
-
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
-  }
-
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
-    if (!btn) return;
-    btn.id = id;
-    btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
-  }
-
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
-</script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}</style></head><body>${invoiceHtml}</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
@@ -4154,198 +3390,7 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}
-<script>
-(function(){
-  "use strict";
-
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
-    });
-    return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
-      shipName: name,
-      shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
-    };
-  }
-
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
-    win.document.close();
-    try { win.focus(); } catch(e) {}
-  }
-
-  function card(label, value){
-    if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
-  }
-
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
-  }
-
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
-  }
-
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
-  }
-
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
-  }
-
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
-    if (!btn) return;
-    btn.id = id;
-    btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
-  }
-
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
-</script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
@@ -4544,198 +3589,7 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script>
-<script>
-(function(){
-  "use strict";
-
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
-    });
-    return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
-      shipName: name,
-      shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
-    };
-  }
-
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
-    win.document.close();
-    try { win.focus(); } catch(e) {}
-  }
-
-  function card(label, value){
-    if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
-  }
-
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
-  }
-
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
-  }
-
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
-  }
-
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
-  }
-
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
-    if (!btn) return;
-    btn.id = id;
-    btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
-  }
-
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
-</script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script></body></html>`);
       win.document.close();
     }
 
@@ -5978,398 +4832,126 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
 
 
-<script>
-/* === Avery CSV export replacement v2026-05-17 CSV-1 ===
-   Replaces browser-printed label sheets with Avery Design & Print / Word-friendly CSV exports.
-   Button IDs intentionally changed so older print bindings do not attach to these controls. */
-(function(){
-  const AVERY_CSV_VERSION = 'Avery CSV Export v2026-05-17 CSV-1';
-
-  function byId(id){ return document.getElementById(id); }
-  function safeValue(value){ return String(value ?? '').trim(); }
-  function cleanFilePart(value, fallback){
-    const cleaned = safeValue(value || fallback || 'avery-labels').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '');
-    return cleaned || fallback || 'avery-labels';
-  }
-  function csvCell(value){
-    const text = String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  function buildCsv(rows){
-    const headers = Array.from(rows.reduce((set,row) => {
-      Object.keys(row).forEach(key => set.add(key));
-      return set;
-    }, new Set()));
-    const lines = [headers.map(csvCell).join(',')];
-    rows.forEach(row => lines.push(headers.map(key => csvCell(row[key])).join(',')));
-    return lines.join('\r\n');
-  }
-  function downloadCsv(filename, rows){
-    if (!rows || !rows.length) throw new Error('No label rows were created.');
-    const csv = buildCsv(rows);
-    const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1200);
-  }
-  function parseAddressLines(value){
-    return safeValue(value).split(/\n+/).map(line => line.trim()).filter(Boolean);
-  }
-  function promptInt(message, fallback, min, max){
-    const raw = prompt(message, String(fallback));
-    if (raw === null) return null;
-    const parsed = parseInt(raw, 10);
-    if (!Number.isFinite(parsed)) return fallback;
-    return Math.max(min, Math.min(max, parsed));
-  }
-  function getOrderSnapshot(){
-    if (typeof snapshotForm === 'function') return snapshotForm();
-    const ids = [
-      'orderNumber','customerName','customerEmail','orderTitle','quantity','fulfillment','trackingNumber','poNumber','poPartNumber',
-      'olipolyPartNumber','partRevision','shippingContactName','shippingCompany','shippingAddress','billingAddress','catalogMaterial',
-      'catalogColor','catalogProductionNotes','catalogPostProcessingNotes','paidDate','orderDate'
-    ];
-    return ids.reduce((obj,id) => {
-      const key = id.replace(/[A-Z]/g, m => '_' + m.toLowerCase());
-      obj[key] = byId(id)?.value || '';
-      return obj;
-    }, {});
-  }
-  function showExportMessage(text, isError){
-    const el = byId('formMessage');
-    if (el && typeof setMsg === 'function') setMsg(el, text, !!isError);
-    else if (isError) alert(text);
-  }
-
-  function exportAvery5168ShippingCsv(){
-    const d = getOrderSnapshot();
-    const labelCount = promptInt('How many Avery 5168 shipping labels should be exported? Max 4 per sheet.', 1, 1, 4);
-    if (labelCount === null) return;
-
-    const shipLines = parseAddressLines(d.shipping_address);
-    const billingLines = parseAddressLines(d.billing_address);
-    const returnLines = ['OliPoly 3D LLC', '908 Jazmine Root Road', 'Aurora, Ohio 44202', 'OliPoly3D.com'];
-    const shipName = safeValue(d.shipping_contact_name || d.customer_name || 'Receiving Contact');
-    const shipCompany = safeValue(d.shipping_company);
-    const orderNumber = safeValue(d.order_number);
-    const todayValue = (typeof today === 'function') ? today() : new Date().toISOString().slice(0,10);
-
-    const baseRow = {
-      LabelType: 'Avery 5168 Shipping',
-      BusinessName: 'OliPoly 3D',
-      BusinessTagline: 'Custom 3D Printing • Creative Builds • Prototypes',
-      OrderNumber: orderNumber,
-      ProjectTitle: safeValue(d.order_title),
-      Fulfillment: safeValue(d.fulfillment),
-      TrackingNumber: safeValue(d.tracking_number),
-      ShipToName: shipName,
-      ShipToCompany: shipCompany,
-      ShipToAddress1: shipLines[0] || '',
-      ShipToAddress2: shipLines[1] || '',
-      ShipToAddress3: shipLines[2] || '',
-      ShipToAddressFull: shipLines.join('\n'),
-      CustomerName: safeValue(d.customer_name),
-      CustomerEmail: safeValue(d.customer_email),
-      CustomerPO: safeValue(d.po_number),
-      CustomerPartNumber: safeValue(d.po_part_number),
-      OliPolyPartNumber: safeValue(d.olipoly_part_number),
-      Revision: safeValue(d.part_revision),
-      Quantity: safeValue(d.quantity),
-      BillingAddressFull: billingLines.join('\n'),
-      ReturnName: returnLines[0],
-      ReturnAddress1: returnLines[1],
-      ReturnAddress2: returnLines[2],
-      ReturnWebsite: returnLines[3],
-      ExportDate: todayValue
-    };
-
-    const rows = Array.from({length: labelCount}, (_, index) => ({...baseRow, LabelNumber: index + 1}));
-    const filename = `${cleanFilePart(orderNumber || d.customer_name || 'order', 'order')}-avery-5168-shipping.csv`;
-    downloadCsv(filename, rows);
-    showExportMessage(`Exported ${labelCount} Avery 5168 shipping CSV row${labelCount === 1 ? '' : 's'} for Avery Design & Print.`, false);
-  }
-
-  function exportAvery5366InnerPackCsv(){
-    const d = getOrderSnapshot();
-    const defaultPart = safeValue(d.olipoly_part_number || d.po_part_number || d.order_title || 'Part');
-    const defaultQty = safeValue(d.quantity || '1');
-    const defaultMaterial = [d.catalog_material, d.catalog_color].map(safeValue).filter(Boolean).join(' / ');
-    const defaultRev = safeValue(d.part_revision || '');
-    const partNumber = prompt('Inner pack label — Part / item / part number:', defaultPart);
-    if (partNumber === null) return;
-    const packQty = prompt('Quantity per inner package:', defaultQty);
-    if (packQty === null) return;
-    const labelCount = promptInt('How many Avery 5366 inner pack labels should be exported? Max 30 per sheet.', 30, 1, 30);
-    if (labelCount === null) return;
-    const qcInitials = prompt('QC initials or packed-by initials:', '') ?? '';
-    const materialLot = prompt('Material / color / lot note:', defaultMaterial) ?? defaultMaterial;
-    const revision = prompt('Revision:', defaultRev) ?? defaultRev;
-    const packDate = prompt('Pack date:', (typeof today === 'function') ? today() : new Date().toISOString().slice(0,10)) ?? '';
-    const labelNote = prompt('Short label note (optional):', '') ?? '';
-
-    const orderNumber = safeValue(d.order_number);
-    const baseRow = {
-      LabelType: 'Avery 5366 Inner Pack',
-      BusinessName: 'OliPoly 3D',
-      Badge: 'INNER PACK',
-      PartNumber: safeValue(partNumber),
-      Quantity: safeValue(packQty),
-      OrderNumber: orderNumber,
-      QCInitials: safeValue(qcInitials),
-      Revision: safeValue(revision),
-      PackDate: safeValue(packDate),
-      MaterialLot: safeValue(materialLot),
-      Note: safeValue(labelNote),
-      ProjectTitle: safeValue(d.order_title),
-      CustomerPartNumber: safeValue(d.po_part_number),
-      OliPolyPartNumber: safeValue(d.olipoly_part_number),
-      CustomerPO: safeValue(d.po_number),
-      CustomerName: safeValue(d.customer_name),
-      ExportDate: (typeof today === 'function') ? today() : new Date().toISOString().slice(0,10)
-    };
-
-    const rows = Array.from({length: labelCount}, (_, index) => ({...baseRow, LabelNumber: index + 1}));
-    const filename = `${cleanFilePart(orderNumber || partNumber || 'inner-pack', 'inner-pack')}-avery-5366-inner-pack.csv`;
-    downloadCsv(filename, rows);
-    showExportMessage(`Exported ${labelCount} Avery 5366 inner pack CSV row${labelCount === 1 ? '' : 's'} for Avery Design & Print.`, false);
-  }
-
-  function bindCsvExportButtons(){
-    const shipBtn = byId('exportAvery5168CsvBtn');
-    if (shipBtn && shipBtn.dataset.averyCsvBound !== 'true') {
-      shipBtn.dataset.averyCsvBound = 'true';
-      shipBtn.title = AVERY_CSV_VERSION;
-      shipBtn.addEventListener('click', function(event){
-        event.preventDefault();
-        event.stopPropagation();
-        try { exportAvery5168ShippingCsv(); }
-        catch (error) {
-          console.error('Avery 5168 CSV export failed:', error);
-          showExportMessage(`Avery 5168 CSV export failed: ${error?.message || error}`, true);
-        }
-      }, true);
-    }
-
-    const innerBtn = byId('exportAvery5366CsvBtn');
-    if (innerBtn && innerBtn.dataset.averyCsvBound !== 'true') {
-      innerBtn.dataset.averyCsvBound = 'true';
-      innerBtn.title = AVERY_CSV_VERSION;
-      innerBtn.addEventListener('click', function(event){
-        event.preventDefault();
-        event.stopPropagation();
-        try { exportAvery5366InnerPackCsv(); }
-        catch (error) {
-          console.error('Avery 5366 CSV export failed:', error);
-          showExportMessage(`Avery 5366 CSV export failed: ${error?.message || error}`, true);
-        }
-      }, true);
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', bindCsvExportButtons);
-  bindCsvExportButtons();
-  setTimeout(bindCsvExportButtons, 250);
-  setTimeout(bindCsvExportButtons, 1000);
-
-  window.exportAvery5168ShippingCsv = exportAvery5168ShippingCsv;
-  window.exportAvery5366InnerPackCsv = exportAvery5366InnerPackCsv;
-})();
-</script>
 
 <script>
+/* === OliPoly clean Avery print override v2026-05-17S === */
 (function(){
   "use strict";
+  const RETURN_ADDRESS = ["OliPoly 3D LLC", "990 Aurora Hudson Road", "Aurora, OH 44202", "OliPoly3D@gmail.com"];
+  const $op = (id) => document.getElementById(id);
+  const opVal = (id) => { const el = $op(id); return el && el.value ? String(el.value).trim() : ""; };
+  const opEsc = (s) => String(s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+  const opLines = (s) => String(s || "").replace(/\r/g,"\n").split("\n").map(x=>x.trim()).filter(Boolean);
+  const opInt = (s, fallback, min, max) => { const n = parseInt(s, 10); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback; };
+  const opToday = () => new Date().toISOString().slice(0,10);
 
-  var RETURN_ADDRESS = ["OliPoly 3D LLC","990 Aurora Hudson Road","Aurora, OH 44202","OliPoly3D@gmail.com"];
-
-  function byId(id){ return document.getElementById(id); }
-  function val(id){ var el = byId(id); return el && el.value ? String(el.value).trim() : ""; }
-  function esc(s){
-    return String(s == null ? "" : s)
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  }
-  function lines(s){
-    return String(s || "").replace(/\r/g,"\n").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
-  }
-  function asInt(s, fallback, min, max){
-    var n = parseInt(s,10);
-    if (!isFinite(n)) return fallback;
-    return Math.max(min, Math.min(max, n));
-  }
-  function today(){ return new Date().toISOString().slice(0,10); }
-
-  function data(){
-    var shipLines = lines(val("shippingAddress"));
-    var billLines = lines(val("billingAddress"));
-    var address = shipLines.length ? shipLines : billLines;
-    var customer = val("customerName");
-    var contact = val("shippingContactName");
-    var company = val("shippingCompany");
-    var name = contact || company || customer || "Receiving Contact";
-    var filtered = address.filter(function(line, idx){
-      var l = line.toLowerCase();
-      if (idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase()))) return false;
-      return true;
+  function opData(){
+    const shipping = opLines(opVal("shippingAddress"));
+    const billing = opLines(opVal("billingAddress"));
+    const rawAddress = shipping.length ? shipping : billing;
+    const customer = opVal("customerName");
+    const contact = opVal("shippingContactName");
+    const company = opVal("shippingCompany");
+    const name = contact || company || customer || "Receiving Contact";
+    const address = rawAddress.filter((line, idx) => {
+      const l = line.toLowerCase();
+      return !(idx === 0 && (l === name.toLowerCase() || (company && l === company.toLowerCase())));
     });
     return {
-      orderNumber: val("orderNumber") || "OP-ORDER",
-      orderDate: val("orderDate") || today(),
+      orderNumber: opVal("orderNumber") || "OP-ORDER",
+      orderDate: opVal("orderDate") || opToday(),
       shipName: name,
       shipCompany: company && company !== name ? company : "",
-      addressLines: filtered,
-      project: val("orderTitle") || "Project",
-      qty: val("quantity") || "1",
-      po: val("poNumber") || "",
-      customerPart: val("poPartNumber") || "",
-      oliPart: val("olipolyPartNumber") || "",
-      rev: val("partRevision") || "Rev A",
-      fulfillment: val("fulfillment") || "shipping",
-      material: [val("catalogMaterial"), val("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
+      address,
+      project: opVal("orderTitle") || "Project",
+      qty: opVal("quantity") || "1",
+      po: opVal("poNumber") || "",
+      customerPart: opVal("poPartNumber") || "",
+      oliPart: opVal("olipolyPartNumber") || "",
+      rev: opVal("partRevision") || "Rev A",
+      fulfillment: opVal("fulfillment") || "shipping",
+      material: [opVal("catalogMaterial"), opVal("catalogColor")].filter(Boolean).join(" / ") || "Material / color"
     };
   }
 
-  function openPrint(title, css, bodyHtml){
-    var win = window.open("", "_blank");
+  function opOpenPrint(title, css, bodyHtml){
+    const win = window.open("", "_blank");
     if (!win) { alert("Pop-up blocked. Allow pop-ups for this site and try again."); return; }
-
-    var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
-    var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
-
+    const toolbarCss = `.op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}`;
+    const toolbar = `<div class="op-print-toolbar"><div><strong>${opEsc(title)}</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>`;
     win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${opEsc(title)}</title><style>${toolbarCss}${css}</style></head><body>${toolbar}${bodyHtml}</body></html>`);
     win.document.close();
     try { win.focus(); } catch(e) {}
   }
 
-  function card(label, value){
+  function opCard(label, value){
     if (!value) return "";
-    return '<div class="info-card"><b>' + esc(label) + '</b><strong>' + esc(value) + '</strong></div>';
+    return `<div class="info-card"><b>${opEsc(label)}</b><strong>${opEsc(value)}</strong></div>`;
   }
 
-  function shipLabel(d, outline){
-    var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
-    if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-
-    var cards = [
-      card("Project", d.project),
-      card("Qty", d.qty),
-      card("PO", d.po),
-      card("Customer Part #", d.customerPart),
-      card("OliPoly Part #", d.oliPart)
-    ].join("");
-
-    var returnBlock = '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' +
-      RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>';
-
-    return '<section class="ship-label ' + (outline ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">' + esc(d.orderNumber) + '</div><div class="ship-badge">' + esc(d.fulfillment) + '</div></div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
+  function opShippingLabel(d, outline){
+    const addr = d.address.length ? d.address.map(x => `<div class="addr-line">${opEsc(x)}</div>`).join("") : `<div class="addr-line muted">No shipping address entered.</div>`;
+    const cards = [opCard("Project", d.project), opCard("Qty", d.qty), opCard("PO", d.po), opCard("Customer Part #", d.customerPart), opCard("OliPoly Part #", d.oliPart)].join("");
+    const returnBlock = `<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>${RETURN_ADDRESS.map(x=>`<div>${opEsc(x)}</div>`).join("")}</div>`;
+    return `<section class="ship-label ${outline ? "test-outline" : ""}"><header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">${opEsc(d.orderNumber)}</div><div class="ship-badge">${opEsc(d.fulfillment)}</div></div></header><main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">${opEsc(d.shipName)}</div>${d.shipCompany ? `<div class="addr-company">${opEsc(d.shipCompany)}</div>` : ""}<div class="addr-body">${addr}</div></div><div class="ship-info">${cards}</div></main>${returnBlock}</section>`;
   }
 
-  function print5168(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
-    var start = asInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
-    var x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25"));
-    if (!isFinite(x)) x = 0.25;
-    var y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0"));
-    if (!isFinite(y)) y = 0;
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=4;i++){
-      if (i >= start && printed < qty){ labels.push(shipLabel(d, outline)); printed++; }
-      else labels.push('<section class="ship-label blank"></section>');
+  function opPrint5168(){
+    const d = opData();
+    const qty = opInt(prompt("How many Avery 5168 shipping labels? Max 4.", "4"), 4, 1, 4);
+    const start = opInt(prompt("Start position? 1-4: 1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right.", "1"), 1, 1, 4);
+    let x = Number(prompt("Fine adjust left/right in inches. Positive moves right. Keep 0.25 if spacing looked correct.", "0.25")); if (!Number.isFinite(x)) x = 0.25;
+    let y = Number(prompt("Fine adjust up/down in inches. Positive moves down.", "0")); if (!Number.isFinite(y)) y = 0;
+    const outline = confirm("Print test outlines? OK = yes, Cancel = no.");
+    const labels = [];
+    let printed = 0;
+    for (let i=1; i<=4; i++) {
+      labels.push(i >= start && printed < qty ? (printed++, opShippingLabel(d, outline)) : `<section class="ship-label blank"></section>`);
     }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
-      ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
-    ].join("");
-
-    var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5168 Shipping Labels", css, html);
+    const css = `@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}.slot.s1{left:calc(0.50in + ${x}in);top:calc(0.50in + ${y}in)}.slot.s2{left:calc(4.50in + ${x}in);top:calc(0.50in + ${y}in)}.slot.s3{left:calc(0.50in + ${x}in);top:calc(5.50in + ${y}in)}.slot.s4{left:calc(4.50in + ${x}in);top:calc(5.50in + ${y}in)}.ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}.ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}.ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}.ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}`;
+    opOpenPrint("Avery 5168 Shipping Labels", css, `<div class="sheet">${labels.map((label,idx)=>`<div class="slot s${idx+1}">${label}</div>`).join("")}</div>`);
   }
 
-  function innerLabel(d, o){
-    return '<section class="inner-label ' + (o.outline ? "test-outline" : "") + '"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">' + esc(o.part) + '</div><div class="mid-row"><div><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>' + esc(d.rev) + '</strong></div><div><b>Date</b><strong>' + esc(d.orderDate) + '</strong></div></div><div class="bottom-row"><span>' + esc(o.material) + '</span><em>QTY ' + esc(o.packQty) + '</em></div></div></section>';
+  function opInnerLabel(d, o){
+    return `<section class="inner-label ${o.outline ? "test-outline" : ""}"><div class="edge-bar"></div><div class="inner-content"><div class="inner-top"><div class="brand-mini">OliPoly<span>3D</span></div><div class="pack-badge">INNER PACK</div></div><div class="part-line">${opEsc(o.part)}</div><div class="mid-row"><div><b>Order</b><strong>${opEsc(d.orderNumber)}</strong></div><div><b>QC</b><strong>—</strong></div><div><b>Rev</b><strong>${opEsc(d.rev)}</strong></div><div><b>Date</b><strong>${opEsc(d.orderDate)}</strong></div></div><div class="bottom-row"><span>${opEsc(o.material)}</span><em>QTY ${opEsc(o.packQty)}</em></div></div></section>`;
   }
 
-  function print5366(){
-    var d = data();
-    var qty = asInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
-    var start = asInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
-    var part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
-    var packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
-    var material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
-    var outline = confirm("Print test outlines? OK = yes, Cancel = no.");
-    var opts = {part:part,packQty:packQty,material:material,outline:outline};
-
-    var labels = [], printed = 0;
-    for (var i=1;i<=30;i++){
-      if (i >= start && printed < qty){ labels.push(innerLabel(d, opts)); printed++; }
-      else labels.push('<section class="inner-label blank"></section>');
-    }
-
-    var slotCss = "";
-    for (var idx=0;idx<30;idx++){
-      var col = idx % 2, row = Math.floor(idx/2);
-      var left = col === 0 ? 0.50 : 4.5625;
-      var top = 0.50 + row * 0.6667;
-      slotCss += ".slot5366.s" + (idx+1) + "{left:" + left.toFixed(4) + "in;top:" + top.toFixed(4) + "in}";
-    }
-
-    var css = [
-      "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
-      ".sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}" + slotCss,
-      ".inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}",
-      ".inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}",
-      ".part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
-      ".bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}"
-    ].join("");
-
-    var html = '<div class="sheet5366">' + labels.map(function(label, idx){ return '<div class="slot5366 s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
-    openPrint("Avery 5366 Inner Pack Labels", css, html);
+  function opPrint5366(){
+    const d = opData();
+    const qty = opInt(prompt("How many Avery 5366 inner pack labels? Max 30.", "30"), 30, 1, 30);
+    const start = opInt(prompt("Start position? 1-30, top-left to bottom-right.", "1"), 1, 1, 30);
+    const part = prompt("Part / item / part number:", d.oliPart || d.customerPart || d.project || "Part") || "Part";
+    const packQty = prompt("Quantity shown on label:", d.qty || "1") || "1";
+    const material = prompt("Material / color / lot line:", d.material || "PETG / Black") || "";
+    const outline = confirm("Print test outlines? OK = yes, Cancel = no.");
+    const labels = [];
+    let printed = 0;
+    for (let i=1; i<=30; i++) labels.push(i >= start && printed < qty ? (printed++, opInnerLabel(d, {part,packQty,material,outline})) : `<section class="inner-label blank"></section>`);
+    let slotCss = "";
+    for (let idx=0; idx<30; idx++) { const col=idx%2, row=Math.floor(idx/2), left=col===0?0.50:4.5625, top=0.50+row*0.6667; slotCss += `.slot5366.s${idx+1}{left:${left.toFixed(4)}in;top:${top.toFixed(4)}in}`; }
+    const css = `@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet5366{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot5366{position:absolute;width:3.4375in;height:0.6667in;overflow:hidden}${slotCss}.inner-label{width:3.4375in;height:0.6667in;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid #efd2ec;font-family:Inter,Arial,sans-serif}.inner-label.blank{border:0;background:transparent}.inner-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.edge-bar{position:absolute;left:0;top:0;bottom:0;width:.035in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#2ee6c4)}.inner-content{position:absolute;left:.055in;right:.035in;top:.035in;bottom:.035in;display:grid;grid-template-rows:auto auto 1fr auto;gap:.018in;min-width:0}.inner-top{display:flex;justify-content:space-between;align-items:start;gap:.04in;min-width:0}.brand-mini{font-family:Georgia,'Times New Roman',serif;font-weight:900;font-size:10px;line-height:.92;color:#241b2b;white-space:nowrap}.brand-mini span{color:#9d4df1}.pack-badge{border:1px solid #ead8f2;border-radius:999px;padding:.006in .035in;font-size:4.9px;line-height:1;font-weight:950;letter-spacing:.08em;color:#7c4a82;white-space:nowrap;max-width:.72in;overflow:hidden;text-overflow:ellipsis}.part-line{font-size:7.3px;line-height:1.03;font-weight:950;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding-right:.02in}.mid-row{display:grid;grid-template-columns:1.03fr .42fr .52fr .68fr;gap:.025in;align-items:center;min-width:0}.mid-row div{display:grid;grid-template-columns:auto 1fr;gap:.018in;align-items:center;border:1px solid #f0d7ef;border-radius:.025in;padding:.008in .018in;min-width:0;overflow:hidden}.mid-row b{font-size:4.6px;line-height:1;text-transform:uppercase;letter-spacing:.06em;color:#7c4a82;font-weight:950;white-space:nowrap}.mid-row strong{font-size:5.8px;line-height:1;color:#111827;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}.bottom-row{display:grid;grid-template-columns:minmax(0,1fr) .68in;gap:.04in;align-items:end;min-width:0}.bottom-row span{font-size:5.9px;line-height:1;font-weight:900;color:#241b2b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bottom-row em{display:block;min-width:0;max-width:.68in;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-style:normal;font-size:8px;line-height:1;font-weight:950;color:#fff;background:linear-gradient(135deg,#6e6a7a,#9d7cff);border-radius:999px;padding:.017in .025in .015in}`;
+    opOpenPrint("Avery 5366 Inner Pack Labels", css, `<div class="sheet5366">${labels.map((label,idx)=>`<div class="slot5366 s${idx+1}">${label}</div>`).join("")}</div>`);
   }
 
-  function setButton(id, fallbackId, label, fn){
-    var btn = byId(id) || byId(fallbackId);
+  function opBindButton(id, label, handler){
+    const btn = $op(id);
     if (!btn) return;
-    btn.id = id;
     btn.textContent = label;
-    var clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      fn();
-    }, true);
+    if (btn.dataset.opAveryBound === "true") return;
+    btn.dataset.opAveryBound = "true";
+    btn.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); handler(); }, true);
   }
 
-  function bind(){
-    setButton("printShippingLabelBtn", "exportAvery5168CsvBtn", "Print Avery 5168 Shipping Label", print5168);
-    setButton("printInnerPackLabelBtn", "exportAvery5366CsvBtn", "Print Avery 5366 Inner Pack Labels", print5366);
+  function opBind(){
+    opBindButton("printShippingLabelBtn", "Print Avery 5168 Shipping Label", opPrint5168);
+    opBindButton("printInnerPackLabelBtn", "Print Avery 5366 Inner Pack Labels", opPrint5366);
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", opBind); else opBind();
+  setTimeout(opBind, 500);
+  setTimeout(opBind, 1500);
 })();
 </script>
-
 </body>
 </html>
