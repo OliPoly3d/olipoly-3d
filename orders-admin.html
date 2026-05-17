@@ -2213,7 +2213,386 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
@@ -2454,7 +2833,386 @@ https://olipoly3d.com`;
     }
 
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
-    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);d.close();}
+    function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`${d.payment_status === 'paid' ? 'Payment Received' : 'Invoice Ready'}: ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
     function closeInvoiceEmailModal(){$('invoiceEmailModal')?.classList.add('hidden');$('invoiceEmailModal')?.setAttribute('aria-hidden','true');document.body.style.overflow='';}
     async function copyInvoiceRichEmail(){try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([lastInvoiceEmail.html],{type:'text/html'}),'text/plain':new Blob([lastInvoiceEmail.plain],{type:'text/plain'})})]);}else await navigator.clipboard.writeText(lastInvoiceEmail.html);$('invoiceEmailModalMessage').innerHTML='Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';}catch(err){$('invoiceEmailModalMessage').textContent='Could not copy rich email automatically. Try Download HTML.';}}
@@ -2626,7 +3384,386 @@ https://olipoly3d.com`;
       if (!frame) return;
       const doc = frame.contentDocument || frame.contentWindow?.document;
       doc.open();
-      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}</body></html>`);
+      doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`);
       doc.close();
     }
 
@@ -3194,7 +4331,386 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}</style></head><body>${invoiceHtml}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}</style></head><body>${invoiceHtml}
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
@@ -3390,7 +4906,386 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
     }
@@ -3589,7 +5484,386 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script></body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script>
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`);
       win.document.close();
     }
 
@@ -5220,7 +7494,386 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   }
 
   function printDoc(title, css, body, autoPrint=true){
-    const full = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${body}${autoPrint ? `<script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print();},450);});<\/script>` : ''}</body></html>`;
+    const full = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${body}${autoPrint ? `<script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print();},450);});<\/script>` : ''}
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
+})();
+</script>
+
+</body></html>`;
     const win = window.open('', '_blank', 'width=980,height=760');
     if (!win) {
       const blob = new Blob([full], {type:'text/html;charset=utf-8'});
@@ -5349,6 +8002,385 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   }
   document.addEventListener('DOMContentLoaded', install);
   install(); setTimeout(install,250); setTimeout(install,1000);
+})();
+</script>
+
+
+<script>
+/* === OliPoly Avery 5168 Shipping Label Address Polish v2026-05-17K ===
+   Last-loaded override: keeps the working Avery geometry/spacing, but cleans the ship-to/return address typography.
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ const el = byId(id); return (el && el.value ? String(el.value).trim() : ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function cleanLines(value){
+    return String(value || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  function orderData(){
+    const shippingLines = cleanLines(val("shippingAddress"));
+    const billingLines = cleanLines(val("billingAddress"));
+    const customer = val("customerName");
+    const shipContact = val("shippingContactName");
+    const shipCompany = val("shippingCompany");
+    const useLines = shippingLines.length ? shippingLines : billingLines;
+
+    // Best effort: avoid duplicating a company/contact line if already included in the address textarea.
+    const firstAddressLine = (useLines[0] || "").toLowerCase();
+    const displayName = shipContact || shipCompany || customer || "Receiving Contact";
+    const companyLine = shipCompany && shipCompany.toLowerCase() !== displayName.toLowerCase() ? shipCompany : "";
+    const filteredAddress = useLines.filter((line, idx) => {
+      const l = line.toLowerCase();
+      if (idx === 0 && (l === displayName.toLowerCase() || (companyLine && l === companyLine.toLowerCase()))) return false;
+      return true;
+    });
+
+    return {
+      orderNumber: val("orderNumber") || "OP-ORDER",
+      orderTitle: val("orderTitle") || "Project",
+      quantity: val("quantity") || "1",
+      poNumber: val("poNumber") || "",
+      poPartNumber: val("poPartNumber") || "",
+      olipolyPartNumber: val("olipolyPartNumber") || "",
+      partRevision: val("partRevision") || "",
+      customerName: customer,
+      shippingContactName: shipContact,
+      shippingCompany: shipCompany,
+      shipToName: displayName,
+      shipToCompany: companyLine,
+      shipToLines: filteredAddress,
+      returnLines: [
+        "OliPoly 3D LLC",
+        "981 Jasmine Avenue Road",
+        "Aurora, OH 44202",
+        "OliPoly3D@gmail.com"
+      ],
+      fulfillment: val("fulfillment") || "shipping"
+    };
+  }
+
+  function parsePositiveInt(input, fallback, min, max){
+    const n = parseInt(input, 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function buildFieldOptions5168(existing){
+    const defaults = {
+      project: true, qty: true, po: true, customerPart: true, olipolyPart: true,
+      revision: false, returnAddress: true, orderNumber: true, badges: true, outlines: false,
+      xOffset: 0.25, yOffset: 0
+    };
+    const o = Object.assign({}, defaults, existing || {});
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div id="op5168OptionsBackdrop" style="position:fixed;inset:0;z-index:99999;background:rgba(5,9,19,.72);display:grid;place-items:center;padding:18px;">
+        <div style="width:min(720px,96vw);max-height:92vh;overflow:auto;border-radius:26px;background:#0b142b;color:#eef4ff;border:1px solid rgba(126,144,255,.24);box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;">
+          <div style="padding:20px 22px;border-bottom:1px solid rgba(126,144,255,.18);">
+            <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#a8b5db;font-weight:900;">Avery 5168 Shipping Label</div>
+            <h3 style="margin:6px 0 0;font-family:Cormorant Garamond,Georgia,serif;font-size:1.7rem;">Choose label content</h3>
+            <p style="margin:6px 0 0;color:#a8b5db;line-height:1.45;">Uses the working Avery spacing. Address formatting is now standardized for valid shipping-label readability.</p>
+          </div>
+          <div style="padding:18px 22px;display:grid;gap:16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+              <label><span>Quantity</span><input id="op5168Qty" type="number" min="1" max="4" value="4"></label>
+              <label><span>Start position</span><select id="op5168Start"><option value="1">1 - Top left</option><option value="2">2 - Top right</option><option value="3">3 - Bottom left</option><option value="4">4 - Bottom right</option></select></label>
+              <label><span>Fine shift X inches</span><input id="op5168X" type="number" step="0.01" value="${o.xOffset}"></label>
+              <label><span>Fine shift Y inches</span><input id="op5168Y" type="number" step="0.01" value="${o.yOffset}"></label>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+              ${[
+                ["project","Project / item"],
+                ["qty","Quantity"],
+                ["po","PO number"],
+                ["customerPart","Customer part #"],
+                ["olipolyPart","OliPoly part #"],
+                ["revision","Revision"],
+                ["returnAddress","From / return address"],
+                ["orderNumber","Order number"],
+                ["badges","Shipping badge"],
+                ["outlines","Test outlines"]
+              ].map(([key,label]) => `
+                <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(126,144,255,.14);">
+                  <input id="op5168_${key}" type="checkbox" ${o[key] ? "checked" : ""} style="width:auto;">
+                  <span>${label}</span>
+                </label>`).join("")}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid rgba(126,144,255,.18);">
+            <button id="op5168Cancel" type="button" style="border:1px solid rgba(126,144,255,.24);background:rgba(255,255,255,.06);color:#eef4ff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer;">Cancel</button>
+            <button id="op5168Go" type="button" style="border:0;background:linear-gradient(135deg,#7e7bff,#2ee6c4);color:white;border-radius:999px;padding:11px 18px;font-weight:950;cursor:pointer;">Open Print Sheet</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = byId("op5168OptionsBackdrop");
+    modal.querySelectorAll("label > span:first-child").forEach(s => {
+      if (s.parentElement.querySelector("input[type=number],select")) {
+        s.style.display = "block";
+        s.style.marginBottom = "6px";
+        s.style.color = "#a8b5db";
+        s.style.fontSize = ".78rem";
+        s.style.fontWeight = "900";
+      }
+    });
+    modal.querySelectorAll("input[type=number],select").forEach(el => {
+      el.style.width = "100%";
+      el.style.borderRadius = "14px";
+      el.style.border = "1px solid rgba(126,144,255,.22)";
+      el.style.background = "rgba(255,255,255,.06)";
+      el.style.color = "#eef4ff";
+      el.style.padding = "11px 12px";
+      el.style.font = "inherit";
+    });
+
+    return new Promise(resolve => {
+      byId("op5168Cancel").onclick = () => { modal.remove(); resolve(null); };
+      byId("op5168Go").onclick = () => {
+        const opts = {
+          qty: parsePositiveInt(byId("op5168Qty").value, 4, 1, 4),
+          start: parsePositiveInt(byId("op5168Start").value, 1, 1, 4),
+          project: byId("op5168_project").checked,
+          qtyField: byId("op5168_qty").checked,
+          po: byId("op5168_po").checked,
+          customerPart: byId("op5168_customerPart").checked,
+          olipolyPart: byId("op5168_olipolyPart").checked,
+          revision: byId("op5168_revision").checked,
+          returnAddress: byId("op5168_returnAddress").checked,
+          orderNumber: byId("op5168_orderNumber").checked,
+          badges: byId("op5168_badges").checked,
+          outlines: byId("op5168_outlines").checked,
+          xOffset: Number(byId("op5168X").value) || 0,
+          yOffset: Number(byId("op5168Y").value) || 0
+        };
+        modal.remove();
+        resolve(opts);
+      };
+    });
+  }
+
+  function infoCard(label, value){
+    if (!value) return "";
+    return `<div class="ship-info-card"><b>${esc(label)}</b><strong>${esc(value)}</strong></div>`;
+  }
+
+  function build5168LabelHTML(d, opts){
+    const infoCards = [
+      opts.project ? infoCard("Project", d.orderTitle) : "",
+      opts.qtyField ? infoCard("Qty", d.quantity) : "",
+      opts.po ? infoCard("PO", d.poNumber) : "",
+      opts.customerPart ? infoCard("Customer Part #", d.poPartNumber) : "",
+      opts.olipolyPart ? infoCard("OliPoly Part #", d.olipolyPartNumber) : "",
+      opts.revision ? infoCard("Revision", d.partRevision) : ""
+    ].filter(Boolean).join("");
+
+    const addressLines = d.shipToLines.map(line => `<div class="addr-line">${esc(line)}</div>`).join("");
+    const returnBlock = opts.returnAddress ? `
+      <div class="return-block">
+        <div class="return-rule"></div>
+        <div class="return-kicker">From / return address</div>
+        ${d.returnLines.map(line => `<div>${esc(line)}</div>`).join("")}
+      </div>` : "";
+
+    return `
+      <section class="ship-label ${opts.outlines ? "test-outline" : ""}">
+        <header class="ship-head">
+          <div>
+            <div class="brand-word">OliPoly<span>3D</span></div>
+            <div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div>
+          </div>
+          <div class="ship-top-right">
+            ${opts.orderNumber ? `<div class="order-no">${esc(d.orderNumber)}</div>` : ""}
+            ${opts.badges ? `<div class="ship-badge">${esc(d.fulfillment || "shipping")}</div>` : ""}
+          </div>
+        </header>
+
+        <main class="ship-main">
+          <div class="ship-to">
+            <div class="section-kicker">Ship / deliver to</div>
+            <div class="addr-name">${esc(d.shipToName)}</div>
+            ${d.shipToCompany ? `<div class="addr-company">${esc(d.shipToCompany)}</div>` : ""}
+            <div class="addr-body">${addressLines || `<div class="addr-line muted-address">No shipping address entered.</div>`}</div>
+          </div>
+          <div class="ship-info">${infoCards}</div>
+        </main>
+
+        ${returnBlock}
+      </section>`;
+  }
+
+  function open5168Print(opts){
+    const d = orderData();
+    const totalSlots = 4;
+    const labels = [];
+    for (let slot = 1; slot <= totalSlots; slot++){
+      const shouldPrint = slot >= opts.start && labels.filter(Boolean).length < opts.qty;
+      labels.push(shouldPrint ? build5168LabelHTML(d, opts) : `<section class="ship-label blank"></section>`);
+    }
+
+    const css = `
+      @page{size:letter portrait;margin:0}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .print-note{font:700 10px/1.35 Arial,sans-serif;color:#34263d;background:#fff9db;border-bottom:1px solid #e7dca4;padding:5px 7px}
+      @media print{.print-note{display:none}}
+      .sheet{
+        position:relative;
+        width:8.5in;
+        height:11in;
+        overflow:hidden;
+        background:#fff;
+      }
+      .slot{
+        position:absolute;
+        width:3.5in;
+        height:5in;
+        overflow:hidden;
+      }
+      /* Working Avery geometry + requested 0.25in right-shift preserved */
+      .slot.s1{left:calc(0.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s2{left:calc(4.50in + ${opts.xOffset}in);top:calc(0.50in + ${opts.yOffset}in)}
+      .slot.s3{left:calc(0.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+      .slot.s4{left:calc(4.50in + ${opts.xOffset}in);top:calc(5.50in + ${opts.yOffset}in)}
+
+      .ship-label{
+        width:3.5in;height:5in;padding:.16in .18in .13in;
+        background:
+          radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),
+          linear-gradient(180deg,#fff,#fff9fd);
+        border-radius:.08in;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      .ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}
+      .ship-label.blank{background:transparent}
+      .ship-head{
+        display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;
+        padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in;
+      }
+      .brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}
+      .brand-word span{color:#a24df1}
+      .brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}
+      .ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}
+      .order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}
+      .ship-badge{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:.035in .075in;border-radius:999px;
+        background:linear-gradient(135deg,#7e7bff,#bd6cff);
+        color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em;
+      }
+      .ship-main{
+        display:grid;
+        grid-template-columns:1fr 1.18in;
+        gap:.12in;
+        min-height:3.40in;
+        flex:1;
+      }
+      .section-kicker{
+        font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#7c4a82;font-weight:950;margin-bottom:.07in;
+      }
+      .addr-name{
+        font-size:15px;
+        line-height:1.12;
+        font-weight:950;
+        color:#111827;
+        margin-bottom:.035in;
+        overflow-wrap:anywhere;
+      }
+      .addr-company{
+        font-size:10.5px;
+        line-height:1.18;
+        font-weight:850;
+        color:#35243e;
+        margin-bottom:.055in;
+        overflow-wrap:anywhere;
+      }
+      .addr-body{
+        display:grid;
+        gap:.018in;
+        margin-top:.04in;
+      }
+      .addr-line{
+        font-size:10.2px;
+        line-height:1.20;
+        font-weight:650;
+        color:#111827;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .addr-line:last-child{
+        font-weight:900;
+        letter-spacing:.01em;
+      }
+      .muted-address{color:#7b6c82;font-style:italic;text-transform:none}
+      .ship-info{display:grid;align-content:start;gap:.055in}
+      .ship-info-card{
+        border:1px solid #ebc9ef;
+        background:rgba(255,250,253,.92);
+        border-radius:.065in;
+        padding:.055in .065in;
+        min-height:.33in;
+      }
+      .ship-info-card b{
+        display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;
+        color:#8e4d99;font-weight:950;margin-bottom:.028in;
+      }
+      .ship-info-card strong{
+        display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere;
+      }
+      .return-block{
+        margin-top:.08in;
+        font-size:6.4px;
+        line-height:1.22;
+        color:#604d68;
+        font-weight:700;
+      }
+      .return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}
+      .return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}
+    `;
+
+    const html = `
+      <div class="print-note">AVERY 5168 SHIPPING POLISH v2026-05-17L — Letter, Portrait, Scale 100%, Margins None, headers/footers off.</div>
+      <div class="sheet">
+        ${labels.map((label, i) => `<div class="slot s${i+1}">${label}</div>`).join("")}
+      </div>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked. Allow pop-ups and try again."); return; }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Avery 5168 Shipping Labels</title><style>${css}</style></head><body>${html}<script>setTimeout(()=>{window.focus();window.print();},650);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  function bindOverride(){
+    const btn = byId("printShippingLabelBtn") || byId("exportAvery5168CsvBtn");
+    if (!btn) return;
+    btn.textContent = "Print Avery 5168 Shipping Label";
+    btn.id = "printShippingLabelBtn";
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener("click", async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const opts = await buildFieldOptions5168();
+      if (opts) open5168Print(opts);
+    }, true);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindOverride);
+  else bindOverride();
+  setTimeout(bindOverride, 500);
+  setTimeout(bindOverride, 1500);
 })();
 </script>
 
