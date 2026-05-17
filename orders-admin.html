@@ -876,8 +876,8 @@ body{font-family:Inter,Arial,sans-serif}
               <button class="btn-ghost" id="generateInvoicePdfBtn" type="button">Generate Invoice PDF</button>
               <button class="btn-ghost" id="generatePackingSlipBtn" type="button">Packing Slip PDF</button>
               <button class="btn-ghost" id="generateTravelerPdfBtn" type="button">Manufacturing Traveler PDF</button>
-              <button class="btn-ghost" id="printShippingLabelBtn" type="button">Print Avery 5168 Label</button>
-              <button class="btn-ghost" id="printInnerPackLabelBtn" type="button">Print Avery 5366 Inner Pack Labels</button>
+              <button class="btn-ghost" id="exportAvery5168CsvBtn" type="button">Export Avery 5168 Shipping CSV</button>
+              <button class="btn-ghost" id="exportAvery5366CsvBtn" type="button">Export Avery 5366 Inner Pack CSV</button>
             </div>
           </div>
 
@@ -4830,5 +4830,209 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 })();
 </script>
 
+
+
+<script>
+/* === Avery CSV export replacement v2026-05-17 CSV-1 ===
+   Replaces browser-printed label sheets with Avery Design & Print / Word-friendly CSV exports.
+   Button IDs intentionally changed so older print bindings do not attach to these controls. */
+(function(){
+  const AVERY_CSV_VERSION = 'Avery CSV Export v2026-05-17 CSV-1';
+
+  function byId(id){ return document.getElementById(id); }
+  function safeValue(value){ return String(value ?? '').trim(); }
+  function cleanFilePart(value, fallback){
+    const cleaned = safeValue(value || fallback || 'avery-labels').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '');
+    return cleaned || fallback || 'avery-labels';
+  }
+  function csvCell(value){
+    const text = String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  function buildCsv(rows){
+    const headers = Array.from(rows.reduce((set,row) => {
+      Object.keys(row).forEach(key => set.add(key));
+      return set;
+    }, new Set()));
+    const lines = [headers.map(csvCell).join(',')];
+    rows.forEach(row => lines.push(headers.map(key => csvCell(row[key])).join(',')));
+    return lines.join('\r\n');
+  }
+  function downloadCsv(filename, rows){
+    if (!rows || !rows.length) throw new Error('No label rows were created.');
+    const csv = buildCsv(rows);
+    const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1200);
+  }
+  function parseAddressLines(value){
+    return safeValue(value).split(/\n+/).map(line => line.trim()).filter(Boolean);
+  }
+  function promptInt(message, fallback, min, max){
+    const raw = prompt(message, String(fallback));
+    if (raw === null) return null;
+    const parsed = parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(min, Math.min(max, parsed));
+  }
+  function getOrderSnapshot(){
+    if (typeof snapshotForm === 'function') return snapshotForm();
+    const ids = [
+      'orderNumber','customerName','customerEmail','orderTitle','quantity','fulfillment','trackingNumber','poNumber','poPartNumber',
+      'olipolyPartNumber','partRevision','shippingContactName','shippingCompany','shippingAddress','billingAddress','catalogMaterial',
+      'catalogColor','catalogProductionNotes','catalogPostProcessingNotes','paidDate','orderDate'
+    ];
+    return ids.reduce((obj,id) => {
+      const key = id.replace(/[A-Z]/g, m => '_' + m.toLowerCase());
+      obj[key] = byId(id)?.value || '';
+      return obj;
+    }, {});
+  }
+  function showExportMessage(text, isError){
+    const el = byId('formMessage');
+    if (el && typeof setMsg === 'function') setMsg(el, text, !!isError);
+    else if (isError) alert(text);
+  }
+
+  function exportAvery5168ShippingCsv(){
+    const d = getOrderSnapshot();
+    const labelCount = promptInt('How many Avery 5168 shipping labels should be exported? Max 4 per sheet.', 1, 1, 4);
+    if (labelCount === null) return;
+
+    const shipLines = parseAddressLines(d.shipping_address);
+    const billingLines = parseAddressLines(d.billing_address);
+    const returnLines = ['OliPoly 3D LLC', '908 Jazmine Root Road', 'Aurora, Ohio 44202', 'OliPoly3D.com'];
+    const shipName = safeValue(d.shipping_contact_name || d.customer_name || 'Receiving Contact');
+    const shipCompany = safeValue(d.shipping_company);
+    const orderNumber = safeValue(d.order_number);
+    const todayValue = (typeof today === 'function') ? today() : new Date().toISOString().slice(0,10);
+
+    const baseRow = {
+      LabelType: 'Avery 5168 Shipping',
+      BusinessName: 'OliPoly 3D',
+      BusinessTagline: 'Custom 3D Printing • Creative Builds • Prototypes',
+      OrderNumber: orderNumber,
+      ProjectTitle: safeValue(d.order_title),
+      Fulfillment: safeValue(d.fulfillment),
+      TrackingNumber: safeValue(d.tracking_number),
+      ShipToName: shipName,
+      ShipToCompany: shipCompany,
+      ShipToAddress1: shipLines[0] || '',
+      ShipToAddress2: shipLines[1] || '',
+      ShipToAddress3: shipLines[2] || '',
+      ShipToAddressFull: shipLines.join('\n'),
+      CustomerName: safeValue(d.customer_name),
+      CustomerEmail: safeValue(d.customer_email),
+      CustomerPO: safeValue(d.po_number),
+      CustomerPartNumber: safeValue(d.po_part_number),
+      OliPolyPartNumber: safeValue(d.olipoly_part_number),
+      Revision: safeValue(d.part_revision),
+      Quantity: safeValue(d.quantity),
+      BillingAddressFull: billingLines.join('\n'),
+      ReturnName: returnLines[0],
+      ReturnAddress1: returnLines[1],
+      ReturnAddress2: returnLines[2],
+      ReturnWebsite: returnLines[3],
+      ExportDate: todayValue
+    };
+
+    const rows = Array.from({length: labelCount}, (_, index) => ({...baseRow, LabelNumber: index + 1}));
+    const filename = `${cleanFilePart(orderNumber || d.customer_name || 'order', 'order')}-avery-5168-shipping.csv`;
+    downloadCsv(filename, rows);
+    showExportMessage(`Exported ${labelCount} Avery 5168 shipping CSV row${labelCount === 1 ? '' : 's'} for Avery Design & Print.`, false);
+  }
+
+  function exportAvery5366InnerPackCsv(){
+    const d = getOrderSnapshot();
+    const defaultPart = safeValue(d.olipoly_part_number || d.po_part_number || d.order_title || 'Part');
+    const defaultQty = safeValue(d.quantity || '1');
+    const defaultMaterial = [d.catalog_material, d.catalog_color].map(safeValue).filter(Boolean).join(' / ');
+    const defaultRev = safeValue(d.part_revision || '');
+    const partNumber = prompt('Inner pack label — Part / item / part number:', defaultPart);
+    if (partNumber === null) return;
+    const packQty = prompt('Quantity per inner package:', defaultQty);
+    if (packQty === null) return;
+    const labelCount = promptInt('How many Avery 5366 inner pack labels should be exported? Max 30 per sheet.', 30, 1, 30);
+    if (labelCount === null) return;
+    const qcInitials = prompt('QC initials or packed-by initials:', '') ?? '';
+    const materialLot = prompt('Material / color / lot note:', defaultMaterial) ?? defaultMaterial;
+    const revision = prompt('Revision:', defaultRev) ?? defaultRev;
+    const packDate = prompt('Pack date:', (typeof today === 'function') ? today() : new Date().toISOString().slice(0,10)) ?? '';
+    const labelNote = prompt('Short label note (optional):', '') ?? '';
+
+    const orderNumber = safeValue(d.order_number);
+    const baseRow = {
+      LabelType: 'Avery 5366 Inner Pack',
+      BusinessName: 'OliPoly 3D',
+      Badge: 'INNER PACK',
+      PartNumber: safeValue(partNumber),
+      Quantity: safeValue(packQty),
+      OrderNumber: orderNumber,
+      QCInitials: safeValue(qcInitials),
+      Revision: safeValue(revision),
+      PackDate: safeValue(packDate),
+      MaterialLot: safeValue(materialLot),
+      Note: safeValue(labelNote),
+      ProjectTitle: safeValue(d.order_title),
+      CustomerPartNumber: safeValue(d.po_part_number),
+      OliPolyPartNumber: safeValue(d.olipoly_part_number),
+      CustomerPO: safeValue(d.po_number),
+      CustomerName: safeValue(d.customer_name),
+      ExportDate: (typeof today === 'function') ? today() : new Date().toISOString().slice(0,10)
+    };
+
+    const rows = Array.from({length: labelCount}, (_, index) => ({...baseRow, LabelNumber: index + 1}));
+    const filename = `${cleanFilePart(orderNumber || partNumber || 'inner-pack', 'inner-pack')}-avery-5366-inner-pack.csv`;
+    downloadCsv(filename, rows);
+    showExportMessage(`Exported ${labelCount} Avery 5366 inner pack CSV row${labelCount === 1 ? '' : 's'} for Avery Design & Print.`, false);
+  }
+
+  function bindCsvExportButtons(){
+    const shipBtn = byId('exportAvery5168CsvBtn');
+    if (shipBtn && shipBtn.dataset.averyCsvBound !== 'true') {
+      shipBtn.dataset.averyCsvBound = 'true';
+      shipBtn.title = AVERY_CSV_VERSION;
+      shipBtn.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        try { exportAvery5168ShippingCsv(); }
+        catch (error) {
+          console.error('Avery 5168 CSV export failed:', error);
+          showExportMessage(`Avery 5168 CSV export failed: ${error?.message || error}`, true);
+        }
+      }, true);
+    }
+
+    const innerBtn = byId('exportAvery5366CsvBtn');
+    if (innerBtn && innerBtn.dataset.averyCsvBound !== 'true') {
+      innerBtn.dataset.averyCsvBound = 'true';
+      innerBtn.title = AVERY_CSV_VERSION;
+      innerBtn.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        try { exportAvery5366InnerPackCsv(); }
+        catch (error) {
+          console.error('Avery 5366 CSV export failed:', error);
+          showExportMessage(`Avery 5366 CSV export failed: ${error?.message || error}`, true);
+        }
+      }, true);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', bindCsvExportButtons);
+  bindCsvExportButtons();
+  setTimeout(bindCsvExportButtons, 250);
+  setTimeout(bindCsvExportButtons, 1000);
+
+  window.exportAvery5168ShippingCsv = exportAvery5168ShippingCsv;
+  window.exportAvery5366InnerPackCsv = exportAvery5366InnerPackCsv;
+})();
+</script>
 </body>
 </html>
