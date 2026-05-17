@@ -3423,7 +3423,9 @@ if ($('openVenmoBtn')) {
 
 
     // Avery 5366 inner packaging label generator.
-    // Avery 5366: 30 labels per letter sheet, landscape, each label is 3-7/16" x 2/3".
+    // OliPoly inner-pack layout: LETTER PORTRAIT, 2 columns x 15 rows, 30 labels max.
+    // This version intentionally uses a fixed 2-column CSS grid. There is no auto-fit, auto-fill,
+    // repeat(3), table auto-sizing, or landscape page lock anywhere in this print window.
     function printAvery5366InnerPackLabels(){
       const d = snapshotForm();
       const escLabel = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -3438,6 +3440,7 @@ if ($('openVenmoBtn')) {
       const partNumber = prompt('Inner pack label — Part / item / part number:', defaultPart) ?? defaultPart;
       const packQty = prompt('Quantity per inner package:', defaultQty) ?? defaultQty;
       const labelCountRaw = prompt('How many inner pack labels should print? Max 30 per sheet.', '30') ?? '30';
+      const startPositionRaw = prompt('Start at which label position? 1–30. Positions fill DOWN the left column first, then DOWN the right column.', '1') ?? '1';
       const qcInitials = prompt('QC initials or packed-by initials:', '') ?? '';
       const materialLot = prompt('Material / color / lot note:', defaultMaterial) ?? defaultMaterial;
       const revision = prompt('Revision:', defaultRev) ?? defaultRev;
@@ -3445,14 +3448,16 @@ if ($('openVenmoBtn')) {
       const labelNote = prompt('Short label note (optional):', '') ?? '';
 
       const labelCount = Math.max(1, Math.min(30, parseInt(labelCountRaw, 10) || 30));
+      const startPosition = Math.max(1, Math.min(30, parseInt(startPositionRaw, 10) || 1));
+      const printEndPosition = Math.min(30, startPosition + labelCount - 1);
       const orderNumber = d.order_number || '';
       const customerPart = d.po_part_number || '';
       const olipolyPart = d.olipoly_part_number || '';
       const projectTitle = d.order_title || '';
       const title = `Inner Pack Labels ${orderNumber || ''}`.trim();
 
-      const labelCards = Array.from({ length: 30 }, (_, index) => {
-        if (index >= labelCount) return '<div class="inner-label blank-label"></div>';
+      const makeOneLabel = position => {
+        if (position < startPosition || position > printEndPosition) return '<div class="inner-label blank-label"></div>';
         return `
           <div class="inner-label">
             <div class="inner-band"></div>
@@ -3477,180 +3482,115 @@ if ($('openVenmoBtn')) {
               </div>
             </div>
           </div>`;
-      }).join('');
+      };
+
+      // Positions 1–15 fill down the left column. Positions 16–30 fill down the right column.
+      // CSS grid-auto-flow: column creates that physical Avery 5366 order without 3-column reflow.
+      const labelCards = Array.from({ length: 30 }, (_, index) => makeOneLabel(index + 1)).join('');
 
       const css = `
-        *{box-sizing:border-box}
-        html,body{margin:0;padding:0;background:#fff;color:#241b2b;font-family:Inter,Arial,Helvetica,sans-serif}
-        @page{size:letter landscape;margin:.25in .34in}
+        *{box-sizing:border-box!important}
+        @page{
+          size:letter portrait;
+          margin:0.5in;
+        }
+
+        html,body{
+          width:8.5in!important;
+          height:11in!important;
+          margin:0!important;
+          padding:0!important;
+          background:white!important;
+          color:#241b2b!important;
+          font-family:Inter,Arial,Helvetica,sans-serif!important;
+          overflow:hidden!important;
+          -webkit-print-color-adjust:exact!important;
+          print-color-adjust:exact!important;
+        }
+
+        body{
+          display:flex!important;
+          justify-content:center!important;
+          align-items:flex-start!important;
+        }
+
         .avery5366-sheet{
-          width:10.3125in;
-          display:grid;
-          grid-template-columns:repeat(3,3.4375in);
-          grid-template-rows:repeat(10,.6667in);
-          gap:0;
-          align-items:stretch;
-          justify-content:start;
+          width:7.25in!important;
+          display:grid!important;
+          grid-template-columns:3.5in 3.5in!important;
+          grid-template-rows:repeat(15,0.666in)!important;
+          grid-auto-flow:column!important;
+          grid-auto-columns:3.5in!important;
+          grid-auto-rows:0.666in!important;
+          column-gap:0.125in!important;
+          row-gap:0!important;
+          margin:0!important;
+          padding:0!important;
+          background:#fff!important;
+          overflow:hidden!important;
         }
+
         .inner-label{
-          width:3.4375in;
-          height:.6667in;
-          overflow:hidden;
-          border:1px solid rgba(234,216,242,.72);
-          background:linear-gradient(135deg,rgba(255,247,251,.96),rgba(255,255,255,.98));
-          color:#241b2b;
-          position:relative;
-          display:flex;
+          width:3.5in!important;
+          height:0.666in!important;
+          max-width:3.5in!important;
+          max-height:0.666in!important;
+          min-width:3.5in!important;
+          min-height:0.666in!important;
+          overflow:hidden!important;
+          break-inside:avoid!important;
+          page-break-inside:avoid!important;
+          border:1px solid rgba(234,216,242,.72)!important;
+          background:linear-gradient(135deg,rgba(255,247,251,.96),rgba(255,255,255,.98))!important;
+          color:#241b2b!important;
+          position:relative!important;
+          display:flex!important;
         }
-        .blank-label{
-          border-color:transparent;
-          background:#fff;
-        }
-        .inner-band{
-          width:.055in;
-          flex:0 0 .055in;
-          background:linear-gradient(180deg,#de6fb8,#9d7cff,#65d6c4);
-        }
-        .inner-content{
-          flex:1;
-          min-width:0;
-          padding:.035in .055in .032in .055in;
-          display:grid;
-          grid-template-rows:auto auto auto 1fr;
-          gap:.018in;
-        }
-        .inner-top{
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          gap:.04in;
-          min-width:0;
-        }
-        .inner-brand{
-          font-family:Georgia,'Times New Roman',serif;
-          font-weight:900;
-          font-size:10.5px;
-          line-height:1;
-          letter-spacing:-.035em;
-          color:#241b2b;
-          white-space:nowrap;
-        }
-        .inner-brand span{color:#b86be8}
-        .inner-badge{
-          border:1px solid rgba(157,124,255,.24);
-          background:#fff;
-          border-radius:999px;
-          padding:.012in .045in;
-          font-size:5.4px;
-          line-height:1;
-          letter-spacing:.09em;
-          font-weight:950;
-          color:#7c4a82;
-          white-space:nowrap;
-        }
-        .inner-main{
-          display:grid;
-          grid-template-columns:1fr auto;
-          gap:.06in;
-          align-items:center;
-          min-width:0;
-        }
-        .inner-part{
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-          font-size:9.2px;
-          line-height:1;
-          font-weight:950;
-          color:#241b2b;
-        }
-        .inner-qty{
-          font-size:10.4px;
-          line-height:1;
-          font-weight:950;
-          color:#ffffff;
-          border-radius:999px;
-          padding:.025in .06in;
-          background:linear-gradient(135deg,#de6fb8,#9d7cff);
-          white-space:nowrap;
-        }
-        .inner-grid{
-          display:grid;
-          grid-template-columns:1.2fr .72fr .72fr .9fr;
-          gap:.026in;
-        }
-        .inner-grid div{
-          min-width:0;
-          border:1px solid rgba(234,216,242,.72);
-          border-radius:.035in;
-          padding:.012in .026in;
-          background:rgba(255,255,255,.70);
-          display:grid;
-          grid-template-columns:auto 1fr;
-          gap:.024in;
-          align-items:center;
-        }
-        .inner-grid b{
-          font-size:5.2px;
-          line-height:1;
-          letter-spacing:.08em;
-          text-transform:uppercase;
-          color:#7c4a82;
-          white-space:nowrap;
-        }
-        .inner-grid span{
-          min-width:0;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-          font-size:6.8px;
-          line-height:1;
-          font-weight:900;
-          color:#2f2336;
-          text-align:right;
-        }
-        .inner-bottom{
-          display:grid;
-          grid-template-columns:1fr auto;
-          gap:.05in;
-          align-items:end;
-          min-width:0;
-          border-top:1px solid rgba(234,216,242,.58);
-          padding-top:.012in;
-        }
-        .inner-bottom span,
-        .inner-bottom em{
-          min-width:0;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-          font-size:6.3px;
-          line-height:1;
-          color:#604d68;
-          font-weight:800;
-          font-style:normal;
-        }
-        .inner-bottom em{
-          color:#7c4a82;
-          max-width:1.05in;
-          text-align:right;
-        }
+        .blank-label{border-color:transparent!important;background:#fff!important}
+        .blank-label *{display:none!important}
+        .inner-band{width:.05in!important;flex:0 0 .05in!important;background:linear-gradient(180deg,#de6fb8,#9d7cff,#65d6c4)!important}
+        .inner-content{flex:1!important;min-width:0!important;padding:.032in .05in .028in .05in!important;display:grid!important;grid-template-rows:auto auto auto 1fr!important;gap:.016in!important}
+        .inner-top{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:.04in!important;min-width:0!important}
+        .inner-brand{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;font-size:10px!important;line-height:1!important;letter-spacing:-.035em!important;color:#241b2b!important;white-space:nowrap!important}
+        .inner-brand span{color:#b86be8!important}
+        .inner-badge{border:1px solid rgba(157,124,255,.24)!important;background:#fff!important;border-radius:999px!important;padding:.012in .04in!important;font-size:5.1px!important;line-height:1!important;letter-spacing:.09em!important;font-weight:950!important;color:#7c4a82!important;white-space:nowrap!important}
+        .inner-main{display:grid!important;grid-template-columns:1fr auto!important;gap:.045in!important;align-items:center!important;min-width:0!important}
+        .inner-part{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:8.8px!important;line-height:1!important;font-weight:950!important;color:#241b2b!important}
+        .inner-qty{font-size:9.7px!important;line-height:1!important;font-weight:950!important;color:#fff!important;border-radius:999px!important;padding:.023in .052in!important;background:linear-gradient(135deg,#de6fb8,#9d7cff)!important;white-space:nowrap!important}
+        .inner-grid{display:grid!important;grid-template-columns:1.2fr .72fr .72fr .9fr!important;gap:.022in!important}
+        .inner-grid div{min-width:0!important;border:1px solid rgba(234,216,242,.72)!important;border-radius:.03in!important;padding:.01in .022in!important;background:rgba(255,255,255,.70)!important;display:grid!important;grid-template-columns:auto 1fr!important;gap:.02in!important;align-items:center!important}
+        .inner-grid b{font-size:4.8px!important;line-height:1!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#7c4a82!important;white-space:nowrap!important}
+        .inner-grid span{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:6.2px!important;line-height:1!important;font-weight:900!important;color:#2f2336!important;text-align:right!important}
+        .inner-bottom{display:grid!important;grid-template-columns:1fr auto!important;gap:.045in!important;align-items:end!important;min-width:0!important;border-top:1px solid rgba(234,216,242,.58)!important;padding-top:.01in!important}
+        .inner-bottom span,.inner-bottom em{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:5.9px!important;line-height:1!important;color:#604d68!important;font-weight:800!important;font-style:normal!important}
+        .inner-bottom em{color:#7c4a82!important;max-width:.92in!important;text-align:right!important}
+
         @media print{
-          body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-          .inner-label{break-inside:avoid}
+          @page{size:letter portrait;margin:0.5in!important}
+          html,body{width:8.5in!important;height:11in!important;max-width:8.5in!important;max-height:11in!important;overflow:hidden!important}
+          body{display:flex!important;justify-content:center!important;align-items:flex-start!important}
+          .avery5366-sheet{
+            width:7.25in!important;
+            display:grid!important;
+            grid-template-columns:3.5in 3.5in!important;
+            grid-template-rows:repeat(15,0.666in)!important;
+            grid-auto-flow:column!important;
+            column-gap:0.125in!important;
+            row-gap:0!important;
+          }
+          .inner-label{width:3.5in!important;height:0.666in!important;max-width:3.5in!important;max-height:0.666in!important}
         }
       `;
 
       const html = `<div class="avery5366-sheet">${labelCards}</div>`;
-      const win = window.open('', '_blank');
+      const win = window.open('', '_blank', 'width=850,height=1100');
       if (!win) {
         setMsg($('formMessage'), 'Pop-up blocked. Allow pop-ups for this site and try again.', true);
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script></body></html>`);
       win.document.close();
-      setTimeout(() => { win.focus(); win.print(); }, 350);
     }
 
     window.printAvery5366InnerPackLabels = printAvery5366InnerPackLabels;
@@ -3665,7 +3605,7 @@ if ($('openVenmoBtn')) {
         event.stopPropagation();
 
         try {
-          setMsg($('formMessage'), 'Opening Avery 5366 inner pack label print window...');
+          setMsg($('formMessage'), 'Opening Avery 5366 inner pack label print window.');
           printAvery5366InnerPackLabels();
         } catch (error) {
           console.error('Inner pack label print failed:', error);
