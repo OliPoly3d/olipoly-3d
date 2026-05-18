@@ -5139,24 +5139,52 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   function shipLabel(d, o){
     var addr = d.addressLines.map(function(x){ return '<div class="addr-line">' + esc(x) + '</div>'; }).join("");
     if (!addr) addr = '<div class="addr-line muted">No shipping address entered.</div>';
-    var cards = [
-      o.showProject ? card("Project", d.project) : "",
-      o.showQty ? card("Qty", d.qty) : "",
-      o.showPo ? card("PO", d.po) : "",
-      o.showCustomerPart ? card("Customer Part #", d.customerPart) : "",
-      o.showOliPart ? card("OliPoly Part #", d.oliPart) : "",
-      o.showRevision ? card("Revision", d.rev) : ""
-    ].join("");
-    var returnBlock = o.showReturn ? '<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>' + RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>' : "";
 
-    return '<section class="ship-label ' + (o.outlines ? "test-outline" : "") + '">' +
-      '<header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right">' +
-      (o.showOrderNumber ? '<div class="order-no">' + esc(d.orderNumber) + '</div>' : '') +
-      (o.showBadge ? '<div class="ship-badge">' + esc(d.fulfillment) + '</div>' : '') +
-      '</div></header>' +
-      '<main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
-      (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
-      '<div class="addr-body">' + addr + '</div></div><div class="ship-info">' + cards + '</div></main>' + returnBlock + '</section>';
+    var hasCustomerPart = !!String(d.customerPart || "").trim();
+    var hasOliPart = !!String(d.oliPart || "").trim();
+    var hasPo = !!String(d.po || "").trim();
+    var hasProject = !!String(d.project || "").trim();
+    var partValue = hasCustomerPart ? d.customerPart : (hasOliPart ? d.oliPart : (hasProject ? d.project : "Part # needed"));
+    var partLabel = hasCustomerPart ? "Customer Part #" : (hasOliPart ? "OliPoly Part #" : "Project / Item");
+    var qtyValue = String(d.qty || "1").trim() || "1";
+
+    var addrText = [d.shipName, d.shipCompany].concat(d.addressLines || []).join(" ");
+    var densityClass = (d.addressLines.length >= 5 || addrText.length > 150) ? " dense-address" : "";
+
+    var meta = [];
+    if (o.showOrderNumber) meta.push('<div class="mini-meta"><b>Order</b><strong>' + esc(d.orderNumber) + '</strong></div>');
+    if (o.showPo && hasPo) meta.push('<div class="mini-meta"><b>PO</b><strong>' + esc(d.po) + '</strong></div>');
+    if (o.showOliPart && hasOliPart && hasCustomerPart) meta.push('<div class="mini-meta"><b>OliPoly Part</b><strong>' + esc(d.oliPart) + '</strong></div>');
+    if (o.showRevision && d.rev) meta.push('<div class="mini-meta"><b>Revision</b><strong>' + esc(d.rev) + '</strong></div>');
+    if (o.showProject && hasProject) meta.push('<div class="mini-meta wide"><b>Item</b><strong>' + esc(d.project) + '</strong></div>');
+
+    var returnBlock = o.showReturn ? '<div class="return-block"><div class="return-kicker">Return</div>' + RETURN_ADDRESS.map(function(x){ return '<div>' + esc(x) + '</div>'; }).join("") + '</div>' : "";
+
+    return '<section class="ship-label ' + (o.outlines ? "test-outline" : "") + densityClass + '">' +
+      '<div class="label-frame">' +
+        '<header class="ship-head">' +
+          '<div class="brand-box"><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D printing • fulfillment label</div></div>' +
+          '<div class="ship-top-right">' +
+            (o.showBadge ? '<div class="ship-badge">' + esc(d.fulfillment || "shipping") + '</div>' : '') +
+            (o.showOrderNumber ? '<div class="order-no">' + esc(d.orderNumber) + '</div>' : '') +
+          '</div>' +
+        '</header>' +
+
+        '<section class="hero-strip">' +
+          (o.showCustomerPart ? '<div class="part-hero"><b>' + esc(partLabel) + '</b><strong>' + esc(partValue) + '</strong></div>' : '') +
+          (o.showQty ? '<div class="qty-hero"><b>QTY</b><strong>' + esc(qtyValue) + '</strong></div>' : '') +
+        '</section>' +
+
+        '<main class="ship-body">' +
+          '<section class="address-panel"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">' + esc(d.shipName) + '</div>' +
+          (d.shipCompany ? '<div class="addr-company">' + esc(d.shipCompany) + '</div>' : '') +
+          '<div class="addr-body">' + addr + '</div></section>' +
+          '<aside class="side-panel">' + meta.join("") + '</aside>' +
+        '</main>' +
+
+        '<footer class="label-footer">' + returnBlock + '<div class="qc-line"><b>Packed / QC</b><span></span></div></footer>' +
+      '</div>' +
+    '</section>';
   }
 
   function run5168(raw){
@@ -5180,17 +5208,21 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       "@page{size:letter portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#160d1f;font-family:Inter,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
       ".sheet{position:relative;width:8.5in;height:11in;overflow:hidden;background:#fff}.slot{position:absolute;width:3.5in;height:5in;overflow:hidden}",
       ".slot.s1{left:calc(0.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s2{left:calc(4.50in + " + x + "in);top:calc(0.50in + " + y + "in)}.slot.s3{left:calc(0.50in + " + x + "in);top:calc(5.50in + " + y + "in)}.slot.s4{left:calc(4.50in + " + x + "in);top:calc(5.50in + " + y + "in)}",
-      ".ship-label{width:3.5in;height:5in;padding:.16in .18in .13in;background:radial-gradient(circle at top left,rgba(222,111,184,.06),transparent 42%),linear-gradient(180deg,#fff,#fff9fd);border-radius:.08in;overflow:hidden;display:flex;flex-direction:column}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.ship-label.blank{background:transparent}",
-      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding-bottom:.08in;border-bottom:1px solid #efd2ec;margin-bottom:.10in}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.7px;line-height:1.15;color:#604d68;font-weight:700;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.025in}.order-no{font-size:12px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.035in .075in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:8px;letter-spacing:.08em}",
-      ".ship-main{display:grid;grid-template-columns:1fr 1.18in;gap:.12in;min-height:3.40in;flex:1}.section-kicker{font-size:7.2px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.07in}.addr-name{font-size:15px;line-height:1.12;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:10.5px;line-height:1.18;font-weight:850;color:#35243e;margin-bottom:.055in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.04in}.addr-line{font-size:10.2px;line-height:1.20;font-weight:650;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:900;letter-spacing:.01em}.muted{color:#7b6c82;font-style:italic}",
-      ".ship-info{display:grid;align-content:start;gap:.055in}.info-card{border:1px solid #ebc9ef;background:rgba(255,250,253,.92);border-radius:.065in;padding:.055in .065in;min-height:.33in}.info-card b{display:block;font-size:5.9px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#8e4d99;font-weight:950;margin-bottom:.028in}.info-card strong{display:block;font-size:9px;line-height:1.05;color:#111827;font-weight:950;overflow-wrap:anywhere}.return-block{margin-top:.08in;font-size:6.4px;line-height:1.22;color:#604d68;font-weight:700}.return-rule{height:1px;background:#efd2ec;margin-bottom:.055in}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.6px;font-weight:950;color:#8e4d99;margin-bottom:.025in}"
+      ".ship-label{width:3.5in;height:5in;padding:.115in;background:#fff;overflow:hidden}.ship-label.blank{background:transparent}.ship-label.test-outline{outline:1px dashed #d47bc1;outline-offset:-1px}.label-frame{width:100%;height:100%;border:1px solid #e8d7ef;border-radius:.08in;background:linear-gradient(180deg,#fff,#fffafd);overflow:hidden;display:flex;flex-direction:column;position:relative}",
+      ".label-frame:before{content:'';position:absolute;left:0;top:0;bottom:0;width:.075in;background:linear-gradient(180deg,#de6fb8,#9d7cff,#65d6c4)}.ship-head,.hero-strip,.ship-body,.label-footer{position:relative;z-index:1;margin-left:.075in}",
+      ".ship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.08in;padding:.105in .105in .075in .115in;border-bottom:1px solid #efd2ec}.brand-word{font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:.9;font-weight:900;letter-spacing:-.04em;color:#241b2b}.brand-word span{color:#a24df1}.brand-sub{font-size:6.25px;line-height:1.1;color:#604d68;font-weight:750;margin-top:.025in;white-space:nowrap}.ship-top-right{text-align:right;display:grid;justify-items:end;gap:.026in}.order-no{font-size:9.6px;line-height:1;font-weight:950;color:#170f1f}.ship-badge{display:inline-flex;align-items:center;justify-content:center;padding:.033in .07in;border-radius:999px;background:linear-gradient(135deg,#7e7bff,#bd6cff);color:#fff;text-transform:uppercase;font-weight:950;font-size:6.9px;letter-spacing:.08em}",
+      ".hero-strip{display:grid;grid-template-columns:minmax(0,1fr) .74in;gap:.07in;padding:.085in .105in .08in .115in;background:linear-gradient(135deg,rgba(126,123,255,.075),rgba(46,230,196,.055));border-bottom:1px solid #efd2ec}.part-hero,.qty-hero{min-width:0;border:1px solid #eac8ef;background:#fff;border-radius:.07in;padding:.065in .075in}.part-hero b,.qty-hero b{display:block;font-size:6.1px;line-height:1;text-transform:uppercase;letter-spacing:.115em;color:#7c4a82;font-weight:950;margin-bottom:.032in}.part-hero strong{display:block;font-size:14.5px;line-height:1.03;color:#111827;font-weight:950;overflow-wrap:anywhere;word-break:break-word}.qty-hero{display:grid;place-items:center;text-align:center;padding:.055in .045in}.qty-hero strong{display:block;font-size:26px;line-height:.92;color:#111827;font-weight:950;letter-spacing:-.045em}",
+      ".ship-body{display:grid;grid-template-columns:minmax(0,1fr) .86in;gap:.075in;min-height:2.82in;flex:1;padding:.105in .105in .075in .115in}.address-panel{min-width:0}.section-kicker{font-size:7px;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:#7c4a82;font-weight:950;margin-bottom:.065in}.addr-name{font-size:17.2px;line-height:1.06;font-weight:950;color:#111827;margin-bottom:.035in;overflow-wrap:anywhere}.addr-company{font-size:11.2px;line-height:1.12;font-weight:900;color:#35243e;margin-bottom:.052in;overflow-wrap:anywhere}.addr-body{display:grid;gap:.018in;margin-top:.035in}.addr-line{font-size:11.2px;line-height:1.14;font-weight:760;color:#111827;overflow-wrap:anywhere;text-transform:none}.addr-line:last-child{font-weight:950;letter-spacing:.01em}.dense-address .addr-name{font-size:15px}.dense-address .addr-company{font-size:9.8px}.dense-address .addr-line{font-size:9.55px;line-height:1.08}.muted{color:#7b6c82;font-style:italic}",
+      ".side-panel{display:grid;align-content:start;gap:.046in;min-width:0}.mini-meta{border:1px solid #ebc9ef;background:rgba(255,250,253,.96);border-radius:.06in;padding:.049in .055in;min-width:0}.mini-meta.wide{grid-column:1/-1}.mini-meta b{display:block;font-size:5.35px;line-height:1;text-transform:uppercase;letter-spacing:.10em;color:#8e4d99;font-weight:950;margin-bottom:.026in}.mini-meta strong{display:block;font-size:7.55px;line-height:1.03;color:#111827;font-weight:950;overflow-wrap:anywhere;word-break:break-word}",
+      ".label-footer{display:grid;grid-template-columns:minmax(0,1fr) .86in;gap:.075in;align-items:end;border-top:1px solid #efd2ec;padding:.062in .105in .075in .115in;min-height:.51in}.return-block{font-size:5.8px;line-height:1.12;color:#604d68;font-weight:750;min-width:0;overflow:hidden}.return-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:5.05px;font-weight:950;color:#8e4d99;margin-bottom:.02in}.qc-line{border:1px solid #ebc9ef;border-radius:.055in;background:#fff;min-height:.34in;padding:.04in .045in}.qc-line b{display:block;font-size:5.1px;text-transform:uppercase;letter-spacing:.1em;color:#8e4d99;line-height:1}.qc-line span{display:block;height:.16in;border-bottom:1px solid #241b2b;margin-top:.025in}",
+      "@media print{body{margin:0}.sheet{break-inside:avoid;page-break-inside:avoid}.ship-label{break-inside:avoid;page-break-inside:avoid}}"
     ].join("");
     var html = '<div class="sheet">' + labels.map(function(label, idx){ return '<div class="slot s' + (idx+1) + '">' + label + '</div>'; }).join("") + '</div>';
     openPrint("Avery 5168 Shipping Labels", css, html);
   }
 
   function show5168(){
-    makeModal("Avery 5168 Shipping Label", "Choose fields, quantity/start position, and fine X/Y offset.", [
+    makeModal("Avery 5168 Shipping Label", "Choose fields, quantity/start position, and fine X/Y offset. The print layout now prioritizes shipping address, Customer Part #, and quantity.", [
       {id:"op5168Project", key:"showProject", label:"Project / item", checked:true},
       {id:"op5168QtyField", key:"showQty", label:"Quantity", checked:true},
       {id:"op5168Po", key:"showPo", label:"PO number", checked:true},
@@ -5202,7 +5234,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       {id:"op5168Badge", key:"showBadge", label:"Shipping badge", checked:true},
       {id:"op5168Outlines", key:"outlines", label:"Test outlines", checked:false}
     ], [
-      {id:"op5168Qty", key:"qty", label:"Quantity", type:"number", value:"4", min:"1", max:"4"},
+      {id:"op5168Qty", key:"qty", label:"Labels to print", type:"number", value:"4", min:"1", max:"4"},
       {id:"op5168Start", key:"start", label:"Start position", type:"select", value:"1", options:[{value:"1",text:"1 - Top left"},{value:"2",text:"2 - Top right"},{value:"3",text:"3 - Bottom left"},{value:"4",text:"4 - Bottom right"}]},
       {id:"op5168X", key:"x", label:"X offset inches", type:"number", value:"0.25", step:"0.01"},
       {id:"op5168Y", key:"y", label:"Y offset inches", type:"number", value:"0", step:"0.01"}
