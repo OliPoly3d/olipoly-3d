@@ -16,6 +16,46 @@
     .toolbar{display:grid;grid-template-columns:1fr .8fr .8fr .8fr auto;gap:10px;align-items:end;margin-bottom:14px}.project-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.project-card{border-radius:24px;padding:16px;display:grid;gap:12px;position:relative;overflow:hidden}.project-card::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--accent2)}.project-card.priority-urgent::before{background:var(--danger)}.project-card.priority-high::before{background:var(--warn)}.project-card.priority-low::before{background:#b8a7be}.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.chip{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:.72rem;font-weight:900;border:1px solid var(--line);background:#fff;color:#6b5574}.chip.status{background:rgba(157,124,255,.10);color:#5e4ba2}.chip.priority{background:rgba(222,111,184,.09);color:#9b4c80}.project-card h3{margin:0 0 4px;font-size:1.15rem;color:#2d1f36}.project-card p{margin:0;color:var(--muted);font-size:.9rem}.due-pill{white-space:nowrap;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid var(--line);font-weight:900;font-size:.78rem;color:#6b5574}.info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.info-grid div{padding:10px;border-radius:15px;background:rgba(255,255,255,.68);border:1px solid rgba(221,159,204,.20)}.info-grid span{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900}.info-grid strong{display:block;margin-top:3px;color:#2d1f36;overflow-wrap:anywhere}.notes-preview{padding:11px 12px;border-radius:16px;background:rgba(255,255,255,.6);border:1px dashed rgba(221,159,204,.35);color:var(--muted);line-height:1.45;font-size:.9rem;white-space:pre-wrap}.card-links,.card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.card-links a,.card-links span{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.76);border:1px solid var(--line);font-weight:900;font-size:.82rem;text-decoration:none}.empty{padding:18px;border-radius:22px;background:rgba(255,255,255,.74);border:1px dashed var(--line);color:var(--muted);grid-column:1/-1}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;padding:11px 16px;border-radius:999px;background:rgba(31,26,36,.94);color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.22);font-weight:800;font-size:.92rem;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
     @media (max-width:960px){.topbar{border-radius:28px;align-items:flex-start;flex-direction:column}.hero,.project-list{grid-template-columns:1fr}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.auth-grid,.toolbar{grid-template-columns:1fr 1fr}.topbar .ghost{width:100%}}
     @media (max-width:640px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.card{padding:14px}.auth-grid,.toolbar,.form-grid,.metric-grid{grid-template-columns:1fr}.span2{grid-column:1}.btn,.ghost{width:100%}.card-head{display:grid}.info-grid{grid-template-columns:1fr 1fr}.toast{width:calc(100% - 28px);text-align:center}.topbar{top:8px}}
+  
+/* === Project close-out / history additions === */
+.history-shell{margin-top:16px}
+.history-shell summary{
+  list-style:none;
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border-radius:20px;
+  background:rgba(255,255,255,.72);
+  border:1px solid var(--line);
+  font-weight:900;
+  color:#2d1f36;
+}
+.history-shell summary::-webkit-details-marker{display:none}
+.history-shell summary span{color:var(--muted);font-size:.86rem;font-weight:800}
+.history-table-wrap{margin-top:12px;overflow:auto;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.78)}
+.history-table{width:100%;border-collapse:collapse;min-width:760px}
+.history-table th,.history-table td{padding:11px 12px;border-bottom:1px solid rgba(221,159,204,.22);text-align:left;vertical-align:top;font-size:.9rem}
+.history-table th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:rgba(255,255,255,.86)}
+.history-table tr:last-child td{border-bottom:none}
+.history-table strong{display:block;color:#2d1f36}
+.history-table small{display:block;color:var(--muted);margin-top:3px;line-height:1.35}
+.history-outcome{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 9px;background:rgba(157,124,255,.10);border:1px solid rgba(157,124,255,.18);color:#5e4ba2;font-size:.74rem;font-weight:900;white-space:nowrap}
+.close-modal.hidden{display:none!important}
+.close-modal{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;padding:20px}
+.close-backdrop{position:absolute;inset:0;background:rgba(38,25,47,.46);backdrop-filter:blur(8px)}
+.close-dialog{position:relative;z-index:1;width:min(560px,100%);padding:18px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,252,.96));border:1px solid var(--line);box-shadow:0 28px 70px rgba(56,24,64,.20)}
+.close-dialog h3{margin:0;font-family:"Cormorant Garamond",serif;font-size:2rem;line-height:1;color:#2d1f36}
+.close-dialog p{margin:8px 0 14px;color:var(--muted);line-height:1.5}
+.close-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+.close-project-name{padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.74);border:1px solid var(--line);font-weight:900;color:#2d1f36;margin:12px 0}
+@media(max-width:640px){
+  .history-shell summary{display:grid}
+  .close-actions{display:grid;grid-template-columns:1fr}
+}
+
   </style>
 </head>
 <body>
@@ -62,7 +102,7 @@
         <div class="form-grid">
           <label class="span2">Project Title<input id="projectTitle" placeholder="Example: Blue dragon eggs for May craft show" required></label>
           <label>Type<select id="projectType"><option value="customer_request">Customer Request</option><option value="needs_quote">Needs Quote</option><option value="active_quote">Active Quote</option><option value="po_order">PO / Large Order</option><option value="craft_stock">Craft Show Stock</option><option value="internal_idea">Internal Idea</option><option value="reorder_candidate">Reorder Candidate</option></select></label>
-          <label>Status<select id="projectStatus"><option value="idea">Idea / Requested</option><option value="need_details">Need Details</option><option value="ready_to_quote">Ready to Quote</option><option value="pushed_to_quote">Pushed to Quote</option><option value="quoted">Quoted</option><option value="approved">Approved</option><option value="printing">Printing</option><option value="post_processing">Post-Processing</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="on_hold">On Hold</option><option value="declined">Declined / Cancelled</option></select></label>
+          <label>Status<select id="projectStatus"><option value="idea">Idea / Requested</option><option value="need_details">Need Details</option><option value="ready_to_quote">Ready to Quote</option><option value="pushed_to_quote">Pushed to Quote</option><option value="quoted">Quoted</option><option value="approved">Approved</option><option value="printing">Printing</option><option value="post_processing">Post-Processing</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="on_hold">On Hold</option><option value="declined">Declined / Cancelled</option><option value="completed_order">Completed — Became Order</option><option value="completed_stock">Completed — Craft Stock</option><option value="completed_no_order">Completed — No Order</option><option value="inventory_candidate">Inventory Candidate</option><option value="archived">Archived</option></select></label>
           <label>Priority<select id="priority"><option value="urgent">Urgent</option><option value="high">High</option><option value="normal" selected>Normal</option><option value="low">Low</option></select></label>
           <label>Customer / Contact<input id="customerName" placeholder="Name or company"></label>
           <label>Email<input id="customerEmail" type="email" placeholder="Optional"></label>
@@ -88,15 +128,65 @@
       <span class="kicker">Queue view</span>
       <div class="toolbar">
         <label>Search<input id="searchBox" placeholder="Search project, customer, color, quote..."></label>
-        <label>Status<select id="filterStatus"><option value="all">All statuses</option><option value="idea">Idea / Requested</option><option value="need_details">Need Details</option><option value="ready_to_quote">Ready to Quote</option><option value="pushed_to_quote">Pushed to Quote</option><option value="quoted">Quoted</option><option value="approved">Approved</option><option value="printing">Printing</option><option value="post_processing">Post-Processing</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="on_hold">On Hold</option><option value="declined">Declined / Cancelled</option></select></label>
+        <label>Status<select id="filterStatus"><option value="all">All statuses</option><option value="idea">Idea / Requested</option><option value="need_details">Need Details</option><option value="ready_to_quote">Ready to Quote</option><option value="pushed_to_quote">Pushed to Quote</option><option value="quoted">Quoted</option><option value="approved">Approved</option><option value="printing">Printing</option><option value="post_processing">Post-Processing</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="on_hold">On Hold</option><option value="declined">Declined / Cancelled</option><option value="completed_order">Completed — Became Order</option><option value="completed_stock">Completed — Craft Stock</option><option value="completed_no_order">Completed — No Order</option><option value="inventory_candidate">Inventory Candidate</option><option value="archived">Archived</option></select></label>
         <label>Type<select id="filterType"><option value="all">All types</option><option value="customer_request">Customer Request</option><option value="needs_quote">Needs Quote</option><option value="active_quote">Active Quote</option><option value="po_order">PO / Large Order</option><option value="craft_stock">Craft Show Stock</option><option value="internal_idea">Internal Idea</option><option value="reorder_candidate">Reorder Candidate</option></select></label>
         <label>Sort<select id="sortMode"><option value="smart">Smart queue</option><option value="due">Due date</option><option value="updated">Recently updated</option><option value="hours">Print hours</option></select></label>
         <button class="ghost" id="refreshBtn" type="button">Refresh</button>
       </div>
       <p class="muted" id="countLabel">0 shown / 0 total</p>
       <div id="projectsList" class="project-list"></div>
+
+      <details class="history-shell" id="historyShell">
+        <summary>
+          <div>Closed / Historical Projects</div>
+          <span id="historyCount">0 closed</span>
+        </summary>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Customer / Purpose</th>
+                <th>Outcome</th>
+                <th>Quote / Order</th>
+                <th>Closed</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="closedProjectsTable"></tbody>
+          </table>
+        </div>
+      </details>
     </section>
   </div>
+
+  <div id="closeProjectModal" class="close-modal hidden" aria-hidden="true">
+    <div class="close-backdrop" data-close-modal="true"></div>
+    <div class="close-dialog" role="dialog" aria-modal="true" aria-labelledby="closeProjectTitle">
+      <span class="kicker">Close Project</span>
+      <h3 id="closeProjectTitle">What happened with this project?</h3>
+      <p>Use this instead of deleting when the project is real work you want to remember later.</p>
+      <div id="closeProjectName" class="close-project-name">Project</div>
+      <label>Outcome
+        <select id="closeOutcome">
+          <option value="completed_order">Completed — Became Order</option>
+          <option value="completed_stock">Completed — Craft Show Stock</option>
+          <option value="completed_no_order">Completed — No Order</option>
+          <option value="cancelled">Cancelled / Declined</option>
+          <option value="inventory_candidate">Inventory Candidate</option>
+          <option value="archived">Archived / Reference Only</option>
+        </select>
+      </label>
+      <label style="margin-top:12px;">Close-out note
+        <textarea id="closeNote" placeholder="Optional: what happened, why it closed, show/event result, or future follow-up note..."></textarea>
+      </label>
+      <div class="close-actions">
+        <button class="ghost" type="button" id="cancelCloseProjectBtn">Cancel</button>
+        <button class="btn" type="button" id="confirmCloseProjectBtn">Close Project</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" aria-live="polite"></div>
   <script src="projects.js?v=active-projects-20260513"></script>
 </body>

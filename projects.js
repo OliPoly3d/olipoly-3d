@@ -16,7 +16,8 @@
     filterStatus: 'all',
     filterType: 'all',
     search: '',
-    sort: 'smart'
+    sort: 'smart',
+    closingId: null
   };
 
   const TYPE_LABELS = {
@@ -41,8 +42,17 @@
     ready: 'Ready',
     delivered: 'Delivered',
     on_hold: 'On Hold',
-    declined: 'Declined / Cancelled'
+    declined: 'Declined / Cancelled',
+    completed_order: 'Completed — Became Order',
+    completed_stock: 'Completed — Craft Show Stock',
+    completed_no_order: 'Completed — No Order',
+    cancelled: 'Cancelled / Declined',
+    inventory_candidate: 'Inventory Candidate',
+    archived: 'Archived'
   };
+
+  const CLOSED_STATUSES = ['completed_order','completed_stock','completed_no_order','cancelled','inventory_candidate','archived','declined'];
+  const ACTIVE_STATUSES = ['idea','need_details','ready_to_quote','pushed_to_quote','quoted','approved','printing','post_processing','ready','on_hold'];
 
   const PRIORITY_WEIGHT = { urgent: 0, high: 1, normal: 2, low: 3 };
   const STATUS_WEIGHT = {
@@ -221,7 +231,10 @@
       order_number: $('orderNumber').value.trim() || null,
       notes: $('notes').value.trim() || null,
       updated_at: now,
-      created_at: state.projects.find(p => p.id === id)?.created_at || now
+      created_at: state.projects.find(p => p.id === id)?.created_at || now,
+      closed_at: state.projects.find(p => p.id === id)?.closed_at || null,
+      closed_note: state.projects.find(p => p.id === id)?.closed_note || null,
+      close_outcome: state.projects.find(p => p.id === id)?.close_outcome || null
     };
   }
 
@@ -426,9 +439,116 @@
     }
   }
 
+
+  function suggestedCloseOutcome(p){
+    if (p.order_number) return 'completed_order';
+    if (p.project_type === 'craft_stock') return 'completed_stock';
+    if (p.project_status === 'declined') return 'cancelled';
+    if (p.project_type === 'internal_idea') return 'archived';
+    return 'completed_no_order';
+  }
+
+  function openCloseProject(id){
+    const p = state.projects.find(x => x.id === id);
+    if (!p) return;
+    state.closingId = id;
+    const modal = $('closeProjectModal');
+    $('closeProjectName').textContent = p.project_title || 'Untitled Project';
+    $('closeOutcome').value = suggestedCloseOutcome(p);
+    $('closeNote').value = '';
+    modal?.classList.remove('hidden');
+    modal?.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeCloseProjectModal(){
+    state.closingId = null;
+    const modal = $('closeProjectModal');
+    modal?.classList.add('hidden');
+    modal?.setAttribute('aria-hidden', 'true');
+  }
+
+  async function confirmCloseProject(){
+    const id = state.closingId;
+    const p = state.projects.find(x => x.id === id);
+    if (!p) return closeCloseProjectModal();
+
+    const outcome = $('closeOutcome')?.value || suggestedCloseOutcome(p);
+    const note = $('closeNote')?.value?.trim() || null;
+    const now = new Date().toISOString();
+
+    const updated = {
+      ...p,
+      project_status: outcome,
+      close_outcome: outcome,
+      closed_note: note,
+      closed_at: now,
+      updated_at: now
+    };
+
+    try {
+      if (state.user?.id && !String(id).startsWith('local-')) {
+        await sbApi(`/rest/v1/${PROJECTS_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+          method:'PATCH',
+          headers:{ Prefer:'return=representation' },
+          body: JSON.stringify({
+            project_status: outcome,
+            close_outcome: outcome,
+            closed_note: note,
+            closed_at: now,
+            updated_at: now
+          })
+        });
+      }
+      state.projects = state.projects.map(x => x.id === id ? updated : x);
+      localWrite(state.projects);
+      closeCloseProjectModal();
+      render();
+      toast('Project moved to history.');
+    } catch (err) {
+      alert(`Could not close project:\n\n${err.message || err}\n\nIf Supabase says a column is missing, add close_outcome, closed_note, and closed_at to active_projects.`);
+    }
+  }
+
+  async function reopenProject(id){
+    const p = state.projects.find(x => x.id === id);
+    if (!p) return;
+    const newStatus = p.quote_number ? 'pushed_to_quote' : 'idea';
+    const now = new Date().toISOString();
+    const updated = {
+      ...p,
+      project_status: newStatus,
+      close_outcome: null,
+      closed_note: null,
+      closed_at: null,
+      updated_at: now
+    };
+    try {
+      if (state.user?.id && !String(id).startsWith('local-')) {
+        await sbApi(`/rest/v1/${PROJECTS_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+          method:'PATCH',
+          headers:{ Prefer:'return=representation' },
+          body: JSON.stringify({
+            project_status: newStatus,
+            close_outcome: null,
+            closed_note: null,
+            closed_at: null,
+            updated_at: now
+          })
+        });
+      }
+      state.projects = state.projects.map(x => x.id === id ? updated : x);
+      localWrite(state.projects);
+      render();
+      toast('Project reopened.');
+    } catch (err) {
+      alert(`Could not reopen project:\n\n${err.message || err}`);
+    }
+  }
+
   function filteredProjects(){
     const q = state.search.toLowerCase();
     let list = [...state.projects].filter(p => {
+      if (CLOSED_STATUSES.includes(p.project_status) && state.filterStatus === 'all') return false;
       if (state.filterStatus !== 'all' && p.project_status !== state.filterStatus) return false;
       if (state.filterType !== 'all' && p.project_type !== state.filterType) return false;
       if (!q) return true;
@@ -447,10 +567,10 @@
   }
 
   function renderMetrics(list){
-    const active = state.projects.filter(p => !['delivered','declined'].includes(p.project_status)).length;
+    const active = state.projects.filter(p => !CLOSED_STATUSES.includes(p.project_status)).length;
     const readyQuote = state.projects.filter(p => p.project_status === 'ready_to_quote').length;
-    const printHours = state.projects.filter(p => !['delivered','declined','on_hold'].includes(p.project_status)).reduce((s,p) => s + (Number(p.estimated_print_hours) || 0), 0);
-    const showStock = state.projects.filter(p => p.project_type === 'craft_stock' && !['delivered','declined'].includes(p.project_status)).length;
+    const printHours = state.projects.filter(p => !CLOSED_STATUSES.includes(p.project_status) && p.project_status !== 'on_hold').reduce((s,p) => s + (Number(p.estimated_print_hours) || 0), 0);
+    const showStock = state.projects.filter(p => p.project_type === 'craft_stock' && !CLOSED_STATUSES.includes(p.project_status)).length;
     $('metricActive').textContent = active;
     $('metricQuote').textContent = readyQuote;
     $('metricHours').textContent = printHours.toFixed(printHours >= 10 ? 1 : 2).replace(/\.0+$/,'');
@@ -462,7 +582,7 @@
   function escapeHtml(s){ return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
   function projectCard(p){
-    const canQuote = !['delivered','declined'].includes(p.project_status);
+    const canQuote = !CLOSED_STATUSES.includes(p.project_status);
     const quoteBtn = canQuote ? `<button type="button" class="btn small" data-action="push" data-id="${p.id}">Push to Quote</button>` : '';
     return `<article class="project-card priority-${escapeHtml(p.priority || 'normal')}">
       <div class="card-head">
@@ -492,10 +612,43 @@
       </div>
       <div class="card-actions">
         ${quoteBtn}
+        <button type="button" class="ghost small" data-action="close" data-id="${p.id}">Close Project</button>
         <button type="button" class="ghost small" data-action="edit" data-id="${p.id}">Edit</button>
         <button type="button" class="ghost small danger" data-action="delete" data-id="${p.id}">Delete</button>
       </div>
     </article>`;
+  }
+
+
+  function closedProjects(){
+    return [...state.projects]
+      .filter(p => CLOSED_STATUSES.includes(p.project_status) || p.closed_at)
+      .sort((a,b) => String(b.closed_at || b.updated_at || '').localeCompare(String(a.closed_at || a.updated_at || '')));
+  }
+
+  function formatDate(value){
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0,10);
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  function renderHistory(){
+    const rows = closedProjects();
+    const count = $('historyCount');
+    if (count) count.textContent = `${rows.length} closed`;
+    const table = $('closedProjectsTable');
+    if (!table) return;
+    table.innerHTML = rows.length ? rows.map(p => `
+      <tr>
+        <td><strong>${escapeHtml(p.project_title || 'Untitled Project')}</strong><small>${escapeHtml([TYPE_LABELS[p.project_type] || p.project_type, p.event_name].filter(Boolean).join(' • ') || '—')}</small></td>
+        <td>${escapeHtml([p.customer_name, p.source].filter(Boolean).join(' • ') || '—')}</td>
+        <td><span class="history-outcome">${escapeHtml(STATUS_LABELS[p.close_outcome || p.project_status] || p.close_outcome || p.project_status)}</span>${p.closed_note ? `<small>${escapeHtml(p.closed_note)}</small>` : ''}</td>
+        <td>${p.quote_number ? `<a href="quote.html?quote=${encodeURIComponent(p.quote_number)}">${escapeHtml(p.quote_number)}</a>` : '—'}${p.order_number ? `<small>${escapeHtml(p.order_number)}</small>` : ''}</td>
+        <td>${escapeHtml(formatDate(p.closed_at || p.updated_at))}</td>
+        <td><button type="button" class="ghost small" data-action="reopen" data-id="${p.id}">Reopen</button></td>
+      </tr>
+    `).join('') : `<tr><td colspan="6"><span class="muted">No closed projects yet.</span></td></tr>`;
   }
 
   function render(){
@@ -504,7 +657,8 @@
     const wrap = $('projectsList');
     if (!wrap) return;
     wrap.innerHTML = list.length ? list.map(projectCard).join('') : `<div class="empty">No projects match this view. Add a project or clear filters.</div>`;
-    $('countLabel').textContent = `${list.length} shown / ${state.projects.length} total`;
+    $('countLabel').textContent = `${list.length} active shown / ${state.projects.length} total`;
+    renderHistory();
   }
 
   function bind(){
@@ -525,6 +679,16 @@
       if (btn.dataset.action === 'edit') editProject(id);
       if (btn.dataset.action === 'delete') deleteProject(id);
       if (btn.dataset.action === 'push') pushToQuote(id);
+      if (btn.dataset.action === 'close') openCloseProject(id);
+      if (btn.dataset.action === 'reopen') reopenProject(id);
+    });
+    $('cancelCloseProjectBtn')?.addEventListener('click', closeCloseProjectModal);
+    $('confirmCloseProjectBtn')?.addEventListener('click', confirmCloseProject);
+    $('closeProjectModal')?.addEventListener('click', (e) => {
+      if (e.target?.dataset?.closeModal === 'true') closeCloseProjectModal();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeCloseProjectModal();
     });
   }
 
