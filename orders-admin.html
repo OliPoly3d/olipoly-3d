@@ -640,6 +640,29 @@ body{font-family:Inter,Arial,sans-serif}
 }
 
 
+
+/* === Professional / PO invoice add-on === */
+.professional-invoice-fields{
+  margin-top:4px;
+  padding:16px;
+  border-radius:22px;
+  border:1px solid rgba(255,201,100,.18);
+  background:rgba(255,201,100,.045);
+}
+.professional-invoice-fields h4{
+  margin:0 0 6px;
+  font-size:.8rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.professional-invoice-fields p{
+  margin:0 0 14px;
+  color:var(--muted);
+  line-height:1.55;
+  font-size:.9rem;
+}
+
 /* === Customer tracker message helper === */
 .customer-tracker-box{
   grid-column:1/-1;
@@ -839,6 +862,22 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
           <div><label for="invoiceDueDate">Invoice Due Date</label><input id="invoiceDueDate" type="date" /></div>
           <div><label for="invoiceTerms">Invoice Terms</label><select id="invoiceTerms"><option value="customer_terms">Customer Standard Terms / PO Terms</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_45">Net 45</option><option value="due_on_receipt">Due on Receipt</option></select></div>
+          <div class="full professional-invoice-fields">
+            <h4>Professional / PO Invoice Details</h4>
+            <p>These fields are used only for the professional invoice PDF. ACH fields are intentionally not saved to Supabase; fill them in when you generate the invoice.</p>
+            <div class="form-grid">
+              <div class="full"><label for="proRemitAddress">OliPoly Remit-To Address</label><textarea id="proRemitAddress">OliPoly 3D LLC
+990 Aurora Hudson Road
+Aurora, OH 44202</textarea></div>
+              <div><label for="proCarrier">Carrier</label><input id="proCarrier" placeholder="UPS Ground" /></div>
+              <div><label for="proShipDate">Ship Date</label><input id="proShipDate" type="date" /></div>
+              <div><label for="proBankName">ACH Bank Name</label><input id="proBankName" autocomplete="off" placeholder="Bank name" /></div>
+              <div><label for="proAccountName">ACH Account Name</label><input id="proAccountName" autocomplete="off" value="OliPoly 3D LLC" /></div>
+              <div><label for="proRoutingNumber">ACH Routing Number</label><input id="proRoutingNumber" inputmode="numeric" autocomplete="off" placeholder="Routing number" /></div>
+              <div><label for="proAccountNumber">ACH Account Number</label><input id="proAccountNumber" inputmode="numeric" autocomplete="off" placeholder="Account number" /></div>
+              <div class="full"><label for="proInvoiceNote">Invoice / AP Note</label><textarea id="proInvoiceNote">Please reference the invoice number and PO number with payment or remittance details.</textarea></div>
+            </div>
+          </div>
           <div><label for="apEmail">AP / Billing Email</label><input id="apEmail" type="email" placeholder="Optional accounts payable email" /></div>
           <div class="full"><label for="billingAddress">Billing Address</label><textarea id="billingAddress" placeholder="Company billing address"></textarea></div>
           <div class="full"><label for="shippingAddress">Shipping Address</label><textarea id="shippingAddress" placeholder="Ship-to / receiving address"></textarea></div>
@@ -874,6 +913,7 @@ body{font-family:Inter,Arial,sans-serif}
             <h4>Documents & Labels</h4>
             <div class="btn-row">
               <button class="btn-ghost" id="generateInvoicePdfBtn" type="button">Generate Invoice PDF</button>
+              <button class="btn-ghost" id="generateProfessionalInvoicePdfBtn" type="button">Generate Professional PO Invoice PDF</button>
               <button class="btn-ghost" id="generatePackingSlipBtn" type="button">Packing Slip PDF</button>
               <button class="btn-ghost" id="generateTravelerPdfBtn" type="button">Manufacturing Traveler PDF</button>
               <button class="btn-ghost" id="printShippingLabelBtn" type="button">Print Avery 5168 Shipping Label</button>
@@ -5337,6 +5377,270 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   setTimeout(bind, 500);
   setTimeout(bind, 1500);
 })();
+
+
+/* === Professional PO / ACH Invoice PDF add-on ===
+   Additive only: does not change the existing invoice, shipping label, inner-pack label,
+   auth, or order save logic. ACH fields are read from the page at print time and are
+   not added to snapshotForm(), so they will not be stored in Supabase accidentally.
+*/
+(() => {
+  const byId = id => document.getElementById(id);
+  const read = id => (byId(id)?.value || '').trim();
+  const fmtMoney = value => new Intl.NumberFormat('en-US', { style:'currency', currency:'USD' }).format(Number(value) || 0);
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  const lineBreaks = value => escapeHtml(value || '').replace(/\n/g, '<br>');
+  const todayIso = () => new Date().toISOString().slice(0, 10);
+  const addDays = (dateValue, days) => {
+    const d = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const termsDays = term => ({ net_15:15, net_30:30, net_45:45, due_on_receipt:0, customer_terms:30 })[term] ?? 30;
+  const termsLabel = term => ({
+    customer_terms:'Customer Standard Terms / PO Terms',
+    net_15:'Net 15',
+    net_30:'Net 30',
+    net_45:'Net 45',
+    due_on_receipt:'Due on Receipt'
+  })[term] || term || 'Customer Standard Terms / PO Terms';
+  const invoiceNumberFromOrder = orderNumber => {
+    const cleaned = String(orderNumber || '').trim();
+    const m = cleaned.match(/OP-(\d+)/i);
+    return m ? `INV-${m[1]}` : `INV-${cleaned.replace(/^OP-/i, '') || todayIso().replaceAll('-', '')}`;
+  };
+
+  function ensureProfessionalInvoiceDefaults(){
+    if (byId('invoiceNumber') && !read('invoiceNumber')) byId('invoiceNumber').value = invoiceNumberFromOrder(read('orderNumber'));
+    if (byId('invoiceDate') && !read('invoiceDate')) byId('invoiceDate').value = todayIso();
+    if (byId('invoiceDueDate') && !read('invoiceDueDate')) byId('invoiceDueDate').value = addDays(read('invoiceDate') || todayIso(), termsDays(read('invoiceTerms')));
+    if (byId('apEmail') && !read('apEmail') && read('customerEmail')) byId('apEmail').value = read('customerEmail');
+    if (byId('proShipDate') && !read('proShipDate') && read('trackingNumber')) byId('proShipDate').value = todayIso();
+  }
+
+  function getProfessionalInvoiceData(){
+    ensureProfessionalInvoiceDefaults();
+    const qty = Number(read('quantity')) || 1;
+    const subtotal = Number(read('orderTotal')) || 0;
+    const deposit = Number(read('depositAmount')) || 0;
+    const balanceField = Number(read('balanceAmount')) || 0;
+    const paymentStatus = read('paymentStatus');
+    const taxExempt = read('taxExempt') === 'yes';
+    const tax = 0;
+    const total = subtotal + tax;
+    const amountDue = paymentStatus === 'paid' ? 0 : (balanceField > 0 ? balanceField : Math.max(0, total - deposit));
+    const unit = qty ? subtotal / qty : subtotal;
+    const materialLine = [read('catalogMaterial'), read('catalogColor')].filter(Boolean).join(' / ');
+    const partRefs = [
+      read('poPartNumber') ? `Customer Part #: ${read('poPartNumber')}` : '',
+      read('olipolyPartNumber') ? `OliPoly Part #: ${read('olipolyPartNumber')}` : '',
+      read('partRevision') ? `Revision: ${read('partRevision')}` : '',
+      materialLine ? `Material: ${materialLine}` : ''
+    ].filter(Boolean);
+    return {
+      invoiceNumber: read('invoiceNumber') || invoiceNumberFromOrder(read('orderNumber')),
+      invoiceDate: read('invoiceDate') || todayIso(),
+      dueDate: read('invoiceDueDate') || addDays(todayIso(), termsDays(read('invoiceTerms'))),
+      terms: termsLabel(read('invoiceTerms')),
+      orderNumber: read('orderNumber'),
+      poNumber: read('poNumber'),
+      customerName: read('customerName'),
+      customerEmail: read('customerEmail'),
+      apEmail: read('apEmail'),
+      billingAddress: read('billingAddress'),
+      shippingAddress: read('shippingAddress'),
+      shippingContact: read('shippingContactName'),
+      shippingCompany: read('shippingCompany'),
+      fulfillment: read('fulfillment'),
+      trackingNumber: read('trackingNumber'),
+      carrier: read('proCarrier'),
+      shipDate: read('proShipDate'),
+      title: read('orderTitle') || 'Custom 3D printed parts',
+      qty,
+      unit,
+      subtotal,
+      tax,
+      taxExempt,
+      total,
+      deposit,
+      amountDue,
+      partRefs,
+      remitAddress: read('proRemitAddress') || 'OliPoly 3D LLC\n990 Aurora Hudson Road\nAurora, OH 44202',
+      bankName: read('proBankName'),
+      accountName: read('proAccountName') || 'OliPoly 3D LLC',
+      routingNumber: read('proRoutingNumber'),
+      accountNumber: read('proAccountNumber'),
+      note: read('proInvoiceNote') || 'Please reference the invoice number and PO number with payment or remittance details.',
+      paid: paymentStatus === 'paid'
+    };
+  }
+
+  function professionalInvoiceHtml(d){
+    const billLines = [
+      d.customerName ? `<strong>${escapeHtml(d.customerName)}</strong>` : '',
+      d.apEmail ? `AP / Billing: ${escapeHtml(d.apEmail)}` : (d.customerEmail ? escapeHtml(d.customerEmail) : ''),
+      d.billingAddress ? lineBreaks(d.billingAddress) : ''
+    ].filter(Boolean).join('<br>') || 'Billing information not provided.';
+
+    const shipLines = [
+      d.shippingCompany ? `<strong>${escapeHtml(d.shippingCompany)}</strong>` : '',
+      d.shippingContact ? `Attn: ${escapeHtml(d.shippingContact)}` : '',
+      d.shippingAddress ? lineBreaks(d.shippingAddress) : '',
+      d.fulfillment ? `Fulfillment: ${escapeHtml(d.fulfillment)}` : ''
+    ].filter(Boolean).join('<br>') || 'Ship-to information not provided.';
+
+    const shipment = [
+      d.carrier ? `<strong>Carrier:</strong> ${escapeHtml(d.carrier)}` : '',
+      d.trackingNumber ? `<strong>Tracking #:</strong> ${escapeHtml(d.trackingNumber)}` : '',
+      d.shipDate ? `<strong>Ship Date:</strong> ${escapeHtml(d.shipDate)}` : '',
+      d.orderNumber ? `<strong>Order #:</strong> ${escapeHtml(d.orderNumber)}` : '',
+      d.poNumber ? `<strong>Customer PO:</strong> ${escapeHtml(d.poNumber)}` : ''
+    ].filter(Boolean).join('<br>') || 'Shipment details will be provided as available.';
+
+    const achRows = [
+      d.bankName ? `<div><span>Bank Name</span><strong>${escapeHtml(d.bankName)}</strong></div>` : '',
+      d.accountName ? `<div><span>Account Name</span><strong>${escapeHtml(d.accountName)}</strong></div>` : '',
+      d.routingNumber ? `<div><span>ACH Routing #</span><strong>${escapeHtml(d.routingNumber)}</strong></div>` : '',
+      d.accountNumber ? `<div><span>ACH Account #</span><strong>${escapeHtml(d.accountNumber)}</strong></div>` : ''
+    ].filter(Boolean).join('') || '<p class="muted-small">ACH information not entered. Add bank, routing, and account information before sending if ACH payment is requested.</p>';
+
+    const descriptionDetails = [
+      d.partRefs.length ? d.partRefs.map(escapeHtml).join('<br>') : '',
+      d.orderNumber ? `OliPoly Order: ${escapeHtml(d.orderNumber)}` : '',
+      d.poNumber ? `PO Reference: ${escapeHtml(d.poNumber)}` : ''
+    ].filter(Boolean).join('<br>');
+
+    return `
+      <main class="pro-invoice-sheet ${d.paid ? 'is-paid' : ''}">
+        <div class="top-strip"></div>
+        <div class="paid-stamp">PAID</div>
+        <header class="pro-header">
+          <section>
+            <div class="brand-name">OliPoly <span>3D</span></div>
+            <div class="brand-sub">Custom 3D printed parts • Ohio</div>
+            <div class="remit-block"><strong>Remit To</strong><br>${lineBreaks(d.remitAddress)}<br>OliPoly3D@gmail.com<br>OliPoly3D.com</div>
+          </section>
+          <section class="invoice-title-block">
+            <h1>INVOICE</h1>
+            <div class="invoice-num">${escapeHtml(d.invoiceNumber)}</div>
+          </section>
+        </header>
+
+        <section class="meta-grid">
+          <div><small>Invoice Date</small><strong>${escapeHtml(d.invoiceDate)}</strong></div>
+          <div><small>Due Date</small><strong>${escapeHtml(d.dueDate)}</strong></div>
+          <div><small>Terms</small><strong>${escapeHtml(d.terms)}</strong></div>
+          <div><small>Customer PO</small><strong>${escapeHtml(d.poNumber || 'No PO listed')}</strong></div>
+        </section>
+
+        <section class="address-grid">
+          <div class="panel"><span class="chip">Bill To</span><p>${billLines}</p></div>
+          <div class="panel"><span class="chip">Ship To / Receiving</span><p>${shipLines}</p></div>
+        </section>
+
+        <section class="panel compact">
+          <span class="chip">Shipment / Fulfillment Reference</span>
+          <p>${shipment}</p>
+        </section>
+
+        <table class="line-table">
+          <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>${escapeHtml(d.title)}</strong>${descriptionDetails ? `<br><span>${descriptionDetails}</span>` : ''}</td>
+              <td>${escapeHtml(d.qty)}</td>
+              <td>${fmtMoney(d.unit)}</td>
+              <td>${fmtMoney(d.subtotal)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <section class="bottom-grid">
+          <div>
+            <div class="panel ach-panel">
+              <span class="chip">ACH / Remittance Instructions</span>
+              <div class="ach-grid">${achRows}</div>
+              <p class="note-line">${escapeHtml(d.note)}</p>
+            </div>
+            <div class="panel terms-panel">
+              <span class="chip">Invoice Terms</span>
+              <p>Payment is due according to the approved purchasing terms shown above. Please reference invoice ${escapeHtml(d.invoiceNumber)}${d.poNumber ? ` and PO ${escapeHtml(d.poNumber)}` : ''} with remittance. Goods remain subject to OliPoly 3D LLC standard invoice and fulfillment records. Late payments may be subject to finance charges where permitted by applicable law.</p>
+            </div>
+          </div>
+          <aside class="totals-box">
+            <div><span>Subtotal</span><strong>${fmtMoney(d.subtotal)}</strong></div>
+            <div><span>Sales Tax</span><strong>${d.taxExempt ? 'Tax Exempt' : fmtMoney(d.tax)}</strong></div>
+            <div><span>Deposit / Prior Payments</span><strong>${fmtMoney(d.deposit)}</strong></div>
+            <div><span>Total</span><strong>${fmtMoney(d.total)}</strong></div>
+            <div class="amount-due"><span>Amount Due</span><strong>${fmtMoney(d.amountDue)}</strong></div>
+          </aside>
+        </section>
+
+        <footer>OliPoly 3D LLC • OliPoly3D@gmail.com • OliPoly3D.com • Please attach this invoice PDF when emailing Accounts Payable.</footer>
+      </main>
+    `;
+  }
+
+  function professionalInvoiceCss(){
+    return `
+      @page{size:letter portrait;margin:.25in}
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#fff;color:#241b2b;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .pro-invoice-sheet{position:relative;width:8in;min-height:10.5in;margin:0 auto;background:#fff;color:#241b2b;padding:.38in;overflow:hidden;border:1px solid #f2d7e8}
+      .top-strip{height:14px;margin:-.38in -.38in .28in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
+      .pro-invoice-sheet::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at top left,rgba(222,111,184,.08),transparent 32%),radial-gradient(circle at top right,rgba(101,214,196,.07),transparent 30%);pointer-events:none}
+      .pro-invoice-sheet>*{position:relative;z-index:1}
+      .pro-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:16px;border-bottom:1px solid #f0c8df;margin-bottom:14px}
+      .brand-name{font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:900;letter-spacing:-.05em;line-height:.95}.brand-name span{color:#9d4df1}.brand-sub{margin-top:6px;color:#826889;font-size:12px}.remit-block{margin-top:14px;font-size:11.5px;line-height:1.45;color:#4f4058}
+      .invoice-title-block{text-align:right}.invoice-title-block h1{margin:0;font-size:36px;letter-spacing:.14em;color:#241b2b}.invoice-num{display:inline-block;margin-top:8px;padding:7px 11px;border-radius:999px;background:#fff7fb;border:1px solid #f0c8df;color:#7c4a82;font-weight:900}
+      .paid-stamp{display:none;position:absolute;right:.55in;bottom:1.15in;transform:rotate(-12deg);border:4px solid rgba(22,163,74,.34);color:rgba(22,163,74,.48);font-size:42px;font-weight:950;letter-spacing:.1em;padding:8px 20px;border-radius:14px;z-index:4}.is-paid .paid-stamp{display:block}
+      .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}.meta-grid div,.panel,.totals-box{border:1px solid #f0c8df;background:#fffafd;border-radius:14px;padding:11px 12px}.meta-grid small{display:block;color:#826889;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.meta-grid strong{display:block;font-size:12px;overflow-wrap:anywhere}
+      .address-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.panel p{margin:0;font-size:11.5px;line-height:1.45;color:#32263a}.chip{display:inline-block;margin-bottom:8px;padding:5px 9px;border-radius:999px;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.compact{margin-bottom:12px}
+      .line-table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #f0c8df;border-radius:14px;overflow:hidden;margin:0 0 12px}.line-table th{background:#fff7fb;color:#826889;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:9px 10px;border-bottom:1px solid #f0c8df}.line-table td{padding:12px 10px;font-size:11.5px;line-height:1.4;vertical-align:top}.line-table td span{color:#604d68}.line-table th:nth-child(2),.line-table td:nth-child(2){text-align:center;width:58px}.line-table th:nth-child(3),.line-table td:nth-child(3),.line-table th:nth-child(4),.line-table td:nth-child(4){text-align:right;width:105px}
+      .bottom-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px}.ach-panel{margin-bottom:10px}.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ach-grid div{padding:8px;border-radius:10px;background:#fff;border:1px solid #f6ddec}.ach-grid span{display:block;color:#826889;font-size:8.5px;text-transform:uppercase;letter-spacing:.07em}.ach-grid strong{display:block;font-size:11px;overflow-wrap:anywhere}.note-line{margin-top:9px!important;color:#604d68!important}.muted-small{font-size:10.5px;color:#826889!important}.terms-panel p{font-size:10.5px;color:#604d68}.totals-box div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #f6ddec;font-size:11.5px}.totals-box div:first-child{padding-top:0}.totals-box span{color:#604d68}.amount-due{margin-top:5px;padding-top:10px!important;border-top:2px solid #f0c8df!important;border-bottom:0!important}.amount-due span,.amount-due strong{font-size:17px!important;color:#241b2b!important;font-weight:900}
+      footer{margin-top:12px;padding-top:9px;border-top:1px solid #f0c8df;text-align:center;color:#826889;font-size:9.5px}
+      @media print{body{margin:0}.pro-invoice-sheet{width:100%;min-height:auto;border:0}.panel,.totals-box,.meta-grid div{break-inside:avoid}}
+    `;
+  }
+
+  function generateProfessionalInvoicePdf(){
+    const d = getProfessionalInvoiceData();
+    const win = window.open('', '_blank');
+    if (!win) {
+      if (typeof setMsg === 'function' && byId('formMessage')) setMsg(byId('formMessage'), 'Pop-up blocked. Allow pop-ups for this site and try again.', true);
+      else alert('Pop-up blocked. Allow pop-ups for this site and try again.');
+      return;
+    }
+    win.document.open();
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Professional Invoice ${escapeHtml(d.invoiceNumber)}</title><style>${professionalInvoiceCss()}</style></head><body>${professionalInvoiceHtml(d)}</body></html>`);
+    win.document.close();
+    if (typeof setMsg === 'function' && byId('formMessage')) setMsg(byId('formMessage'), 'Opening professional PO invoice print window. Use Print > Save as PDF to create the attachment for Accounts Payable.');
+    setTimeout(() => { win.focus(); win.print(); }, 350);
+  }
+
+  function bindProfessionalInvoiceButton(){
+    const btn = byId('generateProfessionalInvoicePdfBtn');
+    if (!btn || btn.dataset.professionalInvoiceBound === 'true') return;
+    btn.dataset.professionalInvoiceBound = 'true';
+    btn.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      try { generateProfessionalInvoicePdf(); }
+      catch (error) {
+        console.error('Professional invoice PDF failed:', error);
+        if (typeof setMsg === 'function' && byId('formMessage')) setMsg(byId('formMessage'), `Professional invoice PDF failed: ${error?.message || error}`, true);
+        else alert(`Professional invoice PDF failed: ${error?.message || error}`);
+      }
+    }, true);
+  }
+
+  window.generateProfessionalInvoicePdf = generateProfessionalInvoicePdf;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindProfessionalInvoiceButton);
+  else bindProfessionalInvoiceButton();
+  setTimeout(bindProfessionalInvoiceButton, 500);
+  setTimeout(bindProfessionalInvoiceButton, 1500);
+})();
+
 </script>
 
 </body>
