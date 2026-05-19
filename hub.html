@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Site Hub</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{
       --panel:rgba(255,255,255,.92);
@@ -661,6 +661,75 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
 /* Active Projects hub addition */
 .core-tools-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
 
+
+
+/* === OliPoly Command Center 2026 compact OS refinement === */
+:root{
+  --ink:#25182d;
+  --muted:#74617d;
+  --soft:#fff7fd;
+  --pink:#e84fb7;
+  --purple:#9d6df3;
+  --line:rgba(101,60,120,.15);
+  --shadow:0 22px 62px rgba(95,36,112,.13);
+}
+body{
+  color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 14% -4%,rgba(255,142,213,.30),transparent 32rem),
+    radial-gradient(circle at 93% 3%,rgba(162,113,255,.22),transparent 31rem),
+    linear-gradient(180deg,#fff5fc 0%,#fff 42%,#fff8fd 100%);
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(232,79,183,.032) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(157,109,243,.03) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.58),transparent 78%);
+}
+.wrap{width:min(1180px,calc(100% - 28px));padding:16px 0 64px}
+.topbar{
+  border-radius:26px;
+  padding:11px 14px;
+  margin-bottom:12px;
+  box-shadow:0 14px 36px rgba(95,36,112,.10);
+  background:rgba(255,250,254,.88);
+  border-color:rgba(101,60,120,.13);
+}
+.logo-wrap{width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,#fff,#ffe1f6);box-shadow:0 10px 30px rgba(219,74,176,.18)}
+.logo-wrap img{object-fit:contain;padding:2px}
+.brand h1,.os-title,.section-title h3,.notes-card h3,.ops-title,.priority-title{font-family:"Playfair Display",serif;letter-spacing:-.045em;color:var(--ink)}
+.brand h1{font-size:1.45rem;line-height:.95}.brand p{font-size:.82rem}.brand-mini-badge,.os-kicker{color:#a03c87;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);box-shadow:0 10px 24px rgba(142,69,150,.07)}
+.hub-shell,.hub-section,.auth-card,.health-check-card,.notes-card,.summary-box,.ops-drawer{
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(255,255,255,.82);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(14px);
+  border-radius:28px;
+}
+.hub-shell{padding:18px;margin-bottom:12px;position:relative;overflow:hidden}
+.hub-shell::before,.hub-section::before,.auth-card::before,.health-check-card::before,.notes-card::before,.ops-drawer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.96),transparent);pointer-events:none}
+.hub-section,.auth-card,.health-check-card,.notes-card{padding:15px;margin-bottom:12px;position:relative;overflow:hidden}
+.os-command{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
+.os-title{margin:6px 0 5px;font-size:clamp(2rem,4.4vw,4rem);line-height:.92;max-width:740px}
+.os-sub{margin:0;color:#6f5c78;line-height:1.5;max-width:720px;font-size:.98rem}.status-strip{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}.status-pill{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.74);border:1px solid rgba(101,60,120,.13);font-weight:900;color:#6f4b7e;font-size:.76rem;white-space:nowrap}.status-pill::before{content:"";width:9px;height:9px;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 0 0 4px rgba(232,79,183,.08)}
+.metrics-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}.metric-tile{padding:10px 11px;border-radius:17px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.12)}.metric-tile span{font-size:.68rem;color:#8d5d9a}.metric-tile strong{font-size:1.22rem;color:var(--ink)}
+.priority-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:12px;margin-bottom:12px}.priority-panel{padding:15px;border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.74));border:1px solid rgba(255,255,255,.82);box-shadow:var(--shadow)}.priority-title{font-size:2rem;line-height:.95;margin:4px 0 4px}.priority-list{display:grid;gap:8px;margin-top:12px}.priority-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-decoration:none;padding:10px 11px;border-radius:18px;background:rgba(255,255,255,.78);border:1px solid rgba(101,60,120,.12);transition:.18s ease}.priority-item:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(95,36,112,.08)}.priority-dot{width:12px;height:12px;border-radius:999px;background:var(--purple);box-shadow:0 0 0 4px rgba(157,109,243,.11)}.priority-item.high .priority-dot{background:var(--pink);box-shadow:0 0 0 4px rgba(232,79,183,.12)}.priority-item strong{display:block;color:var(--ink);font-size:.95rem}.priority-item small{display:block;color:var(--muted);line-height:1.35;margin-top:2px}.priority-tag{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:#9b4c80;background:rgba(232,79,183,.09);border:1px solid rgba(232,79,183,.13);border-radius:999px;padding:6px 8px;white-space:nowrap}
+.core-tools-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:9px}.core-tool{min-height:96px;padding:12px;border-radius:20px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;justify-content:start;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,246,252,.82));box-shadow:0 10px 22px rgba(95,36,112,.07)}.core-tool .tool-icon{width:38px;height:38px;border-radius:14px;font-size:1rem}.core-tool strong{font-size:.95rem}.core-tool small{font-size:.78rem;line-height:1.28}.core-tool.primary{background:linear-gradient(135deg,rgba(232,79,183,.14),rgba(157,109,243,.13)),rgba(255,255,255,.9);border-color:rgba(232,79,183,.18)}
+.action-pill-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.action-pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 13px;border-radius:999px;text-decoration:none;background:rgba(255,255,255,.78);border:1px solid rgba(101,60,120,.13);font-weight:900;color:#5f456a;box-shadow:0 8px 18px rgba(95,36,112,.06);transition:.18s ease}.action-pill:hover{transform:translateY(-1px);box-shadow:0 12px 22px rgba(95,36,112,.10)}.action-pill.primary{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));border-color:transparent;box-shadow:0 14px 30px rgba(214,73,186,.20)}
+.ops-drawer{position:relative;overflow:hidden;margin-bottom:12px}.ops-drawer summary{list-style:none;cursor:pointer;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:12px}.ops-drawer summary::-webkit-details-marker{display:none}.ops-drawer .ops-title{font-size:1.55rem;line-height:1;margin:0}.ops-drawer .ops-desc{display:block;color:var(--muted);font-weight:600;line-height:1.35;margin-top:4px;font-size:.88rem}.ops-plus{width:32px;height:32px;display:grid;place-items:center;border-radius:999px;background:rgba(232,79,183,.10);color:#9b4c80;font-weight:900;transition:.2s ease;flex:0 0 auto}.ops-drawer[open] .ops-plus{transform:rotate(45deg)}.ops-body{padding:0 15px 15px}.compact-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.compact-status{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.76);border:1px solid rgba(101,60,120,.12);font-weight:800;font-size:.86rem;color:#5f456a}.compact-status span{width:10px;height:10px;border-radius:50%;background:var(--unknown);box-shadow:0 0 0 4px rgba(184,167,190,.12)}.compact-status.ok span{background:var(--ok);box-shadow:0 0 0 4px rgba(76,175,80,.12)}
+.health-check-card{padding:12px}.health-check-header{margin-bottom:8px}.health-check-summary{font-size:.84rem;padding:9px 10px}.status-row{padding:8px 10px}.status-url{display:none}.health-check-list{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.status-row{grid-template-columns:minmax(0,1fr) auto}.status-row .tiny-btn{display:none}
+.workflow-playbook-grid{grid-template-columns:1fr;gap:8px}.playbook-details{border-radius:18px}.playbook-details summary{padding:12px 13px}.playbook-body{padding:0 13px 13px}.playbook-step{padding:9px 10px;font-size:.84rem}.quiet-seo-grid,.docs-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}.quiet-seo-card,.doc-card{min-height:auto;padding:13px;border-radius:19px}.compact-link-grid{gap:8px}.utility-link{min-height:42px;padding:10px 12px;border-radius:15px}.reminder-toolbar{grid-template-columns:1.35fr .8fr .75fr auto}.reminder-table th,.reminder-table td{padding:8px 10px}.notes-card textarea{min-height:126px}
+@media(max-width:900px){.os-command,.priority-grid{grid-template-columns:1fr}.status-strip{justify-content:flex-start}.compact-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reminder-toolbar{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.wrap{width:min(100% - 18px,1180px);padding-top:10px}.topbar{position:relative;top:auto}.os-title{font-size:2.25rem}.hub-shell,.priority-panel,.hub-section,.auth-card,.health-check-card,.notes-card,.ops-drawer{border-radius:22px}.hub-shell,.priority-panel,.hub-section,.auth-card,.notes-card{padding:13px}.metrics-grid,.compact-status-grid,.reminder-toolbar{grid-template-columns:1fr}.core-tools-grid{grid-template-columns:1fr}.core-tool{min-height:auto}.priority-item{grid-template-columns:auto minmax(0,1fr)}.priority-tag{grid-column:2}.action-pill-grid{display:grid;grid-template-columns:1fr}.action-pill{width:100%}.health-check-list{grid-template-columns:1fr}.auth-grid{grid-template-columns:1fr}.auth-actions{grid-template-columns:1fr}.footer-space{height:18px}}
+
 </style>
 </head>
 <body>
@@ -679,82 +748,92 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       <a class="ghost ext" href="index.html">Open Main Site</a>
     </header>
 
-
-    <section class="os-hero">
-      <div class="os-card">
-        <div class="os-kicker">Today</div>
-        <h2>OliPoly Command Center</h2>
-        <p>Start here for the daily operating flow: quotes, orders, production, payment, shipping, and follow-up.</p>
-        <div class="metrics-grid">
-          <div class="metric-tile"><span>Reminders</span><strong id="metricReminders">—</strong></div>
-          <div class="metric-tile"><span>Overdue</span><strong id="metricOverdue">—</strong></div>
-          <div class="metric-tile"><span>This Week</span><strong id="metricThisWeek">—</strong></div>
-          <div class="metric-tile"><span>System</span><strong id="metricSystem">Ready</strong></div>
+    <section class="hub-shell">
+      <div class="os-command">
+        <div>
+          <span class="os-kicker">Today</span>
+          <h2 class="os-title">Run the shop from one calm place.</h2>
+          <p class="os-sub">Start here for quotes, orders, active projects, production, payment, shipping, follow-up, and finance. Built to feel compact, fast, and aligned with the public OliPoly brand.</p>
+        </div>
+        <div class="status-strip" aria-label="Hub status">
+          <span class="status-pill">Cloud Sync</span>
+          <span class="status-pill">Orders</span>
+          <span class="status-pill">Projects</span>
+          <span class="status-pill">Finance</span>
         </div>
       </div>
 
-      <div class="os-card">
-        <div class="os-kicker">Cloud Sync</div>
-        <h2>Sign in once, work everywhere.</h2>
-        <p>Use Supabase login below to unlock notes, reminders, saved quotes, Orders Admin, and Finance Pro on this device.</p>
-        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
-          <a class="ghost" href="#cloud-login">Go to Login</a>
-          <button class="ghost" id="quickHealthBtn" type="button">Run Health Check</button>
-        </div>
+      <div class="metrics-grid">
+        <div class="metric-tile"><span>Reminders</span><strong id="metricReminders">—</strong></div>
+        <div class="metric-tile"><span>Overdue</span><strong id="metricOverdue">—</strong></div>
+        <div class="metric-tile"><span>This Week</span><strong id="metricThisWeek">—</strong></div>
+        <div class="metric-tile"><span>System</span><strong id="metricSystem">Ready</strong></div>
       </div>
     </section>
 
-<section class="auth-card" id="cloud-login">
-      <div class="section-title" style="margin-bottom:10px;">
-        <h3>Cloud Sync</h3>
-        <p>Sign in to sync notes and reminders across devices.</p>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-        <div class="auth-badge" id="cloudSyncBadge">Not signed in</div>
-        <div class="sync-pill">Supabase sync</div>
-      </div>
-      <div class="auth-grid">
-        <label class="label">
-          Email
-          <input id="hubEmail" class="reminder-input" type="email" placeholder="you@example.com" />
-        </label>
-        <label class="label">
-          Password
-          <input id="hubPassword" class="reminder-input" type="password" placeholder="Password" />
-        </label>
-        <div class="auth-actions">
-          <button class="btn" id="hubLoginBtn" type="button">Log In</button>
-          <button class="ghost" id="hubSignupBtn" type="button">Create</button>
-        </div>
-        <div class="auth-actions">
-          <button class="ghost hidden" id="hubLogoutBtn" type="button">Log Out</button>
+    <section class="priority-grid" aria-label="Priority queue and quick actions">
+      <div class="priority-panel">
+        <span class="os-kicker">Priority Queue</span>
+        <h2 class="priority-title">What needs attention?</h2>
+        <p class="os-sub">Use this as the mental starting point before jumping into the bigger tools.</p>
+        <div class="priority-list">
+          <a class="priority-item high" href="projects.html">
+            <span class="priority-dot"></span>
+            <span><strong>Open Project Queue</strong><small>See what to print next, show stock, PO work, and custom requests.</small></span>
+            <span class="priority-tag">Plan</span>
+          </a>
+          <a class="priority-item" href="orders-admin.html">
+            <span class="priority-dot"></span>
+            <span><strong>Check Orders Admin</strong><small>Update status, payment, shipping, invoice, labels, or customer emails.</small></span>
+            <span class="priority-tag">Orders</span>
+          </a>
+          <a class="priority-item" href="quote.html">
+            <span class="priority-dot"></span>
+            <span><strong>Create or finish a quote</strong><small>Build quotes, PDFs, approval links, and professional quote emails.</small></span>
+            <span class="priority-tag">Quote</span>
+          </a>
         </div>
       </div>
-      <div id="hubAuthStatus" class="auth-status">Waiting for sign-in.</div>
+
+      <div class="priority-panel">
+        <span class="os-kicker">Quick Actions</span>
+        <h2 class="priority-title">Jump straight in.</h2>
+        <p class="os-sub">The highest-frequency actions without scrolling through every document and workflow.</p>
+        <div class="action-pill-grid">
+          <a class="action-pill primary" href="quote.html">+ New Quote</a>
+          <a class="action-pill primary" href="projects.html">Project Queue</a>
+          <a class="action-pill" href="orders-admin.html">Update Order</a>
+          <a class="action-pill" href="finance-pro.html">Add Sale / Expense</a>
+          <a class="action-pill" href="pay.html">Payment Page</a>
+          <a class="action-pill" href="track.html">Customer Tracker</a>
+          <a class="action-pill" href="start-project.html">Preview Intake</a>
+          <button class="action-pill" id="quickHealthBtn" type="button">Run Health Check</button>
+        </div>
+      </div>
     </section>
 
     <section class="hub-section">
       <div class="section-title">
         <span class="os-kicker">Core Operations</span>
         <h3>Daily tools</h3>
-        <p>Your main OliPoly operating tools — promoted so they are fast to reach.</p>
+        <p>Your main operating systems — compact, promoted, and fast to reach.</p>
       </div>
       <div class="core-tools-grid">
-        <a class="core-tool" href="orders-admin.html">
+        <a class="core-tool primary" href="orders-admin.html">
           <span class="tool-icon">📦</span>
-          <span><strong>Orders Admin</strong><small>Live OP orders, tracking, invoices, packing slips, travelers, lifecycle emails.</small></span>
+          <span><strong>Orders Admin</strong><small>Orders, tracking, invoices, labels, slips, travelers, emails.</small></span>
         </a>
-        <a class="core-tool" href="quote.html">
+        <a class="core-tool primary" href="quote.html">
           <span class="tool-icon">🧾</span>
-          <span><strong>Quote Tool</strong><small>Create quotes, professional PDFs, customer approval links.</small></span>
+          <span><strong>Quote Tool</strong><small>Quotes, PDFs, approvals, and quote-to-order flow.</small></span>
         </a>
-        <a class="core-tool" href="projects.html">
+        <a class="core-tool primary" href="projects.html">
           <span class="tool-icon">🗂️</span>
-          <span><strong>Active Projects</strong><small>Plan requests, show stock, PO work, print queue, and push ready items into Quote Tool.</small></span>
+          <span><strong>Active Projects</strong><small>Requests, show stock, print queue, PO work.</small></span>
         </a>
-        <a class="core-tool" href="finance-pro.html">
+        <a class="core-tool primary" href="finance-pro.html">
           <span class="tool-icon">💰</span>
-          <span><strong>Finance Pro</strong><small>Sales, expenses, tax-inclusive revenue, Schedule C exports.</small></span>
+          <span><strong>Finance Pro</strong><small>Sales, expenses, mileage, tax, Schedule C exports.</small></span>
         </a>
         <a class="core-tool" href="track.html">
           <span class="tool-icon">🔎</span>
@@ -762,62 +841,47 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
         </a>
         <a class="core-tool" href="pay.html">
           <span class="tool-icon">💳</span>
-          <span><strong>Pay Page</strong><small>Quick craft-table and customer payment options.</small></span>
+          <span><strong>Pay Page</strong><small>Craft-table, pickup, and quick customer payment handoff.</small></span>
         </a>
       </div>
     </section>
 
-    <section class="hub-section quick-action-section">
-      <div class="section-title">
-        <span class="os-kicker">Quick Actions</span>
-        <h3>Jump straight into the next task</h3>
-        <p>Fast links for the things you’re most likely to need during a normal OliPoly work session.</p>
+    <details class="ops-drawer" id="cloud-login" open>
+      <summary>
+        <span><h3 class="ops-title">Cloud Sync</h3><span class="ops-desc">Sign in once to sync notes, reminders, saved quotes, Orders Admin, and Finance Pro on this device.</span></span>
+        <b class="ops-plus">+</b>
+      </summary>
+      <div class="ops-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div class="auth-badge" id="cloudSyncBadge">Not signed in</div>
+          <div class="sync-pill">Supabase sync</div>
+        </div>
+        <div class="auth-grid">
+          <label class="label">
+            Email
+            <input id="hubEmail" class="reminder-input" type="email" placeholder="you@example.com" />
+          </label>
+          <label class="label">
+            Password
+            <input id="hubPassword" class="reminder-input" type="password" placeholder="Password" />
+          </label>
+          <div class="auth-actions">
+            <button class="btn" id="hubLoginBtn" type="button">Log In</button>
+            <button class="ghost" id="hubSignupBtn" type="button">Create</button>
+          </div>
+          <div class="auth-actions">
+            <button class="ghost hidden" id="hubLogoutBtn" type="button">Log Out</button>
+          </div>
+        </div>
+        <div id="hubAuthStatus" class="auth-status">Waiting for sign-in.</div>
+        <div class="compact-status-grid">
+          <div class="compact-status ok"><span></span><span id="statusAuth">Checking login...</span></div>
+          <div class="compact-status ok"><span></span><span id="statusOrders">Orders Admin ready</span></div>
+          <div class="compact-status ok"><span></span><span id="statusQuote">Quote Tool ready</span></div>
+          <div class="compact-status ok"><span></span><span id="statusFinance">Finance ready</span></div>
+        </div>
       </div>
-      <div class="quick-action-grid">
-        <a class="quick-action-card primary" href="quote.html">
-          <strong>+ New Quote</strong>
-          <small>Create a customer quote, PDF, and approval link.</small>
-        </a>
-        <a class="quick-action-card primary" href="projects.html">
-          <strong>Open Project Queue</strong>
-          <small>See what to print next, capture requests, plan show stock, and push ready projects to quotes.</small>
-        </a>
-        <a class="quick-action-card" href="start-project.html">
-          <strong>Preview Start Project</strong>
-          <small>Test the public Tally intake and branded project-received flow.</small>
-        </a>
-        <a class="quick-action-card" href="orders-admin.html">
-          <strong>Lookup / Update Order</strong>
-          <small>Check status, payment, shipping, and tracker details.</small>
-        </a>
-        <a class="quick-action-card" href="finance-pro.html">
-          <strong>Add Sale or Expense</strong>
-          <small>Record revenue, costs, tax, or Schedule C items.</small>
-        </a>
-        <a class="quick-action-card" href="track.html">
-          <strong>Open Customer Tracker</strong>
-          <small>Preview what customers see for Q or OP numbers.</small>
-        </a>
-        <a class="quick-action-card" href="pay.html">
-          <strong>Open Payment Page</strong>
-          <small>Use for craft shows, pickups, or quick payment handoff.</small>
-        </a>
-      </div>
-    </section>
-
-    <section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">System Status</span>
-        <h3>Operational readiness</h3>
-        <p>Quick view of login and core system availability.</p>
-      </div>
-      <div class="checklist-list">
-        <div class="check-row"><span class="check-number">✓</span><span id="statusAuth">Checking login...</span></div>
-        <div class="check-row"><span class="check-number">✓</span><span id="statusOrders">Orders Admin ready</span></div>
-        <div class="check-row"><span class="check-number">✓</span><span id="statusQuote">Quote Tool ready</span></div>
-        <div class="check-row"><span class="check-number">✓</span><span id="statusFinance">Finance ready</span></div>
-      </div>
-    </section>
+    </details>
 
     <section class="hub-section">
       <div class="section-title">
@@ -843,19 +907,17 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
 
     <section class="hub-section">
       <div class="section-title">
-        <span class="os-kicker">Fulfillment Workflow</span>
+        <span class="os-kicker">Fulfillment</span>
         <h3>Live order documents & shop-floor tools</h3>
-        <p>Generated documents now come from Orders Admin using live customer/order data. Static label/slip templates are no longer the source of truth.</p>
+        <p>Generated documents come from Orders Admin using live customer/order data. Static label/slip templates are no longer the source of truth.</p>
       </div>
-
       <div class="workflow-source-card">
-        <strong>Source of truth:</strong> open the order in Orders Admin, confirm the customer/order fields, then generate the Packing Slip, Manufacturing Traveler, Invoice PDF, and lifecycle emails from the live OP order.
+        <strong>Source of truth:</strong> open the order in Orders Admin, confirm the customer/order fields, then generate the Packing Slip, Manufacturing Traveler, Invoice PDF, labels, and lifecycle emails from the live OP order.
       </div>
-
       <div class="compact-link-grid">
         <a class="utility-link" href="orders-admin.html">Orders Admin / Live Docs <span>→</span></a>
-        <a class="utility-link" href="orders-admin.html">Generate Packing Slip <span>→</span></a>
-        <a class="utility-link" href="orders-admin.html">Generate Traveler <span>→</span></a>
+        <a class="utility-link" href="orders-admin.html">Packing Slip <span>→</span></a>
+        <a class="utility-link" href="orders-admin.html">Manufacturing Traveler <span>→</span></a>
         <a class="utility-link" href="track.html">Customer Tracker <span>→</span></a>
         <a class="utility-link" href="pay.html">Payment Page <span>→</span></a>
         <a class="utility-link" href="materials.html">Materials <span>→</span></a>
@@ -863,205 +925,138 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       </div>
     </section>
 
+    <details class="ops-drawer">
+      <summary>
+        <span><h3 class="ops-title">Workflow Playbooks</h3><span class="ops-desc">Retail, business/PO, craft-show, and repeat/catalog operating flows. Collapsed by default to keep the hub compact.</span></span>
+        <b class="ops-plus">+</b>
+      </summary>
+      <div class="ops-body">
+        <div class="workflow-playbook-grid">
+          <details class="playbook-details">
+            <summary><span>Retail / custom customer<small>Standard quote approval, payment, production, pickup or shipping.</small></span><b>+</b></summary>
+            <div class="playbook-body">
+              <div class="playbook-steps">
+                <div class="playbook-step"><span>1</span>Receive inquiry or custom request.</div>
+                <div class="playbook-step"><span>2</span>Create quote in Quote Tool.</div>
+                <div class="playbook-step"><span>3</span>Generate Quote PDF v2 and prepare Quote Email v2.</div>
+                <div class="playbook-step"><span>4</span>Send approval link to customer.</div>
+                <div class="playbook-step"><span>5</span>Customer approves quote on Quote Response page.</div>
+                <div class="playbook-step"><span>6</span>Quote converts to OP order and activates Tracker.</div>
+                <div class="playbook-step"><span>7</span>Confirm payment link/status in Orders Admin.</div>
+                <div class="playbook-step"><span>8</span>Produce item; generate traveler/packing slip if helpful.</div>
+                <div class="playbook-step"><span>9</span>Send ready, pickup, shipped, or completion lifecycle email.</div>
+                <div class="playbook-step"><span>10</span>Record sale/tax/costs in Finance Pro.</div>
+              </div>
+              <div class="playbook-note">Best for one-off custom jobs, gifts, small creative builds, local pickup, and normal customer requests.</div>
+            </div>
+          </details>
+
+          <details class="playbook-details">
+            <summary><span>Business / PO customer<small>Professional quote, vendor docs, PO, live order docs, invoice.</small></span><b>+</b></summary>
+            <div class="playbook-body">
+              <div class="playbook-steps">
+                <div class="playbook-step"><span>1</span>Receive RFQ, drawings, part details, or print files.</div>
+                <div class="playbook-step"><span>2</span>Create professional/business quote with PO, part, and revision fields.</div>
+                <div class="playbook-step"><span>3</span>Send Quote PDF v2 + Quote Email v2; include W-9/vendor packet if requested.</div>
+                <div class="playbook-step"><span>4</span>Customer approves quote or issues PO.</div>
+                <div class="playbook-step"><span>5</span>Convert quote to OP order and confirm PO/part/revision data.</div>
+                <div class="playbook-step"><span>6</span>Generate Manufacturing Traveler for production.</div>
+                <div class="playbook-step"><span>7</span>Generate Packing Slip from Orders Admin for fulfillment.</div>
+                <div class="playbook-step"><span>8</span>Ship/deliver and send shipping or ready-for-pickup email.</div>
+                <div class="playbook-step"><span>9</span>Generate/send Invoice PDF v2 or invoice email as required.</div>
+                <div class="playbook-step"><span>10</span>Close out in Finance Pro and save catalog part if repeatable.</div>
+              </div>
+              <div class="playbook-note">Best for PO customers, repeat production, part-numbered jobs, business invoices, and purchasing department workflows.</div>
+            </div>
+          </details>
+
+          <details class="playbook-details">
+            <summary><span>Craft show / in-person sale<small>Fast payment, handoff, optional follow-up, Finance Pro entry.</small></span><b>+</b></summary>
+            <div class="playbook-body">
+              <div class="playbook-steps">
+                <div class="playbook-step"><span>1</span>Customer selects premade item or asks about a custom idea.</div>
+                <div class="playbook-step"><span>2</span>Open Pay Page or QR/payment sign.</div>
+                <div class="playbook-step"><span>3</span>Accept card, PayPal, Venmo, or other approved payment.</div>
+                <div class="playbook-step"><span>4</span>Bag item with thank-you insert or QR card.</div>
+                <div class="playbook-step"><span>5</span>For custom follow-up, direct customer to quote form/site.</div>
+                <div class="playbook-step"><span>6</span>Record sale, tax collected, and costs in Finance Pro.</div>
+                <div class="playbook-step"><span>7</span>Add reminder if follow-up/custom quote is needed.</div>
+              </div>
+              <div class="playbook-note">Best for events, quick local purchases, impulse sales, and converting in-person ideas into later quote requests.</div>
+            </div>
+          </details>
+
+          <details class="playbook-details">
+            <summary><span>Repeat / catalog production<small>Saved part memory, revision control, repeat job setup.</small></span><b>+</b></summary>
+            <div class="playbook-body">
+              <div class="playbook-steps">
+                <div class="playbook-step"><span>1</span>Open Orders Admin and search saved catalog parts.</div>
+                <div class="playbook-step"><span>2</span>Load the catalog part into the order form for reference.</div>
+                <div class="playbook-step"><span>3</span>Confirm revision, material, color, quantity, and prior pricing.</div>
+                <div class="playbook-step"><span>4</span>Create quote or order using current quantity/pricing.</div>
+                <div class="playbook-step"><span>5</span>Generate traveler and packing slip from live order data.</div>
+                <div class="playbook-step"><span>6</span>Produce batch and update Tracker.</div>
+                <div class="playbook-step"><span>7</span>Send lifecycle email and close out in Finance Pro.</div>
+                <div class="playbook-step"><span>8</span>Update catalog part notes/revision if anything changed.</div>
+              </div>
+              <div class="playbook-note">The Create Reorder Quote automation is intentionally on the backlog; for now, use catalog search/load as the memory layer.</div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </details>
+
+    <details class="ops-drawer">
+      <summary>
+        <span><h3 class="ops-title">Business, brand & landing page assets</h3><span class="ops-desc">Vendor docs, thank-you inserts, payment signage, QR folders, and quiet SEO/staging pages.</span></span>
+        <b class="ops-plus">+</b>
+      </summary>
+      <div class="ops-body">
+        <div class="docs-grid">
+          <div class="doc-card">
+            <strong>W-9 PDF</strong>
+            <small>Use for vendor setup and business customers that request tax paperwork.</small>
+            <div class="doc-actions"><a class="tiny-btn" href="assets/docs/w9.pdf" target="_blank" rel="noopener noreferrer">Open</a><button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/w9.pdf')">Copy Link</button></div>
+          </div>
+          <div class="doc-card">
+            <strong>Vendor Setup Packet</strong>
+            <small>Business information packet for vendor onboarding, purchasing departments, and PO customers.</small>
+            <div class="doc-actions"><a class="tiny-btn" href="assets/docs/vendor-setup-packet.pdf" target="_blank" rel="noopener noreferrer">Open</a><button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/vendor-setup-packet.pdf')">Copy Link</button></div>
+          </div>
+          <div class="doc-card">
+            <strong>Consumer Thank-You Insert</strong>
+            <small>Customer insert for repeat orders, care notes, contact info, and OliPoly branding.</small>
+            <div class="doc-actions"><a class="tiny-btn" href="assets/templates/consumer/consumer-thank-you-insert.pdf" target="_blank" rel="noopener noreferrer">Open</a><button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-thank-you-insert.pdf')">Copy Link</button></div>
+          </div>
+          <div class="doc-card">
+            <strong>Craft Table Payment Sign</strong>
+            <small>Branded digital payment sign for craft tables, pickup, QR signage, and social posts.</small>
+            <div class="doc-actions"><a class="tiny-btn" href="assets/brand/payment-sign-event.png" target="_blank" rel="noopener noreferrer">Open PNG</a><a class="tiny-btn" href="assets/brand/payment-sign-event.pdf" target="_blank" rel="noopener noreferrer">Open PDF</a></div>
+          </div>
+          <div class="doc-card">
+            <strong>Payment QR Codes</strong>
+            <small>QR folder for PayPal, Venmo, card payments, website, upload form, and tracker links.</small>
+            <div class="doc-actions"><a class="tiny-btn" href="assets/qr/" target="_blank" rel="noopener noreferrer">Open Folder</a><button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/qr/')">Copy Link</button></div>
+          </div>
+          <div class="doc-card">
+            <strong>Generated Order Documents</strong>
+            <small>Packing slips, travelers, invoice PDFs, and lifecycle emails live inside Orders Admin.</small>
+            <div class="doc-actions"><a class="tiny-btn" href="orders-admin.html">Open Orders Admin</a></div>
+          </div>
+        </div>
+
+        <div class="quiet-seo-grid" style="margin-top:12px;">
+          <a class="quiet-seo-card" href="start-project.html"><span class="quiet-badge">Public Intake</span><strong>Start Project Portal</strong><small>Future customer-facing intake page for homepage and landing-page CTAs.</small></a>
+          <a class="quiet-seo-card" href="business-3d-printing.html"><span class="quiet-badge">SEO Staging</span><strong>Business 3D Printing</strong><small>PO-friendly, production support, repeat parts, business buyers.</small></a>
+          <a class="quiet-seo-card" href="prototype-printing.html"><span class="quiet-badge">SEO Staging</span><strong>Prototype Printing</strong><small>Concepts, iteration, test-fit parts, product development.</small></a>
+          <a class="quiet-seo-card" href="custom-brackets.html"><span class="quiet-badge">SEO Staging</span><strong>Custom Brackets</strong><small>Functional parts, spacers, mounts, adapters, replacements.</small></a>
+          <a class="quiet-seo-card" href="ohio-3d-printing.html"><span class="quiet-badge">SEO Staging</span><strong>Ohio 3D Printing</strong><small>Local custom printing, fabrication support, pickup/shipping.</small></a>
+          <a class="quiet-seo-card" href="creative-learning-tools.html"><span class="quiet-badge">SEO Staging</span><strong>Creative Learning Tools</strong><small>Educational prints, STEM helpers, classroom tools, playful learning.</small></a>
+        </div>
+      </div>
+    </details>
+
     <section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Business Docs</span>
-        <h3>Vendor, PO & business files</h3>
-        <p>Static corporate-facing documents for vendor setup and purchasing departments. Order-specific slips and invoices are generated from Orders Admin.</p>
-      </div>
-      <div class="docs-grid">
-        <div class="doc-card">
-          <strong>W-9 PDF</strong>
-          <small>Use for vendor setup and business customers that request tax paperwork.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/docs/w9.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/w9.pdf')">Copy Link</button>
-          </div>
-        </div>
-        <div class="doc-card">
-          <strong>Vendor Setup Packet</strong>
-          <small>Business information packet for vendor onboarding, purchasing departments, and PO customers.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/docs/vendor-setup-packet.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/docs/vendor-setup-packet.pdf')">Copy Link</button>
-          </div>
-        </div>
-        <div class="doc-card">
-          <strong>Generated Order Documents</strong>
-          <small>Packing slips, manufacturing travelers, invoice PDFs, and lifecycle emails now live inside Orders Admin.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="orders-admin.html">Open Orders Admin</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-<section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Marketing / Brand Assets</span>
-        <h3>Customer-facing files</h3>
-        <p>Friendly packaging, QR codes, craft table signage, payment graphics, and branded customer assets.</p>
-      </div>
-      <div class="docs-grid">
-        <div class="doc-card">
-          <strong>Consumer Thank-You Insert</strong>
-          <small>Polished customer insert for repeat orders, care notes, contact info, and friendly OliPoly branding.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/templates/consumer/consumer-thank-you-insert.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/templates/consumer/consumer-thank-you-insert.pdf')">Copy Link</button>
-          </div>
-        </div>
-        <div class="doc-card">
-          <strong>Craft Table Payment Sign</strong>
-          <small>Branded OliPoly digital payment sign for craft tables, pickup, QR signage, and social posts.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/brand/payment-sign-event.png" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/brand/payment-sign-event.png')">Copy Link</button>
-          </div>
-        </div>
-        <div class="doc-card">
-          <strong>Payment Sign PDF</strong>
-          <small>Printable PDF version of the OliPoly craft-table digital payment sign.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/brand/payment-sign-event.pdf" target="_blank" rel="noopener noreferrer">Open</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/brand/payment-sign-event.pdf')">Copy Link</button>
-          </div>
-        </div>
-        <div class="doc-card">
-          <strong>Payment QR Codes</strong>
-          <small>QR folder for PayPal, Venmo, card payments, website, upload form, and tracker links.</small>
-          <div class="doc-actions">
-            <a class="tiny-btn" href="assets/qr/" target="_blank" rel="noopener noreferrer">Open Folder</a>
-            <button class="tiny-btn" type="button" onclick="copyText('https://olipoly3d.com/assets/qr/')">Copy Link</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    
-
-    <section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Quiet SEO / Showcase Pages</span>
-        <h3>Landing pages to review and build out</h3>
-        <p>Internal preview links for the new quiet landing pages. These are not in the public main nav yet, but they can be reviewed, improved, and filled with real examples over time.</p>
-      </div>
-      <div class="quiet-seo-grid">
-        <a class="quiet-seo-card" href="start-project.html">
-          <span class="quiet-badge">Public Intake</span>
-          <strong>Start Project Portal</strong>
-          <small>Future customer-facing intake page for homepage and landing-page CTAs.</small>
-        </a>
-        <a class="quiet-seo-card" href="business-3d-printing.html">
-          <span class="quiet-badge">SEO Staging</span>
-          <strong>Business 3D Printing</strong>
-          <small>PO-friendly, production support, repeat parts, business buyers.</small>
-        </a>
-        <a class="quiet-seo-card" href="prototype-printing.html">
-          <span class="quiet-badge">SEO Staging</span>
-          <strong>Prototype Printing</strong>
-          <small>Concepts, iteration, test-fit parts, product development.</small>
-        </a>
-        <a class="quiet-seo-card" href="custom-brackets.html">
-          <span class="quiet-badge">SEO Staging</span>
-          <strong>Custom Brackets</strong>
-          <small>Functional parts, spacers, mounts, adapters, replacements.</small>
-        </a>
-        <a class="quiet-seo-card" href="ohio-3d-printing.html">
-          <span class="quiet-badge">SEO Staging</span>
-          <strong>Ohio 3D Printing</strong>
-          <small>Local custom printing, fabrication support, pickup/shipping.</small>
-        </a>
-        <a class="quiet-seo-card" href="creative-learning-tools.html">
-          <span class="quiet-badge">SEO Staging</span>
-          <strong>Creative Learning Tools</strong>
-          <small>Educational prints, STEM helpers, classroom tools, playful learning.</small>
-        </a>
-      </div>
-    </section>
-
-<section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Workflow Playbooks</span>
-        <h3>Customer-type operating flows</h3>
-        <p>Use these playbooks as the current operating guide for retail, business/PO, craft-show, and repeat/catalog work.</p>
-      </div>
-
-      <div class="workflow-playbook-grid">
-        <details class="playbook-details" open>
-          <summary><span>Retail / custom customer<small>Standard quote approval, payment, production, pickup or shipping.</small></span><b>+</b></summary>
-          <div class="playbook-body">
-            <div class="playbook-steps">
-              <div class="playbook-step"><span>1</span>Receive inquiry or custom request.</div>
-              <div class="playbook-step"><span>2</span>Create quote in Quote Tool.</div>
-              <div class="playbook-step"><span>3</span>Generate Quote PDF v2 and prepare Quote Email v2.</div>
-              <div class="playbook-step"><span>4</span>Send approval link to customer.</div>
-              <div class="playbook-step"><span>5</span>Customer approves quote on Quote Response page.</div>
-              <div class="playbook-step"><span>6</span>Quote converts to OP order and activates Tracker.</div>
-              <div class="playbook-step"><span>7</span>Confirm payment link/status in Orders Admin.</div>
-              <div class="playbook-step"><span>8</span>Produce item; generate traveler/packing slip if helpful.</div>
-              <div class="playbook-step"><span>9</span>Send ready, pickup, shipped, or completion lifecycle email.</div>
-              <div class="playbook-step"><span>10</span>Record sale/tax/costs in Finance Pro.</div>
-            </div>
-            <div class="playbook-note">Best for one-off custom jobs, gifts, small creative builds, local pickup, and normal customer requests.</div>
-          </div>
-        </details>
-
-        <details class="playbook-details">
-          <summary><span>Business / PO customer<small>Professional quote, vendor docs, PO, live order docs, invoice.</small></span><b>+</b></summary>
-          <div class="playbook-body">
-            <div class="playbook-steps">
-              <div class="playbook-step"><span>1</span>Receive RFQ, drawings, part details, or print files.</div>
-              <div class="playbook-step"><span>2</span>Create professional/business quote with PO, part, and revision fields.</div>
-              <div class="playbook-step"><span>3</span>Send Quote PDF v2 + Quote Email v2; include W-9/vendor packet if requested.</div>
-              <div class="playbook-step"><span>4</span>Customer approves quote or issues PO.</div>
-              <div class="playbook-step"><span>5</span>Convert quote to OP order and confirm PO/part/revision data.</div>
-              <div class="playbook-step"><span>6</span>Generate Manufacturing Traveler for production.</div>
-              <div class="playbook-step"><span>7</span>Generate Packing Slip from Orders Admin for fulfillment.</div>
-              <div class="playbook-step"><span>8</span>Ship/deliver and send shipping or ready-for-pickup email.</div>
-              <div class="playbook-step"><span>9</span>Generate/send Invoice PDF v2 or invoice email as required.</div>
-              <div class="playbook-step"><span>10</span>Close out in Finance Pro and save catalog part if repeatable.</div>
-            </div>
-            <div class="playbook-note">Best for PO customers, repeat production, part-numbered jobs, business invoices, and purchasing department workflows.</div>
-          </div>
-        </details>
-
-        <details class="playbook-details">
-          <summary><span>Craft show / in-person sale<small>Fast payment, handoff, optional follow-up, Finance Pro entry.</small></span><b>+</b></summary>
-          <div class="playbook-body">
-            <div class="playbook-steps">
-              <div class="playbook-step"><span>1</span>Customer selects premade item or asks about a custom idea.</div>
-              <div class="playbook-step"><span>2</span>Open Pay Page or QR/payment sign.</div>
-              <div class="playbook-step"><span>3</span>Accept card, PayPal, Venmo, or other approved payment.</div>
-              <div class="playbook-step"><span>4</span>Bag item with thank-you insert or QR card.</div>
-              <div class="playbook-step"><span>5</span>For custom follow-up, direct customer to quote form/site.</div>
-              <div class="playbook-step"><span>6</span>Record sale, tax collected, and costs in Finance Pro.</div>
-              <div class="playbook-step"><span>7</span>Add reminder if follow-up/custom quote is needed.</div>
-            </div>
-            <div class="playbook-note">Best for events, quick local purchases, impulse sales, and converting in-person ideas into later quote requests.</div>
-          </div>
-        </details>
-
-        <details class="playbook-details">
-          <summary><span>Repeat / catalog production<small>Saved part memory, revision control, repeat job setup.</small></span><b>+</b></summary>
-          <div class="playbook-body">
-            <div class="playbook-steps">
-              <div class="playbook-step"><span>1</span>Open Orders Admin and search saved catalog parts.</div>
-              <div class="playbook-step"><span>2</span>Load the catalog part into the order form for reference.</div>
-              <div class="playbook-step"><span>3</span>Confirm revision, material, color, quantity, and prior pricing.</div>
-              <div class="playbook-step"><span>4</span>Create quote or order using current quantity/pricing.</div>
-              <div class="playbook-step"><span>5</span>Generate traveler and packing slip from live order data.</div>
-              <div class="playbook-step"><span>6</span>Produce batch and update Tracker.</div>
-              <div class="playbook-step"><span>7</span>Send lifecycle email and close out in Finance Pro.</div>
-              <div class="playbook-step"><span>8</span>Update catalog part notes/revision if anything changed.</div>
-            </div>
-            <div class="playbook-note">The Create Reorder Quote automation is intentionally on the backlog; for now, use catalog search/load as the memory layer.</div>
-          </div>
-        </details>
-      </div>
-    </section>
-
-<section class="hub-section">
       <div class="section-title">
         <span class="os-kicker">Financial Tools</span>
         <h3>Sales tax calculator</h3>
@@ -1080,7 +1075,7 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
         <div class="section-title" style="margin-bottom:0;">
           <span class="os-kicker">Health Check</span>
           <h3>Core page check</h3>
-          <p class="muted">Check active OliPoly pages quickly.</p>
+          <p class="muted">Compact check for the live OliPoly pages.</p>
         </div>
         <button class="btn" id="runHealthCheckBtn" type="button">Run Check</button>
       </div>
@@ -1088,24 +1083,24 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
       <div id="healthCheckList" class="health-check-list"></div>
     </section>
 
-    <section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Utilities / Admin</span>
-        <h3>External dashboards</h3>
-        <p>Lower-frequency admin tools, dashboards, and external services.</p>
+    <details class="ops-drawer">
+      <summary>
+        <span><h3 class="ops-title">Utilities / Admin</h3><span class="ops-desc">Lower-frequency dashboards and external services.</span></span>
+        <b class="ops-plus">+</b>
+      </summary>
+      <div class="ops-body">
+        <div class="compact-link-grid">
+          <a class="utility-link" href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe <span>→</span></a>
+          <a class="utility-link" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener noreferrer">Stripe Invoices <span>→</span></a>
+          <a class="utility-link" href="https://github.com/olipoly3d/olipoly-3d" target="_blank" rel="noopener noreferrer">GitHub Repo <span>→</span></a>
+          <a class="utility-link" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude" target="_blank" rel="noopener noreferrer">Supabase <span>→</span></a>
+          <a class="utility-link" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal <span>→</span></a>
+          <a class="utility-link" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo <span>→</span></a>
+          <a class="utility-link" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail <span>→</span></a>
+          <a class="utility-link" href="quote-tool.html">Legacy Quote Tool <span>→</span></a>
+        </div>
       </div>
-      <div class="compact-link-grid">
-        <a class="utility-link" href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">Stripe <span>→</span></a>
-        <a class="utility-link" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener noreferrer">Stripe Invoices <span>→</span></a>
-        <a class="utility-link" href="https://github.com/olipoly3d/olipoly-3d" target="_blank" rel="noopener noreferrer">GitHub Repo <span>→</span></a>
-        <a class="utility-link" href="https://supabase.com/dashboard/project/alffoktlwhpfothieude" target="_blank" rel="noopener noreferrer">Supabase <span>→</span></a>
-        <a class="utility-link" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal <span>→</span></a>
-        <a class="utility-link" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo <span>→</span></a>
-        <a class="utility-link" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail <span>→</span></a>
-        <a class="utility-link" href="quote-tool.html">Legacy Quote Tool <span>→</span></a>
-      </div>
-    </section>
-
+    </details>
 
     <section class="dashboard-grid">
       <section class="notes-card">
@@ -1118,6 +1113,8 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
         </div>
       </section>
     </section>
+
+    <div class="footer-space"></div>
   </div>
 
   <script type="module">
