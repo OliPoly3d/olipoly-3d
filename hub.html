@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>OliPoly 3D | Site Hub</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -1046,12 +1047,13 @@ body::before{
         </div>
 
         <div class="quiet-seo-grid" style="margin-top:12px;">
-          <a class="quiet-seo-card" href="start-project.html"><span class="quiet-badge">Public Intake</span><strong>Start Project Portal</strong><small>Future customer-facing intake page for homepage and landing-page CTAs.</small></a>
-          <a class="quiet-seo-card" href="business-3d-printing.html"><span class="quiet-badge">SEO Staging</span><strong>Business 3D Printing</strong><small>PO-friendly, production support, repeat parts, business buyers.</small></a>
-          <a class="quiet-seo-card" href="prototype-printing.html"><span class="quiet-badge">SEO Staging</span><strong>Prototype Printing</strong><small>Concepts, iteration, test-fit parts, product development.</small></a>
-          <a class="quiet-seo-card" href="custom-brackets.html"><span class="quiet-badge">SEO Staging</span><strong>Custom Brackets</strong><small>Functional parts, spacers, mounts, adapters, replacements.</small></a>
-          <a class="quiet-seo-card" href="ohio-3d-printing.html"><span class="quiet-badge">SEO Staging</span><strong>Ohio 3D Printing</strong><small>Local custom printing, fabrication support, pickup/shipping.</small></a>
-          <a class="quiet-seo-card" href="creative-learning-tools.html"><span class="quiet-badge">SEO Staging</span><strong>Creative Learning Tools</strong><small>Educational prints, STEM helpers, classroom tools, playful learning.</small></a>
+          <a class="quiet-seo-card" href="start-project.html"><span class="quiet-badge">Public Intake</span><strong>Start Project Portal</strong><small>Main customer-facing request page for homepage and future landing-page CTAs.</small></a>
+          <a class="quiet-seo-card" href="showcase.html"><span class="quiet-badge">Public Gallery</span><strong>Showcase Gallery</strong><small>Finished work, process visuals, capabilities, and customer-facing proof.</small></a>
+          <a class="quiet-seo-card" href="events.html"><span class="quiet-badge">Public Events</span><strong>Events Page</strong><small>Craft shows, seasonal appearances, and current public event details.</small></a>
+          <a class="quiet-seo-card" href="track.html"><span class="quiet-badge">Customer Tool</span><strong>Order Tracking</strong><small>Public tracker for order status, payment status, and shipping updates.</small></a>
+          <a class="quiet-seo-card" href="pay.html"><span class="quiet-badge">Payment</span><strong>Payment Page</strong><small>Simple branded page for customer payments, craft shows, and QR codes.</small></a>
+          <a class="quiet-seo-card" href="faq.html"><span class="quiet-badge">Support</span><strong>FAQ</strong><small>Customer questions, project expectations, timing, materials, and ordering basics.</small></a>
+          <a class="quiet-seo-card" href="legal.html"><span class="quiet-badge">Reference</span><strong>Legal / Terms</strong><small>Basic terms, order expectations, and policy-style customer reference.</small></a>
         </div>
       </div>
     </details>
@@ -1097,7 +1099,6 @@ body::before{
           <a class="utility-link" href="https://www.paypal.com" target="_blank" rel="noopener noreferrer">PayPal <span>→</span></a>
           <a class="utility-link" href="https://venmo.com" target="_blank" rel="noopener noreferrer">Venmo <span>→</span></a>
           <a class="utility-link" href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail <span>→</span></a>
-          <a class="utility-link" href="quote-tool.html">Legacy Quote Tool <span>→</span></a>
         </div>
       </div>
     </details>
@@ -1268,20 +1269,21 @@ body::before{
 
     const HEALTH_TARGETS = [
       { name: 'Main Site', url: 'index.html' },
+      { name: 'Showcase', url: 'showcase.html' },
+      { name: 'Start Project', url: 'start-project.html' },
+      { name: 'Project Received', url: 'project-received.html' },
+      { name: 'Events', url: 'events.html' },
+      { name: 'FAQ', url: 'faq.html' },
+      { name: 'Legal / Terms', url: 'legal.html' },
+      { name: 'Tracker', url: 'track.html' },
+      { name: 'Pay Page', url: 'pay.html' },
       { name: 'Hub', url: 'hub.html' },
       { name: 'Orders Admin', url: 'orders-admin.html' },
-      { name: 'Tracker', url: 'track.html' },
       { name: 'Quote Tool', url: 'quote.html' },
       { name: 'Finance Tool', url: 'finance-pro.html' },
+      { name: 'Active Projects', url: 'projects.html' },
       { name: 'Printer PM', url: 'pm.html' },
-      { name: 'Materials', url: 'materials.html' },
-      { name: 'Pay Page', url: 'pay.html' },
-      { name: 'Start Project', url: 'start-project.html' },
-      { name: 'Business 3D Printing', url: 'business-3d-printing.html' },
-      { name: 'Prototype Printing', url: 'prototype-printing.html' },
-      { name: 'Custom Brackets', url: 'custom-brackets.html' },
-      { name: 'Ohio 3D Printing', url: 'ohio-3d-printing.html' },
-      { name: 'Creative Learning Tools', url: 'creative-learning-tools.html' }
+      { name: 'Materials', url: 'materials.html' }
     ];
 
     function setAuthUi() {
