@@ -1106,27 +1106,46 @@ function buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackL
 async function loadCustomerResponses() {
   const list = document.getElementById("responsesList");
 
+  const normalizeStatus = (value) => String(value || "").trim().toLowerCase();
+  const closedStatuses = new Set([
+    "converted_to_order",
+    "converted",
+    "closed",
+    "archived",
+    "completed",
+    "complete"
+  ]);
+
+  const needsFollowUp = (q) => {
+    if (!q) return false;
+    if (!q.customer_response) return false;
+    if (q.converted_order_number) return false;
+    if (closedStatuses.has(normalizeStatus(q.quote_status))) return false;
+    return true;
+  };
+
   try {
     if (!list) return;
 
     if (typeof window.sbApi !== "function") {
-      list.innerHTML = `<div style="color:#e45a7a;">Could not load customer responses. Supabase helper is not ready yet.</div>`;
+      list.innerHTML = `<div style="color:#e45a7a;">Could not load quote follow-ups. Supabase helper is not ready yet.</div>`;
       return;
     }
 
     const res = await window.sbApi(
-      `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_name,customer_email,quote_data,customer_response,customer_response_message,converted_order_number,confirmation_email_sent,confirmation_email_sent_at,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=10`,
+      `/rest/v1/quotes?select=quote_number,quote_title,quote_status,customer_name,customer_email,quote_data,customer_response,customer_response_message,converted_order_number,confirmation_email_sent,confirmation_email_sent_at,updated_at&customer_response=not.is.null&order=updated_at.desc&limit=50`,
       { method: "GET" }
     );
 
     if (!res.ok || res.error) {
-      throw new Error(res.error?.message || JSON.stringify(res.error || res.data || {}) || "Could not load responses.");
+      throw new Error(res.error?.message || JSON.stringify(res.error || res.data || {}) || "Could not load quote follow-ups.");
     }
 
-    const rows = Array.isArray(res.data) ? res.data : [];
+    const allRows = Array.isArray(res.data) ? res.data : [];
+    const rows = allRows.filter(needsFollowUp).slice(0, 10);
 
     if (rows.length === 0) {
-      list.innerHTML = `<div style="color:#866a86;">No recent responses yet.</div>`;
+      list.innerHTML = `<div style="color:#866a86;">No quote follow-ups requiring action.</div>`;
       return;
     }
 
@@ -1147,115 +1166,21 @@ async function loadCustomerResponses() {
       `;
 
       const response = q.customer_response || "response";
-      const responseColor = response === "accepted" ? "#16a34a" : "#e45a7a";
+      const responseColor = response === "accepted" ? "#16a34a" : response === "revision_requested" ? "#b45309" : "#e45a7a";
 
       const left = document.createElement("div");
       left.style.cssText = "min-width:240px;line-height:1.45;";
       left.innerHTML = `
         <strong>${q.quote_number || "Quote"}</strong> – ${q.quote_title || "Untitled"}<br>
         <span style="color:${responseColor};font-weight:800;">
-          ${response.toUpperCase()}
+          ${String(response).replace(/_/g, " ").toUpperCase()}
         </span>
-        ${q.converted_order_number ? ` → <strong>${q.converted_order_number}</strong>` : ""}
         ${q.customer_response_message ? `<br><em style="color:#6f5d76;">${q.customer_response_message}</em>` : ""}
       `;
 
       const right = document.createElement("div");
       right.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
-// ✅ SEND CONFIRMATION EMAIL BUTTON
-if (q.customer_response === "accepted" && q.converted_order_number) {
-  const emailBtn = document.createElement("button");
-  emailBtn.textContent = q.confirmation_email_sent ? "Confirmation Sent ✅" : "Send Confirmation Email";
-  emailBtn.className = "btn-ghost";
-  emailBtn.type = "button";
-  emailBtn.disabled = !!q.confirmation_email_sent;
 
-  if (q.confirmation_email_sent) {
-    emailBtn.title = q.confirmation_email_sent_at
-      ? `Confirmation email marked sent ${new Date(q.confirmation_email_sent_at).toLocaleString()}`
-      : "Confirmation email already marked sent.";
-    emailBtn.style.opacity = "0.68";
-    emailBtn.style.cursor = "not-allowed";
-  }
-
-  emailBtn.onclick = async () => {
-    if (q.confirmation_email_sent) return;
-
-    const orderNumber = q.converted_order_number;
-    const email =
-      q.customer_email ||
-      q.quote_data?.fields?.customerEmail ||
-      q.quote_data?.fields?.email ||
-      q.quote_data?.fields?.contactEmail ||
-      "";
-    const customerName = q.customer_name || q.quote_data?.fields?.customerName || q.quote_data?.fields?.contactName || "";
-    const project = q.quote_title || q.quote_data?.fields?.quoteTitle || q.quote_data?.fields?.projectTitle || "";
-
-    if (!orderNumber || !email) {
-      alert("Missing order number or customer email.");
-      return;
-    }
-
-    const trackLink = `https://olipoly3d.com/track.html?order=${encodeURIComponent(orderNumber)}`;
-    const subject = `Order Confirmed – OliPoly 3D (${orderNumber})`;
-
-    const plainBody = `Hi${customerName ? ` ${customerName}` : ""} — your order has been created.
-
-Order #: ${orderNumber}
-${project ? `Project: ${project}\n` : ""}
-Track your order and complete payment:
-${trackLink}
-
-If you have any questions, just reply.
-
-Thanks!
-OliPoly 3D`;
-
-    const htmlEmail = buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackLink });
-
-    try {
-      await navigator.clipboard.writeText(htmlEmail);
-      alert("Styled confirmation email copied to your clipboard. Gmail will open with a plain prefilled draft for review. After Gmail opens, this quote will be marked as confirmation sent.");
-    } catch (_) {
-      alert("Gmail will open with a plain prefilled draft. Styled copy was not available from this browser. After Gmail opens, this quote will be marked as confirmation sent.");
-    }
-
-    const gmailUrl =
-      "https://mail.google.com/mail/?view=cm&fs=1" +
-      `&to=${encodeURIComponent(email)}` +
-      `&su=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(plainBody)}`;
-
-    window.open(gmailUrl, "_blank", "noopener,noreferrer");
-
-    try {
-      const encoded = encodeURIComponent(q.quote_number);
-      const markRes = await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
-        method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify({
-          confirmation_email_sent: true,
-          confirmation_email_sent_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-      });
-
-      if (!markRes.ok || markRes.error) {
-        throw new Error(markRes.error?.message || "Could not mark confirmation sent.");
-      }
-
-      emailBtn.textContent = "Confirmation Sent ✅";
-      emailBtn.disabled = true;
-      emailBtn.style.opacity = "0.68";
-      emailBtn.style.cursor = "not-allowed";
-      await loadCustomerResponses();
-    } catch (err) {
-      alert(`Gmail opened, but the sent status could not be saved:\n\n${err.message || err}`);
-    }
-  };
-
-  right.appendChild(emailBtn);
-}
       const loadBtn = document.createElement("button");
       loadBtn.textContent = "Load Quote";
       loadBtn.className = "btn-ghost";
@@ -1271,67 +1196,92 @@ OliPoly 3D`;
         }
       };
       right.appendChild(loadBtn);
-const reviseBtn = document.createElement("button");
-reviseBtn.textContent = "Mark Revised";
-reviseBtn.className = "btn-ghost";
-reviseBtn.type = "button";
-reviseBtn.onclick = async () => {
-  if (!q.quote_number) return;
 
-  const ok = confirm(`Mark ${q.quote_number} as revised and clear the customer response?`);
-  if (!ok) return;
+      const clearFollowUpBtn = document.createElement("button");
+      clearFollowUpBtn.textContent = "Clear Follow-Up";
+      clearFollowUpBtn.className = "btn-ghost";
+      clearFollowUpBtn.type = "button";
+      clearFollowUpBtn.title = "Hide this quote from Quote Follow-Up without deleting the saved quote.";
+      clearFollowUpBtn.onclick = async () => {
+        if (!q.quote_number) return;
 
-  try {
-    const encoded = encodeURIComponent(q.quote_number);
-    const res = await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        quote_status: "revised",
-        customer_response: null,
-        customer_response_message: null,
-        responded_at: null,
-        converted_order_number: null,
-        confirmation_email_sent: false,
-        confirmation_email_sent_at: null,
-        updated_at: new Date().toISOString()
-      })
-    });
+        const ok = confirm(`Hide ${q.quote_number} from Quote Follow-Up?\n\nThis clears the response flag only. The saved quote/order history stays intact.`);
+        if (!ok) return;
 
-    if (!res.ok || res.error) {
-      throw new Error(res.error?.message || "Could not mark revised.");
-    }
+        try {
+          const encoded = encodeURIComponent(q.quote_number);
+          const res = await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
+            method: "PATCH",
+            headers: { Prefer: "return=representation" },
+            body: JSON.stringify({
+              customer_response: null,
+              customer_response_message: null,
+              responded_at: null,
+              updated_at: new Date().toISOString()
+            })
+          });
 
-    await loadCustomerResponses();
-    alert(`${q.quote_number} marked revised. You can now update it and resend the same quote link.`);
-  } catch (err) {
-    alert(`Could not mark revised:\n\n${err.message || err}`);
-  }
-};
-right.appendChild(reviseBtn);
-      if (q.converted_order_number) {
-        const orderBtn = document.createElement("button");
-        orderBtn.textContent = "Open Orders";
-        orderBtn.className = "btn-ghost";
-        orderBtn.type = "button";
-        orderBtn.onclick = () => {
-          window.open("orders-admin.html", "_blank", "noopener,noreferrer");
-        };
-        right.appendChild(orderBtn);
-      }
+          if (!res.ok || res.error) {
+            throw new Error(res.error?.message || "Could not clear follow-up.");
+          }
+
+          await loadCustomerResponses();
+        } catch (err) {
+          alert(`Could not clear follow-up:\n\n${err.message || err}`);
+        }
+      };
+      right.appendChild(clearFollowUpBtn);
+
+      const reviseBtn = document.createElement("button");
+      reviseBtn.textContent = "Mark Revised";
+      reviseBtn.className = "btn-ghost";
+      reviseBtn.type = "button";
+      reviseBtn.onclick = async () => {
+        if (!q.quote_number) return;
+
+        const ok = confirm(`Mark ${q.quote_number} as revised and clear the customer response?`);
+        if (!ok) return;
+
+        try {
+          const encoded = encodeURIComponent(q.quote_number);
+          const res = await window.sbApi(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
+            method: "PATCH",
+            headers: { Prefer: "return=representation" },
+            body: JSON.stringify({
+              quote_status: "revised",
+              customer_response: null,
+              customer_response_message: null,
+              responded_at: null,
+              converted_order_number: null,
+              confirmation_email_sent: false,
+              confirmation_email_sent_at: null,
+              updated_at: new Date().toISOString()
+            })
+          });
+
+          if (!res.ok || res.error) {
+            throw new Error(res.error?.message || "Could not mark revised.");
+          }
+
+          await loadCustomerResponses();
+          alert(`${q.quote_number} marked revised. You can now update it and resend the same quote link.`);
+        } catch (err) {
+          alert(`Could not mark revised:\n\n${err.message || err}`);
+        }
+      };
+      right.appendChild(reviseBtn);
 
       row.appendChild(left);
       row.appendChild(right);
       list.appendChild(row);
     });
   } catch (err) {
-    console.error("Failed to load customer responses:", err);
+    console.error("Failed to load quote follow-ups:", err);
     if (list) {
-      list.innerHTML = `<div style="color:#e45a7a;">Could not load customer responses. Make sure you are logged in.</div>`;
+      list.innerHTML = `<div style="color:#e45a7a;">Could not load quote follow-ups. Make sure you are logged in.</div>`;
     }
   }
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(loadCustomerResponses, 1200);
 });
