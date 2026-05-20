@@ -1201,11 +1201,53 @@
       closed_at:j.closed_at,
       updated_at:j.updated_at
     };
-    await sbApi('/rest/v1/production_jobs?on_conflict=id',{
-      method:'POST',
-      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify(payload)
-    });
+
+    async function post(body){
+      return sbApi('/rest/v1/production_jobs?on_conflict=id',{
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify(body)
+      });
+    }
+
+    try{
+      await post(payload);
+    }catch(err){
+      const msg = String(err?.message || err || '');
+      if(!msg.includes('schema cache') && !msg.includes('column')) throw err;
+
+      // Compatibility fallback for older Supabase production_jobs schemas.
+      // Keeps the page usable while optional newer columns are added by SQL.
+      const corePayload = {
+        id:j.id,
+        user_id:state.user.id,
+        job_title:j.job_title,
+        job_type:j.job_type,
+        production_status:j.production_status,
+        priority:j.priority,
+        quantity:j.quantity,
+        machine_preference:j.machine_preference,
+        due_date:j.due_date,
+        primary_material:j.primary_material,
+        primary_color:j.primary_color,
+        other_colors:j.other_colors,
+        color_count:j.color_count,
+        estimated_hours_each:j.estimated_hours_each,
+        estimated_grams_each:j.estimated_grams_each,
+        estimated_total_hours:j.estimated_total_hours,
+        estimated_total_grams:j.estimated_total_grams,
+        estimated_price_each:j.estimated_price_each,
+        image_url:j.image_url,
+        customer_name:j.customer_name,
+        quote_number:j.quote_number,
+        order_number:j.order_number,
+        finished_sku:j.finished_sku,
+        filament_breakdown:j.filament_breakdown,
+        notes:j.notes,
+        updated_at:j.updated_at
+      };
+      await post(corePayload);
+    }
   }
 
   async function saveJob(e){
@@ -1823,13 +1865,29 @@
     if(!j) return;
     const updated = {...j, exclude_inventory_reduction:!j.exclude_inventory_reduction, updated_at:new Date().toISOString()};
     try{
-      await cloudSaveJob(updated);
+      // Important: update only the inventory flag so this button does not fail if older
+      // production_jobs schemas are missing optional columns used by the full job editor.
+      if(state.user?.id && !String(id).startsWith('local-')){
+        await sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(id)}`, {
+          method:'PATCH',
+          headers:{Prefer:'return=representation'},
+          body:JSON.stringify({
+            exclude_inventory_reduction: updated.exclude_inventory_reduction,
+            updated_at: updated.updated_at
+          })
+        });
+      }
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       render();
       toast(updated.exclude_inventory_reduction ? 'Job excluded from inventory planning.' : 'Job included in inventory planning.');
     }catch(err){
-      alert(`Could not update inventory flag:\n\n${err.message || err}`);
+      // Still update browser fallback so the card stops reserving filament locally.
+      console.warn(err);
+      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
+      localWrite(LS_JOBS,state.jobs);
+      render();
+      toast('Inventory flag updated locally. Run the latest SQL if cloud sync still complains.');
     }
   }
 
