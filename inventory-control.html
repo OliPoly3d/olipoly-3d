@@ -4,66 +4,685 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Inventory Control</title>
-  <meta name="description" content="OliPoly 3D internal inventory control for raw filament, finished goods, low-stock warnings, and production usage history." />
+  <meta name="description" content="OliPoly 3D internal inventory control for raw filament, finished goods, reorder warnings, and material movement history." />
   <meta name="theme-color" content="#fff7fb" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
-    :root{--ink:#25182d;--muted:#74617d;--soft:#fff7fd;--pink:#e84fb7;--rose:#ff7fcf;--purple:#9d6df3;--lavender:#f4dcff;--blue:#5fcfff;--mint:#aaf6dc;--line:rgba(101,60,120,.15);--line2:rgba(232,79,183,.18);--panel:rgba(255,255,255,.80);--panel2:rgba(255,255,255,.92);--shadow:0 28px 80px rgba(95,36,112,.18);--shadow2:0 18px 44px rgba(95,36,112,.12);--danger:#e45a7a;--warn:#f0b429;--ok:#4caf73;--max:1240px;--tap:46px}
-    *{box-sizing:border-box} html{scroll-behavior:smooth;scroll-padding-top:92px} body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 14% -4%,rgba(255,142,213,.34),transparent 32rem),radial-gradient(circle at 93% 3%,rgba(162,113,255,.24),transparent 31rem),linear-gradient(180deg,#fff5fc 0%,#fff 42%,#fff8fd 100%);overflow-x:hidden} body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background-image:linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);background-size:56px 56px;mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%)}
-    a{color:inherit;text-decoration:none} button,input,textarea,select{font:inherit} button{cursor:pointer}.hidden{display:none!important}.wrap{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:20px 0 82px}.site-header{position:sticky;top:0;z-index:50;background:rgba(255,250,254,.84);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.nav{width:min(var(--max),calc(100% - 32px));margin:0 auto;min-height:74px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;align-items:center;gap:12px;min-width:0}.brand-mark{width:50px;height:50px;border-radius:17px;background:linear-gradient(135deg,#fff,#ffe1f6);box-shadow:0 10px 30px rgba(219,74,176,.22);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}.brand-mark span{width:38px;height:38px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--pink),var(--purple))}.brand-name{display:block;font-family:"Playfair Display",serif;font-size:clamp(1.42rem,3.4vw,2.05rem);line-height:.9;letter-spacing:-.04em;white-space:nowrap}.brand-name span{color:var(--pink)}.brand-sub{display:block;margin-top:5px;color:var(--muted);font-size:.76rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}.nav-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-    .btn,.ghost,.danger-btn{border:0;border-radius:999px;min-height:var(--tap);padding:12px 16px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;text-align:center}.btn{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 16px 40px rgba(214,73,186,.28)}.ghost{background:rgba(255,255,255,.78);color:#5f456a;border:1px solid rgba(104,59,123,.15);box-shadow:0 14px 34px rgba(54,24,66,.08)}.danger-btn{background:rgba(228,90,122,.10);border:1px solid rgba(228,90,122,.18);color:#ad3354}.btn:hover,.ghost:hover,.danger-btn:hover{transform:translateY(-2px)}.small{min-height:36px;padding:8px 11px;font-size:.82rem}
-    .hero{margin-top:24px;padding:clamp(22px,4vw,44px);border:1px solid rgba(255,255,255,.75);border-radius:clamp(30px,4vw,54px);background:radial-gradient(circle at 88% 10%,rgba(255,118,206,.20),transparent 22rem),radial-gradient(circle at 50% 85%,rgba(161,111,255,.14),transparent 30rem),linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.72));box-shadow:var(--shadow);display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;position:relative;overflow:hidden}.hero::before{content:"";position:absolute;inset:18px;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.65),transparent 42%,rgba(255,255,255,.4));mask:linear-gradient(#000,transparent 75%)}.hero>*{position:relative;z-index:1}.eyebrow,.kicker{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);color:#a93f8a;font-weight:900;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(142,69,150,.08)}.hero h1{margin:18px 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2.6rem,7vw,5.7rem);line-height:.88;letter-spacing:-.075em;max-width:820px}.gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{max-width:720px;color:#6f5c78;font-size:clamp(1rem,1.6vw,1.13rem);line-height:1.62;margin:0}.hero-card{border-radius:32px;padding:18px;background:rgba(255,255,255,.74);border:1px solid rgba(255,255,255,.78);box-shadow:0 24px 70px rgba(83,41,97,.12)}
-    .panel{margin-top:18px;padding:18px;border-radius:30px;background:var(--panel);border:1px solid rgba(255,255,255,.78);box-shadow:var(--shadow2);backdrop-filter:blur(12px)}.panel.solid{background:var(--panel2)}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}.section-head h2{margin:8px 0 0;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.8vw,3rem);line-height:.95;letter-spacing:-.045em}.section-head p,.muted{color:var(--muted);line-height:1.5}.section-head p{margin:6px 0 0}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.metric{padding:13px;border-radius:20px;background:rgba(255,255,255,.72);border:1px solid var(--line)}.metric span{display:block;color:var(--muted);font-size:.69rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}.metric strong{display:block;margin-top:3px;font-size:1.45rem;color:#25182d}.metric small{display:block;margin-top:3px;color:#8b758f;font-weight:800;font-size:.76rem;line-height:1.25}
-    label{display:grid;gap:6px;font-weight:900;font-size:.88rem;color:#493452}input,select,textarea{width:100%;border-radius:16px;border:1px solid var(--line);padding:12px 13px;background:rgba(255,255,255,.86);color:var(--ink);outline:none;min-height:44px}textarea{min-height:96px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:rgba(157,109,243,.42);box-shadow:0 0 0 4px rgba(157,109,243,.10)}.form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.span2{grid-column:span 2}.full{grid-column:1/-1}.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar{display:grid;grid-template-columns:1.2fr .8fr .8fr .8fr auto;gap:10px;align-items:end;margin:8px 0 14px}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:999px;padding:10px 14px;font-weight:900;color:#5f456a}.tab.active{color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));border-color:transparent;box-shadow:0 12px 28px rgba(214,73,186,.22)}
-    .table-wrap{overflow:auto;border-radius:24px;border:1px solid var(--line);background:rgba(255,255,255,.72)}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:11px 12px;border-bottom:1px solid rgba(101,60,120,.10);text-align:left;vertical-align:top;font-size:.88rem}th{position:sticky;top:0;background:rgba(255,252,254,.96);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#8d7696;z-index:2}tr:last-child td{border-bottom:0}td strong{display:block;color:#25182d}td small{display:block;color:var(--muted);margin-top:3px;line-height:1.35}.chip{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.76);font-size:.73rem;font-weight:900;color:#654b70;white-space:nowrap}.chip.warn{background:rgba(240,180,41,.12);color:#946900}.chip.ok{background:rgba(76,175,115,.10);color:#2d8150}.chip.danger{background:rgba(228,90,122,.10);color:#ad3354}.chip.status{background:rgba(157,109,243,.10);color:#5e4ba2}.color-dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(37,24,45,.18);background:linear-gradient(135deg,#fff,#eee)}.subtle{color:#9a849f}.empty{padding:18px;border-radius:22px;background:rgba(255,255,255,.74);border:1px dashed var(--line);color:var(--muted)}
-    .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.inv-card{border-radius:24px;padding:15px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.8);box-shadow:0 16px 42px rgba(84,38,94,.10);display:grid;gap:10px}.inv-card h3{margin:0;font-family:"Playfair Display",serif;font-size:1.6rem;line-height:1}.bar{height:10px;border-radius:999px;background:rgba(101,60,120,.12);overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--mint));border-radius:inherit}.bar.warn span{background:linear-gradient(90deg,var(--warn),#ffd782)}.bar.danger span{background:linear-gradient(90deg,var(--danger),#ff9cb2)}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;padding:11px 16px;border-radius:999px;background:rgba(31,26,36,.94);color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.22);font-weight:800;font-size:.92rem;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
-    @media(max-width:1000px){.hero{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid,.toolbar{grid-template-columns:1fr 1fr}.cards{grid-template-columns:1fr 1fr}.nav{align-items:flex-start;flex-direction:column;padding:12px 0}.nav-actions{width:100%;justify-content:flex-start}}@media(max-width:640px){.wrap,.nav{width:min(100% - 18px,var(--max))}.form-grid,.toolbar,.metrics,.cards{grid-template-columns:1fr}.span2{grid-column:1}.btn,.ghost,.danger-btn{width:100%}.section-head{display:grid}.brand-sub{white-space:normal}.hero{border-radius:32px;padding:20px}.hero h1{font-size:3rem}table{min-width:860px}}
+    :root{
+      --ink:#25182d;--text:#3f3146;--muted:#74617d;--soft:#fff7fd;
+      --pink:#e84fb7;--rose:#ff7fcf;--purple:#9d6df3;--blue:#5fcfff;--mint:#aaf6dc;
+      --ok:#34c759;--warn:#f7b731;--danger:#ef476f;
+      --line:rgba(101,60,120,.15);--line2:rgba(232,79,183,.18);
+      --panel:rgba(255,255,255,.82);--panel2:rgba(255,255,255,.94);
+      --shadow:0 24px 70px rgba(84,38,94,.14);--max:1320px;--r:26px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 14% -4%,rgba(255,142,213,.28),transparent 32rem),
+        radial-gradient(circle at 93% 3%,rgba(162,113,255,.22),transparent 31rem),
+        linear-gradient(180deg,#fff5fc 0%,#fff 42%,#fff8fd 100%);
+      overflow-x:hidden;
+    }
+    body::before{
+      content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);
+      background-size:56px 56px;mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%);
+    }
+    a{color:inherit;text-decoration:none} button,input,textarea,select{font:inherit} button{cursor:pointer}
+    .wrap{width:min(var(--max),calc(100% - 28px));margin:0 auto;padding:18px 0 80px}
+    .topbar,.card,.modal-dialog,.ops-collapse{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 18px;border-radius:999px;
+      position:sticky;top:12px;z-index:40;margin-bottom:16px;background:rgba(255,250,254,.88);
+    }
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}.logo{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-weight:900;box-shadow:0 12px 30px rgba(214,73,186,.25);flex:0 0 auto}
+    .brand h1{margin:0;font-family:"Playfair Display",serif;font-size:1.75rem;line-height:.95;letter-spacing:-.04em;color:var(--ink)}.brand p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.35}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn,.ghost,.mini-btn{
+      min-height:44px;border-radius:999px;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:12px 16px;font-weight:900;transition:.18s ease;white-space:nowrap;
+    }
+    .btn{color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 14px 34px rgba(214,73,186,.24)}
+    .ghost{background:rgba(255,255,255,.78);border-color:var(--line);color:#5f456a}.mini-btn{min-height:34px;padding:7px 10px;font-size:.76rem;background:rgba(255,255,255,.78);border-color:var(--line);color:#5f456a}
+    .btn:hover,.ghost:hover,.mini-btn:hover{transform:translateY(-1px)}.danger-btn{color:#b33857}.hidden{display:none!important}
+    .card{border-radius:var(--r);padding:18px;margin-bottom:16px}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-bottom:16px}.kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:rgba(232,79,183,.09);border:1px solid rgba(232,79,183,.14);color:#a03c87;font-size:.72rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}
+    .hero h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.2rem);line-height:.94;letter-spacing:-.055em;color:var(--ink)}.muted,.hero p{color:var(--muted);line-height:1.55}
+    .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.metric{padding:12px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid var(--line);display:flex;gap:10px;align-items:center}.metric-icon{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:rgba(244,220,255,.62);flex:0 0 auto}.metric span{display:block;color:var(--muted);font-size:.64rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}.metric strong{display:block;margin-top:2px;font-size:1.25rem;color:var(--ink)}
+    .decision-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.decision-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:.76rem;font-weight:900;color:#6f4b7e}.decision-pill.warn{background:rgba(247,183,49,.16);border-color:rgba(247,183,49,.24);color:#7a5400}.decision-pill.danger{background:rgba(239,71,111,.10);border-color:rgba(239,71,111,.18);color:#9a2140}.decision-pill.ok{background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.18);color:#23763b}
+    .ops-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.ops-panel{border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line);padding:14px;box-shadow:0 12px 30px rgba(84,38,94,.08)}.ops-panel h3{margin:0 0 10px;color:var(--ink)}
+    .attention-list{display:grid;gap:8px}.attention-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.68);border:1px solid rgba(101,60,120,.10)}.attention-item strong{font-size:.86rem;color:var(--ink)}.attention-item span{font-size:.74rem;color:var(--muted);font-weight:800}
+    .util-row{display:grid;grid-template-columns:115px 1fr auto;gap:9px;align-items:center;margin:8px 0}.util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}.util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab{border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);padding:10px 14px;font-weight:900;color:#5f456a}.tab.active{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 12px 28px rgba(214,73,186,.20)}
+    .toolbar{display:grid;grid-template-columns:1.1fr .7fr .7fr .7fr auto;gap:10px;align-items:end;margin:12px 0}.toolbar.compact{grid-template-columns:1.1fr .7fr .7fr auto}
+    label{display:grid;gap:6px;font-size:.84rem;font-weight:900}input,select,textarea{width:100%;min-height:42px;border-radius:15px;border:1px solid var(--line2);padding:10px 11px;background:rgba(255,255,255,.84);outline:none;color:var(--text)}textarea{min-height:96px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:rgba(157,109,243,.45);box-shadow:0 0 0 4px rgba(157,109,243,.10)}
+    .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.span2{grid-column:span 2}.span3{grid-column:span 3}.full{grid-column:1/-1}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    details.ops-collapse{border-radius:24px;margin-bottom:16px;overflow:hidden}details.ops-collapse>summary{list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 16px;font-weight:900;color:var(--ink);cursor:pointer}details.ops-collapse>summary::-webkit-details-marker{display:none}details.ops-collapse>summary::after{content:"+";width:28px;height:28px;border-radius:999px;display:grid;place-items:center;background:rgba(232,79,183,.10);color:#a03c87}details.ops-collapse[open]>summary::after{content:"–"}.collapse-body{padding:0 14px 14px}
+    .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.inventory-card{position:relative;overflow:hidden;border-radius:24px;padding:14px;background:rgba(255,255,255,.86);border:1px solid var(--line);box-shadow:0 12px 32px rgba(84,38,94,.08)}.inventory-card::before{content:"";position:absolute;inset:0 auto 0 0;width:7px;background:var(--accent,#9d6df3)}.card-head{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start}.color-dot{width:36px;height:36px;border-radius:14px;border:1px solid rgba(101,60,120,.18);box-shadow:inset 0 0 0 2px rgba(255,255,255,.55);background:var(--dot,#ddd)}.inventory-card h3{margin:0;color:var(--ink);font-size:1rem;line-height:1.18}.card-sub{margin-top:3px;color:var(--muted);font-size:.78rem;font-weight:800}.thumb{width:58px;height:58px;border-radius:16px;object-fit:cover;border:1px solid var(--line);background:#fff}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.chip{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:999px;background:rgba(244,220,255,.55);border:1px solid rgba(101,60,120,.10);color:#6f4b7e;font-size:.66rem;font-weight:900}.chip.ok{background:rgba(52,199,89,.12);color:#23763b}.chip.warn{background:rgba(247,183,49,.16);color:#7a5400}.chip.danger{background:rgba(239,71,111,.10);color:#9a2140}.chip.muted{background:rgba(154,138,163,.12);color:#665970}
+    .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{padding:8px;border-radius:14px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.10)}.stat span{display:block;font-size:.6rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}.stat strong{display:block;margin-top:2px;font-size:.84rem;color:var(--ink);overflow-wrap:anywhere}
+    .bar{height:10px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden;margin-top:8px}.bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ok),#9be36c)}.bar.warn span{background:linear-gradient(90deg,var(--warn),#ffd166)}.bar.danger span{background:linear-gradient(90deg,var(--danger),#ff8fa3)}
+    .recipe-mini{display:grid;gap:5px;margin-top:9px}.recipe-line{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 9px;border-radius:14px;background:rgba(255,255,255,.58);border:1px solid rgba(101,60,120,.08);font-size:.78rem}.recipe-line strong{color:var(--ink)}.card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.quick-adjust{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-top:8px}.empty{padding:16px;border-radius:18px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.48);font-size:.9rem}
+    .table-wrap{overflow:auto;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.62)}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px 11px;border-bottom:1px solid rgba(101,60,120,.10);text-align:left;vertical-align:top;font-size:.86rem}th{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.72)}tr:last-child td{border-bottom:0}
+    .modal.hidden{display:none!important}.modal{position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:18px}.modal::before{content:"";position:absolute;inset:0;background:rgba(37,24,45,.45);backdrop-filter:blur(8px)}.modal-dialog{position:relative;z-index:1;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:30px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,252,.96))}.modal-dialog h2{margin:0;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:var(--ink)}.modal-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:1000;background:rgba(37,24,45,.94);color:#fff;padding:11px 16px;border-radius:999px;box-shadow:0 18px 44px rgba(0,0,0,.22);font-weight:800;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+    @media(max-width:1100px){.hero,.ops-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,1fr)}.cards-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.toolbar,.toolbar.compact{grid-template-columns:1fr 1fr}.span2,.span3{grid-column:span 1}}
+    @media(max-width:700px){.wrap{width:min(100% - 16px,var(--max));padding-top:10px}.topbar{border-radius:26px;align-items:flex-start;flex-direction:column;top:8px}.top-actions,.btn,.ghost{width:100%}.metrics,.cards-grid,.form-grid,.toolbar,.toolbar.compact{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}.quick-adjust{grid-template-columns:1fr}.util-row{grid-template-columns:1fr}.card{padding:14px}}
   </style>
 </head>
 <body>
-  <header class="site-header"><nav class="nav"><a class="brand" href="hub.html"><div class="brand-mark"><span>OP</span></div><div><span class="brand-name">Inventory <span>Control</span></span><span class="brand-sub">Raw material + finished goods tracker</span></div></a><div class="nav-actions"><a class="ghost" href="hub.html">← Hub</a><a class="ghost" href="production-control.html">Production Control →</a><button class="ghost" id="exportBtn" type="button">Export Backup</button><button class="ghost" id="importBtn" type="button">Import</button><input id="importFile" class="hidden" type="file" accept="application/json"></div></nav></header>
-  <main class="wrap">
-    <section class="hero"><div><span class="eyebrow">OliPoly ops suite</span><h1>Know what you have, what you used, and what needs <span class="gradient-word">reordered.</span></h1><p>Raw material inventory is reduced when Production Control close-outs include matching material, color, and brand/type. Finished Goods inventory tracks sale price, quantity on hand, and the recipe behind each product.</p></div><div class="hero-card"><div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="metric"><span>Raw SKUs</span><strong id="mRaw">0</strong><small>spools/colors</small></div><div class="metric"><span>Low / Reorder</span><strong id="mLow">0</strong><small>below threshold</small></div><div class="metric"><span>Finished Items</span><strong id="mFinished">0</strong><small>sellable products</small></div><div class="metric"><span>On Hand Value</span><strong id="mValue">$0</strong><small>finished goods retail</small></div></div></div></section>
+  <div class="wrap">
+    <header class="topbar">
+      <a class="brand" href="hub.html">
+        <div class="logo">OP</div>
+        <div>
+          <h1>Inventory Control</h1>
+          <p>Raw filament, reorder alerts, finished goods, and usage history.</p>
+        </div>
+      </a>
+      <div class="top-actions">
+        <a class="ghost" href="hub.html">← Hub</a>
+        <a class="ghost" href="production-control.html">Production Control</a>
+        <button class="ghost" id="exportBtn" type="button">Export Backup</button>
+        <button class="ghost" id="importBtn" type="button">Import</button>
+        <input id="importFile" class="hidden" type="file" accept="application/json">
+      </div>
+    </header>
 
-    <section class="panel"><div class="tabs"><button class="tab active" data-tab="raw" type="button">Raw Materials</button><button class="tab" data-tab="finished" type="button">Finished Goods</button><button class="tab" data-tab="ledger" type="button">Usage / Movement Log</button></div></section>
+    <section class="hero">
+      <div class="card">
+        <span class="kicker">OliPoly inventory flow</span>
+        <h2>Know what is low, what is stocked, and what each product costs to make.</h2>
+        <p>Production Control close-outs can subtract raw filament and add finished goods. This page keeps the inventory side easy to scan and quick to adjust.</p>
+        <div class="decision-pills" id="decisionPills"><span class="decision-pill">Loading inventory...</span></div>
+      </div>
+      <div class="card">
+        <span class="kicker">Inventory snapshot</span>
+        <div class="metrics">
+          <div class="metric"><div class="metric-icon">🧵</div><div><span>Raw SKUs</span><strong id="mRaw">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">⚠️</div><div><span>Reorder</span><strong id="mLow">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">📦</div><div><span>Finished</span><strong id="mFinished">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">💵</div><div><span>Retail Value</span><strong id="mValue">$0</strong></div></div>
+          <div class="metric"><div class="metric-icon">🔁</div><div><span>Moves</span><strong id="mMoves">0</strong></div></div>
+        </div>
+      </div>
+    </section>
 
-    <section class="panel solid" id="rawPanel"><div class="section-head"><div><span class="kicker">Raw materials</span><h2>Filament & spool management</h2><p>Add each spool/color here. Production close-outs subtract grams when the material/color/brand matches.</p></div></div><form id="rawForm"><div class="form-grid"><input id="rawId" type="hidden"><label>Material<select id="rawMaterial"><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label><label>Color<input id="rawColor" placeholder="Blush Pink" required></label><label>Brand / Type<input id="rawBrand" placeholder="Bambu Matte"></label><label>Location<input id="rawLocation" placeholder="Shelf / dry box"></label><label>Starting grams<input id="rawStarting" type="number" min="0" step="1" value="1000"></label><label>Remaining grams<input id="rawRemaining" type="number" min="0" step="1" value="1000"></label><label>Reorder threshold<input id="rawThreshold" type="number" min="0" step="1" value="250"></label><label>Spool cost<input id="rawCost" type="number" min="0" step="0.01" placeholder="24.99"></label><label class="full">Notes<textarea id="rawNotes" placeholder="Supplier, link, special print settings, etc."></textarea></label></div><div class="actions" style="margin-top:14px"><button class="btn" type="submit" id="rawSaveBtn">Save Raw Material</button><button class="ghost" type="button" id="rawResetBtn">Clear</button></div></form><div class="toolbar"><label>Search<input id="rawSearch" placeholder="color, brand, material..."></label><label>Status<select id="rawStatus"><option value="all">All</option><option value="ok">Good</option><option value="low">Low</option><option value="out">Out</option></select></label><label>Material<select id="rawFilterMaterial"><option value="all">All Materials</option><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label><label>Sort<select id="rawSort"><option value="status">Need first</option><option value="color">Color</option><option value="material">Material</option><option value="remaining">Lowest grams</option></select></label><button class="ghost" id="rawClearFilters" type="button">Clear</button></div><div class="table-wrap"><table><thead><tr><th>Status</th><th>Material / Color</th><th>Remaining</th><th>Cost</th><th>Location</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="rawBody"></tbody></table></div></section>
+    <section class="card">
+      <span class="kicker">Today view</span>
+      <div class="ops-grid">
+        <div class="ops-panel">
+          <h3>What needs attention?</h3>
+          <div class="attention-list" id="attentionList"></div>
+        </div>
+        <div class="ops-panel">
+          <h3>Material balance</h3>
+          <div id="materialBalance"></div>
+        </div>
+      </div>
+    </section>
 
-    <section class="panel solid hidden" id="finishedPanel"><div class="section-head"><div><span class="kicker">Finished goods</span><h2>Sellable product inventory</h2><p>Track quantity on hand, target stock, retail price, and material recipe per item.</p></div></div><form id="finishedForm"><input id="fgId" type="hidden"><div class="form-grid"><label class="span2">Product name<input id="fgName" required placeholder="Dragon egg, flower keychain, coaster set..."></label><label>Category<select id="fgCategory"><option value="craft_show_stock">Craft Show Stock</option><option value="seasonal">Seasonal</option><option value="online">Online / Catalog</option><option value="display_sample">Display Sample</option><option value="custom_repeatable">Repeatable Custom</option></select></label><label>Sale price<input id="fgPrice" type="number" min="0" step="0.01"></label><label>Qty on hand<input id="fgQty" type="number" min="0" step="1" value="0"></label><label>Target qty<input id="fgTarget" type="number" min="0" step="1" value="0"></label><label>Print hrs / item<input id="fgHours" type="number" min="0" step="0.01"></label><label>Status<select id="fgStatus"><option value="active">Active</option><option value="low">Low / Reprint Soon</option><option value="sold_out">Sold Out</option><option value="retired">Retired</option></select></label><label class="full">Recipe / notes<textarea id="fgRecipe" placeholder="Example: PLA pink 42g, PLA white 8g. Or use auto-created recipe from Production Control."></textarea></label></div><div class="actions" style="margin-top:14px"><button class="btn" type="submit" id="fgSaveBtn">Save Finished Good</button><button class="ghost" type="button" id="fgResetBtn">Clear</button></div></form><div class="toolbar"><label>Search<input id="fgSearch" placeholder="product/category..."></label><label>Status<select id="fgFilterStatus"><option value="all">All</option><option value="active">Active</option><option value="low">Low</option><option value="sold_out">Sold Out</option><option value="retired">Retired</option></select></label><label>Category<select id="fgFilterCategory"><option value="all">All Categories</option><option value="craft_show_stock">Craft Show Stock</option><option value="seasonal">Seasonal</option><option value="online">Online / Catalog</option><option value="display_sample">Display Sample</option><option value="custom_repeatable">Repeatable Custom</option></select></label><label>Sort<select id="fgSort"><option value="need">Need first</option><option value="name">Name</option><option value="qty">Lowest qty</option><option value="value">Highest value</option></select></label><button class="ghost" id="fgClearFilters" type="button">Clear</button></div><div class="table-wrap"><table><thead><tr><th>Status</th><th>Product</th><th>Qty</th><th>Price / Value</th><th>Recipe</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="fgBody"></tbody></table></div></section>
+    <section class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="raw" type="button">🧵 Raw Materials</button>
+        <button class="tab" data-tab="finished" type="button">📦 Finished Goods</button>
+        <button class="tab" data-tab="ledger" type="button">🔁 Movement Log</button>
+      </div>
+      <div id="tabHelp" class="muted">Manage filament and spool inventory.</div>
+    </section>
 
-    <section class="panel solid hidden" id="ledgerPanel"><div class="section-head"><div><span class="kicker">Movement log</span><h2>Inventory usage history</h2><p>Production Control writes material usage here, including unmatched filament rows that did not find a raw material spool.</p></div><button class="danger-btn" id="clearLedgerBtn" type="button">Clear Log</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Project</th><th>Material</th><th>Grams</th><th>Machine</th><th>Note</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
-  </main>
+    <details class="ops-collapse" id="rawEditor" open>
+      <summary>Quick add / edit raw material</summary>
+      <div class="collapse-body">
+        <form id="rawForm">
+          <input id="rawId" type="hidden">
+          <div class="form-grid">
+            <label>Material<select id="rawMaterial"><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label>
+            <label>Color<input id="rawColor" placeholder="Blush Pink" required></label>
+            <label>Brand / Type<input id="rawBrand" placeholder="Bambu Matte"></label>
+            <label>Location<input id="rawLocation" placeholder="Shelf / dry box"></label>
+            <label>Starting grams<input id="rawStarting" type="number" min="0" step="1" value="1000"></label>
+            <label>Remaining grams<input id="rawRemaining" type="number" min="0" step="1" value="1000"></label>
+            <label>Reorder threshold<input id="rawThreshold" type="number" min="0" step="1" value="250"></label>
+            <label>Spool cost<input id="rawCost" type="number" min="0" step="0.01" placeholder="24.99"></label>
+            <label class="full">Notes<textarea id="rawNotes" placeholder="Supplier, link, special print settings, etc."></textarea></label>
+          </div>
+          <div class="actions">
+            <button class="btn" type="submit" id="rawSaveBtn">Save Raw Material</button>
+            <button class="ghost" type="button" id="rawResetBtn">Clear</button>
+          </div>
+        </form>
+      </div>
+    </details>
+
+    <details class="ops-collapse hidden" id="finishedEditor" open>
+      <summary>Quick add / edit finished good</summary>
+      <div class="collapse-body">
+        <form id="finishedForm">
+          <input id="fgId" type="hidden">
+          <div class="form-grid">
+            <label class="span2">Product name<input id="fgName" required placeholder="Dragon egg, flower keychain..."></label>
+            <label>Category<input id="fgCategory" placeholder="Craft show, seasonal, custom..."></label>
+            <label>Status<select id="fgStatus"><option value="active">Active</option><option value="seasonal">Seasonal</option><option value="low">Low</option><option value="sold_out">Sold Out</option><option value="retired">Retired</option></select></label>
+            <label>Sale price<input id="fgPrice" type="number" min="0" step="0.01" placeholder="15.00"></label>
+            <label>Qty on hand<input id="fgQty" type="number" min="0" step="1" value="0"></label>
+            <label>Target qty<input id="fgTarget" type="number" min="0" step="1" value="0"></label>
+            <label>Print hours / item<input id="fgHours" type="number" min="0" step="0.01"></label>
+            <label class="span2">Image URL<input id="fgImage" placeholder="Optional. Only shows if filled."></label>
+            <label class="full">Material recipe per item<textarea id="fgRecipe" placeholder="PLA Pink: 35g&#10;PLA White: 10g"></textarea></label>
+            <label class="full">Notes<textarea id="fgNotes" placeholder="Packaging, display notes, best seller notes, etc."></textarea></label>
+          </div>
+          <div class="actions">
+            <button class="btn" type="submit" id="fgSaveBtn">Save Finished Good</button>
+            <button class="ghost" type="button" id="fgResetBtn">Clear</button>
+          </div>
+        </form>
+      </div>
+    </details>
+
+    <section class="card" id="rawPanel">
+      <span class="kicker">Raw materials</span>
+      <div class="toolbar">
+        <label>Search<input id="rawSearch" placeholder="color, brand, material..."></label>
+        <label>Status<select id="rawStatus"><option value="all">All</option><option value="ok">Good</option><option value="low">Low</option><option value="out">Out</option></select></label>
+        <label>Material<select id="rawFilterMaterial"><option value="all">All Materials</option><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label>
+        <label>Sort<select id="rawSort"><option value="status">Need first</option><option value="remaining">Lowest grams</option><option value="color">Color</option><option value="material">Material</option><option value="brand">Brand</option></select></label>
+        <button class="ghost" id="rawClearFilters" type="button">Clear</button>
+      </div>
+      <div class="cards-grid" id="rawCards"></div>
+    </section>
+
+    <section class="card hidden" id="finishedPanel">
+      <span class="kicker">Finished goods</span>
+      <div class="toolbar compact">
+        <label>Search<input id="fgSearch" placeholder="product, category, recipe..."></label>
+        <label>Status<select id="fgFilterStatus"><option value="all">All</option><option value="active">Active</option><option value="low">Low</option><option value="sold_out">Sold Out</option><option value="seasonal">Seasonal</option><option value="retired">Retired</option></select></label>
+        <label>Sort<select id="fgSort"><option value="need">Need first</option><option value="qty">Lowest qty</option><option value="value">Highest value</option><option value="name">Name</option></select></label>
+        <button class="ghost" id="fgClearFilters" type="button">Clear</button>
+      </div>
+      <div class="cards-grid" id="finishedCards"></div>
+    </section>
+
+    <section class="card hidden" id="ledgerPanel">
+      <span class="kicker">Usage / movement log</span>
+      <div class="toolbar compact">
+        <label>Search<input id="ledgerSearch" placeholder="material, product, source..."></label>
+        <label>Type<select id="ledgerType"><option value="all">All</option><option value="raw_adjust">Raw Adjust</option><option value="raw_usage">Raw Usage</option><option value="fg_adjust">Finished Adjust</option><option value="import">Import</option></select></label>
+        <label>Sort<select id="ledgerSort"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
+        <button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Change</th><th>Source / Note</th></tr></thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal hidden" id="adjustModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <h2 id="adjustTitle">Adjust Inventory</h2>
+      <p class="muted" id="adjustSub">Record a quick quantity change.</p>
+      <div class="form-grid" style="margin-top:12px">
+        <label>Action<select id="adjustAction"><option value="add">Add</option><option value="subtract">Subtract</option><option value="set">Set to</option></select></label>
+        <label id="adjustAmountLabel">Amount<input id="adjustAmount" type="number" min="0" step="1"></label>
+        <label class="span2">Reason / note<input id="adjustNote" placeholder="New spool, production use, sold at show..."></label>
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" id="cancelAdjustBtn" type="button">Cancel</button>
+        <button class="btn" id="confirmAdjustBtn" type="button">Save Adjustment</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
-  <script>
-  (()=>{
-    const LS_RAW='olipoly_inventory_raw_v1', LS_FINISHED='olipoly_inventory_finished_v1', LS_LEDGER='olipoly_inventory_ledger_v1';
-    const $=id=>document.getElementById(id); const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgCategory:'all',fgSort:'need'};
-    const read=(k,f=[])=>{try{return JSON.parse(localStorage.getItem(k)||'')??f}catch{return f}}; const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-    const id=()=>crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random()}`; const num=v=>Number(v)||0; const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-    const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v)); const grams=v=>num(v)>=1000?`${(num(v)/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(num(v))}g`; const toast=m=>{const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)};
-    const norm=v=>String(v||'').trim().toLowerCase();
-    function rawStatus(r){ if(num(r.remaining_grams)<=0) return 'out'; if(num(r.remaining_grams)<=num(r.reorder_threshold)) return 'low'; return 'ok'; }
-    function statusChip(s){ return s==='out'?'<span class="chip danger">Out</span>':s==='low'?'<span class="chip warn">Reorder</span>':'<span class="chip ok">Good</span>'; }
-    function colorStyle(c){ const v=norm(c); const map={pink:'#ff8ad8',blush:'#ffc0df',purple:'#9d6df3',white:'#ffffff',black:'#1f1b24',red:'#f04b5f',blue:'#4bb8ff',green:'#55c978',yellow:'#ffd84f',orange:'#ff9b3f',gray:'#aaa',grey:'#aaa'}; for(const k in map){ if(v.includes(k)) return map[k]; } return 'linear-gradient(135deg,#fff,#ddd)'; }
-    function rawList(){let rows=read(LS_RAW); const q=norm(state.rawSearch); rows=rows.filter(r=>(state.rawStatus==='all'||rawStatus(r)===state.rawStatus)&&(state.rawMaterial==='all'||r.material===state.rawMaterial)&&(!q||[r.material,r.color,r.brand,r.location,r.notes].some(x=>norm(x).includes(q)))); rows.sort((a,b)=>{ if(state.rawSort==='color') return String(a.color||'').localeCompare(String(b.color||'')); if(state.rawSort==='material') return String(a.material||'').localeCompare(String(b.material||'')); if(state.rawSort==='remaining') return num(a.remaining_grams)-num(b.remaining_grams); return ({out:0,low:1,ok:2}[rawStatus(a)]-({out:0,low:1,ok:2}[rawStatus(b)])) || num(a.remaining_grams)-num(b.remaining_grams); }); return rows; }
-    function fgNeed(f){ const q=num(f.qty_on_hand), t=num(f.target_qty); if(q<=0) return 'sold_out'; if(t && q<t) return 'low'; return f.status||'active'; }
-    function fgChip(s){ s=s||'active'; return s==='sold_out'?'<span class="chip danger">Sold out</span>':s==='low'?'<span class="chip warn">Low</span>':s==='retired'?'<span class="chip">Retired</span>':'<span class="chip ok">Active</span>'; }
-    function fgList(){ let rows=read(LS_FINISHED); const q=norm(state.fgSearch); rows=rows.filter(f=>(state.fgStatus==='all'||fgNeed(f)===state.fgStatus||f.status===state.fgStatus)&&(state.fgCategory==='all'||f.category===state.fgCategory)&&(!q||[f.name,f.category,f.notes].some(x=>norm(x).includes(q)))); rows.sort((a,b)=>{ if(state.fgSort==='name') return String(a.name||'').localeCompare(String(b.name||'')); if(state.fgSort==='qty') return num(a.qty_on_hand)-num(b.qty_on_hand); if(state.fgSort==='value') return (num(b.qty_on_hand)*num(b.sale_price))-(num(a.qty_on_hand)*num(a.sale_price)); const score=x=>fgNeed(x)==='sold_out'?0:fgNeed(x)==='low'?1:fgNeed(x)==='active'?2:3; return score(a)-score(b); }); return rows; }
-    function recipeText(f){ if(typeof f.recipe==='string') return f.recipe; if(Array.isArray(f.recipe)&&f.recipe.length) return f.recipe.map(r=>`${r.material||''} ${r.color||''} ${r.brand||''} ${grams(r.grams_per_item||r.grams_total||0)}/item`.trim()).join('; '); return ''; }
-    function renderMetrics(){ const raw=read(LS_RAW), fg=read(LS_FINISHED); const low=raw.filter(r=>rawStatus(r)!=='ok').length; const value=fg.reduce((s,f)=>s+num(f.qty_on_hand)*num(f.sale_price),0); $('mRaw').textContent=raw.length; $('mLow').textContent=low; $('mFinished').textContent=fg.length; $('mValue').textContent=money(value); }
-    function renderRaw(){ const rows=rawList(); $('rawBody').innerHTML=rows.length?rows.map(r=>{ const pct=Math.max(0,Math.min(100,(num(r.remaining_grams)/(num(r.starting_grams)||1000))*100)); const s=rawStatus(r); return `<tr><td>${statusChip(s)}</td><td><strong><span class="color-dot" style="background:${colorStyle(r.color)}"></span> ${esc(r.material)} / ${esc(r.color)}</strong><small>${esc(r.brand||'No brand/type')}</small></td><td><strong>${grams(r.remaining_grams)} / ${grams(r.starting_grams)}</strong><small>Reorder at ${grams(r.reorder_threshold)}</small><div class="bar ${s==='low'?'warn':s==='out'?'danger':''}"><span style="width:${pct}%"></span></div></td><td><strong>${money(r.cost)}</strong><small>${num(r.starting_grams)?money(num(r.cost)/num(r.starting_grams))+'/g':'—'}</small></td><td>${esc(r.location||'—')}</td><td>${esc(r.notes||'—')}</td><td><div class="actions"><button class="ghost small" data-edit-raw="${r.id}" type="button">Edit</button><button class="danger-btn small" data-del-raw="${r.id}" type="button">Delete</button></div></td></tr>` }).join(''):`<tr><td colspan="7"><span class="muted">No raw materials yet.</span></td></tr>`; }
-    function renderFinished(){ const rows=fgList(); $('fgBody').innerHTML=rows.length?rows.map(f=>{ const s=fgNeed(f); const value=num(f.qty_on_hand)*num(f.sale_price); return `<tr><td>${fgChip(s)}</td><td><strong>${esc(f.name)}</strong><small>${esc((f.category||'').replaceAll('_',' '))}</small></td><td><strong>${num(f.qty_on_hand)} on hand</strong><small>Target ${num(f.target_qty)||'—'}</small></td><td><strong>${money(f.sale_price)}</strong><small>${money(value)} total retail</small></td><td>${esc(recipeText(f)||'—')}<small>${num(f.print_hours_per_item)?num(f.print_hours_per_item).toFixed(2)+'h/item':''}</small></td><td>${esc(f.notes||'—')}</td><td><div class="actions"><button class="ghost small" data-edit-fg="${f.id}" type="button">Edit</button><button class="ghost small" data-adjust-fg="${f.id}" type="button">Sell -1</button><button class="danger-btn small" data-del-fg="${f.id}" type="button">Delete</button></div></td></tr>` }).join(''):`<tr><td colspan="7"><span class="muted">No finished goods yet.</span></td></tr>`; }
-    function renderLedger(){ const rows=read(LS_LEDGER).slice(0,250); $('ledgerBody').innerHTML=rows.length?rows.map(l=>`<tr><td>${esc(l.date||'—')}</td><td><span class="chip ${l.kind==='raw_usage_unmatched'?'warn':'status'}">${esc((l.kind||'movement').replaceAll('_',' '))}</span></td><td><strong>${esc(l.project_title||'—')}</strong></td><td>${esc([l.material,l.color,l.brand].filter(Boolean).join(' / ')||'—')}</td><td><strong>${grams(l.grams)}</strong></td><td>${esc(l.machine||'—')}</td><td>${esc(l.note||'—')}</td></tr>`).join(''):`<tr><td colspan="7"><span class="muted">No usage history yet.</span></td></tr>`; }
-    function render(){ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.tab)); ['raw','finished','ledger'].forEach(t=>$(t+'Panel').classList.toggle('hidden',state.tab!==t)); renderMetrics(); renderRaw(); renderFinished(); renderLedger(); }
-    function rawFromForm(){ const now=new Date().toISOString(); return {id:$('rawId').value||id(),material:$('rawMaterial').value,color:$('rawColor').value.trim(),brand:$('rawBrand').value.trim(),location:$('rawLocation').value.trim(),starting_grams:num($('rawStarting').value),remaining_grams:num($('rawRemaining').value),reorder_threshold:num($('rawThreshold').value),cost:num($('rawCost').value),notes:$('rawNotes').value.trim(),updated_at:now,created_at:($('rawId').value&&(read(LS_RAW).find(x=>x.id===$('rawId').value)||{}).created_at)||now}; }
-    function resetRaw(){ $('rawForm').reset(); $('rawId').value=''; $('rawStarting').value=1000; $('rawRemaining').value=1000; $('rawThreshold').value=250; $('rawSaveBtn').textContent='Save Raw Material'; }
-    function fgFromForm(){ const now=new Date().toISOString(); const existing=$('fgId').value&&(read(LS_FINISHED).find(x=>x.id===$('fgId').value)||{}); return {id:$('fgId').value||id(),name:$('fgName').value.trim(),category:$('fgCategory').value,qty_on_hand:num($('fgQty').value),target_qty:num($('fgTarget').value),sale_price:num($('fgPrice').value),print_hours_per_item:num($('fgHours').value),status:$('fgStatus').value,recipe:$('fgRecipe').value.trim(),notes:existing.notes||'',updated_at:now,created_at:existing.created_at||now}; }
-    function resetFg(){ $('finishedForm').reset(); $('fgId').value=''; $('fgQty').value=0; $('fgTarget').value=0; $('fgSaveBtn').textContent='Save Finished Good'; }
-    function bind(){ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{state.tab=b.dataset.tab;render()})); $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); if(!r.color) return toast('Add a color.'); let rows=read(LS_RAW).filter(x=>x.id!==r.id); rows.unshift(r); write(LS_RAW,rows); resetRaw(); render(); toast('Raw material saved.');}); $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.name) return toast('Add a product name.'); let rows=read(LS_FINISHED).filter(x=>x.id!==f.id); rows.unshift(f); write(LS_FINISHED,rows); resetFg(); render(); toast('Finished good saved.');}); $('rawResetBtn').addEventListener('click',resetRaw); $('fgResetBtn').addEventListener('click',resetFg); $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;render()}); $('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;render()}); $('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;render()}); $('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;render()}); $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;render()}); $('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;render()}); $('fgFilterCategory').addEventListener('change',e=>{state.fgCategory=e.target.value;render()}); $('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;render()}); $('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';['rawSearch','rawStatus','rawFilterMaterial','rawSort'].forEach(i=>$(i).value=i==='rawSearch'?'':i==='rawSort'?'status':'all');render()}); $('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgCategory='all';state.fgSort='need';['fgSearch','fgFilterStatus','fgFilterCategory','fgSort'].forEach(i=>$(i).value=i==='fgSearch'?'':i==='fgSort'?'need':'all');render()}); document.body.addEventListener('click',e=>{ const er=e.target.closest('[data-edit-raw]'); if(er){ const r=read(LS_RAW).find(x=>x.id===er.dataset.editRaw); if(r){$('rawId').value=r.id;$('rawMaterial').value=r.material||'PLA';$('rawColor').value=r.color||'';$('rawBrand').value=r.brand||'';$('rawLocation').value=r.location||'';$('rawStarting').value=r.starting_grams||0;$('rawRemaining').value=r.remaining_grams||0;$('rawThreshold').value=r.reorder_threshold||0;$('rawCost').value=r.cost||'';$('rawNotes').value=r.notes||'';$('rawSaveBtn').textContent='Update Raw Material'; window.scrollTo({top:0,behavior:'smooth'});} } const dr=e.target.closest('[data-del-raw]'); if(dr&&confirm('Delete this raw material item?')){write(LS_RAW,read(LS_RAW).filter(x=>x.id!==dr.dataset.delRaw));render();} const ef=e.target.closest('[data-edit-fg]'); if(ef){ const f=read(LS_FINISHED).find(x=>x.id===ef.dataset.editFg); if(f){state.tab='finished';$('fgId').value=f.id;$('fgName').value=f.name||'';$('fgCategory').value=f.category||'craft_show_stock';$('fgPrice').value=f.sale_price||'';$('fgQty').value=f.qty_on_hand||0;$('fgTarget').value=f.target_qty||0;$('fgHours').value=f.print_hours_per_item||'';$('fgStatus').value=f.status||'active';$('fgRecipe').value=recipeText(f)||'';$('fgSaveBtn').textContent='Update Finished Good';render(); window.scrollTo({top:0,behavior:'smooth'});} } const af=e.target.closest('[data-adjust-fg]'); if(af){ const rows=read(LS_FINISHED); const f=rows.find(x=>x.id===af.dataset.adjustFg); if(f){f.qty_on_hand=Math.max(0,num(f.qty_on_hand)-1);f.updated_at=new Date().toISOString();write(LS_FINISHED,rows);render();toast('Sold one / reduced quantity.');} } const df=e.target.closest('[data-del-fg]'); if(df&&confirm('Delete this finished good?')){write(LS_FINISHED,read(LS_FINISHED).filter(x=>x.id!==df.dataset.delFg));render();} }); $('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear inventory movement log?')){write(LS_LEDGER,[]);render();}}); $('exportBtn').addEventListener('click',()=>{const data={exported_at:new Date().toISOString(),raw:read(LS_RAW),finished:read(LS_FINISHED),ledger:read(LS_LEDGER)}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='olipoly-inventory-backup.json'; a.click(); URL.revokeObjectURL(a.href);}); $('importBtn').addEventListener('click',()=>$('importFile').click()); $('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0]; if(!file) return; const data=JSON.parse(await file.text()); if(data.raw) write(LS_RAW,data.raw); if(data.finished) write(LS_FINISHED,data.finished); if(data.ledger) write(LS_LEDGER,data.ledger); render(); toast('Inventory backup imported.');}); }
-    bind(); render();
-  })();
-  </script>
+
+<script>
+(()=>{
+  'use strict';
+
+  const RAW_KEY='olipoly_raw_material_inventory_v3';
+  const FG_KEY='olipoly_finished_goods_inventory_v3';
+  const LEDGER_KEY='olipoly_inventory_ledger_v2';
+  const LEGACY_RAW_KEYS=['olipoly_inventory_raw_v1','olipoly_raw_material_inventory_v3'];
+  const LEGACY_FG_KEYS=['olipoly_inventory_finished_v1','olipoly_finished_goods_inventory_v3'];
+  const LEGACY_LEDGER_KEYS=['olipoly_inventory_ledger_v1','olipoly_inventory_ledger_v2'];
+  const $=id=>document.getElementById(id);
+  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null};
+
+  function uid(){return crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
+  function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
+  function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
+  function num(v){return Number(v)||0}
+  function norm(v){return String(v||'').trim().toLowerCase()}
+  function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+  function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v))}
+  function grams(v){const n=num(v);return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`}
+  function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
+
+  function migrate(){
+    const rawMap=new Map();
+    LEGACY_RAW_KEYS.forEach(k=>read(k,[]).forEach(r=>{
+      const x=normalizeRaw(r); const key=x.id || `${x.material_type}|${x.color}|${x.brand}`;
+      rawMap.set(key,x);
+    }));
+    const fgMap=new Map();
+    LEGACY_FG_KEYS.forEach(k=>read(k,[]).forEach(f=>{
+      const x=normalizeFg(f); const key=x.id || x.sku || x.product_name;
+      fgMap.set(key,x);
+    }));
+    const ledger=[];
+    LEGACY_LEDGER_KEYS.forEach(k=>read(k,[]).forEach(x=>ledger.push(normalizeLedger(x))));
+    if(rawMap.size) write(RAW_KEY,[...rawMap.values()]);
+    if(fgMap.size) write(FG_KEY,[...fgMap.values()]);
+    if(ledger.length) write(LEDGER_KEY,ledger.sort((a,b)=>String(b.date).localeCompare(String(a.date))));
+  }
+
+  function raw(){return read(RAW_KEY,[]).map(normalizeRaw)}
+  function saveRaw(list){write(RAW_KEY,list.map(normalizeRaw))}
+  function finished(){return read(FG_KEY,[]).map(normalizeFg)}
+  function saveFinished(list){write(FG_KEY,list.map(normalizeFg))}
+  function ledger(){return read(LEDGER_KEY,[]).map(normalizeLedger)}
+  function saveLedger(list){write(LEDGER_KEY,list.map(normalizeLedger))}
+
+  function normalizeRaw(r){
+    return {
+      id:r.id||uid(),
+      material_type:r.material_type||r.material||'PLA',
+      color:r.color||'',
+      brand:r.brand||r.filament||r.type||'',
+      location:r.location||'',
+      starting_grams:num(r.starting_grams||r.starting||1000),
+      remaining_grams:num(r.remaining_grams||r.remaining||0),
+      reorder_threshold_grams:num(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250),
+      spool_cost:num(r.spool_cost||r.cost||0),
+      notes:r.notes||'',
+      created_at:r.created_at||new Date().toISOString(),
+      updated_at:r.updated_at||new Date().toISOString()
+    };
+  }
+  function normalizeFg(f){
+    return {
+      id:f.id||uid(),
+      sku:f.sku||String(f.product_name||f.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||uid(),
+      product_name:f.product_name||f.name||'',
+      category:f.category||'',
+      sale_price:num(f.sale_price||f.price||0),
+      quantity_on_hand:num(f.quantity_on_hand||f.qty_on_hand||f.qty||0),
+      target_quantity:num(f.target_quantity||f.target_qty||f.target||0),
+      print_hours_each:num(f.print_hours_each||f.hours_each||0),
+      status:f.status||'active',
+      material_recipe:f.material_recipe||f.recipe||'',
+      image_url:f.image_url||f.image||'',
+      notes:f.notes||'',
+      created_at:f.created_at||new Date().toISOString(),
+      updated_at:f.updated_at||new Date().toISOString()
+    };
+  }
+  function normalizeLedger(x){
+    return {
+      id:x.id||uid(),
+      date:x.date||x.created_at||new Date().toISOString(),
+      type:x.type||'adjust',
+      item:x.item||x.label||'Inventory movement',
+      amount:x.amount??x.change??'',
+      note:x.note||x.notes||x.source||''
+    };
+  }
+
+  function addLedger(entry){
+    const rows=ledger();
+    rows.unshift(normalizeLedger({...entry,id:uid(),date:new Date().toISOString()}));
+    saveLedger(rows);
+  }
+
+  function rawStatus(r){ if(num(r.remaining_grams)<=0) return 'out'; if(num(r.remaining_grams)<=num(r.reorder_threshold_grams)) return 'low'; return 'ok'; }
+  function rawStatusChip(r){
+    const s=rawStatus(r);
+    if(s==='out') return '<span class="chip danger">Out</span>';
+    if(s==='low') return '<span class="chip warn">Reorder</span>';
+    return '<span class="chip ok">Good</span>';
+  }
+  function fgNeed(f){const q=num(f.quantity_on_hand),t=num(f.target_quantity); if(q<=0) return 'sold_out'; if(t&&q<t) return 'low'; return f.status||'active'}
+  function fgChip(f){
+    const s=fgNeed(f);
+    if(s==='sold_out') return '<span class="chip danger">Sold out</span>';
+    if(s==='low') return '<span class="chip warn">Low</span>';
+    if(s==='seasonal') return '<span class="chip">Seasonal</span>';
+    if(s==='retired') return '<span class="chip muted">Retired</span>';
+    return '<span class="chip ok">Stocked</span>';
+  }
+  function colorStyle(c){
+    const v=norm(c);
+    const map={pink:'#ff8ad8',blush:'#ffc0df',rose:'#ff7fcf',purple:'#9d6df3',violet:'#9d6df3',white:'#fff',black:'#1f1b24',red:'#f04b5f',blue:'#4bb8ff',green:'#55c978',yellow:'#ffd84f',gold:'#e6b84a',orange:'#ff9b3f',gray:'#aaa',grey:'#aaa',silver:'#c9c9d1',brown:'#9b6a4c',wood:'#b68454',clear:'linear-gradient(135deg,#fff,rgba(95,207,255,.32))'};
+    for(const k in map){if(v.includes(k)) return map[k]}
+    return 'linear-gradient(135deg,#fff,#ddd)';
+  }
+  function recipeLines(text){
+    if(Array.isArray(text)) return text;
+    return String(text||'').split(/\n+/).map(line=>{
+      const m=line.match(/^\s*(.+?)\s*:\s*([\d.]+)\s*g?/i);
+      return m?{label:m[1].trim(),grams:num(m[2])}:null;
+    }).filter(Boolean);
+  }
+
+  function rawList(){
+    let rows=raw(); const q=norm(state.rawSearch);
+    rows=rows.filter(r=>(state.rawStatus==='all'||rawStatus(r)===state.rawStatus)&&(state.rawMaterial==='all'||r.material_type===state.rawMaterial)&&(!q||[r.material_type,r.color,r.brand,r.location,r.notes].some(x=>norm(x).includes(q))));
+    rows.sort((a,b)=>{
+      if(state.rawSort==='color') return String(a.color||'').localeCompare(String(b.color||''));
+      if(state.rawSort==='material') return String(a.material_type||'').localeCompare(String(b.material_type||''));
+      if(state.rawSort==='brand') return String(a.brand||'').localeCompare(String(b.brand||''));
+      if(state.rawSort==='remaining') return num(a.remaining_grams)-num(b.remaining_grams);
+      return ({out:0,low:1,ok:2}[rawStatus(a)]-({out:0,low:1,ok:2}[rawStatus(b)])) || num(a.remaining_grams)-num(b.remaining_grams);
+    });
+    return rows;
+  }
+  function fgList(){
+    let rows=finished(); const q=norm(state.fgSearch);
+    rows=rows.filter(f=>(state.fgStatus==='all'||fgNeed(f)===state.fgStatus||f.status===state.fgStatus)&&(!q||[f.product_name,f.category,f.notes,f.material_recipe].some(x=>norm(x).includes(q))));
+    rows.sort((a,b)=>{
+      if(state.fgSort==='name') return String(a.product_name||'').localeCompare(String(b.product_name||''));
+      if(state.fgSort==='qty') return num(a.quantity_on_hand)-num(b.quantity_on_hand);
+      if(state.fgSort==='value') return num(b.quantity_on_hand)*num(b.sale_price)-num(a.quantity_on_hand)*num(a.sale_price);
+      const score=x=>fgNeed(x)==='sold_out'?0:fgNeed(x)==='low'?1:fgNeed(x)==='active'?2:3;
+      return score(a)-score(b);
+    });
+    return rows;
+  }
+
+  function renderMetrics(){
+    const r=raw(), f=finished(), l=ledger();
+    const low=r.filter(x=>rawStatus(x)!=='ok');
+    const value=f.reduce((s,x)=>s+num(x.quantity_on_hand)*num(x.sale_price),0);
+    $('mRaw').textContent=r.length;
+    $('mLow').textContent=low.length;
+    $('mFinished').textContent=f.length;
+    $('mValue').textContent=money(value);
+    $('mMoves').textContent=l.length;
+    const pills=[
+      `<span class="decision-pill ${low.length?'danger':'ok'}">⚠️ ${low.length} reorder/out</span>`,
+      `<span class="decision-pill">🧵 ${grams(r.reduce((s,x)=>s+num(x.remaining_grams),0))} filament</span>`,
+      `<span class="decision-pill">📦 ${f.reduce((s,x)=>s+num(x.quantity_on_hand),0)} finished units</span>`,
+      `<span class="decision-pill">💵 ${money(value)} retail value</span>`
+    ];
+    $('decisionPills').innerHTML=pills.join('');
+  }
+
+  function renderAttention(){
+    const items=[];
+    raw().filter(r=>rawStatus(r)!=='ok').sort((a,b)=>({out:0,low:1}[rawStatus(a)]-({out:0,low:1}[rawStatus(b)])).slice(0,8).forEach(r=>{
+      items.push({icon:rawStatus(r)==='out'?'🚫':'⚠️',title:`${r.material_type} ${r.color}`,meta:`${rawStatus(r)==='out'?'Out':'Low'} · ${grams(r.remaining_grams)} left · reorder at ${grams(r.reorder_threshold_grams)}`,cls:rawStatus(r)==='out'?'danger':'warn'});
+    });
+    finished().filter(f=>['low','sold_out'].includes(fgNeed(f))).slice(0,6).forEach(f=>{
+      items.push({icon:fgNeed(f)==='sold_out'?'🛑':'📦',title:f.product_name,meta:`${fgNeed(f)==='sold_out'?'Sold out':'Below target'} · ${f.quantity_on_hand}/${f.target_quantity||'—'} on hand`,cls:fgNeed(f)==='sold_out'?'danger':'warn'});
+    });
+    $('attentionList').innerHTML=items.length?items.slice(0,10).map(i=>`<div class="attention-item"><div>${i.icon}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.meta)}</span></div><span class="decision-pill ${i.cls}">Now</span></div>`).join(''):'<div class="empty">No low-stock or finished-good alerts right now.</div>';
+  }
+  function renderMaterialBalance(){
+    const groups=new Map();
+    raw().forEach(r=>{
+      const key=r.material_type||'Other';
+      groups.set(key,(groups.get(key)||0)+num(r.remaining_grams));
+    });
+    const rows=[...groups.entries()].sort((a,b)=>b[1]-a[1]);
+    const max=Math.max(1,...rows.map(x=>x[1]));
+    $('materialBalance').innerHTML=rows.length?rows.map(([m,g])=>`<div class="util-row"><strong>${esc(m)}</strong><div class="util-bar"><div class="util-fill" style="width:${Math.max(4,Math.round(g/max*100))}%"></div></div><span>${grams(g)}</span></div>`).join(''):'<div class="empty">No raw materials entered yet.</div>';
+  }
+
+  function renderRawCards(){
+    const rows=rawList();
+    $('rawCards').innerHTML=rows.length?rows.map(r=>{
+      const pct=Math.max(0,Math.min(100,(num(r.remaining_grams)/(num(r.starting_grams)||1000))*100));
+      const s=rawStatus(r);
+      const accent=s==='out'?'#ef476f':s==='low'?'#f7b731':'#34c759';
+      const costPerGram=r.spool_cost&&r.starting_grams?num(r.spool_cost)/num(r.starting_grams):0;
+      return `<article class="inventory-card" style="--accent:${accent}">
+        <div class="card-head">
+          <div class="color-dot" style="--dot:${colorStyle(r.color)}"></div>
+          <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div></div>
+          ${rawStatusChip(r)}
+        </div>
+        <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}</div>
+        <div class="stat-grid">
+          <div class="stat"><span>Remaining</span><strong>${grams(r.remaining_grams)}</strong></div>
+          <div class="stat"><span>Threshold</span><strong>${grams(r.reorder_threshold_grams)}</strong></div>
+          <div class="stat"><span>Cost/g</span><strong>${costPerGram?money(costPerGram):'—'}</strong></div>
+        </div>
+        <div class="bar ${s==='low'?'warn':s==='out'?'danger':''}"><span style="width:${pct}%"></span></div>
+        ${r.notes?`<div class="card-sub" style="margin-top:8px">${esc(r.notes)}</div>`:''}
+        <div class="quick-adjust">
+          <input data-quick-amount="${r.id}" type="number" min="0" step="1" placeholder="grams">
+          <button class="mini-btn" data-quick-add="${r.id}" type="button">+ Add</button>
+          <button class="mini-btn" data-quick-use="${r.id}" type="button">− Use</button>
+        </div>
+        <div class="card-actions">
+          <button class="mini-btn" data-edit-raw="${r.id}" type="button">Edit</button>
+          <button class="mini-btn" data-adjust-raw="${r.id}" type="button">Adjust</button>
+          <button class="mini-btn danger-btn" data-delete-raw="${r.id}" type="button">Delete</button>
+        </div>
+      </article>`;
+    }).join(''):'<div class="empty">No raw materials match these filters.</div>';
+  }
+
+  function renderFinishedCards(){
+    const rows=fgList();
+    $('finishedCards').innerHTML=rows.length?rows.map(f=>{
+      const need=fgNeed(f);
+      const accent=need==='sold_out'?'#ef476f':need==='low'?'#f7b731':'#9d6df3';
+      const value=num(f.quantity_on_hand)*num(f.sale_price);
+      const recipe=recipeLines(f.material_recipe);
+      const img=f.image_url?`<img class="thumb" src="${esc(f.image_url)}" alt="">`:'';
+      return `<article class="inventory-card" style="--accent:${accent}">
+        <div class="card-head">
+          <div class="color-dot" style="--dot:linear-gradient(135deg,#ffe1f6,#f4dcff)"></div>
+          <div><h3>${esc(f.product_name || 'Untitled product')}</h3><div class="card-sub">${esc(f.category || 'No category')} · SKU ${esc(f.sku)}</div></div>
+          ${img}
+        </div>
+        <div class="chips">${fgChip(f)}<span class="chip">${esc(f.category||'General')}</span><span class="chip">${money(f.sale_price)}</span></div>
+        <div class="stat-grid">
+          <div class="stat"><span>On Hand</span><strong>${esc(f.quantity_on_hand)}</strong></div>
+          <div class="stat"><span>Target</span><strong>${esc(f.target_quantity||'—')}</strong></div>
+          <div class="stat"><span>Value</span><strong>${money(value)}</strong></div>
+        </div>
+        ${recipe.length?`<div class="recipe-mini">${recipe.map(r=>`<div class="recipe-line"><strong>${esc(r.label)}</strong><span>${grams(r.grams)}</span></div>`).join('')}</div>`:''}
+        ${f.notes?`<div class="card-sub" style="margin-top:8px">${esc(f.notes)}</div>`:''}
+        <div class="quick-adjust">
+          <input data-quick-fg-amount="${f.id}" type="number" min="0" step="1" placeholder="qty">
+          <button class="mini-btn" data-quick-fg-add="${f.id}" type="button">+ Add</button>
+          <button class="mini-btn" data-quick-fg-sell="${f.id}" type="button">− Sold</button>
+        </div>
+        <div class="card-actions">
+          <button class="mini-btn" data-edit-fg="${f.id}" type="button">Edit</button>
+          <button class="mini-btn" data-adjust-fg="${f.id}" type="button">Adjust</button>
+          <button class="mini-btn danger-btn" data-delete-fg="${f.id}" type="button">Delete</button>
+        </div>
+      </article>`;
+    }).join(''):'<div class="empty">No finished goods match these filters.</div>';
+  }
+
+  function renderLedger(){
+    let rows=ledger(); const q=norm(state.ledgerSearch);
+    rows=rows.filter(x=>(state.ledgerType==='all'||x.type===state.ledgerType)&&(!q||[x.type,x.item,x.amount,x.note].some(v=>norm(v).includes(q))));
+    rows.sort((a,b)=>state.ledgerSort==='oldest'?String(a.date).localeCompare(String(b.date)):String(b.date).localeCompare(String(a.date)));
+    $('ledgerBody').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(new Date(x.date).toLocaleString())}</td><td>${esc(x.type)}</td><td><strong>${esc(x.item)}</strong></td><td>${esc(x.amount)}</td><td>${esc(x.note)}</td></tr>`).join(''):'<tr><td colspan="5">No movement history yet.</td></tr>';
+  }
+
+  function render(){
+    renderMetrics();renderAttention();renderMaterialBalance();renderRawCards();renderFinishedCards();renderLedger();
+  }
+
+  function rawFromForm(){
+    const existing=raw().find(r=>r.id===$('rawId').value);
+    return normalizeRaw({
+      id:$('rawId').value||uid(),
+      material_type:$('rawMaterial').value,
+      color:$('rawColor').value.trim(),
+      brand:$('rawBrand').value.trim(),
+      location:$('rawLocation').value.trim(),
+      starting_grams:num($('rawStarting').value),
+      remaining_grams:num($('rawRemaining').value),
+      reorder_threshold_grams:num($('rawThreshold').value),
+      spool_cost:num($('rawCost').value),
+      notes:$('rawNotes').value.trim(),
+      created_at:existing?.created_at||new Date().toISOString(),
+      updated_at:new Date().toISOString()
+    });
+  }
+  function fillRaw(r){
+    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawNotes').value=r.notes;
+    $('rawSaveBtn').textContent='Update Raw Material';
+    $('rawEditor').open=true;$('rawEditor').scrollIntoView({behavior:'smooth'});
+  }
+  function resetRaw(){
+    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawSaveBtn').textContent='Save Raw Material';
+  }
+  function fgFromForm(){
+    const existing=finished().find(f=>f.id===$('fgId').value);
+    return normalizeFg({
+      id:$('fgId').value||uid(),
+      product_name:$('fgName').value.trim(),
+      category:$('fgCategory').value.trim(),
+      sale_price:num($('fgPrice').value),
+      quantity_on_hand:num($('fgQty').value),
+      target_quantity:num($('fgTarget').value),
+      print_hours_each:num($('fgHours').value),
+      status:$('fgStatus').value,
+      material_recipe:$('fgRecipe').value.trim(),
+      image_url:$('fgImage').value.trim(),
+      notes:$('fgNotes').value.trim(),
+      created_at:existing?.created_at||new Date().toISOString(),
+      updated_at:new Date().toISOString()
+    });
+  }
+  function fillFg(f){
+    $('fgId').value=f.id;$('fgName').value=f.product_name;$('fgCategory').value=f.category;$('fgPrice').value=f.sale_price||'';$('fgQty').value=f.quantity_on_hand;$('fgTarget').value=f.target_quantity;$('fgHours').value=f.print_hours_each||'';$('fgStatus').value=f.status||'active';$('fgRecipe').value=f.material_recipe||'';$('fgImage').value=f.image_url||'';$('fgNotes').value=f.notes||'';
+    $('fgSaveBtn').textContent='Update Finished Good';
+    setTab('finished');$('finishedEditor').open=true;$('finishedEditor').scrollIntoView({behavior:'smooth'});
+  }
+  function resetFg(){
+    $('finishedForm').reset();$('fgId').value='';$('fgQty').value=0;$('fgTarget').value=0;$('fgStatus').value='active';$('fgSaveBtn').textContent='Save Finished Good';
+  }
+
+  function setTab(tab){
+    state.tab=tab;
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+    $('rawPanel').classList.toggle('hidden',tab!=='raw');$('rawEditor').classList.toggle('hidden',tab!=='raw');
+    $('finishedPanel').classList.toggle('hidden',tab!=='finished');$('finishedEditor').classList.toggle('hidden',tab!=='finished');
+    $('ledgerPanel').classList.toggle('hidden',tab!=='ledger');
+    $('tabHelp').textContent=tab==='raw'?'Manage filament and spool inventory.':tab==='finished'?'Manage sellable craft-show and stock items.':'Review usage, sales, production adjustments, and imports.';
+  }
+
+  function openAdjust(kind,id){
+    const item=kind==='raw'?raw().find(x=>x.id===id):finished().find(x=>x.id===id);
+    if(!item)return;
+    state.adjust={kind,id};
+    $('adjustTitle').textContent=kind==='raw'?'Adjust Raw Material':'Adjust Finished Good';
+    $('adjustSub').textContent=kind==='raw'?`${item.material_type} ${item.color} · currently ${grams(item.remaining_grams)}`:`${item.product_name} · currently ${item.quantity_on_hand} on hand`;
+    $('adjustAmount').value='';
+    $('adjustNote').value='';
+    $('adjustModal').classList.remove('hidden');
+  }
+  function closeAdjust(){state.adjust=null;$('adjustModal').classList.add('hidden')}
+  function confirmAdjust(){
+    if(!state.adjust)return closeAdjust();
+    const action=$('adjustAction').value, amount=num($('adjustAmount').value), note=$('adjustNote').value.trim();
+    if(!amount && action!=='set')return toast('Enter an amount.');
+    if(state.adjust.kind==='raw'){
+      const list=raw(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
+      const before=num(list[idx].remaining_grams);
+      list[idx].remaining_grams=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
+      list[idx].updated_at=new Date().toISOString(); saveRaw(list);
+      addLedger({type:action==='subtract'?'raw_usage':'raw_adjust',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:note||'Manual raw material adjustment'});
+    }else{
+      const list=finished(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
+      const before=num(list[idx].quantity_on_hand);
+      list[idx].quantity_on_hand=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
+      list[idx].updated_at=new Date().toISOString(); saveFinished(list);
+      addLedger({type:'fg_adjust',item:list[idx].product_name,amount:`${before} → ${list[idx].quantity_on_hand}`,note:note||'Manual finished good adjustment'});
+    }
+    closeAdjust(); render(); toast('Inventory adjusted.');
+  }
+
+  function quickRaw(id,dir){
+    const input=document.querySelector(`[data-quick-amount="${CSS.escape(id)}"]`);
+    const amount=num(input?.value); if(!amount)return toast('Enter grams first.');
+    const list=raw(); const idx=list.findIndex(x=>x.id===id); if(idx<0)return;
+    const before=num(list[idx].remaining_grams);
+    list[idx].remaining_grams=dir==='add'?before+amount:Math.max(0,before-amount);
+    list[idx].updated_at=new Date().toISOString(); saveRaw(list);
+    addLedger({type:dir==='add'?'raw_adjust':'raw_usage',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:dir==='add'?'Quick add raw material':'Quick use raw material'});
+    render(); toast(dir==='add'?'Raw material added.':'Raw material used.');
+  }
+  function quickFg(id,dir){
+    const input=document.querySelector(`[data-quick-fg-amount="${CSS.escape(id)}"]`);
+    const amount=num(input?.value); if(!amount)return toast('Enter quantity first.');
+    const list=finished(); const idx=list.findIndex(x=>x.id===id); if(idx<0)return;
+    const before=num(list[idx].quantity_on_hand);
+    list[idx].quantity_on_hand=dir==='add'?before+amount:Math.max(0,before-amount);
+    list[idx].updated_at=new Date().toISOString(); saveFinished(list);
+    addLedger({type:'fg_adjust',item:list[idx].product_name,amount:`${before} → ${list[idx].quantity_on_hand}`,note:dir==='add'?'Quick add finished goods':'Quick subtract/sold finished goods'});
+    render(); toast(dir==='add'?'Finished goods added.':'Finished goods reduced.');
+  }
+
+  function exportBackup(){
+    const data={version:'inventory-control-v2',exported_at:new Date().toISOString(),raw:raw(),finished:finished(),ledger:ledger()};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`olipoly-inventory-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
+  }
+  function importBackup(file){
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const data=JSON.parse(reader.result);
+        if(Array.isArray(data.raw)) saveRaw(data.raw.map(normalizeRaw));
+        if(Array.isArray(data.finished)) saveFinished(data.finished.map(normalizeFg));
+        if(Array.isArray(data.ledger)) saveLedger(data.ledger.map(normalizeLedger));
+        addLedger({type:'import',item:'Inventory backup',amount:'Imported',note:file.name});
+        render(); toast('Inventory backup imported.');
+      }catch(err){alert('Could not import backup. Make sure it is a valid JSON export.')}
+    };
+    reader.readAsText(file);
+  }
+
+  function bind(){
+    document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+    $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
+    $('rawResetBtn').addEventListener('click',resetRaw);
+    $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); resetFg();render();toast('Finished good saved.');});
+    $('fgResetBtn').addEventListener('click',resetFg);
+    $('exportBtn').addEventListener('click',exportBackup);
+    $('importBtn').addEventListener('click',()=>$('importFile').click());
+    $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
+    $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawCards()});$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawCards()});
+    $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
+    $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
+    $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
+    document.addEventListener('click',e=>{
+      const er=e.target.closest('[data-edit-raw]')?.dataset.editRaw; if(er){const r=raw().find(x=>x.id===er); if(r)fillRaw(r)}
+      const dr=e.target.closest('[data-delete-raw]')?.dataset.deleteRaw; if(dr&&confirm('Delete this raw material?')){saveRaw(raw().filter(x=>x.id!==dr));addLedger({type:'raw_adjust',item:'Raw material',amount:'Deleted',note:dr});render();toast('Raw material deleted.')}
+      const ar=e.target.closest('[data-adjust-raw]')?.dataset.adjustRaw; if(ar)openAdjust('raw',ar);
+      const qar=e.target.closest('[data-quick-add]')?.dataset.quickAdd; if(qar)quickRaw(qar,'add');
+      const qur=e.target.closest('[data-quick-use]')?.dataset.quickUse; if(qur)quickRaw(qur,'use');
+
+      const ef=e.target.closest('[data-edit-fg]')?.dataset.editFg; if(ef){const f=finished().find(x=>x.id===ef); if(f)fillFg(f)}
+      const df=e.target.closest('[data-delete-fg]')?.dataset.deleteFg; if(df&&confirm('Delete this finished good?')){saveFinished(finished().filter(x=>x.id!==df));addLedger({type:'fg_adjust',item:'Finished good',amount:'Deleted',note:df});render();toast('Finished good deleted.')}
+      const af=e.target.closest('[data-adjust-fg]')?.dataset.adjustFg; if(af)openAdjust('fg',af);
+      const qaf=e.target.closest('[data-quick-fg-add]')?.dataset.quickFgAdd; if(qaf)quickFg(qaf,'add');
+      const qsf=e.target.closest('[data-quick-fg-sell]')?.dataset.quickFgSell; if(qsf)quickFg(qsf,'sell');
+    });
+  }
+
+  migrate();
+  bind();
+  render();
+})();
+</script>
 </body>
 </html>
