@@ -340,6 +340,7 @@
         <a class="ghost" href="production-control.html">Production Control</a>
         <button class="ghost" id="exportBtn" type="button">Export Backup</button>
         <button class="ghost" id="importBtn" type="button">Import</button>
+        <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
         <input id="importFile" class="hidden" type="file" accept="application/json">
       </div>
     </header>
@@ -557,8 +558,26 @@
   const RAW_KEY='olipoly_raw_material_inventory_v3';
   const FG_KEY='olipoly_finished_goods_inventory_v3';
   const LEDGER_KEY='olipoly_inventory_ledger_v2';
-  const LEGACY_RAW_KEYS=['olipoly_inventory_raw_v1','olipoly_raw_material_inventory_v3'];
-  const LEGACY_FG_KEYS=['olipoly_inventory_finished_v1','olipoly_finished_goods_inventory_v3'];
+  const LEGACY_RAW_KEYS=[
+    'olipoly_inventory_raw_v1',
+    'olipoly_inventory_raw_v2',
+    'olipoly_raw_material_inventory_v1',
+    'olipoly_raw_material_inventory_v2',
+    'olipoly_raw_material_inventory_v3',
+    'olipoly_materials_v1',
+    'olipoly_materials',
+    'olipoly_inventory_materials',
+    'inventory_raw',
+    'raw_materials'
+  ];
+  const LEGACY_FG_KEYS=[
+    'olipoly_inventory_finished_v1',
+    'olipoly_inventory_finished_v2',
+    'olipoly_finished_goods_inventory_v1',
+    'olipoly_finished_goods_inventory_v2',
+    'olipoly_finished_goods_inventory_v3',
+    'finished_goods'
+  ];
   const LEGACY_LEDGER_KEYS=['olipoly_inventory_ledger_v1','olipoly_inventory_ledger_v2'];
   const $=id=>document.getElementById(id);
   const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false};
@@ -588,22 +607,87 @@
       : `<span class="decision-pill warn">💻 Browser fallback</span><span class="decision-pill">Log in from Production/Orders to sync inventory across devices</span>`;
   }
 
+  function looksLikeRawMaterial(x){
+    if(!x || typeof x !== 'object') return false;
+    return !!(x.material_type || x.material || x.color || x.remaining_grams !== undefined || x.remaining !== undefined || x.brand || x.filament);
+  }
+
+  function looksLikeFinishedGood(x){
+    if(!x || typeof x !== 'object') return false;
+    return !!(x.product_name || x.name || x.sku || x.qty_on_hand !== undefined || x.quantity_on_hand !== undefined);
+  }
+
+  function mergeByIdOrFingerprint(items, normalizer, fingerprint){
+    const map=new Map();
+    items.filter(Boolean).forEach(item=>{
+      const x=normalizer(item);
+      const key=x.id || fingerprint(x);
+      const existing=map.get(key);
+      if(!existing || String(x.updated_at||'').localeCompare(String(existing.updated_at||''))>0) map.set(key,x);
+    });
+    return [...map.values()];
+  }
+
+  function scanAllLocalStorageForInventory(){
+    const rawRows=[], fgRows=[], ledgerRows=[];
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      let parsed=null;
+      try{ parsed=JSON.parse(localStorage.getItem(key)||'null'); }catch{ parsed=null; }
+      const arr=Array.isArray(parsed) ? parsed : (parsed && typeof parsed==='object' && Array.isArray(parsed.raw) ? parsed.raw : null);
+      if(Array.isArray(arr)){
+        arr.forEach(row=>{
+          if(looksLikeRawMaterial(row)) rawRows.push(row);
+          else if(looksLikeFinishedGood(row)) fgRows.push(row);
+        });
+      }
+      if(parsed && typeof parsed==='object'){
+        if(Array.isArray(parsed.finished)) parsed.finished.forEach(row=>{if(looksLikeFinishedGood(row)) fgRows.push(row);});
+        if(Array.isArray(parsed.ledger)) parsed.ledger.forEach(row=>ledgerRows.push(row));
+      }
+    }
+    return {rawRows,fgRows,ledgerRows};
+  }
+
   function migrate(){
-    const rawMap=new Map();
-    LEGACY_RAW_KEYS.forEach(k=>read(k,[]).forEach(r=>{
-      const x=normalizeRaw(r); const key=x.id || `${x.material_type}|${x.color}|${x.brand}`;
-      rawMap.set(key,x);
-    }));
-    const fgMap=new Map();
-    LEGACY_FG_KEYS.forEach(k=>read(k,[]).forEach(f=>{
-      const x=normalizeFg(f); const key=x.id || x.sku || x.product_name;
-      fgMap.set(key,x);
-    }));
-    const ledger=[];
-    LEGACY_LEDGER_KEYS.forEach(k=>read(k,[]).forEach(x=>ledger.push(normalizeLedger(x))));
-    if(rawMap.size) write(RAW_KEY,[...rawMap.values()]);
-    if(fgMap.size) write(FG_KEY,[...fgMap.values()]);
-    if(ledger.length) write(LEDGER_KEY,ledger.sort((a,b)=>String(b.date).localeCompare(String(a.date))));
+    const rawCandidates=[], fgCandidates=[], ledgerCandidates=[];
+    LEGACY_RAW_KEYS.forEach(k=>read(k,[]).forEach(r=>rawCandidates.push(r)));
+    LEGACY_FG_KEYS.forEach(k=>read(k,[]).forEach(f=>fgCandidates.push(f)));
+    LEGACY_LEDGER_KEYS.forEach(k=>read(k,[]).forEach(x=>ledgerCandidates.push(x)));
+
+    const broad=scanAllLocalStorageForInventory();
+    rawCandidates.push(...broad.rawRows);
+    fgCandidates.push(...broad.fgRows);
+    ledgerCandidates.push(...broad.ledgerRows);
+
+    const currentRaw=read(RAW_KEY,[]);
+    const currentFg=read(FG_KEY,[]);
+    rawCandidates.push(...currentRaw);
+    fgCandidates.push(...currentFg);
+
+    const mergedRaw=mergeByIdOrFingerprint(rawCandidates, normalizeRaw, x=>`${norm(x.material_type)}|${norm(x.color)}|${norm(x.brand)}|${norm(x.roll_label)}|${x.starting_grams}|${x.remaining_grams}`);
+    const mergedFg=mergeByIdOrFingerprint(fgCandidates, normalizeFg, x=>`${norm(x.product_name)}|${norm(x.sku)}|${x.quantity_on_hand}`);
+    const mergedLedger=ledgerCandidates.map(normalizeLedger).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+
+    if(mergedRaw.length) write(RAW_KEY,mergedRaw);
+    if(mergedFg.length) write(FG_KEY,mergedFg);
+    if(mergedLedger.length) write(LEDGER_KEY,mergedLedger);
+    return {rawCount:mergedRaw.length, fgCount:mergedFg.length, ledgerCount:mergedLedger.length};
+  }
+
+  async function syncLocalInventoryToCloud(){
+    if(!state.cloud) return;
+    const rows=raw();
+    const goods=finished();
+    for(const r of rows){ try{ await cloudSaveRaw(r); }catch(err){ console.warn('raw cloud sync failed', r, err); } }
+    for(const f of goods){ try{ await cloudSaveFg(f); }catch(err){ console.warn('finished cloud sync failed', f, err); } }
+  }
+
+  async function recoverLocalInventory(){
+    const result=migrate();
+    render();
+    if(state.cloud) await syncLocalInventoryToCloud();
+    toast(`Recovered/imported ${result.rawCount} raw material row(s).`);
   }
 
   function raw(){return read(RAW_KEY,[]).map(normalizeRaw)}
@@ -775,9 +859,16 @@
         sbApi(`/rest/v1/finished_goods_inventory?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
         sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=created_at.desc`,{method:'GET'}).catch(()=>null)
       ]);
-      if(Array.isArray(rawRows) && rawRows.length) write(RAW_KEY,rawRows.map(normalizeRaw));
-      if(Array.isArray(fgRows) && fgRows.length) write(FG_KEY,fgRows.map(normalizeFg));
+      if(Array.isArray(rawRows) && rawRows.length){
+        const merged=mergeByIdOrFingerprint([...raw(),...rawRows], normalizeRaw, x=>`${norm(x.material_type)}|${norm(x.color)}|${norm(x.brand)}|${norm(x.roll_label)}|${x.starting_grams}|${x.remaining_grams}`);
+        write(RAW_KEY, merged);
+      }
+      if(Array.isArray(fgRows) && fgRows.length){
+        const merged=mergeByIdOrFingerprint([...finished(),...fgRows], normalizeFg, x=>`${norm(x.product_name)}|${norm(x.sku)}|${x.quantity_on_hand}`);
+        write(FG_KEY, merged);
+      }
       if(Array.isArray(ledgerRows) && ledgerRows.length) write(LEDGER_KEY,ledgerRows.map(x=>normalizeLedger({date:x.created_at,type:x.transaction_type,item:x.item_label,amount:x.quantity_change,note:x.note})));
+      await syncLocalInventoryToCloud();
     }catch(err){console.warn(err); toast('Cloud inventory load failed. Using browser data.')}
   }
 
@@ -1237,6 +1328,7 @@
     $('fgResetBtn').addEventListener('click',resetFg);
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());
+    $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
     $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawCards()});$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawCards()});
     $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
