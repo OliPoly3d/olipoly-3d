@@ -190,6 +190,38 @@
 
 
 
+
+    .ops-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    .ops-panel{border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line);padding:14px;box-shadow:0 12px 30px rgba(84,38,94,.08)}
+    .ops-panel h3{margin:0 0 10px;color:var(--ink)}
+    .today-list{display:grid;gap:8px}
+    .today-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.68);border:1px solid rgba(101,60,120,.10)}
+    .today-item strong{font-size:.86rem;color:var(--ink)}
+    .today-item span{font-size:.74rem;color:var(--muted);font-weight:800}
+    .util-row{display:grid;grid-template-columns:70px 1fr auto;gap:9px;align-items:center;margin:8px 0}
+    .util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}
+    .util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
+    .section-toggle{margin-bottom:12px}
+    details.ops-collapse{border-radius:24px;background:rgba(255,255,255,.62);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07);overflow:hidden}
+    details.ops-collapse > summary{list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 16px;font-weight:900;color:var(--ink);cursor:pointer}
+    details.ops-collapse > summary::-webkit-details-marker{display:none}
+    details.ops-collapse > summary::after{content:"+";width:28px;height:28px;border-radius:999px;display:grid;place-items:center;background:rgba(232,79,183,.10);color:#a03c87}
+    details.ops-collapse[open] > summary::after{content:"–"}
+    .collapse-body{padding:0 14px 14px}
+    .lane.ready{border-top:7px solid #9d6df3;background:linear-gradient(180deg,rgba(157,109,243,.10),rgba(255,255,255,.58))}
+    .lane.printing{border-top:7px solid #5fcfff;background:linear-gradient(180deg,rgba(95,207,255,.12),rgba(255,255,255,.58))}
+    .lane.post{border-top:7px solid #ff7fcf;background:linear-gradient(180deg,rgba(255,127,207,.12),rgba(255,255,255,.58))}
+    .lane.delivery{border-top:7px solid #f7b731;background:linear-gradient(180deg,rgba(247,183,49,.14),rgba(255,255,255,.58))}
+    .mini-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:var(--muted)}
+    .bulk-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px;border-radius:18px;background:rgba(255,255,255,.62);border:1px solid var(--line)}
+    .bulk-bar select,.bulk-bar button{width:auto;min-width:140px}
+    .select-check{position:absolute;right:10px;top:10px;z-index:2;accent-color:#e84fb7;transform:scale(1.15)}
+    .failure-select{min-width:180px}
+    .machine-suggestion{display:inline-flex;margin-top:6px;padding:5px 8px;border-radius:999px;background:rgba(95,207,255,.13);border:1px solid rgba(95,207,255,.22);font-size:.68rem;font-weight:900;color:#1d5d7d}
+    .inv-warn{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border-radius:999px;background:rgba(247,183,49,.16);border:1px solid rgba(247,183,49,.22);color:#7a5400;font-size:.66rem;font-weight:900}
+    .compact-chip-text .chip.type{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    @media(max-width:900px){.ops-grid{grid-template-columns:1fr}.util-row{grid-template-columns:1fr}.bulk-bar select,.bulk-bar button{width:100%}}
+
     .needs-row{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
     .need-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border-radius:999px;background:rgba(239,71,111,.10);border:1px solid rgba(239,71,111,.18);color:#9a2140;font-size:.66rem;font-weight:900}
     .ready-close{display:flex;align-items:center;gap:7px;margin-top:8px;padding:8px 10px;border-radius:14px;background:rgba(247,183,49,.14);border:1px solid rgba(247,183,49,.22);color:#7a5400;font-size:.78rem;font-weight:900}
@@ -376,7 +408,22 @@
     </div>
   </section>
 
-  <section class="card" id="authSection">
+
+  <section class="card">
+    <span class="kicker">Today view</span>
+    <div class="ops-grid">
+      <div class="ops-panel">
+        <h3>What needs action today?</h3>
+        <div class="today-list" id="todayView"></div>
+      </div>
+      <div class="ops-panel">
+        <h3>Printer utilization</h3>
+        <div id="utilizationBoard"></div>
+      </div>
+    </div>
+  </section>
+
+  <details class="ops-collapse" id="authSection"><summary>Cloud login / sync</summary><div class="collapse-body">
     <span class="kicker">Cloud login</span>
     <div class="auth-grid">
       <label>Email<input id="email" type="email" autocomplete="email" placeholder="OliPoly login email"></label>
@@ -386,9 +433,9 @@
       <button class="ghost hidden" id="logoutBtn" type="button">Log Out</button>
     </div>
     <div id="authStatus" class="auth-status">Checking sign-in.</div>
-  </section>
+  </div></details>
 
-  <section class="card" id="addJobSection">
+  <details class="ops-collapse" id="addJobSection" open><summary>Quick add / edit production job</summary><div class="collapse-body">
     <div class="form-intro-strip"><div><span class="kicker">Quick add</span><h2>Add the minimum. Enrich later.</h2><p>Title, type, status, priority, machine, due date, and time drive the board.</p></div><button class="ghost" type="button" id="clearFormBtn">Clear</button></div>
     <div class="quick-start-grid">
       <button class="quick-preset" type="button" data-preset="craft_stock"><strong>🛍️ Craft stock</strong><span>Inventory/show item</span></button>
@@ -540,6 +587,13 @@
     </div>
     <p class="board-note">Use Smart Priority for recommendations, Due Date/Color/Hours for temporary views, or Manual Priority to drag jobs up/down and save your preferred order.</p>
     <div class="sort-manual-hint">Manual Priority mode is active. Drag cards up or down inside a lane. Switching to another sort changes the view only; your manual order is kept for when you return.</div>
+    <div class="bulk-bar">
+      <span class="mini-label">Bulk actions</span>
+      <select id="bulkStatus"><option value="">Move selected to...</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option></select>
+      <select id="bulkMachine"><option value="">Assign machine...</option><option value="P1S">P1S</option><option value="P2S">P2S</option><option value="A1">A1</option><option value="either">Either</option></select>
+      <button class="ghost" id="applyBulkBtn" type="button">Apply to selected</button>
+      <button class="ghost" id="clearSelectionBtn" type="button">Clear selection</button>
+    </div>
     <div class="lanes" id="laneBoard"></div>
   </section>
 
@@ -576,6 +630,18 @@
       <label>Actual Print Hours<input id="closeHours" type="number" min="0" step="0.01"></label>
       <label>Actual Grams Used<input id="closeGrams" type="number" min="0" step="0.1"></label>
       <label>Failure / Scrap Grams<input id="closeScrapGrams" type="number" min="0" step="0.1"></label>
+      <label>Failure Reason<select id="closeFailureReason" class="failure-select">
+        <option value="">None / Not failed</option>
+        <option value="Adhesion failure">Adhesion failure</option>
+        <option value="AMS issue">AMS issue</option>
+        <option value="Nozzle clog">Nozzle clog</option>
+        <option value="Warping">Warping</option>
+        <option value="Support failure">Support failure</option>
+        <option value="Layer shift">Layer shift</option>
+        <option value="Wrong color/material">Wrong color/material</option>
+        <option value="Quality defect">Quality defect</option>
+        <option value="Other">Other</option>
+      </select></label>
       <label>Primary Material<input id="closeMaterial"></label>
       <label>Primary Color<input id="closeColor"></label>
       <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
@@ -1035,6 +1101,7 @@
       print_started_at: existing?.print_started_at || null,
       estimated_finish_at: existing?.estimated_finish_at || null,
       scrap_grams: existing?.scrap_grams || null,
+      failure_reason: existing?.failure_reason || null,
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
       manual_rank: existing?.manual_rank ?? Date.now(),
@@ -1189,13 +1256,14 @@
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
     state.closingId = id;
-    $('closeJobName').innerHTML = `<strong>${esc(j.job_title)}</strong><span>${esc(TYPE[j.job_type]?.label || j.job_type)} · ${esc(STATUS[j.production_status] || j.production_status)}</span>`;
+    $('closeJobName').innerHTML = `<strong>${esc(j.job_title)}</strong><span>${esc(TYPE[j.job_type]?.label || j.job_type)} · ${esc(statusShort(STATUS[j.production_status] || j.production_status))}</span>`;
     $('closeStatus').value = j.production_status === 'delivered' ? 'delivered' : 'completed';
     $('closeMachine').value = j.actual_machine || (j.machine_preference !== 'either' ? j.machine_preference : 'P1S');
     $('closeQty').value = j.actual_quantity || j.quantity || 1;
     $('closeHours').value = j.actual_print_hours || j.estimated_total_hours || '';
     $('closeGrams').value = j.actual_grams_used || j.estimated_total_grams || '';
     $('closeScrapGrams').value = j.scrap_grams || '';
+    $('closeFailureReason').value = j.failure_reason || '';
     $('closeMaterial').value = j.primary_material || '';
     $('closeColor').value = j.primary_color || '';
     $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
@@ -1302,6 +1370,7 @@
       primary_color:$('closeColor').value.trim() || j.primary_color,
       actual_filament_breakdown:$('closeBreakdown').value.trim() || null,
       scrap_grams:num($('closeScrapGrams').value),
+      failure_reason:$('closeFailureReason').value || null,
       close_note:$('closeNote').value.trim() || null,
       closed_at:now,
       updated_at:now
@@ -1509,6 +1578,7 @@
       print_started_at:j.print_started_at || null,
       estimated_finish_at:j.estimated_finish_at || null,
       scrap_grams:j.scrap_grams || null,
+      failure_reason:j.failure_reason || null,
       closed_at:j.closed_at || null,
       created_at:j.created_at || new Date().toISOString(),
       manual_rank:j.manual_rank ?? Date.now(),
@@ -1643,6 +1713,96 @@
   }
 
 
+
+  function typeShort(label){
+    return String(label || '').replace('Customer Custom Order','Custom').replace('Business / PO Order','PO').replace('Craft Show Stock','Stock').replace('Finished Goods Replenishment','Restock').replace('Prototype / Test Print','Prototype').replace('Replacement / Warranty','Warranty').replace('Internal Tooling / Shop Use','Shop').replace('Marketing / Display Sample','Sample').replace('Failed / Scrap / Reprint','Reprint');
+  }
+
+  function statusShort(label){
+    return String(label || '').replace('Post-Processing / QC','QC').replace('Delivery Scheduled','Scheduled').replace('Awaiting Pickup','Pickup').replace('Ready to Print','Ready').replace('Idea / Requested','Idea');
+  }
+
+  function rawInventoryList(){
+    return localRead(LS_RAW, []);
+  }
+
+  function inventoryWarningsForJob(j){
+    const recipe = safeJsonParse(j.filament_recipe, []);
+    const raw = rawInventoryList();
+    const warnings = [];
+    recipe.forEach(r=>{
+      const needed = num(r.grams_each) * (num(j.quantity)||1);
+      const match = raw.find(x => String(x.material_type||x.material||'').toLowerCase() === String(r.material||'').toLowerCase() && String(x.color||'').toLowerCase() === String(r.color||'').toLowerCase());
+      if(match){
+        const remaining = num(match.remaining_grams);
+        const threshold = num(match.reorder_threshold_grams || match.reorder_threshold || 0);
+        if(remaining <= threshold || remaining < needed) warnings.push(`${r.color || r.material} low`);
+      }
+    });
+    return warnings;
+  }
+
+  function suggestMachine(j){
+    if(j.machine_preference && j.machine_preference !== 'either') return j.machine_preference;
+    const machines = machineList();
+    let best = machines[0] || 'P1S';
+    let bestLoad = Infinity;
+    machines.forEach(m=>{
+      const pm = state.pm.find(p=>p.machine===m);
+      if(pm && pmStatus(pm).cls === 'pm-danger') return;
+      const load = activeJobs().filter(x=>needsPrinterTime(x) && (x.machine_preference===m || x.actual_machine===m)).reduce((s,x)=>s+num(x.estimated_total_hours),0);
+      if(load < bestLoad){bestLoad=load;best=m;}
+    });
+    return best;
+  }
+
+  function renderTodayView(){
+    const active = activeJobs();
+    const items = [];
+    active.filter(j=>j.production_status==='printing').forEach(j=>items.push({icon:'🖨️', title:j.job_title, meta:`Printing · ${finishText(j.estimated_finish_at)}`, cls:'warn'}));
+    active.filter(j=>needsActionList(j).length).slice(0,5).forEach(j=>items.push({icon:'🔎', title:j.job_title, meta:`Needs: ${needsActionList(j).slice(0,2).join(', ')}`, cls:'danger'}));
+    active.filter(j=>needsPrinterTime(j) && j.due_date && daysUntil(j.due_date)<=1).forEach(j=>items.push({icon:'⚠️', title:j.job_title, meta:dueText(j.due_date), cls:'danger'}));
+    active.filter(readyToClose).slice(0,5).forEach(j=>items.push({icon:'✅', title:j.job_title, meta:'Ready to close out', cls:'warn'}));
+    state.pm.filter(p=>pmStatus(p).cls!=='pm-good').forEach(p=>items.push({icon:'🧰', title:`${p.machine} PM`, meta:pmStatus(p).label, cls:'danger'}));
+    $('todayView').innerHTML = items.length ? items.slice(0,10).map(i=>`<div class="today-item"><div>${i.icon}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.meta)}</span></div><span class="decision-pill ${i.cls||''}">Now</span></div>`).join('') : `<div class="empty">No urgent action items right now.</div>`;
+  }
+
+  function renderUtilization(){
+    const machines = machineList();
+    const loads = machines.map(m=>({machine:m, hours:activeJobs().filter(j=>needsPrinterTime(j) && (j.machine_preference===m || j.actual_machine===m)).reduce((s,j)=>s+num(j.estimated_total_hours),0)}));
+    const max = Math.max(1, ...loads.map(x=>x.hours));
+    $('utilizationBoard').innerHTML = loads.map(x=>`<div class="util-row"><strong>${esc(x.machine)}</strong><div class="util-bar"><div class="util-fill" style="width:${Math.max(4,Math.round((x.hours/max)*100))}%"></div></div><span>${fmtHours(x.hours)}</span></div>`).join('');
+  }
+
+  async function applyBulk(){
+    const ids = [...state.selectedIds];
+    if(!ids.length) return toast('Select one or more cards first.');
+    const status = $('bulkStatus').value;
+    const machine = $('bulkMachine').value;
+    if(!status && !machine) return toast('Choose a bulk action first.');
+    for(const id of ids){
+      const j = state.jobs.find(x=>x.id===id);
+      if(!j) continue;
+      const updated = {...j, updated_at:new Date().toISOString()};
+      if(status) updated.production_status = status;
+      if(machine) updated.machine_preference = machine;
+      if(status === 'printing' && !updated.print_started_at){
+        const now = new Date();
+        updated.print_started_at = now.toISOString();
+        if(num(updated.estimated_total_hours)) updated.estimated_finish_at = new Date(now.getTime()+num(updated.estimated_total_hours)*3600000).toISOString();
+      }
+      try{ await cloudSaveJob(updated); }catch{}
+      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
+    }
+    localWrite(LS_JOBS,state.jobs);
+    state.selectedIds.clear();
+    $('bulkStatus').value = '';
+    $('bulkMachine').value = '';
+    render();
+    toast('Bulk action applied.');
+  }
+
+
   function needsActionList(j){
     const needs = [];
     if(!j.due_date && needsPrinterTime(j)) needs.push('No due date');
@@ -1652,6 +1812,7 @@
     if(!num(j.estimated_total_hours) && needsPrinterTime(j)) needs.push('No time estimate');
     const pm = state.pm.find(p=>p.machine === j.machine_preference);
     if(pm && pmStatus(pm).cls !== 'pm-good' && needsPrinterTime(j)) needs.push(`${j.machine_preference} PM`);
+    inventoryWarningsForJob(j).forEach(w=>needs.push(w));
     return needs;
   }
 
@@ -1698,7 +1859,7 @@
         <div>
           <h4>${esc(j.job_title)}</h4>
           <div class="chips">
-            <span class="chip type">${esc(t.label)}</span>
+            <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
             <span class="chip priority">${esc(j.priority || 'normal')}</span>
           </div>
@@ -1716,6 +1877,7 @@
         <div class="stat"><span>Color</span><strong>${esc(j.primary_color || '—')}</strong></div>
         <div class="stat"><span>${isPostPrint(j) ? 'Handoff' : 'Due'}</span><strong>${isPostPrint(j) ? 'Post-print' : esc(dueText(j.due_date))}</strong></div>
       </div>
+      ${j.machine_preference==='either' && needsPrinterTime(j) ? `<div class="machine-suggestion">Suggested machine: ${esc(suggestMachine(j))}</div>` : ''}
       ${recipeMiniHtml(j)}
       ${j.production_status==='printing' ? `<div class="tiny-note">Started: ${j.print_started_at ? esc(new Date(j.print_started_at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})) : '—'} · ${esc(finishText(j.estimated_finish_at))}</div>` : ''}
       <div class="job-actions">${actions}</div>
@@ -1921,6 +2083,8 @@
   function render(){
     document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
     renderFilters();
+    renderTodayView();
+    renderUtilization();
     renderMetrics();
     renderPm();
     renderMachineBoard();
@@ -2023,6 +2187,12 @@
     if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
     if(markPm) markPmDone(markPm);
     if(savePm) savePmFromCard(savePm);
+    const sel = e.target.closest('[data-select]');
+    if(sel){
+      const id = sel.dataset.select;
+      if(sel.checked) state.selectedIds.add(id);
+      else state.selectedIds.delete(id);
+    }
   });
 
   $('jobForm').addEventListener('input', e=>{
