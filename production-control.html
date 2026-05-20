@@ -187,8 +187,30 @@
 
     .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:1000;background:rgba(37,24,45,.94);color:#fff;padding:11px 16px;border-radius:999px;box-shadow:0 18px 44px rgba(0,0,0,.22);font-weight:800;opacity:0;pointer-events:none;transition:.2s}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+    .machine-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .machine-card{border-radius:24px;padding:15px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 12px 30px rgba(84,38,94,.08);display:grid;gap:10px}
+    .machine-card h3{margin:0;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .machine-slot{padding:10px;border-radius:16px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.10)}
+    .machine-slot span{display:block;font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:var(--muted);margin-bottom:3px}
+    .machine-slot strong{display:block;color:var(--ink);font-size:.9rem}
+    .suggestion-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .suggestion{padding:13px;border-radius:20px;background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08));border:1px solid var(--line)}
+    .suggestion h3{margin:0 0 6px;font-size:1rem;color:var(--ink)}
+    .suggestion p{margin:0;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .calendar-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+    .day-card{min-height:112px;padding:10px;border-radius:18px;background:rgba(255,255,255,.68);border:1px solid var(--line);overflow:hidden}
+    .day-card strong{display:block;color:var(--ink);font-size:.86rem;margin-bottom:7px}
+    .day-item{display:block;margin:5px 0;padding:5px 7px;border-radius:999px;background:rgba(244,220,255,.62);font-size:.68rem;font-weight:900;color:#6f4b7e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .insight-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .insight{padding:12px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid var(--line)}
+    .insight span{display:block;color:var(--muted);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .insight strong{display:block;margin-top:4px;color:var(--ink);font-size:1.25rem}
+    .quick-usage-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-top:8px}
+    .tiny-note{font-size:.78rem;color:var(--muted);line-height:1.4}
+
     @media(max-width:1100px){
-      .hero,.detail-list{grid-template-columns:1fr}
+      .hero,.detail-list,.machine-grid,.suggestion-grid{grid-template-columns:1fr}
       .metrics{grid-template-columns:repeat(3,1fr)}
       .form-grid,.pm-fields{grid-template-columns:repeat(2,1fr)}
       .lanes{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -200,7 +222,9 @@
       .topbar{border-radius:26px;align-items:flex-start;flex-direction:column;top:8px}
       .top-actions,.btn,.ghost{width:100%}
       .metrics,.form-grid,.pm-fields,.pm-board,.lanes,.auth-grid,.toolbar,.detail-list{grid-template-columns:1fr}
-      .detail-grid,.job-stats{grid-template-columns:repeat(2,1fr)}
+      .detail-grid,.job-stats,.insight-grid{grid-template-columns:repeat(2,1fr)}
+      .calendar-strip{grid-template-columns:1fr}
+      .quick-usage-row{grid-template-columns:1fr}
       .card{padding:14px}
     }
   </style>
@@ -343,6 +367,26 @@ PETG Black: 18g"></textarea></label>
   </section>
 
   <section class="card">
+    <span class="kicker">Printer command center</span>
+    <div class="machine-grid" id="machineBoard"></div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Smart production suggestions</span>
+    <div class="suggestion-grid" id="suggestionBoard"></div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Production calendar</span>
+    <div class="calendar-strip" id="calendarStrip"></div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Estimate accuracy & scrap insight</span>
+    <div class="insight-grid" id="insightBoard"></div>
+  </section>
+
+  <section class="card">
     <span class="kicker">Print queue</span>
     <div class="toolbar">
       <label>Search<input id="searchInput" placeholder="Search title, customer, material, color..."></label>
@@ -370,7 +414,7 @@ PETG Black: 18g"></textarea></label>
     <span class="kicker">Completed / history</span>
     <div class="history-wrap">
       <table>
-        <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Filament</th><th>Closed</th></tr></thead>
+        <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>
     </div>
@@ -398,10 +442,20 @@ PETG Black: 18g"></textarea></label>
       <label>Actual Quantity<input id="closeQty" type="number" min="0" step="1"></label>
       <label>Actual Print Hours<input id="closeHours" type="number" min="0" step="0.01"></label>
       <label>Actual Grams Used<input id="closeGrams" type="number" min="0" step="0.1"></label>
+      <label>Failure / Scrap Grams<input id="closeScrapGrams" type="number" min="0" step="0.1"></label>
       <label>Primary Material<input id="closeMaterial"></label>
       <label>Primary Color<input id="closeColor"></label>
       <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
       <label class="full">Actual Filament Breakdown<textarea id="closeBreakdown" placeholder="PLA Pink: 120g&#10;PLA White: 40g"></textarea></label>
+      <div class="full">
+        <div class="tiny-note"><strong>Quick usage buttons:</strong> Use these to quickly add common usage lines to the breakdown above.</div>
+        <div class="quick-usage-row">
+          <input id="quickMaterial" placeholder="Material, e.g. PLA">
+          <input id="quickColor" placeholder="Color, e.g. Pink">
+          <input id="quickGrams" type="number" min="0" step="0.1" placeholder="Grams">
+          <button class="ghost" id="quickAddUsageBtn" type="button">+ Add Usage</button>
+        </div>
+      </div>
       <label class="full">Close Note<textarea id="closeNote" placeholder="QC, delivery, scrap reason, customer handoff, etc."></textarea></label>
     </div>
     <div class="modal-actions">
@@ -726,6 +780,9 @@ PETG Black: 18g"></textarea></label>
       actual_grams_used: existing?.actual_grams_used || null,
       actual_filament_breakdown: existing?.actual_filament_breakdown || null,
       close_note: existing?.close_note || null,
+      print_started_at: existing?.print_started_at || null,
+      estimated_finish_at: existing?.estimated_finish_at || null,
+      scrap_grams: existing?.scrap_grams || null,
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
       updated_at: now
@@ -806,6 +863,9 @@ PETG Black: 18g"></textarea></label>
       actual_grams_used:j.actual_grams_used,
       actual_filament_breakdown:j.actual_filament_breakdown,
       close_note:j.close_note,
+      print_started_at:j.print_started_at,
+      estimated_finish_at:j.estimated_finish_at,
+      scrap_grams:j.scrap_grams,
       closed_at:j.closed_at,
       updated_at:j.updated_at
     };
@@ -835,7 +895,18 @@ PETG Black: 18g"></textarea></label>
   async function setStatus(id,status){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
-    const updated = {...j, production_status:status, updated_at:new Date().toISOString()};
+    const now = new Date();
+    const updated = {...j, production_status:status, updated_at:now.toISOString()};
+    if(status === 'printing' && !updated.print_started_at){
+      updated.print_started_at = now.toISOString();
+      if(num(updated.estimated_total_hours)){
+        updated.estimated_finish_at = new Date(now.getTime() + num(updated.estimated_total_hours)*3600000).toISOString();
+      }
+    }
+    if(status === 'queued'){
+      updated.print_started_at = null;
+      updated.estimated_finish_at = null;
+    }
     try{
       await cloudSaveJob(updated);
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
@@ -869,6 +940,7 @@ PETG Black: 18g"></textarea></label>
     $('closeQty').value = j.actual_quantity || j.quantity || 1;
     $('closeHours').value = j.actual_print_hours || j.estimated_total_hours || '';
     $('closeGrams').value = j.actual_grams_used || j.estimated_total_grams || '';
+    $('closeScrapGrams').value = j.scrap_grams || '';
     $('closeMaterial').value = j.primary_material || '';
     $('closeColor').value = j.primary_color || '';
     $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
@@ -905,6 +977,18 @@ PETG Black: 18g"></textarea></label>
       rows.push({material:fallbackMaterial || '', color:fallbackColor || '', grams:num(fallbackGrams)});
     }
     return rows;
+  }
+
+  function quickAddUsage(){
+    const material = $('quickMaterial').value.trim();
+    const color = $('quickColor').value.trim();
+    const grams = num($('quickGrams').value);
+    if(!material || !color || !grams) return toast('Enter material, color, and grams.');
+    const line = `${material} ${color}: ${grams}g`;
+    $('closeBreakdown').value = ($('closeBreakdown').value.trim() ? $('closeBreakdown').value.trim() + '\n' : '') + line;
+    $('quickMaterial').value = '';
+    $('quickColor').value = '';
+    $('quickGrams').value = '';
   }
 
   function applyInventoryLocal(j, breakdown, addFinished){
@@ -962,6 +1046,7 @@ PETG Black: 18g"></textarea></label>
       primary_material:$('closeMaterial').value.trim() || j.primary_material,
       primary_color:$('closeColor').value.trim() || j.primary_color,
       actual_filament_breakdown:$('closeBreakdown').value.trim() || null,
+      scrap_grams:num($('closeScrapGrams').value),
       close_note:$('closeNote').value.trim() || null,
       closed_at:now,
       updated_at:now
@@ -1165,6 +1250,9 @@ PETG Black: 18g"></textarea></label>
       actual_grams_used:j.actual_grams_used || null,
       actual_filament_breakdown:j.actual_filament_breakdown || null,
       close_note:j.close_note || null,
+      print_started_at:j.print_started_at || null,
+      estimated_finish_at:j.estimated_finish_at || null,
+      scrap_grams:j.scrap_grams || null,
       closed_at:j.closed_at || null,
       created_at:j.created_at || new Date().toISOString(),
       updated_at:j.updated_at || new Date().toISOString()
@@ -1292,6 +1380,7 @@ PETG Black: 18g"></textarea></label>
         <div class="stat"><span>Color</span><strong>${esc(j.primary_color || '—')}</strong></div>
         <div class="stat"><span>Due</span><strong>${esc(dueText(j.due_date))}</strong></div>
       </div>
+      ${j.production_status==='printing' ? `<div class="tiny-note">Started: ${j.print_started_at ? esc(new Date(j.print_started_at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})) : '—'} · ${esc(finishText(j.estimated_finish_at))}</div>` : ''}
       <div class="job-actions">${actions}</div>
     </article>`;
   }
@@ -1321,14 +1410,19 @@ PETG Black: 18g"></textarea></label>
           <div class="detail-item"><span>Machine</span><strong>${esc(j.machine_preference || 'either')}</strong></div>
           <div class="detail-item"><span>Qty</span><strong>${esc(j.quantity)}</strong></div>
           <div class="detail-item"><span>Due</span><strong>${esc(dueText(j.due_date))}</strong></div>
-          <div class="detail-item"><span>Total Hours</span><strong>${fmtHours(j.estimated_total_hours)}</strong></div>
-          <div class="detail-item"><span>Total Grams</span><strong>${fmtG(j.estimated_total_grams)}</strong></div>
+          <div class="detail-item"><span>Est. Hours</span><strong>${fmtHours(j.estimated_total_hours)}</strong></div>
+          <div class="detail-item"><span>Actual Hours</span><strong>${fmtHours(j.actual_print_hours)}</strong></div>
+          <div class="detail-item"><span>Est. Grams</span><strong>${fmtG(j.estimated_total_grams)}</strong></div>
+          <div class="detail-item"><span>Actual Grams</span><strong>${fmtG(j.actual_grams_used)}</strong></div>
           <div class="detail-item"><span>Material</span><strong>${esc(j.primary_material || '—')}</strong></div>
           <div class="detail-item"><span>Colors</span><strong>${esc([j.primary_color,j.other_colors].filter(Boolean).join(', ') || '—')}</strong></div>
           <div class="detail-item"><span>Quote #</span><strong>${esc(j.quote_number || '—')}</strong></div>
           <div class="detail-item"><span>Order #</span><strong>${esc(j.order_number || '—')}</strong></div>
           <div class="detail-item"><span>SKU</span><strong>${esc(j.finished_sku || '—')}</strong></div>
           <div class="detail-item"><span>Price Each</span><strong>${j.estimated_price_each ? '$'+Number(j.estimated_price_each).toFixed(2) : '—'}</strong></div>
+          <div class="detail-item"><span>Started</span><strong>${j.print_started_at ? esc(new Date(j.print_started_at).toLocaleString()) : '—'}</strong></div>
+          <div class="detail-item"><span>Finish Estimate</span><strong>${esc(finishText(j.estimated_finish_at))}</strong></div>
+          <div class="detail-item"><span>Scrap Grams</span><strong>${fmtG(j.scrap_grams)}</strong></div>
         </div>
         ${j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : ''}
         ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}
@@ -1355,9 +1449,10 @@ PETG Black: 18g"></textarea></label>
         <td>${esc(j.actual_quantity || j.quantity || '—')}</td>
         <td>${fmtHours(j.actual_print_hours)}</td>
         <td>${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
+        <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="7">No completed production jobs yet.</td></tr>`;
+    }).join('') : `<tr><td colspan="8">No completed production jobs yet.</td></tr>`;
   }
 
   function renderFilters(){
@@ -1368,10 +1463,120 @@ PETG Black: 18g"></textarea></label>
     }
   }
 
+
+  function machineList(){
+    const names = new Set(['P1S','P2S']);
+    state.jobs.forEach(j=>{
+      if(j.machine_preference && j.machine_preference !== 'either') names.add(j.machine_preference);
+      if(j.actual_machine) names.add(j.actual_machine);
+    });
+    state.pm.forEach(p=>p.machine && names.add(p.machine));
+    return [...names];
+  }
+
+  function finishText(iso){
+    if(!iso) return 'No finish estimate';
+    const d = new Date(iso);
+    if(isNaN(d)) return 'No finish estimate';
+    const diff = d.getTime() - Date.now();
+    const hours = Math.round(diff/3600000*10)/10;
+    const time = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    if(diff < 0) return `Estimated finish passed (${time})`;
+    if(hours < 1) return `Finishes soon (${time})`;
+    return `~${hours}h remaining · ${time}`;
+  }
+
+  function renderMachineBoard(){
+    const active = activeJobs();
+    $('machineBoard').innerHTML = machineList().map(machine=>{
+      const pm = state.pm.find(p=>p.machine===machine);
+      const st = pm ? pmStatus(pm) : {cls:'pm-good',label:'No PM record'};
+      const printing = active.filter(j=>j.production_status==='printing' && (j.actual_machine===machine || j.machine_preference===machine));
+      const queued = active.filter(j=>['ready_to_print','queued'].includes(j.production_status) && (j.machine_preference===machine || j.machine_preference==='either')).sort(compareJobs).slice(0,3);
+      const suggested = queued[0];
+      return `<article class="machine-card">
+        <h3>${esc(machine)} <span class="pm-pill ${st.cls}"><span class="pm-dot"></span>${esc(st.label)}</span></h3>
+        <div class="machine-slot"><span>Currently Printing</span><strong>${printing[0] ? esc(printing[0].job_title) : 'Idle'}</strong>${printing[0] ? `<div class="tiny-note">${esc(finishText(printing[0].estimated_finish_at))}</div>` : ''}</div>
+        <div class="machine-slot"><span>Suggested Next</span><strong>${suggested ? esc(suggested.job_title) : 'No matching queued job'}</strong>${suggested ? `<div class="tiny-note">${fmtHours(suggested.estimated_total_hours)} · ${esc(suggested.primary_material||'')} ${esc(suggested.primary_color||'')}</div>` : ''}</div>
+        <div class="machine-slot"><span>Next Queue</span><strong>${queued.length ? queued.map(j=>esc(j.job_title)).join(' → ') : '—'}</strong></div>
+      </article>`;
+    }).join('');
+  }
+
+  function groupBy(list, keyFn){
+    const m = new Map();
+    list.forEach(item=>{
+      const k = keyFn(item);
+      if(!k) return;
+      if(!m.has(k)) m.set(k, []);
+      m.get(k).push(item);
+    });
+    return [...m.entries()].sort((a,b)=>b[1].length-a[1].length);
+  }
+
+  function renderSuggestions(){
+    const active = activeJobs().filter(j=>['ready_to_print','queued','idea'].includes(j.production_status));
+    const colorGroups = groupBy(active, j=>[j.primary_material,j.primary_color].filter(Boolean).join(' / ')).filter(g=>g[1].length>=2).slice(0,2);
+    const quickWins = active.filter(j=>num(j.estimated_total_hours)>0 && num(j.estimated_total_hours)<=2).sort(compareJobs).slice(0,3);
+    const urgent = active.filter(j=>j.priority==='urgent' || (j.due_date && daysUntil(j.due_date)<=2)).sort(compareJobs).slice(0,3);
+    const cards = [];
+    if(colorGroups.length){
+      colorGroups.forEach(([name,jobs])=>cards.push(`<div class="suggestion"><h3>🎨 Batch ${esc(name)}</h3><p>${jobs.length} jobs use this material/color. Consider printing together to reduce swaps: ${jobs.map(j=>esc(j.job_title)).join(', ')}.</p></div>`));
+    }
+    if(quickWins.length) cards.push(`<div class="suggestion"><h3>⚡ Quick Wins</h3><p>${quickWins.map(j=>`${esc(j.job_title)} (${fmtHours(j.estimated_total_hours)})`).join(', ')}.</p></div>`);
+    if(urgent.length) cards.push(`<div class="suggestion"><h3>🔥 Urgent / Due Soon</h3><p>${urgent.map(j=>`${esc(j.job_title)} · ${esc(dueText(j.due_date))}`).join(', ')}.</p></div>`);
+    const pmWarn = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good');
+    if(pmWarn.length) cards.push(`<div class="suggestion"><h3>🧰 PM Watch</h3><p>${pmWarn.map(p=>`${esc(p.machine)}: ${pmStatus(p).label}`).join(', ')}. Avoid starting long jobs if maintenance is due.</p></div>`);
+    $('suggestionBoard').innerHTML = cards.length ? cards.join('') : `<div class="empty">No batch or urgency suggestions yet. Add due dates, material, color, and estimated hours to unlock smarter recommendations.</div>`;
+  }
+
+  function renderCalendar(){
+    const today = new Date(todayISO()+'T00:00:00');
+    const days = Array.from({length:7},(_,i)=>{
+      const d = new Date(today);
+      d.setDate(d.getDate()+i);
+      return d.toISOString().slice(0,10);
+    });
+    $('calendarStrip').innerHTML = days.map(date=>{
+      const due = activeJobs().filter(j=>j.due_date===date).sort(compareJobs);
+      const pmDue = state.pm.filter(p=>p.next_pm_date===date);
+      const label = new Date(date+'T00:00:00').toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
+      return `<div class="day-card"><strong>${esc(label)}</strong>
+        ${due.map(j=>`<span class="day-item">${esc(TYPE[j.job_type]?.icon||'🧾')} ${esc(j.job_title)}</span>`).join('')}
+        ${pmDue.map(p=>`<span class="day-item">🧰 ${esc(p.machine)} PM</span>`).join('')}
+        ${(!due.length && !pmDue.length) ? `<span class="tiny-note">No due items</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderInsights(){
+    const closed = state.jobs.filter(j=>j.closed_at || CLOSED.includes(j.production_status));
+    const withActual = closed.filter(j=>num(j.estimated_total_hours) && num(j.actual_print_hours));
+    const hourDelta = withActual.length ? withActual.reduce((s,j)=>s + ((num(j.actual_print_hours)-num(j.estimated_total_hours))/num(j.estimated_total_hours)),0)/withActual.length : 0;
+    const gramActual = closed.reduce((s,j)=>s+num(j.actual_grams_used),0);
+    const scrap = closed.reduce((s,j)=>s+num(j.scrap_grams),0);
+    const failures = closed.filter(j=>j.production_status==='failed_scrap' || j.job_type==='failed_reprint').length;
+    const utilization = activeJobs().filter(j=>j.production_status==='printing').reduce((s,j)=>s+num(j.estimated_total_hours),0);
+    $('insightBoard').innerHTML = `
+      <div class="insight"><span>Estimate Accuracy</span><strong>${withActual.length ? `${hourDelta>=0?'+':''}${Math.round(hourDelta*100)}%` : '—'}</strong></div>
+      <div class="insight"><span>Actual Filament Used</span><strong>${fmtG(gramActual)}</strong></div>
+      <div class="insight"><span>Scrap / Waste</span><strong>${fmtG(scrap)}</strong></div>
+      <div class="insight"><span>Failed / Scrap Jobs</span><strong>${failures}</strong></div>
+      <div class="insight"><span>Printing Workload</span><strong>${fmtHours(utilization)}</strong></div>
+      <div class="insight"><span>Closed Jobs</span><strong>${closed.length}</strong></div>
+      <div class="insight"><span>Color Batch Groups</span><strong>${groupBy(activeJobs(),j=>[j.primary_material,j.primary_color].filter(Boolean).join(' / ')).filter(g=>g[1].length>=2).length}</strong></div>
+      <div class="insight"><span>PM Alerts</span><strong>${state.pm.filter(p=>pmStatus(p).cls!=='pm-good').length}</strong></div>`;
+  }
+
+
   function render(){
     renderFilters();
     renderMetrics();
     renderPm();
+    renderMachineBoard();
+    renderSuggestions();
+    renderCalendar();
+    renderInsights();
     renderLanes();
     renderDetails();
     renderHistory();
@@ -1400,6 +1605,7 @@ PETG Black: 18g"></textarea></label>
   $('logoutBtn').addEventListener('click', signOut);
   $('cancelCloseBtn').addEventListener('click', closeClose);
   $('confirmCloseBtn').addEventListener('click', confirmClose);
+  $('quickAddUsageBtn').addEventListener('click', quickAddUsage);
   $('searchInput').addEventListener('input', e=>{state.search=e.target.value; render();});
   $('filterType').addEventListener('change', e=>{state.filterType=e.target.value; render();});
   $('filterStatus').addEventListener('change', e=>{state.filterStatus=e.target.value; render();});
