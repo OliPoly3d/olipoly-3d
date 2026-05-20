@@ -442,14 +442,35 @@
 
   function renderAttention(){
     const items=[];
-    raw().filter(r=>rawStatus(r)!=='ok').sort((a,b)=>({out:0,low:1}[rawStatus(a)]-({out:0,low:1}[rawStatus(b)])).slice(0,8).forEach(r=>{
-      items.push({icon:rawStatus(r)==='out'?'🚫':'⚠️',title:`${r.material_type} ${r.color}`,meta:`${rawStatus(r)==='out'?'Out':'Low'} · ${grams(r.remaining_grams)} left · reorder at ${grams(r.reorder_threshold_grams)}`,cls:rawStatus(r)==='out'?'danger':'warn'});
-    });
-    finished().filter(f=>['low','sold_out'].includes(fgNeed(f))).slice(0,6).forEach(f=>{
-      items.push({icon:fgNeed(f)==='sold_out'?'🛑':'📦',title:f.product_name,meta:`${fgNeed(f)==='sold_out'?'Sold out':'Below target'} · ${f.quantity_on_hand}/${f.target_quantity||'—'} on hand`,cls:fgNeed(f)==='sold_out'?'danger':'warn'});
-    });
-    $('attentionList').innerHTML=items.length?items.slice(0,10).map(i=>`<div class="attention-item"><div>${i.icon}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.meta)}</span></div><span class="decision-pill ${i.cls}">Now</span></div>`).join(''):'<div class="empty">No low-stock or finished-good alerts right now.</div>';
+    const statusScore = r => ({out:0,low:1,ok:2}[rawStatus(r)] ?? 3);
+    raw()
+      .filter(r=>rawStatus(r)!=='ok')
+      .sort((a,b)=>statusScore(a)-statusScore(b))
+      .slice(0,8)
+      .forEach(r=>{
+        items.push({
+          icon:rawStatus(r)==='out'?'🚫':'⚠️',
+          title:`${r.material_type} ${r.color}`,
+          meta:`${rawStatus(r)==='out'?'Out':'Low'} · ${grams(r.remaining_grams)} left · reorder at ${grams(r.reorder_threshold_grams)}`,
+          cls:rawStatus(r)==='out'?'danger':'warn'
+        });
+      });
+    finished()
+      .filter(f=>['low','sold_out'].includes(fgNeed(f)))
+      .slice(0,6)
+      .forEach(f=>{
+        items.push({
+          icon:fgNeed(f)==='sold_out'?'🛑':'📦',
+          title:f.product_name,
+          meta:`${fgNeed(f)==='sold_out'?'Sold out':'Below target'} · ${f.quantity_on_hand}/${f.target_quantity||'—'} on hand`,
+          cls:fgNeed(f)==='sold_out'?'danger':'warn'
+        });
+      });
+    $('attentionList').innerHTML=items.length
+      ? items.slice(0,10).map(i=>`<div class="attention-item"><div>${i.icon}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.meta)}</span></div><span class="decision-pill ${i.cls}">Now</span></div>`).join('')
+      : '<div class="empty">No low-stock or finished-good alerts right now.</div>';
   }
+
   function renderMaterialBalance(){
     const groups=new Map();
     raw().forEach(r=>{
