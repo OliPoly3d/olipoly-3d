@@ -54,6 +54,148 @@
     .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-bottom:16px}.kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:rgba(232,79,183,.09);border:1px solid rgba(232,79,183,.14);color:#a03c87;font-size:.72rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}
     .hero h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.2rem);line-height:.94;letter-spacing:-.055em;color:var(--ink)}.muted,.hero p{color:var(--muted);line-height:1.55}
 
+
+    .snapshot-card{
+      background:
+        radial-gradient(circle at 10% 0%,rgba(232,79,183,.12),transparent 26rem),
+        radial-gradient(circle at 100% 0%,rgba(157,109,243,.12),transparent 24rem),
+        rgba(255,255,255,.86);
+      overflow:hidden;
+    }
+    .snapshot-feature{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:14px;
+      margin-top:8px;
+      align-items:stretch;
+    }
+    .snapshot-hero-stat{
+      min-height:180px;
+      border-radius:28px;
+      padding:18px;
+      background:linear-gradient(135deg,rgba(232,79,183,.13),rgba(157,109,243,.13));
+      border:1px solid rgba(232,79,183,.18);
+      box-shadow:0 18px 44px rgba(84,38,94,.10);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      position:relative;
+      overflow:hidden;
+    }
+    .snapshot-hero-stat::after{
+      content:"";
+      position:absolute;
+      right:-48px;
+      top:-48px;
+      width:150px;
+      height:150px;
+      border-radius:999px;
+      background:rgba(255,255,255,.45);
+    }
+    .snapshot-hero-stat .label{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:.78rem;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#8b3c79;
+    }
+    .snapshot-hero-stat .big{
+      position:relative;
+      z-index:1;
+      font-size:3.35rem;
+      line-height:.92;
+      font-weight:900;
+      letter-spacing:-.06em;
+      color:var(--ink);
+      margin-top:10px;
+    }
+    .snapshot-hero-stat .sub{
+      position:relative;
+      z-index:1;
+      color:var(--muted);
+      font-weight:800;
+      margin-top:8px;
+    }
+    .snapshot-side-stack{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    .snapshot-pill-card{
+      border-radius:22px;
+      padding:14px;
+      background:rgba(255,255,255,.76);
+      border:1px solid var(--line);
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    .snapshot-pill-icon{
+      width:42px;
+      height:42px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      background:rgba(244,220,255,.68);
+      font-size:1.15rem;
+    }
+    .snapshot-pill-card span{
+      display:block;
+      color:var(--muted);
+      font-size:.68rem;
+      text-transform:uppercase;
+      font-weight:900;
+      letter-spacing:.07em;
+    }
+    .snapshot-pill-card strong{
+      display:block;
+      color:var(--ink);
+      font-size:1.22rem;
+      margin-top:2px;
+    }
+    .snapshot-mini-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .snapshot-mini{
+      min-height:96px;
+      padding:13px;
+      border-radius:22px;
+      background:rgba(255,255,255,.70);
+      border:1px solid var(--line);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .snapshot-mini span{
+      color:var(--muted);
+      font-size:.64rem;
+      text-transform:uppercase;
+      font-weight:900;
+      letter-spacing:.07em;
+    }
+    .snapshot-mini strong{
+      color:var(--ink);
+      font-size:1.45rem;
+      line-height:1;
+    }
+    @media(max-width:1000px){
+      .snapshot-feature{grid-template-columns:1fr}
+      .snapshot-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:700px){
+      .snapshot-mini-grid{grid-template-columns:1fr 1fr}
+      .snapshot-hero-stat .big{font-size:2.7rem}
+    }
+
     .snapshot-card .metrics{
       grid-template-columns:repeat(5,minmax(120px,1fr));
       gap:12px;
@@ -91,6 +233,66 @@
     .spool-card span{display:block;font-size:.72rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
     .spool-card strong{display:block;margin-top:6px;font-size:2rem;color:var(--ink)}
     .spool-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+
+
+
+    .inventory-command-grid{grid-template-columns:.95fr 1.25fr}
+    .material-command-panel{display:grid;gap:12px}
+    .compact-spool-hero{margin-top:0}
+    .compact-spool-hero .spool-hero-card{padding:12px}
+    .compact-spool-hero .spool-hero-card strong{font-size:1.55rem}
+    .material-balance-grid{display:grid;gap:9px}
+    .material-balance-card{
+      border-radius:18px;
+      padding:11px;
+      background:rgba(255,255,255,.68);
+      border:1px solid rgba(101,60,120,.10);
+      display:grid;
+      gap:8px;
+    }
+    .material-balance-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .material-balance-head strong{color:var(--ink)}
+    .material-balance-head span{font-size:.8rem;color:var(--muted);font-weight:900}
+    .balance-meta{display:flex;gap:6px;flex-wrap:wrap}
+    .balance-meta .chip{font-size:.62rem}
+
+    .priority-raw-layout{display:grid;grid-template-columns:1fr;gap:14px}
+    .raw-summary-first{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .material-summary-card{
+      border-radius:26px;
+      padding:16px;
+      background:rgba(255,255,255,.88);
+      border:1px solid var(--line);
+      box-shadow:0 14px 36px rgba(84,38,94,.09);
+      position:relative;
+      overflow:hidden;
+    }
+    .material-summary-card::before{
+      content:"";
+      position:absolute;
+      inset:0 auto 0 0;
+      width:8px;
+      background:var(--accent,#9d6df3);
+    }
+    .material-title{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .material-title h3{margin:0;color:var(--ink);font-size:1.15rem}
+    .material-title small{display:block;color:var(--muted);font-weight:800;margin-top:2px}
+    .big-material-number{font-size:2rem;line-height:1;font-weight:900;color:var(--ink)}
+    .material-primary-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+    .material-primary-stats .stat{padding:10px}
+    .spool-hero-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+    .spool-hero-card{border-radius:22px;padding:14px;background:rgba(255,255,255,.80);border:1px solid var(--line)}
+    .spool-hero-card span{display:block;font-size:.68rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .spool-hero-card strong{display:block;margin-top:5px;font-size:1.8rem;color:var(--ink)}
+    .rolls-secondary{opacity:.96}
+    .rolls-secondary .cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media(max-width:1000px){.raw-summary-first{grid-template-columns:1fr}.material-primary-stats,.spool-hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.material-primary-stats,.spool-hero-grid{grid-template-columns:1fr}.rolls-secondary .cards-grid{grid-template-columns:1fr}}
 
     .summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}
     .summary-card{border-radius:22px;padding:13px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07)}
@@ -156,30 +358,66 @@
       </div>
       <div class="card snapshot-card">
         <span class="kicker">Inventory snapshot</span>
-        <div class="metrics">
-          <div class="metric"><div class="metric-icon">🧵</div><div><span>Raw Rolls</span><strong id="mRaw">0</strong></div></div>
-          <div class="metric"><div class="metric-icon">⚠️</div><div><span>Reorder</span><strong id="mLow">0</strong></div></div>
-          <div class="metric"><div class="metric-icon">🧷</div><div><span>Mounted</span><strong id="mMounted">0</strong></div></div>
-          <div class="metric"><div class="metric-icon">♻️</div><div><span>Free Spools</span><strong id="mFreeSpools">0</strong></div></div>
-          <div class="metric"><div class="metric-icon">🔄</div><div><span>Refills</span><strong id="mRefills">0</strong></div></div>
-          <div class="metric"><div class="metric-icon">📦</div><div><span>Finished</span><strong id="mFinished">0</strong></div></div>
-          <div class="metric"><div class="metric-icon">💵</div><div><span>Retail Value</span><strong id="mValue">$0</strong></div></div>
-          <div class="metric"><div class="metric-icon">🧮</div><div><span>Raw Value</span><strong id="mRawValue">$0</strong></div></div>
-          <div class="metric"><div class="metric-icon">🔁</div><div><span>Moves</span><strong id="mMoves">0</strong></div></div>
+        <div class="snapshot-feature">
+          <div class="snapshot-hero-stat">
+            <div>
+              <div class="label">🧵 Raw material on hand</div>
+              <div class="big" id="mRawMaterialHero">0g</div>
+              <div class="sub">known filament across active rolls/refills</div>
+            </div>
+            <div class="decision-pills" style="margin-top:12px">
+              <span class="decision-pill"><strong id="mRaw">0</strong> raw rolls</span>
+              <span class="decision-pill"><strong id="mLow">0</strong> reorder/out</span>
+            </div>
+          </div>
+
+          <div class="snapshot-side-stack">
+            <div class="snapshot-pill-card">
+              <div class="snapshot-pill-icon">♻️</div>
+              <div><span>Free reusable spools</span><strong id="mFreeSpools">0</strong></div>
+              <span class="chip ok">available</span>
+            </div>
+            <div class="snapshot-pill-card">
+              <div class="snapshot-pill-icon">🧷</div>
+              <div><span>Mounted / in use</span><strong id="mMounted">0</strong></div>
+              <span class="chip">loaded</span>
+            </div>
+            <div class="snapshot-pill-card">
+              <div class="snapshot-pill-icon">🔄</div>
+              <div><span>Refills waiting</span><strong id="mRefills">0</strong></div>
+              <span class="chip">inventory</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="snapshot-mini-grid">
+          <div class="snapshot-mini"><span>Finished units</span><strong id="mFinished">0</strong></div>
+          <div class="snapshot-mini"><span>Retail value</span><strong id="mValue">$0</strong></div>
+          <div class="snapshot-mini"><span>Raw value</span><strong id="mRawValue">$0</strong></div>
+          <div class="snapshot-mini"><span>Moves logged</span><strong id="mMoves">0</strong></div>
         </div>
       </div>
     </section>
 
     <section class="card">
       <span class="kicker">Today view</span>
-      <div class="ops-grid">
+      <div class="ops-grid inventory-command-grid">
         <div class="ops-panel">
           <h3>What needs attention?</h3>
           <div class="attention-list" id="attentionList"></div>
         </div>
-        <div class="ops-panel">
-          <h3>Material balance</h3>
+        <div class="ops-panel material-command-panel">
+          <h3>Raw goods command center</h3>
+          <div class="spool-hero-grid compact-spool-hero">
+            <div class="spool-hero-card"><span>Free spools</span><strong id="spoolAvailable">0</strong></div>
+            <div class="spool-hero-card"><span>Mounted</span><strong id="spoolMounted">0</strong></div>
+            <div class="spool-hero-card"><span>Refills</span><strong id="mRefillsHero">0</strong></div>
+          </div>
           <div id="materialBalance"></div>
+          <div class="spool-actions">
+            <button class="mini-btn" id="addEmptySpoolBtn" type="button">+ Add Empty Spool</button>
+            <button class="mini-btn" id="retireSpoolBtn" type="button">Retire Spool</button>
+          </div>
         </div>
       </div>
     </section>
@@ -607,56 +845,47 @@
   }
 
   function renderRawSummary(){
-    const groups=rawGroups();
+    const groups=rawGroups().filter(g=>{
+      const q=norm(state.rawSearch);
+      const statusOk = state.rawStatus==='all' || groupStatus(g)===state.rawStatus;
+      const materialOk = state.rawMaterial==='all' || g.material_type===state.rawMaterial;
+      const searchOk = !q || [g.material_type,g.color,g.brand].some(x=>norm(x).includes(q)) || g.items.some(r=>[r.roll_label,r.location,r.notes].some(x=>norm(x).includes(q)));
+      return statusOk && materialOk && searchOk;
+    });
     const el=$('rawSummary');
     if(!el) return;
-    el.innerHTML = groups.length ? groups.map(g=>`<article class="summary-card">
-      <h3><span class="color-dot" style="--dot:${colorStyle(g.color)};width:24px;height:24px;border-radius:9px;display:inline-block;vertical-align:middle;margin-right:6px"></span>${esc(g.material_type)} / ${esc(g.color || 'No color')}</h3>
-      <div class="card-sub">${esc(g.brand || 'No brand/type')}</div>
-      <div class="summary-stats">
-        <div><span>Total</span><strong>${grams(g.grams)}</strong></div>
-        <div><span>Available</span><strong>${grams(g.available)}</strong></div>
-        <div><span>Rolls</span><strong>${g.rolls}</strong></div>
-        <div><span>Mounted</span><strong>${g.mounted}</strong></div>
-        <div><span>Refills</span><strong>${g.refills}</strong></div>
-        <div><span>Free spools</span><strong>${g.free_spools}</strong></div>
-        <div><span>Reserved</span><strong>${grams(g.reserved)}</strong></div>
-        <div><span>Value</span><strong>${money(g.value)}</strong></div>
-      </div>
-      <div class="roll-badges">${groupStatusChip(g)}<span class="chip">Threshold ${grams(groupThreshold(g))}</span><span class="chip">${g.items.length} records</span></div>
-    </article>`).join('') : '<div class="empty">No raw material groups yet.</div>';
+    el.innerHTML = groups.length ? groups.map(g=>{
+      const status = groupStatus(g);
+      const accent = status==='out' ? '#ef476f' : status==='low' ? '#f7b731' : '#34c759';
+      return `<article class="material-summary-card" style="--accent:${accent}">
+        <div class="material-title">
+          <span class="color-dot" style="--dot:${colorStyle(g.color)}"></span>
+          <div>
+            <h3>${esc(g.material_type)} / ${esc(g.color || 'No color')}</h3>
+            <small>${esc(g.brand || 'No brand/type')}</small>
+          </div>
+          <div style="margin-left:auto">${groupStatusChip(g)}</div>
+        </div>
+        <div class="big-material-number">${grams(g.available)}</div>
+        <div class="card-sub">available now · ${grams(g.grams)} total on hand · ${grams(g.reserved)} reserved</div>
+        <div class="material-primary-stats">
+          <div class="stat"><span>Total grams</span><strong>${grams(g.grams)}</strong></div>
+          <div class="stat"><span>Available</span><strong>${grams(g.available)}</strong></div>
+          <div class="stat"><span>Rolls</span><strong>${g.rolls}</strong></div>
+          <div class="stat"><span>Mounted</span><strong>${g.mounted}</strong></div>
+          <div class="stat"><span>Refills</span><strong>${g.refills}</strong></div>
+          <div class="stat"><span>Reserved</span><strong>${grams(g.reserved)}</strong></div>
+          <div class="stat"><span>Threshold</span><strong>${grams(groupThreshold(g))}</strong></div>
+          <div class="stat"><span>Value</span><strong>${money(g.value)}</strong></div>
+        </div>
+        <div class="roll-badges">
+          ${g.free_spools ? `<span class="chip ok">${g.free_spools} free spool(s) in group</span>` : ''}
+          ${g.refills ? `<span class="chip">${g.refills} refill(s)</span>` : ''}
+          <span class="chip">${g.items.length} roll record(s)</span>
+        </div>
+      </article>`;
+    }).join('') : '<div class="empty">No material groups match these filters.</div>';
   }
-
-
-
-  function renderSpoolPool(){
-    const pool = state.spoolPool || {available_empty:0,mounted_in_use:0,retired:0};
-    if($('spoolAvailable')) $('spoolAvailable').textContent = pool.available_empty || 0;
-    if($('spoolMounted')) $('spoolMounted').textContent = pool.mounted_in_use || 0;
-    if($('spoolRetired')) $('spoolRetired').textContent = pool.retired || 0;
-  }
-
-  function saveSpoolPool(){
-    localStorage.setItem(LS_SPOOL, JSON.stringify(state.spoolPool));
-  }
-
-  function addEmptySpool(){
-    state.spoolPool.available_empty = (state.spoolPool.available_empty || 0) + 1;
-    saveSpoolPool();
-    renderSpoolPool();
-  }
-
-  function retireSpool(){
-    if((state.spoolPool.available_empty || 0) > 0){
-      state.spoolPool.available_empty -= 1;
-      state.spoolPool.retired = (state.spoolPool.retired || 0) + 1;
-      saveSpoolPool();
-      renderSpoolPool();
-    } else {
-      alert('No available empty spools to retire.');
-    }
-  }
-
 
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
@@ -666,6 +895,7 @@
     const mounted=r.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
     const refills=r.filter(x=>x.roll_type==='refill' && x.roll_status!=='empty').length;
     const freeSpools=(state.spoolPool?.available_empty || 0);
+    if($('mRawMaterialHero')) $('mRawMaterialHero').textContent=grams(r.reduce((s,x)=>s+num(x.remaining_grams),0));
     $('mRaw').textContent=r.length;
     $('mLow').textContent=low.length;
     if($('mMounted')) $('mMounted').textContent=mounted;
@@ -719,14 +949,33 @@
   }
 
   function renderMaterialBalance(){
-    const groups=new Map();
-    raw().forEach(r=>{
-      const key=r.material_type||'Other';
-      groups.set(key,(groups.get(key)||0)+num(r.remaining_grams));
-    });
-    const rows=[...groups.entries()].sort((a,b)=>b[1]-a[1]);
-    const max=Math.max(1,...rows.map(x=>x[1]));
-    $('materialBalance').innerHTML=rows.length?rows.map(([m,g])=>`<div class="util-row"><strong>${esc(m)}</strong><div class="util-bar"><div class="util-fill" style="width:${Math.max(4,Math.round(g/max*100))}%"></div></div><span>${grams(g)}</span></div>`).join(''):'<div class="empty">No raw materials entered yet.</div>';
+    const groups = rawGroups().slice(0,6);
+    const max = Math.max(1,...groups.map(g=>g.available));
+    const el = $('materialBalance');
+    if(!el) return;
+    el.innerHTML = groups.length ? `<div class="material-balance-grid">` + groups.map(g=>{
+      const status = groupStatus(g);
+      const cls = status==='out' ? 'danger' : status==='low' ? 'warn' : 'ok';
+      const width = Math.max(4,Math.round((g.available/max)*100));
+      return `<div class="material-balance-card">
+        <div class="material-balance-head">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="color-dot" style="--dot:${colorStyle(g.color)};width:24px;height:24px;border-radius:9px"></span>
+            <strong>${esc(g.material_type)} / ${esc(g.color || 'No color')}</strong>
+          </div>
+          <span>${grams(g.available)} available</span>
+        </div>
+        <div class="bar ${status==='low'?'warn':status==='out'?'danger':''}"><span style="width:${width}%"></span></div>
+        <div class="balance-meta">
+          <span class="chip ${cls}">${status==='ok'?'Good':status==='low'?'Reorder':'Out'}</span>
+          <span class="chip">${grams(g.grams)} total</span>
+          <span class="chip">${g.rolls} roll(s)</span>
+          <span class="chip">${g.mounted} mounted</span>
+          <span class="chip">${g.refills} refill(s)</span>
+          <span class="chip">${grams(g.reserved)} reserved</span>
+        </div>
+      </div>`;
+    }).join('') + `</div>` : '<div class="empty">No raw material groups yet.</div>';
   }
 
   function renderRawCards(){
