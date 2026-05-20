@@ -85,6 +85,13 @@
     .util-row{display:grid;grid-template-columns:115px 1fr auto;gap:9px;align-items:center;margin:8px 0}.util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}.util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
 
 
+    
+    .spool-pool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+    .spool-card{padding:18px;border-radius:22px;background:rgba(255,255,255,.76);border:1px solid var(--line)}
+    .spool-card span{display:block;font-size:.72rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .spool-card strong{display:block;margin-top:6px;font-size:2rem;color:var(--ink)}
+    .spool-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+
     .summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}
     .summary-card{border-radius:22px;padding:13px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07)}
     .summary-card h3{margin:0;color:var(--ink);font-size:1rem}
@@ -621,6 +628,36 @@
   }
 
 
+
+  function renderSpoolPool(){
+    const pool = state.spoolPool || {available_empty:0,mounted_in_use:0,retired:0};
+    if($('spoolAvailable')) $('spoolAvailable').textContent = pool.available_empty || 0;
+    if($('spoolMounted')) $('spoolMounted').textContent = pool.mounted_in_use || 0;
+    if($('spoolRetired')) $('spoolRetired').textContent = pool.retired || 0;
+  }
+
+  function saveSpoolPool(){
+    localStorage.setItem(LS_SPOOL, JSON.stringify(state.spoolPool));
+  }
+
+  function addEmptySpool(){
+    state.spoolPool.available_empty = (state.spoolPool.available_empty || 0) + 1;
+    saveSpoolPool();
+    renderSpoolPool();
+  }
+
+  function retireSpool(){
+    if((state.spoolPool.available_empty || 0) > 0){
+      state.spoolPool.available_empty -= 1;
+      state.spoolPool.retired = (state.spoolPool.retired || 0) + 1;
+      saveSpoolPool();
+      renderSpoolPool();
+    } else {
+      alert('No available empty spools to retire.');
+    }
+  }
+
+
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
     const low=rawGroups().filter(g=>groupStatus(g)!=='ok');
@@ -628,7 +665,7 @@
     const rawVal=r.reduce((s,x)=>s+rawValue(x),0);
     const mounted=r.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
     const refills=r.filter(x=>x.roll_type==='refill' && x.roll_status!=='empty').length;
-    const freeSpools=r.filter(x=>x.reusable_spool && !x.is_mounted).length;
+    const freeSpools=(state.spoolPool?.available_empty || 0);
     $('mRaw').textContent=r.length;
     $('mLow').textContent=low.length;
     if($('mMounted')) $('mMounted').textContent=mounted;
@@ -780,7 +817,7 @@
   }
 
   function render(){
-    renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderFinishedCards();renderLedger();
+    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderFinishedCards();renderLedger();
   }
 
   function rawFromForm(){
