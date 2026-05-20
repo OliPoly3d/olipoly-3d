@@ -189,6 +189,13 @@
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
 
+
+    .needs-row{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+    .need-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border-radius:999px;background:rgba(239,71,111,.10);border:1px solid rgba(239,71,111,.18);color:#9a2140;font-size:.66rem;font-weight:900}
+    .ready-close{display:flex;align-items:center;gap:7px;margin-top:8px;padding:8px 10px;border-radius:14px;background:rgba(247,183,49,.14);border:1px solid rgba(247,183,49,.22);color:#7a5400;font-size:.78rem;font-weight:900}
+    .history-top{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .history-top label{min-width:min(420px,100%);flex:1}
+
     .recipe-builder{grid-column:1/-1;display:grid;gap:10px;padding:12px;border-radius:20px;background:rgba(255,255,255,.58);border:1px solid var(--line)}
     .recipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .recipe-head strong{color:var(--ink)}
@@ -355,7 +362,7 @@
       <div class="metrics compact-metrics">
         <div class="metric"><div class="metric-icon">📋</div><div><span>Active</span><strong id="metricActive">0</strong></div></div>
         <div class="metric"><div class="metric-icon">🖨️</div><div><span>Printing</span><strong id="metricPrinting">0</strong></div></div>
-        <div class="metric"><div class="metric-icon">⏱️</div><div><span>Open Hours</span><strong id="metricHours">0h</strong></div></div>
+        <div class="metric"><div class="metric-icon">⏱️</div><div><span>Open Print Load</span><strong id="metricHours">0h</strong></div></div>
         <div class="metric"><div class="metric-icon">⚠️</div><div><span>Due Soon</span><strong id="metricDue">0</strong></div></div>
         <div class="metric"><div class="metric-icon">📦</div><div><span>Post Print</span><strong id="metricPostPrint">0</strong></div></div>
         <div class="metric"><div class="metric-icon">✅</div><div><span>Closed</span><strong id="metricClosed">0</strong></div></div>
@@ -1574,11 +1581,15 @@
     $('metricPm').textContent = pmWarn.length;
 
     const colorBatchCount = groupBy(printWork.filter(isRecommendedCandidate),j=>[j.primary_material,j.primary_color].filter(Boolean).join(' / ')).filter(g=>g[1].length>=2).length;
+    const needsActionCount = printWork.filter(j=>needsActionList(j).length).length;
+    const readyCloseCount = active.filter(readyToClose).length;
     const pills = [];
     pills.push(`<span class="decision-pill ${printing.length?'warn':''}">🖨️ ${printing.length || 0} running</span>`);
     pills.push(`<span class="decision-pill ${dueSoon.length?'danger':''}">⚠️ ${dueSoon.length || 0} print due soon</span>`);
+    pills.push(`<span class="decision-pill ${needsActionCount?'danger':''}">🔎 ${needsActionCount || 0} need action</span>`);
     pills.push(`<span class="decision-pill ${postPrint.length?'warn':''}">📦 ${postPrint.length || 0} post-print</span>`);
-    pills.push(`<span class="decision-pill">✅ ${closed.length || 0} closed</span>`);
+    pills.push(`<span class="decision-pill ${readyCloseCount?'warn':''}">✅ ${readyCloseCount || 0} ready to close</span>`);
+    pills.push(`<span class="decision-pill">🗂️ ${closed.length || 0} closed</span>`);
     pills.push(`<span class="decision-pill ${pmWarn.length?'danger':''}">🧰 ${pmWarn.length || 0} PM alerts</span>`);
     pills.push(`<span class="decision-pill">🎨 ${colorBatchCount} color batches</span>`);
     const dp = $('decisionPills'); if(dp) dp.innerHTML = pills.join('');
@@ -1631,22 +1642,53 @@
     return signals.join('');
   }
 
+
+  function needsActionList(j){
+    const needs = [];
+    if(!j.due_date && needsPrinterTime(j)) needs.push('No due date');
+    if((!j.machine_preference || j.machine_preference === 'either') && needsPrinterTime(j)) needs.push('No printer picked');
+    if(!j.primary_material && needsPrinterTime(j)) needs.push('No material');
+    if(!j.primary_color && needsPrinterTime(j)) needs.push('No color');
+    if(!num(j.estimated_total_hours) && needsPrinterTime(j)) needs.push('No time estimate');
+    const pm = state.pm.find(p=>p.machine === j.machine_preference);
+    if(pm && pmStatus(pm).cls !== 'pm-good' && needsPrinterTime(j)) needs.push(`${j.machine_preference} PM`);
+    return needs;
+  }
+
+  function needsActionHtml(j){
+    const needs = needsActionList(j);
+    return needs.length ? `<div class="needs-row">${needs.slice(0,4).map(n=>`<span class="need-badge">⚠️ ${esc(n)}</span>`).join('')}</div>` : '';
+  }
+
+  function readyToClose(j){
+    return ['ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status);
+  }
+
+  function readyToCloseHtml(j){
+    return readyToClose(j) ? `<div class="ready-close">✅ Post-print complete? Close it out to update PM, inventory, and history.</div>` : '';
+  }
+
+
   function jobCard(j){
     const t = TYPE[j.job_type] || TYPE.customer_custom;
     const img = j.image_url ? `<img class="job-thumb" src="${esc(j.image_url)}" alt="">` : '';
     const isClosed = CLOSED.includes(j.production_status);
     let actions = '';
     if(j.production_status === 'printing'){
-      actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back to Queue</button>`;
-      actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Send to QC</button>`;
     } else if(j.production_status === 'post_processing'){
       actions += `<button class="mini-btn" data-status="${j.id}|ready" type="button">Mark Ready</button>`;
-    } else if(DELIVERY.includes(j.production_status)){
-      actions += `<button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery Scheduled</button>`;
-      actions += `<button class="mini-btn" data-close="${j.id}" type="button">Complete</button>`;
-    } else if(!isClosed) {
+    } else if(j.production_status === 'ready'){
+      actions += `<button class="mini-btn" data-status="${j.id}|awaiting_pickup" type="button">Awaiting Pickup</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Schedule Delivery</button>`;
+      actions += `<button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>`;
+    } else if(['awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status)){
+      actions += `<button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>`;
+    } else if(!isClosed && isRecommendedCandidate(j)) {
       actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Mark Printing</button>`;
-      actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>`;
+    } else if(!isClosed && needsPrinterTime(j)) {
+      actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>`;
     }
     actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
@@ -1664,6 +1706,8 @@
         </div>
         ${img}
       </div>
+      ${needsActionHtml(j)}
+      ${readyToCloseHtml(j)}
       <div class="job-stats">
         <div class="stat"><span>Machine</span><strong>${esc(j.actual_machine || j.machine_preference || 'Either')}</strong></div>
         <div class="stat"><span>Qty</span><strong>${esc(j.quantity)}</strong></div>
@@ -1718,22 +1762,32 @@
           <div class="detail-item"><span>Finish Estimate</span><strong>${esc(finishText(j.estimated_finish_at))}</strong></div>
           <div class="detail-item"><span>Scrap Grams</span><strong>${fmtG(j.scrap_grams)}</strong></div>
         </div>
+        ${needsActionHtml(j)}
+        ${readyToCloseHtml(j)}
         ${recipeMiniHtml(j) || (j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : '')}
         ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}
         <div class="job-actions">
-          <button class="mini-btn" data-status="${j.id}|printing" type="button">Mark Printing</button>
-          <button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back to Queue</button>
-          <button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>
+          <button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>
+          <button class="mini-btn" data-status="${j.id}|printing" type="button">Print</button>
+          <button class="mini-btn" data-status="${j.id}|post_processing" type="button">QC</button>
           <button class="mini-btn" data-status="${j.id}|ready" type="button">Ready</button>
-          <button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery Scheduled</button>
-          <button class="mini-btn" data-close="${j.id}" type="button">Complete / Close</button>
+          <button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery</button>
+          <button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>
         </div>
       </article>`;
     }).join('') : `<div class="empty">No active jobs match the filters.</div>`;
   }
 
   function renderHistory(){
-    const closed = state.jobs.filter(j=>CLOSED.includes(j.production_status) || j.closed_at).sort((a,b)=>String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at)));
+    const q = (state.historySearch || '').toLowerCase().trim();
+    const closed = state.jobs
+      .filter(j=>CLOSED.includes(j.production_status) || j.closed_at)
+      .filter(j=>{
+        if(!q) return true;
+        const hay = [j.job_title,j.customer_name,j.actual_machine,j.machine_preference,j.primary_material,j.primary_color,j.other_colors,j.actual_filament_breakdown,j.filament_breakdown,j.close_note,j.order_number,j.quote_number].join(' ').toLowerCase();
+        return hay.includes(q);
+      })
+      .sort((a,b)=>String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at)));
     $('historyBody').innerHTML = closed.length ? closed.map(j=>{
       const t = TYPE[j.job_type] || {};
       return `<tr>
@@ -1746,8 +1800,9 @@
         <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="8">No completed production jobs yet.</td></tr>`;
+    }).join('') : `<tr><td colspan="8">No completed jobs match the history search.</td></tr>`;
   }
+
 
   function renderFilters(){
     const typeSel = $('filterType');
@@ -1992,6 +2047,7 @@
   $('filterStatus').addEventListener('change', e=>{state.filterStatus=e.target.value; render();});
   $('filterMachine').addEventListener('change', e=>{state.filterMachine=e.target.value; render();});
   $('sortBy').addEventListener('change', e=>{state.sortBy=e.target.value; render();});
+  $('historySearch').addEventListener('input', e=>{state.historySearch=e.target.value; renderHistory();});
 
   renderRecipeRows([]);
   loadAll();
