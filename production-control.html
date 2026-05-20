@@ -1221,7 +1221,8 @@
 
   async function cloudSaveJob(j){
     if(!state.user?.id) return;
-    const payload = {
+
+    const fullPayload = {
       id:j.id,
       user_id:state.user.id,
       job_title:j.job_title,
@@ -1246,6 +1247,7 @@
       order_number:j.order_number,
       finished_sku:j.finished_sku,
       filament_breakdown:j.filament_breakdown,
+      filament_recipe:j.filament_recipe,
       notes:j.notes,
       actual_machine:j.actual_machine,
       actual_quantity:j.actual_quantity,
@@ -1256,12 +1258,32 @@
       print_started_at:j.print_started_at,
       estimated_finish_at:j.estimated_finish_at,
       scrap_grams:j.scrap_grams,
+      failure_reason:j.failure_reason,
       exclude_inventory_reduction:j.exclude_inventory_reduction,
+      roll_usages:j.roll_usages || [],
+      finished_roll:j.finished_roll,
+      spool_freed:j.spool_freed,
       closed_at:j.closed_at,
       updated_at:j.updated_at
     };
 
-    async function post(body){
+    const corePayload = {
+      id:j.id,
+      user_id:state.user.id,
+      job_title:j.job_title,
+      job_type:j.job_type,
+      production_status:j.production_status,
+      priority:j.priority,
+      quantity:j.quantity,
+      machine_preference:j.machine_preference,
+      due_date:j.due_date,
+      primary_material:j.primary_material,
+      primary_color:j.primary_color,
+      notes:j.notes,
+      updated_at:j.updated_at
+    };
+
+    async function upsert(body){
       return sbApi('/rest/v1/production_jobs?on_conflict=id',{
         method:'POST',
         headers:{Prefer:'resolution=merge-duplicates,return=representation'},
@@ -1270,42 +1292,17 @@
     }
 
     try{
-      await post(payload);
+      await upsert(fullPayload);
     }catch(err){
-      const msg = String(err?.message || err || '');
-      if(!msg.includes('schema cache') && !msg.includes('column')) throw err;
+      const msg=String(err?.message || err || '');
+      console.warn('Full production job cloud save failed; retrying core payload.', err);
 
-      // Compatibility fallback for older Supabase production_jobs schemas.
-      // Keeps the page usable while optional newer columns are added by SQL.
-      const corePayload = {
-        id:j.id,
-        user_id:state.user.id,
-        job_title:j.job_title,
-        job_type:j.job_type,
-        production_status:j.production_status,
-        priority:j.priority,
-        quantity:j.quantity,
-        machine_preference:j.machine_preference,
-        due_date:j.due_date,
-        primary_material:j.primary_material,
-        primary_color:j.primary_color,
-        other_colors:j.other_colors,
-        color_count:j.color_count,
-        estimated_hours_each:j.estimated_hours_each,
-        estimated_grams_each:j.estimated_grams_each,
-        estimated_total_hours:j.estimated_total_hours,
-        estimated_total_grams:j.estimated_total_grams,
-        estimated_price_each:j.estimated_price_each,
-        image_url:j.image_url,
-        customer_name:j.customer_name,
-        quote_number:j.quote_number,
-        order_number:j.order_number,
-        finished_sku:j.finished_sku,
-        filament_breakdown:j.filament_breakdown,
-        notes:j.notes,
-        updated_at:j.updated_at
-      };
-      await post(corePayload);
+      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('400')){
+        await upsert(corePayload);
+        toast('Saved with basic cloud fields. Run the production SQL repair for full fields.');
+        return;
+      }
+      throw err;
     }
   }
 
