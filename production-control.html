@@ -1,14 +1,338 @@
-<!-- PATCH INSTRUCTIONS -->
-<!-- Add this before login/render initialization -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OliPoly | Production Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#fff8fc;
+--panel:rgba(255,255,255,.88);
+--line:rgba(210,150,210,.25);
+--pink:#e84fb7;
+--purple:#9d6df3;
+--text:#2e2135;
+--muted:#78657f;
+--shadow:0 18px 45px rgba(86,40,98,.12);
+}
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:Inter,sans-serif;
+background:
+radial-gradient(circle at top left,rgba(232,79,183,.12),transparent 30%),
+radial-gradient(circle at top right,rgba(157,109,243,.12),transparent 30%),
+var(--bg);
+color:var(--text);
+}
+.wrap{width:min(1400px,calc(100% - 24px));margin:auto;padding:18px 0 60px}
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px 22px;
+border-radius:28px;
+background:var(--panel);
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+margin-bottom:18px;
+backdrop-filter:blur(10px);
+}
+h1{margin:0;font-size:2rem}
+.sub{color:var(--muted);margin-top:4px}
+.btn{
+border:none;
+border-radius:999px;
+padding:12px 18px;
+font-weight:700;
+cursor:pointer;
+background:linear-gradient(135deg,var(--pink),var(--purple));
+color:#fff;
+}
+.grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:14px;
+margin-bottom:18px;
+}
+.card{
+background:var(--panel);
+border:1px solid var(--line);
+border-radius:24px;
+padding:18px;
+box-shadow:var(--shadow);
+backdrop-filter:blur(10px);
+}
+.metric{
+font-size:2rem;
+font-weight:800;
+margin-top:8px;
+}
+.metric-label{
+font-size:.8rem;
+text-transform:uppercase;
+letter-spacing:.08em;
+color:var(--muted);
+font-weight:700;
+}
+.queue{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:14px;
+}
+.lane{
+background:rgba(255,255,255,.6);
+border:1px solid var(--line);
+border-radius:28px;
+padding:14px;
+min-height:500px;
+}
+.lane h2{
+margin:0 0 14px;
+font-size:1rem;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+.badge{
+padding:6px 10px;
+border-radius:999px;
+font-size:.72rem;
+font-weight:800;
+}
+.blue{background:#dff1ff;color:#215a7d}
+.green{background:#e2f8e7;color:#256339}
+.yellow{background:#fff2cc;color:#7b5a00}
+.red{background:#ffdfe5;color:#912743}
+.job{
+background:#fff;
+border:1px solid rgba(210,150,210,.18);
+border-left:6px solid var(--purple);
+border-radius:20px;
+padding:14px;
+margin-bottom:12px;
+box-shadow:0 8px 20px rgba(0,0,0,.05);
+}
+.job.high{border-left-color:#ffb300}
+.job.urgent{border-left-color:#ff4d6d}
+.job h3{
+margin:0 0 8px;
+font-size:1rem;
+}
+.meta{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-bottom:10px;
+}
+.pill{
+font-size:.72rem;
+padding:5px 8px;
+border-radius:999px;
+background:#f6eff8;
+font-weight:700;
+}
+.pm-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:14px;
+margin-top:18px;
+}
+.pm-card{
+padding:16px;
+border-radius:22px;
+background:#fff;
+border:1px solid var(--line);
+}
+.pm-top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+.pm-status{
+width:14px;
+height:14px;
+border-radius:999px;
+}
+.pm-good{background:#3ecf63}
+.pm-warn{background:#ffb300}
+.pm-danger{background:#ff4d6d}
+.actions{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+margin-top:10px;
+}
+.small{
+padding:8px 12px;
+font-size:.8rem;
+}
+@media(max-width:1100px){
+.grid,.queue,.pm-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:700px){
+.grid,.queue,.pm-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+<div>
+<h1>Production Control</h1>
+<div class="sub">OliPoly operations board · print queue · PM lite · workflow tracking</div>
+</div>
+<button class="btn">+ Add Production Job</button>
+</div>
+
+<div class="grid">
+<div class="card">
+<div class="metric-label">Active Jobs</div>
+<div class="metric" id="metricActive">12</div>
+</div>
+<div class="card">
+<div class="metric-label">Currently Printing</div>
+<div class="metric" id="metricPrinting">3</div>
+</div>
+<div class="card">
+<div class="metric-label">Open Print Hours</div>
+<div class="metric" id="metricHours">47h</div>
+</div>
+<div class="card">
+<div class="metric-label">Low Inventory Warnings</div>
+<div class="metric" id="metricInventory">5</div>
+</div>
+</div>
+
+<div class="queue">
+
+<div class="lane">
+<h2>Ready Queue <span class="badge blue">5 Jobs</span></h2>
+
+<div class="job high">
+<h3>🛍 Dragon Egg Set</h3>
+<div class="meta">
+<span class="pill">Craft Show Stock</span>
+<span class="pill">PLA Silk Pink</span>
+<span class="pill">P1S</span>
+</div>
+<div>Estimated: 6h · Qty 4</div>
+<div class="actions">
+<button class="btn small">Mark Printing</button>
+</div>
+</div>
+
+<div class="job">
+<h3>🏢 Spacer Brackets</h3>
+<div class="meta">
+<span class="pill">Business / PO</span>
+<span class="pill">PETG Black</span>
+<span class="pill">P2S</span>
+</div>
+<div>Estimated: 12h · Qty 40</div>
+<div class="actions">
+<button class="btn small">Mark Printing</button>
+</div>
+</div>
+
+</div>
+
+<div class="lane">
+<h2>Currently Printing <span class="badge green">3 Active</span></h2>
+
+<div class="job urgent">
+<h3>👤 Lithophane Lamp</h3>
+<div class="meta">
+<span class="pill">Customer Custom</span>
+<span class="pill">White PLA</span>
+<span class="pill">P1S</span>
+</div>
+<div>2h remaining</div>
+<div class="actions">
+<button class="btn small">Move Back To Queue</button>
+<button class="btn small">Post Processing</button>
+</div>
+</div>
+
+</div>
+
+<div class="lane">
+<h2>Post Processing / QC <span class="badge yellow">2 Jobs</span></h2>
+
+<div class="job">
+<h3>🧪 Prototype Enclosure</h3>
+<div class="meta">
+<span class="pill">Prototype</span>
+<span class="pill">Gray PLA</span>
+</div>
+<div>Sanding / QC pending</div>
+<div class="actions">
+<button class="btn small">Mark Ready</button>
+</div>
+</div>
+
+</div>
+
+<div class="lane">
+<h2>Delivery / Pickup <span class="badge red">4 Pending</span></h2>
+
+<div class="job">
+<h3>📦 Custom Sign</h3>
+<div class="meta">
+<span class="pill">Awaiting Pickup</span>
+<span class="pill">Customer Custom</span>
+</div>
+<div>Pickup Friday</div>
+<div class="actions">
+<button class="btn small">Delivery Scheduled</button>
+<button class="btn small">Complete</button>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<div class="card" style="margin-top:18px">
+<h2 style="margin-top:0">PM Lite</h2>
+
+<div class="pm-grid">
+
+<div class="pm-card">
+<div class="pm-top">
+<strong>P1S</strong>
+<div class="pm-status pm-good"></div>
+</div>
+<div>Hours Since PM: 122h</div>
+<div>Next PM Date: 2026-06-20</div>
+<div style="color:var(--muted);margin-top:8px">Green = healthy</div>
+</div>
+
+<div class="pm-card">
+<div class="pm-top">
+<strong>P2S</strong>
+<div class="pm-status pm-warn"></div>
+</div>
+<div>Hours Since PM: 284h</div>
+<div>Next PM Date: 2026-05-24</div>
+<div style="color:var(--muted);margin-top:8px">Yellow = approaching PM threshold</div>
+</div>
+
+</div>
+</div>
+
+</div>
 
 <script>
-function renderMetrics(){}
-</script>
-
-<!-- OR replace any direct renderMetrics() call with:
-
-if (typeof renderMetrics === 'function') {
-  renderMetrics();
+function renderMetrics(){
+console.log('renderMetrics loaded');
 }
 
--->
+renderMetrics();
+</script>
+
+</body>
+</html>
