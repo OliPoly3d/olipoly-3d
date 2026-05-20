@@ -1,338 +1,1299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OliPoly | Production Control</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{
---bg:#fff8fc;
---panel:rgba(255,255,255,.88);
---line:rgba(210,150,210,.25);
---pink:#e84fb7;
---purple:#9d6df3;
---text:#2e2135;
---muted:#78657f;
---shadow:0 18px 45px rgba(86,40,98,.12);
-}
-*{box-sizing:border-box}
-body{
-margin:0;
-font-family:Inter,sans-serif;
-background:
-radial-gradient(circle at top left,rgba(232,79,183,.12),transparent 30%),
-radial-gradient(circle at top right,rgba(157,109,243,.12),transparent 30%),
-var(--bg);
-color:var(--text);
-}
-.wrap{width:min(1400px,calc(100% - 24px));margin:auto;padding:18px 0 60px}
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:18px 22px;
-border-radius:28px;
-background:var(--panel);
-border:1px solid var(--line);
-box-shadow:var(--shadow);
-margin-bottom:18px;
-backdrop-filter:blur(10px);
-}
-h1{margin:0;font-size:2rem}
-.sub{color:var(--muted);margin-top:4px}
-.btn{
-border:none;
-border-radius:999px;
-padding:12px 18px;
-font-weight:700;
-cursor:pointer;
-background:linear-gradient(135deg,var(--pink),var(--purple));
-color:#fff;
-}
-.grid{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:14px;
-margin-bottom:18px;
-}
-.card{
-background:var(--panel);
-border:1px solid var(--line);
-border-radius:24px;
-padding:18px;
-box-shadow:var(--shadow);
-backdrop-filter:blur(10px);
-}
-.metric{
-font-size:2rem;
-font-weight:800;
-margin-top:8px;
-}
-.metric-label{
-font-size:.8rem;
-text-transform:uppercase;
-letter-spacing:.08em;
-color:var(--muted);
-font-weight:700;
-}
-.queue{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:14px;
-}
-.lane{
-background:rgba(255,255,255,.6);
-border:1px solid var(--line);
-border-radius:28px;
-padding:14px;
-min-height:500px;
-}
-.lane h2{
-margin:0 0 14px;
-font-size:1rem;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-.badge{
-padding:6px 10px;
-border-radius:999px;
-font-size:.72rem;
-font-weight:800;
-}
-.blue{background:#dff1ff;color:#215a7d}
-.green{background:#e2f8e7;color:#256339}
-.yellow{background:#fff2cc;color:#7b5a00}
-.red{background:#ffdfe5;color:#912743}
-.job{
-background:#fff;
-border:1px solid rgba(210,150,210,.18);
-border-left:6px solid var(--purple);
-border-radius:20px;
-padding:14px;
-margin-bottom:12px;
-box-shadow:0 8px 20px rgba(0,0,0,.05);
-}
-.job.high{border-left-color:#ffb300}
-.job.urgent{border-left-color:#ff4d6d}
-.job h3{
-margin:0 0 8px;
-font-size:1rem;
-}
-.meta{
-display:flex;
-flex-wrap:wrap;
-gap:6px;
-margin-bottom:10px;
-}
-.pill{
-font-size:.72rem;
-padding:5px 8px;
-border-radius:999px;
-background:#f6eff8;
-font-weight:700;
-}
-.pm-grid{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:14px;
-margin-top:18px;
-}
-.pm-card{
-padding:16px;
-border-radius:22px;
-background:#fff;
-border:1px solid var(--line);
-}
-.pm-top{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:10px;
-}
-.pm-status{
-width:14px;
-height:14px;
-border-radius:999px;
-}
-.pm-good{background:#3ecf63}
-.pm-warn{background:#ffb300}
-.pm-danger{background:#ff4d6d}
-.actions{
-display:flex;
-gap:8px;
-flex-wrap:wrap;
-margin-top:10px;
-}
-.small{
-padding:8px 12px;
-font-size:.8rem;
-}
-@media(max-width:1100px){
-.grid,.queue,.pm-grid{grid-template-columns:1fr 1fr}
-}
-@media(max-width:700px){
-.grid,.queue,.pm-grid{grid-template-columns:1fr}
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OliPoly 3D | Production Control</title>
+  <meta name="theme-color" content="#fff7fb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#25182d;
+      --text:#3f3146;
+      --muted:#78657f;
+      --panel:rgba(255,255,255,.88);
+      --panel2:rgba(255,255,255,.72);
+      --line:rgba(101,60,120,.15);
+      --line2:rgba(221,159,204,.28);
+      --pink:#e84fb7;
+      --rose:#ff7fcf;
+      --purple:#9d6df3;
+      --blue:#5fcfff;
+      --mint:#aaf6dc;
+      --danger:#ef476f;
+      --warn:#f7b731;
+      --ok:#34c759;
+      --shadow:0 24px 70px rgba(84,38,94,.14);
+      --r:26px;
+      --tap:46px;
+      --max:1320px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-height:100vh;
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 14% -4%,rgba(255,142,213,.28),transparent 32rem),
+        radial-gradient(circle at 93% 3%,rgba(162,113,255,.22),transparent 31rem),
+        linear-gradient(180deg,#fff5fc 0%,#fff 42%,#fff8fd 100%);
+      overflow-x:hidden;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);
+      background-size:56px 56px;
+      mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%);
+    }
+    a{color:inherit;text-decoration:none}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    img{max-width:100%;display:block}
+    .wrap{width:min(var(--max),calc(100% - 28px));margin:0 auto;padding:18px 0 80px}
+    .topbar,.card,.job-card,.lane,.modal-dialog{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:18px;
+      padding:14px 18px;
+      border-radius:999px;
+      position:sticky;
+      top:12px;
+      z-index:40;
+      margin-bottom:16px;
+      background:rgba(255,250,254,.88);
+    }
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}
+    .logo{
+      width:54px;height:54px;border-radius:18px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      color:white;font-weight:900;box-shadow:0 12px 30px rgba(214,73,186,.25);flex:0 0 auto
+    }
+    .brand h1{margin:0;font-family:"Playfair Display",serif;font-size:1.75rem;line-height:.95;letter-spacing:-.04em;color:var(--ink)}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.35}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn,.ghost,.mini-btn{
+      min-height:var(--tap);border-radius:999px;border:1px solid transparent;
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:12px 16px;font-weight:900;transition:.18s ease;white-space:nowrap
+    }
+    .btn{color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 14px 34px rgba(214,73,186,.24)}
+    .ghost{background:rgba(255,255,255,.78);border-color:var(--line);color:#5f456a}
+    .mini-btn{min-height:36px;padding:8px 11px;font-size:.78rem;background:rgba(255,255,255,.78);border-color:var(--line);color:#5f456a}
+    .btn:hover,.ghost:hover,.mini-btn:hover{transform:translateY(-1px)}
+    .danger-btn{color:#b33857}
+    .hidden{display:none!important}
+
+    .hero{display:grid;grid-template-columns:1fr .82fr;gap:16px;margin-bottom:16px}
+    .card{border-radius:var(--r);padding:18px}
+    .kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:rgba(232,79,183,.09);border:1px solid rgba(232,79,183,.14);color:#a03c87;font-size:.72rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}
+    .section-title h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.2rem,5vw,4.2rem);line-height:.94;letter-spacing:-.055em;color:var(--ink)}
+    .section-title p,.muted{color:var(--muted);line-height:1.55}
+    .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+    .metric{padding:12px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid var(--line)}
+    .metric span{display:block;color:var(--muted);font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .metric strong{display:block;margin-top:3px;font-size:1.45rem;color:var(--ink)}
+    .next-box{display:grid;gap:8px;padding:15px;border-radius:20px;background:linear-gradient(135deg,rgba(232,79,183,.10),rgba(157,109,243,.10));border:1px solid rgba(232,79,183,.16)}
+    .next-box strong{color:var(--ink)}
+    .next-box span{color:var(--muted);font-size:.9rem}
+
+    label{display:grid;gap:6px;font-size:.86rem;font-weight:900}
+    input,select,textarea{
+      width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line2);
+      padding:11px 12px;background:rgba(255,255,255,.84);outline:none;color:var(--text)
+    }
+    textarea{min-height:104px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:rgba(157,109,243,.45);box-shadow:0 0 0 4px rgba(157,109,243,.10)}
+    .auth-grid{display:grid;grid-template-columns:1fr 1fr auto auto auto;gap:10px;align-items:end}
+    .auth-status{margin-top:10px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.66);border:1px solid var(--line);color:var(--muted);font-size:.9rem}
+    .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .span2{grid-column:span 2}
+    .span3{grid-column:span 3}
+    .full{grid-column:1/-1}
+    .form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .toolbar{display:grid;grid-template-columns:1.1fr .75fr .75fr .75fr .75fr;gap:10px;align-items:end;margin:14px 0}
+
+    .pm-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .pm-card{padding:14px;border-radius:22px;background:rgba(255,255,255,.72);border:1px solid var(--line);display:grid;gap:10px}
+    .pm-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .pm-head h3{margin:0;font-size:1.15rem;color:var(--ink)}
+    .pm-pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 10px;font-size:.75rem;font-weight:900}
+    .pm-dot{width:11px;height:11px;border-radius:999px}
+    .pm-good{background:rgba(52,199,89,.12);color:#23763b}.pm-good .pm-dot{background:var(--ok)}
+    .pm-warn{background:rgba(247,183,49,.18);color:#7a5400}.pm-warn .pm-dot{background:var(--warn)}
+    .pm-danger{background:rgba(239,71,111,.13);color:#9a2140}.pm-danger .pm-dot{background:var(--danger)}
+    .pm-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .pm-small{font-size:.8rem;color:var(--muted);line-height:1.4}
+
+    .lanes{display:grid;grid-template-columns:repeat(4,minmax(250px,1fr));gap:14px;align-items:start}
+    .lane{border-radius:26px;padding:13px;min-height:310px;background:rgba(255,255,255,.58)}
+    .lane-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .lane h3{margin:0;font-size:.98rem;color:var(--ink);display:flex;align-items:center;gap:8px}
+    .lane-count{font-size:.72rem;font-weight:900;border-radius:999px;padding:6px 9px;background:rgba(255,255,255,.82);border:1px solid var(--line);color:var(--muted)}
+    .lane.ready{border-top:5px solid #9d6df3}.lane.printing{border-top:5px solid #5fcfff}.lane.post{border-top:5px solid #ff7fcf}.lane.delivery{border-top:5px solid #f7b731}
+
+    .job-card{position:relative;overflow:hidden;border-radius:22px;padding:13px;margin-bottom:10px;background:rgba(255,255,255,.88);box-shadow:0 12px 32px rgba(84,38,94,.08)}
+    .job-card::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--type-color,#9d6df3)}
+    .job-card.priority-urgent{box-shadow:0 0 0 2px rgba(239,71,111,.22),0 18px 44px rgba(239,71,111,.14)}
+    .job-card.priority-high{box-shadow:0 0 0 2px rgba(247,183,49,.22),0 18px 44px rgba(247,183,49,.12)}
+    .job-top{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start}
+    .job-icon{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(232,79,183,.12),rgba(157,109,243,.12));font-size:1.05rem}
+    .job-card h4{margin:0;color:var(--ink);font-size:.98rem;line-height:1.18}
+    .job-thumb{width:52px;height:52px;border-radius:14px;object-fit:cover;border:1px solid var(--line);background:#fff}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}
+    .chip{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:999px;background:rgba(244,220,255,.55);border:1px solid rgba(101,60,120,.10);color:#6f4b7e;font-size:.68rem;font-weight:900}
+    .chip.type{background:var(--type-bg,rgba(244,220,255,.64));color:var(--type-text,#6f4b7e)}
+    .chip.priority{background:rgba(255,255,255,.8)}
+    .job-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+    .stat{padding:8px;border-radius:13px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.10)}
+    .stat span{display:block;font-size:.62rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .stat strong{display:block;margin-top:2px;font-size:.82rem;color:var(--ink);overflow-wrap:anywhere}
+    .job-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+    .empty{padding:14px;border-radius:18px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.44);font-size:.9rem}
+
+    .detail-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-card{border-radius:24px;padding:15px;background:rgba(255,255,255,.74);border:1px solid var(--line);box-shadow:0 12px 30px rgba(84,38,94,.08)}
+    .detail-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+    .detail-card h3{margin:0;color:var(--ink);font-size:1.1rem}
+    .detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+    .detail-item{padding:9px;border-radius:14px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.10)}
+    .detail-item span{display:block;font-size:.62rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .detail-item strong{display:block;margin-top:2px;font-size:.82rem;color:var(--ink);overflow-wrap:anywhere}
+    .notes{white-space:pre-wrap;color:var(--muted);line-height:1.45;background:rgba(255,255,255,.55);border:1px dashed var(--line);padding:10px;border-radius:14px;font-size:.88rem}
+
+    .history-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.62)}
+    table{width:100%;border-collapse:collapse;min-width:820px}
+    th,td{padding:11px;border-bottom:1px solid rgba(101,60,120,.10);text-align:left;vertical-align:top;font-size:.88rem}
+    th{font-size:.68rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.72)}
+    tr:last-child td{border-bottom:0}
+
+    .modal.hidden{display:none!important}
+    .modal{position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:18px}
+    .modal::before{content:"";position:absolute;inset:0;background:rgba(37,24,45,.45);backdrop-filter:blur(8px)}
+    .modal-dialog{position:relative;z-index:1;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:30px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,252,.96))}
+    .modal-dialog h2{margin:0;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:var(--ink)}
+    .modal-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:1000;background:rgba(37,24,45,.94);color:#fff;padding:11px 16px;border-radius:999px;box-shadow:0 18px 44px rgba(0,0,0,.22);font-weight:800;opacity:0;pointer-events:none;transition:.2s}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+    @media(max-width:1100px){
+      .hero,.detail-list{grid-template-columns:1fr}
+      .metrics{grid-template-columns:repeat(3,1fr)}
+      .form-grid,.pm-fields{grid-template-columns:repeat(2,1fr)}
+      .lanes{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .auth-grid,.toolbar{grid-template-columns:1fr 1fr}
+      .span2,.span3{grid-column:span 1}
+    }
+    @media(max-width:700px){
+      .wrap{width:min(100% - 16px,var(--max));padding-top:10px}
+      .topbar{border-radius:26px;align-items:flex-start;flex-direction:column;top:8px}
+      .top-actions,.btn,.ghost{width:100%}
+      .metrics,.form-grid,.pm-fields,.pm-board,.lanes,.auth-grid,.toolbar,.detail-list{grid-template-columns:1fr}
+      .detail-grid,.job-stats{grid-template-columns:repeat(2,1fr)}
+      .card{padding:14px}
+    }
+  </style>
 </head>
 <body>
 <div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">OP</div>
+      <div>
+        <h1>Production Control</h1>
+        <p>Print queue, production jobs, PM Lite, inventory handoff, and completed print history.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="ghost" href="hub.html">← Hub</a>
+      <a class="ghost" href="inventory-control.html">Inventory Control</a>
+      <button class="btn" id="jumpAddBtn" type="button">+ Add Job</button>
+    </div>
+  </header>
 
-<div class="topbar">
-<div>
-<h1>Production Control</h1>
-<div class="sub">OliPoly operations board · print queue · PM lite · workflow tracking</div>
-</div>
-<button class="btn">+ Add Production Job</button>
+  <section class="hero">
+    <div class="card section-title">
+      <span class="kicker">OliPoly production flow</span>
+      <h2>Know what to print, when to maintain, and what inventory changes.</h2>
+      <p>Use this as the operating board for everything printed: customer work, business orders, craft stock, prototypes, personal/free prints, reprints, scrap, and internal shop work.</p>
+      <div class="metrics">
+        <div class="metric"><span>Active Jobs</span><strong id="metricActive">0</strong></div>
+        <div class="metric"><span>Printing</span><strong id="metricPrinting">0</strong></div>
+        <div class="metric"><span>Open Hours</span><strong id="metricHours">0h</strong></div>
+        <div class="metric"><span>Due Soon</span><strong id="metricDue">0</strong></div>
+        <div class="metric"><span>PM Warnings</span><strong id="metricPm">0</strong></div>
+      </div>
+    </div>
+    <div class="card">
+      <span class="kicker">Next best print</span>
+      <div class="next-box" id="nextPrintBox">
+        <strong>No active production jobs yet</strong>
+        <span>Add a job to start building the queue.</span>
+      </div>
+      <p class="muted">Queue logic favors urgent/high priority, due dates, ready-to-print statuses, and active production work.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Cloud login</span>
+    <div class="auth-grid">
+      <label>Email<input id="email" type="email" autocomplete="email" placeholder="OliPoly login email"></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label>
+      <button class="btn" id="loginBtn" type="button">Log In</button>
+      <button class="ghost" id="signupBtn" type="button">Create</button>
+      <button class="ghost hidden" id="logoutBtn" type="button">Log Out</button>
+    </div>
+    <div id="authStatus" class="auth-status">Checking sign-in.</div>
+  </section>
+
+  <section class="card" id="addJobSection">
+    <span class="kicker">Add / edit production job</span>
+    <form id="jobForm">
+      <div class="form-grid">
+        <label class="span2">Job Title<input id="jobTitle" placeholder="Example: Pink dragon eggs for craft show" required></label>
+        <label>Job Type<select id="jobType">
+          <option value="customer_custom">Customer Custom Order</option>
+          <option value="business_po">Business / PO Order</option>
+          <option value="craft_stock">Craft Show Stock</option>
+          <option value="finished_goods_restock">Finished Goods Replenishment</option>
+          <option value="prototype">Prototype / Test Print</option>
+          <option value="personal_free">Personal / Free</option>
+          <option value="marketing_sample">Marketing / Display Sample</option>
+          <option value="replacement_warranty">Replacement / Warranty</option>
+          <option value="internal_shop">Internal Tooling / Shop Use</option>
+          <option value="failed_reprint">Failed / Scrap / Reprint</option>
+        </select></label>
+        <label>Production Status<select id="productionStatus">
+          <option value="idea">Idea / Requested</option>
+          <option value="awaiting_approval">Awaiting Approval</option>
+          <option value="ready_to_print">Ready to Print</option>
+          <option value="queued">Queued</option>
+          <option value="printing">Printing</option>
+          <option value="post_processing">Post-Processing / QC</option>
+          <option value="packaging">Packaging</option>
+          <option value="ready">Ready</option>
+          <option value="awaiting_pickup">Awaiting Pickup</option>
+          <option value="delivery_scheduled">Delivery Scheduled</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+          <option value="completed">Completed</option>
+          <option value="failed_scrap">Failed / Scrap</option>
+          <option value="on_hold">On Hold</option>
+          <option value="archived">Archived</option>
+        </select></label>
+
+        <label>Priority<select id="priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+          <option value="low">Low</option>
+        </select></label>
+        <label>Quantity<input id="quantity" type="number" min="1" step="1" value="1"></label>
+        <label>Machine<select id="machine">
+          <option value="either">Either</option>
+          <option value="P1S">P1S</option>
+          <option value="P2S">P2S</option>
+          <option value="A1">A1</option>
+          <option value="Other">Other</option>
+        </select></label>
+        <label>Due Date<input id="dueDate" type="date"></label>
+
+        <label>Primary Material<input id="primaryMaterial" placeholder="PLA, PETG, TPU, etc."></label>
+        <label>Primary Color<input id="primaryColor" placeholder="Pink, black, silk gold..."></label>
+        <label>Other Colors<input id="otherColors" placeholder="White, purple, green"></label>
+        <label># Colors<input id="colorCount" type="number" min="1" step="1" value="1"></label>
+
+        <label>Print Hours / One<input id="hoursEach" type="number" min="0" step="0.01" placeholder="2.5"></label>
+        <label>Grams / One<input id="gramsEach" type="number" min="0" step="0.1" placeholder="45"></label>
+        <label>Est. Price / Each<input id="priceEach" type="number" min="0" step="0.01" placeholder="15.00"></label>
+        <label>Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
+
+        <label>Customer / Purpose<input id="customerName" placeholder="Customer, show, or reason"></label>
+        <label>Quote #<input id="quoteNumber" placeholder="Q-000000"></label>
+        <label>Order #<input id="orderNumber" placeholder="OP-000000"></label>
+        <label>Finished Good SKU<input id="finishedSku" placeholder="Optional inventory SKU"></label>
+
+        <label class="full">Filament Usage Breakdown<textarea id="filamentBreakdown" placeholder="Optional. Example:
+PLA Pink: 120g
+PLA White: 40g
+PETG Black: 18g"></textarea></label>
+        <label class="full">Notes<textarea id="notes" placeholder="Setup notes, slicer notes, customer requirements, packaging notes, etc."></textarea></label>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="saveBtn" type="submit">Save Production Job</button>
+        <button class="ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <span class="kicker">PM Lite</span>
+    <div class="pm-board" id="pmBoard"></div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Print queue</span>
+    <div class="toolbar">
+      <label>Search<input id="searchInput" placeholder="Search title, customer, material, color..."></label>
+      <label>Job Type<select id="filterType"><option value="all">All Job Types</option></select></label>
+      <label>Status<select id="filterStatus"><option value="all">All Statuses</option></select></label>
+      <label>Machine<select id="filterMachine"><option value="all">All Machines</option><option>P1S</option><option>P2S</option><option>A1</option><option>either</option><option>Other</option></select></label>
+      <label>Sort<select id="sortBy">
+        <option value="smart">Smart Priority</option>
+        <option value="due">Due Date</option>
+        <option value="hours_short">Shortest First</option>
+        <option value="hours_long">Longest First</option>
+        <option value="primary_color">Primary Color</option>
+        <option value="machine">Machine</option>
+      </select></label>
+    </div>
+    <div class="lanes" id="laneBoard"></div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Full detail cards</span>
+    <div id="detailList" class="detail-list"></div>
+  </section>
+
+  <section class="card">
+    <span class="kicker">Completed / history</span>
+    <div class="history-wrap">
+      <table>
+        <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Filament</th><th>Closed</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
-<div class="grid">
-<div class="card">
-<div class="metric-label">Active Jobs</div>
-<div class="metric" id="metricActive">12</div>
-</div>
-<div class="card">
-<div class="metric-label">Currently Printing</div>
-<div class="metric" id="metricPrinting">3</div>
-</div>
-<div class="card">
-<div class="metric-label">Open Print Hours</div>
-<div class="metric" id="metricHours">47h</div>
-</div>
-<div class="card">
-<div class="metric-label">Low Inventory Warnings</div>
-<div class="metric" id="metricInventory">5</div>
-</div>
-</div>
-
-<div class="queue">
-
-<div class="lane">
-<h2>Ready Queue <span class="badge blue">5 Jobs</span></h2>
-
-<div class="job high">
-<h3>🛍 Dragon Egg Set</h3>
-<div class="meta">
-<span class="pill">Craft Show Stock</span>
-<span class="pill">PLA Silk Pink</span>
-<span class="pill">P1S</span>
-</div>
-<div>Estimated: 6h · Qty 4</div>
-<div class="actions">
-<button class="btn small">Mark Printing</button>
-</div>
+<div class="modal hidden" id="closeModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <h2>Complete / close production job</h2>
+    <p class="muted">Enter actuals here so PM Lite and inventory can update from real print activity.</p>
+    <div class="next-box" id="closeJobName"><strong>Job</strong><span>Close-out details</span></div>
+    <div class="form-grid" style="margin-top:12px">
+      <label>Final Status<select id="closeStatus">
+        <option value="completed">Completed</option>
+        <option value="delivered">Delivered</option>
+        <option value="failed_scrap">Failed / Scrap</option>
+        <option value="archived">Archived</option>
+      </select></label>
+      <label>Machine Printed On<select id="closeMachine">
+        <option value="P1S">P1S</option>
+        <option value="P2S">P2S</option>
+        <option value="A1">A1</option>
+        <option value="Other">Other</option>
+      </select></label>
+      <label>Actual Quantity<input id="closeQty" type="number" min="0" step="1"></label>
+      <label>Actual Print Hours<input id="closeHours" type="number" min="0" step="0.01"></label>
+      <label>Actual Grams Used<input id="closeGrams" type="number" min="0" step="0.1"></label>
+      <label>Primary Material<input id="closeMaterial"></label>
+      <label>Primary Color<input id="closeColor"></label>
+      <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
+      <label class="full">Actual Filament Breakdown<textarea id="closeBreakdown" placeholder="PLA Pink: 120g&#10;PLA White: 40g"></textarea></label>
+      <label class="full">Close Note<textarea id="closeNote" placeholder="QC, delivery, scrap reason, customer handoff, etc."></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="cancelCloseBtn" type="button">Cancel</button>
+      <button class="btn" id="confirmCloseBtn" type="button">Save Close-Out</button>
+    </div>
+  </div>
 </div>
 
-<div class="job">
-<h3>🏢 Spacer Brackets</h3>
-<div class="meta">
-<span class="pill">Business / PO</span>
-<span class="pill">PETG Black</span>
-<span class="pill">P2S</span>
-</div>
-<div>Estimated: 12h · Qty 40</div>
-<div class="actions">
-<button class="btn small">Mark Printing</button>
-</div>
-</div>
-
-</div>
-
-<div class="lane">
-<h2>Currently Printing <span class="badge green">3 Active</span></h2>
-
-<div class="job urgent">
-<h3>👤 Lithophane Lamp</h3>
-<div class="meta">
-<span class="pill">Customer Custom</span>
-<span class="pill">White PLA</span>
-<span class="pill">P1S</span>
-</div>
-<div>2h remaining</div>
-<div class="actions">
-<button class="btn small">Move Back To Queue</button>
-<button class="btn small">Post Processing</button>
-</div>
-</div>
-
-</div>
-
-<div class="lane">
-<h2>Post Processing / QC <span class="badge yellow">2 Jobs</span></h2>
-
-<div class="job">
-<h3>🧪 Prototype Enclosure</h3>
-<div class="meta">
-<span class="pill">Prototype</span>
-<span class="pill">Gray PLA</span>
-</div>
-<div>Sanding / QC pending</div>
-<div class="actions">
-<button class="btn small">Mark Ready</button>
-</div>
-</div>
-
-</div>
-
-<div class="lane">
-<h2>Delivery / Pickup <span class="badge red">4 Pending</span></h2>
-
-<div class="job">
-<h3>📦 Custom Sign</h3>
-<div class="meta">
-<span class="pill">Awaiting Pickup</span>
-<span class="pill">Customer Custom</span>
-</div>
-<div>Pickup Friday</div>
-<div class="actions">
-<button class="btn small">Delivery Scheduled</button>
-<button class="btn small">Complete</button>
-</div>
-</div>
-
-</div>
-
-</div>
-
-<div class="card" style="margin-top:18px">
-<h2 style="margin-top:0">PM Lite</h2>
-
-<div class="pm-grid">
-
-<div class="pm-card">
-<div class="pm-top">
-<strong>P1S</strong>
-<div class="pm-status pm-good"></div>
-</div>
-<div>Hours Since PM: 122h</div>
-<div>Next PM Date: 2026-06-20</div>
-<div style="color:var(--muted);margin-top:8px">Green = healthy</div>
-</div>
-
-<div class="pm-card">
-<div class="pm-top">
-<strong>P2S</strong>
-<div class="pm-status pm-warn"></div>
-</div>
-<div>Hours Since PM: 284h</div>
-<div>Next PM Date: 2026-05-24</div>
-<div style="color:var(--muted);margin-top:8px">Yellow = approaching PM threshold</div>
-</div>
-
-</div>
-</div>
-
-</div>
+<div id="toast" class="toast"></div>
 
 <script>
-function renderMetrics(){
-console.log('renderMetrics loaded');
-}
+(() => {
+  'use strict';
 
-renderMetrics();
+  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+  const LS_JOBS = 'olipoly_production_jobs_v3';
+  const LS_PM = 'olipoly_printer_pm_v3';
+  const LS_RAW = 'olipoly_raw_material_inventory_v3';
+  const LS_FINISHED = 'olipoly_finished_goods_inventory_v3';
+
+  const $ = id => document.getElementById(id);
+
+  const TYPE = {
+    customer_custom:{label:'Customer Custom Order', icon:'👤', color:'#e84fb7', bg:'rgba(232,79,183,.12)', text:'#9b2b76'},
+    business_po:{label:'Business / PO Order', icon:'🏢', color:'#5fcfff', bg:'rgba(95,207,255,.16)', text:'#1d5d7d'},
+    craft_stock:{label:'Craft Show Stock', icon:'🛍️', color:'#9d6df3', bg:'rgba(157,109,243,.14)', text:'#5e3fa3'},
+    finished_goods_restock:{label:'Finished Goods Replenishment', icon:'📦', color:'#a46eff', bg:'rgba(164,110,255,.14)', text:'#6042a5'},
+    prototype:{label:'Prototype / Test Print', icon:'🧪', color:'#f7b731', bg:'rgba(247,183,49,.18)', text:'#775300'},
+    personal_free:{label:'Personal / Free', icon:'🏠', color:'#9a8aa3', bg:'rgba(154,138,163,.16)', text:'#675770'},
+    marketing_sample:{label:'Marketing / Display Sample', icon:'✨', color:'#ff7fcf', bg:'rgba(255,127,207,.14)', text:'#9b397d'},
+    replacement_warranty:{label:'Replacement / Warranty', icon:'🔁', color:'#ffd166', bg:'rgba(255,209,102,.2)', text:'#7a5b00'},
+    internal_shop:{label:'Internal Tooling / Shop Use', icon:'🛠️', color:'#34c759', bg:'rgba(52,199,89,.14)', text:'#23763b'},
+    failed_reprint:{label:'Failed / Scrap / Reprint', icon:'⚠️', color:'#ef476f', bg:'rgba(239,71,111,.13)', text:'#9a2140'}
+  };
+
+  const STATUS = {
+    idea:'Idea / Requested',
+    awaiting_approval:'Awaiting Approval',
+    ready_to_print:'Ready to Print',
+    queued:'Queued',
+    printing:'Printing',
+    post_processing:'Post-Processing / QC',
+    packaging:'Packaging',
+    ready:'Ready',
+    awaiting_pickup:'Awaiting Pickup',
+    delivery_scheduled:'Delivery Scheduled',
+    shipped:'Shipped',
+    delivered:'Delivered',
+    completed:'Completed',
+    failed_scrap:'Failed / Scrap',
+    on_hold:'On Hold',
+    archived:'Archived'
+  };
+
+  const CLOSED = ['completed','failed_scrap','archived'];
+  const DELIVERY = ['packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
+  const LANES = [
+    {id:'ready', title:'Ready / Queued', icon:'🧾', cls:'ready', statuses:['idea','awaiting_approval','ready_to_print','queued','on_hold']},
+    {id:'printing', title:'Currently Printing', icon:'🖨️', cls:'printing', statuses:['printing']},
+    {id:'post', title:'Post-Processing / QC', icon:'🔍', cls:'post', statuses:['post_processing']},
+    {id:'delivery', title:'Packaging / Delivery', icon:'📦', cls:'delivery', statuses:DELIVERY}
+  ];
+
+  const state = {
+    user:null,
+    jobs:[],
+    pm:[],
+    editingId:null,
+    closingId:null,
+    search:'',
+    filterType:'all',
+    filterStatus:'all',
+    filterMachine:'all',
+    sortBy:'smart'
+  };
+
+  function token(){ return localStorage.getItem('sb_token') || null; }
+
+  async function sbApi(path, options = {}){
+    const headers = {
+      apikey: SUPABASE_KEY,
+      'Content-Type':'application/json',
+      ...(token() ? {Authorization:`Bearer ${token()}`} : {}),
+      ...(options.headers || {})
+    };
+    const res = await fetch(`${SUPABASE_URL}${path}`, {...options, headers});
+    const txt = await res.text();
+    let data = null;
+    try{ data = txt ? JSON.parse(txt) : null; }catch{ data = txt; }
+    if(!res.ok){
+      const msg = data?.message || data?.error_description || data?.hint || txt || `Supabase error ${res.status}`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  function toast(msg){
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(()=>el.classList.remove('show'),2800);
+  }
+
+  function uid(){ return crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function num(v){ return Number(v) || 0; }
+  function fmtHours(v){ const n=num(v); return n ? `${n.toFixed(n>=10?1:2).replace(/\.00?$/,'')}h` : '—'; }
+  function fmtG(v){ const n=num(v); return n ? `${Math.round(n)}g` : '—'; }
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  function localRead(key, fallback=[]){ try{return JSON.parse(localStorage.getItem(key)||'null') ?? fallback;}catch{return fallback;} }
+  function localWrite(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+
+  function addDays(date, days){
+    const d = new Date((date || todayISO()) + 'T00:00:00');
+    d.setDate(d.getDate() + Number(days||0));
+    return d.toISOString().slice(0,10);
+  }
+
+  function daysUntil(date){
+    if(!date) return 9999;
+    const t = new Date(todayISO()+'T00:00:00');
+    const d = new Date(date+'T00:00:00');
+    return Math.round((d-t)/86400000);
+  }
+
+  function dueText(date){
+    if(!date) return 'No due date';
+    const d = daysUntil(date);
+    if(d < 0) return `Overdue ${Math.abs(d)}d`;
+    if(d === 0) return 'Due today';
+    if(d <= 7) return `Due in ${d}d`;
+    return date;
+  }
+
+  function defaultPm(){
+    return ['P1S','P2S'].map(machine => ({
+      id:machine,
+      machine,
+      hours_since_pm:0,
+      pm_hour_interval:250,
+      last_pm_date:todayISO(),
+      pm_day_interval:30,
+      next_pm_date:addDays(todayISO(),30),
+      notes:'',
+      updated_at:new Date().toISOString()
+    }));
+  }
+
+  function pmStatus(pm){
+    const hours = num(pm.hours_since_pm);
+    const hInt = num(pm.pm_hour_interval) || 250;
+    const hPct = hInt ? hours / hInt : 0;
+    const d = daysUntil(pm.next_pm_date);
+    if(hPct >= 1 || d <= 0) return {cls:'pm-danger', label:'PM Due'};
+    if(hPct >= .82 || d <= 5) return {cls:'pm-warn', label:'Due Soon'};
+    return {cls:'pm-good', label:'Healthy'};
+  }
+
+  async function getUser(){
+    if(!token()) return null;
+    try{return await sbApi('/auth/v1/user',{method:'GET'});}catch{return null;}
+  }
+
+  function updateAuthUI(){
+    const signed = !!state.user?.id;
+    $('authStatus').textContent = signed
+      ? `Cloud sync active: ${state.user.email || 'signed in'}`
+      : 'Not signed in. Browser fallback is active. Log in to sync across sessions/devices.';
+    $('loginBtn').classList.toggle('hidden', signed);
+    $('signupBtn').classList.toggle('hidden', signed);
+    $('logoutBtn').classList.toggle('hidden', !signed);
+  }
+
+  async function signIn(){
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    if(!email || !password) return toast('Enter email and password.');
+    try{
+      const data = await sbApi('/auth/v1/token?grant_type=password',{method:'POST', body:JSON.stringify({email,password})});
+      if(data?.access_token) localStorage.setItem('sb_token', data.access_token);
+      state.user = await getUser();
+      updateAuthUI();
+      await loadAll();
+      toast('Signed in. Production data synced.');
+    }catch(err){
+      alert(`Login failed:\n\n${err.message || err}`);
+    }
+  }
+
+  async function signUp(){
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    if(!email || !password) return toast('Enter email and password.');
+    try{
+      const data = await sbApi('/auth/v1/signup',{method:'POST', body:JSON.stringify({email,password})});
+      if(data?.access_token) localStorage.setItem('sb_token', data.access_token);
+      state.user = await getUser();
+      updateAuthUI();
+      await loadAll();
+      toast('Account created or confirmation sent.');
+    }catch(err){
+      alert(`Create account failed:\n\n${err.message || err}`);
+    }
+  }
+
+  function signOut(){
+    localStorage.removeItem('sb_token');
+    state.user = null;
+    updateAuthUI();
+    loadAll();
+  }
+
+  function formJob(){
+    const existing = state.jobs.find(j=>j.id===state.editingId);
+    const q = Math.max(1, Math.round(num($('quantity').value) || 1));
+    const hEach = num($('hoursEach').value);
+    const gEach = num($('gramsEach').value);
+    const now = new Date().toISOString();
+    return {
+      id: state.editingId || uid(),
+      user_id: state.user?.id || null,
+      job_title:$('jobTitle').value.trim(),
+      job_type:$('jobType').value,
+      production_status:$('productionStatus').value,
+      priority:$('priority').value,
+      quantity:q,
+      machine_preference:$('machine').value,
+      due_date:$('dueDate').value || null,
+      primary_material:$('primaryMaterial').value.trim() || null,
+      primary_color:$('primaryColor').value.trim() || null,
+      other_colors:$('otherColors').value.trim() || null,
+      color_count:Math.max(1, Math.round(num($('colorCount').value) || 1)),
+      estimated_hours_each:hEach,
+      estimated_grams_each:gEach,
+      estimated_total_hours:hEach*q,
+      estimated_total_grams:gEach*q,
+      estimated_price_each:num($('priceEach').value),
+      image_url:$('imageUrl').value.trim() || null,
+      customer_name:$('customerName').value.trim() || null,
+      quote_number:$('quoteNumber').value.trim() || null,
+      order_number:$('orderNumber').value.trim() || null,
+      finished_sku:$('finishedSku').value.trim() || null,
+      filament_breakdown:$('filamentBreakdown').value.trim() || null,
+      notes:$('notes').value.trim() || null,
+      actual_machine: existing?.actual_machine || null,
+      actual_quantity: existing?.actual_quantity || null,
+      actual_print_hours: existing?.actual_print_hours || null,
+      actual_grams_used: existing?.actual_grams_used || null,
+      actual_filament_breakdown: existing?.actual_filament_breakdown || null,
+      close_note: existing?.close_note || null,
+      closed_at: existing?.closed_at || null,
+      created_at: existing?.created_at || now,
+      updated_at: now
+    };
+  }
+
+  function fillForm(j){
+    state.editingId = j.id;
+    $('jobTitle').value = j.job_title || '';
+    $('jobType').value = j.job_type || 'customer_custom';
+    $('productionStatus').value = j.production_status || 'idea';
+    $('priority').value = j.priority || 'normal';
+    $('quantity').value = j.quantity || 1;
+    $('machine').value = j.machine_preference || 'either';
+    $('dueDate').value = j.due_date || '';
+    $('primaryMaterial').value = j.primary_material || '';
+    $('primaryColor').value = j.primary_color || '';
+    $('otherColors').value = j.other_colors || '';
+    $('colorCount').value = j.color_count || 1;
+    $('hoursEach').value = j.estimated_hours_each || '';
+    $('gramsEach').value = j.estimated_grams_each || '';
+    $('priceEach').value = j.estimated_price_each || '';
+    $('imageUrl').value = j.image_url || '';
+    $('customerName').value = j.customer_name || '';
+    $('quoteNumber').value = j.quote_number || '';
+    $('orderNumber').value = j.order_number || '';
+    $('finishedSku').value = j.finished_sku || '';
+    $('filamentBreakdown').value = j.filament_breakdown || '';
+    $('notes').value = j.notes || '';
+    $('saveBtn').textContent = 'Update Production Job';
+    $('cancelEditBtn').classList.remove('hidden');
+    $('addJobSection').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function resetForm(){
+    state.editingId = null;
+    $('jobForm').reset();
+    $('quantity').value = 1;
+    $('colorCount').value = 1;
+    $('priority').value = 'normal';
+    $('productionStatus').value = 'idea';
+    $('machine').value = 'either';
+    $('saveBtn').textContent = 'Save Production Job';
+    $('cancelEditBtn').classList.add('hidden');
+  }
+
+  async function cloudSaveJob(j){
+    if(!state.user?.id) return;
+    const payload = {
+      id:j.id,
+      user_id:state.user.id,
+      job_title:j.job_title,
+      job_type:j.job_type,
+      production_status:j.production_status,
+      priority:j.priority,
+      quantity:j.quantity,
+      machine_preference:j.machine_preference,
+      due_date:j.due_date,
+      primary_material:j.primary_material,
+      primary_color:j.primary_color,
+      other_colors:j.other_colors,
+      color_count:j.color_count,
+      estimated_hours_each:j.estimated_hours_each,
+      estimated_grams_each:j.estimated_grams_each,
+      estimated_total_hours:j.estimated_total_hours,
+      estimated_total_grams:j.estimated_total_grams,
+      estimated_price_each:j.estimated_price_each,
+      image_url:j.image_url,
+      customer_name:j.customer_name,
+      quote_number:j.quote_number,
+      order_number:j.order_number,
+      finished_sku:j.finished_sku,
+      filament_breakdown:j.filament_breakdown,
+      notes:j.notes,
+      actual_machine:j.actual_machine,
+      actual_quantity:j.actual_quantity,
+      actual_print_hours:j.actual_print_hours,
+      actual_grams_used:j.actual_grams_used,
+      actual_filament_breakdown:j.actual_filament_breakdown,
+      close_note:j.close_note,
+      closed_at:j.closed_at,
+      updated_at:j.updated_at
+    };
+    await sbApi('/rest/v1/production_jobs?on_conflict=id',{
+      method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+      body:JSON.stringify(payload)
+    });
+  }
+
+  async function saveJob(e){
+    e?.preventDefault();
+    try{
+      const j = formJob();
+      if(!j.job_title) throw new Error('Job title is required.');
+      await cloudSaveJob(j);
+      state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
+      localWrite(LS_JOBS,state.jobs);
+      resetForm();
+      render();
+      toast('Production job saved.');
+    }catch(err){
+      alert(`Could not save job:\n\n${err.message || err}`);
+    }
+  }
+
+  async function setStatus(id,status){
+    const j = state.jobs.find(x=>x.id===id);
+    if(!j) return;
+    const updated = {...j, production_status:status, updated_at:new Date().toISOString()};
+    try{
+      await cloudSaveJob(updated);
+      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
+      localWrite(LS_JOBS,state.jobs);
+      render();
+      toast(`Moved to ${STATUS[status] || status}.`);
+    }catch(err){ alert(`Could not update status:\n\n${err.message || err}`); }
+  }
+
+  async function deleteJob(id){
+    const j = state.jobs.find(x=>x.id===id);
+    if(!j || !confirm(`Delete "${j.job_title}"?`)) return;
+    try{
+      if(state.user?.id && !String(id).startsWith('local-')){
+        await sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});
+      }
+      state.jobs = state.jobs.filter(x=>x.id!==id);
+      localWrite(LS_JOBS,state.jobs);
+      render();
+      toast('Job deleted.');
+    }catch(err){ alert(`Could not delete job:\n\n${err.message || err}`); }
+  }
+
+  function openClose(id){
+    const j = state.jobs.find(x=>x.id===id);
+    if(!j) return;
+    state.closingId = id;
+    $('closeJobName').innerHTML = `<strong>${esc(j.job_title)}</strong><span>${esc(TYPE[j.job_type]?.label || j.job_type)} · ${esc(STATUS[j.production_status] || j.production_status)}</span>`;
+    $('closeStatus').value = j.production_status === 'delivered' ? 'delivered' : 'completed';
+    $('closeMachine').value = j.actual_machine || (j.machine_preference !== 'either' ? j.machine_preference : 'P1S');
+    $('closeQty').value = j.actual_quantity || j.quantity || 1;
+    $('closeHours').value = j.actual_print_hours || j.estimated_total_hours || '';
+    $('closeGrams').value = j.actual_grams_used || j.estimated_total_grams || '';
+    $('closeMaterial').value = j.primary_material || '';
+    $('closeColor').value = j.primary_color || '';
+    $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
+    $('closeBreakdown').value = j.actual_filament_breakdown || j.filament_breakdown || '';
+    $('closeNote').value = j.close_note || '';
+    $('closeModal').classList.remove('hidden');
+    $('closeModal').setAttribute('aria-hidden','false');
+  }
+
+  function closeClose(){
+    state.closingId = null;
+    $('closeModal').classList.add('hidden');
+    $('closeModal').setAttribute('aria-hidden','true');
+  }
+
+  function parseBreakdown(text, fallbackMaterial, fallbackColor, fallbackGrams){
+    const rows = [];
+    String(text || '').split(/\n+/).forEach(line=>{
+      const m = line.match(/^\s*(.+?)\s*:\s*([\d.]+)\s*g?\s*$/i);
+      if(m){
+        const label = m[1].trim();
+        const grams = num(m[2]);
+        let material = fallbackMaterial || '';
+        let color = label;
+        const parts = label.split(/\s+/);
+        if(parts.length > 1 && /^(PLA|PETG|TPU|ABS|ASA|PA|NYLON|PC)$/i.test(parts[0])){
+          material = parts[0].toUpperCase();
+          color = parts.slice(1).join(' ');
+        }
+        rows.push({material,color,grams});
+      }
+    });
+    if(!rows.length && fallbackGrams){
+      rows.push({material:fallbackMaterial || '', color:fallbackColor || '', grams:num(fallbackGrams)});
+    }
+    return rows;
+  }
+
+  function applyInventoryLocal(j, breakdown, addFinished){
+    const raw = localRead(LS_RAW, []);
+    breakdown.forEach(b=>{
+      const idx = raw.findIndex(r =>
+        String(r.material_type||'').toLowerCase() === String(b.material||'').toLowerCase() &&
+        String(r.color||'').toLowerCase() === String(b.color||'').toLowerCase()
+      );
+      if(idx >= 0){
+        raw[idx].remaining_grams = Math.max(0, num(raw[idx].remaining_grams) - num(b.grams));
+        raw[idx].updated_at = new Date().toISOString();
+      }
+    });
+    localWrite(LS_RAW, raw);
+
+    if(addFinished){
+      const finished = localRead(LS_FINISHED, []);
+      const sku = j.finished_sku || j.job_title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const idx = finished.findIndex(f=>f.sku===sku);
+      if(idx >= 0){
+        finished[idx].quantity_on_hand = num(finished[idx].quantity_on_hand) + num(j.actual_quantity || j.quantity || 1);
+        finished[idx].updated_at = new Date().toISOString();
+      } else {
+        finished.unshift({
+          id:uid(),
+          sku,
+          product_name:j.job_title,
+          category:TYPE[j.job_type]?.label || j.job_type,
+          quantity_on_hand:num(j.actual_quantity || j.quantity || 1),
+          target_quantity:num(j.actual_quantity || j.quantity || 1),
+          sale_price:num(j.estimated_price_each),
+          material_recipe:j.actual_filament_breakdown || j.filament_breakdown || '',
+          print_hours_each:num(j.estimated_hours_each),
+          status:'stocked',
+          updated_at:new Date().toISOString(),
+          created_at:new Date().toISOString()
+        });
+      }
+      localWrite(LS_FINISHED, finished);
+    }
+  }
+
+  async function confirmClose(){
+    const j = state.jobs.find(x=>x.id===state.closingId);
+    if(!j) return closeClose();
+    const now = new Date().toISOString();
+    const updated = {
+      ...j,
+      production_status:$('closeStatus').value,
+      actual_machine:$('closeMachine').value,
+      actual_quantity:num($('closeQty').value),
+      actual_print_hours:num($('closeHours').value),
+      actual_grams_used:num($('closeGrams').value),
+      primary_material:$('closeMaterial').value.trim() || j.primary_material,
+      primary_color:$('closeColor').value.trim() || j.primary_color,
+      actual_filament_breakdown:$('closeBreakdown').value.trim() || null,
+      close_note:$('closeNote').value.trim() || null,
+      closed_at:now,
+      updated_at:now
+    };
+    const breakdown = parseBreakdown(updated.actual_filament_breakdown, updated.primary_material, updated.primary_color, updated.actual_grams_used);
+    const addFinished = $('closeAddFinished').value === 'yes';
+    try{
+      if(state.user?.id){
+        try{
+          await sbApi('/rest/v1/rpc/complete_production_job',{
+            method:'POST',
+            body:JSON.stringify({
+              p_job_id: updated.id,
+              p_status: updated.production_status,
+              p_actual_machine: updated.actual_machine,
+              p_actual_quantity: updated.actual_quantity,
+              p_actual_print_hours: updated.actual_print_hours,
+              p_actual_grams_used: updated.actual_grams_used,
+              p_actual_filament_breakdown: updated.actual_filament_breakdown,
+              p_close_note: updated.close_note,
+              p_add_finished_good: addFinished
+            })
+          });
+        }catch(rpcErr){
+          await cloudSaveJob(updated);
+        }
+      }
+      applyPmUsage(updated.actual_machine, updated.actual_print_hours);
+      applyInventoryLocal(updated, breakdown, addFinished);
+      state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
+      localWrite(LS_JOBS,state.jobs);
+      closeClose();
+      render();
+      toast('Close-out saved. PM and inventory updated.');
+    }catch(err){
+      alert(`Could not close job:\n\n${err.message || err}`);
+    }
+  }
+
+  function applyPmUsage(machine, hours){
+    const m = machine || 'Other';
+    let pm = state.pm.find(p=>p.machine===m);
+    if(!pm){
+      pm = {id:m,machine:m,hours_since_pm:0,pm_hour_interval:250,last_pm_date:null,pm_day_interval:30,next_pm_date:addDays(todayISO(),30),notes:'',updated_at:new Date().toISOString()};
+      state.pm.push(pm);
+    }
+    pm.hours_since_pm = num(pm.hours_since_pm) + num(hours);
+    pm.updated_at = new Date().toISOString();
+    localWrite(LS_PM,state.pm);
+    cloudSavePm(pm).catch(()=>{});
+  }
+
+  async function markPmDone(machine){
+    const pm = state.pm.find(p=>p.machine===machine);
+    if(!pm) return;
+    pm.hours_since_pm = 0;
+    pm.last_pm_date = todayISO();
+    pm.next_pm_date = addDays(todayISO(), num(pm.pm_day_interval)||30);
+    pm.updated_at = new Date().toISOString();
+    localWrite(LS_PM,state.pm);
+    try{ await cloudSavePm(pm); }catch{}
+    render();
+    toast(`${machine} PM marked complete.`);
+  }
+
+  async function savePmFromCard(machine){
+    const pm = state.pm.find(p=>p.machine===machine);
+    if(!pm) return;
+    pm.hours_since_pm = num($(`pm_hours_${machine}`).value);
+    pm.pm_hour_interval = num($(`pm_h_interval_${machine}`).value) || 250;
+    pm.last_pm_date = $(`pm_last_${machine}`).value || null;
+    pm.pm_day_interval = num($(`pm_d_interval_${machine}`).value) || 30;
+    pm.next_pm_date = $(`pm_next_${machine}`).value || (pm.last_pm_date ? addDays(pm.last_pm_date, pm.pm_day_interval) : addDays(todayISO(), pm.pm_day_interval));
+    pm.updated_at = new Date().toISOString();
+    localWrite(LS_PM,state.pm);
+    try{ await cloudSavePm(pm); }catch{}
+    render();
+    toast(`${machine} PM settings saved.`);
+  }
+
+  async function cloudSavePm(pm){
+    if(!state.user?.id) return;
+    const payload = {...pm, user_id:state.user.id};
+    await sbApi('/rest/v1/printer_pm?on_conflict=user_id,machine',{
+      method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+      body:JSON.stringify(payload)
+    });
+  }
+
+  async function loadAll(){
+    state.user = state.user || await getUser();
+    updateAuthUI();
+    if(state.user?.id){
+      try{
+        const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
+        state.jobs = Array.isArray(jobs) ? jobs.map(normalizeJob) : [];
+        localWrite(LS_JOBS,state.jobs);
+      }catch(err){
+        console.warn(err);
+        state.jobs = localRead(LS_JOBS, []);
+        toast('Cloud jobs unavailable. Using browser fallback.');
+      }
+      try{
+        const pm = await sbApi(`/rest/v1/printer_pm?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=machine.asc`,{method:'GET'});
+        state.pm = Array.isArray(pm) && pm.length ? pm.map(normalizePm) : localRead(LS_PM, defaultPm());
+        if(!state.pm.length) state.pm = defaultPm();
+        localWrite(LS_PM,state.pm);
+      }catch(err){
+        console.warn(err);
+        state.pm = localRead(LS_PM, defaultPm());
+      }
+    }else{
+      state.jobs = localRead(LS_JOBS, seedJobs());
+      state.pm = localRead(LS_PM, defaultPm());
+    }
+    if(!state.pm.length) state.pm = defaultPm();
+    localWrite(LS_JOBS,state.jobs);
+    localWrite(LS_PM,state.pm);
+    render();
+  }
+
+  function normalizeJob(j){
+    const q = num(j.quantity) || 1;
+    const h = num(j.estimated_hours_each ?? j.print_hours_each ?? j.hours_each);
+    const g = num(j.estimated_grams_each ?? j.grams_each);
+    return {
+      id:j.id || uid(),
+      user_id:j.user_id || state.user?.id || null,
+      job_title:j.job_title || j.project_title || 'Untitled Job',
+      job_type:j.job_type || j.project_type || 'customer_custom',
+      production_status:j.production_status || j.project_status || 'idea',
+      priority:j.priority || 'normal',
+      quantity:q,
+      machine_preference:j.machine_preference || j.machine || 'either',
+      due_date:j.due_date || null,
+      primary_material:j.primary_material || j.material || null,
+      primary_color:j.primary_color || j.color || null,
+      other_colors:j.other_colors || null,
+      color_count:num(j.color_count)||1,
+      estimated_hours_each:h,
+      estimated_grams_each:g,
+      estimated_total_hours:num(j.estimated_total_hours) || h*q,
+      estimated_total_grams:num(j.estimated_total_grams) || g*q,
+      estimated_price_each:num(j.estimated_price_each),
+      image_url:j.image_url || null,
+      customer_name:j.customer_name || null,
+      quote_number:j.quote_number || null,
+      order_number:j.order_number || null,
+      finished_sku:j.finished_sku || null,
+      filament_breakdown:j.filament_breakdown || null,
+      notes:j.notes || null,
+      actual_machine:j.actual_machine || null,
+      actual_quantity:j.actual_quantity || null,
+      actual_print_hours:j.actual_print_hours || null,
+      actual_grams_used:j.actual_grams_used || null,
+      actual_filament_breakdown:j.actual_filament_breakdown || null,
+      close_note:j.close_note || null,
+      closed_at:j.closed_at || null,
+      created_at:j.created_at || new Date().toISOString(),
+      updated_at:j.updated_at || new Date().toISOString()
+    };
+  }
+
+  function normalizePm(p){
+    return {
+      id:p.id || p.machine,
+      machine:p.machine,
+      hours_since_pm:num(p.hours_since_pm),
+      pm_hour_interval:num(p.pm_hour_interval)||250,
+      last_pm_date:p.last_pm_date || null,
+      pm_day_interval:num(p.pm_day_interval)||30,
+      next_pm_date:p.next_pm_date || (p.last_pm_date ? addDays(p.last_pm_date,num(p.pm_day_interval)||30) : addDays(todayISO(),30)),
+      notes:p.notes || '',
+      updated_at:p.updated_at || new Date().toISOString()
+    };
+  }
+
+  function seedJobs(){
+    return [];
+  }
+
+  function filteredJobs(){
+    let list = state.jobs.filter(j=>{
+      const hay = [j.job_title,j.customer_name,j.primary_material,j.primary_color,j.other_colors,j.notes,j.quote_number,j.order_number].join(' ').toLowerCase();
+      if(state.search && !hay.includes(state.search.toLowerCase())) return false;
+      if(state.filterType !== 'all' && j.job_type !== state.filterType) return false;
+      if(state.filterStatus !== 'all' && j.production_status !== state.filterStatus) return false;
+      if(state.filterMachine !== 'all' && j.machine_preference !== state.filterMachine && j.actual_machine !== state.filterMachine) return false;
+      return true;
+    });
+    return list.sort(compareJobs);
+  }
+
+  function compareJobs(a,b){
+    if(state.sortBy === 'due') return (a.due_date || '9999').localeCompare(b.due_date || '9999');
+    if(state.sortBy === 'hours_short') return num(a.estimated_total_hours) - num(b.estimated_total_hours);
+    if(state.sortBy === 'hours_long') return num(b.estimated_total_hours) - num(a.estimated_total_hours);
+    if(state.sortBy === 'primary_color') return String(a.primary_color||'').localeCompare(String(b.primary_color||''));
+    if(state.sortBy === 'machine') return String(a.machine_preference||'').localeCompare(String(b.machine_preference||''));
+    const p = {urgent:0, high:1, normal:2, low:3};
+    const s = {printing:0, ready_to_print:1, queued:2, post_processing:3, packaging:4, ready:5, awaiting_pickup:6, delivery_scheduled:7, shipped:8, delivered:9, idea:10, awaiting_approval:11, on_hold:12};
+    return (p[a.priority]??2)-(p[b.priority]??2) || (a.due_date||'9999').localeCompare(b.due_date||'9999') || (s[a.production_status]??20)-(s[b.production_status]??20);
+  }
+
+  function activeJobs(){ return state.jobs.filter(j=>!CLOSED.includes(j.production_status)); }
+
+  function renderMetrics(){
+    const active = activeJobs();
+    $('metricActive').textContent = active.length;
+    $('metricPrinting').textContent = active.filter(j=>j.production_status==='printing').length;
+    $('metricHours').textContent = fmtHours(active.reduce((s,j)=>s+num(j.estimated_total_hours),0));
+    $('metricDue').textContent = active.filter(j=>j.due_date && daysUntil(j.due_date)<=7).length;
+    $('metricPm').textContent = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good').length;
+    const next = [...active].filter(j=>['ready_to_print','queued','printing'].includes(j.production_status)).sort(compareJobs)[0] || [...active].sort(compareJobs)[0];
+    $('nextPrintBox').innerHTML = next
+      ? `<strong>${esc(TYPE[next.job_type]?.icon || '🧾')} ${esc(next.job_title)}</strong><span>${esc(TYPE[next.job_type]?.label || next.job_type)} · ${esc(STATUS[next.production_status] || next.production_status)} · ${fmtHours(next.estimated_total_hours)} · ${dueText(next.due_date)}</span>`
+      : `<strong>No active production jobs yet</strong><span>Add a job to start building the queue.</span>`;
+  }
+
+  function renderPm(){
+    $('pmBoard').innerHTML = state.pm.map(p=>{
+      const st = pmStatus(p);
+      const d = daysUntil(p.next_pm_date);
+      const dateMsg = d <= 0 ? 'Date due now' : `${d} day${d===1?'':'s'} until next PM`;
+      return `<div class="pm-card">
+        <div class="pm-head">
+          <h3>${esc(p.machine)}</h3>
+          <span class="pm-pill ${st.cls}"><span class="pm-dot"></span>${st.label}</span>
+        </div>
+        <div class="pm-fields">
+          <label>Hours Since PM<input id="pm_hours_${esc(p.machine)}" type="number" min="0" step="0.1" value="${esc(p.hours_since_pm)}"></label>
+          <label>Hour Trigger<input id="pm_h_interval_${esc(p.machine)}" type="number" min="1" step="1" value="${esc(p.pm_hour_interval)}"></label>
+          <label>Last PM Date<input id="pm_last_${esc(p.machine)}" type="date" value="${esc(p.last_pm_date || '')}"></label>
+          <label>Next PM Date<input id="pm_next_${esc(p.machine)}" type="date" value="${esc(p.next_pm_date || '')}"></label>
+          <label>Day Interval<input id="pm_d_interval_${esc(p.machine)}" type="number" min="1" step="1" value="${esc(p.pm_day_interval)}"></label>
+        </div>
+        <div class="pm-small">${fmtHours(p.hours_since_pm)} of ${fmtHours(p.pm_hour_interval)} · ${esc(dateMsg)}</div>
+        <div class="job-actions">
+          <button class="mini-btn" data-save-pm="${esc(p.machine)}" type="button">Save PM Settings</button>
+          <button class="mini-btn" data-mark-pm="${esc(p.machine)}" type="button">Mark PM Complete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function jobCard(j){
+    const t = TYPE[j.job_type] || TYPE.customer_custom;
+    const img = j.image_url ? `<img class="job-thumb" src="${esc(j.image_url)}" alt="">` : '';
+    const isClosed = CLOSED.includes(j.production_status);
+    let actions = '';
+    if(j.production_status === 'printing'){
+      actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back to Queue</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>`;
+    } else if(j.production_status === 'post_processing'){
+      actions += `<button class="mini-btn" data-status="${j.id}|ready" type="button">Mark Ready</button>`;
+    } else if(DELIVERY.includes(j.production_status)){
+      actions += `<button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery Scheduled</button>`;
+      actions += `<button class="mini-btn" data-close="${j.id}" type="button">Complete</button>`;
+    } else if(!isClosed) {
+      actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Mark Printing</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>`;
+    }
+    actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
+    return `<article class="job-card priority-${esc(j.priority)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
+      <div class="job-top">
+        <div class="job-icon">${t.icon}</div>
+        <div>
+          <h4>${esc(j.job_title)}</h4>
+          <div class="chips">
+            <span class="chip type">${esc(t.label)}</span>
+            <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>
+          </div>
+        </div>
+        ${img}
+      </div>
+      <div class="job-stats">
+        <div class="stat"><span>Machine</span><strong>${esc(j.actual_machine || j.machine_preference || 'Either')}</strong></div>
+        <div class="stat"><span>Qty</span><strong>${esc(j.quantity)}</strong></div>
+        <div class="stat"><span>Time</span><strong>${fmtHours(j.estimated_total_hours)}</strong></div>
+        <div class="stat"><span>Material</span><strong>${esc(j.primary_material || '—')}</strong></div>
+        <div class="stat"><span>Color</span><strong>${esc(j.primary_color || '—')}</strong></div>
+        <div class="stat"><span>Due</span><strong>${esc(dueText(j.due_date))}</strong></div>
+      </div>
+      <div class="job-actions">${actions}</div>
+    </article>`;
+  }
+
+  function renderLanes(){
+    const list = filteredJobs().filter(j=>!CLOSED.includes(j.production_status));
+    $('laneBoard').innerHTML = LANES.map(l=>{
+      const jobs = list.filter(j=>l.statuses.includes(j.production_status));
+      return `<section class="lane ${l.cls}">
+        <div class="lane-head"><h3>${l.icon} ${l.title}</h3><span class="lane-count">${jobs.length}</span></div>
+        ${jobs.length ? jobs.map(jobCard).join('') : `<div class="empty">No jobs in this lane.</div>`}
+      </section>`;
+    }).join('');
+  }
+
+  function renderDetails(){
+    const active = filteredJobs().filter(j=>!CLOSED.includes(j.production_status));
+    $('detailList').innerHTML = active.length ? active.map(j=>{
+      const t = TYPE[j.job_type] || TYPE.customer_custom;
+      return `<article class="detail-card" style="border-left:6px solid ${t.color}">
+        <div class="detail-head">
+          <div><h3>${t.icon} ${esc(j.job_title)}</h3><div class="chips"><span class="chip type" style="--type-bg:${t.bg};--type-text:${t.text}">${esc(t.label)}</span><span class="chip">${esc(STATUS[j.production_status]||j.production_status)}</span></div></div>
+          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button><button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-item"><span>Customer/Purpose</span><strong>${esc(j.customer_name || '—')}</strong></div>
+          <div class="detail-item"><span>Machine</span><strong>${esc(j.machine_preference || 'either')}</strong></div>
+          <div class="detail-item"><span>Qty</span><strong>${esc(j.quantity)}</strong></div>
+          <div class="detail-item"><span>Due</span><strong>${esc(dueText(j.due_date))}</strong></div>
+          <div class="detail-item"><span>Total Hours</span><strong>${fmtHours(j.estimated_total_hours)}</strong></div>
+          <div class="detail-item"><span>Total Grams</span><strong>${fmtG(j.estimated_total_grams)}</strong></div>
+          <div class="detail-item"><span>Material</span><strong>${esc(j.primary_material || '—')}</strong></div>
+          <div class="detail-item"><span>Colors</span><strong>${esc([j.primary_color,j.other_colors].filter(Boolean).join(', ') || '—')}</strong></div>
+          <div class="detail-item"><span>Quote #</span><strong>${esc(j.quote_number || '—')}</strong></div>
+          <div class="detail-item"><span>Order #</span><strong>${esc(j.order_number || '—')}</strong></div>
+          <div class="detail-item"><span>SKU</span><strong>${esc(j.finished_sku || '—')}</strong></div>
+          <div class="detail-item"><span>Price Each</span><strong>${j.estimated_price_each ? '$'+Number(j.estimated_price_each).toFixed(2) : '—'}</strong></div>
+        </div>
+        ${j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : ''}
+        ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}
+        <div class="job-actions">
+          <button class="mini-btn" data-status="${j.id}|printing" type="button">Mark Printing</button>
+          <button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back to Queue</button>
+          <button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>
+          <button class="mini-btn" data-status="${j.id}|ready" type="button">Ready</button>
+          <button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery Scheduled</button>
+          <button class="mini-btn" data-close="${j.id}" type="button">Complete / Close</button>
+        </div>
+      </article>`;
+    }).join('') : `<div class="empty">No active jobs match the filters.</div>`;
+  }
+
+  function renderHistory(){
+    const closed = state.jobs.filter(j=>CLOSED.includes(j.production_status) || j.closed_at).sort((a,b)=>String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at)));
+    $('historyBody').innerHTML = closed.length ? closed.map(j=>{
+      const t = TYPE[j.job_type] || {};
+      return `<tr>
+        <td><strong>${esc(j.job_title)}</strong><br><small>${esc(j.close_note || '')}</small></td>
+        <td>${esc(t.label || j.job_type)}</td>
+        <td>${esc(j.actual_machine || j.machine_preference || '—')}</td>
+        <td>${esc(j.actual_quantity || j.quantity || '—')}</td>
+        <td>${fmtHours(j.actual_print_hours)}</td>
+        <td>${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
+        <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="7">No completed production jobs yet.</td></tr>`;
+  }
+
+  function renderFilters(){
+    const typeSel = $('filterType');
+    if(typeSel.options.length <= 1){
+      Object.entries(TYPE).forEach(([k,v]) => typeSel.insertAdjacentHTML('beforeend', `<option value="${k}">${esc(v.label)}</option>`));
+      Object.entries(STATUS).forEach(([k,v]) => $('filterStatus').insertAdjacentHTML('beforeend', `<option value="${k}">${esc(v)}</option>`));
+    }
+  }
+
+  function render(){
+    renderFilters();
+    renderMetrics();
+    renderPm();
+    renderLanes();
+    renderDetails();
+    renderHistory();
+  }
+
+  document.addEventListener('click', e=>{
+    const edit = e.target.closest('[data-edit]')?.dataset.edit;
+    const del = e.target.closest('[data-delete]')?.dataset.delete;
+    const close = e.target.closest('[data-close]')?.dataset.close;
+    const st = e.target.closest('[data-status]')?.dataset.status;
+    const markPm = e.target.closest('[data-mark-pm]')?.dataset.markPm;
+    const savePm = e.target.closest('[data-save-pm]')?.dataset.savePm;
+    if(edit){ const j=state.jobs.find(x=>x.id===edit); if(j) fillForm(j); }
+    if(del) deleteJob(del);
+    if(close) openClose(close);
+    if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
+    if(markPm) markPmDone(markPm);
+    if(savePm) savePmFromCard(savePm);
+  });
+
+  $('jobForm').addEventListener('submit', saveJob);
+  $('cancelEditBtn').addEventListener('click', resetForm);
+  $('jumpAddBtn').addEventListener('click', ()=>$('addJobSection').scrollIntoView({behavior:'smooth'}));
+  $('loginBtn').addEventListener('click', signIn);
+  $('signupBtn').addEventListener('click', signUp);
+  $('logoutBtn').addEventListener('click', signOut);
+  $('cancelCloseBtn').addEventListener('click', closeClose);
+  $('confirmCloseBtn').addEventListener('click', confirmClose);
+  $('searchInput').addEventListener('input', e=>{state.search=e.target.value; render();});
+  $('filterType').addEventListener('change', e=>{state.filterType=e.target.value; render();});
+  $('filterStatus').addEventListener('change', e=>{state.filterStatus=e.target.value; render();});
+  $('filterMachine').addEventListener('change', e=>{state.filterMachine=e.target.value; render();});
+  $('sortBy').addEventListener('change', e=>{state.sortBy=e.target.value; render();});
+
+  loadAll();
+})();
 </script>
-
 </body>
 </html>
