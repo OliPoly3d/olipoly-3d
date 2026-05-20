@@ -84,6 +84,18 @@
     .attention-list{display:grid;gap:8px}.attention-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.68);border:1px solid rgba(101,60,120,.10)}.attention-item strong{font-size:.86rem;color:var(--ink)}.attention-item span{font-size:.74rem;color:var(--muted);font-weight:800}
     .util-row{display:grid;grid-template-columns:115px 1fr auto;gap:9px;align-items:center;margin:8px 0}.util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}.util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
 
+
+    .summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}
+    .summary-card{border-radius:22px;padding:13px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07)}
+    .summary-card h3{margin:0;color:var(--ink);font-size:1rem}
+    .summary-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}
+    .summary-stats div{padding:7px;border-radius:13px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.08)}
+    .summary-stats span{display:block;font-size:.58rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .summary-stats strong{font-size:.82rem;color:var(--ink)}
+    .roll-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    @media(max-width:1100px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.summary-grid,.summary-stats{grid-template-columns:1fr 1fr}}
+
     .cloud-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .reorder-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:6px 9px;border-radius:999px;background:rgba(95,207,255,.12);border:1px solid rgba(95,207,255,.22);font-size:.72rem;font-weight:900;color:#1d5d7d}
 
@@ -138,8 +150,11 @@
       <div class="card snapshot-card">
         <span class="kicker">Inventory snapshot</span>
         <div class="metrics">
-          <div class="metric"><div class="metric-icon">🧵</div><div><span>Raw SKUs</span><strong id="mRaw">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">🧵</div><div><span>Raw Rolls</span><strong id="mRaw">0</strong></div></div>
           <div class="metric"><div class="metric-icon">⚠️</div><div><span>Reorder</span><strong id="mLow">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">🧷</div><div><span>Mounted</span><strong id="mMounted">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">♻️</div><div><span>Free Spools</span><strong id="mFreeSpools">0</strong></div></div>
+          <div class="metric"><div class="metric-icon">🔄</div><div><span>Refills</span><strong id="mRefills">0</strong></div></div>
           <div class="metric"><div class="metric-icon">📦</div><div><span>Finished</span><strong id="mFinished">0</strong></div></div>
           <div class="metric"><div class="metric-icon">💵</div><div><span>Retail Value</span><strong id="mValue">$0</strong></div></div>
           <div class="metric"><div class="metric-icon">🧮</div><div><span>Raw Value</span><strong id="mRawValue">$0</strong></div></div>
@@ -180,6 +195,11 @@
             <label>Material<select id="rawMaterial"><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label>
             <label>Color<input id="rawColor" placeholder="Blush Pink" required></label>
             <label>Brand / Type<input id="rawBrand" placeholder="Bambu Matte"></label>
+            <label>Roll / Spool ID<input id="rawRollLabel" placeholder="Pink PLA Roll 1"></label>
+            <label>Roll Type<select id="rawRollType"><option value="spool">Spool</option><option value="refill">Refill</option><option value="sample">Sample / partial</option></select></label>
+            <label>Mounted?<select id="rawMounted"><option value="yes">Mounted / on spool</option><option value="no">Not mounted</option></select></label>
+            <label>Reusable spool?<select id="rawReusableSpool"><option value="yes">Uses reusable spool</option><option value="no">Disposable / no spool</option></select></label>
+            <label>Roll status<select id="rawRollStatus"><option value="active">Active</option><option value="sealed">Sealed / unopened</option><option value="low">Low</option><option value="empty">Empty</option><option value="retired">Retired</option></select></label>
             <label>Location<input id="rawLocation" placeholder="Shelf / dry box"></label>
             <label>Starting grams<input id="rawStarting" type="number" min="0" step="1" value="1000"></label>
             <label>Remaining grams<input id="rawRemaining" type="number" min="0" step="1" value="1000"></label>
@@ -232,6 +252,7 @@
         <label>Sort<select id="rawSort"><option value="status">Need first</option><option value="remaining">Lowest grams</option><option value="color">Color</option><option value="material">Material</option><option value="brand">Brand</option></select></label>
         <button class="ghost" id="rawClearFilters" type="button">Clear</button>
       </div>
+      <div class="summary-grid" id="rawSummary"></div>
       <div class="cards-grid" id="rawCards"></div>
     </section>
 
@@ -354,6 +375,11 @@
       color:r.color||'',
       brand:r.brand||r.filament||r.type||'',
       location:r.location||'',
+      roll_label:r.roll_label||r.roll_id||'',
+      roll_type:r.roll_type||'spool',
+      is_mounted:typeof r.is_mounted==='boolean'?r.is_mounted:(r.mounted==='no'?false:true),
+      reusable_spool:typeof r.reusable_spool==='boolean'?r.reusable_spool:(r.reusable_spool==='no'?false:true),
+      roll_status:r.roll_status||'active',
       starting_grams:num(r.starting_grams||r.starting||1000),
       remaining_grams:num(r.remaining_grams||r.remaining||0),
       reorder_threshold_grams:num(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250),
@@ -512,7 +538,7 @@
 
   async function cloudSaveRaw(r){
     if(!state.cloud) return;
-    const payload={id:r.id,user_id:state.user.id,material_type:r.material_type,color:r.color,brand:r.brand,location:r.location,starting_grams:r.starting_grams,remaining_grams:r.remaining_grams,reorder_threshold_grams:r.reorder_threshold_grams,spool_cost:r.spool_cost,supplier:r.supplier,reorder_link:r.reorder_link,reorder_quantity:r.reorder_quantity,reserved_grams:reservedGramsForRaw(r),notes:r.notes,updated_at:new Date().toISOString()};
+    const payload={id:r.id,user_id:state.user.id,material_type:r.material_type,color:r.color,brand:r.brand,location:r.location,roll_label:r.roll_label,roll_type:r.roll_type,is_mounted:r.is_mounted,reusable_spool:r.reusable_spool,roll_status:r.roll_status,starting_grams:r.starting_grams,remaining_grams:r.remaining_grams,reorder_threshold_grams:r.reorder_threshold_grams,spool_cost:r.spool_cost,supplier:r.supplier,reorder_link:r.reorder_link,reorder_quantity:r.reorder_quantity,reserved_grams:reservedGramsForRaw(r),notes:r.notes,updated_at:new Date().toISOString()};
     await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
   }
   async function cloudSaveFg(f){
@@ -521,13 +547,64 @@
     await sbApi('/rest/v1/finished_goods_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
   }
 
+
+  function rawGroups(){
+    const map=new Map();
+    raw().filter(r=>r.roll_status!=='retired').forEach(r=>{
+      const key=[r.material_type,r.color,r.brand].map(x=>String(x||'').trim()).join('|');
+      if(!map.has(key)){
+        map.set(key,{material_type:r.material_type,color:r.color,brand:r.brand,grams:0,available:0,reserved:0,rolls:0,mounted:0,refills:0,free_spools:0,low:0,value:0,items:[]});
+      }
+      const g=map.get(key);
+      g.grams += num(r.remaining_grams);
+      g.available += availableGrams(r);
+      g.reserved += reservedGramsForRaw(r);
+      if(r.roll_status!=='empty') g.rolls += 1;
+      if(r.is_mounted && r.roll_status!=='empty') g.mounted += 1;
+      if(r.roll_type==='refill' && r.roll_status!=='empty') g.refills += 1;
+      if(r.reusable_spool && !r.is_mounted) g.free_spools += 1;
+      if(rawStatus(r)!=='ok') g.low += 1;
+      g.value += rawValue(r);
+      g.items.push(r);
+    });
+    return [...map.values()].sort((a,b)=>b.grams-a.grams);
+  }
+
+  function renderRawSummary(){
+    const groups=rawGroups();
+    const el=$('rawSummary');
+    if(!el) return;
+    el.innerHTML = groups.length ? groups.map(g=>`<article class="summary-card">
+      <h3><span class="color-dot" style="--dot:${colorStyle(g.color)};width:24px;height:24px;border-radius:9px;display:inline-block;vertical-align:middle;margin-right:6px"></span>${esc(g.material_type)} / ${esc(g.color || 'No color')}</h3>
+      <div class="card-sub">${esc(g.brand || 'No brand/type')}</div>
+      <div class="summary-stats">
+        <div><span>Total</span><strong>${grams(g.grams)}</strong></div>
+        <div><span>Available</span><strong>${grams(g.available)}</strong></div>
+        <div><span>Rolls</span><strong>${g.rolls}</strong></div>
+        <div><span>Mounted</span><strong>${g.mounted}</strong></div>
+        <div><span>Refills</span><strong>${g.refills}</strong></div>
+        <div><span>Free spools</span><strong>${g.free_spools}</strong></div>
+        <div><span>Reserved</span><strong>${grams(g.reserved)}</strong></div>
+        <div><span>Value</span><strong>${money(g.value)}</strong></div>
+      </div>
+      <div class="roll-badges">${g.low?`<span class="chip warn">${g.low} low/out</span>`:''}<span class="chip">${g.items.length} records</span></div>
+    </article>`).join('') : '<div class="empty">No raw material groups yet.</div>';
+  }
+
+
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
     const low=r.filter(x=>rawStatus(x)!=='ok');
     const value=f.reduce((s,x)=>s+num(x.quantity_on_hand)*num(x.sale_price),0);
     const rawVal=r.reduce((s,x)=>s+rawValue(x),0);
+    const mounted=r.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
+    const refills=r.filter(x=>x.roll_type==='refill' && x.roll_status!=='empty').length;
+    const freeSpools=r.filter(x=>x.reusable_spool && !x.is_mounted).length;
     $('mRaw').textContent=r.length;
     $('mLow').textContent=low.length;
+    if($('mMounted')) $('mMounted').textContent=mounted;
+    if($('mFreeSpools')) $('mFreeSpools').textContent=freeSpools;
+    if($('mRefills')) $('mRefills').textContent=refills;
     $('mFinished').textContent=f.length;
     $('mValue').textContent=money(value);
     if($('mRawValue')) $('mRawValue').textContent=money(rawVal);
@@ -535,6 +612,9 @@
     const pills=[
       `<span class="decision-pill ${low.length?'danger':'ok'}">⚠️ ${low.length} reorder/out</span>`,
       `<span class="decision-pill">🧵 ${grams(r.reduce((s,x)=>s+num(x.remaining_grams),0))} filament</span>`,
+      `<span class="decision-pill">🧷 ${mounted} mounted</span>`,
+      `<span class="decision-pill">♻️ ${freeSpools} free spools</span>`,
+      `<span class="decision-pill">🔄 ${refills} refills</span>`,
       `<span class="decision-pill">📦 ${f.reduce((s,x)=>s+num(x.quantity_on_hand),0)} finished units</span>`,
       `<span class="decision-pill">💵 ${money(value)} retail value</span>`
     ];
@@ -596,7 +676,7 @@
           <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div></div>
           ${rawStatusChip(r)}
         </div>
-        <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}</div>
+        <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}<span class="chip">${esc(r.roll_type||'spool')}</span><span class="chip ${r.is_mounted?'ok':'muted'}">${r.is_mounted?'Mounted':'Not mounted'}</span><span class="chip ${r.reusable_spool?'ok':'muted'}">${r.reusable_spool?'Reusable spool':'No spool'}</span><span class="chip">${esc(r.roll_status||'active')}</span></div>
         <div class="stat-grid">
           <div class="stat"><span>On Hand</span><strong>${grams(r.remaining_grams)}</strong></div>
           <div class="stat"><span>Reserved</span><strong>${grams(reservedGramsForRaw(r))}</strong></div>
@@ -670,7 +750,7 @@
   }
 
   function render(){
-    renderMetrics();renderAttention();renderMaterialBalance();renderRawCards();renderFinishedCards();renderLedger();
+    renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderFinishedCards();renderLedger();
   }
 
   function rawFromForm(){
@@ -680,6 +760,11 @@
       material_type:$('rawMaterial').value,
       color:$('rawColor').value.trim(),
       brand:$('rawBrand').value.trim(),
+      roll_label:$('rawRollLabel').value.trim(),
+      roll_type:$('rawRollType').value,
+      is_mounted:$('rawMounted').value === 'yes',
+      reusable_spool:$('rawReusableSpool').value === 'yes',
+      roll_status:$('rawRollStatus').value,
       location:$('rawLocation').value.trim(),
       starting_grams:num($('rawStarting').value),
       remaining_grams:num($('rawRemaining').value),
@@ -694,12 +779,12 @@
     });
   }
   function fillRaw(r){
-    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawSupplier').value=r.supplier||'';$('rawReorderLink').value=r.reorder_link||'';$('rawReorderQty').value=r.reorder_quantity||1;$('rawNotes').value=r.notes;
+    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawRollLabel').value=r.roll_label||'';$('rawRollType').value=r.roll_type||'spool';$('rawMounted').value=r.is_mounted?'yes':'no';$('rawReusableSpool').value=r.reusable_spool?'yes':'no';$('rawRollStatus').value=r.roll_status||'active';$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawSupplier').value=r.supplier||'';$('rawReorderLink').value=r.reorder_link||'';$('rawReorderQty').value=r.reorder_quantity||1;$('rawNotes').value=r.notes;
     $('rawSaveBtn').textContent='Update Raw Material';
     $('rawEditor').open=true;$('rawEditor').scrollIntoView({behavior:'smooth'});
   }
   function resetRaw(){
-    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawReorderQty').value=1;$('rawSaveBtn').textContent='Save Raw Material';
+    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawReorderQty').value=1;$('rawRollType').value='spool';$('rawMounted').value='yes';$('rawReusableSpool').value='yes';$('rawRollStatus').value='active';$('rawSaveBtn').textContent='Save Raw Material';
   }
   function fgFromForm(){
     const existing=finished().find(f=>f.id===$('fgId').value);

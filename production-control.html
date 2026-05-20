@@ -649,6 +649,9 @@
       </select></label>
       <label>Primary Material<input id="closeMaterial"></label>
       <label>Primary Color<input id="closeColor"></label>
+      <label>Roll used<select id="closeRollUsed"><option value="">Auto / not selected</option></select></label>
+      <label>Finished roll?<select id="closeFinishedRoll"><option value="no">No</option><option value="yes">Yes, mark roll empty</option></select></label>
+      <label>Spool freed?<select id="closeSpoolFreed"><option value="no">No</option><option value="yes">Yes, reusable spool is free</option></select></label>
       <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
       <label class="full">Actual Filament Breakdown<textarea id="closeBreakdown" placeholder="PLA Pink: 120g&#10;PLA White: 40g"></textarea></label>
       <div class="full">
@@ -1304,6 +1307,54 @@
     }catch(err){ alert(`Could not delete job:\n\n${err.message || err}`); }
   }
 
+
+  function rawInventoryRows(){
+    try{return JSON.parse(localStorage.getItem('olipoly_raw_material_inventory_v3')||'[]')}catch{return []}
+  }
+
+  function matchingRollsForJob(j){
+    const rows = rawInventoryRows();
+    const recipe = safeJsonParse(j.filament_recipe, []);
+    const first = recipe[0] || {material:j.primary_material,color:j.primary_color};
+    return rows.filter(r=>{
+      const mat = String(r.material_type||r.material||'').toLowerCase() === String(first.material||j.primary_material||'').toLowerCase();
+      const col = String(r.color||'').toLowerCase() === String(first.color||j.primary_color||'').toLowerCase();
+      return mat && col && String(r.roll_status||'active') !== 'empty';
+    });
+  }
+
+  function populateCloseRollOptions(j){
+    const sel = $('closeRollUsed');
+    if(!sel) return;
+    const rolls = matchingRollsForJob(j);
+    sel.innerHTML = '<option value="">Auto / not selected</option>' + rolls.map(r=>{
+      const label = `${r.material_type||r.material||''} ${r.color||''} · ${r.brand||''} · ${r.roll_label||r.id} · ${Math.round(num(r.remaining_grams||r.remaining||0))}g ${r.is_mounted?'· mounted':'· not mounted'}`;
+      return `<option value="${esc(r.id)}">${esc(label)}</option>`;
+    }).join('');
+  }
+
+  function applyRollCloseoutLocal(rollId, usedGrams, finishedRoll, spoolFreed){
+    if(!rollId) return;
+    const rows = rawInventoryRows();
+    const idx = rows.findIndex(r=>r.id===rollId);
+    if(idx < 0) return;
+    const before = num(rows[idx].remaining_grams || rows[idx].remaining || 0);
+    if(finishedRoll){
+      rows[idx].remaining_grams = 0;
+      rows[idx].roll_status = 'empty';
+    }else{
+      rows[idx].remaining_grams = Math.max(0, before - num(usedGrams));
+      if(rows[idx].remaining_grams <= 0) rows[idx].roll_status = 'empty';
+    }
+    if(spoolFreed){
+      rows[idx].is_mounted = false;
+      rows[idx].reusable_spool = true;
+    }
+    rows[idx].updated_at = new Date().toISOString();
+    localStorage.setItem('olipoly_raw_material_inventory_v3', JSON.stringify(rows));
+  }
+
+
   function openClose(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
@@ -1318,6 +1369,9 @@
     $('closeFailureReason').value = j.failure_reason || '';
     $('closeMaterial').value = j.primary_material || '';
     $('closeColor').value = j.primary_color || '';
+    populateCloseRollOptions(j);
+    $('closeFinishedRoll').value = 'no';
+    $('closeSpoolFreed').value = 'no';
     $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
     $('closeBreakdown').value = j.actual_filament_breakdown || j.filament_breakdown || '';
     $('closeNote').value = j.close_note || '';
@@ -1424,6 +1478,9 @@
       scrap_grams:num($('closeScrapGrams').value),
       failure_reason:$('closeFailureReason').value || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
+      raw_material_roll_id:$('closeRollUsed')?.value || null,
+      finished_roll:$('closeFinishedRoll')?.value === 'yes',
+      spool_freed:$('closeSpoolFreed')?.value === 'yes',
       close_note:$('closeNote').value.trim() || null,
       closed_at:now,
       updated_at:now
@@ -1445,7 +1502,10 @@
               p_actual_filament_breakdown: updated.actual_filament_breakdown,
               p_close_note: updated.close_note,
               p_add_finished_good: addFinished,
-              p_skip_inventory_reduction: updated.exclude_inventory_reduction
+              p_skip_inventory_reduction: updated.exclude_inventory_reduction,
+              p_raw_material_roll_id: updated.raw_material_roll_id,
+              p_finished_roll: updated.finished_roll,
+              p_spool_freed: updated.spool_freed
             })
           });
         }catch(rpcErr){
@@ -1453,8 +1513,12 @@
         }
       }
       applyPmUsage(updated.actual_machine, updated.actual_print_hours);
-      if(!updated.exclude_inventory_reduction) applyInventoryLocal(updated, breakdown, addFinished);
-      else if(addFinished) applyInventoryLocal(updated, [], addFinished);
+      if(!updated.exclude_inventory_reduction){
+        if(updated.raw_material_roll_id) applyRollCloseoutLocal(updated.raw_material_roll_id, updated.actual_grams_used, updated.finished_roll, updated.spool_freed);
+        else applyInventoryLocal(updated, breakdown, addFinished);
+      } else if(addFinished) {
+        applyInventoryLocal(updated, [], addFinished);
+      }
       state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       closeClose();
@@ -2048,7 +2112,7 @@
         <td>${esc(j.actual_machine || j.machine_preference || '—')}</td>
         <td>${esc(j.actual_quantity || j.quantity || '—')}</td>
         <td>${fmtHours(j.actual_print_hours)}</td>
-        <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
+        <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${j.finished_roll ? 'Finished roll · ' : ''}${j.spool_freed ? 'Spool freed · ' : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
         <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
       </tr>`;
