@@ -686,7 +686,11 @@
   async function recoverLocalInventory(){
     const result=migrate();
     render();
-    if(state.cloud) await syncLocalInventoryToCloud();
+    if(state.cloud){
+      try{ await syncLocalInventoryToCloud(); }
+      catch(err){ console.warn('cloud sync after recovery failed', err); }
+    }
+    render();
     toast(`Recovered/imported ${result.rawCount} raw material row(s).`);
   }
 
@@ -874,8 +878,52 @@
 
   async function cloudSaveRaw(r){
     if(!state.cloud) return;
-    const payload={id:r.id,user_id:state.user.id,material_type:r.material_type,color:r.color,brand:r.brand,location:r.location,roll_label:r.roll_label,roll_type:r.roll_type,is_mounted:r.is_mounted,reusable_spool:r.reusable_spool,roll_status:r.roll_status,starting_grams:r.starting_grams,remaining_grams:r.remaining_grams,reorder_threshold_grams:r.reorder_threshold_grams,spool_cost:r.spool_cost,supplier:r.supplier,reorder_link:r.reorder_link,reorder_quantity:r.reorder_quantity,reserved_grams:reservedGramsForRaw(r),notes:r.notes,updated_at:new Date().toISOString()};
-    await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+    const fullPayload={
+      id:r.id,
+      user_id:state.user.id,
+      material_type:r.material_type,
+      color:r.color,
+      brand:r.brand,
+      location:r.location,
+      roll_label:r.roll_label,
+      roll_type:r.roll_type,
+      is_mounted:r.is_mounted,
+      reusable_spool:r.reusable_spool,
+      roll_status:r.roll_status,
+      starting_grams:r.starting_grams,
+      remaining_grams:r.remaining_grams,
+      reorder_threshold_grams:r.reorder_threshold_grams,
+      spool_cost:r.spool_cost,
+      supplier:r.supplier,
+      reorder_link:r.reorder_link,
+      reorder_quantity:r.reorder_quantity,
+      reserved_grams:typeof reservedGramsForRaw === 'function' ? reservedGramsForRaw(r) : 0,
+      notes:r.notes,
+      updated_at:new Date().toISOString()
+    };
+
+    async function upsert(payload){
+      return sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify(payload)
+      });
+    }
+
+    try{
+      await upsert(fullPayload);
+    }catch(err){
+      const msg=String(err?.message || err || '');
+      console.warn('raw cloud sync failed', err);
+
+      // Do not let cloud schema/cache issues break local inventory.
+      // If the table is behind, localStorage remains source of truth until SQL is run.
+      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('400')){
+        toast('Saved locally. Run/refresh the inventory SQL for cloud sync.');
+        return;
+      }
+      throw err;
+    }
   }
   async function cloudSaveFg(f){
     if(!state.cloud) return;
@@ -977,6 +1025,46 @@
       </article>`;
     }).join('') : '<div class="empty">No material groups match these filters.</div>';
   }
+
+
+  function renderSpoolPool(){
+    const rows = raw();
+    const pool = (()=>{ try{return JSON.parse(localStorage.getItem('olipoly_spool_pool_v1')||'{}')}catch{return {}} })();
+    const mounted = rows.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
+    const refills = rows.filter(x=>x.roll_type==='refill' && x.roll_status!=='empty').length;
+    const freeSpools = Number(pool.available_empty || 0);
+    if($('spoolAvailable')) $('spoolAvailable').textContent = freeSpools;
+    if($('spoolMounted')) $('spoolMounted').textContent = mounted;
+    if($('spoolRetired')) $('spoolRetired').textContent = Number(pool.retired || 0);
+    if($('mRefillsHero')) $('mRefillsHero').textContent = refills;
+  }
+
+  function saveSpoolPoolValue(next){
+    localStorage.setItem('olipoly_spool_pool_v1', JSON.stringify(next));
+  }
+
+  function currentSpoolPool(){
+    try{return JSON.parse(localStorage.getItem('olipoly_spool_pool_v1')||'{}')}catch{return {}}
+  }
+
+  function addEmptySpool(){
+    const pool=currentSpoolPool();
+    pool.available_empty = Number(pool.available_empty||0) + 1;
+    saveSpoolPoolValue(pool);
+    render();
+    toast('Empty spool added.');
+  }
+
+  function retireSpool(){
+    const pool=currentSpoolPool();
+    if(Number(pool.available_empty||0) <= 0) return toast('No free empty spools to retire.');
+    pool.available_empty = Number(pool.available_empty||0) - 1;
+    pool.retired = Number(pool.retired||0) + 1;
+    saveSpoolPoolValue(pool);
+    render();
+    toast('Spool retired.');
+  }
+
 
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
