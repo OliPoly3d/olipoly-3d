@@ -241,6 +241,12 @@
     .recipe-mini-row strong{color:var(--ink)}
     @media(max-width:900px){.recipe-row{grid-template-columns:1fr 1fr}.recipe-row label:last-child{grid-column:1/-1}}
 
+
+    .close-roll-grid{display:grid;gap:8px;margin-top:10px}
+    .close-roll-row{display:grid;grid-template-columns:1.1fr 1.5fr .7fr .7fr .7fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
+    .close-roll-row label{font-size:.74rem}
+    @media(max-width:900px){.close-roll-row{grid-template-columns:1fr 1fr}.close-roll-row label:first-child{grid-column:1/-1}}
+
     .machine-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .machine-card{border-radius:24px;padding:15px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 12px 30px rgba(84,38,94,.08);display:grid;gap:10px}
     .machine-card h3{margin:0;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -649,10 +655,11 @@
       </select></label>
       <label>Primary Material<input id="closeMaterial"></label>
       <label>Primary Color<input id="closeColor"></label>
-      <label>Roll used<select id="closeRollUsed"><option value="">Auto / not selected</option></select></label>
-      <label>Finished roll?<select id="closeFinishedRoll"><option value="no">No</option><option value="yes">Yes, mark roll empty</option></select></label>
-      <label>Spool freed?<select id="closeSpoolFreed"><option value="no">No</option><option value="yes">Yes, reusable spool is free</option></select></label>
       <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
+      <div class="full">
+        <div class="tiny-note"><strong>Roll usage by filament:</strong> choose the physical roll used for each material/color. Use “finished roll” and “spool freed” when a refill/spool is done.</div>
+        <div class="close-roll-grid" id="closeRollAllocations"></div>
+      </div>
       <label class="full">Actual Filament Breakdown<textarea id="closeBreakdown" placeholder="PLA Pink: 120g&#10;PLA White: 40g"></textarea></label>
       <div class="full">
         <div class="tiny-note"><strong>Quick usage buttons:</strong> Use these to quickly add common usage lines to the breakdown above.</div>
@@ -1312,45 +1319,83 @@
     try{return JSON.parse(localStorage.getItem('olipoly_raw_material_inventory_v3')||'[]')}catch{return []}
   }
 
-  function matchingRollsForJob(j){
-    const rows = rawInventoryRows();
+  function jobRecipeRows(j){
     const recipe = safeJsonParse(j.filament_recipe, []);
-    const first = recipe[0] || {material:j.primary_material,color:j.primary_color};
+    if(recipe.length) return recipe;
+    return [{material:j.primary_material||'', color:j.primary_color||'', filament:'', grams_each:num(j.estimated_grams_each)||num(j.actual_grams_used)||0, notes:''}];
+  }
+
+  function matchingRollsForRecipeRow(row){
+    const rows = rawInventoryRows();
     return rows.filter(r=>{
-      const mat = String(r.material_type||r.material||'').toLowerCase() === String(first.material||j.primary_material||'').toLowerCase();
-      const col = String(r.color||'').toLowerCase() === String(first.color||j.primary_color||'').toLowerCase();
-      return mat && col && String(r.roll_status||'active') !== 'empty';
+      const mat = !row.material || String(r.material_type||r.material||'').toLowerCase() === String(row.material||'').toLowerCase();
+      const col = !row.color || String(r.color||'').toLowerCase() === String(row.color||'').toLowerCase();
+      const brand = !row.filament || !r.brand || String(row.filament||'').toLowerCase().includes(String(r.brand||'').toLowerCase()) || String(r.brand||'').toLowerCase().includes(String(row.filament||'').toLowerCase());
+      return mat && col && brand && String(r.roll_status||'active') !== 'empty';
     });
   }
 
-  function populateCloseRollOptions(j){
-    const sel = $('closeRollUsed');
-    if(!sel) return;
-    const rolls = matchingRollsForJob(j);
-    sel.innerHTML = '<option value="">Auto / not selected</option>' + rolls.map(r=>{
+  function rollOptionHtml(rolls){
+    return '<option value="">Auto / not selected</option>' + rolls.map(r=>{
       const label = `${r.material_type||r.material||''} ${r.color||''} · ${r.brand||''} · ${r.roll_label||r.id} · ${Math.round(num(r.remaining_grams||r.remaining||0))}g ${r.is_mounted?'· mounted':'· not mounted'}`;
       return `<option value="${esc(r.id)}">${esc(label)}</option>`;
     }).join('');
   }
 
-  function applyRollCloseoutLocal(rollId, usedGrams, finishedRoll, spoolFreed){
-    if(!rollId) return;
+  function populateCloseRollAllocations(j){
+    const el = $('closeRollAllocations');
+    if(!el) return;
+    const qty = num($('closeQty')?.value || j.actual_quantity || j.quantity || 1) || 1;
+    const recipe = jobRecipeRows(j);
+    el.innerHTML = recipe.map((row,i)=>{
+      const expected = num(row.grams_each) * qty;
+      const rolls = matchingRollsForRecipeRow(row);
+      const label = [row.material,row.filament,row.color].filter(Boolean).join(' ') || `Filament ${i+1}`;
+      return `<div class="close-roll-row" data-close-roll-row="${i}">
+        <label>Filament<input id="closeRollLabel_${i}" value="${esc(label)}" readonly></label>
+        <label>Roll used<select id="closeRollId_${i}">${rollOptionHtml(rolls)}</select></label>
+        <label>Actual grams<input id="closeRollGrams_${i}" type="number" min="0" step="0.1" value="${esc(expected || '')}"></label>
+        <label>Finished roll?<select id="closeRollFinished_${i}"><option value="no">No</option><option value="yes">Yes</option></select></label>
+        <label>Spool freed?<select id="closeRollSpoolFreed_${i}"><option value="no">No</option><option value="yes">Yes</option></select></label>
+      </div>`;
+    }).join('');
+  }
+
+  function closeRollAllocations(){
+    const rows = [...document.querySelectorAll('[data-close-roll-row]')];
+    return rows.map(row=>{
+      const i = row.dataset.closeRollRow;
+      return {
+        label:$(`closeRollLabel_${i}`)?.value || '',
+        raw_material_roll_id:$(`closeRollId_${i}`)?.value || null,
+        grams_used:num($(`closeRollGrams_${i}`)?.value),
+        finished_roll:$(`closeRollFinished_${i}`)?.value === 'yes',
+        spool_freed:$(`closeRollSpoolFreed_${i}`)?.value === 'yes'
+      };
+    }).filter(x=>x.raw_material_roll_id || x.grams_used || x.finished_roll || x.spool_freed);
+  }
+
+  function applyRollCloseoutLocal(allocations){
+    if(!Array.isArray(allocations) || !allocations.length) return;
     const rows = rawInventoryRows();
-    const idx = rows.findIndex(r=>r.id===rollId);
-    if(idx < 0) return;
-    const before = num(rows[idx].remaining_grams || rows[idx].remaining || 0);
-    if(finishedRoll){
-      rows[idx].remaining_grams = 0;
-      rows[idx].roll_status = 'empty';
-    }else{
-      rows[idx].remaining_grams = Math.max(0, before - num(usedGrams));
-      if(rows[idx].remaining_grams <= 0) rows[idx].roll_status = 'empty';
-    }
-    if(spoolFreed){
-      rows[idx].is_mounted = false;
-      rows[idx].reusable_spool = true;
-    }
-    rows[idx].updated_at = new Date().toISOString();
+    allocations.forEach(a=>{
+      if(!a.raw_material_roll_id) return;
+      const idx = rows.findIndex(r=>r.id===a.raw_material_roll_id);
+      if(idx < 0) return;
+      const before = num(rows[idx].remaining_grams || rows[idx].remaining || 0);
+      if(a.finished_roll){
+        rows[idx].remaining_grams = 0;
+        rows[idx].roll_status = 'empty';
+      }else{
+        rows[idx].remaining_grams = Math.max(0, before - num(a.grams_used));
+        if(rows[idx].remaining_grams <= 0) rows[idx].roll_status = 'empty';
+      }
+      if(a.spool_freed){
+        rows[idx].is_mounted = false;
+        rows[idx].reusable_spool = true;
+      }
+      rows[idx].updated_at = new Date().toISOString();
+    });
     localStorage.setItem('olipoly_raw_material_inventory_v3', JSON.stringify(rows));
   }
 
@@ -1369,10 +1414,8 @@
     $('closeFailureReason').value = j.failure_reason || '';
     $('closeMaterial').value = j.primary_material || '';
     $('closeColor').value = j.primary_color || '';
-    populateCloseRollOptions(j);
-    $('closeFinishedRoll').value = 'no';
-    $('closeSpoolFreed').value = 'no';
     $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
+    populateCloseRollAllocations(j);
     $('closeBreakdown').value = j.actual_filament_breakdown || j.filament_breakdown || '';
     $('closeNote').value = j.close_note || '';
     $('closeModal').classList.remove('hidden');
@@ -1478,9 +1521,9 @@
       scrap_grams:num($('closeScrapGrams').value),
       failure_reason:$('closeFailureReason').value || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
-      raw_material_roll_id:$('closeRollUsed')?.value || null,
-      finished_roll:$('closeFinishedRoll')?.value === 'yes',
-      spool_freed:$('closeSpoolFreed')?.value === 'yes',
+      roll_usages:closeRollAllocations(),
+      finished_roll:closeRollAllocations().some(x=>x.finished_roll),
+      spool_freed:closeRollAllocations().some(x=>x.spool_freed),
       close_note:$('closeNote').value.trim() || null,
       closed_at:now,
       updated_at:now
@@ -1503,9 +1546,7 @@
               p_close_note: updated.close_note,
               p_add_finished_good: addFinished,
               p_skip_inventory_reduction: updated.exclude_inventory_reduction,
-              p_raw_material_roll_id: updated.raw_material_roll_id,
-              p_finished_roll: updated.finished_roll,
-              p_spool_freed: updated.spool_freed
+              p_roll_usages: updated.roll_usages || []
             })
           });
         }catch(rpcErr){
@@ -1514,7 +1555,7 @@
       }
       applyPmUsage(updated.actual_machine, updated.actual_print_hours);
       if(!updated.exclude_inventory_reduction){
-        if(updated.raw_material_roll_id) applyRollCloseoutLocal(updated.raw_material_roll_id, updated.actual_grams_used, updated.finished_roll, updated.spool_freed);
+        if(updated.roll_usages && updated.roll_usages.some(x=>x.raw_material_roll_id)) applyRollCloseoutLocal(updated.roll_usages);
         else applyInventoryLocal(updated, breakdown, addFinished);
       } else if(addFinished) {
         applyInventoryLocal(updated, [], addFinished);
@@ -2112,7 +2153,7 @@
         <td>${esc(j.actual_machine || j.machine_preference || '—')}</td>
         <td>${esc(j.actual_quantity || j.quantity || '—')}</td>
         <td>${fmtHours(j.actual_print_hours)}</td>
-        <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${j.finished_roll ? 'Finished roll · ' : ''}${j.spool_freed ? 'Spool freed · ' : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
+        <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${j.finished_roll ? 'Finished roll · ' : ''}${j.spool_freed ? 'Spool freed · ' : ''}${Array.isArray(j.roll_usages) && j.roll_usages.length ? `${j.roll_usages.length} roll allocation(s) · ` : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
         <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
       </tr>`;
@@ -2367,6 +2408,10 @@
   $('logoutBtn').addEventListener('click', signOut);
   $('cancelCloseBtn').addEventListener('click', closeClose);
   $('confirmCloseBtn').addEventListener('click', confirmClose);
+  $('closeQty').addEventListener('input', () => {
+    const j = state.jobs.find(x=>x.id===state.closingId);
+    if(j) populateCloseRollAllocations(j);
+  });
   $('quickAddUsageBtn').addEventListener('click', quickAddUsage);
   $('searchInput').addEventListener('input', e=>{state.search=e.target.value; render();});
   $('filterType').addEventListener('change', e=>{state.filterType=e.target.value; render();});

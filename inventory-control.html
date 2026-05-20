@@ -460,13 +460,13 @@
 
   function rawList(){
     let rows=raw(); const q=norm(state.rawSearch);
-    rows=rows.filter(r=>(state.rawStatus==='all'||rawStatus(r)===state.rawStatus)&&(state.rawMaterial==='all'||r.material_type===state.rawMaterial)&&(!q||[r.material_type,r.color,r.brand,r.location,r.notes].some(x=>norm(x).includes(q))));
+    rows=rows.filter(r=>{ const g=groupForRaw(r); return (state.rawStatus==='all'||(g&&groupStatus(g)===state.rawStatus))&&(state.rawMaterial==='all'||r.material_type===state.rawMaterial)&&(!q||[r.material_type,r.color,r.brand,r.location,r.notes].some(x=>norm(x).includes(q))); });
     rows.sort((a,b)=>{
       if(state.rawSort==='color') return String(a.color||'').localeCompare(String(b.color||''));
       if(state.rawSort==='material') return String(a.material_type||'').localeCompare(String(b.material_type||''));
       if(state.rawSort==='brand') return String(a.brand||'').localeCompare(String(b.brand||''));
       if(state.rawSort==='remaining') return num(a.remaining_grams)-num(b.remaining_grams);
-      return ({out:0,low:1,ok:2}[rawStatus(a)]-({out:0,low:1,ok:2}[rawStatus(b)])) || num(a.remaining_grams)-num(b.remaining_grams);
+      return ({out:0,low:1,ok:2}[groupStatus(groupForRaw(a))]-({out:0,low:1,ok:2}[groupStatus(groupForRaw(b))])) || num(a.remaining_grams)-num(b.remaining_grams);
     });
     return rows;
   }
@@ -548,6 +548,35 @@
   }
 
 
+
+  function rawGroupKey(r){
+    return [r.material_type,r.color,r.brand].map(x=>String(x||'').trim().toLowerCase()).join('|');
+  }
+
+  function groupForRaw(r){
+    const key = rawGroupKey(r);
+    return rawGroups().find(g=>rawGroupKey(g)===key);
+  }
+
+  function groupThreshold(g){
+    return Math.max(0, ...g.items.map(x=>num(x.reorder_threshold_grams)));
+  }
+
+  function groupStatus(g){
+    const threshold = groupThreshold(g);
+    if(num(g.grams)<=0) return 'out';
+    if(threshold && num(g.available)<=threshold) return 'low';
+    return 'ok';
+  }
+
+  function groupStatusChip(g){
+    const s=groupStatus(g);
+    if(s==='out') return '<span class="chip danger">Out</span>';
+    if(s==='low') return '<span class="chip warn">Reorder</span>';
+    return '<span class="chip ok">Good</span>';
+  }
+
+
   function rawGroups(){
     const map=new Map();
     raw().filter(r=>r.roll_status!=='retired').forEach(r=>{
@@ -587,14 +616,14 @@
         <div><span>Reserved</span><strong>${grams(g.reserved)}</strong></div>
         <div><span>Value</span><strong>${money(g.value)}</strong></div>
       </div>
-      <div class="roll-badges">${g.low?`<span class="chip warn">${g.low} low/out</span>`:''}<span class="chip">${g.items.length} records</span></div>
+      <div class="roll-badges">${groupStatusChip(g)}<span class="chip">Threshold ${grams(groupThreshold(g))}</span><span class="chip">${g.items.length} records</span></div>
     </article>`).join('') : '<div class="empty">No raw material groups yet.</div>';
   }
 
 
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
-    const low=r.filter(x=>rawStatus(x)!=='ok');
+    const low=rawGroups().filter(g=>groupStatus(g)!=='ok');
     const value=f.reduce((s,x)=>s+num(x.quantity_on_hand)*num(x.sale_price),0);
     const rawVal=r.reduce((s,x)=>s+rawValue(x),0);
     const mounted=r.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
@@ -624,16 +653,16 @@
   function renderAttention(){
     const items=[];
     const statusScore = r => ({out:0,low:1,ok:2}[rawStatus(r)] ?? 3);
-    raw()
-      .filter(r=>rawStatus(r)!=='ok')
-      .sort((a,b)=>statusScore(a)-statusScore(b))
+    rawGroups()
+      .filter(g=>groupStatus(g)!=='ok')
+      .sort((a,b)=>{ const score={out:0,low:1,ok:2}; return (score[groupStatus(a)] ?? 3) - (score[groupStatus(b)] ?? 3); })
       .slice(0,8)
-      .forEach(r=>{
+      .forEach(g=>{
         items.push({
-          icon:rawStatus(r)==='out'?'🚫':'⚠️',
-          title:`${r.material_type} ${r.color}`,
-          meta:`${rawStatus(r)==='out'?'Out':'Low'} · ${grams(r.remaining_grams)} on hand · ${grams(availableGrams(r))} available`,
-          cls:rawStatus(r)==='out'?'danger':'warn'
+          icon:groupStatus(g)==='out'?'🚫':'⚠️',
+          title:`${g.material_type} ${g.color}`,
+          meta:`${groupStatus(g)==='out'?'Out':'Low'} · ${grams(g.grams)} total · ${grams(g.available)} available · threshold ${grams(groupThreshold(g))}`,
+          cls:groupStatus(g)==='out'?'danger':'warn'
         });
       });
     finished()
@@ -667,21 +696,22 @@
     const rows=rawList();
     $('rawCards').innerHTML=rows.length?rows.map(r=>{
       const pct=Math.max(0,Math.min(100,(num(r.remaining_grams)/(num(r.starting_grams)||1000))*100));
-      const s=rawStatus(r);
+      const g=groupForRaw(r);
+      const s=g ? groupStatus(g) : rawStatus(r);
       const accent=s==='out'?'#ef476f':s==='low'?'#f7b731':'#34c759';
       const costPerGram=r.spool_cost&&r.starting_grams?num(r.spool_cost)/num(r.starting_grams):0;
       return `<article class="inventory-card" style="--accent:${accent}">
         <div class="card-head">
           <div class="color-dot" style="--dot:${colorStyle(r.color)}"></div>
           <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div></div>
-          ${rawStatusChip(r)}
+          ${g ? groupStatusChip(g) : rawStatusChip(r)}
         </div>
         <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}<span class="chip">${esc(r.roll_type||'spool')}</span><span class="chip ${r.is_mounted?'ok':'muted'}">${r.is_mounted?'Mounted':'Not mounted'}</span><span class="chip ${r.reusable_spool?'ok':'muted'}">${r.reusable_spool?'Reusable spool':'No spool'}</span><span class="chip">${esc(r.roll_status||'active')}</span></div>
         <div class="stat-grid">
           <div class="stat"><span>On Hand</span><strong>${grams(r.remaining_grams)}</strong></div>
           <div class="stat"><span>Reserved</span><strong>${grams(reservedGramsForRaw(r))}</strong></div>
           <div class="stat"><span>Available</span><strong>${grams(availableGrams(r))}</strong></div>
-          <div class="stat"><span>Threshold</span><strong>${grams(r.reorder_threshold_grams)}</strong></div>
+          <div class="stat"><span>Group Threshold</span><strong>${grams(g ? groupThreshold(g) : r.reorder_threshold_grams)}</strong></div>
           <div class="stat"><span>Value</span><strong>${money(rawValue(r))}</strong></div>
           <div class="stat"><span>Cost/g</span><strong>${costPerGram?money(costPerGram):'—'}</strong></div>
         </div>
