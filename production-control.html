@@ -209,8 +209,37 @@
     .quick-usage-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-top:8px}
     .tiny-note{font-size:.78rem;color:var(--muted);line-height:1.4}
 
+
+    .quick-start-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:8px 0 14px}
+    .quick-preset{border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.76);padding:12px;text-align:left;box-shadow:0 10px 24px rgba(84,38,94,.06);transition:.18s ease;color:var(--text)}
+    .quick-preset:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(84,38,94,.10)}
+    .quick-preset strong{display:block;color:var(--ink);font-size:.9rem;margin-bottom:3px}
+    .quick-preset span{display:block;color:var(--muted);font-size:.75rem;line-height:1.35}
+    .form-section{grid-column:1/-1;border:1px solid var(--line);background:rgba(255,255,255,.46);border-radius:22px;padding:12px;margin-top:2px}
+    .form-section summary{cursor:pointer;font-weight:900;color:var(--ink);list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .form-section summary::-webkit-details-marker{display:none}
+    .form-section summary::after{content:"+";width:26px;height:26px;border-radius:999px;display:grid;place-items:center;background:rgba(232,79,183,.10);color:#a03c87}
+    .form-section[open] summary::after{content:"–"}
+    .form-section-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+    .entry-hint{grid-column:1/-1;padding:10px 12px;border-radius:16px;background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08));border:1px solid var(--line);color:var(--muted);font-size:.86rem;line-height:1.45}
+    .board-note{margin:0 0 12px;color:var(--muted);font-size:.88rem;line-height:1.45}
+    .sort-manual-hint{display:none;margin:0 0 12px;padding:10px 12px;border-radius:16px;background:rgba(95,207,255,.12);border:1px solid rgba(95,207,255,.24);color:#1d5d7d;font-size:.86rem;font-weight:800}
+    .manual-mode .sort-manual-hint{display:block}
+    .drag-handle{width:32px;height:32px;border-radius:12px;display:none;place-items:center;background:rgba(255,255,255,.72);border:1px solid var(--line);color:var(--muted);font-weight:900;cursor:grab;user-select:none}
+    .manual-mode .drag-handle{display:grid}
+    .job-card[draggable="true"]{cursor:grab}
+    .job-card.dragging{opacity:.45;transform:scale(.985)}
+    .job-card.drop-target{outline:2px dashed rgba(157,109,243,.45);outline-offset:4px}
+    .job-card .focus-row{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 2px}
+    .signal{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:.68rem;font-weight:900;background:rgba(255,255,255,.75);border:1px solid var(--line);color:var(--muted)}
+    .signal.red{background:rgba(239,71,111,.12);color:#9a2140;border-color:rgba(239,71,111,.20)}
+    .signal.yellow{background:rgba(247,183,49,.18);color:#775300;border-color:rgba(247,183,49,.24)}
+    .signal.green{background:rgba(52,199,89,.12);color:#23763b;border-color:rgba(52,199,89,.18)}
+    .lane-drop-hint{display:none;margin-bottom:10px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.58);border:1px dashed var(--line);color:var(--muted);font-size:.78rem;font-weight:800;text-align:center}
+    .manual-mode .lane-drop-hint{display:block}
+
     @media(max-width:1100px){
-      .hero,.detail-list,.machine-grid,.suggestion-grid{grid-template-columns:1fr}
+      .hero,.detail-list,.machine-grid,.suggestion-grid,.quick-start-grid{grid-template-columns:1fr}
       .metrics{grid-template-columns:repeat(3,1fr)}
       .form-grid,.pm-fields{grid-template-columns:repeat(2,1fr)}
       .lanes{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -222,8 +251,9 @@
       .topbar{border-radius:26px;align-items:flex-start;flex-direction:column;top:8px}
       .top-actions,.btn,.ghost{width:100%}
       .metrics,.form-grid,.pm-fields,.pm-board,.lanes,.auth-grid,.toolbar,.detail-list{grid-template-columns:1fr}
-      .detail-grid,.job-stats,.insight-grid{grid-template-columns:repeat(2,1fr)}
+      .detail-grid,.job-stats,.insight-grid,.form-section-body{grid-template-columns:repeat(2,1fr)}
       .calendar-strip{grid-template-columns:1fr}
+      .form-section-body{grid-template-columns:1fr}
       .quick-usage-row{grid-template-columns:1fr}
       .card{padding:14px}
     }
@@ -282,9 +312,19 @@
   </section>
 
   <section class="card" id="addJobSection">
-    <span class="kicker">Add / edit production job</span>
+    <span class="kicker">Fast entry</span>
+    <h2 style="margin:0 0 6px;font-family:'Playfair Display',serif;color:var(--ink);letter-spacing:-.04em">Add only what you know now. Fill details later.</h2>
+    <p class="muted" style="margin-top:0">The top fields are the ones that drive the board. Material, inventory, pricing, customer, and notes are tucked into expandable sections so entry stays quick.</p>
+    <div class="quick-start-grid">
+      <button class="quick-preset" type="button" data-preset="craft_stock"><strong>🛍️ Craft stock</strong><span>Inventory/show item</span></button>
+      <button class="quick-preset" type="button" data-preset="customer_custom"><strong>👤 Custom order</strong><span>Customer work</span></button>
+      <button class="quick-preset" type="button" data-preset="business_po"><strong>🏢 Business / PO</strong><span>More urgent, traceable</span></button>
+      <button class="quick-preset" type="button" data-preset="prototype"><strong>🧪 Prototype</strong><span>Test or development</span></button>
+      <button class="quick-preset" type="button" data-preset="personal_free"><strong>🏠 Personal / free</strong><span>No sales follow-up</span></button>
+    </div>
     <form id="jobForm">
       <div class="form-grid">
+        <div class="entry-hint"><strong>Minimum useful entry:</strong> title, job type, status, priority, quantity, machine, due date, time each. Everything else improves inventory/analytics but can be added later.</div>
         <label class="span2">Job Title<input id="jobTitle" placeholder="Example: Pink dragon eggs for craft show" required></label>
         <label>Job Type<select id="jobType">
           <option value="customer_custom">Customer Custom Order</option>
@@ -316,7 +356,6 @@
           <option value="on_hold">On Hold</option>
           <option value="archived">Archived</option>
         </select></label>
-
         <label>Priority<select id="priority">
           <option value="normal">Normal</option>
           <option value="high">High</option>
@@ -332,27 +371,41 @@
           <option value="Other">Other</option>
         </select></label>
         <label>Due Date<input id="dueDate" type="date"></label>
-
-        <label>Primary Material<input id="primaryMaterial" placeholder="PLA, PETG, TPU, etc."></label>
-        <label>Primary Color<input id="primaryColor" placeholder="Pink, black, silk gold..."></label>
-        <label>Other Colors<input id="otherColors" placeholder="White, purple, green"></label>
-        <label># Colors<input id="colorCount" type="number" min="1" step="1" value="1"></label>
-
         <label>Print Hours / One<input id="hoursEach" type="number" min="0" step="0.01" placeholder="2.5"></label>
-        <label>Grams / One<input id="gramsEach" type="number" min="0" step="0.1" placeholder="45"></label>
-        <label>Est. Price / Each<input id="priceEach" type="number" min="0" step="0.01" placeholder="15.00"></label>
-        <label>Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
 
-        <label>Customer / Purpose<input id="customerName" placeholder="Customer, show, or reason"></label>
-        <label>Quote #<input id="quoteNumber" placeholder="Q-000000"></label>
-        <label>Order #<input id="orderNumber" placeholder="OP-000000"></label>
-        <label>Finished Good SKU<input id="finishedSku" placeholder="Optional inventory SKU"></label>
-
-        <label class="full">Filament Usage Breakdown<textarea id="filamentBreakdown" placeholder="Optional. Example:
+        <details class="form-section" open>
+          <summary>Material + color planning</summary>
+          <div class="form-section-body">
+            <label>Primary Material<input id="primaryMaterial" placeholder="PLA, PETG, TPU, etc."></label>
+            <label>Primary Color<input id="primaryColor" placeholder="Pink, black, silk gold..."></label>
+            <label>Other Colors<input id="otherColors" placeholder="White, purple, green"></label>
+            <label># Colors<input id="colorCount" type="number" min="1" step="1" value="1"></label>
+            <label>Grams / One<input id="gramsEach" type="number" min="0" step="0.1" placeholder="45"></label>
+            <label class="span3">Filament Usage Breakdown<textarea id="filamentBreakdown" placeholder="Optional. Example:
 PLA Pink: 120g
 PLA White: 40g
 PETG Black: 18g"></textarea></label>
-        <label class="full">Notes<textarea id="notes" placeholder="Setup notes, slicer notes, customer requirements, packaging notes, etc."></textarea></label>
+          </div>
+        </details>
+
+        <details class="form-section">
+          <summary>Customer, order, price + image</summary>
+          <div class="form-section-body">
+            <label>Customer / Purpose<input id="customerName" placeholder="Customer, show, or reason"></label>
+            <label>Quote #<input id="quoteNumber" placeholder="Q-000000"></label>
+            <label>Order #<input id="orderNumber" placeholder="OP-000000"></label>
+            <label>Finished Good SKU<input id="finishedSku" placeholder="Optional inventory SKU"></label>
+            <label>Est. Price / Each<input id="priceEach" type="number" min="0" step="0.01" placeholder="15.00"></label>
+            <label class="span3">Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
+          </div>
+        </details>
+
+        <details class="form-section">
+          <summary>Notes / special instructions</summary>
+          <div class="form-section-body">
+            <label class="full">Notes<textarea id="notes" placeholder="Setup notes, slicer notes, customer requirements, packaging notes, etc."></textarea></label>
+          </div>
+        </details>
       </div>
       <div class="form-actions">
         <button class="btn" id="saveBtn" type="submit">Save Production Job</button>
@@ -394,6 +447,7 @@ PETG Black: 18g"></textarea></label>
       <label>Status<select id="filterStatus"><option value="all">All Statuses</option></select></label>
       <label>Machine<select id="filterMachine"><option value="all">All Machines</option><option>P1S</option><option>P2S</option><option>A1</option><option>either</option><option>Other</option></select></label>
       <label>Sort<select id="sortBy">
+        <option value="manual">Manual Priority</option>
         <option value="smart">Smart Priority</option>
         <option value="due">Due Date</option>
         <option value="hours_short">Shortest First</option>
@@ -402,6 +456,8 @@ PETG Black: 18g"></textarea></label>
         <option value="machine">Machine</option>
       </select></label>
     </div>
+    <p class="board-note">Use Smart Priority for recommendations, Due Date/Color/Hours for temporary views, or Manual Priority to drag jobs up/down and save your preferred order.</p>
+    <div class="sort-manual-hint">Manual Priority mode is active. Drag cards up or down inside a lane. Switching to another sort changes the view only; your manual order is kept for when you return.</div>
     <div class="lanes" id="laneBoard"></div>
   </section>
 
@@ -544,7 +600,8 @@ PETG Black: 18g"></textarea></label>
     filterType:'all',
     filterStatus:'all',
     filterMachine:'all',
-    sortBy:'smart'
+    sortBy:'smart',
+    draggingId:null
   };
 
   function token(){ return localStorage.getItem('sb_token') || null; }
@@ -785,6 +842,7 @@ PETG Black: 18g"></textarea></label>
       scrap_grams: existing?.scrap_grams || null,
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
+      manual_rank: existing?.manual_rank ?? Date.now(),
       updated_at: now
     };
   }
@@ -1255,6 +1313,7 @@ PETG Black: 18g"></textarea></label>
       scrap_grams:j.scrap_grams || null,
       closed_at:j.closed_at || null,
       created_at:j.created_at || new Date().toISOString(),
+      manual_rank:j.manual_rank ?? Date.now(),
       updated_at:j.updated_at || new Date().toISOString()
     };
   }
@@ -1290,6 +1349,7 @@ PETG Black: 18g"></textarea></label>
   }
 
   function compareJobs(a,b){
+    if(state.sortBy === 'manual') return (num(a.manual_rank)||0) - (num(b.manual_rank)||0);
     if(state.sortBy === 'due') return (a.due_date || '9999').localeCompare(b.due_date || '9999');
     if(state.sortBy === 'hours_short') return num(a.estimated_total_hours) - num(b.estimated_total_hours);
     if(state.sortBy === 'hours_long') return num(b.estimated_total_hours) - num(a.estimated_total_hours);
@@ -1341,6 +1401,23 @@ PETG Black: 18g"></textarea></label>
     }).join('');
   }
 
+  function jobSignals(j){
+    const signals = [];
+    const d = daysUntil(j.due_date);
+    if(j.due_date){
+      const cls = d <= 1 ? 'red' : d <= 5 ? 'yellow' : 'green';
+      signals.push(`<span class="signal ${cls}">📅 ${esc(dueText(j.due_date))}</span>`);
+    }
+    if(num(j.estimated_total_hours)){
+      const h = num(j.estimated_total_hours);
+      const cls = h >= 10 ? 'red' : h >= 4 ? 'yellow' : 'green';
+      signals.push(`<span class="signal ${cls}">⏱ ${fmtHours(h)}</span>`);
+    }
+    if(j.primary_color) signals.push(`<span class="signal">🎨 ${esc(j.primary_color)}</span>`);
+    if(j.machine_preference && j.machine_preference !== 'either') signals.push(`<span class="signal">🖨 ${esc(j.machine_preference)}</span>`);
+    return signals.join('');
+  }
+
   function jobCard(j){
     const t = TYPE[j.job_type] || TYPE.customer_custom;
     const img = j.image_url ? `<img class="job-thumb" src="${esc(j.image_url)}" alt="">` : '';
@@ -1359,8 +1436,9 @@ PETG Black: 18g"></textarea></label>
       actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Post-Processing</button>`;
     }
     actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
-    return `<article class="job-card priority-${esc(j.priority)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
+    return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
+        <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
         <div class="job-icon">${t.icon}</div>
         <div>
           <h4>${esc(j.job_title)}</h4>
@@ -1369,6 +1447,7 @@ PETG Black: 18g"></textarea></label>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
             <span class="chip priority">${esc(j.priority || 'normal')}</span>
           </div>
+          <div class="focus-row">${jobSignals(j)}</div>
         </div>
         ${img}
       </div>
@@ -1391,6 +1470,7 @@ PETG Black: 18g"></textarea></label>
       const jobs = list.filter(j=>l.statuses.includes(j.production_status));
       return `<section class="lane ${l.cls}">
         <div class="lane-head"><h3>${l.icon} ${l.title}</h3><span class="lane-count">${jobs.length}</span></div>
+        <div class="lane-drop-hint">Drag cards here to set manual priority for this lane.</div>
         ${jobs.length ? jobs.map(jobCard).join('') : `<div class="empty">No jobs in this lane.</div>`}
       </section>`;
     }).join('');
@@ -1570,6 +1650,7 @@ PETG Black: 18g"></textarea></label>
 
 
   function render(){
+    document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
     renderFilters();
     renderMetrics();
     renderPm();
@@ -1582,7 +1663,85 @@ PETG Black: 18g"></textarea></label>
     renderHistory();
   }
 
+  function applyPreset(type){
+    const presets = {
+      craft_stock:{status:'ready_to_print', priority:'normal', machine:'either', title:'Craft show stock item'},
+      customer_custom:{status:'awaiting_approval', priority:'high', machine:'either', title:'Customer custom print'},
+      business_po:{status:'ready_to_print', priority:'urgent', machine:'P2S', title:'Business / PO production job'},
+      prototype:{status:'queued', priority:'normal', machine:'either', title:'Prototype / test print'},
+      personal_free:{status:'queued', priority:'low', machine:'either', title:'Personal / free print'}
+    };
+    const p = presets[type];
+    if(!p) return;
+    $('jobType').value = type;
+    $('productionStatus').value = p.status;
+    $('priority').value = p.priority;
+    $('machine').value = p.machine;
+    if(!$('jobTitle').value.trim()) $('jobTitle').value = p.title;
+    $('jobTitle').focus();
+  }
+
+  function reorderManual(dragId, targetId){
+    if(!dragId || !targetId || dragId === targetId) return;
+    const list = filteredJobs().filter(j=>!CLOSED.includes(j.production_status));
+    const dragJob = state.jobs.find(j=>j.id===dragId);
+    const targetJob = state.jobs.find(j=>j.id===targetId);
+    if(!dragJob || !targetJob) return;
+    const lane = LANES.find(l=>l.statuses.includes(targetJob.production_status));
+    if(!lane || !lane.statuses.includes(dragJob.production_status)) return toast('Drag within the same lane to set priority.');
+    const laneJobs = list.filter(j=>lane.statuses.includes(j.production_status));
+    const without = laneJobs.filter(j=>j.id !== dragId);
+    const idx = without.findIndex(j=>j.id === targetId);
+    without.splice(idx < 0 ? without.length : idx, 0, dragJob);
+    without.forEach((j,i)=>{
+      const real = state.jobs.find(x=>x.id===j.id);
+      if(real) real.manual_rank = Date.now() + i;
+    });
+    localWrite(LS_JOBS,state.jobs);
+    render();
+    toast('Manual priority updated.');
+  }
+
+  document.addEventListener('dragstart', e=>{
+    const card = e.target.closest('[data-job-card]');
+    if(!card || state.sortBy !== 'manual') return;
+    state.draggingId = card.dataset.jobCard;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', state.draggingId);
+  });
+
+  document.addEventListener('dragover', e=>{
+    if(state.sortBy !== 'manual') return;
+    const card = e.target.closest('[data-job-card]');
+    if(card && card.dataset.jobCard !== state.draggingId){
+      e.preventDefault();
+      card.classList.add('drop-target');
+    }
+  });
+
+  document.addEventListener('dragleave', e=>{
+    const card = e.target.closest('[data-job-card]');
+    if(card) card.classList.remove('drop-target');
+  });
+
+  document.addEventListener('drop', e=>{
+    if(state.sortBy !== 'manual') return;
+    const card = e.target.closest('[data-job-card]');
+    if(!card) return;
+    e.preventDefault();
+    card.classList.remove('drop-target');
+    reorderManual(state.draggingId, card.dataset.jobCard);
+  });
+
+  document.addEventListener('dragend', e=>{
+    document.querySelectorAll('.dragging,.drop-target').forEach(el=>el.classList.remove('dragging','drop-target'));
+    state.draggingId = null;
+  });
+
   document.addEventListener('click', e=>{
+    const preset = e.target.closest('[data-preset]')?.dataset.preset;
+    if(preset) applyPreset(preset);
     const edit = e.target.closest('[data-edit]')?.dataset.edit;
     const del = e.target.closest('[data-delete]')?.dataset.delete;
     const close = e.target.closest('[data-close]')?.dataset.close;
