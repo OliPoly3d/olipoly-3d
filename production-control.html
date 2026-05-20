@@ -188,6 +188,20 @@
     .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:1000;background:rgba(37,24,45,.94);color:#fff;padding:11px 16px;border-radius:999px;box-shadow:0 18px 44px rgba(0,0,0,.22);font-weight:800;opacity:0;pointer-events:none;transition:.2s}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
+
+    .recipe-builder{grid-column:1/-1;display:grid;gap:10px;padding:12px;border-radius:20px;background:rgba(255,255,255,.58);border:1px solid var(--line)}
+    .recipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .recipe-head strong{color:var(--ink)}
+    .recipe-list{display:grid;gap:8px}
+    .recipe-row{display:grid;grid-template-columns:1fr 1.05fr 1fr .75fr 1fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
+    .recipe-row label{font-size:.76rem}
+    .recipe-total{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.84rem;font-weight:800}
+    .recipe-total span{display:inline-flex;border-radius:999px;padding:6px 9px;background:rgba(244,220,255,.55);border:1px solid rgba(101,60,120,.10)}
+    .recipe-mini{display:grid;gap:6px;margin-top:8px}
+    .recipe-mini-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:7px 9px;border-radius:14px;background:rgba(255,255,255,.6);border:1px solid rgba(101,60,120,.08);font-size:.82rem}
+    .recipe-mini-row strong{color:var(--ink)}
+    @media(max-width:900px){.recipe-row{grid-template-columns:1fr 1fr}.recipe-row label:last-child{grid-column:1/-1}}
+
     .machine-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .machine-card{border-radius:24px;padding:15px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 12px 30px rgba(84,38,94,.08);display:grid;gap:10px}
     .machine-card h3{margin:0;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -428,15 +442,22 @@
         <details class="form-section" open>
           <summary>Material + color planning</summary>
           <div class="form-section-body">
-            <label>Primary Material<input id="primaryMaterial" placeholder="PLA, PETG, TPU, etc."></label>
-            <label>Primary Color<input id="primaryColor" placeholder="Pink, black, silk gold..."></label>
-            <label>Other Colors<input id="otherColors" placeholder="White, purple, green"></label>
-            <label># Colors<input id="colorCount" type="number" min="1" step="1" value="1"></label>
-            <label>Grams / One<input id="gramsEach" type="number" min="0" step="0.1" placeholder="45"></label>
-            <label class="span3">Filament Usage Breakdown<textarea id="filamentBreakdown" placeholder="Optional. Example:
-PLA Pink: 120g
-PLA White: 40g
-PETG Black: 18g"></textarea></label>
+            <label># Colors / Filaments<input id="colorCount" type="number" min="1" max="8" step="1" value="1"></label>
+            <label>Primary Material<input id="primaryMaterial" placeholder="Auto-filled from recipe"></label>
+            <label>Primary Color<input id="primaryColor" placeholder="Auto-filled from recipe"></label>
+            <label>Other Colors<input id="otherColors" placeholder="Auto-filled from recipe"></label>
+
+            <div class="recipe-builder">
+              <div class="recipe-head">
+                <strong>Filament recipe per item</strong>
+                <div class="recipe-total" id="recipeTotals"><span>1 filament</span><span>0g per item</span><span>0g total</span></div>
+              </div>
+              <div class="recipe-list" id="recipeRows"></div>
+              <p class="tiny-note">Enter usage for one finished item. The page multiplies grams by quantity for total material planning, close-out, PM, and inventory subtraction.</p>
+            </div>
+
+            <label class="span3">Generated Filament Usage Breakdown<textarea id="filamentBreakdown" placeholder="Auto-generated from the recipe rows, but you can still edit if needed."></textarea></label>
+            <label>Grams / One<input id="gramsEach" type="number" min="0" step="0.1" placeholder="Auto total"></label>
           </div>
         </details>
 
@@ -846,11 +867,113 @@ PETG Black: 18g"></textarea></label>
     loadAll();
   }
 
+
+  function safeJsonParse(value, fallback){
+    try{
+      if(!value) return fallback;
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+      return Array.isArray(parsed) ? parsed : fallback;
+    }catch{return fallback;}
+  }
+
+  function recipeFromForm(){
+    const count = Math.max(1, Math.min(8, Math.round(num($('colorCount').value) || 1)));
+    const rows = [];
+    for(let i=0;i<count;i++){
+      const material = $(`recipeMaterial_${i}`)?.value.trim() || '';
+      const filament = $(`recipeFilament_${i}`)?.value.trim() || '';
+      const color = $(`recipeColor_${i}`)?.value.trim() || '';
+      const grams_each = num($(`recipeGrams_${i}`)?.value);
+      const notes = $(`recipeNotes_${i}`)?.value.trim() || '';
+      if(material || filament || color || grams_each || notes){
+        rows.push({material, filament, color, grams_each, notes});
+      }
+    }
+    return rows;
+  }
+
+  function recipeToBreakdown(recipe, qty=1){
+    return (recipe || []).filter(r=>r.material || r.color || r.grams_each).map(r=>{
+      const label = [r.material, r.filament, r.color].filter(Boolean).join(' ');
+      const total = num(r.grams_each) * (num(qty)||1);
+      const per = num(r.grams_each);
+      return `${label || 'Filament'}: ${per}g each × ${qty} = ${Math.round(total*10)/10}g`;
+    }).join('\\n');
+  }
+
+  function recipePrimary(recipe){
+    const first = (recipe || []).find(r=>r.material || r.color || r.grams_each) || {};
+    const others = (recipe || []).slice(1).map(r=>r.color).filter(Boolean).join(', ');
+    return {
+      material:first.material || '',
+      color:first.color || '',
+      otherColors:others
+    };
+  }
+
+  function recipeFromBreakdown(j){
+    const recipe = [];
+    const existing = safeJsonParse(j.filament_recipe, []);
+    if(existing.length) return existing;
+    if(j.primary_material || j.primary_color || j.estimated_grams_each){
+      recipe.push({
+        material:j.primary_material || '',
+        filament:'',
+        color:j.primary_color || '',
+        grams_each:num(j.estimated_grams_each),
+        notes:'Imported from older material fields'
+      });
+    }
+    return recipe;
+  }
+
+  function renderRecipeRows(recipe){
+    const count = Math.max(1, Math.min(8, Math.round(num($('colorCount').value) || 1)));
+    const current = recipe || recipeFromForm();
+    const rows = [];
+    for(let i=0;i<count;i++){
+      const r = current[i] || {};
+      rows.push(`<div class="recipe-row" data-recipe-row="${i}">
+        <label>Material ${i+1}<input id="recipeMaterial_${i}" value="${esc(r.material || '')}" placeholder="PLA, PETG..."></label>
+        <label>Filament / Spool ${i+1}<input id="recipeFilament_${i}" value="${esc(r.filament || '')}" placeholder="Bambu Matte, Inland Silk..."></label>
+        <label>Color ${i+1}<input id="recipeColor_${i}" value="${esc(r.color || '')}" placeholder="Pink, white..."></label>
+        <label>g per item<input id="recipeGrams_${i}" type="number" min="0" step="0.1" value="${esc(r.grams_each ?? '')}" placeholder="0"></label>
+        <label>Notes<input id="recipeNotes_${i}" value="${esc(r.notes || '')}" placeholder="AMS slot, support, accent..."></label>
+      </div>`);
+    }
+    $('recipeRows').innerHTML = rows.join('');
+    updateRecipeDerivedFields();
+  }
+
+  function updateRecipeDerivedFields(){
+    const recipe = recipeFromForm();
+    const qty = Math.max(1, num($('quantity').value)||1);
+    const totalEach = recipe.reduce((s,r)=>s+num(r.grams_each),0);
+    const totalAll = totalEach * qty;
+    const primary = recipePrimary(recipe);
+    if(primary.material) $('primaryMaterial').value = primary.material;
+    if(primary.color) $('primaryColor').value = primary.color;
+    $('otherColors').value = primary.otherColors;
+    $('gramsEach').value = totalEach ? String(Math.round(totalEach*10)/10) : '';
+    $('filamentBreakdown').value = recipeToBreakdown(recipe, qty);
+    $('recipeTotals').innerHTML = `<span>${recipe.length || 1} filament${(recipe.length||1)===1?'':'s'}</span><span>${Math.round(totalEach*10)/10}g per item</span><span>${Math.round(totalAll*10)/10}g total</span>`;
+  }
+
+  function recipeMiniHtml(j){
+    const recipe = safeJsonParse(j.filament_recipe, []);
+    if(!recipe.length) return '';
+    const qty = num(j.quantity)||1;
+    return `<div class="recipe-mini">${recipe.map(r=>`<div class="recipe-mini-row"><strong>${esc([r.material,r.filament,r.color].filter(Boolean).join(' ') || 'Filament')}</strong><span>${esc(num(r.grams_each))}g × ${qty} = ${Math.round(num(r.grams_each)*qty*10)/10}g</span></div>`).join('')}</div>`;
+  }
+
+
   function formJob(){
     const existing = state.jobs.find(j=>j.id===state.editingId);
     const q = Math.max(1, Math.round(num($('quantity').value) || 1));
     const hEach = num($('hoursEach').value);
-    const gEach = num($('gramsEach').value);
+    updateRecipeDerivedFields();
+    const recipe = recipeFromForm();
+    const gEach = recipe.length ? recipe.reduce((s,r)=>s+num(r.grams_each),0) : num($('gramsEach').value);
     const now = new Date().toISOString();
     return {
       id: state.editingId || uid(),
@@ -877,6 +1000,7 @@ PETG Black: 18g"></textarea></label>
       order_number:$('orderNumber').value.trim() || null,
       finished_sku:$('finishedSku').value.trim() || null,
       filament_breakdown:$('filamentBreakdown').value.trim() || null,
+      filament_recipe: JSON.stringify(recipe),
       notes:$('notes').value.trim() || null,
       actual_machine: existing?.actual_machine || null,
       actual_quantity: existing?.actual_quantity || null,
@@ -916,6 +1040,7 @@ PETG Black: 18g"></textarea></label>
     $('orderNumber').value = j.order_number || '';
     $('finishedSku').value = j.finished_sku || '';
     $('filamentBreakdown').value = j.filament_breakdown || '';
+    renderRecipeRows(safeJsonParse(j.filament_recipe, recipeFromBreakdown(j)));
     $('notes').value = j.notes || '';
     $('saveBtn').textContent = 'Update Production Job';
     $('cancelEditBtn').classList.remove('hidden');
@@ -930,6 +1055,7 @@ PETG Black: 18g"></textarea></label>
     $('priority').value = 'normal';
     $('productionStatus').value = 'idea';
     $('machine').value = 'either';
+    renderRecipeRows([]);
     $('saveBtn').textContent = 'Save Production Job';
     $('cancelEditBtn').classList.add('hidden');
   }
@@ -1349,6 +1475,7 @@ PETG Black: 18g"></textarea></label>
       finished_sku:j.finished_sku || null,
       filament_breakdown:j.filament_breakdown || null,
       notes:j.notes || null,
+      filament_recipe:j.filament_recipe || null,
       actual_machine:j.actual_machine || null,
       actual_quantity:j.actual_quantity || null,
       actual_print_hours:j.actual_print_hours || null,
@@ -1515,6 +1642,7 @@ PETG Black: 18g"></textarea></label>
         <div class="stat"><span>Color</span><strong>${esc(j.primary_color || '—')}</strong></div>
         <div class="stat"><span>Due</span><strong>${esc(dueText(j.due_date))}</strong></div>
       </div>
+      ${recipeMiniHtml(j)}
       ${j.production_status==='printing' ? `<div class="tiny-note">Started: ${j.print_started_at ? esc(new Date(j.print_started_at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})) : '—'} · ${esc(finishText(j.estimated_finish_at))}</div>` : ''}
       <div class="job-actions">${actions}</div>
     </article>`;
@@ -1560,7 +1688,7 @@ PETG Black: 18g"></textarea></label>
           <div class="detail-item"><span>Finish Estimate</span><strong>${esc(finishText(j.estimated_finish_at))}</strong></div>
           <div class="detail-item"><span>Scrap Grams</span><strong>${fmtG(j.scrap_grams)}</strong></div>
         </div>
-        ${j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : ''}
+        ${recipeMiniHtml(j) || (j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : '')}
         ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}
         <div class="job-actions">
           <button class="mini-btn" data-status="${j.id}|printing" type="button">Mark Printing</button>
@@ -1812,6 +1940,12 @@ PETG Black: 18g"></textarea></label>
     if(savePm) savePmFromCard(savePm);
   });
 
+  $('jobForm').addEventListener('input', e=>{
+    if(e.target.closest('#recipeRows') || ['colorCount','quantity'].includes(e.target.id)){
+      if(e.target.id === 'colorCount') renderRecipeRows(recipeFromForm());
+      else updateRecipeDerivedFields();
+    }
+  });
   $('jobForm').addEventListener('submit', saveJob);
   $('cancelEditBtn').addEventListener('click', resetForm);
   $('jumpAddBtn').addEventListener('click', ()=>$('addJobSection').scrollIntoView({behavior:'smooth'}));
@@ -1829,6 +1963,7 @@ PETG Black: 18g"></textarea></label>
   $('filterMachine').addEventListener('change', e=>{state.filterMachine=e.target.value; render();});
   $('sortBy').addEventListener('change', e=>{state.sortBy=e.target.value; render();});
 
+  renderRecipeRows([]);
   loadAll();
 })();
 </script>
