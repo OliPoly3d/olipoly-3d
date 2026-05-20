@@ -425,6 +425,18 @@ PETG Black: 18g"></textarea></label>
   const LS_RAW = 'olipoly_raw_material_inventory_v3';
   const LS_FINISHED = 'olipoly_finished_goods_inventory_v3';
 
+  // Legacy/local fallback keys from earlier Projects + Production Control builds.
+  // This keeps older jobs from appearing "lost" after the production-control conversion.
+  const LEGACY_JOB_KEYS = [
+    'olipoly_production_jobs_v3',
+    'olipoly_production_jobs_v2',
+    'olipoly_production_jobs_v1',
+    'olipoly_production_jobs_local_v1',
+    'olipoly_active_projects_local_v1',
+    'olipoly_active_projects_v1',
+    'active_projects'
+  ];
+
   const $ = id => document.getElementById(id);
 
   const TYPE = {
@@ -518,6 +530,63 @@ PETG Black: 18g"></textarea></label>
 
   function localRead(key, fallback=[]){ try{return JSON.parse(localStorage.getItem(key)||'null') ?? fallback;}catch{return fallback;} }
   function localWrite(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+
+  function mergeUniqueJobs(lists){
+    const map = new Map();
+    lists.flat().filter(Boolean).forEach(raw => {
+      const job = normalizeJob(raw);
+      const key = job.id || `${job.job_title}|${job.created_at || ''}|${job.customer_name || ''}`;
+      const existing = map.get(key);
+      if(!existing || String(job.updated_at || '').localeCompare(String(existing.updated_at || '')) > 0){
+        map.set(key, job);
+      }
+    });
+    return [...map.values()].sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
+  }
+
+  function migrateLocalJobs(){
+    const lists = [];
+    LEGACY_JOB_KEYS.forEach(key => {
+      const val = localRead(key, []);
+      if(Array.isArray(val) && val.length) lists.push(val);
+    });
+    const merged = mergeUniqueJobs(lists);
+    if(merged.length){
+      localWrite(LS_JOBS, merged);
+    }
+    return merged;
+  }
+
+  async function loadCloudJobs(){
+    const lists = [];
+    try{
+      const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
+      if(Array.isArray(jobs) && jobs.length) lists.push(jobs);
+    }catch(err){
+      console.warn('production_jobs cloud load failed', err);
+    }
+
+    // Pull from the original Projects table too, so older project-card records can be adopted.
+    try{
+      const active = await sbApi(`/rest/v1/active_projects?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
+      if(Array.isArray(active) && active.length) lists.push(active);
+    }catch(err){
+      console.warn('active_projects cloud load skipped/failed', err);
+    }
+
+    return mergeUniqueJobs(lists);
+  }
+
+  async function migrateVisibleJobsToCloud(){
+    if(!state.user?.id) return;
+    for(const j of state.jobs){
+      try{
+        await cloudSaveJob({...j, user_id:state.user.id});
+      }catch(err){
+        console.warn('Could not migrate job to production_jobs', j.job_title, err);
+      }
+    }
+  }
 
   function addDays(date, days){
     const d = new Date((date || todayISO()) + 'T00:00:00');
@@ -988,13 +1057,16 @@ PETG Black: 18g"></textarea></label>
     updateAuthUI();
     if(state.user?.id){
       try{
-        const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
-        state.jobs = Array.isArray(jobs) ? jobs.map(normalizeJob) : [];
+        const localMigrated = migrateLocalJobs();
+        const cloudMigrated = await loadCloudJobs();
+        state.jobs = mergeUniqueJobs([cloudMigrated, localMigrated]);
         localWrite(LS_JOBS,state.jobs);
+        if(state.jobs.length) migrateVisibleJobsToCloud();
+        if(localMigrated.length || cloudMigrated.length) toast(`Loaded ${state.jobs.length} production/project jobs.`);
       }catch(err){
         console.warn(err);
-        state.jobs = localRead(LS_JOBS, []);
-        toast('Cloud jobs unavailable. Using browser fallback.');
+        state.jobs = migrateLocalJobs();
+        toast('Cloud jobs unavailable. Using browser fallback/imported local jobs.');
       }
       try{
         const pm = await sbApi(`/rest/v1/printer_pm?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=machine.asc`,{method:'GET'});
@@ -1006,13 +1078,55 @@ PETG Black: 18g"></textarea></label>
         state.pm = localRead(LS_PM, defaultPm());
       }
     }else{
-      state.jobs = localRead(LS_JOBS, seedJobs());
+      state.jobs = migrateLocalJobs();
+      if(!state.jobs.length) state.jobs = seedJobs();
       state.pm = localRead(LS_PM, defaultPm());
     }
     if(!state.pm.length) state.pm = defaultPm();
     localWrite(LS_JOBS,state.jobs);
     localWrite(LS_PM,state.pm);
     render();
+  }
+
+  function mapLegacyType(v){
+    const val = String(v || '').trim();
+    const map = {
+      customer_request:'customer_custom',
+      needs_quote:'customer_custom',
+      active_quote:'customer_custom',
+      po_order:'business_po',
+      craft_stock:'craft_stock',
+      internal_idea:'prototype',
+      reorder_candidate:'finished_goods_restock',
+      custom_order:'customer_custom',
+      business_order:'business_po',
+      personal:'personal_free',
+      prototype:'prototype'
+    };
+    return TYPE[val] ? val : (map[val] || 'customer_custom');
+  }
+
+  function mapLegacyStatus(v){
+    const val = String(v || '').trim();
+    const map = {
+      need_details:'idea',
+      ready_to_quote:'awaiting_approval',
+      pushed_to_quote:'awaiting_approval',
+      quoted:'awaiting_approval',
+      approved:'ready_to_print',
+      printing:'printing',
+      post_processing:'post_processing',
+      ready:'ready',
+      delivered:'delivered',
+      declined:'archived',
+      completed_order:'completed',
+      completed_stock:'completed',
+      completed_no_order:'completed',
+      cancelled:'archived',
+      inventory_candidate:'ready',
+      idea:'idea'
+    };
+    return STATUS[val] ? val : (map[val] || 'idea');
   }
 
   function normalizeJob(j){
@@ -1023,8 +1137,8 @@ PETG Black: 18g"></textarea></label>
       id:j.id || uid(),
       user_id:j.user_id || state.user?.id || null,
       job_title:j.job_title || j.project_title || 'Untitled Job',
-      job_type:j.job_type || j.project_type || 'customer_custom',
-      production_status:j.production_status || j.project_status || 'idea',
+      job_type:mapLegacyType(j.job_type || j.project_type || 'customer_custom'),
+      production_status:mapLegacyStatus(j.production_status || j.project_status || 'idea'),
       priority:j.priority || 'normal',
       quantity:q,
       machine_preference:j.machine_preference || j.machine || 'either',
