@@ -53,6 +53,31 @@
     .card{border-radius:var(--r);padding:18px;margin-bottom:16px}
     .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-bottom:16px}.kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:rgba(232,79,183,.09);border:1px solid rgba(232,79,183,.14);color:#a03c87;font-size:.72rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}
     .hero h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.2rem);line-height:.94;letter-spacing:-.055em;color:var(--ink)}.muted,.hero p{color:var(--muted);line-height:1.55}
+
+    .snapshot-card .metrics{
+      grid-template-columns:repeat(5,minmax(120px,1fr));
+      gap:12px;
+    }
+    .snapshot-card .metric{
+      min-width:120px;
+      padding:14px 12px;
+    }
+    .snapshot-card .metric span{
+      font-size:.66rem;
+      line-height:1.05;
+      max-width:72px;
+    }
+    .snapshot-card .metric strong{
+      font-size:1.35rem;
+    }
+    @media(max-width:1180px){
+      .snapshot-card .metrics{grid-template-columns:repeat(3,minmax(130px,1fr))}
+    }
+    @media(max-width:700px){
+      .snapshot-card .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .snapshot-card .metric span{max-width:none}
+    }
+
     .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.metric{padding:12px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid var(--line);display:flex;gap:10px;align-items:center}.metric-icon{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:rgba(244,220,255,.62);flex:0 0 auto}.metric span{display:block;color:var(--muted);font-size:.64rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}.metric strong{display:block;margin-top:2px;font-size:1.25rem;color:var(--ink)}
     .decision-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.decision-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:.76rem;font-weight:900;color:#6f4b7e}.decision-pill.warn{background:rgba(247,183,49,.16);border-color:rgba(247,183,49,.24);color:#7a5400}.decision-pill.danger{background:rgba(239,71,111,.10);border-color:rgba(239,71,111,.18);color:#9a2140}.decision-pill.ok{background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.18);color:#23763b}
     .ops-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.ops-panel{border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line);padding:14px;box-shadow:0 12px 30px rgba(84,38,94,.08)}.ops-panel h3{margin:0 0 10px;color:var(--ink)}
@@ -101,7 +126,7 @@
         <p>Production Control close-outs can subtract raw filament and add finished goods. This page keeps the inventory side easy to scan and quick to adjust.</p>
         <div class="decision-pills" id="decisionPills"><span class="decision-pill">Loading inventory...</span></div>
       </div>
-      <div class="card">
+      <div class="card snapshot-card">
         <span class="kicker">Inventory snapshot</span>
         <div class="metrics">
           <div class="metric"><div class="metric-icon">🧵</div><div><span>Raw SKUs</span><strong id="mRaw">0</strong></div></div>
@@ -573,11 +598,28 @@
   function setTab(tab){
     state.tab=tab;
     document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-    $('rawPanel').classList.toggle('hidden',tab!=='raw');$('rawEditor').classList.toggle('hidden',tab!=='raw');
-    $('finishedPanel').classList.toggle('hidden',tab!=='finished');$('finishedEditor').classList.toggle('hidden',tab!=='finished');
-    $('ledgerPanel').classList.toggle('hidden',tab!=='ledger');
-    $('tabHelp').textContent=tab==='raw'?'Manage filament and spool inventory.':tab==='finished'?'Manage sellable craft-show and stock items.':'Review usage, sales, production adjustments, and imports.';
+
+    const rawPanel=$('rawPanel'), rawEditor=$('rawEditor');
+    const finishedPanel=$('finishedPanel'), finishedEditor=$('finishedEditor');
+    const ledgerPanel=$('ledgerPanel');
+
+    if(rawPanel) rawPanel.classList.toggle('hidden',tab!=='raw');
+    if(rawEditor) rawEditor.classList.toggle('hidden',tab!=='raw');
+    if(finishedPanel) finishedPanel.classList.toggle('hidden',tab!=='finished');
+    if(finishedEditor) finishedEditor.classList.toggle('hidden',tab!=='finished');
+    if(ledgerPanel) ledgerPanel.classList.toggle('hidden',tab!=='ledger');
+
+    const help=$('tabHelp');
+    if(help){
+      help.textContent=tab==='raw'
+        ? 'Manage filament and spool inventory.'
+        : tab==='finished'
+          ? 'Manage sellable craft-show and stock items.'
+          : 'Review usage, sales, production adjustments, and imports.';
+    }
+    render();
   }
+
 
   function openAdjust(kind,id){
     const item=kind==='raw'?raw().find(x=>x.id===id):finished().find(x=>x.id===id);
@@ -652,7 +694,7 @@
   }
 
   function bind(){
-    document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+    document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
     $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
     $('rawResetBtn').addEventListener('click',resetRaw);
     $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); resetFg();render();toast('Finished good saved.');});
@@ -665,6 +707,8 @@
     $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
     $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
     document.addEventListener('click',e=>{
+      const tabBtn=e.target.closest('.tab[data-tab]');
+      if(tabBtn){e.preventDefault(); setTab(tabBtn.dataset.tab); return;}
       const er=e.target.closest('[data-edit-raw]')?.dataset.editRaw; if(er){const r=raw().find(x=>x.id===er); if(r)fillRaw(r)}
       const dr=e.target.closest('[data-delete-raw]')?.dataset.deleteRaw; if(dr&&confirm('Delete this raw material?')){saveRaw(raw().filter(x=>x.id!==dr));addLedger({type:'raw_adjust',item:'Raw material',amount:'Deleted',note:dr});render();toast('Raw material deleted.')}
       const ar=e.target.closest('[data-adjust-raw]')?.dataset.adjustRaw; if(ar)openAdjust('raw',ar);
