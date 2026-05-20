@@ -232,7 +232,7 @@
     .recipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .recipe-head strong{color:var(--ink)}
     .recipe-list{display:grid;gap:8px}
-    .recipe-row{display:grid;grid-template-columns:1fr 1.05fr 1fr .75fr 1fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
+    .recipe-row{display:grid;grid-template-columns:1.25fr 1fr 1.05fr 1fr .75fr 1fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
     .recipe-row label{font-size:.76rem}
     .recipe-total{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.84rem;font-weight:800}
     .recipe-total span{display:inline-flex;border-radius:999px;padding:6px 9px;background:rgba(244,220,255,.55);border:1px solid rgba(101,60,120,.10)}
@@ -514,8 +514,9 @@
                 <strong>Filament recipe per item</strong>
                 <div class="recipe-total" id="recipeTotals"><span>1 filament</span><span>0g per item</span><span>0g total</span></div>
               </div>
+              <datalist id="inventoryMaterialOptions"></datalist>
               <div class="recipe-list" id="recipeRows"></div>
-              <p class="tiny-note">Enter usage for one finished item. The page multiplies grams by quantity for total material planning, close-out, PM, and inventory subtraction.</p>
+              <p class="tiny-note">Choose existing inventory filament when possible so material/color/brand match exactly. Enter grams for one finished item; totals multiply by quantity.</p>
             </div>
 
             <label>Inventory Planning<select id="excludeInventoryReduction">
@@ -981,6 +982,51 @@
     }catch{return fallback;}
   }
 
+
+  function rawInventoryGroupsForProduction(){
+    let rows=[];
+    try{ rows=JSON.parse(localStorage.getItem('olipoly_raw_material_inventory_v3')||'[]'); }catch{ rows=[]; }
+    const map=new Map();
+    rows.filter(r=>String(r.roll_status||'active')!=='empty').forEach(r=>{
+      const material = r.material_type || r.material || '';
+      const color = r.color || '';
+      const filament = r.brand || r.filament || '';
+      const key = [material,color,filament].map(x=>String(x||'').trim().toLowerCase()).join('|');
+      if(!map.has(key)) map.set(key,{material, color, filament, remaining:0, rolls:0});
+      const g=map.get(key);
+      g.remaining += Number(r.remaining_grams || r.remaining || 0);
+      g.rolls += 1;
+    });
+    return [...map.values()].sort((a,b)=>`${a.material} ${a.color} ${a.filament}`.localeCompare(`${b.material} ${b.color} ${b.filament}`));
+  }
+
+  function inventoryMaterialValue(g){
+    return [g.material,g.color,g.filament].filter(Boolean).join(' | ');
+  }
+
+  function parseInventoryMaterialValue(value){
+    const parts=String(value||'').split('|').map(x=>x.trim());
+    return {material:parts[0]||'', color:parts[1]||'', filament:parts[2]||''};
+  }
+
+  function refreshInventoryMaterialOptions(){
+    const list=$('inventoryMaterialOptions');
+    if(!list) return;
+    const groups=rawInventoryGroupsForProduction();
+    list.innerHTML = groups.map(g=>`<option value="${esc(inventoryMaterialValue(g))}">${esc(g.material)} / ${esc(g.color)} / ${esc(g.filament || 'No brand')} · ${Math.round(g.remaining)}g · ${g.rolls} roll(s)</option>`).join('');
+  }
+
+  function applyInventoryPickToRecipeRow(i){
+    const pick=$(`recipeInventoryPick_${i}`)?.value || '';
+    if(!pick) return;
+    const parsed=parseInventoryMaterialValue(pick);
+    if($(`recipeMaterial_${i}`)) $(`recipeMaterial_${i}`).value = parsed.material;
+    if($(`recipeColor_${i}`)) $(`recipeColor_${i}`).value = parsed.color;
+    if($(`recipeFilament_${i}`)) $(`recipeFilament_${i}`).value = parsed.filament;
+    updateRecipeDerivedFields();
+  }
+
+
   function recipeFromForm(){
     const count = Math.max(1, Math.min(8, Math.round(num($('colorCount').value) || 1)));
     const rows = [];
@@ -1033,14 +1079,17 @@
   }
 
   function renderRecipeRows(recipe){
+    refreshInventoryMaterialOptions();
     const count = Math.max(1, Math.min(8, Math.round(num($('colorCount').value) || 1)));
     const current = recipe || recipeFromForm();
     const rows = [];
     for(let i=0;i<count;i++){
       const r = current[i] || {};
+      const pickValue = r.material || r.color || r.filament ? inventoryMaterialValue({material:r.material||'', color:r.color||'', filament:r.filament||''}) : '';
       rows.push(`<div class="recipe-row" data-recipe-row="${i}">
+        <label>Inventory filament ${i+1}<input id="recipeInventoryPick_${i}" list="inventoryMaterialOptions" value="${esc(pickValue)}" placeholder="Choose existing inventory material..."></label>
         <label>Material ${i+1}<input id="recipeMaterial_${i}" value="${esc(r.material || '')}" placeholder="PLA, PETG..."></label>
-        <label>Filament / Spool ${i+1}<input id="recipeFilament_${i}" value="${esc(r.filament || '')}" placeholder="Bambu Matte, Inland Silk..."></label>
+        <label>Filament / Brand ${i+1}<input id="recipeFilament_${i}" value="${esc(r.filament || '')}" placeholder="Bambu Matte, Inland Silk..."></label>
         <label>Color ${i+1}<input id="recipeColor_${i}" value="${esc(r.color || '')}" placeholder="Pink, white..."></label>
         <label>g per item<input id="recipeGrams_${i}" type="number" min="0" step="0.1" value="${esc(r.grams_each ?? '')}" placeholder="0"></label>
         <label>Notes<input id="recipeNotes_${i}" value="${esc(r.notes || '')}" placeholder="AMS slot, support, accent..."></label>
@@ -2393,6 +2442,11 @@
   });
 
   $('jobForm').addEventListener('input', e=>{
+    if(e.target.id && e.target.id.startsWith('recipeInventoryPick_')){
+      const i=e.target.id.split('_')[1];
+      applyInventoryPickToRecipeRow(i);
+      return;
+    }
     if(e.target.closest('#recipeRows') || ['colorCount','quantity'].includes(e.target.id)){
       if(e.target.id === 'colorCount') renderRecipeRows(recipeFromForm());
       else updateRecipeDerivedFields();

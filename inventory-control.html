@@ -1035,6 +1035,7 @@
     const refills = rows.filter(x=>x.roll_type==='refill' && x.roll_status!=='empty').length;
     const freeSpools = Number(pool.available_empty || 0);
     if($('spoolAvailable')) $('spoolAvailable').textContent = freeSpools;
+    if($('mFreeSpools')) $('mFreeSpools').textContent = freeSpools;
     if($('spoolMounted')) $('spoolMounted').textContent = mounted;
     if($('spoolRetired')) $('spoolRetired').textContent = Number(pool.retired || 0);
     if($('mRefillsHero')) $('mRefillsHero').textContent = refills;
@@ -1053,7 +1054,10 @@
     const pool=currentSpoolPool();
     pool.available_empty = Number(pool.available_empty || 0) + qty;
     saveSpoolPoolValue(pool);
-    render();
+    renderSpoolPool();
+    renderMetrics();
+    renderAttention();
+    renderMaterialBalance();
     toast(`${qty} empty reusable spool${qty===1?'':'s'} added.`);
   }
 
@@ -1075,7 +1079,7 @@
     const rawVal=r.reduce((s,x)=>s+rawValue(x),0);
     const mounted=r.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
     const refills=r.filter(x=>x.roll_type==='refill' && x.roll_status!=='empty').length;
-    const freeSpools=(state.spoolPool?.available_empty || 0);
+    const freeSpools=Number(currentSpoolPool().available_empty || 0);
     if($('mRawMaterialHero')) $('mRawMaterialHero').textContent=grams(r.reduce((s,x)=>s+num(x.remaining_grams),0));
     $('mRaw').textContent=r.length;
     $('mLow').textContent=low.length;
