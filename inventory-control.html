@@ -416,6 +416,7 @@
           </div>
           <div id="materialBalance"></div>
           <div class="spool-actions">
+            <input id="spoolAddQty" type="number" min="1" step="1" value="1" style="max-width:110px" aria-label="Spools to add">
             <button class="mini-btn" id="addEmptySpoolBtn" type="button">+ Add Empty Spool</button>
             <button class="mini-btn" id="retireSpoolBtn" type="button">Retire Spool</button>
           </div>
@@ -1048,21 +1049,22 @@
   }
 
   function addEmptySpool(){
+    const qty = Math.max(1, Math.round(Number($('spoolAddQty')?.value || 1) || 1));
     const pool=currentSpoolPool();
-    pool.available_empty = Number(pool.available_empty||0) + 1;
+    pool.available_empty = Number(pool.available_empty || 0) + qty;
     saveSpoolPoolValue(pool);
     render();
-    toast('Empty spool added.');
+    toast(`${qty} empty reusable spool${qty===1?'':'s'} added.`);
   }
 
   function retireSpool(){
     const pool=currentSpoolPool();
-    if(Number(pool.available_empty||0) <= 0) return toast('No free empty spools to retire.');
-    pool.available_empty = Number(pool.available_empty||0) - 1;
-    pool.retired = Number(pool.retired||0) + 1;
+    if(Number(pool.available_empty || 0) <= 0) return toast('No free empty spools to retire.');
+    pool.available_empty = Number(pool.available_empty || 0) - 1;
+    pool.retired = Number(pool.retired || 0) + 1;
     saveSpoolPoolValue(pool);
     render();
-    toast('Spool retired.');
+    toast('Reusable spool retired.');
   }
 
 
@@ -1418,11 +1420,16 @@
     $('importBtn').addEventListener('click',()=>$('importFile').click());
     $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
+    $('addEmptySpoolBtn')?.addEventListener('click', addEmptySpool);
+    $('retireSpoolBtn')?.addEventListener('click', retireSpool);
     $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawCards()});$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawCards()});
     $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
     $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
     $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
     document.addEventListener('click',e=>{
+      // spool-action-click-fallback
+      if(e.target.closest('#addEmptySpoolBtn')){ e.preventDefault(); addEmptySpool(); return; }
+      if(e.target.closest('#retireSpoolBtn')){ e.preventDefault(); retireSpool(); return; }
       const tabBtn=e.target.closest('.tab[data-tab]');
       if(tabBtn){e.preventDefault(); setTab(tabBtn.dataset.tab); return;}
       const er=e.target.closest('[data-edit-raw]')?.dataset.editRaw; if(er){const r=raw().find(x=>x.id===er); if(r)fillRaw(r)}
