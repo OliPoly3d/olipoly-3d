@@ -357,6 +357,8 @@
         <div class="metric"><div class="metric-icon">🖨️</div><div><span>Printing</span><strong id="metricPrinting">0</strong></div></div>
         <div class="metric"><div class="metric-icon">⏱️</div><div><span>Open Hours</span><strong id="metricHours">0h</strong></div></div>
         <div class="metric"><div class="metric-icon">⚠️</div><div><span>Due Soon</span><strong id="metricDue">0</strong></div></div>
+        <div class="metric"><div class="metric-icon">📦</div><div><span>Post Print</span><strong id="metricPostPrint">0</strong></div></div>
+        <div class="metric"><div class="metric-icon">✅</div><div><span>Closed</span><strong id="metricClosed">0</strong></div></div>
         <div class="metric"><div class="metric-icon">🧰</div><div><span>PM Alerts</span><strong id="metricPm">0</strong></div></div>
       </div>
       <div class="decision-pills" id="decisionPills"><span class="decision-pill">Loading board...</span></div>
@@ -1552,25 +1554,38 @@
   function activeJobs(){ return state.jobs.filter(j=>!CLOSED.includes(j.production_status)); }
 
   function renderMetrics(){
+    const all = state.jobs || [];
     const active = activeJobs();
-    $('metricActive').textContent = active.length;
-    $('metricPrinting').textContent = active.filter(j=>j.production_status==='printing').length;
-    $('metricHours').textContent = fmtHours(active.reduce((s,j)=>s+num(j.estimated_total_hours),0));
-    $('metricDue').textContent = active.filter(j=>j.due_date && daysUntil(j.due_date)<=7).length;
-    $('metricPm').textContent = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good').length;
-    const dueSoon = active.filter(j=>j.due_date && daysUntil(j.due_date)<=7);
-    const pmWarn = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good');
+    const printWork = active.filter(needsPrinterTime);
     const printing = active.filter(j=>j.production_status==='printing');
-    const next = [...active].filter(j=>['ready_to_print','queued','printing'].includes(j.production_status)).sort(compareJobs)[0] || [...active].sort(compareJobs)[0];
+    const postPrint = active.filter(isPostPrint);
+    const closed = all.filter(j=>CLOSED.includes(j.production_status) || j.closed_at);
+    const dueSoon = printWork.filter(j=>j.due_date && daysUntil(j.due_date)<=7);
+    const pmWarn = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good');
+    const recommended = printWork.filter(isRecommendedCandidate).sort(compareJobs);
+    const next = recommended[0] || null;
+
+    $('metricActive').textContent = printWork.filter(j=>j.production_status!=='printing').length;
+    $('metricPrinting').textContent = printing.length;
+    $('metricHours').textContent = fmtHours(printWork.reduce((s,j)=>s+num(j.estimated_total_hours),0));
+    $('metricDue').textContent = dueSoon.length;
+    if($('metricPostPrint')) $('metricPostPrint').textContent = postPrint.length;
+    if($('metricClosed')) $('metricClosed').textContent = closed.length;
+    $('metricPm').textContent = pmWarn.length;
+
+    const colorBatchCount = groupBy(printWork.filter(isRecommendedCandidate),j=>[j.primary_material,j.primary_color].filter(Boolean).join(' / ')).filter(g=>g[1].length>=2).length;
     const pills = [];
     pills.push(`<span class="decision-pill ${printing.length?'warn':''}">🖨️ ${printing.length || 0} running</span>`);
-    pills.push(`<span class="decision-pill ${dueSoon.length?'danger':''}">⚠️ ${dueSoon.length || 0} due soon</span>`);
+    pills.push(`<span class="decision-pill ${dueSoon.length?'danger':''}">⚠️ ${dueSoon.length || 0} print due soon</span>`);
+    pills.push(`<span class="decision-pill ${postPrint.length?'warn':''}">📦 ${postPrint.length || 0} post-print</span>`);
+    pills.push(`<span class="decision-pill">✅ ${closed.length || 0} closed</span>`);
     pills.push(`<span class="decision-pill ${pmWarn.length?'danger':''}">🧰 ${pmWarn.length || 0} PM alerts</span>`);
-    pills.push(`<span class="decision-pill">🎨 ${groupBy(active,j=>[j.primary_material,j.primary_color].filter(Boolean).join(' / ')).filter(g=>g[1].length>=2).length} color batches</span>`);
+    pills.push(`<span class="decision-pill">🎨 ${colorBatchCount} color batches</span>`);
     const dp = $('decisionPills'); if(dp) dp.innerHTML = pills.join('');
+
     $('nextPrintBox').innerHTML = next
       ? `<strong>${esc(TYPE[next.job_type]?.icon || '🧾')} ${esc(next.job_title)}</strong><span>${esc(TYPE[next.job_type]?.label || next.job_type)} · ${esc(STATUS[next.production_status] || next.production_status)} · ${fmtHours(next.estimated_total_hours)} · ${dueText(next.due_date)}</span>`
-      : `<strong>No print-ready jobs competing for printer time</strong><span>Post-print, delivery, and completed work stays visible in its lane but is excluded from recommendations.</span>`;
+      : `<strong>No print-ready jobs competing for printer time</strong><span>Post-print, delivery, and closed work is excluded from Recommended Next.</span>`;
   }
 
   function renderPm(){
