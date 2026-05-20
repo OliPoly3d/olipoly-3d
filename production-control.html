@@ -645,6 +645,7 @@
       <label>Primary Material<input id="closeMaterial"></label>
       <label>Primary Color<input id="closeColor"></label>
       <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
+      <label>Inventory impact<select id="closeInventoryImpact"><option value="reduce">Reduce raw inventory</option><option value="skip">Do not reduce inventory</option></select></label>
       <label class="full">Actual Filament Breakdown<textarea id="closeBreakdown" placeholder="PLA Pink: 120g&#10;PLA White: 40g"></textarea></label>
       <div class="full">
         <div class="tiny-note"><strong>Quick usage buttons:</strong> Use these to quickly add common usage lines to the breakdown above.</div>
@@ -1102,6 +1103,7 @@
       estimated_finish_at: existing?.estimated_finish_at || null,
       scrap_grams: existing?.scrap_grams || null,
       failure_reason: existing?.failure_reason || null,
+      exclude_inventory_reduction: !!existing?.exclude_inventory_reduction,
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
       manual_rank: existing?.manual_rank ?? Date.now(),
@@ -1188,6 +1190,7 @@
       print_started_at:j.print_started_at,
       estimated_finish_at:j.estimated_finish_at,
       scrap_grams:j.scrap_grams,
+      exclude_inventory_reduction:j.exclude_inventory_reduction,
       closed_at:j.closed_at,
       updated_at:j.updated_at
     };
@@ -1267,6 +1270,7 @@
     $('closeMaterial').value = j.primary_material || '';
     $('closeColor').value = j.primary_color || '';
     $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
+    $('closeInventoryImpact').value = j.exclude_inventory_reduction ? 'skip' : 'reduce';
     $('closeBreakdown').value = j.actual_filament_breakdown || j.filament_breakdown || '';
     $('closeNote').value = j.close_note || '';
     $('closeModal').classList.remove('hidden');
@@ -1371,6 +1375,7 @@
       actual_filament_breakdown:$('closeBreakdown').value.trim() || null,
       scrap_grams:num($('closeScrapGrams').value),
       failure_reason:$('closeFailureReason').value || null,
+      exclude_inventory_reduction:$('closeInventoryImpact').value === 'skip',
       close_note:$('closeNote').value.trim() || null,
       closed_at:now,
       updated_at:now
@@ -1391,7 +1396,8 @@
               p_actual_grams_used: updated.actual_grams_used,
               p_actual_filament_breakdown: updated.actual_filament_breakdown,
               p_close_note: updated.close_note,
-              p_add_finished_good: addFinished
+              p_add_finished_good: addFinished,
+              p_skip_inventory_reduction: updated.exclude_inventory_reduction
             })
           });
         }catch(rpcErr){
@@ -1399,7 +1405,8 @@
         }
       }
       applyPmUsage(updated.actual_machine, updated.actual_print_hours);
-      applyInventoryLocal(updated, breakdown, addFinished);
+      if(!updated.exclude_inventory_reduction) applyInventoryLocal(updated, breakdown, addFinished);
+      else if(addFinished) applyInventoryLocal(updated, [], addFinished);
       state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       closeClose();
@@ -1579,6 +1586,7 @@
       estimated_finish_at:j.estimated_finish_at || null,
       scrap_grams:j.scrap_grams || null,
       failure_reason:j.failure_reason || null,
+      exclude_inventory_reduction:!!j.exclude_inventory_reduction,
       closed_at:j.closed_at || null,
       created_at:j.created_at || new Date().toISOString(),
       manual_rank:j.manual_rank ?? Date.now(),
@@ -1958,7 +1966,7 @@
         <td>${esc(j.actual_machine || j.machine_preference || '—')}</td>
         <td>${esc(j.actual_quantity || j.quantity || '—')}</td>
         <td>${fmtHours(j.actual_print_hours)}</td>
-        <td>${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
+        <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
         <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
       </tr>`;

@@ -83,6 +83,10 @@
     .ops-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.ops-panel{border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line);padding:14px;box-shadow:0 12px 30px rgba(84,38,94,.08)}.ops-panel h3{margin:0 0 10px;color:var(--ink)}
     .attention-list{display:grid;gap:8px}.attention-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.68);border:1px solid rgba(101,60,120,.10)}.attention-item strong{font-size:.86rem;color:var(--ink)}.attention-item span{font-size:.74rem;color:var(--muted);font-weight:800}
     .util-row{display:grid;grid-template-columns:115px 1fr auto;gap:9px;align-items:center;margin:8px 0}.util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}.util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
+
+    .cloud-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .reorder-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:6px 9px;border-radius:999px;background:rgba(95,207,255,.12);border:1px solid rgba(95,207,255,.22);font-size:.72rem;font-weight:900;color:#1d5d7d}
+
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab{border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);padding:10px 14px;font-weight:900;color:#5f456a}.tab.active{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 12px 28px rgba(214,73,186,.20)}
     .toolbar{display:grid;grid-template-columns:1.1fr .7fr .7fr .7fr auto;gap:10px;align-items:end;margin:12px 0}.toolbar.compact{grid-template-columns:1.1fr .7fr .7fr auto}
     label{display:grid;gap:6px;font-size:.84rem;font-weight:900}input,select,textarea{width:100%;min-height:42px;border-radius:15px;border:1px solid var(--line2);padding:10px 11px;background:rgba(255,255,255,.84);outline:none;color:var(--text)}textarea{min-height:96px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:rgba(157,109,243,.45);box-shadow:0 0 0 4px rgba(157,109,243,.10)}
@@ -119,6 +123,11 @@
       </div>
     </header>
 
+    <section class="card">
+      <span class="kicker">Cloud sync</span>
+      <div class="decision-pills" id="cloudStatus"><span class="decision-pill">Checking sign-in...</span></div>
+    </section>
+
     <section class="hero">
       <div class="card">
         <span class="kicker">OliPoly inventory flow</span>
@@ -133,6 +142,7 @@
           <div class="metric"><div class="metric-icon">⚠️</div><div><span>Reorder</span><strong id="mLow">0</strong></div></div>
           <div class="metric"><div class="metric-icon">📦</div><div><span>Finished</span><strong id="mFinished">0</strong></div></div>
           <div class="metric"><div class="metric-icon">💵</div><div><span>Retail Value</span><strong id="mValue">$0</strong></div></div>
+          <div class="metric"><div class="metric-icon">🧮</div><div><span>Raw Value</span><strong id="mRawValue">$0</strong></div></div>
           <div class="metric"><div class="metric-icon">🔁</div><div><span>Moves</span><strong id="mMoves">0</strong></div></div>
         </div>
       </div>
@@ -175,6 +185,9 @@
             <label>Remaining grams<input id="rawRemaining" type="number" min="0" step="1" value="1000"></label>
             <label>Reorder threshold<input id="rawThreshold" type="number" min="0" step="1" value="250"></label>
             <label>Spool cost<input id="rawCost" type="number" min="0" step="0.01" placeholder="24.99"></label>
+            <label>Supplier<input id="rawSupplier" placeholder="Bambu, Amazon, Micro Center..."></label>
+            <label>Reorder link<input id="rawReorderLink" placeholder="https://..."></label>
+            <label>Reorder qty<input id="rawReorderQty" type="number" min="0" step="1" value="1"></label>
             <label class="full">Notes<textarea id="rawNotes" placeholder="Supplier, link, special print settings, etc."></textarea></label>
           </div>
           <div class="actions">
@@ -272,6 +285,9 @@
 (()=>{
   'use strict';
 
+  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
   const RAW_KEY='olipoly_raw_material_inventory_v3';
   const FG_KEY='olipoly_finished_goods_inventory_v3';
   const LEDGER_KEY='olipoly_inventory_ledger_v2';
@@ -279,7 +295,7 @@
   const LEGACY_FG_KEYS=['olipoly_inventory_finished_v1','olipoly_finished_goods_inventory_v3'];
   const LEGACY_LEDGER_KEYS=['olipoly_inventory_ledger_v1','olipoly_inventory_ledger_v2'];
   const $=id=>document.getElementById(id);
-  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null};
+  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false};
 
   function uid(){return crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
   function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
@@ -290,6 +306,21 @@
   function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v))}
   function grams(v){const n=num(v);return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`}
   function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
+  function token(){ return localStorage.getItem('sb_token') || null; }
+  async function sbApi(path, options={}){
+    const headers={apikey:SUPABASE_KEY,'Content-Type':'application/json',...(token()?{Authorization:`Bearer ${token()}`}:{}) ,...(options.headers||{})};
+    const res=await fetch(`${SUPABASE_URL}${path}`,{...options,headers});
+    const txt=await res.text(); let data=null; try{data=txt?JSON.parse(txt):null}catch{data=txt}
+    if(!res.ok) throw new Error(data?.message || data?.hint || txt || `Supabase error ${res.status}`);
+    return data;
+  }
+  async function getUser(){ if(!token()) return null; try{return await sbApi('/auth/v1/user',{method:'GET'})}catch{return null} }
+  function updateCloudStatus(){
+    const el=$('cloudStatus'); if(!el) return;
+    el.innerHTML = state.cloud
+      ? `<span class="decision-pill ok">☁️ Cloud sync active</span><span class="decision-pill">${esc(state.user?.email||'signed in')}</span>`
+      : `<span class="decision-pill warn">💻 Browser fallback</span><span class="decision-pill">Log in from Production/Orders to sync inventory across devices</span>`;
+  }
 
   function migrate(){
     const rawMap=new Map();
@@ -327,6 +358,10 @@
       remaining_grams:num(r.remaining_grams||r.remaining||0),
       reorder_threshold_grams:num(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250),
       spool_cost:num(r.spool_cost||r.cost||0),
+      supplier:r.supplier||'',
+      reorder_link:r.reorder_link||r.product_link||'',
+      reorder_quantity:num(r.reorder_quantity||r.reorder_qty||1),
+      reserved_grams:num(r.reserved_grams||0),
       notes:r.notes||'',
       created_at:r.created_at||new Date().toISOString(),
       updated_at:r.updated_at||new Date().toISOString()
@@ -422,14 +457,80 @@
     return rows;
   }
 
+
+  function productionJobs(){
+    try{return JSON.parse(localStorage.getItem('olipoly_production_jobs_v3')||'[]')}catch{return []}
+  }
+
+  function recipeRowsForJob(j){
+    try{
+      const rows=JSON.parse(j.filament_recipe||'[]');
+      return Array.isArray(rows)?rows:[];
+    }catch{return []}
+  }
+
+  function reservedGramsForRaw(r){
+    const jobs=productionJobs().filter(j=>['ready_to_print','queued','printing'].includes(j.production_status));
+    let total=0;
+    jobs.forEach(j=>{
+      const qty=num(j.quantity)||1;
+      recipeRowsForJob(j).forEach(row=>{
+        const materialMatch=norm(row.material)===norm(r.material_type);
+        const colorMatch=norm(row.color)===norm(r.color);
+        const brandMatch=!row.filament || !r.brand || norm(row.filament).includes(norm(r.brand)) || norm(r.brand).includes(norm(row.filament));
+        if(materialMatch && colorMatch && brandMatch) total += num(row.grams_each)*qty;
+      });
+    });
+    return total;
+  }
+
+  function availableGrams(r){
+    return Math.max(0,num(r.remaining_grams)-reservedGramsForRaw(r));
+  }
+
+  function rawValue(r){
+    const costPerGram = r.spool_cost && r.starting_grams ? num(r.spool_cost)/num(r.starting_grams) : 0;
+    return costPerGram * num(r.remaining_grams);
+  }
+
+  async function loadCloudInventory(){
+    state.user=await getUser();
+    state.cloud=!!state.user?.id;
+    updateCloudStatus();
+    if(!state.cloud) return;
+    try{
+      const [rawRows,fgRows,ledgerRows]=await Promise.all([
+        sbApi(`/rest/v1/raw_material_inventory?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
+        sbApi(`/rest/v1/finished_goods_inventory?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
+        sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=created_at.desc`,{method:'GET'}).catch(()=>null)
+      ]);
+      if(Array.isArray(rawRows) && rawRows.length) write(RAW_KEY,rawRows.map(normalizeRaw));
+      if(Array.isArray(fgRows) && fgRows.length) write(FG_KEY,fgRows.map(normalizeFg));
+      if(Array.isArray(ledgerRows) && ledgerRows.length) write(LEDGER_KEY,ledgerRows.map(x=>normalizeLedger({date:x.created_at,type:x.transaction_type,item:x.item_label,amount:x.quantity_change,note:x.note})));
+    }catch(err){console.warn(err); toast('Cloud inventory load failed. Using browser data.')}
+  }
+
+  async function cloudSaveRaw(r){
+    if(!state.cloud) return;
+    const payload={id:r.id,user_id:state.user.id,material_type:r.material_type,color:r.color,brand:r.brand,location:r.location,starting_grams:r.starting_grams,remaining_grams:r.remaining_grams,reorder_threshold_grams:r.reorder_threshold_grams,spool_cost:r.spool_cost,supplier:r.supplier,reorder_link:r.reorder_link,reorder_quantity:r.reorder_quantity,reserved_grams:reservedGramsForRaw(r),notes:r.notes,updated_at:new Date().toISOString()};
+    await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+  }
+  async function cloudSaveFg(f){
+    if(!state.cloud) return;
+    const payload={id:f.id,user_id:state.user.id,sku:f.sku,product_name:f.product_name,category:f.category,sale_price:f.sale_price,quantity_on_hand:f.quantity_on_hand,target_quantity:f.target_quantity,print_hours_each:f.print_hours_each,status:f.status,material_recipe:f.material_recipe,image_url:f.image_url,notes:f.notes,updated_at:new Date().toISOString()};
+    await sbApi('/rest/v1/finished_goods_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+  }
+
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
     const low=r.filter(x=>rawStatus(x)!=='ok');
     const value=f.reduce((s,x)=>s+num(x.quantity_on_hand)*num(x.sale_price),0);
+    const rawVal=r.reduce((s,x)=>s+rawValue(x),0);
     $('mRaw').textContent=r.length;
     $('mLow').textContent=low.length;
     $('mFinished').textContent=f.length;
     $('mValue').textContent=money(value);
+    if($('mRawValue')) $('mRawValue').textContent=money(rawVal);
     $('mMoves').textContent=l.length;
     const pills=[
       `<span class="decision-pill ${low.length?'danger':'ok'}">⚠️ ${low.length} reorder/out</span>`,
@@ -451,7 +552,7 @@
         items.push({
           icon:rawStatus(r)==='out'?'🚫':'⚠️',
           title:`${r.material_type} ${r.color}`,
-          meta:`${rawStatus(r)==='out'?'Out':'Low'} · ${grams(r.remaining_grams)} left · reorder at ${grams(r.reorder_threshold_grams)}`,
+          meta:`${rawStatus(r)==='out'?'Out':'Low'} · ${grams(r.remaining_grams)} on hand · ${grams(availableGrams(r))} available`,
           cls:rawStatus(r)==='out'?'danger':'warn'
         });
       });
@@ -497,11 +598,19 @@
         </div>
         <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}</div>
         <div class="stat-grid">
-          <div class="stat"><span>Remaining</span><strong>${grams(r.remaining_grams)}</strong></div>
+          <div class="stat"><span>On Hand</span><strong>${grams(r.remaining_grams)}</strong></div>
+          <div class="stat"><span>Reserved</span><strong>${grams(reservedGramsForRaw(r))}</strong></div>
+          <div class="stat"><span>Available</span><strong>${grams(availableGrams(r))}</strong></div>
           <div class="stat"><span>Threshold</span><strong>${grams(r.reorder_threshold_grams)}</strong></div>
+          <div class="stat"><span>Value</span><strong>${money(rawValue(r))}</strong></div>
           <div class="stat"><span>Cost/g</span><strong>${costPerGram?money(costPerGram):'—'}</strong></div>
         </div>
         <div class="bar ${s==='low'?'warn':s==='out'?'danger':''}"><span style="width:${pct}%"></span></div>
+        <div class="card-actions">
+          ${r.supplier?`<span class="chip">${esc(r.supplier)}</span>`:''}
+          ${r.reorder_link?`<a class="reorder-link" href="${esc(r.reorder_link)}" target="_blank" rel="noopener">Reorder ↗</a>`:''}
+          ${r.reorder_quantity?`<span class="chip">Buy ${esc(r.reorder_quantity)}</span>`:''}
+        </div>
         ${r.notes?`<div class="card-sub" style="margin-top:8px">${esc(r.notes)}</div>`:''}
         <div class="quick-adjust">
           <input data-quick-amount="${r.id}" type="number" min="0" step="1" placeholder="grams">
@@ -576,18 +685,21 @@
       remaining_grams:num($('rawRemaining').value),
       reorder_threshold_grams:num($('rawThreshold').value),
       spool_cost:num($('rawCost').value),
+      supplier:$('rawSupplier').value.trim(),
+      reorder_link:$('rawReorderLink').value.trim(),
+      reorder_quantity:num($('rawReorderQty').value)||1,
       notes:$('rawNotes').value.trim(),
       created_at:existing?.created_at||new Date().toISOString(),
       updated_at:new Date().toISOString()
     });
   }
   function fillRaw(r){
-    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawNotes').value=r.notes;
+    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawSupplier').value=r.supplier||'';$('rawReorderLink').value=r.reorder_link||'';$('rawReorderQty').value=r.reorder_quantity||1;$('rawNotes').value=r.notes;
     $('rawSaveBtn').textContent='Update Raw Material';
     $('rawEditor').open=true;$('rawEditor').scrollIntoView({behavior:'smooth'});
   }
   function resetRaw(){
-    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawSaveBtn').textContent='Save Raw Material';
+    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawReorderQty').value=1;$('rawSaveBtn').textContent='Save Raw Material';
   }
   function fgFromForm(){
     const existing=finished().find(f=>f.id===$('fgId').value);
@@ -662,12 +774,14 @@
       const before=num(list[idx].remaining_grams);
       list[idx].remaining_grams=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
       list[idx].updated_at=new Date().toISOString(); saveRaw(list);
+      cloudSaveRaw(list[idx]).catch(console.warn);
       addLedger({type:action==='subtract'?'raw_usage':'raw_adjust',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:note||'Manual raw material adjustment'});
     }else{
       const list=finished(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
       const before=num(list[idx].quantity_on_hand);
       list[idx].quantity_on_hand=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
       list[idx].updated_at=new Date().toISOString(); saveFinished(list);
+      cloudSaveFg(list[idx]).catch(console.warn);
       addLedger({type:'fg_adjust',item:list[idx].product_name,amount:`${before} → ${list[idx].quantity_on_hand}`,note:note||'Manual finished good adjustment'});
     }
     closeAdjust(); render(); toast('Inventory adjusted.');
@@ -716,9 +830,9 @@
 
   function bind(){
     document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
-    $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
+    $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); cloudSaveRaw(r).catch(console.warn); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
     $('rawResetBtn').addEventListener('click',resetRaw);
-    $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); resetFg();render();toast('Finished good saved.');});
+    $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); cloudSaveFg(f).catch(console.warn); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); resetFg();render();toast('Finished good saved.');});
     $('fgResetBtn').addEventListener('click',resetFg);
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());
@@ -746,7 +860,7 @@
 
   migrate();
   bind();
-  render();
+  loadCloudInventory().finally(render);
 })();
 </script>
 </body>
