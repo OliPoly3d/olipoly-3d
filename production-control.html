@@ -238,6 +238,65 @@
     .lane-drop-hint{display:none;margin-bottom:10px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.58);border:1px dashed var(--line);color:var(--muted);font-size:.78rem;font-weight:800;text-align:center}
     .manual-mode .lane-drop-hint{display:block}
 
+
+    /* === Visual hierarchy / board-first polish === */
+    .wrap{display:flex;flex-direction:column}
+    .topbar{order:0}
+    #authSection{order:1}
+    .hero{order:2;grid-template-columns:1.18fr .82fr;align-items:stretch}
+    #queueSection{order:3}
+    #machineSection{order:4}
+    #addJobSection{order:5}
+    #pmSection{order:6}
+    #suggestionSection{order:7}
+    #calendarSection{order:8}
+    #insightSection{order:9}
+    #detailsSection{order:10}
+    #historySection{order:11}
+    .decision-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .decision-title h2{font-size:clamp(1.7rem,3.2vw,2.8rem)!important;max-width:760px}
+    .decision-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .decision-pill{display:inline-flex;align-items:center;gap:7px;padding:9px 11px;border-radius:999px;background:rgba(255,255,255,.74);border:1px solid var(--line);font-weight:900;font-size:.82rem;color:#604966}
+    .decision-pill.warn{background:rgba(247,183,49,.18);color:#7a5400;border-color:rgba(247,183,49,.25)}
+    .decision-pill.danger{background:rgba(239,71,111,.12);color:#9a2140;border-color:rgba(239,71,111,.20)}
+    .metrics.compact-metrics{grid-template-columns:repeat(5,minmax(0,1fr));margin-top:0}
+    .compact-metrics .metric{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;min-height:76px}
+    .metric-icon{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(232,79,183,.12),rgba(157,109,243,.12));font-size:1.08rem}
+    .compact-metrics .metric span{font-size:.62rem}.compact-metrics .metric strong{font-size:1.25rem;margin:0}
+    .ops-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;align-items:stretch}
+    .board-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .board-header h2{margin:0;font-family:'Playfair Display',serif;font-size:clamp(1.8rem,3.8vw,3rem);line-height:.95;letter-spacing:-.045em;color:var(--ink)}
+    .board-legend{display:flex;gap:7px;flex-wrap:wrap}
+    .legend-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:.74rem;font-weight:900;color:#604966}
+    .legend-dot{width:9px;height:9px;border-radius:999px;background:var(--dot,#9d6df3)}
+    .toolbar.board-toolbar{grid-template-columns:1.3fr repeat(4,minmax(120px,.7fr));margin:0 0 10px}
+    .toolbar.board-toolbar label{font-size:.72rem;color:var(--muted)}
+    .toolbar.board-toolbar input,.toolbar.board-toolbar select{min-height:38px;padding:8px 10px;border-radius:13px}
+    .lanes{gap:12px}
+    .lane{padding:11px;border-radius:22px;min-height:280px}
+    .lane-head{position:sticky;top:88px;z-index:2;padding:4px 2px 8px;background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,255,255,.55));backdrop-filter:blur(10px);border-radius:16px}
+    .lane h3{font-size:.9rem;text-transform:uppercase;letter-spacing:.04em}
+    .job-card{padding:11px;border-radius:19px;margin-bottom:9px}
+    .job-card h4{font-size:.92rem}
+    .job-icon{width:30px;height:30px;border-radius:12px}
+    .job-thumb{width:44px;height:44px;border-radius:12px}
+    .chips{margin:7px 0}.chip{font-size:.62rem;padding:4px 7px}
+    .job-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+    .stat{padding:7px;border-radius:12px}.stat span{font-size:.56rem}.stat strong{font-size:.76rem}
+    .job-actions{gap:6px}.mini-btn{min-height:32px;padding:7px 9px;font-size:.72rem}
+    .form-intro-strip{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-bottom:12px;padding:12px;border-radius:18px;background:rgba(255,255,255,.62);border:1px solid var(--line)}
+    .form-intro-strip h2{margin:0;font-family:'Playfair Display',serif;color:var(--ink);letter-spacing:-.04em;font-size:1.8rem;line-height:.95}.form-intro-strip p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+    .quick-start-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:12px}
+    .quick-preset{min-height:72px;padding:10px}.quick-preset strong{font-size:.86rem}.quick-preset span{font-size:.72rem}
+    details.page-collapse{border:0;background:transparent;padding:0}
+    details.page-collapse>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:0;margin:0}
+    details.page-collapse>summary::-webkit-details-marker{display:none}
+    details.page-collapse>summary .kicker{margin-bottom:0}
+    .collapse-caret{font-weight:900;color:var(--muted);background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:.78rem}
+    .page-collapse[open] .collapse-caret::after{content:'Hide'}
+    .page-collapse:not([open]) .collapse-caret::after{content:'Show'}
+    .page-collapse-body{margin-top:14px}
+
     @media(max-width:1100px){
       .hero,.detail-list,.machine-grid,.suggestion-grid,.quick-start-grid{grid-template-columns:1fr}
       .metrics{grid-template-columns:repeat(3,1fr)}
@@ -250,7 +309,7 @@
       .wrap{width:min(100% - 16px,var(--max));padding-top:10px}
       .topbar{border-radius:26px;align-items:flex-start;flex-direction:column;top:8px}
       .top-actions,.btn,.ghost{width:100%}
-      .metrics,.form-grid,.pm-fields,.pm-board,.lanes,.auth-grid,.toolbar,.detail-list{grid-template-columns:1fr}
+      .metrics,.form-grid,.pm-fields,.pm-board,.lanes,.auth-grid,.toolbar,.detail-list,.ops-grid,.compact-metrics,.quick-start-grid{grid-template-columns:1fr}
       .detail-grid,.job-stats,.insight-grid,.form-section-body{grid-template-columns:repeat(2,1fr)}
       .calendar-strip{grid-template-columns:1fr}
       .form-section-body{grid-template-columns:1fr}
@@ -278,28 +337,23 @@
 
   <section class="hero">
     <div class="card section-title">
-      <span class="kicker">OliPoly production flow</span>
-      <h2>Know what to print, when to maintain, and what inventory changes.</h2>
-      <p>Use this as the operating board for everything printed: customer work, business orders, craft stock, prototypes, personal/free prints, reprints, scrap, and internal shop work.</p>
-      <div class="metrics">
-        <div class="metric"><span>Active Jobs</span><strong id="metricActive">0</strong></div>
-        <div class="metric"><span>Printing</span><strong id="metricPrinting">0</strong></div>
-        <div class="metric"><span>Open Hours</span><strong id="metricHours">0h</strong></div>
-        <div class="metric"><span>Due Soon</span><strong id="metricDue">0</strong></div>
-        <div class="metric"><span>PM Warnings</span><strong id="metricPm">0</strong></div>
+      <div class="decision-title"><div><span class="kicker">Today’s decisions</span><h2>What needs attention right now?</h2></div><button class="btn" id="jumpAddBtnHero" type="button">+ Quick Add</button></div>
+      <div class="metrics compact-metrics">
+        <div class="metric"><div class="metric-icon">📋</div><div><span>Active</span><strong id="metricActive">0</strong></div></div>
+        <div class="metric"><div class="metric-icon">🖨️</div><div><span>Printing</span><strong id="metricPrinting">0</strong></div></div>
+        <div class="metric"><div class="metric-icon">⏱️</div><div><span>Open Hours</span><strong id="metricHours">0h</strong></div></div>
+        <div class="metric"><div class="metric-icon">⚠️</div><div><span>Due Soon</span><strong id="metricDue">0</strong></div></div>
+        <div class="metric"><div class="metric-icon">🧰</div><div><span>PM Alerts</span><strong id="metricPm">0</strong></div></div>
       </div>
+      <div class="decision-pills" id="decisionPills"><span class="decision-pill">Loading board...</span></div>
     </div>
     <div class="card">
-      <span class="kicker">Next best print</span>
-      <div class="next-box" id="nextPrintBox">
-        <strong>No active production jobs yet</strong>
-        <span>Add a job to start building the queue.</span>
-      </div>
-      <p class="muted">Queue logic favors urgent/high priority, due dates, ready-to-print statuses, and active production work.</p>
+      <span class="kicker">Recommended next</span>
+      <div class="next-box" id="nextPrintBox"><strong>No active jobs yet</strong><span>Add a job to start building the queue.</span></div>
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="authSection">
     <span class="kicker">Cloud login</span>
     <div class="auth-grid">
       <label>Email<input id="email" type="email" autocomplete="email" placeholder="OliPoly login email"></label>
@@ -312,9 +366,7 @@
   </section>
 
   <section class="card" id="addJobSection">
-    <span class="kicker">Fast entry</span>
-    <h2 style="margin:0 0 6px;font-family:'Playfair Display',serif;color:var(--ink);letter-spacing:-.04em">Add only what you know now. Fill details later.</h2>
-    <p class="muted" style="margin-top:0">The top fields are the ones that drive the board. Material, inventory, pricing, customer, and notes are tucked into expandable sections so entry stays quick.</p>
+    <div class="form-intro-strip"><div><span class="kicker">Quick add</span><h2>Add the minimum. Enrich later.</h2><p>Title, type, status, priority, machine, due date, and time drive the board.</p></div><button class="ghost" type="button" id="clearFormBtn">Clear</button></div>
     <div class="quick-start-grid">
       <button class="quick-preset" type="button" data-preset="craft_stock"><strong>🛍️ Craft stock</strong><span>Inventory/show item</span></button>
       <button class="quick-preset" type="button" data-preset="customer_custom"><strong>👤 Custom order</strong><span>Customer work</span></button>
@@ -414,34 +466,34 @@ PETG Black: 18g"></textarea></label>
     </form>
   </section>
 
-  <section class="card">
+  <section class="card" id="pmSection">
     <span class="kicker">PM Lite</span>
     <div class="pm-board" id="pmBoard"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="machineSection">
     <span class="kicker">Printer command center</span>
     <div class="machine-grid" id="machineBoard"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="suggestionSection">
     <span class="kicker">Smart production suggestions</span>
     <div class="suggestion-grid" id="suggestionBoard"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="calendarSection">
     <span class="kicker">Production calendar</span>
     <div class="calendar-strip" id="calendarStrip"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="insightSection">
     <span class="kicker">Estimate accuracy & scrap insight</span>
     <div class="insight-grid" id="insightBoard"></div>
   </section>
 
-  <section class="card">
-    <span class="kicker">Print queue</span>
-    <div class="toolbar">
+  <section class="card" id="queueSection">
+    <div class="board-header"><div><span class="kicker">Main board</span><h2>Print queue</h2></div><div class="board-legend"><span class="legend-chip"><span class="legend-dot" style="--dot:#9d6df3"></span>Ready</span><span class="legend-chip"><span class="legend-dot" style="--dot:#5fcfff"></span>Printing</span><span class="legend-chip"><span class="legend-dot" style="--dot:#ff7fcf"></span>QC</span><span class="legend-chip"><span class="legend-dot" style="--dot:#f7b731"></span>Delivery</span></div></div>
+    <div class="toolbar board-toolbar">
       <label>Search<input id="searchInput" placeholder="Search title, customer, material, color..."></label>
       <label>Job Type<select id="filterType"><option value="all">All Job Types</option></select></label>
       <label>Status<select id="filterStatus"><option value="all">All Statuses</option></select></label>
@@ -461,19 +513,14 @@ PETG Black: 18g"></textarea></label>
     <div class="lanes" id="laneBoard"></div>
   </section>
 
-  <section class="card">
-    <span class="kicker">Full detail cards</span>
-    <div id="detailList" class="detail-list"></div>
-  </section>
+  <section class="card" id="detailsSection"><details class="page-collapse"><summary><span class="kicker">Full detail cards</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div id="detailList" class="detail-list"></div></div></details></section>
 
-  <section class="card">
-    <span class="kicker">Completed / history</span>
-    <div class="history-wrap">
+  <section class="card" id="historySection"><details class="page-collapse"><summary><span class="kicker">Completed / history</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div class="history-wrap">
       <table>
         <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>
-    </div>
+    </div></div></details>
   </section>
 </div>
 
@@ -1369,7 +1416,16 @@ PETG Black: 18g"></textarea></label>
     $('metricHours').textContent = fmtHours(active.reduce((s,j)=>s+num(j.estimated_total_hours),0));
     $('metricDue').textContent = active.filter(j=>j.due_date && daysUntil(j.due_date)<=7).length;
     $('metricPm').textContent = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good').length;
+    const dueSoon = active.filter(j=>j.due_date && daysUntil(j.due_date)<=7);
+    const pmWarn = state.pm.filter(p=>pmStatus(p).cls !== 'pm-good');
+    const printing = active.filter(j=>j.production_status==='printing');
     const next = [...active].filter(j=>['ready_to_print','queued','printing'].includes(j.production_status)).sort(compareJobs)[0] || [...active].sort(compareJobs)[0];
+    const pills = [];
+    pills.push(`<span class="decision-pill ${printing.length?'warn':''}">🖨️ ${printing.length || 0} running</span>`);
+    pills.push(`<span class="decision-pill ${dueSoon.length?'danger':''}">⚠️ ${dueSoon.length || 0} due soon</span>`);
+    pills.push(`<span class="decision-pill ${pmWarn.length?'danger':''}">🧰 ${pmWarn.length || 0} PM alerts</span>`);
+    pills.push(`<span class="decision-pill">🎨 ${groupBy(active,j=>[j.primary_material,j.primary_color].filter(Boolean).join(' / ')).filter(g=>g[1].length>=2).length} color batches</span>`);
+    const dp = $('decisionPills'); if(dp) dp.innerHTML = pills.join('');
     $('nextPrintBox').innerHTML = next
       ? `<strong>${esc(TYPE[next.job_type]?.icon || '🧾')} ${esc(next.job_title)}</strong><span>${esc(TYPE[next.job_type]?.label || next.job_type)} · ${esc(STATUS[next.production_status] || next.production_status)} · ${fmtHours(next.estimated_total_hours)} · ${dueText(next.due_date)}</span>`
       : `<strong>No active production jobs yet</strong><span>Add a job to start building the queue.</span>`;
@@ -1759,6 +1815,8 @@ PETG Black: 18g"></textarea></label>
   $('jobForm').addEventListener('submit', saveJob);
   $('cancelEditBtn').addEventListener('click', resetForm);
   $('jumpAddBtn').addEventListener('click', ()=>$('addJobSection').scrollIntoView({behavior:'smooth'}));
+  const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', ()=>$('addJobSection').scrollIntoView({behavior:'smooth'}));
+  const clearForm = $('clearFormBtn'); if(clearForm) clearForm.addEventListener('click', resetForm);
   $('loginBtn').addEventListener('click', signIn);
   $('signupBtn').addEventListener('click', signUp);
   $('logoutBtn').addEventListener('click', signOut);
