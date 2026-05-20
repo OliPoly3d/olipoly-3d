@@ -512,6 +512,11 @@
               <p class="tiny-note">Enter usage for one finished item. The page multiplies grams by quantity for total material planning, close-out, PM, and inventory subtraction.</p>
             </div>
 
+            <label>Inventory Planning<select id="excludeInventoryReduction">
+              <option value="no">Reserve/reduce inventory</option>
+              <option value="yes">Exclude from inventory</option>
+            </select></label>
+
             <label class="span3">Generated Filament Usage Breakdown<textarea id="filamentBreakdown" placeholder="Auto-generated from the recipe rows, but you can still edit if needed."></textarea></label>
             <label>Grams / One<input id="gramsEach" type="number" min="0" step="0.1" placeholder="Auto total"></label>
           </div>
@@ -645,7 +650,6 @@
       <label>Primary Material<input id="closeMaterial"></label>
       <label>Primary Color<input id="closeColor"></label>
       <label>Add to Finished Goods?<select id="closeAddFinished"><option value="no">No</option><option value="yes">Yes</option></select></label>
-      <label>Inventory impact<select id="closeInventoryImpact"><option value="reduce">Reduce raw inventory</option><option value="skip">Do not reduce inventory</option></select></label>
       <label class="full">Actual Filament Breakdown<textarea id="closeBreakdown" placeholder="PLA Pink: 120g&#10;PLA White: 40g"></textarea></label>
       <div class="full">
         <div class="tiny-note"><strong>Quick usage buttons:</strong> Use these to quickly add common usage lines to the breakdown above.</div>
@@ -1092,6 +1096,7 @@
       finished_sku:$('finishedSku').value.trim() || null,
       filament_breakdown:$('filamentBreakdown').value.trim() || null,
       filament_recipe: JSON.stringify(recipe),
+      exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes',
       notes:$('notes').value.trim() || null,
       actual_machine: existing?.actual_machine || null,
       actual_quantity: existing?.actual_quantity || null,
@@ -1134,6 +1139,7 @@
     $('finishedSku').value = j.finished_sku || '';
     $('filamentBreakdown').value = j.filament_breakdown || '';
     renderRecipeRows(safeJsonParse(j.filament_recipe, recipeFromBreakdown(j)));
+    if($('excludeInventoryReduction')) $('excludeInventoryReduction').value = j.exclude_inventory_reduction ? 'yes' : 'no';
     $('notes').value = j.notes || '';
     $('saveBtn').textContent = 'Update Production Job';
     $('cancelEditBtn').classList.remove('hidden');
@@ -1149,6 +1155,7 @@
     $('productionStatus').value = 'idea';
     $('machine').value = 'either';
     renderRecipeRows([]);
+    if($('excludeInventoryReduction')) $('excludeInventoryReduction').value = 'no';
     $('saveBtn').textContent = 'Save Production Job';
     $('cancelEditBtn').classList.add('hidden');
   }
@@ -1270,7 +1277,6 @@
     $('closeMaterial').value = j.primary_material || '';
     $('closeColor').value = j.primary_color || '';
     $('closeAddFinished').value = ['craft_stock','finished_goods_restock'].includes(j.job_type) ? 'yes' : 'no';
-    $('closeInventoryImpact').value = j.exclude_inventory_reduction ? 'skip' : 'reduce';
     $('closeBreakdown').value = j.actual_filament_breakdown || j.filament_breakdown || '';
     $('closeNote').value = j.close_note || '';
     $('closeModal').classList.remove('hidden');
@@ -1375,7 +1381,7 @@
       actual_filament_breakdown:$('closeBreakdown').value.trim() || null,
       scrap_grams:num($('closeScrapGrams').value),
       failure_reason:$('closeFailureReason').value || null,
-      exclude_inventory_reduction:$('closeInventoryImpact').value === 'skip',
+      exclude_inventory_reduction:!!j.exclude_inventory_reduction,
       close_note:$('closeNote').value.trim() || null,
       closed_at:now,
       updated_at:now
@@ -1811,6 +1817,22 @@
   }
 
 
+
+  async function toggleInventoryExclusion(id){
+    const j = state.jobs.find(x=>x.id===id);
+    if(!j) return;
+    const updated = {...j, exclude_inventory_reduction:!j.exclude_inventory_reduction, updated_at:new Date().toISOString()};
+    try{
+      await cloudSaveJob(updated);
+      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
+      localWrite(LS_JOBS,state.jobs);
+      render();
+      toast(updated.exclude_inventory_reduction ? 'Job excluded from inventory planning.' : 'Job included in inventory planning.');
+    }catch(err){
+      alert(`Could not update inventory flag:\n\n${err.message || err}`);
+    }
+  }
+
   function needsActionList(j){
     const needs = [];
     if(!j.due_date && needsPrinterTime(j)) needs.push('No due date');
@@ -1820,7 +1842,7 @@
     if(!num(j.estimated_total_hours) && needsPrinterTime(j)) needs.push('No time estimate');
     const pm = state.pm.find(p=>p.machine === j.machine_preference);
     if(pm && pmStatus(pm).cls !== 'pm-good' && needsPrinterTime(j)) needs.push(`${j.machine_preference} PM`);
-    inventoryWarningsForJob(j).forEach(w=>needs.push(w));
+    if(!j.exclude_inventory_reduction) inventoryWarningsForJob(j).forEach(w=>needs.push(w));
     return needs;
   }
 
@@ -1859,6 +1881,7 @@
     } else if(!isClosed && needsPrinterTime(j)) {
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>`;
     }
+    actions += `<button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>`;
     actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
@@ -1869,7 +1892,7 @@
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
         </div>
@@ -1910,7 +1933,7 @@
       const t = TYPE[j.job_type] || TYPE.customer_custom;
       return `<article class="detail-card" style="border-left:6px solid ${t.color}">
         <div class="detail-head">
-          <div><h3>${t.icon} ${esc(j.job_title)}</h3><div class="chips"><span class="chip type" style="--type-bg:${t.bg};--type-text:${t.text}">${esc(t.label)}</span><span class="chip">${esc(STATUS[j.production_status]||j.production_status)}</span></div></div>
+          <div><h3>${t.icon} ${esc(j.job_title)}</h3><div class="chips"><span class="chip type" style="--type-bg:${t.bg};--type-text:${t.text}">${esc(t.label)}</span><span class="chip">${esc(STATUS[j.production_status]||j.production_status)}</span>${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}</div></div>
           <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button><button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
         </div>
         <div class="detail-grid">
@@ -1942,6 +1965,7 @@
           <button class="mini-btn" data-status="${j.id}|post_processing" type="button">QC</button>
           <button class="mini-btn" data-status="${j.id}|ready" type="button">Ready</button>
           <button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery</button>
+          <button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>
           <button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>
         </div>
       </article>`;
@@ -2189,12 +2213,14 @@
     const st = e.target.closest('[data-status]')?.dataset.status;
     const markPm = e.target.closest('[data-mark-pm]')?.dataset.markPm;
     const savePm = e.target.closest('[data-save-pm]')?.dataset.savePm;
+    const toggleInv = e.target.closest('[data-toggle-inventory]')?.dataset.toggleInventory;
     if(edit){ const j=state.jobs.find(x=>x.id===edit); if(j) fillForm(j); }
     if(del) deleteJob(del);
     if(close) openClose(close);
     if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
     if(markPm) markPmDone(markPm);
     if(savePm) savePmFromCard(savePm);
+    if(toggleInv) toggleInventoryExclusion(toggleInv);
     const sel = e.target.closest('[data-select]');
     if(sel){
       const id = sel.dataset.select;

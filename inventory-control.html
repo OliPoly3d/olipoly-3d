@@ -470,7 +470,7 @@
   }
 
   function reservedGramsForRaw(r){
-    const jobs=productionJobs().filter(j=>['ready_to_print','queued','printing'].includes(j.production_status));
+    const jobs=productionJobs().filter(j=>['ready_to_print','queued','printing'].includes(j.production_status) && !j.exclude_inventory_reduction);
     let total=0;
     jobs.forEach(j=>{
       const qty=num(j.quantity)||1;
