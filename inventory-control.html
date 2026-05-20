@@ -341,6 +341,7 @@
         <button class="ghost" id="exportBtn" type="button">Export Backup</button>
         <button class="ghost" id="importBtn" type="button">Import</button>
         <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
+        <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
         <input id="importFile" class="hidden" type="file" accept="application/json">
       </div>
     </header>
@@ -610,11 +611,34 @@
 
   function looksLikeRawMaterial(x){
     if(!x || typeof x !== 'object') return false;
-    return !!(x.material_type || x.material || x.color || x.remaining_grams !== undefined || x.remaining !== undefined || x.brand || x.filament);
+
+    // Do NOT allow production job objects to be imported as raw material.
+    // Production jobs may contain material/color fields, but they are not inventory records.
+    if(x.job_title || x.production_status || x.job_type || x.filament_recipe || x.estimated_total_hours || x.order_number || x.quote_number){
+      return false;
+    }
+
+    // A real raw inventory row should have material/color plus at least one inventory-specific field.
+    const hasMaterialIdentity = !!(x.material_type || x.material) && !!(x.color || x.brand || x.filament);
+    const hasInventoryField = (
+      x.remaining_grams !== undefined ||
+      x.remaining !== undefined ||
+      x.starting_grams !== undefined ||
+      x.starting !== undefined ||
+      x.reorder_threshold_grams !== undefined ||
+      x.reorder_threshold !== undefined ||
+      x.roll_type !== undefined ||
+      x.roll_status !== undefined ||
+      x.roll_label !== undefined ||
+      x.location !== undefined ||
+      x.spool_cost !== undefined
+    );
+    return hasMaterialIdentity && hasInventoryField;
   }
 
   function looksLikeFinishedGood(x){
     if(!x || typeof x !== 'object') return false;
+    if(x.job_title || x.production_status || x.job_type) return false;
     return !!(x.product_name || x.name || x.sku || x.qty_on_hand !== undefined || x.quantity_on_hand !== undefined);
   }
 
@@ -629,40 +653,16 @@
     return [...map.values()];
   }
 
-  function scanAllLocalStorageForInventory(){
-    const rawRows=[], fgRows=[], ledgerRows=[];
-    for(let i=0;i<localStorage.length;i++){
-      const key=localStorage.key(i);
-      let parsed=null;
-      try{ parsed=JSON.parse(localStorage.getItem(key)||'null'); }catch{ parsed=null; }
-      const arr=Array.isArray(parsed) ? parsed : (parsed && typeof parsed==='object' && Array.isArray(parsed.raw) ? parsed.raw : null);
-      if(Array.isArray(arr)){
-        arr.forEach(row=>{
-          if(looksLikeRawMaterial(row)) rawRows.push(row);
-          else if(looksLikeFinishedGood(row)) fgRows.push(row);
-        });
-      }
-      if(parsed && typeof parsed==='object'){
-        if(Array.isArray(parsed.finished)) parsed.finished.forEach(row=>{if(looksLikeFinishedGood(row)) fgRows.push(row);});
-        if(Array.isArray(parsed.ledger)) parsed.ledger.forEach(row=>ledgerRows.push(row));
-      }
-    }
-    return {rawRows,fgRows,ledgerRows};
-  }
-
   function migrate(){
+    // Recovery should only read known inventory keys.
+    // It should never scan production-control jobs and turn them into raw material.
     const rawCandidates=[], fgCandidates=[], ledgerCandidates=[];
-    LEGACY_RAW_KEYS.forEach(k=>read(k,[]).forEach(r=>rawCandidates.push(r)));
-    LEGACY_FG_KEYS.forEach(k=>read(k,[]).forEach(f=>fgCandidates.push(f)));
+    LEGACY_RAW_KEYS.forEach(k=>read(k,[]).forEach(r=>{ if(looksLikeRawMaterial(r)) rawCandidates.push(r); }));
+    LEGACY_FG_KEYS.forEach(k=>read(k,[]).forEach(f=>{ if(looksLikeFinishedGood(f)) fgCandidates.push(f); }));
     LEGACY_LEDGER_KEYS.forEach(k=>read(k,[]).forEach(x=>ledgerCandidates.push(x)));
 
-    const broad=scanAllLocalStorageForInventory();
-    rawCandidates.push(...broad.rawRows);
-    fgCandidates.push(...broad.fgRows);
-    ledgerCandidates.push(...broad.ledgerRows);
-
-    const currentRaw=read(RAW_KEY,[]);
-    const currentFg=read(FG_KEY,[]);
+    const currentRaw=read(RAW_KEY,[]).filter(looksLikeRawMaterial);
+    const currentFg=read(FG_KEY,[]).filter(looksLikeFinishedGood);
     rawCandidates.push(...currentRaw);
     fgCandidates.push(...currentFg);
 
@@ -670,10 +670,24 @@
     const mergedFg=mergeByIdOrFingerprint(fgCandidates, normalizeFg, x=>`${norm(x.product_name)}|${norm(x.sku)}|${x.quantity_on_hand}`);
     const mergedLedger=ledgerCandidates.map(normalizeLedger).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 
-    if(mergedRaw.length) write(RAW_KEY,mergedRaw);
+    write(RAW_KEY,mergedRaw);
     if(mergedFg.length) write(FG_KEY,mergedFg);
     if(mergedLedger.length) write(LEDGER_KEY,mergedLedger);
     return {rawCount:mergedRaw.length, fgCount:mergedFg.length, ledgerCount:mergedLedger.length};
+  }
+
+  function cleanBadProductionImports(){
+    const before = read(RAW_KEY,[]);
+    const cleaned = before.filter(r=>{
+      if(!looksLikeRawMaterial(r)) return false;
+      const text = [r.material_type,r.material,r.color,r.brand,r.roll_label,r.notes].join(' ').toLowerCase();
+      // Specific cleanup for accidental production job color/name imports.
+      if(text.includes('shadow box') && !text.includes('bambu') && !text.includes('matte')) return false;
+      return true;
+    });
+    write(RAW_KEY, cleaned.map(normalizeRaw));
+    render();
+    toast(`Cleaned ${before.length-cleaned.length} accidental production import(s).`);
   }
 
   async function syncLocalInventoryToCloud(){
@@ -1423,6 +1437,7 @@
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());
     $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
+    $('cleanBadImportsBtn')?.addEventListener('click',cleanBadProductionImports);
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
     $('addEmptySpoolBtn')?.addEventListener('click', addEmptySpool);
     $('retireSpoolBtn')?.addEventListener('click', retireSpool);
