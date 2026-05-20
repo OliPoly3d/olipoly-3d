@@ -659,7 +659,7 @@ body{font-family:Inter,system-ui,-apple-system,sans-serif}
 }
 
 
-/* Active Projects hub addition */
+/* Production hub addition */
 .core-tools-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
 
 
@@ -834,12 +834,12 @@ body::before{
         <div>
           <span class="os-kicker">Today</span>
           <h2 class="os-title">Run the shop from one calm place.</h2>
-          <p class="os-sub">Start here for quotes, orders, active projects, production, payment, shipping, follow-up, and finance. Built to feel compact, fast, and aligned with the public OliPoly brand.</p>
+          <p class="os-sub">Start here for quotes, orders, production, inventory, payment, shipping, follow-up, and finance. Built to feel compact, fast, and aligned with the public OliPoly brand.</p>
         </div>
         <div class="status-strip" aria-label="Hub status">
           <span class="status-pill">Cloud Sync</span>
           <span class="status-pill">Orders</span>
-          <span class="status-pill">Projects</span>
+          <span class="status-pill">Production</span>
           <span class="status-pill">Finance</span>
         </div>
       </div>
@@ -858,10 +858,10 @@ body::before{
         <h2 class="priority-title">What needs attention?</h2>
         <p class="os-sub">Use this as the mental starting point before jumping into the bigger tools.</p>
         <div class="priority-list">
-          <a class="priority-item high" href="projects.html">
+          <a class="priority-item high" href="production-control.html">
             <span class="priority-dot"></span>
-            <span><strong>Open Project Queue</strong><small>See what to print next, show stock, PO work, and custom requests.</small></span>
-            <span class="priority-tag">Plan</span>
+            <span><strong>Open Production Control</strong><small>See the print queue, printer lanes, PM Lite, due jobs, and production close-outs.</small></span>
+            <span class="priority-tag">Print</span>
           </a>
           <a class="priority-item" href="orders-admin.html">
             <span class="priority-dot"></span>
@@ -882,7 +882,8 @@ body::before{
         <p class="os-sub">The highest-frequency actions without scrolling through every document and workflow.</p>
         <div class="action-pill-grid">
           <a class="action-pill primary" href="quote.html">+ New Quote</a>
-          <a class="action-pill primary" href="projects.html">Project Queue</a>
+          <a class="action-pill primary" href="production-control.html">Production Control</a>
+          <a class="action-pill primary" href="inventory-control.html">Inventory Control</a>
           <a class="action-pill" href="orders-admin.html">Update Order</a>
           <a class="action-pill" href="finance-pro.html">Add Sale / Expense</a>
           <a class="action-pill" href="pay.html">Payment Page</a>
@@ -908,9 +909,13 @@ body::before{
           <span class="tool-icon">🧾</span>
           <span><strong>Quote Tool</strong><small>Quotes, PDFs, approvals, and quote-to-order flow.</small></span>
         </a>
-        <a class="core-tool primary" href="projects.html">
-          <span class="tool-icon">🗂️</span>
-          <span><strong>Active Projects</strong><small>Requests, show stock, print queue, PO work.</small></span>
+        <a class="core-tool primary" href="production-control.html">
+          <span class="tool-icon">🖨️</span>
+          <span><strong>Production Control</strong><small>Print queue, printer lanes, PM Lite, close-outs, and production history.</small></span>
+        </a>
+        <a class="core-tool primary" href="inventory-control.html">
+          <span class="tool-icon">🧵</span>
+          <span><strong>Inventory Control</strong><small>Raw filament, reorder warnings, finished goods, stock levels, and usage tracking.</small></span>
         </a>
         <a class="core-tool primary" href="finance-pro.html">
           <span class="tool-icon">💰</span>
@@ -1001,8 +1006,8 @@ body::before{
         <a class="utility-link" href="orders-admin.html">Manufacturing Traveler <span>→</span></a>
         <a class="utility-link" href="track.html">Customer Tracker <span>→</span></a>
         <a class="utility-link" href="pay.html">Payment Page <span>→</span></a>
-        <a class="utility-link" href="materials.html">Materials <span>→</span></a>
-        <a class="utility-link" href="pm.html">Printer PM <span>→</span></a>
+        <a class="utility-link" href="production-control.html">Production Control / PM Lite <span>→</span></a>
+        <a class="utility-link" href="inventory-control.html">Inventory Control <span>→</span></a>
       </div>
     </section>
 
@@ -1138,21 +1143,7 @@ body::before{
       </div>
     </details>
 
-    <section class="hub-section">
-      <div class="section-title">
-        <span class="os-kicker">Financial Tools</span>
-        <h3>Sales tax calculator</h3>
-        <p>Use for quick estimates before entering final records in Finance Pro.</p>
-      </div>
-      <div class="input-grid">
-        <label class="label">Sale amount<input id="taxSale" class="tax-input" placeholder="0.00" /></label>
-        <label class="label">Tax %<input id="taxRate" class="tax-input" placeholder="7.25" /></label>
-        <label class="label">Tax amount<input id="taxAmount" class="tax-input" disabled /></label>
-        <label class="label">Total w/ tax<input id="taxTotal" class="tax-input" disabled /></label>
-      </div>
-    </section>
-
-    <section class="health-check-card">
+<section class="health-check-card">
       <div class="health-check-header">
         <div class="section-title" style="margin-bottom:0;">
           <span class="os-kicker">Health Check</span>
@@ -1361,9 +1352,8 @@ body::before{
       { name: 'Orders Admin', url: 'orders-admin.html' },
       { name: 'Quote Tool', url: 'quote.html' },
       { name: 'Finance Tool', url: 'finance-pro.html' },
-      { name: 'Active Projects', url: 'projects.html' },
-      { name: 'Printer PM', url: 'pm.html' },
-      { name: 'Materials', url: 'materials.html' }
+      { name: 'Production Control', url: 'production-control.html' },
+      { name: 'Inventory Control', url: 'inventory-control.html' }
     ];
 
     function setAuthUi() {
