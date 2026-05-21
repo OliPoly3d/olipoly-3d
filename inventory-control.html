@@ -1063,10 +1063,20 @@
     try{return JSON.parse(localStorage.getItem('olipoly_spool_pool_v1')||'{}')}catch{return {}}
   }
 
+  function spoolQtyInput(){
+    const el = $('spoolAddQty');
+    const rawValue = el ? String(el.value || '').trim() : '1';
+    const parsed = Number.parseInt(rawValue, 10);
+    const qty = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    if(el) el.value = String(qty);
+    return qty;
+  }
+
   function addEmptySpool(){
-    const qty = Math.max(1, Math.round(Number($('spoolAddQty')?.value || 1) || 1));
+    const qty = spoolQtyInput();
     const pool=currentSpoolPool();
-    pool.available_empty = Number(pool.available_empty || 0) + qty;
+    pool.available_empty = Math.max(0, Number(pool.available_empty || 0)) + qty;
+    pool.updated_at = new Date().toISOString();
     saveSpoolPoolValue(pool);
     renderSpoolPool();
     renderMetrics();
@@ -1076,13 +1086,17 @@
   }
 
   function retireSpool(){
+    const qty = spoolQtyInput();
     const pool=currentSpoolPool();
-    if(Number(pool.available_empty || 0) <= 0) return toast('No free empty spools to retire.');
-    pool.available_empty = Number(pool.available_empty || 0) - 1;
-    pool.retired = Number(pool.retired || 0) + 1;
+    const available = Math.max(0, Number(pool.available_empty || 0));
+    if(available <= 0) return toast('No free empty spools to retire.');
+    const retireQty = Math.min(qty, available);
+    pool.available_empty = available - retireQty;
+    pool.retired = Math.max(0, Number(pool.retired || 0)) + retireQty;
+    pool.updated_at = new Date().toISOString();
     saveSpoolPoolValue(pool);
     render();
-    toast('Reusable spool retired.');
+    toast(`${retireQty} reusable spool${retireQty===1?'':'s'} retired.`);
   }
 
 
@@ -1446,9 +1460,6 @@
     $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
     $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
     document.addEventListener('click',e=>{
-      // spool-action-click-fallback
-      if(e.target.closest('#addEmptySpoolBtn')){ e.preventDefault(); addEmptySpool(); return; }
-      if(e.target.closest('#retireSpoolBtn')){ e.preventDefault(); retireSpool(); return; }
       const tabBtn=e.target.closest('.tab[data-tab]');
       if(tabBtn){e.preventDefault(); setTab(tabBtn.dataset.tab); return;}
       const er=e.target.closest('[data-edit-raw]')?.dataset.editRaw; if(er){const r=raw().find(x=>x.id===er); if(r)fillRaw(r)}
