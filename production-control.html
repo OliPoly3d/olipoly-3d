@@ -239,6 +239,71 @@
     .recipe-mini{display:grid;gap:6px;margin-top:8px}
     .recipe-mini-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:7px 9px;border-radius:14px;background:rgba(255,255,255,.6);border:1px solid rgba(101,60,120,.08);font-size:.82rem}
     .recipe-mini-row strong{color:var(--ink)}
+
+    .pricing-preview{
+      grid-column:1/-1;
+      display:grid;
+      grid-template-columns:repeat(6,minmax(0,1fr));
+      gap:8px;
+      padding:12px;
+      border-radius:20px;
+      background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08));
+      border:1px solid var(--line);
+    }
+    .pricing-preview .price-box{
+      padding:9px;
+      border-radius:14px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .pricing-preview .price-box span{
+      display:block;
+      font-size:.58rem;
+      color:var(--muted);
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+    .pricing-preview .price-box strong{
+      display:block;
+      margin-top:2px;
+      color:var(--ink);
+      font-size:.9rem;
+    }
+    .pricing-preview .price-box.profit strong{font-size:1rem}
+    .pricing-preview .price-box.profit.good strong{color:#23763b}
+    .pricing-preview .price-box.profit.warn strong{color:#9a2140}
+    .finance-strip{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:6px;
+      margin-top:8px;
+    }
+    .finance-pill{
+      padding:7px 8px;
+      border-radius:13px;
+      background:rgba(255,255,255,.66);
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .finance-pill span{
+      display:block;
+      font-size:.55rem;
+      color:var(--muted);
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+    .finance-pill strong{
+      display:block;
+      margin-top:2px;
+      color:var(--ink);
+      font-size:.78rem;
+    }
+    .finance-pill.profit.good strong{color:#23763b}
+    .finance-pill.profit.warn strong{color:#9a2140}
+
+    @media(max-width:1100px){.pricing-preview{grid-template-columns:repeat(3,minmax(0,1fr))}.finance-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.pricing-preview{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-strip{grid-template-columns:1fr 1fr}}
     @media(max-width:900px){.recipe-row{grid-template-columns:1fr 1fr}.recipe-row label:last-child{grid-column:1/-1}}
 
 
@@ -537,7 +602,18 @@
             <label>Order #<input id="orderNumber" placeholder="OP-000000"></label>
             <label>Finished Good SKU<input id="finishedSku" placeholder="Optional inventory SKU"></label>
             <label>Est. Price / Each<input id="priceEach" type="number" min="0" step="0.01" placeholder="15.00"></label>
-            <label class="span3">Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
+            <label>Design Fee / Cost<input id="designFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label>Post-Processing Fee / Cost<input id="postProcessingFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label class="span2">Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
+
+            <div class="pricing-preview" id="pricingPreview">
+              <div class="price-box"><span>Material Cost</span><strong id="previewMaterialCost">$0.00</strong></div>
+              <div class="price-box"><span>Machine Cost</span><strong id="previewMachineCost">$0.00</strong></div>
+              <div class="price-box"><span>Design Cost</span><strong id="previewDesignCost">$0.00</strong></div>
+              <div class="price-box"><span>Post Cost</span><strong id="previewPostCost">$0.00</strong></div>
+              <div class="price-box"><span>Total Revenue</span><strong id="previewRevenue">$0.00</strong></div>
+              <div class="price-box profit" id="previewProfitBox"><span>Est. Profit</span><strong id="previewProfit">$0.00</strong></div>
+            </div>
           </div>
         </details>
 
@@ -613,7 +689,7 @@
 
   <section class="card" id="historySection"><details class="page-collapse"><summary><span class="kicker">Completed / history</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div class="history-wrap">
       <table>
-        <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
+        <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Revenue</th><th>Est. Profit</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>
     </div></div></details>
@@ -811,6 +887,7 @@
   function num(v){ return Number(v) || 0; }
   function fmtHours(v){ const n=num(v); return n ? `${n.toFixed(n>=10?1:2).replace(/\.00?$/,'')}h` : '—'; }
   function fmtG(v){ const n=num(v); return n ? `${Math.round(n)}g` : '—'; }
+  function money(v){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v)); }
   function esc(s){ return String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
   function localRead(key, fallback=[]){ try{return JSON.parse(localStorage.getItem(key)||'null') ?? fallback;}catch{return fallback;} }
@@ -843,23 +920,14 @@
   }
 
   async function loadCloudJobs(){
-    const lists = [];
     try{
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
-      if(Array.isArray(jobs) && jobs.length) lists.push(jobs);
+      return Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
     }catch(err){
-      console.warn('production_jobs cloud load failed', err);
+      console.warn('Could not load production_jobs table', err);
+      toast('Cloud load failed. Using local browser data.');
+      return [];
     }
-
-    // Pull from the original Projects table too, so older project-card records can be adopted.
-    try{
-      const active = await sbApi(`/rest/v1/active_projects?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
-      if(Array.isArray(active) && active.length) lists.push(active);
-    }catch(err){
-      console.warn('active_projects cloud load skipped/failed', err);
-    }
-
-    return mergeUniqueJobs(lists);
   }
 
   async function migrateVisibleJobsToCloud(){
@@ -1111,6 +1179,7 @@
     $('gramsEach').value = totalEach ? String(Math.round(totalEach*10)/10) : '';
     $('filamentBreakdown').value = recipeToBreakdown(recipe, qty);
     $('recipeTotals').innerHTML = `<span>${recipe.length || 1} filament${(recipe.length||1)===1?'':'s'}</span><span>${Math.round(totalEach*10)/10}g per item</span><span>${Math.round(totalAll*10)/10}g total</span>`;
+    updatePricingPreview();
   }
 
   function recipeMiniHtml(j){
@@ -1148,6 +1217,17 @@
       estimated_total_hours:hEach*q,
       estimated_total_grams:gEach*q,
       estimated_price_each:num($('priceEach').value),
+      design_fee:num($('designFee')?.value),
+      post_processing_fee:num($('postProcessingFee')?.value),
+      estimated_material_cost:estimatedMaterialCostForJob({
+        quantity:q,
+        estimated_grams_each:gEach,
+        estimated_total_grams:gEach*q,
+        filament_recipe:JSON.stringify(recipe),
+        primary_material:$('primaryMaterial').value.trim() || null,
+        primary_color:$('primaryColor').value.trim() || null,
+        exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes'
+      }),
       image_url:$('imageUrl').value.trim() || null,
       customer_name:$('customerName').value.trim() || null,
       quote_number:$('quoteNumber').value.trim() || null,
@@ -1167,7 +1247,7 @@
       estimated_finish_at: existing?.estimated_finish_at || null,
       scrap_grams: existing?.scrap_grams || null,
       failure_reason: existing?.failure_reason || null,
-      exclude_inventory_reduction: !!existing?.exclude_inventory_reduction,
+      exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes',
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
       manual_rank: existing?.manual_rank ?? Date.now(),
@@ -1191,6 +1271,8 @@
     $('hoursEach').value = j.estimated_hours_each || '';
     $('gramsEach').value = j.estimated_grams_each || '';
     $('priceEach').value = j.estimated_price_each || '';
+    if($('designFee')) $('designFee').value = j.design_fee || '';
+    if($('postProcessingFee')) $('postProcessingFee').value = j.post_processing_fee || '';
     $('imageUrl').value = j.image_url || '';
     $('customerName').value = j.customer_name || '';
     $('quoteNumber').value = j.quote_number || '';
@@ -1199,6 +1281,7 @@
     $('filamentBreakdown').value = j.filament_breakdown || '';
     renderRecipeRows(safeJsonParse(j.filament_recipe, recipeFromBreakdown(j)));
     if($('excludeInventoryReduction')) $('excludeInventoryReduction').value = j.exclude_inventory_reduction ? 'yes' : 'no';
+    updatePricingPreview();
     $('notes').value = j.notes || '';
     $('saveBtn').textContent = 'Update Production Job';
     $('cancelEditBtn').classList.remove('hidden');
@@ -1214,95 +1297,84 @@
     $('productionStatus').value = 'idea';
     $('machine').value = 'either';
     renderRecipeRows([]);
+    if($('designFee')) $('designFee').value = '';
+    if($('postProcessingFee')) $('postProcessingFee').value = '';
     if($('excludeInventoryReduction')) $('excludeInventoryReduction').value = 'no';
+    updatePricingPreview();
     $('saveBtn').textContent = 'Save Production Job';
     $('cancelEditBtn').classList.add('hidden');
   }
 
   async function cloudSaveJob(j){
-    if(!state.user?.id) return;
+    if(!state.user?.id) return false;
 
-    const fullPayload = {
-      id:j.id,
-      user_id:state.user.id,
-      job_title:j.job_title,
-      job_type:j.job_type,
-      production_status:j.production_status,
-      priority:j.priority,
-      quantity:j.quantity,
-      machine_preference:j.machine_preference,
-      due_date:j.due_date,
-      primary_material:j.primary_material,
-      primary_color:j.primary_color,
-      other_colors:j.other_colors,
-      color_count:j.color_count,
-      estimated_hours_each:j.estimated_hours_each,
-      estimated_grams_each:j.estimated_grams_each,
-      estimated_total_hours:j.estimated_total_hours,
-      estimated_total_grams:j.estimated_total_grams,
-      estimated_price_each:j.estimated_price_each,
-      image_url:j.image_url,
-      customer_name:j.customer_name,
-      quote_number:j.quote_number,
-      order_number:j.order_number,
-      finished_sku:j.finished_sku,
-      filament_breakdown:j.filament_breakdown,
-      filament_recipe:j.filament_recipe,
-      notes:j.notes,
-      actual_machine:j.actual_machine,
-      actual_quantity:j.actual_quantity,
-      actual_print_hours:j.actual_print_hours,
-      actual_grams_used:j.actual_grams_used,
-      actual_filament_breakdown:j.actual_filament_breakdown,
-      close_note:j.close_note,
-      print_started_at:j.print_started_at,
-      estimated_finish_at:j.estimated_finish_at,
-      scrap_grams:j.scrap_grams,
-      failure_reason:j.failure_reason,
-      exclude_inventory_reduction:j.exclude_inventory_reduction,
-      roll_usages:j.roll_usages || [],
-      finished_roll:j.finished_roll,
-      spool_freed:j.spool_freed,
-      closed_at:j.closed_at,
-      updated_at:j.updated_at
+    const full = jobPayload(j);
+    const payload = {
+      id: full.id,
+      user_id: state.user.id,
+      job_title: full.job_title,
+      job_type: full.job_type,
+      production_status: full.production_status,
+      priority: full.priority,
+      customer_name: full.customer_name,
+      quote_number: full.quote_number,
+      order_number: full.order_number,
+      quantity: full.quantity,
+      machine_preference: full.machine_preference,
+      due_date: full.due_date,
+      primary_material: full.primary_material,
+      primary_color: full.primary_color,
+      other_colors: full.other_colors,
+      color_count: full.color_count,
+      estimated_hours_each: full.estimated_hours_each,
+      estimated_total_hours: full.estimated_total_hours,
+      actual_print_hours: full.actual_print_hours,
+      estimated_grams_each: full.estimated_grams_each,
+      estimated_total_grams: full.estimated_total_grams,
+      actual_grams_used: full.actual_grams_used,
+      scrap_grams: full.scrap_grams,
+      filament_breakdown: full.filament_breakdown,
+      actual_filament_breakdown: full.actual_filament_breakdown,
+      filament_recipe: full.filament_recipe,
+      roll_usages: full.roll_usages,
+      finished_sku: full.finished_sku,
+      estimated_price_each: full.estimated_price_each,
+      design_fee: full.design_fee,
+      post_processing_fee: full.post_processing_fee,
+      estimated_material_cost: estimatedMaterialCostForJob(full),
+      image_url: full.image_url,
+      notes: full.notes,
+      failure_reason: full.failure_reason,
+      close_note: full.close_note,
+      actual_machine: full.actual_machine,
+      actual_quantity: full.actual_quantity,
+      exclude_inventory_reduction: full.exclude_inventory_reduction,
+      finished_roll: full.finished_roll,
+      spool_freed: full.spool_freed,
+      manual_rank: full.manual_rank,
+      print_started_at: full.print_started_at,
+      estimated_finish_at: full.estimated_finish_at,
+      closed_at: full.closed_at,
+      job_payload: full,
+      updated_at: new Date().toISOString()
     };
-
-    const corePayload = {
-      id:j.id,
-      user_id:state.user.id,
-      job_title:j.job_title,
-      job_type:j.job_type,
-      production_status:j.production_status,
-      priority:j.priority,
-      quantity:j.quantity,
-      machine_preference:j.machine_preference,
-      due_date:j.due_date,
-      primary_material:j.primary_material,
-      primary_color:j.primary_color,
-      notes:j.notes,
-      updated_at:j.updated_at
-    };
-
-    async function upsert(body){
-      return sbApi('/rest/v1/production_jobs?on_conflict=id',{
-        method:'POST',
-        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-        body:JSON.stringify(body)
-      });
-    }
 
     try{
-      await upsert(fullPayload);
-    }catch(err){
-      const msg=String(err?.message || err || '');
-      console.warn('Full production job cloud save failed; retrying core payload.', err);
+      const saved = await sbApi('/rest/v1/production_jobs?on_conflict=id',{
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify(payload)
+      });
 
-      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('400')){
-        await upsert(corePayload);
-        toast('Saved with basic cloud fields. Run the production SQL repair for full fields.');
-        return;
+      const returned = Array.isArray(saved) ? saved[0] : saved;
+      if(returned && returned.job_payload == null){
+        throw new Error('Cloud save did not return job_payload. Supabase schema cache may need refresh.');
       }
-      throw err;
+      return true;
+    }catch(err){
+      console.warn('Full production cloud save failed', err);
+      toast('Saved locally only — full cloud payload failed. Run SQL repair and refresh.');
+      return false;
     }
   }
 
@@ -1311,14 +1383,18 @@
     try{
       const j = formJob();
       if(!j.job_title) throw new Error('Job title is required.');
-      await cloudSaveJob(j);
+
       state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
       localWrite(LS_JOBS,state.jobs);
+
+      const cloudOk = await cloudSaveJob(j);
+
       resetForm();
       render();
-      toast('Production job saved.');
+      toast(cloudOk ? 'Saved production job to browser + cloud.' : 'Saved production job locally only.');
     }catch(err){
-      alert(`Could not save job:\n\n${err.message || err}`);
+      console.warn(err);
+      toast(err.message || 'Could not save job.');
     }
   }
 
@@ -1767,6 +1843,9 @@
       estimated_total_hours:num(j.estimated_total_hours) || h*q,
       estimated_total_grams:num(j.estimated_total_grams) || g*q,
       estimated_price_each:num(j.estimated_price_each),
+      design_fee:num(j.design_fee),
+      post_processing_fee:num(j.post_processing_fee),
+      estimated_material_cost:num(j.estimated_material_cost),
       image_url:j.image_url || null,
       customer_name:j.customer_name || null,
       quote_number:j.quote_number || null,
@@ -1931,6 +2010,149 @@
 
   function rawInventoryList(){
     return localRead(LS_RAW, []);
+  }
+
+  const MACHINE_COST_PER_HOUR = 0.50;
+
+  function safeObject(value){
+    if(!value) return null;
+    if(typeof value === 'object') return value;
+    if(typeof value === 'string'){
+      try{return JSON.parse(value);}catch{return null;}
+    }
+    return null;
+  }
+
+  function normalizeCloudJob(row){
+    const payload = safeObject(row?.job_payload);
+    if(payload && typeof payload === 'object'){
+      return normalizeJob({
+        ...row,
+        ...payload,
+        id: row.id || payload.id,
+        updated_at: row.updated_at || payload.updated_at || payload.saved_at
+      });
+    }
+    return normalizeJob(row);
+  }
+
+  function jobPayload(j){
+    const clean = normalizeJob(j);
+    return {...clean, saved_at:new Date().toISOString(), payload_version:2};
+  }
+
+  function materialMatchScore(raw, recipeRow){
+    const rawMaterial = String(raw.material_type || raw.material || '').trim().toLowerCase();
+    const rawColor = String(raw.color || '').trim().toLowerCase();
+    const rawBrand = String(raw.brand || raw.filament || raw.type || '').trim().toLowerCase();
+    const material = String(recipeRow.material || '').trim().toLowerCase();
+    const color = String(recipeRow.color || '').trim().toLowerCase();
+    const filament = String(recipeRow.filament || '').trim().toLowerCase();
+    if(!material || rawMaterial !== material) return -1;
+    if(color && rawColor !== color) return -1;
+    let score = 10;
+    if(color && rawColor === color) score += 10;
+    if(filament && rawBrand){
+      if(rawBrand === filament) score += 12;
+      else if(rawBrand.includes(filament) || filament.includes(rawBrand)) score += 6;
+    }
+    return score;
+  }
+
+  function rawCostPerGramForRecipeRow(recipeRow){
+    const raw = rawInventoryList().filter(r=>String(r.roll_status || 'active') !== 'retired');
+    const matches = raw.map(r=>({row:r, score:materialMatchScore(r, recipeRow)})).filter(x=>x.score >= 0).sort((a,b)=>b.score-a.score);
+    if(!matches.length) return 0;
+    const bestScore = matches[0].score;
+    const best = matches.filter(x=>x.score === bestScore).map(x=>x.row);
+    let weightedCost = 0;
+    let weightedGrams = 0;
+    best.forEach(r=>{
+      const remaining = Math.max(0, num(r.remaining_grams || r.remaining || r.starting_grams || r.starting || 0));
+      const starting = Math.max(1, num(r.starting_grams || r.starting || 1000));
+      const cost = num(r.spool_cost || r.cost || 0);
+      if(cost > 0){
+        const gramsForWeight = remaining || starting;
+        weightedCost += (cost / starting) * gramsForWeight;
+        weightedGrams += gramsForWeight;
+      }
+    });
+    return weightedGrams ? weightedCost / weightedGrams : 0;
+  }
+
+  function estimatedMaterialCostForJob(j){
+    if(j.exclude_inventory_reduction) return 0;
+    const qty = Math.max(1, num(j.quantity) || 1);
+    const recipe = safeJsonParse(j.filament_recipe, []);
+    if(recipe.length){
+      return recipe.reduce((sum,r)=>sum + (num(r.grams_each) * qty * rawCostPerGramForRecipeRow(r)), 0);
+    }
+    const grams = num(j.estimated_total_grams) || (num(j.estimated_grams_each) * qty);
+    if(!grams) return num(j.estimated_material_cost);
+    const costPerGram = rawCostPerGramForRecipeRow({material:j.primary_material || '', color:j.primary_color || '', filament:''});
+    return costPerGram ? grams * costPerGram : num(j.estimated_material_cost);
+  }
+
+  function estimatedMachineCostForJob(j){
+    const hours = num(j.actual_print_hours) || num(j.estimated_total_hours) || (num(j.estimated_hours_each) * (num(j.quantity)||1));
+    return hours * MACHINE_COST_PER_HOUR;
+  }
+
+  function estimatedRevenueForJob(j){
+    return num(j.estimated_price_each) * (Math.max(1, num(j.quantity) || 1));
+  }
+
+  function jobFinancials(j){
+    const materialCost = estimatedMaterialCostForJob(j);
+    const machineCost = estimatedMachineCostForJob(j);
+    const designCost = num(j.design_fee);
+    const postCost = num(j.post_processing_fee);
+    const revenue = estimatedRevenueForJob(j);
+    const totalCost = materialCost + machineCost + designCost + postCost;
+    const profit = revenue - totalCost;
+    return {materialCost, machineCost, designCost, postCost, revenue, totalCost, profit};
+  }
+
+  function financeStripHtml(j){
+    const f = jobFinancials(j);
+    const profitCls = f.profit >= 0 ? 'good' : 'warn';
+    return `<div class="finance-strip">
+      <div class="finance-pill"><span>Material Cost</span><strong>${money(f.materialCost)}</strong></div>
+      <div class="finance-pill"><span>Machine Cost</span><strong>${money(f.machineCost)}</strong></div>
+      <div class="finance-pill"><span>Revenue</span><strong>${money(f.revenue)}</strong></div>
+      <div class="finance-pill profit ${profitCls}"><span>Est. Profit</span><strong>${money(f.profit)}</strong></div>
+    </div>`;
+  }
+
+  function updatePricingPreview(){
+    if(!$('pricingPreview')) return;
+    const q = Math.max(1, Math.round(num($('quantity')?.value) || 1));
+    const hEach = num($('hoursEach')?.value);
+    const recipe = recipeFromForm();
+    const gEach = recipe.length ? recipe.reduce((s,r)=>s+num(r.grams_each),0) : num($('gramsEach')?.value);
+    const tempJob = {
+      quantity:q,
+      estimated_hours_each:hEach,
+      estimated_total_hours:hEach*q,
+      estimated_grams_each:gEach,
+      estimated_total_grams:gEach*q,
+      estimated_price_each:num($('priceEach')?.value),
+      design_fee:num($('designFee')?.value),
+      post_processing_fee:num($('postProcessingFee')?.value),
+      filament_recipe:JSON.stringify(recipe),
+      primary_material:$('primaryMaterial')?.value || '',
+      primary_color:$('primaryColor')?.value || '',
+      exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes'
+    };
+    const f = jobFinancials(tempJob);
+    $('previewMaterialCost').textContent = money(f.materialCost);
+    $('previewMachineCost').textContent = money(f.machineCost);
+    $('previewDesignCost').textContent = money(f.designCost);
+    $('previewPostCost').textContent = money(f.postCost);
+    $('previewRevenue').textContent = money(f.revenue);
+    $('previewProfit').textContent = money(f.profit);
+    $('previewProfitBox')?.classList.toggle('good', f.profit >= 0);
+    $('previewProfitBox')?.classList.toggle('warn', f.profit < 0);
   }
 
   function inventoryWarningsForJob(j){
@@ -2154,6 +2376,9 @@
           <div class="detail-item"><span>Actual Hours</span><strong>${fmtHours(j.actual_print_hours)}</strong></div>
           <div class="detail-item"><span>Est. Grams</span><strong>${fmtG(j.estimated_total_grams)}</strong></div>
           <div class="detail-item"><span>Actual Grams</span><strong>${fmtG(j.actual_grams_used)}</strong></div>
+          <div class="detail-item"><span>Material Cost</span><strong>${money(jobFinancials(j).materialCost)}</strong></div>
+          <div class="detail-item"><span>Revenue</span><strong>${money(jobFinancials(j).revenue)}</strong></div>
+          <div class="detail-item"><span>Est. Profit</span><strong>${money(jobFinancials(j).profit)}</strong></div>
           <div class="detail-item"><span>Material</span><strong>${esc(j.primary_material || '—')}</strong></div>
           <div class="detail-item"><span>Colors</span><strong>${esc([j.primary_color,j.other_colors].filter(Boolean).join(', ') || '—')}</strong></div>
           <div class="detail-item"><span>Quote #</span><strong>${esc(j.quote_number || '—')}</strong></div>
@@ -2164,6 +2389,7 @@
           <div class="detail-item"><span>Finish Estimate</span><strong>${esc(finishText(j.estimated_finish_at))}</strong></div>
           <div class="detail-item"><span>Scrap Grams</span><strong>${fmtG(j.scrap_grams)}</strong></div>
         </div>
+        ${financeStripHtml(j)}
         ${needsActionHtml(j)}
         ${readyToCloseHtml(j)}
         ${recipeMiniHtml(j) || (j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : '')}
@@ -2199,11 +2425,13 @@
         <td>${esc(j.actual_machine || j.machine_preference || '—')}</td>
         <td>${esc(j.actual_quantity || j.quantity || '—')}</td>
         <td>${fmtHours(j.actual_print_hours)}</td>
+        <td>${money(jobFinancials(j).revenue)}</td>
+        <td>${money(jobFinancials(j).profit)}</td>
         <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${j.finished_roll ? 'Finished roll · ' : ''}${j.spool_freed ? 'Spool freed · ' : ''}${Array.isArray(j.roll_usages) && j.roll_usages.length ? `${j.roll_usages.length} roll allocation(s) · ` : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
         <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="8">No completed jobs match the history search.</td></tr>`;
+    }).join('') : `<tr><td colspan="10">No completed jobs match the history search.</td></tr>`;
   }
 
 
@@ -2444,9 +2672,10 @@
       applyInventoryPickToRecipeRow(i);
       return;
     }
-    if(e.target.closest('#recipeRows') || ['colorCount','quantity'].includes(e.target.id)){
+    if(e.target.closest('#recipeRows') || ['colorCount','quantity','hoursEach','priceEach','designFee','postProcessingFee','excludeInventoryReduction','gramsEach','primaryMaterial','primaryColor'].includes(e.target.id)){
       if(e.target.id === 'colorCount') renderRecipeRows(recipeFromForm());
       else updateRecipeDerivedFields();
+      updatePricingPreview();
     }
   });
   $('jobForm').addEventListener('submit', saveJob);
@@ -2469,7 +2698,7 @@
   $('filterStatus').addEventListener('change', e=>{state.filterStatus=e.target.value; render();});
   $('filterMachine').addEventListener('change', e=>{state.filterMachine=e.target.value; render();});
   $('sortBy').addEventListener('change', e=>{state.sortBy=e.target.value; render();});
-  $('historySearch').addEventListener('input', e=>{state.historySearch=e.target.value; renderHistory();});
+  if($('historySearch')) $('historySearch').addEventListener('input', e=>{state.historySearch=e.target.value; renderHistory();});
 
   renderRecipeRows([]);
   loadAll();
