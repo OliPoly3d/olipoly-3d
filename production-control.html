@@ -300,38 +300,6 @@
       font-size:.78rem;
     }
     .finance-pill.profit.good strong{color:#23763b}
-    .card-finance-mini{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:6px;
-      margin:8px 0;
-      padding:8px;
-      border-radius:16px;
-      background:linear-gradient(135deg,rgba(232,79,183,.07),rgba(157,109,243,.07));
-      border:1px solid rgba(101,60,120,.10);
-    }
-    .card-finance-mini div{
-      padding:7px 8px;
-      border-radius:12px;
-      background:rgba(255,255,255,.66);
-      border:1px solid rgba(101,60,120,.08);
-    }
-    .card-finance-mini span{
-      display:block;
-      font-size:.52rem;
-      color:var(--muted);
-      font-weight:900;
-      text-transform:uppercase;
-      letter-spacing:.05em;
-    }
-    .card-finance-mini strong{
-      display:block;
-      color:var(--ink);
-      font-size:.76rem;
-      margin-top:2px;
-    }
-    .card-finance-mini .profit.good strong{color:#23763b}
-    .card-finance-mini .profit.warn strong{color:#9a2140}
     .finance-pill.profit.warn strong{color:#9a2140}
 
     @media(max-width:1100px){.pricing-preview{grid-template-columns:repeat(3,minmax(0,1fr))}.finance-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -662,8 +630,6 @@
       </div>
     </form>
   </section>
-
-  <section class="card" id="activeFinanceSection"><div id="activeFinanceMount"></div></section>
 
   <section class="card" id="pmSection">
     <span class="kicker">PM Lite</span>
@@ -1119,58 +1085,27 @@
   }
 
   function applyInventoryPickToRecipeRow(i){
-    const pick = $(`recipeInventoryPick_${i}`);
+    const pick=$(`recipeInventoryPick_${i}`)?.value || '';
     if(!pick) return;
-    const val = pick.value || '';
-    const raw = rawInventoryList();
-    const found = raw.find(r=>{
-      const label = [r.material_type || r.material, r.brand || r.filament || r.type, r.color, r.roll_label || r.roll_id].filter(Boolean).join(' ');
-      return String(r.id||'') === val || label === val;
-    });
-    if(!found) {
-      updateRecipeDerivedFields();
-      return;
-    }
-    const material = $(`recipeMaterial_${i}`);
-    const filament = $(`recipeFilament_${i}`);
-    const color = $(`recipeColor_${i}`);
-    if(material) material.value = found.material_type || found.material || '';
-    if(filament) filament.value = found.brand || found.filament || found.type || '';
-    if(color) color.value = found.color || '';
-    // Keep the chosen inventory label/id in the picker so cost math can use the exact inventory item.
-    pick.value = val;
+    const parsed=parseInventoryMaterialValue(pick);
+    if($(`recipeMaterial_${i}`)) $(`recipeMaterial_${i}`).value = parsed.material;
+    if($(`recipeColor_${i}`)) $(`recipeColor_${i}`).value = parsed.color;
+    if($(`recipeFilament_${i}`)) $(`recipeFilament_${i}`).value = parsed.filament;
     updateRecipeDerivedFields();
   }
 
 
   function recipeFromForm(){
-    const count = Math.max(1, Math.min(8, Math.round(num($('colorCount')?.value) || 1)));
+    const count = Math.max(1, Math.min(8, Math.round(num($('colorCount').value) || 1)));
     const rows = [];
     for(let i=0;i<count;i++){
-      const pickEl = $(`recipeInventoryPick_${i}`);
-      const materialEl = $(`recipeMaterial_${i}`);
-      const filamentEl = $(`recipeFilament_${i}`);
-      const colorEl = $(`recipeColor_${i}`);
-      const gramsEl = $(`recipeGrams_${i}`);
-      const notesEl = $(`recipeNotes_${i}`);
-
-      const inventoryPick = pickEl?.value?.trim() || '';
-      const material = materialEl?.value?.trim() || '';
-      const filament = filamentEl?.value?.trim() || '';
-      const color = colorEl?.value?.trim() || '';
-      const grams_each = num(gramsEl?.value);
-      const notes = notesEl?.value?.trim() || '';
-
-      if(inventoryPick || material || filament || color || grams_each || notes){
-        rows.push({
-          inventory_id: inventoryPick,
-          inventory_pick: inventoryPick,
-          material,
-          filament,
-          color,
-          grams_each,
-          notes
-        });
+      const material = $(`recipeMaterial_${i}`)?.value.trim() || '';
+      const filament = $(`recipeFilament_${i}`)?.value.trim() || '';
+      const color = $(`recipeColor_${i}`)?.value.trim() || '';
+      const grams_each = num($(`recipeGrams_${i}`)?.value);
+      const notes = $(`recipeNotes_${i}`)?.value.trim() || '';
+      if(material || filament || color || grams_each || notes){
+        rows.push({material, filament, color, grams_each, notes});
       }
     }
     return rows;
@@ -2038,7 +1973,6 @@
           <label>Day Interval<input id="pm_d_interval_${esc(p.machine)}" type="number" min="1" step="1" value="${esc(p.pm_day_interval)}"></label>
         </div>
         <div class="pm-small">${fmtHours(p.hours_since_pm)} of ${fmtHours(p.pm_hour_interval)} · ${esc(dateMsg)}</div>
-        ${financeMiniHtml(j)}
         <div class="job-actions">
           <button class="mini-btn" data-save-pm="${esc(p.machine)}" type="button">Save PM Settings</button>
           <button class="mini-btn" data-mark-pm="${esc(p.machine)}" type="button">Mark PM Complete</button>
@@ -2141,14 +2075,13 @@
 
   function rawCostPerGramForRecipeRow(recipeRow){
     const raw = rawInventoryList().filter(r=>String(r.roll_status || 'active') !== 'retired');
+    const recipeMaterial = String(recipeRow.material || recipeRow.material_type || '').trim().toLowerCase();
+    const recipeColor = String(recipeRow.color || '').trim().toLowerCase();
+    const recipeBrand = String(recipeRow.filament || recipeRow.brand || '').trim().toLowerCase();
 
     function rawMaterialName(r){ return String(r.material_type || r.material || '').trim().toLowerCase(); }
     function rawColorName(r){ return String(r.color || '').trim().toLowerCase(); }
     function rawBrandName(r){ return String(r.brand || r.filament || r.type || '').trim().toLowerCase(); }
-    function rawLabel(r){
-      return [r.material_type || r.material, r.brand || r.filament || r.type, r.color, r.roll_label || r.roll_id]
-        .filter(Boolean).join(' ').trim().toLowerCase();
-    }
     function cpg(r){
       const starting = Math.max(1, num(r.starting_grams || r.starting || 1000));
       const cost = num(r.spool_cost || r.cost || 0);
@@ -2169,23 +2102,7 @@
       return weightedGrams ? weightedCost / weightedGrams : 0;
     }
 
-    const selected = String(recipeRow.inventory_id || recipeRow.raw_id || recipeRow.inventory_pick || recipeRow.inventory || '').trim().toLowerCase();
-    if(selected){
-      const exact = raw.find(r=>String(r.id || '').toLowerCase() === selected);
-      if(exact && cpg(exact)) return cpg(exact);
-
-      const byLabel = raw.filter(r=>{
-        const label = rawLabel(r);
-        return label && (label === selected || label.includes(selected) || selected.includes(label));
-      });
-      const labelCost = weightedAverageCost(byLabel);
-      if(labelCost) return labelCost;
-    }
-
-    const recipeMaterial = String(recipeRow.material || recipeRow.material_type || '').trim().toLowerCase();
-    const recipeColor = String(recipeRow.color || '').trim().toLowerCase();
-    const recipeBrand = String(recipeRow.filament || recipeRow.brand || '').trim().toLowerCase();
-
+    // Best case: exact material + exact color, with brand as a bonus.
     let matches = raw.filter(r=>rawMaterialName(r) === recipeMaterial && rawColorName(r) === recipeColor);
     if(matches.length){
       const brandMatches = recipeBrand ? matches.filter(r=>{
@@ -2196,12 +2113,14 @@
       if(cost) return cost;
     }
 
+    // Fallback: exact material only. This keeps cost estimates working even if color/brand text differs.
     matches = raw.filter(r=>rawMaterialName(r) === recipeMaterial);
     if(matches.length){
       const cost = weightedAverageCost(matches);
       if(cost) return cost;
     }
 
+    // Last fallback: average cost of all costed filament.
     const costed = raw.filter(r=>cpg(r) > 0);
     return weightedAverageCost(costed);
   }
@@ -2237,79 +2156,6 @@
     const totalCost = materialCost + machineCost + designCost + postCost;
     const profit = revenue - totalCost;
     return {materialCost, machineCost, designCost, postCost, revenue, totalCost, profit};
-  }
-
-
-  function activeFinanceSummary(){
-    const active = (state.jobs || []).filter(j=>!['completed','failed_scrap','archived'].includes(String(j.production_status || j.status || '').toLowerCase()));
-    let revenue = 0;
-    let material = 0;
-    let machine = 0;
-    let design = 0;
-    let post = 0;
-    let profit = 0;
-
-    active.forEach(j=>{
-      const f = jobFinancials(j);
-      revenue += f.revenue;
-      material += f.materialCost;
-      machine += f.machineCost;
-      design += f.designCost;
-      post += f.postCost;
-      profit += f.profit;
-    });
-
-    return {active,revenue,material,machine,design,post,profit};
-  }
-
-  function activeFinanceHtml(){
-    const s = activeFinanceSummary();
-    const rows = s.active.slice(0,12).map(j=>{
-      const f = jobFinancials(j);
-      const missingPrice = !num(j.estimated_price_each);
-      const missingMaterial = !f.materialCost;
-      return `<div class="active-finance-row">
-        <div><strong>${esc(j.job_title || 'Untitled Job')}</strong></div>
-        <div>${money(f.revenue)}</div>
-        <div>${money(f.materialCost)}</div>
-        <div>${money(f.machineCost)}</div>
-        <div>${money(f.profit)}</div>
-        <div>${missingPrice || missingMaterial ? '<span class="finance-warn">Needs review</span>' : 'OK'}</div>
-      </div>`;
-    }).join('');
-
-    return `
-      <div class="active-finance-wrap">
-        <div class="active-finance-head">
-          <h3>Active Project Finance</h3>
-          <span>${s.active.length} active project(s)</span>
-        </div>
-        <div class="active-finance-grid">
-          <div class="active-finance-card"><span>Revenue</span><strong>${money(s.revenue)}</strong></div>
-          <div class="active-finance-card"><span>Material Cost</span><strong>${money(s.material)}</strong></div>
-          <div class="active-finance-card"><span>Machine Cost</span><strong>${money(s.machine)}</strong></div>
-          <div class="active-finance-card"><span>Design Cost</span><strong>${money(s.design)}</strong></div>
-          <div class="active-finance-card"><span>Post Cost</span><strong>${money(s.post)}</strong></div>
-          <div class="active-finance-card profit"><span>Estimated Profit</span><strong>${money(s.profit)}</strong></div>
-        </div>
-        <div class="active-finance-table">
-          <div class="active-finance-row header">
-            <div>Project</div><div>Revenue</div><div>Material</div><div>Machine</div><div>Profit</div><div>Status</div>
-          </div>
-          ${rows || '<div class="active-finance-row"><div>No active projects yet.</div><div>—</div><div>—</div><div>—</div><div>—</div><div>—</div></div>'}
-        </div>
-      </div>
-    `;
-  }
-
-  function financeMiniHtml(j){
-    const f = jobFinancials(j);
-    const cls = f.profit >= 0 ? 'good' : 'warn';
-    return `<div class="card-finance-mini">
-      <div><span>Mat.</span><strong>${money(f.materialCost)}</strong></div>
-      <div><span>Rev.</span><strong>${money(f.revenue)}</strong></div>
-      <div class="profit ${cls}"><span>Profit</span><strong>${money(f.profit)}</strong></div>
-    </div>`;
   }
 
   function financeStripHtml(j){
@@ -2591,7 +2437,6 @@
           <div class="detail-item"><span>Scrap Grams</span><strong>${fmtG(j.scrap_grams)}</strong></div>
         </div>
         ${financeStripHtml(j)}
-        ${financeMiniHtml(j)}
         ${needsActionHtml(j)}
         ${readyToCloseHtml(j)}
         ${recipeMiniHtml(j) || (j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : '')}
@@ -2757,7 +2602,6 @@
     renderTodayView();
     renderUtilization();
     renderMetrics();
-    if($('activeFinanceMount')) $('activeFinanceMount').innerHTML = activeFinanceHtml();
     renderPm();
     renderMachineBoard();
     renderSuggestions();
