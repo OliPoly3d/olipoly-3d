@@ -232,10 +232,10 @@
     .recipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .recipe-head strong{color:var(--ink)}
     .recipe-list{display:grid;gap:8px}
-    .supply-usage-row{display:grid;grid-template-columns:1.4fr .7fr .6fr 1fr;gap:10px;align-items:end;padding:10px;border-radius:16px;background:rgba(255,255,255,.62);border:1px solid rgba(101,60,120,.09);margin-bottom:8px}
+    .supply-usage-row{display:grid;grid-template-columns:2fr .7fr .7fr .9fr;gap:8px;align-items:end;padding:12px;border-radius:18px;background:rgba(255,255,255,.82);border:1px solid rgba(101,60,120,.12);margin-bottom:10px}.supply-usage-row label{min-width:0}.supply-usage-row input{width:100%;min-width:0}.supply-usage-row .span2{grid-column:span 2}
     .supply-usage-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
     .supply-usage-mini span{display:block;padding:7px 8px;border-radius:13px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.09);font-size:.68rem;font-weight:900;color:#604966}
-    @media(max-width:900px){.supply-usage-row{grid-template-columns:1fr 1fr}.supply-usage-mini{grid-template-columns:1fr 1fr}}
+    @media(max-width:900px){.supply-usage-row{grid-template-columns:1fr 1fr}.supply-usage-mini{grid-template-columns:1fr 1fr}.supply-usage-row .span2{grid-column:span 1}}
     .recipe-row{display:grid;grid-template-columns:1.25fr 1fr 1.05fr 1fr .75fr 1fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
     .recipe-row label{font-size:.76rem}
     .recipe-total{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.84rem;font-weight:800}
@@ -2110,11 +2110,32 @@
     catch(err){console.warn('Could not refresh non-filament supplies from cloud',err);}
   }
   function supplyOptionValue(s){return [s.item_name,s.category,s.unit_type].filter(Boolean).join(' / ')}
-  function parseSupplyOption(v){const parts=String(v||'').split('/').map(x=>x.trim()); return {item_name:parts[0]||'',category:parts[1]||'',unit_type:parts[2]||''};}
+  function parseSupplyOption(v){
+    const raw=String(v||'').trim();
+    const parts=raw.split('/').map(x=>x.trim()).filter(Boolean);
+    return {item_name:parts[0]||raw,category:parts[1]||'',unit_type:parts[2]||''};
+  }
   function findSupplyForUsage(row){
-    const supplies=nonFilamentSupplies(); const pick=String(row.supply_pick||'').trim().toLowerCase();
-    if(pick){const exact=supplies.find(s=>supplyOptionValue(s).toLowerCase()===pick); if(exact)return exact; const inc=supplies.find(s=>supplyOptionValue(s).toLowerCase().includes(pick)||pick.includes(supplyOptionValue(s).toLowerCase())); if(inc)return inc;}
-    const name=String(row.item_name||'').trim().toLowerCase(); return supplies.find(s=>String(s.item_name||'').trim().toLowerCase()===name)||null;
+    const supplies=nonFilamentSupplies();
+    const pick=String(row.supply_pick||'').trim().toLowerCase();
+
+    if(pick){
+      const exact=supplies.find(s=>supplyOptionValue(s).toLowerCase()===pick);
+      if(exact) return exact;
+
+      const partial=supplies.find(s=>
+        supplyOptionValue(s).toLowerCase().includes(pick) ||
+        pick.includes(String(s.item_name||'').trim().toLowerCase())
+      );
+
+      if(partial) return partial;
+    }
+
+    const name=String(row.item_name||'').trim().toLowerCase();
+
+    return supplies.find(s=>
+      String(s.item_name||'').trim().toLowerCase()===name
+    ) || null;
   }
   function supplyUsageCostForRow(row){const matched=findSupplyForUsage(row); const unitCost=num(row.unit_cost)||num(matched?.cost_per_unit); return num(row.quantity)*unitCost;}
   function totalSupplyCostForJob(j){return safeJsonParse(j.supply_usage,[]).reduce((sum,row)=>sum+supplyUsageCostForRow(row),0);}
@@ -2124,7 +2145,35 @@
     for(let i=0;i<count;i++){const supply_pick=$(`jobSupplyPick_${i}`)?.value.trim()||''; const parsed=parseSupplyOption(supply_pick); const item_name=$(`jobSupplyName_${i}`)?.value.trim()||parsed.item_name; const quantity=num($(`jobSupplyQty_${i}`)?.value); const unit_type=$(`jobSupplyUnit_${i}`)?.value.trim()||parsed.unit_type||'each'; const unit_cost=num($(`jobSupplyCost_${i}`)?.value); const notes=$(`jobSupplyNotes_${i}`)?.value.trim()||''; if(supply_pick||item_name||quantity||unit_cost||notes)rows.push({supply_pick,item_name,quantity,unit_type,unit_cost,notes});}
     return rows;
   }
-  function applySupplyPickToRow(i){const pick=$(`jobSupplyPick_${i}`)?.value||''; if(!pick)return updateSupplyDerivedFields(); const parsed=parseSupplyOption(pick); const matched=findSupplyForUsage({supply_pick:pick,item_name:parsed.item_name}); if($(`jobSupplyName_${i}`))$(`jobSupplyName_${i}`).value=matched?.item_name||parsed.item_name; if($(`jobSupplyUnit_${i}`))$(`jobSupplyUnit_${i}`).value=matched?.unit_type||parsed.unit_type||'each'; if($(`jobSupplyCost_${i}`))$(`jobSupplyCost_${i}`).value=matched?.cost_per_unit||''; updateSupplyDerivedFields();}
+  function applySupplyPickToRow(i){
+    const pick=$(`jobSupplyPick_${i}`)?.value||'';
+    if(!pick) return updateSupplyDerivedFields();
+
+    const parsed=parseSupplyOption(pick);
+
+    const matched=findSupplyForUsage({
+      supply_pick:pick,
+      item_name:parsed.item_name
+    });
+
+    if($(`jobSupplyName_${i}`)){
+      $(`jobSupplyName_${i}`).value =
+        matched?.item_name || parsed.item_name;
+    }
+
+    if($(`jobSupplyUnit_${i}`)){
+      $(`jobSupplyUnit_${i}`).value =
+        matched?.unit_type || parsed.unit_type || 'each';
+    }
+
+    if($(`jobSupplyCost_${i}`)){
+      const resolvedCost = Number(matched?.cost_per_unit || 0);
+      $(`jobSupplyCost_${i}`).value =
+        resolvedCost > 0 ? resolvedCost.toFixed(4) : '';
+    }
+
+    updateSupplyDerivedFields();
+  }
   function renderSupplyRows(rows){
     refreshSupplyOptions(); const count=Math.max(0,Math.min(10,Math.round(num($('supplyCount')?.value)||0))); const current=rows||supplyRowsFromForm(); const el=$('supplyRows'); if(!el)return;
     el.innerHTML=count?Array.from({length:count}).map((_,i)=>{const r=current[i]||{}; const pick=r.supply_pick||(r.item_name?[r.item_name,r.category,r.unit_type].filter(Boolean).join(' / '):''); return `<div class="supply-usage-row" data-supply-row="${i}">
@@ -2137,7 +2186,7 @@
       </div>`}).join(''):'';
     updateSupplyDerivedFields();
   }
-  function updateSupplyDerivedFields(){const rows=supplyRowsFromForm(); const total=rows.reduce((s,r)=>s+supplyUsageCostForRow(r),0); const el=$('supplyTotals'); if(el)el.innerHTML=rows.length?`<span>${rows.length} supply item(s)</span><span>${money(total)} estimated supply cost</span>`:'<span>No non-filament supplies selected.</span>'; updatePricingPreview();}
+  function updateSupplyDerivedFields(){const rows=supplyRowsFromForm(); const total=rows.reduce((s,r)=>s+supplyUsageCostForRow(r),0); const el=$('supplyTotals'); if(el)el.innerHTML=rows.length?`<span>${rows.length} supply item(s)</span><span><strong>${money(total)}</strong> estimated supply cost</span>`:'<span>No non-filament supplies selected.</span>'; updatePricingPreview();}
   function supplyUsageMiniHtml(j){const rows=safeJsonParse(j.supply_usage,[]); if(!rows.length)return ''; return `<div class="recipe-mini">${rows.map(r=>`<div class="recipe-mini-row"><strong>${esc(r.item_name||'Supply')}</strong><span>${esc(r.quantity)} ${esc(r.unit_type||'unit')} × ${money(num(r.unit_cost)||num(findSupplyForUsage(r)?.cost_per_unit))} = ${money(supplyUsageCostForRow(r))}</span></div>`).join('')}</div>`;}
 
   function rawInventoryList(){
@@ -2328,7 +2377,7 @@
     const profitCls = f.profit >= 0 ? 'good' : 'warn';
     return `<div class="finance-strip">
       <div class="finance-pill"><span>Filament</span><strong>${money(f.materialCost)}</strong></div>
-      <div class="finance-pill"><span>Supplies</span><strong>${money(f.supplyCost)}</strong></div>
+      <div class="finance-pill"><span>Non-Filament Supplies</span><strong>${money(f.supplyCost)}</strong></div>
       <div class="finance-pill"><span>Machine</span><strong>${money(f.machineCost)}</strong></div>
       <div class="finance-pill"><span>Design/Post</span><strong>${money(f.designCost + f.postCost)}</strong></div>
       <div class="finance-pill"><span>Revenue</span><strong>${money(f.revenue)}</strong></div>
