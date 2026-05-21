@@ -1268,17 +1268,19 @@
 
 
   function rawInventoryGroupsForProduction(){
-    let rows=[];
-    try{ rows=JSON.parse(localStorage.getItem('olipoly_raw_material_inventory_v3')||'[]'); }catch{ rows=[]; }
-    const map=new Map();
-    rows.filter(r=>String(r.roll_status||'active')!=='empty').forEach(r=>{
-      const material = r.material_type || r.material || '';
-      const color = r.color || '';
-      const filament = r.brand || r.filament || '';
+    const rows = rawInventoryList();
+    const map = new Map();
+    rows.filter(r=>{
+      const status = String(r.roll_status || r.status || 'active').toLowerCase();
+      return status !== 'retired' && status !== 'empty' && status !== 'deleted';
+    }).forEach(r=>{
+      const material = r.material_type || r.material || r.primary_material || '';
+      const color = r.color || r.primary_color || '';
+      const filament = r.brand || r.filament || r.type || r.series || '';
       const key = [material,color,filament].map(x=>String(x||'').trim().toLowerCase()).join('|');
       if(!map.has(key)) map.set(key,{material, color, filament, remaining:0, rolls:0});
       const g=map.get(key);
-      g.remaining += Number(r.remaining_grams || r.remaining || 0);
+      g.remaining += Number(r.remaining_grams || r.remaining || r.on_hand_grams || r.available_grams || r.quantity_grams || 0);
       g.rolls += 1;
     });
     return [...map.values()].sort((a,b)=>`${a.material} ${a.color} ${a.filament}`.localeCompare(`${b.material} ${b.color} ${b.filament}`));
@@ -2454,19 +2456,95 @@
   }
 
   function rawCostPerGramForRecipeRow(recipeRow){
-    const raw = rawInventoryList().filter(r=>String(r.roll_status || 'active') !== 'retired');
+    const raw = rawInventoryList().filter(r=>{
+      const status = String(r.roll_status || r.status || 'active').toLowerCase();
+      return status !== 'retired' && status !== 'empty' && status !== 'deleted';
+    });
 
     function clean(v){ return String(v || '').trim().toLowerCase(); }
-    function rawMaterialName(r){ return clean(r.material_type || r.material); }
-    function rawColorName(r){ return clean(r.color); }
-    function rawBrandName(r){ return clean(r.brand || r.filament || r.type); }
-    function rawLabel(r){
-      return clean([r.material_type || r.material, r.brand || r.filament || r.type, r.color].filter(Boolean).join(' / '));
+    function tokens(v){
+      return clean(v).replace(/[\/|_-]+/g,' ').split(/\s+/).filter(Boolean);
+    }
+    function hasAllTokens(haystack, needle){
+      const h = tokens(haystack);
+      const n = tokens(needle);
+      return n.length && n.every(t=>h.includes(t));
+    }
+    function rawMaterialName(r){ return clean(r.material_type || r.material || r.primary_material); }
+    function rawColorName(r){ return clean(r.color || r.primary_color); }
+    function rawBrandName(r){ return clean(r.brand || r.filament || r.type || r.series); }
+    function rawLabels(r){
+      const material = r.material_type || r.material || r.primary_material || '';
+      const color = r.color || r.primary_color || '';
+      const brand = r.brand || r.filament || r.type || r.series || '';
+      const label = r.label || r.name || r.display_name || r.roll_label || '';
+      return [
+        [material,color,brand].filter(Boolean).join(' | '),
+        [material,brand,color].filter(Boolean).join(' | '),
+        [material,color,brand].filter(Boolean).join(' / '),
+        [material,brand,color].filter(Boolean).join(' / '),
+        [material,brand,color].filter(Boolean).join(' '),
+        [material,color,brand].filter(Boolean).join(' '),
+        label
+      ].filter(Boolean).map(clean);
+    }
+    function explicitCostPerGram(r){
+      return num(
+        r.cost_per_gram ??
+        r.cost_per_g ??
+        r.unit_cost_per_gram ??
+        r.unit_cost_g ??
+        r.price_per_gram ??
+        r.price_per_g ??
+        0
+      );
+    }
+    function totalCost(r){
+      return num(
+        r.spool_cost ??
+        r.total_cost ??
+        r.purchase_cost ??
+        r.purchase_price ??
+        r.cost ??
+        r.price ??
+        r.raw_cost ??
+        r.material_cost ??
+        0
+      );
+    }
+    function startingGrams(r){
+      return Math.max(1, num(
+        r.starting_grams ??
+        r.starting ??
+        r.total_grams ??
+        r.original_grams ??
+        r.initial_grams ??
+        r.purchased_grams ??
+        r.spool_size_grams ??
+        r.size_grams ??
+        r.nominal_grams ??
+        1000
+      ));
+    }
+    function remainingGrams(r){
+      return Math.max(0, num(
+        r.remaining_grams ??
+        r.remaining ??
+        r.on_hand_grams ??
+        r.available_grams ??
+        r.quantity_grams ??
+        r.total_on_hand_grams ??
+        r.starting_grams ??
+        r.starting ??
+        0
+      ));
     }
     function costPerGram(r){
-      const starting = Math.max(1, num(r.starting_grams || r.starting || r.total_grams || 1000));
-      const cost = num(r.spool_cost || r.cost || r.total_cost || r.purchase_cost || 0);
-      return cost > 0 ? cost / starting : 0;
+      const explicit = explicitCostPerGram(r);
+      if(explicit > 0) return explicit;
+      const cost = totalCost(r);
+      const grams = startingGrams(r);
+      return cost > 0 ? cost / grams : 0;
     }
     function weightedAverageCost(rows){
       let weightedCost = 0;
@@ -2474,40 +2552,47 @@
       rows.forEach(r=>{
         const cpg = costPerGram(r);
         if(!cpg) return;
-        const remaining = Math.max(0, num(r.remaining_grams || r.remaining || r.on_hand_grams || r.available_grams || r.starting_grams || r.starting || 0));
-        const starting = Math.max(1, num(r.starting_grams || r.starting || r.total_grams || 1000));
-        const weight = remaining || starting;
+        const weight = remainingGrams(r) || startingGrams(r);
         weightedCost += cpg * weight;
         weightedGrams += weight;
       });
       return weightedGrams ? weightedCost / weightedGrams : 0;
     }
 
-    const selected = clean(recipeRow.inventory_pick || recipeRow.inventory_id || recipeRow.raw_id);
+    const selectedRaw = recipeRow.inventory_pick || recipeRow.inventory_id || recipeRow.raw_id || recipeRow.label || '';
+    const parsed = selectedRaw ? parseInventoryMaterialValue(selectedRaw) : {};
+    const material = clean(recipeRow.material || recipeRow.material_type || parsed.material || '');
+    const color = clean(recipeRow.color || parsed.color || '');
+    const filament = clean(recipeRow.filament || recipeRow.brand || parsed.filament || '');
+    const selected = clean(selectedRaw);
+
     if(selected){
       const selectedMatches = raw.filter(r=>{
-        const label = rawLabel(r);
-        return label && (label === selected || label.includes(selected) || selected.includes(label));
+        const labels = rawLabels(r);
+        if(labels.some(label=>label === selected || label.includes(selected) || selected.includes(label))) return true;
+        if(labels.some(label=>hasAllTokens(label, selected) || hasAllTokens(selected, label))) return true;
+        return false;
       });
       const selectedCost = weightedAverageCost(selectedMatches);
       if(selectedCost) return selectedCost;
     }
 
-    const material = clean(recipeRow.material || recipeRow.material_type);
-    const color = clean(recipeRow.color);
-    const filament = clean(recipeRow.filament || recipeRow.brand);
+    let matches = raw.filter(r=>{
+      const materialOk = !material || rawMaterialName(r) === material || hasAllTokens(rawMaterialName(r), material) || hasAllTokens(material, rawMaterialName(r));
+      const colorOk = !color || rawColorName(r) === color || hasAllTokens(rawColorName(r), color) || hasAllTokens(color, rawColorName(r));
+      return materialOk && colorOk;
+    });
 
-    let matches = raw.filter(r=>rawMaterialName(r) === material && (!color || rawColorName(r) === color));
     if(matches.length){
       const brandMatches = filament ? matches.filter(r=>{
         const rb = rawBrandName(r);
-        return rb && (rb === filament || rb.includes(filament) || filament.includes(rb));
+        return rb && (rb === filament || rb.includes(filament) || filament.includes(rb) || hasAllTokens(rb, filament) || hasAllTokens(filament, rb));
       }) : [];
       const cost = weightedAverageCost(brandMatches.length ? brandMatches : matches);
       if(cost) return cost;
     }
 
-    matches = raw.filter(r=>rawMaterialName(r) === material);
+    matches = raw.filter(r=>material && (rawMaterialName(r) === material || hasAllTokens(rawMaterialName(r), material) || hasAllTokens(material, rawMaterialName(r))));
     if(matches.length){
       const cost = weightedAverageCost(matches);
       if(cost) return cost;
@@ -3197,6 +3282,9 @@
     </div>`;
   }
 
+
+
+  window.OP_DEBUG_FILAMENT_COST = { rawInventoryList, rawCostPerGramForRecipeRow, estimatedMaterialCostForJob };
 
   function render(){
     document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
