@@ -194,10 +194,65 @@
     .ops-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
     .ops-panel{border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line);padding:14px;box-shadow:0 12px 30px rgba(84,38,94,.08)}
     .ops-panel h3{margin:0 0 10px;color:var(--ink)}
-    .today-list{display:grid;gap:8px}
-    .today-item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.68);border:1px solid rgba(101,60,120,.10)}
-    .today-item strong{font-size:.86rem;color:var(--ink)}
-    .today-item span{font-size:.74rem;color:var(--muted);font-weight:800}
+    .today-list{display:grid;gap:10px}
+    .today-item{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:12px;
+      align-items:center;
+      padding:12px 13px;
+      border-radius:18px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(101,60,120,.11);
+      box-shadow:0 8px 20px rgba(84,38,94,.045);
+    }
+    .today-icon{
+      width:30px;
+      height:30px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,rgba(232,79,183,.12),rgba(157,109,243,.12));
+      font-size:.95rem;
+    }
+    .today-copy{display:grid;gap:3px;min-width:0}
+    .today-title{font-size:.88rem;color:var(--ink);font-weight:950;line-height:1.2}
+    .today-meta{font-size:.76rem;color:var(--muted);font-weight:800;line-height:1.25}
+    .today-reason{
+      display:inline-flex;
+      width:max-content;
+      max-width:100%;
+      margin-top:2px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(101,60,120,.07);
+      color:#604966;
+      font-size:.68rem;
+      font-weight:900;
+      line-height:1.2;
+    }
+    .today-reason.danger{background:rgba(239,71,111,.10);color:#9a2140}
+    .today-reason.warn{background:rgba(247,183,49,.16);color:#7a5400}
+    .today-reason.ready{background:rgba(52,199,89,.12);color:#23763b}
+    .today-priority{
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      min-width:74px;
+      padding:7px 9px;
+      border-radius:999px;
+      border:1px solid rgba(101,60,120,.10);
+      background:rgba(255,255,255,.78);
+      color:#604966;
+      font-size:.68rem;
+      font-weight:950;
+      text-transform:uppercase;
+      letter-spacing:.035em;
+      white-space:nowrap;
+    }
+    .today-priority.urgent{background:rgba(239,71,111,.12);border-color:rgba(239,71,111,.22);color:#9a2140}
+    .today-priority.soon{background:rgba(247,183,49,.18);border-color:rgba(247,183,49,.26);color:#7a5400}
+    .today-priority.ready{background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.18);color:#23763b}
     .util-row{display:grid;grid-template-columns:70px 1fr auto;gap:9px;align-items:center;margin:8px 0}
     .util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}
     .util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
@@ -2481,12 +2536,75 @@
   function renderTodayView(){
     const active = activeJobs();
     const items = [];
-    active.filter(j=>j.production_status==='printing').forEach(j=>items.push({icon:'🖨️', title:j.job_title, meta:`Printing · ${finishText(j.estimated_finish_at)}`, cls:'warn'}));
-    active.filter(j=>needsActionList(j).length).slice(0,5).forEach(j=>items.push({icon:'🔎', title:j.job_title, meta:`Needs: ${needsActionList(j).slice(0,2).join(', ')}`, cls:'danger'}));
-    active.filter(j=>needsPrinterTime(j) && j.due_date && daysUntil(j.due_date)<=1).forEach(j=>items.push({icon:'⚠️', title:j.job_title, meta:dueText(j.due_date), cls:'danger'}));
-    active.filter(readyToClose).slice(0,5).forEach(j=>items.push({icon:'✅', title:j.job_title, meta:'Ready to close out', cls:'warn'}));
-    state.pm.filter(p=>pmStatus(p).cls!=='pm-good').forEach(p=>items.push({icon:'🧰', title:`${p.machine} PM`, meta:pmStatus(p).label, cls:'danger'}));
-    $('todayView').innerHTML = items.length ? items.slice(0,10).map(i=>`<div class="today-item"><div>${i.icon}</div><div><strong>${esc(i.title)}</strong><span>${esc(i.meta)}</span></div><span class="decision-pill ${i.cls||''}">Now</span></div>`).join('') : `<div class="empty">No urgent action items right now.</div>`;
+
+    active
+      .filter(j=>j.production_status==='printing')
+      .forEach(j=>items.push({
+        icon:'🖨️',
+        title:j.job_title,
+        reason:`Printing · ${finishText(j.estimated_finish_at)}`,
+        priority:'In Progress',
+        cls:'soon',
+        reasonCls:'warn'
+      }));
+
+    active
+      .filter(j=>needsActionList(j).length)
+      .slice(0,5)
+      .forEach(j=>items.push({
+        icon:'🔎',
+        title:j.job_title,
+        reason:needsActionList(j).slice(0,2).join(', '),
+        priority:'Review',
+        cls:'urgent',
+        reasonCls:'danger'
+      }));
+
+    active
+      .filter(j=>needsPrinterTime(j) && j.due_date && daysUntil(j.due_date)<=1)
+      .forEach(j=>items.push({
+        icon:'⚠️',
+        title:j.job_title,
+        reason:dueText(j.due_date),
+        priority:'Urgent',
+        cls:'urgent',
+        reasonCls:'danger'
+      }));
+
+    active
+      .filter(readyToClose)
+      .slice(0,5)
+      .forEach(j=>items.push({
+        icon:'✅',
+        title:j.job_title,
+        reason:'Post-print complete — ready to close out, update inventory, and move to history.',
+        priority:'Ready',
+        cls:'ready',
+        reasonCls:'ready'
+      }));
+
+    state.pm
+      .filter(p=>pmStatus(p).cls!=='pm-good')
+      .forEach(p=>items.push({
+        icon:'🧰',
+        title:`${p.machine} PM`,
+        reason:pmStatus(p).label,
+        priority:'Maintenance',
+        cls:'soon',
+        reasonCls:'warn'
+      }));
+
+    $('todayView').innerHTML = items.length
+      ? items.slice(0,10).map(i=>`<div class="today-item">
+          <div class="today-icon">${i.icon}</div>
+          <div class="today-copy">
+            <div class="today-title">${esc(i.title)}</div>
+            <div class="today-meta">Action needed</div>
+            <div class="today-reason ${i.reasonCls||''}">${esc(i.reason)}</div>
+          </div>
+          <span class="today-priority ${i.cls||''}">${esc(i.priority)}</span>
+        </div>`).join('')
+      : `<div class="empty">No urgent action items right now.</div>`;
   }
 
   function renderUtilization(){
