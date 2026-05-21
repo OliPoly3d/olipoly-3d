@@ -232,6 +232,10 @@
     .recipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .recipe-head strong{color:var(--ink)}
     .recipe-list{display:grid;gap:8px}
+    .supply-usage-row{display:grid;grid-template-columns:1.4fr .7fr .6fr 1fr;gap:10px;align-items:end;padding:10px;border-radius:16px;background:rgba(255,255,255,.62);border:1px solid rgba(101,60,120,.09);margin-bottom:8px}
+    .supply-usage-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+    .supply-usage-mini span{display:block;padding:7px 8px;border-radius:13px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.09);font-size:.68rem;font-weight:900;color:#604966}
+    @media(max-width:900px){.supply-usage-row{grid-template-columns:1fr 1fr}.supply-usage-mini{grid-template-columns:1fr 1fr}}
     .recipe-row{display:grid;grid-template-columns:1.25fr 1fr 1.05fr 1fr .75fr 1fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
     .recipe-row label{font-size:.76rem}
     .recipe-total{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.84rem;font-weight:800}
@@ -619,6 +623,18 @@
           </div>
         </details>
 
+
+        <details class="form-section">
+          <summary>Non-filament supplies / add-on materials</summary>
+          <div class="form-section-body">
+            <p class="muted">Select materials from Inventory Control's Non-Filament Supplies list. Examples: LED puck lights, rope lights, keyrings, magnets, magnetic sheets, packaging, hardware, batteries, adhesive.</p>
+            <label>Supply rows<input id="supplyCount" type="number" min="0" max="10" step="1" value="0"></label>
+            <datalist id="supplyOptions"></datalist>
+            <div id="supplyRows"></div>
+            <div class="recipe-mini" id="supplyTotals"><span>No non-filament supplies selected.</span></div>
+          </div>
+        </details>
+
         <details class="form-section">
           <summary>Customer, order, price + image</summary>
           <div class="form-section-body">
@@ -628,7 +644,9 @@
             <label>Finished Good SKU<input id="finishedSku" placeholder="Optional inventory SKU"></label>
             <label>Est. Price / Each<input id="priceEach" type="number" min="0" step="0.01" placeholder="15.00"></label>
             <label>Design / Setup Cost<input id="designFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label>Design Cost Mode<select id="designFeeMode"><option value="flat">Flat per job</option><option value="per_piece">Per piece</option></select></label>
             <label>Post-Processing Cost<input id="postProcessingFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label>Post Cost Mode<select id="postProcessingFeeMode"><option value="flat">Flat per job</option><option value="per_piece">Per piece</option></select></label>
             <label class="span2">Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
 
             <div class="pricing-preview" id="pricingPreview">
@@ -807,6 +825,7 @@
   const LS_PM = 'olipoly_printer_pm_v3';
   const LS_RAW = 'olipoly_raw_material_inventory_v3';
   const LS_FINISHED = 'olipoly_finished_goods_inventory_v3';
+  const LS_SUPPLIES = 'olipoly_non_filament_supplies_v1';
 
   // Legacy/local fallback keys from earlier Projects + Production Control builds.
   // This keeps older jobs from appearing "lost" after the production-control conversion.
@@ -1257,7 +1276,11 @@
       estimated_total_grams:gEach*q,
       estimated_price_each:num($('priceEach').value),
       design_fee:num($('designFee')?.value),
+      design_fee_mode:$('designFeeMode')?.value || 'flat',
       post_processing_fee:num($('postProcessingFee')?.value),
+      post_processing_fee_mode:$('postProcessingFeeMode')?.value || 'flat',
+      supply_usage:JSON.stringify(supplyRowsFromForm()),
+      supply_cost:supplyRowsFromForm().reduce((s,r)=>s+supplyUsageCostForRow(r),0),
       estimated_material_cost:estimatedMaterialCostForJob({
         quantity:q,
         estimated_grams_each:gEach,
@@ -1311,7 +1334,11 @@
     $('gramsEach').value = j.estimated_grams_each || '';
     $('priceEach').value = j.estimated_price_each || '';
     if($('designFee')) $('designFee').value = j.design_fee || '';
+    if($('designFeeMode')) $('designFeeMode').value = j.design_fee_mode || 'flat';
     if($('postProcessingFee')) $('postProcessingFee').value = j.post_processing_fee || '';
+    if($('postProcessingFeeMode')) $('postProcessingFeeMode').value = j.post_processing_fee_mode || 'flat';
+    if($('supplyCount')) $('supplyCount').value = safeJsonParse(j.supply_usage, []).length || 0;
+    renderSupplyRows(safeJsonParse(j.supply_usage, []));
     $('imageUrl').value = j.image_url || '';
     $('customerName').value = j.customer_name || '';
     $('quoteNumber').value = j.quote_number || '';
@@ -1337,7 +1364,11 @@
     $('machine').value = 'either';
     renderRecipeRows([]);
     if($('designFee')) $('designFee').value = '';
+    if($('designFeeMode')) $('designFeeMode').value = 'flat';
     if($('postProcessingFee')) $('postProcessingFee').value = '';
+    if($('postProcessingFeeMode')) $('postProcessingFeeMode').value = 'flat';
+    if($('supplyCount')) $('supplyCount').value = 0;
+    renderSupplyRows([]);
     if($('excludeInventoryReduction')) $('excludeInventoryReduction').value = 'no';
     updatePricingPreview();
     $('saveBtn').textContent = 'Save Production Job';
@@ -1379,7 +1410,11 @@
       finished_sku: full.finished_sku,
       estimated_price_each: num(full.estimated_price_each),
       design_fee: num(full.design_fee),
+      design_fee_mode: full.design_fee_mode || 'flat',
       post_processing_fee: num(full.post_processing_fee),
+      post_processing_fee_mode: full.post_processing_fee_mode || 'flat',
+      supply_usage: full.supply_usage || '[]',
+      supply_cost: num(totalSupplyCostForJob(full)),
       estimated_material_cost: num(estimatedMaterialCostForJob(full)),
       image_url: full.image_url,
       notes: full.notes,
@@ -1804,6 +1839,7 @@
         state.jobs = mergeUniqueJobs([cloudMigrated, localMigrated]);
         localWrite(LS_JOBS,state.jobs);
         await refreshRawInventoryFromCloud();
+        await refreshNonFilamentSuppliesFromCloud();
         if(state.jobs.length) migrateVisibleJobsToCloud();
         if(localMigrated.length || cloudMigrated.length) toast(`Loaded ${state.jobs.length} production/project jobs.`);
       }catch(err){
@@ -1896,7 +1932,11 @@
       estimated_total_grams:num(j.estimated_total_grams) || g*q,
       estimated_price_each:num(j.estimated_price_each),
       design_fee:num(j.design_fee),
+      design_fee_mode:j.design_fee_mode || 'flat',
       post_processing_fee:num(j.post_processing_fee),
+      post_processing_fee_mode:j.post_processing_fee_mode || 'flat',
+      supply_usage:j.supply_usage || '[]',
+      supply_cost:num(j.supply_cost),
       estimated_material_cost:num(j.estimated_material_cost),
       image_url:j.image_url || null,
       customer_name:j.customer_name || null,
@@ -2059,6 +2099,46 @@
   function statusShort(label){
     return String(label || '').replace('Post-Processing / QC','QC').replace('Delivery Scheduled','Scheduled').replace('Awaiting Pickup','Pickup').replace('Ready to Print','Ready').replace('Idea / Requested','Idea');
   }
+
+
+  function nonFilamentSupplies(){
+    return localRead(LS_SUPPLIES, []).map(s=>({id:s.id||uid(),item_name:s.item_name||s.name||'',category:s.category||'',unit_type:s.unit_type||s.unit||'each',quantity_on_hand:num(s.quantity_on_hand ?? s.qty_on_hand ?? s.quantity ?? 0),cost_per_unit:num(s.cost_per_unit ?? s.unit_cost ?? s.cost ?? 0),supplier:s.supplier||'',notes:s.notes||''})).filter(s=>s.item_name);
+  }
+  async function refreshNonFilamentSuppliesFromCloud(){
+    if(!state.user?.id) return;
+    try{const rows=await sbApi(`/rest/v1/non_filament_materials?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}); if(Array.isArray(rows)&&rows.length)localWrite(LS_SUPPLIES,rows);}
+    catch(err){console.warn('Could not refresh non-filament supplies from cloud',err);}
+  }
+  function supplyOptionValue(s){return [s.item_name,s.category,s.unit_type].filter(Boolean).join(' / ')}
+  function parseSupplyOption(v){const parts=String(v||'').split('/').map(x=>x.trim()); return {item_name:parts[0]||'',category:parts[1]||'',unit_type:parts[2]||''};}
+  function findSupplyForUsage(row){
+    const supplies=nonFilamentSupplies(); const pick=String(row.supply_pick||'').trim().toLowerCase();
+    if(pick){const exact=supplies.find(s=>supplyOptionValue(s).toLowerCase()===pick); if(exact)return exact; const inc=supplies.find(s=>supplyOptionValue(s).toLowerCase().includes(pick)||pick.includes(supplyOptionValue(s).toLowerCase())); if(inc)return inc;}
+    const name=String(row.item_name||'').trim().toLowerCase(); return supplies.find(s=>String(s.item_name||'').trim().toLowerCase()===name)||null;
+  }
+  function supplyUsageCostForRow(row){const matched=findSupplyForUsage(row); const unitCost=num(row.unit_cost)||num(matched?.cost_per_unit); return num(row.quantity)*unitCost;}
+  function totalSupplyCostForJob(j){return safeJsonParse(j.supply_usage,[]).reduce((sum,row)=>sum+supplyUsageCostForRow(row),0);}
+  function refreshSupplyOptions(){const dl=$('supplyOptions'); if(!dl)return; dl.innerHTML=nonFilamentSupplies().map(s=>`<option value="${esc(supplyOptionValue(s))}">${esc(s.item_name)} · ${money(s.cost_per_unit)} / ${esc(s.unit_type)}</option>`).join('');}
+  function supplyRowsFromForm(){
+    const count=Math.max(0,Math.min(10,Math.round(num($('supplyCount')?.value)||0))); const rows=[];
+    for(let i=0;i<count;i++){const supply_pick=$(`jobSupplyPick_${i}`)?.value.trim()||''; const parsed=parseSupplyOption(supply_pick); const item_name=$(`jobSupplyName_${i}`)?.value.trim()||parsed.item_name; const quantity=num($(`jobSupplyQty_${i}`)?.value); const unit_type=$(`jobSupplyUnit_${i}`)?.value.trim()||parsed.unit_type||'each'; const unit_cost=num($(`jobSupplyCost_${i}`)?.value); const notes=$(`jobSupplyNotes_${i}`)?.value.trim()||''; if(supply_pick||item_name||quantity||unit_cost||notes)rows.push({supply_pick,item_name,quantity,unit_type,unit_cost,notes});}
+    return rows;
+  }
+  function applySupplyPickToRow(i){const pick=$(`jobSupplyPick_${i}`)?.value||''; if(!pick)return updateSupplyDerivedFields(); const parsed=parseSupplyOption(pick); const matched=findSupplyForUsage({supply_pick:pick,item_name:parsed.item_name}); if($(`jobSupplyName_${i}`))$(`jobSupplyName_${i}`).value=matched?.item_name||parsed.item_name; if($(`jobSupplyUnit_${i}`))$(`jobSupplyUnit_${i}`).value=matched?.unit_type||parsed.unit_type||'each'; if($(`jobSupplyCost_${i}`))$(`jobSupplyCost_${i}`).value=matched?.cost_per_unit||''; updateSupplyDerivedFields();}
+  function renderSupplyRows(rows){
+    refreshSupplyOptions(); const count=Math.max(0,Math.min(10,Math.round(num($('supplyCount')?.value)||0))); const current=rows||supplyRowsFromForm(); const el=$('supplyRows'); if(!el)return;
+    el.innerHTML=count?Array.from({length:count}).map((_,i)=>{const r=current[i]||{}; const pick=r.supply_pick||(r.item_name?[r.item_name,r.category,r.unit_type].filter(Boolean).join(' / '):''); return `<div class="supply-usage-row" data-supply-row="${i}">
+        <label>Supply ${i+1}<input id="jobSupplyPick_${i}" list="supplyOptions" value="${esc(pick)}" placeholder="Choose supply..."></label>
+        <label>Qty used<input id="jobSupplyQty_${i}" type="number" min="0" step="0.01" value="${esc(r.quantity ?? '')}"></label>
+        <label>Unit<input id="jobSupplyUnit_${i}" value="${esc(r.unit_type||'')}" placeholder="each, ft, sq in..."></label>
+        <label>Cost / unit<input id="jobSupplyCost_${i}" type="number" min="0" step="0.0001" value="${esc(r.unit_cost ?? '')}"></label>
+        <label class="span2">Item name<input id="jobSupplyName_${i}" value="${esc(r.item_name||'')}" placeholder="Auto-fills from supply"></label>
+        <label class="span2">Notes<input id="jobSupplyNotes_${i}" value="${esc(r.notes||'')}" placeholder="Optional usage notes"></label>
+      </div>`}).join(''):'';
+    updateSupplyDerivedFields();
+  }
+  function updateSupplyDerivedFields(){const rows=supplyRowsFromForm(); const total=rows.reduce((s,r)=>s+supplyUsageCostForRow(r),0); const el=$('supplyTotals'); if(el)el.innerHTML=rows.length?`<span>${rows.length} supply item(s)</span><span>${money(total)} estimated supply cost</span>`:'<span>No non-filament supplies selected.</span>'; updatePricingPreview();}
+  function supplyUsageMiniHtml(j){const rows=safeJsonParse(j.supply_usage,[]); if(!rows.length)return ''; return `<div class="recipe-mini">${rows.map(r=>`<div class="recipe-mini-row"><strong>${esc(r.item_name||'Supply')}</strong><span>${esc(r.quantity)} ${esc(r.unit_type||'unit')} × ${money(num(r.unit_cost)||num(findSupplyForUsage(r)?.cost_per_unit))} = ${money(supplyUsageCostForRow(r))}</span></div>`).join('')}</div>`;}
 
   function rawInventoryList(){
     const keys = [
@@ -2231,24 +2311,26 @@
   }
 
   function jobFinancials(j){
+    const qty = Math.max(1, num(j.quantity) || 1);
     const materialCost = estimatedMaterialCostForJob(j);
+    const supplyCost = totalSupplyCostForJob(j);
     const machineCost = estimatedMachineCostForJob(j);
-    const designCost = num(j.design_fee);
-    const postCost = num(j.post_processing_fee);
+    const designCost = num(j.design_fee) * (j.design_fee_mode === 'per_piece' ? qty : 1);
+    const postCost = num(j.post_processing_fee) * (j.post_processing_fee_mode === 'per_piece' ? qty : 1);
     const revenue = estimatedRevenueForJob(j);
-    const totalCost = materialCost + machineCost + designCost + postCost;
+    const totalCost = materialCost + supplyCost + machineCost + designCost + postCost;
     const profit = revenue - totalCost;
-    return {materialCost, machineCost, designCost, postCost, revenue, totalCost, profit};
+    return {materialCost, supplyCost, machineCost, designCost, postCost, revenue, totalCost, profit};
   }
 
   function financeStripHtml(j){
     const f = jobFinancials(j);
     const profitCls = f.profit >= 0 ? 'good' : 'warn';
     return `<div class="finance-strip">
-      <div class="finance-pill"><span>Material</span><strong>${money(f.materialCost)}</strong></div>
+      <div class="finance-pill"><span>Filament</span><strong>${money(f.materialCost)}</strong></div>
+      <div class="finance-pill"><span>Supplies</span><strong>${money(f.supplyCost)}</strong></div>
       <div class="finance-pill"><span>Machine</span><strong>${money(f.machineCost)}</strong></div>
-      <div class="finance-pill"><span>Design</span><strong>${money(f.designCost)}</strong></div>
-      <div class="finance-pill"><span>Post</span><strong>${money(f.postCost)}</strong></div>
+      <div class="finance-pill"><span>Design/Post</span><strong>${money(f.designCost + f.postCost)}</strong></div>
       <div class="finance-pill"><span>Revenue</span><strong>${money(f.revenue)}</strong></div>
       <div class="finance-pill profit ${profitCls}"><span>Profit</span><strong>${money(f.profit)}</strong></div>
     </div>`;
@@ -2507,7 +2589,8 @@
           <div class="detail-item"><span>Actual Hours</span><strong>${fmtHours(j.actual_print_hours)}</strong></div>
           <div class="detail-item"><span>Est. Grams</span><strong>${fmtG(j.estimated_total_grams)}</strong></div>
           <div class="detail-item"><span>Actual Grams</span><strong>${fmtG(j.actual_grams_used)}</strong></div>
-          <div class="detail-item"><span>Material Cost</span><strong>${money(jobFinancials(j).materialCost)}</strong></div>
+          <div class="detail-item"><span>Filament Cost</span><strong>${money(jobFinancials(j).materialCost)}</strong></div>
+          <div class="detail-item"><span>Supply Cost</span><strong>${money(jobFinancials(j).supplyCost)}</strong></div>
           <div class="detail-item"><span>Revenue</span><strong>${money(jobFinancials(j).revenue)}</strong></div>
           <div class="detail-item"><span>Est. Profit</span><strong>${money(jobFinancials(j).profit)}</strong></div>
           <div class="detail-item"><span>Material</span><strong>${esc(j.primary_material || '—')}</strong></div>
@@ -2524,6 +2607,7 @@
         ${needsActionHtml(j)}
         ${readyToCloseHtml(j)}
         ${recipeMiniHtml(j) || (j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : '')}
+        ${supplyUsageMiniHtml(j)}
         ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}
         <div class="job-actions">
           <button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>
@@ -2694,13 +2778,14 @@
       s.rows.push({job:j, financials:f, needsReview});
       s.revenue += f.revenue;
       s.material += f.materialCost;
+      s.supplies = (s.supplies || 0) + f.supplyCost;
       s.machine += f.machineCost;
       s.design += f.designCost;
       s.post += f.postCost;
       s.profit += f.profit;
       if(needsReview) s.needsReview += 1;
       return s;
-    }, {rows:[], revenue:0, material:0, machine:0, design:0, post:0, profit:0, needsReview:0});
+    }, {rows:[], revenue:0, material:0, supplies:0, machine:0, design:0, post:0, profit:0, needsReview:0});
   }
 
   function financeMiniHtml(j){
@@ -2739,8 +2824,8 @@
     mount.innerHTML = `<div class="finance-dashboard">
       <div class="finance-summary-grid">
         <div class="finance-summary-card"><span>Total Revenue</span><strong>${money(s.revenue)}</strong></div>
-        <div class="finance-summary-card"><span>Material Cost</span><strong>${money(s.material)}</strong></div>
-        <div class="finance-summary-card"><span>Machine Cost</span><strong>${money(s.machine)}</strong></div>
+        <div class="finance-summary-card"><span>Filament Cost</span><strong>${money(s.material)}</strong></div>
+        <div class="finance-summary-card"><span>Supply Cost</span><strong>${money(s.supplies || 0)}</strong></div>
         <div class="finance-summary-card"><span>Est. Profit</span><strong>${money(s.profit)}</strong></div>
         <div class="finance-summary-card ${profitCls}"><span>Margin</span><strong>${marginPct(s.profit, s.revenue)}</strong></div>
         <div class="finance-summary-card ${s.needsReview ? 'warn' : 'profit'}"><span>Needs Review</span><strong>${s.needsReview}</strong></div>
@@ -2877,9 +2962,10 @@
       applyInventoryPickToRecipeRow(i);
       return;
     }
-    if(e.target.closest('#recipeRows') || ['colorCount','quantity','hoursEach','priceEach','designFee','postProcessingFee','excludeInventoryReduction','gramsEach','primaryMaterial','primaryColor'].includes(e.target.id)){
+    if(e.target.closest('#recipeRows') || ['colorCount','quantity','hoursEach','priceEach','designFee','designFeeMode','postProcessingFee','postProcessingFeeMode','excludeInventoryReduction','gramsEach','primaryMaterial','primaryColor','supplyCount'].includes(e.target.id)){
       if(e.target.id === 'colorCount') renderRecipeRows(recipeFromForm());
-      else updateRecipeDerivedFields();
+      else if(e.target.id === 'supplyCount') renderSupplyRows(supplyRowsFromForm());
+      else { updateRecipeDerivedFields(); updateSupplyDerivedFields(); }
       updatePricingPreview();
     }
   });

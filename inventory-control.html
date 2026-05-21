@@ -321,6 +321,18 @@
     .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.chip{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:999px;background:rgba(244,220,255,.55);border:1px solid rgba(101,60,120,.10);color:#6f4b7e;font-size:.66rem;font-weight:900}.chip.ok{background:rgba(52,199,89,.12);color:#23763b}.chip.warn{background:rgba(247,183,49,.16);color:#7a5400}.chip.danger{background:rgba(239,71,111,.10);color:#9a2140}.chip.muted{background:rgba(154,138,163,.12);color:#665970}
     .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{padding:8px;border-radius:14px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.10)}.stat span{display:block;font-size:.6rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}.stat strong{display:block;margin-top:2px;font-size:.84rem;color:var(--ink);overflow-wrap:anywhere}
     .bar{height:10px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden;margin-top:8px}.bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ok),#9be36c)}.bar.warn span{background:linear-gradient(90deg,var(--warn),#ffd166)}.bar.danger span{background:linear-gradient(90deg,var(--danger),#ff8fa3)}
+
+    .supply-hero-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+    .supply-hero-card{border-radius:22px;padding:14px;background:rgba(255,255,255,.80);border:1px solid var(--line)}
+    .supply-hero-card span{display:block;font-size:.68rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .supply-hero-card strong{display:block;margin-top:5px;font-size:1.5rem;color:var(--ink)}
+    .supply-card{position:relative;overflow:hidden;border-radius:24px;padding:14px;background:rgba(255,255,255,.86);border:1px solid var(--line);box-shadow:0 12px 32px rgba(84,38,94,.08)}
+    .supply-card::before{content:"";position:absolute;inset:0 auto 0 0;width:7px;background:linear-gradient(180deg,var(--blue),var(--purple))}
+    .supply-card h3{margin:0;color:var(--ink);font-size:1rem;line-height:1.18}
+    .supply-card .supply-unit{color:var(--muted);font-size:.78rem;font-weight:800;margin-top:3px}
+    @media(max-width:900px){.supply-hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:600px){.supply-hero-grid{grid-template-columns:1fr}}
+
     .recipe-mini{display:grid;gap:5px;margin-top:9px}.recipe-line{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 9px;border-radius:14px;background:rgba(255,255,255,.58);border:1px solid rgba(101,60,120,.08);font-size:.78rem}.recipe-line strong{color:var(--ink)}.card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.quick-adjust{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-top:8px}.empty{padding:16px;border-radius:18px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.48);font-size:.9rem}
     .table-wrap{overflow:auto;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.62)}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px 11px;border-bottom:1px solid rgba(101,60,120,.10);text-align:left;vertical-align:top;font-size:.86rem}th{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.72)}tr:last-child td{border-bottom:0}
     .modal.hidden{display:none!important}.modal{position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:18px}.modal::before{content:"";position:absolute;inset:0;background:rgba(37,24,45,.45);backdrop-filter:blur(8px)}.modal-dialog{position:relative;z-index:1;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:30px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,252,.96))}.modal-dialog h2{margin:0;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:var(--ink)}.modal-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
@@ -433,6 +445,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="raw" type="button">🧵 Raw Materials</button>
         <button class="tab" data-tab="finished" type="button">📦 Finished Goods</button>
+        <button class="tab" data-tab="supplies" type="button">🧰 Non-Filament Supplies</button>
         <button class="tab" data-tab="ledger" type="button">🔁 Movement Log</button>
       </div>
       <div id="tabHelp" class="muted">Manage filament and spool inventory.</div>
@@ -465,6 +478,31 @@
           <div class="actions">
             <button class="btn" type="submit" id="rawSaveBtn">Save Raw Material</button>
             <button class="ghost" type="button" id="rawResetBtn">Clear</button>
+          </div>
+        </form>
+      </div>
+    </details>
+
+
+    <details class="ops-collapse hidden" id="supplyEditor" open>
+      <summary>Quick add / edit non-filament supply</summary>
+      <div class="collapse-body">
+        <form id="supplyForm">
+          <input id="supplyId" type="hidden">
+          <div class="form-grid">
+            <label class="span2">Item name<input id="supplyName" required placeholder="LED puck light kit, keyring, magnetic sheet..."></label>
+            <label>Category<input id="supplyCategory" placeholder="Lighting, hardware, packaging..."></label>
+            <label>Unit type<select id="supplyUnit"><option value="each">each</option><option value="piece">piece</option><option value="foot">foot</option><option value="inch">inch</option><option value="square inch">square inch</option><option value="sheet">sheet</option><option value="pack">pack</option><option value="pair">pair</option><option value="gram">gram</option><option value="ounce">ounce</option><option value="custom">custom</option></select></label>
+            <label>Qty on hand<input id="supplyQty" type="number" min="0" step="0.01" value="0"></label>
+            <label>Cost per unit<input id="supplyCost" type="number" min="0" step="0.0001" placeholder="0.00"></label>
+            <label>Reorder threshold<input id="supplyThreshold" type="number" min="0" step="0.01" value="0"></label>
+            <label>Supplier<input id="supplySupplier" placeholder="Amazon, ULINE, Micro Center..."></label>
+            <label>Reorder link<input id="supplyReorderLink" placeholder="https://..."></label>
+            <label class="full">Notes<textarea id="supplyNotes" placeholder="Pack size, exact size, color, usage notes, etc."></textarea></label>
+          </div>
+          <div class="actions">
+            <button class="btn" type="submit" id="supplySaveBtn">Save Supply</button>
+            <button class="ghost" type="button" id="supplyResetBtn">Clear</button>
           </div>
         </form>
       </div>
@@ -514,6 +552,25 @@
         <div class="cards-grid" id="rawCards"></div>
       </div>
     </details>
+
+
+    <section class="card hidden" id="suppliesPanel">
+      <span class="kicker">Non-filament supplies</span>
+      <p class="muted">Track project materials that are not filament: LEDs, rope lights, keyrings, magnets, magnetic sheets, packaging, hardware, adhesive, and similar shop supplies.</p>
+      <div class="toolbar compact">
+        <label>Search<input id="supplySearch" placeholder="LED, magnet, keyring, category..."></label>
+        <label>Category<select id="supplyFilterCategory"><option value="all">All Categories</option></select></label>
+        <label>Sort<select id="supplySort"><option value="need">Need first</option><option value="name">Name</option><option value="qty">Lowest qty</option><option value="value">Highest value</option></select></label>
+        <button class="ghost" id="supplyClearFilters" type="button">Clear</button>
+      </div>
+      <div class="supply-hero-grid">
+        <div class="supply-hero-card"><span>Supply SKUs</span><strong id="mSupplyCount">0</strong></div>
+        <div class="supply-hero-card"><span>Supply Value</span><strong id="mSupplyValue">$0</strong></div>
+        <div class="supply-hero-card"><span>Low / Out</span><strong id="mSupplyLow">0</strong></div>
+        <div class="supply-hero-card"><span>Categories</span><strong id="mSupplyCategories">0</strong></div>
+      </div>
+      <div class="cards-grid" id="supplyCards"></div>
+    </section>
 
     <section class="card hidden" id="finishedPanel">
       <span class="kicker">Finished goods</span>
@@ -571,6 +628,7 @@
   const RAW_KEY='olipoly_raw_material_inventory_v3';
   const FG_KEY='olipoly_finished_goods_inventory_v3';
   const LEDGER_KEY='olipoly_inventory_ledger_v2';
+  const SUPPLY_KEY='olipoly_non_filament_supplies_v1';
   const LEGACY_RAW_KEYS=[
     'olipoly_inventory_raw_v1',
     'olipoly_inventory_raw_v2',
@@ -593,7 +651,7 @@
   ];
   const LEGACY_LEDGER_KEYS=['olipoly_inventory_ledger_v1','olipoly_inventory_ledger_v2'];
   const $=id=>document.getElementById(id);
-  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false};
+  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',supplySearch:'',supplyCategory:'all',supplySort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false};
 
   function uid(){return crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
   function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
@@ -707,6 +765,7 @@
     const goods=finished();
     for(const r of rows){ try{ await cloudSaveRaw(r); }catch(err){ console.warn('raw cloud sync failed', r, err); } }
     for(const f of goods){ try{ await cloudSaveFg(f); }catch(err){ console.warn('finished cloud sync failed', f, err); } }
+    for(const s of supplies()){ try{ await cloudSaveSupply(s); }catch(err){ console.warn('supply cloud sync failed', s, err); } }
   }
 
   async function recoverLocalInventory(){
@@ -726,6 +785,30 @@
   function saveFinished(list){write(FG_KEY,list.map(normalizeFg))}
   function ledger(){return read(LEDGER_KEY,[]).map(normalizeLedger)}
   function saveLedger(list){write(LEDGER_KEY,list.map(normalizeLedger))}
+
+  function supplies(){return read(SUPPLY_KEY,[]).map(normalizeSupply)}
+  function saveSupplies(list){write(SUPPLY_KEY,list.map(normalizeSupply))}
+
+  function normalizeSupply(s){
+    return {
+      id:s.id||uid(),
+      item_name:s.item_name||s.name||'',
+      category:s.category||'',
+      unit_type:s.unit_type||s.unit||'each',
+      quantity_on_hand:num(s.quantity_on_hand ?? s.qty_on_hand ?? s.quantity ?? 0),
+      cost_per_unit:num(s.cost_per_unit ?? s.unit_cost ?? s.cost ?? 0),
+      reorder_threshold:num(s.reorder_threshold ?? s.threshold ?? 0),
+      supplier:s.supplier||'',
+      reorder_link:s.reorder_link||s.product_link||'',
+      notes:s.notes||'',
+      created_at:s.created_at||new Date().toISOString(),
+      updated_at:s.updated_at||new Date().toISOString()
+    };
+  }
+  function supplyStatus(s){ if(num(s.quantity_on_hand)<=0) return 'out'; if(num(s.reorder_threshold)&&num(s.quantity_on_hand)<=num(s.reorder_threshold)) return 'low'; return 'ok'; }
+  function supplyChip(s){const st=supplyStatus(s); if(st==='out') return '<span class="chip danger">Out</span>'; if(st==='low') return '<span class="chip warn">Reorder</span>'; return '<span class="chip ok">Good</span>';}
+  function supplyValue(s){return num(s.quantity_on_hand)*num(s.cost_per_unit)}
+
 
   function normalizeRaw(r){
     return {
@@ -937,9 +1020,10 @@
     updateCloudStatus();
     if(!state.cloud) return;
     try{
-      const [rawRows,fgRows,ledgerRows]=await Promise.all([
+      const [rawRows,fgRows,supplyRows,ledgerRows]=await Promise.all([
         sbApi(`/rest/v1/raw_material_inventory?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
         sbApi(`/rest/v1/finished_goods_inventory?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
+        sbApi(`/rest/v1/non_filament_materials?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
         sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=created_at.desc`,{method:'GET'}).catch(()=>null)
       ]);
       if(Array.isArray(rawRows) && rawRows.length){
@@ -949,6 +1033,10 @@
       if(Array.isArray(fgRows) && fgRows.length){
         const merged=mergeByIdOrFingerprint([...finished(),...fgRows], normalizeFg, x=>`${norm(x.product_name)}|${norm(x.sku)}|${x.quantity_on_hand}`);
         write(FG_KEY, merged);
+      }
+      if(Array.isArray(supplyRows) && supplyRows.length){
+        const merged=mergeByIdOrFingerprint([...supplies(),...supplyRows], normalizeSupply, x=>`${norm(x.item_name)}|${norm(x.category)}|${norm(x.unit_type)}`);
+        write(SUPPLY_KEY, merged);
       }
       if(Array.isArray(ledgerRows) && ledgerRows.length) write(LEDGER_KEY,ledgerRows.map(x=>normalizeLedger({date:x.created_at,type:x.transaction_type,item:x.item_label,amount:x.quantity_change,note:x.note})));
       await syncLocalInventoryToCloud();
@@ -1004,6 +1092,20 @@
       throw err;
     }
   }
+
+  async function cloudSaveSupply(s){
+    if(!state.cloud) return;
+    const payload={id:s.id,user_id:state.user.id,item_name:s.item_name,category:s.category,unit_type:s.unit_type,quantity_on_hand:s.quantity_on_hand,cost_per_unit:s.cost_per_unit,reorder_threshold:s.reorder_threshold,supplier:s.supplier,reorder_link:s.reorder_link,notes:s.notes,updated_at:new Date().toISOString()};
+    try{
+      await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+    }catch(err){
+      const msg=String(err?.message || err || '');
+      console.warn('supply cloud sync failed', err);
+      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('relation') || msg.includes('400')){toast('Supply saved locally. Run the non-filament supplies SQL for cloud sync.');return;}
+      throw err;
+    }
+  }
+
   async function cloudSaveFg(f){
     if(!state.cloud) return;
     const payload={id:f.id,user_id:state.user.id,sku:f.sku,product_name:f.product_name,category:f.category,sale_price:f.sale_price,quantity_on_hand:f.quantity_on_hand,target_quantity:f.target_quantity,print_hours_each:f.print_hours_each,status:f.status,material_recipe:f.material_recipe,image_url:f.image_url,notes:f.notes,updated_at:new Date().toISOString()};
@@ -1060,6 +1162,43 @@
       g.items.push(r);
     });
     return [...map.values()].sort((a,b)=>b.grams-a.grams);
+  }
+
+
+  function supplyList(){
+    let rows=supplies(); const q=norm(state.supplySearch);
+    rows=rows.filter(s=>(state.supplyCategory==='all'||s.category===state.supplyCategory)&&(!q||[s.item_name,s.category,s.unit_type,s.supplier,s.notes].some(x=>norm(x).includes(q))));
+    rows.sort((a,b)=>{
+      if(state.supplySort==='name') return String(a.item_name||'').localeCompare(String(b.item_name||''));
+      if(state.supplySort==='qty') return num(a.quantity_on_hand)-num(b.quantity_on_hand);
+      if(state.supplySort==='value') return supplyValue(b)-supplyValue(a);
+      return ({out:0,low:1,ok:2}[supplyStatus(a)]-({out:0,low:1,ok:2}[supplyStatus(b)])) || String(a.item_name||'').localeCompare(String(b.item_name||''));
+    });
+    return rows;
+  }
+  function renderSupplyFilters(){
+    const sel=$('supplyFilterCategory'); if(!sel) return;
+    const current=sel.value||'all';
+    const cats=[...new Set(supplies().map(s=>s.category).filter(Boolean))].sort();
+    sel.innerHTML='<option value="all">All Categories</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    sel.value=cats.includes(current)?current:'all';
+  }
+  function renderSupplyCards(){
+    renderSupplyFilters();
+    const rows=supplyList(), all=supplies(), cats=new Set(all.map(s=>s.category).filter(Boolean));
+    if($('mSupplyCount')) $('mSupplyCount').textContent=all.length;
+    if($('mSupplyValue')) $('mSupplyValue').textContent=money(all.reduce((a,s)=>a+supplyValue(s),0));
+    if($('mSupplyLow')) $('mSupplyLow').textContent=all.filter(s=>supplyStatus(s)!=='ok').length;
+    if($('mSupplyCategories')) $('mSupplyCategories').textContent=cats.size;
+    const el=$('supplyCards'); if(!el) return;
+    el.innerHTML=rows.length ? rows.map(s=>`<article class="supply-card">
+      <div class="card-head"><div class="snapshot-pill-icon">🧰</div><div><h3>${esc(s.item_name)}</h3><div class="supply-unit">${esc(s.category||'Uncategorized')} · ${esc(s.unit_type)}</div></div>${supplyChip(s)}</div>
+      <div class="chips"><span class="chip">${esc(s.quantity_on_hand)} ${esc(s.unit_type)} on hand</span><span class="chip">${money(s.cost_per_unit)} / ${esc(s.unit_type)}</span>${s.reorder_threshold?`<span class="chip">Threshold ${esc(s.reorder_threshold)}</span>`:''}</div>
+      <div class="stat-grid"><div class="stat"><span>Qty</span><strong>${esc(s.quantity_on_hand)}</strong></div><div class="stat"><span>Unit</span><strong>${esc(s.unit_type)}</strong></div><div class="stat"><span>Value</span><strong>${money(supplyValue(s))}</strong></div></div>
+      ${s.supplier||s.reorder_link?`<div class="chips">${s.supplier?`<span class="chip">${esc(s.supplier)}</span>`:''}${s.reorder_link?`<a class="reorder-link" href="${esc(s.reorder_link)}" target="_blank" rel="noopener">Reorder</a>`:''}</div>`:''}
+      ${s.notes?`<div class="card-sub">${esc(s.notes)}</div>`:''}
+      <div class="card-actions"><button class="mini-btn" data-edit-supply="${s.id}" type="button">Edit</button><button class="mini-btn" data-adjust-supply="${s.id}" type="button">Adjust</button><button class="mini-btn danger-btn" data-delete-supply="${s.id}" type="button">Delete</button></div>
+    </article>`).join('') : '<div class="empty">No non-filament supplies yet. Add LEDs, keyrings, magnets, magnetic sheets, packaging, or hardware above.</div>';
   }
 
   function renderRawSummary(){
@@ -1343,7 +1482,7 @@
   }
 
   function render(){
-    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderFinishedCards();renderLedger();
+    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderLedger();
   }
 
   function rawFromForm(){
@@ -1379,6 +1518,17 @@
   function resetRaw(){
     $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawReorderQty').value=1;$('rawRollType').value='spool';$('rawMounted').value='yes';$('rawReusableSpool').value='yes';$('rawRollStatus').value='active';$('rawSaveBtn').textContent='Save Raw Material';
   }
+
+  function supplyFromForm(){
+    const existing=supplies().find(s=>s.id===$('supplyId').value);
+    return normalizeSupply({id:$('supplyId').value||uid(),item_name:$('supplyName').value.trim(),category:$('supplyCategory').value.trim(),unit_type:$('supplyUnit').value,quantity_on_hand:num($('supplyQty').value),cost_per_unit:num($('supplyCost').value),reorder_threshold:num($('supplyThreshold').value),supplier:$('supplySupplier').value.trim(),reorder_link:$('supplyReorderLink').value.trim(),notes:$('supplyNotes').value.trim(),created_at:existing?.created_at||new Date().toISOString(),updated_at:new Date().toISOString()});
+  }
+  function fillSupply(s){
+    $('supplyId').value=s.id;$('supplyName').value=s.item_name;$('supplyCategory').value=s.category;$('supplyUnit').value=s.unit_type||'each';$('supplyQty').value=s.quantity_on_hand;$('supplyCost').value=s.cost_per_unit||'';$('supplyThreshold').value=s.reorder_threshold||0;$('supplySupplier').value=s.supplier||'';$('supplyReorderLink').value=s.reorder_link||'';$('supplyNotes').value=s.notes||'';
+    $('supplySaveBtn').textContent='Update Supply';setTab('supplies');$('supplyEditor').open=true;$('supplyEditor').scrollIntoView({behavior:'smooth'});
+  }
+  function resetSupply(){ $('supplyForm').reset();$('supplyId').value='';$('supplyQty').value=0;$('supplyThreshold').value=0;$('supplyUnit').value='each';$('supplySaveBtn').textContent='Save Supply'; }
+
   function fgFromForm(){
     const existing=finished().find(f=>f.id===$('fgId').value);
     return normalizeFg({
@@ -1409,35 +1559,38 @@
   function setTab(tab){
     state.tab=tab;
     document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-
     const rawPanel=$('rawPanel'), rawEditor=$('rawEditor');
+    const supplyPanel=$('suppliesPanel'), supplyEditor=$('supplyEditor');
     const finishedPanel=$('finishedPanel'), finishedEditor=$('finishedEditor');
     const ledgerPanel=$('ledgerPanel');
-
     if(rawPanel) rawPanel.classList.toggle('hidden',tab!=='raw');
+    if($('rawRollDetails')) $('rawRollDetails').classList.toggle('hidden',tab!=='raw');
     if(rawEditor) rawEditor.classList.toggle('hidden',tab!=='raw');
+    if(supplyPanel) supplyPanel.classList.toggle('hidden',tab!=='supplies');
+    if(supplyEditor) supplyEditor.classList.toggle('hidden',tab!=='supplies');
     if(finishedPanel) finishedPanel.classList.toggle('hidden',tab!=='finished');
     if(finishedEditor) finishedEditor.classList.toggle('hidden',tab!=='finished');
     if(ledgerPanel) ledgerPanel.classList.toggle('hidden',tab!=='ledger');
-
     const help=$('tabHelp');
     if(help){
       help.textContent=tab==='raw'
         ? 'Manage filament and spool inventory.'
-        : tab==='finished'
-          ? 'Manage sellable craft-show and stock items.'
-          : 'Review usage, sales, production adjustments, and imports.';
+        : tab==='supplies'
+          ? 'Manage non-filament supplies, flexible units, costs, and reorder points.'
+          : tab==='finished'
+            ? 'Manage sellable craft-show and stock items.'
+            : 'Review usage, sales, production adjustments, and imports.';
     }
     render();
   }
 
 
   function openAdjust(kind,id){
-    const item=kind==='raw'?raw().find(x=>x.id===id):finished().find(x=>x.id===id);
+    const item=kind==='raw'?raw().find(x=>x.id===id):kind==='supply'?supplies().find(x=>x.id===id):finished().find(x=>x.id===id);
     if(!item)return;
     state.adjust={kind,id};
-    $('adjustTitle').textContent=kind==='raw'?'Adjust Raw Material':'Adjust Finished Good';
-    $('adjustSub').textContent=kind==='raw'?`${item.material_type} ${item.color} · currently ${grams(item.remaining_grams)}`:`${item.product_name} · currently ${item.quantity_on_hand} on hand`;
+    $('adjustTitle').textContent=kind==='raw'?'Adjust Raw Material':kind==='supply'?'Adjust Non-Filament Supply':'Adjust Finished Good';
+    $('adjustSub').textContent=kind==='raw'?`${item.material_type} ${item.color} · currently ${grams(item.remaining_grams)}`:kind==='supply'?`${item.item_name} · currently ${item.quantity_on_hand} ${item.unit_type}`:`${item.product_name} · currently ${item.quantity_on_hand} on hand`;
     $('adjustAmount').value='';
     $('adjustNote').value='';
     $('adjustModal').classList.remove('hidden');
@@ -1451,15 +1604,19 @@
       const list=raw(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
       const before=num(list[idx].remaining_grams);
       list[idx].remaining_grams=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
-      list[idx].updated_at=new Date().toISOString(); saveRaw(list);
-      cloudSaveRaw(list[idx]).catch(console.warn);
+      list[idx].updated_at=new Date().toISOString(); saveRaw(list); cloudSaveRaw(list[idx]).catch(console.warn);
       addLedger({type:action==='subtract'?'raw_usage':'raw_adjust',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:note||'Manual raw material adjustment'});
+    }else if(state.adjust.kind==='supply'){
+      const list=supplies(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
+      const before=num(list[idx].quantity_on_hand);
+      list[idx].quantity_on_hand=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
+      list[idx].updated_at=new Date().toISOString(); saveSupplies(list); cloudSaveSupply(list[idx]).catch(console.warn);
+      addLedger({type:'supply_adjust',item:list[idx].item_name,amount:`${before} ${list[idx].unit_type} → ${list[idx].quantity_on_hand} ${list[idx].unit_type}`,note:note||'Manual non-filament supply adjustment'});
     }else{
       const list=finished(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
       const before=num(list[idx].quantity_on_hand);
       list[idx].quantity_on_hand=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
-      list[idx].updated_at=new Date().toISOString(); saveFinished(list);
-      cloudSaveFg(list[idx]).catch(console.warn);
+      list[idx].updated_at=new Date().toISOString(); saveFinished(list); cloudSaveFg(list[idx]).catch(console.warn);
       addLedger({type:'fg_adjust',item:list[idx].product_name,amount:`${before} → ${list[idx].quantity_on_hand}`,note:note||'Manual finished good adjustment'});
     }
     closeAdjust(); render(); toast('Inventory adjusted.');
@@ -1487,7 +1644,7 @@
   }
 
   function exportBackup(){
-    const data={version:'inventory-control-v2',exported_at:new Date().toISOString(),raw:raw(),finished:finished(),ledger:ledger()};
+    const data={version:'inventory-control-v3',exported_at:new Date().toISOString(),raw:raw(),finished:finished(),supplies:supplies(),ledger:ledger()};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`olipoly-inventory-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
   }
@@ -1510,6 +1667,8 @@
     document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
     $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); cloudSaveRaw(r).catch(console.warn); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
     $('rawResetBtn').addEventListener('click',resetRaw);
+    $('supplyForm')?.addEventListener('submit',e=>{e.preventDefault(); const s=supplyFromForm(); if(!s.item_name)return toast('Supply item name is required.'); const list=supplies().filter(x=>x.id!==s.id); list.unshift(s); saveSupplies(list); cloudSaveSupply(s).catch(console.warn); addLedger({type:'supply_adjust',item:s.item_name,amount:`Saved ${s.quantity_on_hand} ${s.unit_type}`,note:'Non-filament supply saved'}); resetSupply();render();toast('Supply saved.');});
+    $('supplyResetBtn')?.addEventListener('click',resetSupply);
     $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); cloudSaveFg(f).catch(console.warn); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); resetFg();render();toast('Finished good saved.');});
     $('fgResetBtn').addEventListener('click',resetFg);
     $('exportBtn').addEventListener('click',exportBackup);
@@ -1520,6 +1679,7 @@
     $('addEmptySpoolBtn')?.addEventListener('click', addEmptySpool);
     $('retireSpoolBtn')?.addEventListener('click', retireSpool);
     $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawCards()});$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawCards()});
+    $('supplySearch')?.addEventListener('input',e=>{state.supplySearch=e.target.value;renderSupplyCards()});$('supplyFilterCategory')?.addEventListener('change',e=>{state.supplyCategory=e.target.value;renderSupplyCards()});$('supplySort')?.addEventListener('change',e=>{state.supplySort=e.target.value;renderSupplyCards()});$('supplyClearFilters')?.addEventListener('click',()=>{state.supplySearch='';state.supplyCategory='all';state.supplySort='need';$('supplySearch').value='';$('supplyFilterCategory').value='all';$('supplySort').value='need';renderSupplyCards()});
     $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
     $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
     $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
@@ -1531,7 +1691,9 @@
       const ar=e.target.closest('[data-adjust-raw]')?.dataset.adjustRaw; if(ar)openAdjust('raw',ar);
       const qar=e.target.closest('[data-quick-add]')?.dataset.quickAdd; if(qar)quickRaw(qar,'add');
       const qur=e.target.closest('[data-quick-use]')?.dataset.quickUse; if(qur)quickRaw(qur,'use');
-
+      const es=e.target.closest('[data-edit-supply]')?.dataset.editSupply; if(es){const s=supplies().find(x=>x.id===es); if(s)fillSupply(s)}
+      const ds=e.target.closest('[data-delete-supply]')?.dataset.deleteSupply; if(ds&&confirm('Delete this supply?')){const s=supplies().find(x=>x.id===ds);saveSupplies(supplies().filter(x=>x.id!==ds));addLedger({type:'supply_adjust',item:s?.item_name||'Supply',amount:'Deleted',note:ds});render();toast('Supply deleted.')}
+      const as=e.target.closest('[data-adjust-supply]')?.dataset.adjustSupply; if(as)openAdjust('supply',as);
       const ef=e.target.closest('[data-edit-fg]')?.dataset.editFg; if(ef){const f=finished().find(x=>x.id===ef); if(f)fillFg(f)}
       const df=e.target.closest('[data-delete-fg]')?.dataset.deleteFg; if(df&&confirm('Delete this finished good?')){saveFinished(finished().filter(x=>x.id!==df));addLedger({type:'fg_adjust',item:'Finished good',amount:'Deleted',note:df});render();toast('Finished good deleted.')}
       const af=e.target.closest('[data-adjust-fg]')?.dataset.adjustFg; if(af)openAdjust('fg',af);
