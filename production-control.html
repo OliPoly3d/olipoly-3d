@@ -685,9 +685,9 @@
   <section class="card" id="financeSection">
     <div class="finance-board-head">
       <div>
-        <span class="kicker">Active Project Finance</span>
-        <h2>Finance snapshot</h2>
-        <p class="muted">Uses inventory cost-per-gram, price × quantity, machine time at $0.50/hr, design/setup, and post-processing costs.</p>
+        <span class="kicker">Live Profit Snapshot</span>
+        <h2>Pricing & margin check</h2>
+        <p class="muted">Operational pricing sanity check for active production jobs — using inventory cost-per-gram, price × quantity, machine time at $0.50/hr, design/setup, and post-processing costs.</p>
       </div>
       <div id="financeHealthNote" class="finance-health">Waiting for jobs...</div>
     </div>
@@ -2680,6 +2680,12 @@
   }
 
 
+  function marginPct(profit, revenue){
+    const r = num(revenue);
+    if(!r) return '—';
+    return `${Math.round((num(profit) / r) * 100)}%`;
+  }
+
   function activeFinanceSummary(){
     const jobs = state.jobs.filter(j=>!CLOSED.includes(j.production_status));
     return jobs.reduce((s,j)=>{
@@ -2721,26 +2727,26 @@
         <div>${money(f.revenue)}</div>
         <div>${money(f.materialCost)}</div>
         <div>${money(f.machineCost)}</div>
-        <div>${money(f.profit)}</div>
+        <div>${money(f.profit)} <small>${marginPct(f.profit, f.revenue)}</small></div>
         <div><span class="finance-review ${needsReview ? 'warn' : 'good'}">${needsReview ? 'Needs review' : 'OK'}</span></div>
       </div>`).join('');
 
     const note = $('financeHealthNote');
     if(note) note.textContent = s.needsReview
-      ? `${s.needsReview} project(s) need price/material review`
-      : `${s.rows.length} active project(s) tracked`;
+      ? `${s.needsReview} job(s) need pricing/material check`
+      : `${s.rows.length} active job(s) checked`;
 
     mount.innerHTML = `<div class="finance-dashboard">
       <div class="finance-summary-grid">
         <div class="finance-summary-card"><span>Total Revenue</span><strong>${money(s.revenue)}</strong></div>
         <div class="finance-summary-card"><span>Material Cost</span><strong>${money(s.material)}</strong></div>
         <div class="finance-summary-card"><span>Machine Cost</span><strong>${money(s.machine)}</strong></div>
-        <div class="finance-summary-card"><span>Design / Setup</span><strong>${money(s.design)}</strong></div>
-        <div class="finance-summary-card"><span>Post Processing</span><strong>${money(s.post)}</strong></div>
-        <div class="finance-summary-card ${profitCls}"><span>Estimated Profit</span><strong>${money(s.profit)}</strong></div>
+        <div class="finance-summary-card"><span>Est. Profit</span><strong>${money(s.profit)}</strong></div>
+        <div class="finance-summary-card ${profitCls}"><span>Margin</span><strong>${marginPct(s.profit, s.revenue)}</strong></div>
+        <div class="finance-summary-card ${s.needsReview ? 'warn' : 'profit'}"><span>Needs Review</span><strong>${s.needsReview}</strong></div>
       </div>
       <div class="finance-project-table">
-        <div class="finance-project-row header"><div>Project</div><div>Revenue</div><div>Material</div><div>Machine</div><div>Profit</div><div>Status</div></div>
+        <div class="finance-project-row header"><div>Project</div><div>Revenue</div><div>Material</div><div>Machine</div><div>Profit / Margin</div><div>Status</div></div>
         ${rows || '<div class="empty">No active projects yet.</div>'}
       </div>
     </div>`;
