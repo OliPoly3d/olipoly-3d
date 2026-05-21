@@ -663,6 +663,8 @@
     </form>
   </section>
 
+  <section class="card" id="activeFinanceSection"><div id="activeFinanceMount"></div></section>
+
   <section class="card" id="pmSection">
     <span class="kicker">PM Lite</span>
     <div class="pm-board" id="pmBoard"></div>
@@ -2237,6 +2239,69 @@
     return {materialCost, machineCost, designCost, postCost, revenue, totalCost, profit};
   }
 
+
+  function activeFinanceSummary(){
+    const active = (state.jobs || []).filter(j=>!['completed','failed_scrap','archived'].includes(String(j.production_status || j.status || '').toLowerCase()));
+    let revenue = 0;
+    let material = 0;
+    let machine = 0;
+    let design = 0;
+    let post = 0;
+    let profit = 0;
+
+    active.forEach(j=>{
+      const f = jobFinancials(j);
+      revenue += f.revenue;
+      material += f.materialCost;
+      machine += f.machineCost;
+      design += f.designCost;
+      post += f.postCost;
+      profit += f.profit;
+    });
+
+    return {active,revenue,material,machine,design,post,profit};
+  }
+
+  function activeFinanceHtml(){
+    const s = activeFinanceSummary();
+    const rows = s.active.slice(0,12).map(j=>{
+      const f = jobFinancials(j);
+      const missingPrice = !num(j.estimated_price_each);
+      const missingMaterial = !f.materialCost;
+      return `<div class="active-finance-row">
+        <div><strong>${esc(j.job_title || 'Untitled Job')}</strong></div>
+        <div>${money(f.revenue)}</div>
+        <div>${money(f.materialCost)}</div>
+        <div>${money(f.machineCost)}</div>
+        <div>${money(f.profit)}</div>
+        <div>${missingPrice || missingMaterial ? '<span class="finance-warn">Needs review</span>' : 'OK'}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="active-finance-wrap">
+        <div class="active-finance-head">
+          <h3>Active Project Finance</h3>
+          <span>${s.active.length} active project(s)</span>
+        </div>
+        <div class="active-finance-grid">
+          <div class="active-finance-card"><span>Revenue</span><strong>${money(s.revenue)}</strong></div>
+          <div class="active-finance-card"><span>Material Cost</span><strong>${money(s.material)}</strong></div>
+          <div class="active-finance-card"><span>Machine Cost</span><strong>${money(s.machine)}</strong></div>
+          <div class="active-finance-card"><span>Design Cost</span><strong>${money(s.design)}</strong></div>
+          <div class="active-finance-card"><span>Post Cost</span><strong>${money(s.post)}</strong></div>
+          <div class="active-finance-card profit"><span>Estimated Profit</span><strong>${money(s.profit)}</strong></div>
+        </div>
+        <div class="active-finance-table">
+          <div class="active-finance-row header">
+            <div>Project</div><div>Revenue</div><div>Material</div><div>Machine</div><div>Profit</div><div>Status</div>
+          </div>
+          ${rows || '<div class="active-finance-row"><div>No active projects yet.</div><div>—</div><div>—</div><div>—</div><div>—</div><div>—</div></div>'}
+        </div>
+      </div>
+    `;
+  }
+
   function financeMiniHtml(j){
     const f = jobFinancials(j);
     const cls = f.profit >= 0 ? 'good' : 'warn';
@@ -2692,6 +2757,7 @@
     renderTodayView();
     renderUtilization();
     renderMetrics();
+    if($('activeFinanceMount')) $('activeFinanceMount').innerHTML = activeFinanceHtml();
     renderPm();
     renderMachineBoard();
     renderSuggestions();
