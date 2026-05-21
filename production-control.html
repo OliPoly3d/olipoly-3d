@@ -656,7 +656,7 @@
 
             <div class="pricing-preview" id="pricingPreview">
               <div class="price-box"><span>Filament Cost</span><strong id="previewMaterialCost">$0.00</strong></div>
-              <div class="price-box"><span>Supply Cost</span><strong id="previewSupplyCost">$0.00</strong></div>
+              <div class="price-box"><span>Non-Filament Supply Cost</span><strong id="previewSupplyCost">$0.00</strong></div>
               <div class="price-box"><span>Machine Cost</span><strong id="previewMachineCost">$0.00</strong></div>
               <div class="price-box"><span>Design Cost</span><strong id="previewDesignCost">$0.00</strong></div>
               <div class="price-box"><span>Post Cost</span><strong id="previewPostCost">$0.00</strong></div>
@@ -2426,7 +2426,11 @@
       estimated_total_grams:gEach*q,
       estimated_price_each:num($('priceEach')?.value),
       design_fee:num($('designFee')?.value),
+      design_fee_mode:$('designFeeMode')?.value || 'flat',
       post_processing_fee:num($('postProcessingFee')?.value),
+      post_processing_fee_mode:$('postProcessingFeeMode')?.value || 'flat',
+      supply_usage:JSON.stringify(supplyRowsFromForm()),
+      supply_cost:supplyRowsFromForm().reduce((s,r)=>s+supplyUsageCostForRow(r),0),
       filament_recipe:JSON.stringify(recipe),
       primary_material:$('primaryMaterial')?.value || '',
       primary_color:$('primaryColor')?.value || '',
