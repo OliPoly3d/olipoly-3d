@@ -275,7 +275,7 @@
     .pricing-preview .price-box.profit.warn strong{color:#9a2140}
     .finance-strip{
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-template-columns:repeat(6,minmax(0,1fr));
       gap:6px;
       margin-top:8px;
     }
@@ -302,7 +302,7 @@
     .finance-pill.profit.good strong{color:#23763b}
     .finance-pill.profit.warn strong{color:#9a2140}
 
-    @media(max-width:1100px){.pricing-preview{grid-template-columns:repeat(3,minmax(0,1fr))}.finance-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:1100px){.pricing-preview{grid-template-columns:repeat(3,minmax(0,1fr))}.finance-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:700px){.pricing-preview{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-strip{grid-template-columns:1fr 1fr}}
     @media(max-width:900px){.recipe-row{grid-template-columns:1fr 1fr}.recipe-row label:last-child{grid-column:1/-1}}
 
@@ -602,8 +602,8 @@
             <label>Order #<input id="orderNumber" placeholder="OP-000000"></label>
             <label>Finished Good SKU<input id="finishedSku" placeholder="Optional inventory SKU"></label>
             <label>Est. Price / Each<input id="priceEach" type="number" min="0" step="0.01" placeholder="15.00"></label>
-            <label>Design Fee / Cost<input id="designFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
-            <label>Post-Processing Fee / Cost<input id="postProcessingFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label>Design / Setup Cost<input id="designFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label>Post-Processing Cost<input id="postProcessingFee" type="number" min="0" step="0.01" placeholder="0.00"></label>
             <label class="span2">Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
 
             <div class="pricing-preview" id="pricingPreview">
@@ -2075,23 +2075,54 @@
 
   function rawCostPerGramForRecipeRow(recipeRow){
     const raw = rawInventoryList().filter(r=>String(r.roll_status || 'active') !== 'retired');
-    const matches = raw.map(r=>({row:r, score:materialMatchScore(r, recipeRow)})).filter(x=>x.score >= 0).sort((a,b)=>b.score-a.score);
-    if(!matches.length) return 0;
-    const bestScore = matches[0].score;
-    const best = matches.filter(x=>x.score === bestScore).map(x=>x.row);
-    let weightedCost = 0;
-    let weightedGrams = 0;
-    best.forEach(r=>{
-      const remaining = Math.max(0, num(r.remaining_grams || r.remaining || r.starting_grams || r.starting || 0));
+    const recipeMaterial = String(recipeRow.material || recipeRow.material_type || '').trim().toLowerCase();
+    const recipeColor = String(recipeRow.color || '').trim().toLowerCase();
+    const recipeBrand = String(recipeRow.filament || recipeRow.brand || '').trim().toLowerCase();
+
+    function rawMaterialName(r){ return String(r.material_type || r.material || '').trim().toLowerCase(); }
+    function rawColorName(r){ return String(r.color || '').trim().toLowerCase(); }
+    function rawBrandName(r){ return String(r.brand || r.filament || r.type || '').trim().toLowerCase(); }
+    function cpg(r){
       const starting = Math.max(1, num(r.starting_grams || r.starting || 1000));
       const cost = num(r.spool_cost || r.cost || 0);
-      if(cost > 0){
-        const gramsForWeight = remaining || starting;
-        weightedCost += (cost / starting) * gramsForWeight;
-        weightedGrams += gramsForWeight;
-      }
-    });
-    return weightedGrams ? weightedCost / weightedGrams : 0;
+      return cost > 0 ? cost / starting : 0;
+    }
+    function weightedAverageCost(rows){
+      let weightedCost = 0;
+      let weightedGrams = 0;
+      rows.forEach(r=>{
+        const costPerGram = cpg(r);
+        if(!costPerGram) return;
+        const remaining = Math.max(0, num(r.remaining_grams || r.remaining || r.starting_grams || r.starting || 0));
+        const starting = Math.max(1, num(r.starting_grams || r.starting || 1000));
+        const weight = remaining || starting;
+        weightedCost += costPerGram * weight;
+        weightedGrams += weight;
+      });
+      return weightedGrams ? weightedCost / weightedGrams : 0;
+    }
+
+    // Best case: exact material + exact color, with brand as a bonus.
+    let matches = raw.filter(r=>rawMaterialName(r) === recipeMaterial && rawColorName(r) === recipeColor);
+    if(matches.length){
+      const brandMatches = recipeBrand ? matches.filter(r=>{
+        const rb = rawBrandName(r);
+        return rb && (rb === recipeBrand || rb.includes(recipeBrand) || recipeBrand.includes(rb));
+      }) : [];
+      const cost = weightedAverageCost(brandMatches.length ? brandMatches : matches);
+      if(cost) return cost;
+    }
+
+    // Fallback: exact material only. This keeps cost estimates working even if color/brand text differs.
+    matches = raw.filter(r=>rawMaterialName(r) === recipeMaterial);
+    if(matches.length){
+      const cost = weightedAverageCost(matches);
+      if(cost) return cost;
+    }
+
+    // Last fallback: average cost of all costed filament.
+    const costed = raw.filter(r=>cpg(r) > 0);
+    return weightedAverageCost(costed);
   }
 
   function estimatedMaterialCostForJob(j){
@@ -2131,10 +2162,12 @@
     const f = jobFinancials(j);
     const profitCls = f.profit >= 0 ? 'good' : 'warn';
     return `<div class="finance-strip">
-      <div class="finance-pill"><span>Material Cost</span><strong>${money(f.materialCost)}</strong></div>
-      <div class="finance-pill"><span>Machine Cost</span><strong>${money(f.machineCost)}</strong></div>
+      <div class="finance-pill"><span>Material</span><strong>${money(f.materialCost)}</strong></div>
+      <div class="finance-pill"><span>Machine</span><strong>${money(f.machineCost)}</strong></div>
+      <div class="finance-pill"><span>Design</span><strong>${money(f.designCost)}</strong></div>
+      <div class="finance-pill"><span>Post</span><strong>${money(f.postCost)}</strong></div>
       <div class="finance-pill"><span>Revenue</span><strong>${money(f.revenue)}</strong></div>
-      <div class="finance-pill profit ${profitCls}"><span>Est. Profit</span><strong>${money(f.profit)}</strong></div>
+      <div class="finance-pill profit ${profitCls}"><span>Profit</span><strong>${money(f.profit)}</strong></div>
     </div>`;
   }
 
