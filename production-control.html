@@ -1760,7 +1760,7 @@
         toast('Cloud jobs unavailable. Using browser fallback/imported local jobs.');
       }
       try{
-        const pm = await sbApi(`/rest/v1/printer_pm?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=machine.asc`,{method:'GET'});
+        const pm = await sbApi(`/rest/v1/printer_pm?select=*&user_id=eq.${encodeURIComponent(state.user.id)}`,{method:'GET'});
         state.pm = Array.isArray(pm) && pm.length ? pm.map(normalizePm) : localRead(LS_PM, defaultPm());
         if(!state.pm.length) state.pm = defaultPm();
         localWrite(LS_PM,state.pm);
@@ -2034,6 +2034,20 @@
       });
     }
     return normalizeJob(row);
+  }
+
+  function normalizePmRow(p){
+    return {
+      ...p,
+      id:p.id || uid(),
+      machine:p.machine || p.printer_name || p.name || p.printer || 'Printer',
+      nozzle_hours:num(p.nozzle_hours),
+      last_pm_date:p.last_pm_date || p.last_maintenance_date || '',
+      next_pm_date:p.next_pm_date || '',
+      pm_interval_hours:num(p.pm_interval_hours || p.interval_hours || 250),
+      pm_interval_days:num(p.pm_interval_days || p.interval_days || 30),
+      notes:p.notes || ''
+    };
   }
 
   function jobPayload(j){
