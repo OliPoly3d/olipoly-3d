@@ -302,6 +302,10 @@
     .summary-stats span{display:block;font-size:.58rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}
     .summary-stats strong{font-size:.82rem;color:var(--ink)}
     .roll-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+    .raw-roll-details{margin-top:0}
+    .raw-roll-details>summary{background:rgba(255,255,255,.72)}
+    .roll-section-note{margin:0 0 12px;color:var(--muted);font-size:.9rem;line-height:1.45}
     @media(max-width:1100px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:700px){.summary-grid,.summary-stats{grid-template-columns:1fr 1fr}}
 
@@ -501,8 +505,15 @@
         <button class="ghost" id="rawClearFilters" type="button">Clear</button>
       </div>
       <div class="summary-grid" id="rawSummary"></div>
-      <div class="cards-grid" id="rawCards"></div>
     </section>
+
+    <details class="ops-collapse raw-roll-details" id="rawRollDetails">
+      <summary>Individual roll records / quick adjustments</summary>
+      <div class="collapse-body">
+        <p class="roll-section-note">These are the individual spool/refill records behind the summary cards above. Keep this collapsed for a cleaner dashboard, then expand when you need to edit, add grams, or use grams from one specific roll.</p>
+        <div class="cards-grid" id="rawCards"></div>
+      </div>
+    </details>
 
     <section class="card hidden" id="finishedPanel">
       <span class="kicker">Finished goods</span>
@@ -843,19 +854,72 @@
     }catch{return []}
   }
 
-  function reservedGramsForRaw(r){
+  function rawReservationAllocation(){
+    const rows = raw().filter(r=>r.roll_status!=='retired' && num(r.remaining_grams)>0);
+    const groupMap = new Map();
+    rows.forEach(r=>{
+      const key = rawGroupKey(r);
+      if(!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key).push(r);
+    });
+
+    const demandByGroup = new Map();
     const jobs=productionJobs().filter(j=>['ready_to_print','queued','printing'].includes(j.production_status) && !j.exclude_inventory_reduction);
-    let total=0;
     jobs.forEach(j=>{
       const qty=num(j.quantity)||1;
       recipeRowsForJob(j).forEach(row=>{
-        const materialMatch=norm(row.material)===norm(r.material_type);
-        const colorMatch=norm(row.color)===norm(r.color);
-        const brandMatch=!row.filament || !r.brand || norm(row.filament).includes(norm(r.brand)) || norm(r.brand).includes(norm(row.filament));
-        if(materialMatch && colorMatch && brandMatch) total += num(row.grams_each)*qty;
+        const need = num(row.grams_each) * qty;
+        if(!need) return;
+
+        const candidates = [...groupMap.keys()].filter(key=>{
+          const sample = groupMap.get(key)?.[0];
+          if(!sample) return false;
+          const materialMatch=norm(row.material)===norm(sample.material_type);
+          const colorMatch=norm(row.color)===norm(sample.color);
+          const brandMatch=!row.filament || !sample.brand || norm(row.filament).includes(norm(sample.brand)) || norm(sample.brand).includes(norm(row.filament));
+          return materialMatch && colorMatch && brandMatch;
+        });
+        if(!candidates.length) return;
+
+        // Prefer the closest brand/type match when Production Control provided one.
+        const chosen = candidates.sort((a,b)=>{
+          const ar = groupMap.get(a)?.[0] || {};
+          const br = groupMap.get(b)?.[0] || {};
+          const aExact = row.filament && norm(row.filament)===norm(ar.brand) ? 0 : 1;
+          const bExact = row.filament && norm(row.filament)===norm(br.brand) ? 0 : 1;
+          return aExact-bExact;
+        })[0];
+        demandByGroup.set(chosen, (demandByGroup.get(chosen)||0) + need);
       });
     });
-    return total;
+
+    const allocation = {};
+    groupMap.forEach((items,key)=>{
+      let remainingDemand = demandByGroup.get(key) || 0;
+      const ordered = [...items].sort((a,b)=>{
+        // Simulate real use: open/mounted roll first, then refill/unmounted stock.
+        const mountedScore = (b.is_mounted?1:0) - (a.is_mounted?1:0);
+        if(mountedScore) return mountedScore;
+        const statusRank = x => ({active:0,low:1,sealed:2,empty:3,retired:4}[x.roll_status] ?? 2);
+        const statusScore = statusRank(a)-statusRank(b);
+        if(statusScore) return statusScore;
+        const typeRank = x => ({spool:0,refill:1,sample:2}[x.roll_type] ?? 1);
+        const typeScore = typeRank(a)-typeRank(b);
+        if(typeScore) return typeScore;
+        return num(a.remaining_grams)-num(b.remaining_grams);
+      });
+      ordered.forEach(r=>{
+        const reserve = Math.min(num(r.remaining_grams), remainingDemand);
+        allocation[r.id] = reserve;
+        remainingDemand = Math.max(0, remainingDemand - reserve);
+      });
+    });
+    return allocation;
+  }
+
+  function reservedGramsForRaw(r){
+    const allocation = rawReservationAllocation();
+    return num(allocation[r.id]);
   }
 
   function availableGrams(r){
@@ -1203,14 +1267,14 @@
         <div class="card-head">
           <div class="color-dot" style="--dot:${colorStyle(r.color)}"></div>
           <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div></div>
-          ${g ? groupStatusChip(g) : rawStatusChip(r)}
+          ${rawStatusChip(r)}
         </div>
         <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}<span class="chip">${esc(r.roll_type||'spool')}</span><span class="chip ${r.is_mounted?'ok':'muted'}">${r.is_mounted?'Mounted':'Not mounted'}</span><span class="chip ${r.reusable_spool?'ok':'muted'}">${r.reusable_spool?'Reusable spool':'No spool'}</span><span class="chip">${esc(r.roll_status||'active')}</span></div>
         <div class="stat-grid">
           <div class="stat"><span>On Hand</span><strong>${grams(r.remaining_grams)}</strong></div>
           <div class="stat"><span>Reserved</span><strong>${grams(reservedGramsForRaw(r))}</strong></div>
           <div class="stat"><span>Available</span><strong>${grams(availableGrams(r))}</strong></div>
-          <div class="stat"><span>Group Threshold</span><strong>${grams(g ? groupThreshold(g) : r.reorder_threshold_grams)}</strong></div>
+          <div class="stat"><span>Roll Threshold</span><strong>${grams(r.reorder_threshold_grams)}</strong></div>
           <div class="stat"><span>Value</span><strong>${money(rawValue(r))}</strong></div>
           <div class="stat"><span>Cost/g</span><strong>${costPerGram?money(costPerGram):'—'}</strong></div>
         </div>
