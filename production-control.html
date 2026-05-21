@@ -253,9 +253,48 @@
     .today-priority.urgent{background:rgba(239,71,111,.12);border-color:rgba(239,71,111,.22);color:#9a2140}
     .today-priority.soon{background:rgba(247,183,49,.18);border-color:rgba(247,183,49,.26);color:#7a5400}
     .today-priority.ready{background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.18);color:#23763b}
-    .util-row{display:grid;grid-template-columns:70px 1fr auto;gap:9px;align-items:center;margin:8px 0}
+    .printer-load-grid{display:grid;gap:10px}
+    .printer-load-card{
+      display:grid;
+      grid-template-columns:72px 1fr;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border-radius:20px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(101,60,120,.11);
+      box-shadow:0 8px 20px rgba(84,38,94,.045);
+    }
+    .printer-art{
+      width:66px;
+      height:54px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,rgba(232,79,183,.10),rgba(157,109,243,.12));
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .printer-art svg{width:54px;height:42px;stroke:#604966;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .printer-load-copy{display:grid;gap:6px;min-width:0}
+    .printer-load-title{display:flex;justify-content:space-between;gap:10px;align-items:baseline;color:var(--ink);font-weight:950}
+    .printer-load-title span{color:var(--muted);font-size:.74rem;font-weight:900;white-space:nowrap}
+    .printer-load-sub{font-size:.72rem;color:var(--muted);font-weight:800}
     .util-bar{height:12px;border-radius:999px;background:rgba(101,60,120,.10);overflow:hidden}
     .util-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--purple));min-width:4px}
+    .util-fill.needs-selection{background:linear-gradient(90deg,#f7b731,var(--pink))}
+    .printer-load-card.needs-selection .printer-art{background:linear-gradient(135deg,rgba(247,183,49,.16),rgba(232,79,183,.10))}
+    .printer-load-card.needs-selection svg{stroke:#7a5400}
+    .printer-selection-note{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:16px;
+      background:rgba(247,183,49,.12);
+      border:1px solid rgba(247,183,49,.22);
+      color:#7a5400;
+      font-size:.76rem;
+      font-weight:900;
+      line-height:1.35;
+    }
     .section-toggle{margin-bottom:12px}
     details.ops-collapse{border-radius:24px;background:rgba(255,255,255,.62);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07);overflow:hidden}
     details.ops-collapse > summary{list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 16px;font-weight:900;color:var(--ink);cursor:pointer}
@@ -577,7 +616,7 @@
         <div class="today-list" id="todayView"></div>
       </div>
       <div class="ops-panel">
-        <h3>Printer utilization</h3>
+        <h3>Printer load</h3>
         <div id="utilizationBoard"></div>
       </div>
     </div>
@@ -2607,11 +2646,74 @@
       : `<div class="empty">No urgent action items right now.</div>`;
   }
 
+  function printerLineArt(machine){
+    const isP2 = String(machine || '').toUpperCase().includes('P2');
+    if(isP2){
+      return `<svg viewBox="0 0 80 58" aria-hidden="true">
+        <rect x="18" y="4" width="44" height="12" rx="3"></rect>
+        <path d="M24 16h32"></path>
+        <rect x="14" y="17" width="52" height="36" rx="6"></rect>
+        <path d="M24 25h32M24 44h32"></path>
+        <path d="M31 17v-6h18v6"></path>
+        <circle cx="28" cy="35" r="3"></circle>
+        <circle cx="52" cy="35" r="3"></circle>
+      </svg>`;
+    }
+    return `<svg viewBox="0 0 80 58" aria-hidden="true">
+      <rect x="14" y="10" width="52" height="42" rx="6"></rect>
+      <path d="M24 19h32M24 43h32"></path>
+      <path d="M28 19v24M52 19v24"></path>
+      <circle cx="40" cy="32" r="5"></circle>
+    </svg>`;
+  }
+
+  function unassignedLineArt(){
+    return `<svg viewBox="0 0 80 58" aria-hidden="true">
+      <rect x="15" y="12" width="50" height="40" rx="7"></rect>
+      <path d="M25 22h30M25 42h18"></path>
+      <circle cx="55" cy="41" r="6"></circle>
+      <path d="M55 35v6l4 3"></path>
+      <path d="M34 30h12"></path>
+    </svg>`;
+  }
+
   function renderUtilization(){
+    const active = activeJobs().filter(j=>needsPrinterTime(j));
     const machines = machineList();
-    const loads = machines.map(m=>({machine:m, hours:activeJobs().filter(j=>needsPrinterTime(j) && (j.machine_preference===m || j.actual_machine===m)).reduce((s,j)=>s+num(j.estimated_total_hours),0)}));
-    const max = Math.max(1, ...loads.map(x=>x.hours));
-    $('utilizationBoard').innerHTML = loads.map(x=>`<div class="util-row"><strong>${esc(x.machine)}</strong><div class="util-bar"><div class="util-fill" style="width:${Math.max(4,Math.round((x.hours/max)*100))}%"></div></div><span>${fmtHours(x.hours)}</span></div>`).join('');
+
+    const loads = machines.map(m=>({
+      machine:m,
+      hours:active
+        .filter(j=>j.machine_preference===m || j.actual_machine===m)
+        .reduce((s,j)=>s+num(j.estimated_total_hours),0)
+    }));
+
+    const unassignedHours = active
+      .filter(j=>!j.actual_machine && (!j.machine_preference || j.machine_preference==='either'))
+      .reduce((s,j)=>s+num(j.estimated_total_hours),0);
+
+    const allLoads = [...loads, {machine:'Needs printer selection', hours:unassignedHours, unassigned:true}];
+    const max = Math.max(1, ...allLoads.map(x=>x.hours));
+
+    $('utilizationBoard').innerHTML = `<div class="printer-load-grid">
+      ${loads.map(x=>`<div class="printer-load-card">
+        <div class="printer-art">${printerLineArt(x.machine)}</div>
+        <div class="printer-load-copy">
+          <div class="printer-load-title"><strong>${esc(x.machine)}</strong><span>${fmtHours(x.hours)}</span></div>
+          <div class="util-bar"><div class="util-fill" style="width:${Math.max(4,Math.round((x.hours/max)*100))}%"></div></div>
+          <div class="printer-load-sub">Assigned estimated print load</div>
+        </div>
+      </div>`).join('')}
+      <div class="printer-load-card needs-selection">
+        <div class="printer-art">${unassignedLineArt()}</div>
+        <div class="printer-load-copy">
+          <div class="printer-load-title"><strong>Needs printer selection</strong><span>${fmtHours(unassignedHours)}</span></div>
+          <div class="util-bar"><div class="util-fill needs-selection" style="width:${unassignedHours ? Math.max(4,Math.round((unassignedHours/max)*100)) : 4}%"></div></div>
+          <div class="printer-load-sub">Queued jobs marked “Either” or missing printer choice</div>
+        </div>
+      </div>
+      ${unassignedHours ? `<div class="printer-selection-note">Assign printers to reduce scheduling risk and make the queue easier to prioritize.</div>` : ''}
+    </div>`;
   }
 
   async function applyBulk(){
