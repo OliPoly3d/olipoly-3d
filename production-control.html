@@ -296,6 +296,29 @@
       line-height:1.35;
     }
     .section-toggle{margin-bottom:12px}
+    details.section-card{
+      border-radius:28px;
+      background:rgba(255,255,255,.70);
+      border:1px solid var(--line);
+      box-shadow:0 14px 34px rgba(84,38,94,.08);
+      overflow:hidden;
+    }
+    details.section-card > summary{
+      min-height:62px;
+      background:rgba(255,255,255,.48);
+    }
+    details.section-card > summary .summary-title{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    details.section-card > summary .summary-title strong{
+      color:var(--ink);
+      font-size:1rem;
+      line-height:1.1;
+    }
+    details.section-card > summary .summary-title span{width:max-content}
+
     details.ops-collapse{border-radius:24px;background:rgba(255,255,255,.62);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07);overflow:hidden}
     details.ops-collapse > summary{list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 16px;font-weight:900;color:var(--ink);cursor:pointer}
     details.ops-collapse > summary::-webkit-details-marker{display:none}
@@ -495,16 +518,17 @@
     .topbar{order:0}
     #authSection{order:1}
     .hero{order:2;grid-template-columns:1.18fr .82fr;align-items:stretch}
-    #financeSection{order:3}
-    #queueSection{order:4}
-    #machineSection{order:5}
-    #addJobSection{order:6}
-    #pmSection{order:7}
-    #suggestionSection{order:8}
-    #calendarSection{order:9}
-    #insightSection{order:10}
-    #detailsSection{order:11}
-    #historySection{order:12}
+    #todaySection{order:3}
+    #financeSection{order:4}
+    #queueSection{order:5}
+    #machineSection{order:6}
+    #addJobSection{order:7}
+    #pmSection{order:8}
+    #suggestionSection{order:9}
+    #calendarSection{order:10}
+    #insightSection{order:11}
+    #detailsSection{order:12}
+    #historySection{order:13}
     .decision-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
     .decision-title h2{font-size:clamp(1.7rem,3.2vw,2.8rem)!important;max-width:760px}
     .decision-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -608,8 +632,9 @@
   </section>
 
 
-  <section class="card">
-    <span class="kicker">Today view</span>
+  <details class="ops-collapse section-card" id="todaySection" open>
+    <summary><span class="summary-title"><span class="kicker">Today view</span><strong>Action list + printer load</strong></span></summary>
+    <div class="collapse-body">
     <div class="ops-grid">
       <div class="ops-panel">
         <h3>What needs action today?</h3>
@@ -620,7 +645,9 @@
         <div id="utilizationBoard"></div>
       </div>
     </div>
-  </section>
+
+    </div>
+  </details>
 
   <details class="ops-collapse" id="authSection"><summary>Cloud login / sync</summary><div class="collapse-body">
     <span class="kicker">Cloud login</span>
@@ -634,7 +661,7 @@
     <div id="authStatus" class="auth-status">Checking sign-in.</div>
   </div></details>
 
-  <details class="ops-collapse" id="addJobSection" open><summary>Quick add / edit production job</summary><div class="collapse-body">
+  <details class="ops-collapse section-card" id="addJobSection"><summary><span class="summary-title"><span class="kicker">Job editor</span><strong>Quick add / edit production job</strong></span></summary><div class="collapse-body">
     <div class="form-intro-strip"><div><span class="kicker">Quick add</span><h2>Add the minimum. Enrich later.</h2><p>Title, type, status, priority, machine, due date, and time drive the board.</p></div><button class="ghost" type="button" id="clearFormBtn">Clear</button></div>
     <div class="quick-start-grid">
       <button class="quick-preset" type="button" data-preset="craft_stock"><strong>🛍️ Craft stock</strong><span>Inventory/show item</span></button>
@@ -772,35 +799,47 @@
         <button class="ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button>
       </div>
     </form>
-  </section>
+  </div></details>
 
-  <section class="card" id="pmSection">
-    <span class="kicker">PM Lite</span>
-    <div class="pm-board" id="pmBoard"></div>
-  </section>
+  <details class="ops-collapse section-card" id="pmSection">
+    <summary><span class="summary-title"><span class="kicker">PM Lite</span><strong>Printer maintenance shortcuts</strong></span></summary>
+    <div class="collapse-body">
+      <div class="pm-board" id="pmBoard"></div>
+    </div>
+  </details>
 
-  <section class="card" id="machineSection">
-    <span class="kicker">Printer command center</span>
-    <div class="machine-grid" id="machineBoard"></div>
-  </section>
+  <details class="ops-collapse section-card" id="machineSection">
+    <summary><span class="summary-title"><span class="kicker">Printer command center</span><strong>Printer status + next queue guidance</strong></span></summary>
+    <div class="collapse-body">
+      <div class="machine-grid" id="machineBoard"></div>
+    </div>
+  </details>
 
-  <section class="card" id="suggestionSection">
-    <span class="kicker">Smart production suggestions</span>
-    <div class="suggestion-grid" id="suggestionBoard"></div>
-  </section>
+  <details class="ops-collapse section-card" id="suggestionSection">
+    <summary><span class="summary-title"><span class="kicker">Smart production suggestions</span><strong>Batch, urgency, and material planning ideas</strong></span></summary>
+    <div class="collapse-body">
+      <div class="suggestion-grid" id="suggestionBoard"></div>
+    </div>
+  </details>
 
-  <section class="card" id="calendarSection">
-    <span class="kicker">Production calendar</span>
-    <div class="calendar-strip" id="calendarStrip"></div>
-  </section>
+  <details class="ops-collapse section-card" id="calendarSection">
+    <summary><span class="summary-title"><span class="kicker">Production calendar</span><strong>Upcoming due dates and schedule view</strong></span></summary>
+    <div class="collapse-body">
+      <div class="calendar-strip" id="calendarStrip"></div>
+    </div>
+  </details>
 
-  <section class="card" id="insightSection">
-    <span class="kicker">Estimate accuracy & scrap insight</span>
-    <div class="insight-grid" id="insightBoard"></div>
-  </section>
+  <details class="ops-collapse section-card" id="insightSection">
+    <summary><span class="summary-title"><span class="kicker">Estimate accuracy & scrap insight</span><strong>Compare estimated vs actual usage</strong></span></summary>
+    <div class="collapse-body">
+      <div class="insight-grid" id="insightBoard"></div>
+    </div>
+  </details>
 
 
-  <section class="card" id="financeSection">
+  <details class="ops-collapse section-card" id="financeSection" open>
+    <summary><span class="summary-title"><span class="kicker">Live Profit Snapshot</span><strong>Pricing & margin check</strong></span></summary>
+    <div class="collapse-body">
     <div class="finance-board-head">
       <div>
         <span class="kicker">Live Profit Snapshot</span>
@@ -810,9 +849,13 @@
       <div id="financeHealthNote" class="finance-health">Waiting for jobs...</div>
     </div>
     <div id="financeBoard"></div>
-  </section>
 
-  <section class="card" id="queueSection">
+    </div>
+  </details>
+
+  <details class="ops-collapse section-card" id="queueSection" open>
+    <summary><span class="summary-title"><span class="kicker">Main board</span><strong>Print queue</strong></span></summary>
+    <div class="collapse-body">
     <div class="board-header"><div><span class="kicker">Main board</span><h2>Print queue</h2></div><div class="board-legend"><span class="legend-chip"><span class="legend-dot" style="--dot:#9d6df3"></span>Ready</span><span class="legend-chip"><span class="legend-dot" style="--dot:#5fcfff"></span>Printing</span><span class="legend-chip"><span class="legend-dot" style="--dot:#ff7fcf"></span>QC</span><span class="legend-chip"><span class="legend-dot" style="--dot:#f7b731"></span>Delivery</span></div></div>
     <div class="toolbar board-toolbar">
       <label>Search<input id="searchInput" placeholder="Search title, customer, material, color..."></label>
@@ -839,17 +882,33 @@
       <button class="ghost" id="clearSelectionBtn" type="button">Clear selection</button>
     </div>
     <div class="lanes" id="laneBoard"></div>
-  </section>
 
+    </div>
+  </details>
+
+  <details class="ops-collapse section-card" id="detailsSection">
+    <summary><span class="summary-title"><span class="kicker">Full detail cards</span><strong>Expanded production job records</strong></span></summary>
+    <div class="collapse-body">
   <section class="card" id="detailsSection"><details class="page-collapse"><summary><span class="kicker">Full detail cards</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div id="detailList" class="detail-list"></div></div></details></section>
 
+
+    </div>
+  </details>
+
+  <details class="ops-collapse section-card" id="historySection">
+    <summary><span class="summary-title"><span class="kicker">Completed / history</span><strong>Closed jobs and production history</strong></span></summary>
+    <div class="collapse-body">
   <section class="card" id="historySection"><details class="page-collapse"><summary><span class="kicker">Completed / history</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div class="history-wrap">
       <table>
         <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Revenue</th><th>Est. Profit</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>
     </div></div></details>
-  </section>
+
+    </div>
+  </details>
+
+
 </div>
 
 <div class="modal hidden" id="closeModal" aria-hidden="true">
