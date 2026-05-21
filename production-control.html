@@ -232,10 +232,15 @@
     .recipe-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .recipe-head strong{color:var(--ink)}
     .recipe-list{display:grid;gap:8px}
-    .supply-usage-row{display:grid;grid-template-columns:2fr .7fr .7fr .9fr;gap:8px;align-items:end;padding:12px;border-radius:18px;background:rgba(255,255,255,.82);border:1px solid rgba(101,60,120,.12);margin-bottom:10px}.supply-usage-row label{min-width:0}.supply-usage-row input{width:100%;min-width:0}.supply-usage-row .span2{grid-column:span 2}
+    .supply-usage-wrap{grid-column:1/-1;display:grid;gap:12px}
+    .supply-usage-row{display:grid;grid-template-columns:minmax(240px,1.4fr) minmax(120px,.7fr) minmax(130px,.7fr) minmax(145px,.7fr);gap:10px;align-items:end;padding:14px;border-radius:20px;background:rgba(255,255,255,.84);border:1px solid rgba(101,60,120,.12);box-shadow:0 10px 24px rgba(84,38,94,.05);margin-bottom:10px}
+    .supply-usage-row label{min-width:0}.supply-usage-row input{width:100%;min-width:0}.supply-usage-row .wide{grid-column:span 2}
+    .supply-help-card{grid-column:1/-1;padding:13px 14px;border-radius:18px;background:rgba(255,255,255,.70);border:1px dashed rgba(101,60,120,.18);color:var(--muted);line-height:1.45}
+    .supply-summary-card{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:18px;background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08));border:1px solid rgba(101,60,120,.12);font-weight:900;color:var(--ink)}
+    .supply-summary-card span{display:inline-flex;gap:5px;align-items:center}.supply-summary-card strong{color:#23763b}
     .supply-usage-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
     .supply-usage-mini span{display:block;padding:7px 8px;border-radius:13px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.09);font-size:.68rem;font-weight:900;color:#604966}
-    @media(max-width:900px){.supply-usage-row{grid-template-columns:1fr 1fr}.supply-usage-mini{grid-template-columns:1fr 1fr}.supply-usage-row .span2{grid-column:span 1}}
+    @media(max-width:900px){.supply-usage-row{grid-template-columns:1fr 1fr}.supply-usage-mini{grid-template-columns:1fr 1fr}.supply-usage-row .wide{grid-column:1/-1}}
     .recipe-row{display:grid;grid-template-columns:1.25fr 1fr 1.05fr 1fr .75fr 1fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
     .recipe-row label{font-size:.76rem}
     .recipe-total{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.84rem;font-weight:800}
@@ -244,7 +249,7 @@
     .recipe-mini-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:7px 9px;border-radius:14px;background:rgba(255,255,255,.6);border:1px solid rgba(101,60,120,.08);font-size:.82rem}
     .recipe-mini-row strong{color:var(--ink)}
 
-    .pricing-preview{
+    .pricing-preview{grid-template-columns:repeat(auto-fit,minmax(145px,1fr)) !important;
       grid-column:1/-1;
       display:grid;
       grid-template-columns:repeat(6,minmax(0,1fr));
@@ -627,11 +632,11 @@
         <details class="form-section">
           <summary>Non-filament supplies / add-on materials</summary>
           <div class="form-section-body">
-            <p class="muted">Select materials from Inventory Control's Non-Filament Supplies list. Examples: LED puck lights, rope lights, keyrings, magnets, magnetic sheets, packaging, hardware, batteries, adhesive.</p>
+            <div class="supply-help-card">Select materials from Inventory Control's Non-Filament Supplies list. Examples: LED puck lights, rope lights, keyrings, magnets, magnetic sheets, packaging, hardware, batteries, and adhesive.</div>
             <label>Supply rows<input id="supplyCount" type="number" min="0" max="10" step="1" value="0"></label>
             <datalist id="supplyOptions"></datalist>
-            <div id="supplyRows"></div>
-            <div class="recipe-mini" id="supplyTotals"><span>No non-filament supplies selected.</span></div>
+            <div class="supply-usage-wrap" id="supplyRows"></div>
+            <div class="supply-summary-card" id="supplyTotals"><span>No non-filament supplies selected.</span></div>
           </div>
         </details>
 
@@ -650,7 +655,8 @@
             <label class="span2">Image / Thumbnail URL<input id="imageUrl" placeholder="images/example.png"></label>
 
             <div class="pricing-preview" id="pricingPreview">
-              <div class="price-box"><span>Material Cost</span><strong id="previewMaterialCost">$0.00</strong></div>
+              <div class="price-box"><span>Filament Cost</span><strong id="previewMaterialCost">$0.00</strong></div>
+              <div class="price-box"><span>Supply Cost</span><strong id="previewSupplyCost">$0.00</strong></div>
               <div class="price-box"><span>Machine Cost</span><strong id="previewMachineCost">$0.00</strong></div>
               <div class="price-box"><span>Design Cost</span><strong id="previewDesignCost">$0.00</strong></div>
               <div class="price-box"><span>Post Cost</span><strong id="previewPostCost">$0.00</strong></div>
@@ -2175,18 +2181,39 @@
     updateSupplyDerivedFields();
   }
   function renderSupplyRows(rows){
-    refreshSupplyOptions(); const count=Math.max(0,Math.min(10,Math.round(num($('supplyCount')?.value)||0))); const current=rows||supplyRowsFromForm(); const el=$('supplyRows'); if(!el)return;
-    el.innerHTML=count?Array.from({length:count}).map((_,i)=>{const r=current[i]||{}; const pick=r.supply_pick||(r.item_name?[r.item_name,r.category,r.unit_type].filter(Boolean).join(' / '):''); return `<div class="supply-usage-row" data-supply-row="${i}">
-        <label>Supply ${i+1}<input id="jobSupplyPick_${i}" list="supplyOptions" value="${esc(pick)}" placeholder="Choose supply..."></label>
-        <label>Qty used<input id="jobSupplyQty_${i}" type="number" min="0" step="0.01" value="${esc(r.quantity ?? '')}"></label>
+    refreshSupplyOptions();
+    const count=Math.max(0,Math.min(10,Math.round(num($('supplyCount')?.value)||0)));
+    const current=rows||supplyRowsFromForm();
+    const el=$('supplyRows');
+    if(!el)return;
+
+    el.innerHTML=count?Array.from({length:count}).map((_,i)=>{
+      const r=current[i]||{};
+      const pick=r.supply_pick||(r.item_name?[r.item_name,r.category,r.unit_type].filter(Boolean).join(' / '):'');
+      return `<div class="supply-usage-row" data-supply-row="${i}">
+        <label class="wide">Supply ${i+1}<input id="jobSupplyPick_${i}" list="supplyOptions" value="${esc(pick)}" placeholder="Choose supply from inventory..."></label>
+        <label>Qty used<input id="jobSupplyQty_${i}" type="number" min="0" step="0.01" value="${esc(r.quantity ?? '')}" placeholder="0"></label>
         <label>Unit<input id="jobSupplyUnit_${i}" value="${esc(r.unit_type||'')}" placeholder="each, ft, sq in..."></label>
-        <label>Cost / unit<input id="jobSupplyCost_${i}" type="number" min="0" step="0.0001" value="${esc(r.unit_cost ?? '')}"></label>
-        <label class="span2">Item name<input id="jobSupplyName_${i}" value="${esc(r.item_name||'')}" placeholder="Auto-fills from supply"></label>
-        <label class="span2">Notes<input id="jobSupplyNotes_${i}" value="${esc(r.notes||'')}" placeholder="Optional usage notes"></label>
-      </div>`}).join(''):'';
+        <label>Cost / unit<input id="jobSupplyCost_${i}" type="number" min="0" step="0.0001" value="${esc(r.unit_cost ?? '')}" placeholder="0.00"></label>
+        <label class="wide">Item name<input id="jobSupplyName_${i}" value="${esc(r.item_name||'')}" placeholder="Auto-fills from supply"></label>
+        <label class="wide">Notes<input id="jobSupplyNotes_${i}" value="${esc(r.notes||'')}" placeholder="Optional usage notes"></label>
+      </div>`;
+    }).join(''):'';
     updateSupplyDerivedFields();
   }
-  function updateSupplyDerivedFields(){const rows=supplyRowsFromForm(); const total=rows.reduce((s,r)=>s+supplyUsageCostForRow(r),0); const el=$('supplyTotals'); if(el)el.innerHTML=rows.length?`<span>${rows.length} supply item(s)</span><span><strong>${money(total)}</strong> estimated supply cost</span>`:'<span>No non-filament supplies selected.</span>'; updatePricingPreview();}
+
+  function updateSupplyDerivedFields(){
+    const rows=supplyRowsFromForm();
+    const total=rows.reduce((s,r)=>s+supplyUsageCostForRow(r),0);
+    const el=$('supplyTotals');
+    if(el){
+      el.innerHTML=rows.length
+        ? `<span>🧰 ${rows.length} supply item(s)</span><span><strong>${money(total)}</strong> non-filament supply cost</span>`
+        : '<span>No non-filament supplies selected.</span>';
+    }
+    updatePricingPreview();
+  }
+
   function supplyUsageMiniHtml(j){const rows=safeJsonParse(j.supply_usage,[]); if(!rows.length)return ''; return `<div class="recipe-mini">${rows.map(r=>`<div class="recipe-mini-row"><strong>${esc(r.item_name||'Supply')}</strong><span>${esc(r.quantity)} ${esc(r.unit_type||'unit')} × ${money(num(r.unit_cost)||num(findSupplyForUsage(r)?.cost_per_unit))} = ${money(supplyUsageCostForRow(r))}</span></div>`).join('')}</div>`;}
 
   function rawInventoryList(){
@@ -2407,6 +2434,7 @@
     };
     const f = jobFinancials(tempJob);
     $('previewMaterialCost').textContent = money(f.materialCost);
+    if($('previewSupplyCost')) $('previewSupplyCost').textContent = money(f.supplyCost || 0);
     $('previewMachineCost').textContent = money(f.machineCost);
     $('previewDesignCost').textContent = money(f.designCost);
     $('previewPostCost').textContent = money(f.postCost);
@@ -3006,6 +3034,10 @@
   });
 
   $('jobForm').addEventListener('input', e=>{
+    if(e.target.closest('[data-supply-row]')){
+      updateSupplyDerivedFields();
+      return;
+    }
     if(e.target.id && e.target.id.startsWith('recipeInventoryPick_')){
       const i=e.target.id.split('_')[1];
       applyInventoryPickToRecipeRow(i);
