@@ -358,6 +358,7 @@
         <button class="ghost" id="importBtn" type="button">Import</button>
         <button class="btn" id="syncCloudBtn" type="button">Sync Inventory to Cloud</button>
         <button class="ghost" id="forceCloudRebuildBtn" type="button">Force Full Cloud Rebuild</button>
+        <button class="ghost" id="syncSpoolPoolBtn" type="button">Sync Spool Count</button>
         <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
         <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
         <input id="importFile" class="hidden" type="file" accept="application/json">
@@ -853,6 +854,14 @@
     updateCloudStatus();
     render();
     return result;
+  }
+
+  async function manualSyncSpoolPool(){
+    const pool=currentSpoolPool();
+    await cloudSaveSpoolPool(pool);
+    await cloudLoadSpoolPool();
+    render();
+    toast(`Spool count synced: ${Number(pool.available_empty||0)} free reusable spool(s).`);
   }
 
   async function manualForceCloudRebuild(){
@@ -1365,35 +1374,106 @@
     try{return JSON.parse(localStorage.getItem('olipoly_spool_pool_v1')||'{}')}catch{return {}}
   }
 
-  async function cloudSaveSpoolPool(pool=currentSpoolPool()){
+  async function cloudSaveInventorySetting(key, value){
     if(!state.cloud || !state.user?.id) return;
     const payload={
       user_id:state.user.id,
-      available_empty:Number(pool.available_empty || 0),
-      retired:Number(pool.retired || 0),
-      notes:pool.notes || '',
+      setting_key:key,
+      setting_value:value,
       updated_at:new Date().toISOString()
     };
-    await sbApi('/rest/v1/inventory_spool_pool?on_conflict=user_id',{
+    await sbApi('/rest/v1/inventory_settings?on_conflict=user_id,setting_key',{
       method:'POST',
       headers:{Prefer:'resolution=merge-duplicates,return=representation'},
       body:JSON.stringify(payload)
     });
   }
 
+  async function cloudLoadInventorySetting(key){
+    if(!state.cloud || !state.user?.id) return null;
+    try{
+      const rows=await sbApi(`/rest/v1/inventory_settings?select=setting_value&user_id=eq.${encodeURIComponent(state.user.id)}&setting_key=eq.${encodeURIComponent(key)}&limit=1`,{method:'GET'});
+      return Array.isArray(rows) && rows.length ? rows[0].setting_value : null;
+    }catch(err){
+      console.warn('inventory setting cloud load failed', key, err);
+      return null;
+    }
+  }
+
+
+  async function cloudSaveSpoolPool(pool=currentSpoolPool()){
+    if(!state.cloud || !state.user?.id) return;
+    const normalized={
+      available_empty:Number(pool.available_empty || 0),
+      retired:Number(pool.retired || 0),
+      notes:pool.notes || '',
+      updated_at:new Date().toISOString()
+    };
+    const payload={
+      user_id:state.user.id,
+      available_empty:normalized.available_empty,
+      retired:normalized.retired,
+      notes:normalized.notes,
+      updated_at:normalized.updated_at
+    };
+
+    let primaryOk=false;
+    try{
+      await sbApi('/rest/v1/inventory_spool_pool?on_conflict=user_id',{
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify(payload)
+      });
+      primaryOk=true;
+    }catch(err){
+      console.warn('spool pool primary table save failed; trying settings fallback', err);
+    }
+
+    await cloudSaveInventorySetting('spool_pool', normalized);
+
+    if($('cloudSyncDetails')){
+      $('cloudSyncDetails').textContent=`Reusable spool pool synced: ${normalized.available_empty} free, ${normalized.retired} retired${primaryOk?'':' (settings fallback used)'}.`;
+    }
+  }
+
   async function cloudLoadSpoolPool(){
     if(!state.cloud || !state.user?.id) return;
+    let primary=null;
     try{
       const rows=await sbApi(`/rest/v1/inventory_spool_pool?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&limit=1`,{method:'GET'});
       if(Array.isArray(rows) && rows.length){
-        saveSpoolPoolValue({
+        primary={
           available_empty:Number(rows[0].available_empty || 0),
           retired:Number(rows[0].retired || 0),
           notes:rows[0].notes || '',
           updated_at:rows[0].updated_at || new Date().toISOString()
-        });
+        };
       }
-    }catch(err){ console.warn('spool pool cloud load failed', err); }
+    }catch(err){
+      console.warn('spool pool primary cloud load failed', err);
+    }
+
+    const fallback=await cloudLoadInventorySetting('spool_pool');
+    let chosen=primary || fallback;
+
+    // If primary exists but is blank/zero and the fallback has a real value, trust the fallback.
+    if(primary && fallback && Number(primary.available_empty||0)===0 && Number(fallback.available_empty||0)>0){
+      chosen=fallback;
+    }
+
+    if(chosen){
+      const normalized={
+        available_empty:Number(chosen.available_empty || 0),
+        retired:Number(chosen.retired || 0),
+        notes:chosen.notes || '',
+        updated_at:chosen.updated_at || new Date().toISOString()
+      };
+      saveSpoolPoolValue(normalized);
+      renderSpoolPool();
+      if($('cloudSyncDetails')){
+        $('cloudSyncDetails').textContent=`Reusable spool pool loaded from cloud: ${normalized.available_empty} free, ${normalized.retired} retired.`;
+      }
+    }
   }
 
   async function deleteUserCloudRows(){
@@ -1844,6 +1924,7 @@
     $('importBtn').addEventListener('click',()=>$('importFile').click());
     $('syncCloudBtn')?.addEventListener('click',manualSyncInventoryToCloud);
     $('forceCloudRebuildBtn')?.addEventListener('click',manualForceCloudRebuild);
+    $('syncSpoolPoolBtn')?.addEventListener('click',manualSyncSpoolPool);
     $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
     $('cleanBadImportsBtn')?.addEventListener('click',cleanBadProductionImports);
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
