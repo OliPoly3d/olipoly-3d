@@ -356,6 +356,7 @@
         <a class="ghost" href="production-control.html">Production Control</a>
         <button class="ghost" id="exportBtn" type="button">Export Backup</button>
         <button class="ghost" id="importBtn" type="button">Import</button>
+        <button class="btn" id="syncCloudBtn" type="button">Sync Inventory to Cloud</button>
         <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
         <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
         <input id="importFile" class="hidden" type="file" accept="application/json">
@@ -759,13 +760,45 @@
     toast(`Cleaned ${before.length-cleaned.length} accidental production import(s).`);
   }
 
-  async function syncLocalInventoryToCloud(){
-    if(!state.cloud) return;
+  async function syncLocalInventoryToCloud({showToast=false}={}){
+    if(!state.cloud || !state.user?.id){
+      if(showToast) toast('Log in first, then sync inventory to cloud.');
+      return {ok:false, raw:0, finished:0, supplies:0, errors:1};
+    }
+
     const rows=raw();
     const goods=finished();
-    for(const r of rows){ try{ await cloudSaveRaw(r); }catch(err){ console.warn('raw cloud sync failed', r, err); } }
-    for(const f of goods){ try{ await cloudSaveFg(f); }catch(err){ console.warn('finished cloud sync failed', f, err); } }
-    for(const s of supplies()){ try{ await cloudSaveSupply(s); }catch(err){ console.warn('supply cloud sync failed', s, err); } }
+    const supplyRows=supplies();
+    let errors=0;
+
+    if(showToast) toast(`Syncing ${rows.length} filament roll(s), ${goods.length} finished good(s), ${supplyRows.length} supply item(s)...`);
+
+    for(const r of rows){
+      try{ await cloudSaveRaw(r); }
+      catch(err){ errors++; console.warn('raw cloud sync failed', r, err); }
+    }
+    for(const f of goods){
+      try{ await cloudSaveFg(f); }
+      catch(err){ errors++; console.warn('finished cloud sync failed', f, err); }
+    }
+    for(const s of supplyRows){
+      try{ await cloudSaveSupply(s); }
+      catch(err){ errors++; console.warn('supply cloud sync failed', s, err); }
+    }
+
+    if(showToast){
+      if(errors) toast(`Cloud sync finished with ${errors} issue(s). Check console/Supabase SQL.`);
+      else toast(`Cloud sync complete: ${rows.length} filament roll(s), ${goods.length} finished good(s), ${supplyRows.length} supply item(s).`);
+    }
+
+    return {ok:errors===0, raw:rows.length, finished:goods.length, supplies:supplyRows.length, errors};
+  }
+
+  async function manualSyncInventoryToCloud(){
+    const result = await syncLocalInventoryToCloud({showToast:true});
+    updateCloudStatus();
+    render();
+    return result;
   }
 
   async function recoverLocalInventory(){
@@ -1673,6 +1706,7 @@
     $('fgResetBtn').addEventListener('click',resetFg);
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());
+    $('syncCloudBtn')?.addEventListener('click',manualSyncInventoryToCloud);
     $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
     $('cleanBadImportsBtn')?.addEventListener('click',cleanBadProductionImports);
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
