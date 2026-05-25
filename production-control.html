@@ -519,11 +519,11 @@
     #authSection{order:1}
     .hero{order:2;grid-template-columns:1.18fr .82fr;align-items:stretch}
     #todaySection{order:3}
-    #financeSection{order:4}
-    #queueSection{order:5}
-    #machineSection{order:6}
-    #addJobSection{order:7}
-    #pmSection{order:8}
+    #queueSection{order:4}
+    #machineSection{order:5}
+    #addJobSection{order:6}
+    #pmSection{order:7}
+    #financeSection{order:8}
     #suggestionSection{order:9}
     #calendarSection{order:10}
     #insightSection{order:11}
@@ -607,6 +607,10 @@
     <div class="top-actions">
       <a class="ghost" href="hub.html">← Hub</a>
       <a class="ghost" href="inventory-control.html">Inventory Control</a>
+      <button class="ghost" id="syncRepairBtn" type="button">Sync / Repair</button>
+      <button class="ghost" id="exportBackupBtn" type="button">Export Backup</button>
+      <button class="ghost" id="importBackupBtn" type="button">Import Backup</button>
+      <input class="hidden" id="importBackupFile" type="file" accept="application/json,.json">
       <button class="btn" id="jumpAddBtn" type="button">+ Add Job</button>
     </div>
   </header>
@@ -837,7 +841,7 @@
   </details>
 
 
-  <details class="ops-collapse section-card" id="financeSection" open>
+  <details class="ops-collapse section-card" id="financeSection">
     <summary><span class="summary-title"><span class="kicker">Live Profit Snapshot</span><strong>Pricing & margin check</strong></span></summary>
     <div class="collapse-body">
     <div class="finance-board-head">
@@ -889,22 +893,22 @@
   <details class="ops-collapse section-card" id="detailsSection">
     <summary><span class="summary-title"><span class="kicker">Full detail cards</span><strong>Expanded production job records</strong></span></summary>
     <div class="collapse-body">
-  <section class="card" id="detailsSection"><details class="page-collapse"><summary><span class="kicker">Full detail cards</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div id="detailList" class="detail-list"></div></div></details></section>
-
-
+      <div id="detailList" class="detail-list"></div>
     </div>
   </details>
 
   <details class="ops-collapse section-card" id="historySection">
     <summary><span class="summary-title"><span class="kicker">Completed / history</span><strong>Closed jobs and production history</strong></span></summary>
     <div class="collapse-body">
-  <section class="card" id="historySection"><details class="page-collapse"><summary><span class="kicker">Completed / history</span><span class="collapse-caret"></span></summary><div class="page-collapse-body"><div class="history-wrap">
-      <table>
-        <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Revenue</th><th>Est. Profit</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
-        <tbody id="historyBody"></tbody>
-      </table>
-    </div></div></details>
-
+      <div class="history-top">
+        <label>Search history<input id="historySearch" placeholder="Search closed jobs, customer, material, note..."></label>
+      </div>
+      <div class="history-wrap">
+        <table>
+          <thead><tr><th>Job</th><th>Type</th><th>Machine</th><th>Qty</th><th>Actual Hours</th><th>Revenue</th><th>Est. Profit</th><th>Filament</th><th>Scrap</th><th>Closed</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
     </div>
   </details>
 
@@ -985,6 +989,8 @@
   const LS_RAW = 'olipoly_raw_material_inventory_v3';
   const LS_FINISHED = 'olipoly_finished_goods_inventory_v3';
   const LS_SUPPLIES = 'olipoly_non_filament_supplies_v1';
+  const LS_SPOOL_POOL = 'olipoly_spool_pool_v1';
+  const PROD_BACKUP_KEYS = [LS_JOBS, LS_PM, LS_RAW, LS_FINISHED, LS_SUPPLIES, LS_SPOOL_POOL, 'olipoly_hub_workflow_v3'];
 
   // Legacy/local fallback keys from earlier Projects + Production Control builds.
   // This keeps older jobs from appearing "lost" after the production-control conversion.
@@ -1067,6 +1073,8 @@
     filterStatus:'all',
     filterMachine:'all',
     sortBy:'smart',
+    historySearch:'',
+    selectedIds:new Set(),
     draggingId:null
   };
 
@@ -1512,6 +1520,7 @@
     $('notes').value = j.notes || '';
     $('saveBtn').textContent = 'Update Production Job';
     $('cancelEditBtn').classList.remove('hidden');
+    if($('addJobSection')) $('addJobSection').open = true;
     $('addJobSection').scrollIntoView({behavior:'smooth', block:'start'});
   }
 
@@ -1882,6 +1891,10 @@
       finished_roll:closeRollAllocations().some(x=>x.finished_roll),
       spool_freed:closeRollAllocations().some(x=>x.spool_freed),
       close_note:$('closeNote').value.trim() || null,
+      pm_hours_applied:true,
+      pm_hours_applied_machine:$('closeMachine').value,
+      pm_hours_applied_hours:num($('closeHours').value),
+      pm_hours_applied_at:now,
       closed_at:now,
       updated_at:now
     };
@@ -1910,7 +1923,7 @@
           await cloudSaveJob(updated);
         }
       }
-      applyPmUsage(updated.actual_machine, updated.actual_print_hours);
+      applyPmUsageForCloseout(j, updated);
       if(!updated.exclude_inventory_reduction){
         if(updated.roll_usages && updated.roll_usages.some(x=>x.raw_material_roll_id)) applyRollCloseoutLocal(updated.roll_usages);
         else applyInventoryLocal(updated, breakdown, addFinished);
@@ -1929,15 +1942,43 @@
 
   function applyPmUsage(machine, hours){
     const m = machine || 'Other';
+    const h = num(hours);
+    if(!h) return;
     let pm = state.pm.find(p=>p.machine===m);
     if(!pm){
       pm = {id:m,machine:m,hours_since_pm:0,pm_hour_interval:250,last_pm_date:null,pm_day_interval:30,next_pm_date:addDays(todayISO(),30),notes:'',updated_at:new Date().toISOString()};
       state.pm.push(pm);
     }
-    pm.hours_since_pm = num(pm.hours_since_pm) + num(hours);
+    pm.hours_since_pm = Math.max(0, num(pm.hours_since_pm) + h);
     pm.updated_at = new Date().toISOString();
     localWrite(LS_PM,state.pm);
     cloudSavePm(pm).catch(()=>{});
+  }
+
+  function applyPmUsageForCloseout(previous, updated){
+    const newMachine = updated.actual_machine || updated.machine_preference || 'Other';
+    const newHours = num(updated.actual_print_hours);
+
+    // Older completed jobs likely already pushed hours through the previous close-out logic.
+    // Treat an already-closed job with actual hours as already applied, even if the new marker does not exist yet.
+    const oldAlreadyApplied = !!previous.pm_hours_applied || (!!previous.closed_at && num(previous.actual_print_hours) > 0);
+    const oldMachine = previous.pm_hours_applied_machine || previous.actual_machine || previous.machine_preference || newMachine;
+    const oldHours = num(previous.pm_hours_applied_hours || previous.actual_print_hours);
+
+    if(!newHours && !oldAlreadyApplied) return;
+
+    if(oldAlreadyApplied){
+      if(oldMachine && oldMachine !== newMachine && oldHours){
+        applyPmUsage(oldMachine, -oldHours);
+        applyPmUsage(newMachine, newHours);
+        return;
+      }
+      const delta = newHours - oldHours;
+      if(delta) applyPmUsage(newMachine, delta);
+      return;
+    }
+
+    applyPmUsage(newMachine, newHours);
   }
 
   async function markPmDone(machine){
@@ -1987,6 +2028,129 @@
       }
     }catch(err){
       console.warn('Could not refresh raw inventory from cloud', err);
+    }
+  }
+
+  function readBackupKey(key){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw == null ? null : JSON.parse(raw);
+    }catch{
+      return localStorage.getItem(key);
+    }
+  }
+
+  function downloadJson(filename, data){
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportProductionBackup(){
+    const local_storage = {};
+    PROD_BACKUP_KEYS.forEach(key => {
+      const value = readBackupKey(key);
+      if(value !== null) local_storage[key] = value;
+    });
+    const backup = {
+      backup_type:'olipoly_production_control_backup_v1',
+      exported_at:new Date().toISOString(),
+      source:location.href,
+      notes:'Production Control backup. Includes jobs, PM, and inventory/supply keys used by production planning.',
+      local_storage,
+      state_snapshot:{
+        jobs:state.jobs || [],
+        pm:state.pm || []
+      }
+    };
+    const stamp = new Date().toISOString().slice(0,10);
+    downloadJson(`olipoly-production-backup-${stamp}.json`, backup);
+    toast('Production backup exported.');
+  }
+
+  function mergePmRows(current, incoming){
+    const map = new Map();
+    [...(current||[]), ...(incoming||[])].filter(Boolean).forEach(row => {
+      const pm = normalizePm(row);
+      const key = pm.machine || pm.id;
+      const existing = map.get(key);
+      if(!existing || String(pm.updated_at || '').localeCompare(String(existing.updated_at || '')) >= 0){
+        map.set(key, pm);
+      }
+    });
+    return [...map.values()];
+  }
+
+  async function importProductionBackup(file){
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      const store = backup.local_storage || backup.keys || {};
+      const incomingJobs = Array.isArray(store[LS_JOBS]) ? store[LS_JOBS] : (Array.isArray(backup.jobs) ? backup.jobs : backup.state_snapshot?.jobs || []);
+      const incomingPm = Array.isArray(store[LS_PM]) ? store[LS_PM] : (Array.isArray(backup.pm) ? backup.pm : backup.state_snapshot?.pm || []);
+
+      if(incomingJobs.length){
+        state.jobs = mergeUniqueJobs([state.jobs, incomingJobs]);
+        localWrite(LS_JOBS, state.jobs);
+      }
+      if(incomingPm.length){
+        state.pm = mergePmRows(state.pm, incomingPm);
+        localWrite(LS_PM, state.pm);
+      }
+
+      const inventoryKeys = [LS_RAW, LS_FINISHED, LS_SUPPLIES, LS_SPOOL_POOL];
+      const hasInventory = inventoryKeys.some(key => Object.prototype.hasOwnProperty.call(store, key));
+      const replaceInventory = hasInventory && confirm('This backup also contains inventory/supply/spool data. Import those local values too? Cancel imports only jobs and PM.');
+
+      if(replaceInventory){
+        inventoryKeys.forEach(key => {
+          if(Object.prototype.hasOwnProperty.call(store, key)){
+            localWrite(key, store[key]);
+          }
+        });
+      }
+
+      if(state.user?.id){
+        await migrateVisibleJobsToCloud();
+        for(const pm of state.pm){
+          try{ await cloudSavePm(pm); }catch(err){ console.warn('PM backup cloud sync failed', err); }
+        }
+      }
+
+      refreshInventoryMaterialOptions();
+      render();
+      toast(`Backup imported. ${state.jobs.length} jobs available.`);
+    }catch(err){
+      console.warn(err);
+      alert(`Could not import backup:\n\n${err.message || err}`);
+    }finally{
+      if($('importBackupFile')) $('importBackupFile').value = '';
+    }
+  }
+
+  async function syncRepair(){
+    try{
+      toast('Sync / repair started...');
+      await loadAll();
+      refreshInventoryMaterialOptions();
+      if(state.user?.id){
+        await migrateVisibleJobsToCloud();
+        for(const pm of state.pm){
+          try{ await cloudSavePm(pm); }catch(err){ console.warn('PM sync repair failed', err); }
+        }
+      }
+      render();
+      toast('Sync / repair complete.');
+    }catch(err){
+      console.warn(err);
+      toast('Sync / repair finished with local fallback.');
     }
   }
 
@@ -2118,6 +2282,10 @@
       scrap_grams:j.scrap_grams || null,
       failure_reason:j.failure_reason || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
+      pm_hours_applied:!!j.pm_hours_applied,
+      pm_hours_applied_machine:j.pm_hours_applied_machine || null,
+      pm_hours_applied_hours:num(j.pm_hours_applied_hours),
+      pm_hours_applied_at:j.pm_hours_applied_at || null,
       closed_at:j.closed_at || null,
       created_at:j.created_at || new Date().toISOString(),
       manual_rank:j.manual_rank ?? Date.now(),
@@ -3423,9 +3591,18 @@
   });
   $('jobForm').addEventListener('submit', saveJob);
   $('cancelEditBtn').addEventListener('click', resetForm);
-  $('jumpAddBtn').addEventListener('click', ()=>$('addJobSection').scrollIntoView({behavior:'smooth'}));
-  const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', ()=>$('addJobSection').scrollIntoView({behavior:'smooth'}));
+  function openSectionAndScroll(id){
+    const section = $(id);
+    if(section && section.tagName === 'DETAILS') section.open = true;
+    section?.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  $('jumpAddBtn').addEventListener('click', () => openSectionAndScroll('addJobSection'));
+  const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', () => openSectionAndScroll('addJobSection'));
   const clearForm = $('clearFormBtn'); if(clearForm) clearForm.addEventListener('click', resetForm);
+  $('exportBackupBtn')?.addEventListener('click', exportProductionBackup);
+  $('importBackupBtn')?.addEventListener('click', ()=>$('importBackupFile')?.click());
+  $('importBackupFile')?.addEventListener('change', e=>importProductionBackup(e.target.files?.[0]));
+  $('syncRepairBtn')?.addEventListener('click', syncRepair);
   $('loginBtn').addEventListener('click', signIn);
   $('signupBtn').addEventListener('click', signUp);
   $('logoutBtn').addEventListener('click', signOut);
