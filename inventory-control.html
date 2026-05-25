@@ -370,6 +370,75 @@
     .summary-grid{margin-top:10px}
     @media(max-width:900px){.cloud-main-row{grid-template-columns:1fr}.cloud-quick-actions{justify-content:flex-start}.inventory-command-grid{grid-template-columns:1fr}}
 
+  
+
+    /* === Inventory visual cleanup + mobile-friendly command bar === */
+    .topbar{padding:12px 14px;gap:14px}
+    .top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .top-actions .ghost,.top-actions .btn{min-height:40px;padding:9px 12px;font-size:.82rem;box-shadow:none}
+    .top-actions .btn{box-shadow:0 10px 24px rgba(214,73,186,.18)}
+    .hero{gap:12px;margin-bottom:12px}
+    .hero .card,.snapshot-card{padding:16px}
+    .snapshot-card{box-shadow:0 14px 38px rgba(84,38,94,.08)}
+    .snapshot-feature{gap:10px}
+    .snapshot-mini-grid{gap:8px}
+    .cloud-card{box-shadow:0 12px 32px rgba(84,38,94,.08)}
+    .cloud-quick-actions .ghost{min-height:38px;padding:8px 11px;font-size:.78rem}
+    .compact-tools{margin-bottom:0}
+    #rawEditor,#supplyEditor,#finishedEditor{box-shadow:0 8px 24px rgba(84,38,94,.055);background:rgba(255,255,255,.56)}
+    #rawEditor>summary,#supplyEditor>summary,#finishedEditor>summary{min-height:48px;background:rgba(255,255,255,.38)}
+    .tabs{position:relative;z-index:1}
+    .tab{padding:8px 12px;font-size:.82rem}
+    .toolbar,.toolbar.compact{gap:8px}
+    .inventory-card,.supply-card,.summary-card{box-shadow:0 8px 22px rgba(84,38,94,.065)}
+
+    @media(max-width:1100px){
+      .topbar{border-radius:28px;align-items:flex-start}
+      .top-actions{max-width:620px}
+    }
+    @media(max-width:760px){
+      .wrap{width:min(100% - 14px,var(--max));padding-top:8px}
+      .topbar{position:static;border-radius:22px;display:grid;grid-template-columns:1fr;gap:10px;padding:10px;margin-bottom:10px}
+      .brand{gap:10px;width:100%}
+      .logo{width:44px;height:44px;border-radius:15px}
+      .brand h1{font-size:1.32rem;letter-spacing:-.035em}
+      .brand p{font-size:.78rem;line-height:1.25;margin-top:2px}
+      .top-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-width:none}
+      .top-actions .ghost,.top-actions .btn{width:auto!important;min-height:38px;padding:8px 9px;font-size:.74rem;white-space:normal;line-height:1.1;text-align:center;border-radius:16px}
+      .top-actions #syncCloudBtn{grid-column:1/-1;min-height:42px;font-size:.8rem}
+      .cloud-main-row{grid-template-columns:1fr!important;gap:8px}
+      .cloud-card{padding:12px;border-radius:20px;margin-bottom:10px}
+      .cloud-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;justify-content:stretch}
+      .cloud-quick-actions .ghost{width:auto!important;min-height:36px;padding:7px 8px;font-size:.72rem;border-radius:15px}
+      .advanced-tool-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+      .advanced-tool-row .ghost,.advanced-tool-row .btn{width:auto!important;min-height:36px;padding:7px 8px;font-size:.72rem;border-radius:15px}
+      .advanced-tool-row .full{grid-column:1/-1}
+      .hero{grid-template-columns:1fr;gap:10px;margin-bottom:10px}
+      .hero .card,.snapshot-card{padding:13px;border-radius:22px}
+      .hero h2{font-size:1.8rem!important}
+      .snapshot-feature{grid-template-columns:1fr!important}
+      .snapshot-hero-stat{min-height:132px;padding:14px;border-radius:22px}
+      .snapshot-hero-stat .big{font-size:2.45rem}
+      .snapshot-mini-grid,.metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px}
+      .metric{min-height:58px;padding:9px;border-radius:15px}
+      .metric span,.snapshot-mini span{font-size:.54rem}
+      .metric strong,.snapshot-mini strong{font-size:1rem}
+      .snapshot-mini{min-height:72px;padding:10px;border-radius:16px}
+      .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+      .tab{width:100%;padding:8px 9px;font-size:.74rem;text-align:center;border-radius:15px}
+      .toolbar,.toolbar.compact{grid-template-columns:1fr 1fr!important;gap:7px}
+      .toolbar label:first-child{grid-column:1/-1}
+      .cards-grid,.form-grid,.summary-grid,.raw-summary-first,.inventory-command-grid,.ops-grid{grid-template-columns:1fr!important}
+      .stat-grid,.summary-stats,.material-primary-stats,.spool-hero-grid,.supply-hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      .actions,.card-actions,.spool-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+      .actions .btn,.actions .ghost,.card-actions .mini-btn,.spool-actions .ghost,.spool-actions .btn{width:auto!important;min-height:36px;padding:7px 8px;font-size:.72rem;border-radius:15px}
+      details.ops-collapse>summary{padding:11px 12px;min-height:48px}
+      .collapse-body{padding:0 10px 10px}
+      .quick-adjust{grid-template-columns:1fr 1fr!important}
+      .quick-adjust .mini-btn{grid-column:1/-1;width:auto!important}
+      table{min-width:760px}
+    }
+
   </style>
 </head>
 <body>

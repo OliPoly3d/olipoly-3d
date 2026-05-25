@@ -592,6 +592,93 @@
       .quick-usage-row{grid-template-columns:1fr}
       .card{padding:14px}
     }
+  
+
+    /* === Production visual cleanup + mobile-friendly command bar === */
+    .topbar{padding:12px 14px;gap:14px}
+    .top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .top-actions .ghost,.top-actions .btn{min-height:40px;padding:9px 12px;font-size:.82rem;box-shadow:none}
+    .top-actions .btn{box-shadow:0 10px 24px rgba(214,73,186,.18)}
+    .hero{margin-bottom:12px}
+    .hero .card{padding:16px}
+    .section-title h2{font-size:clamp(1.9rem,4.2vw,3.4rem)}
+    .metrics.compact-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .compact-metrics .metric:nth-child(5),
+    .compact-metrics .metric:nth-child(6){opacity:.72;background:rgba(255,255,255,.54)}
+    .compact-metrics .metric:nth-child(5) .metric-icon,
+    .compact-metrics .metric:nth-child(6) .metric-icon{filter:saturate(.75);opacity:.8}
+    .decision-pills{margin-top:10px}
+    #todaySection,#queueSection,#addJobSection,#pmSection{box-shadow:0 16px 42px rgba(84,38,94,.09)}
+    #machineSection,#financeSection,#suggestionSection,#calendarSection,#insightSection,#detailsSection,#historySection{box-shadow:0 8px 24px rgba(84,38,94,.055);background:rgba(255,255,255,.56)}
+    #machineSection>summary,#financeSection>summary,#suggestionSection>summary,#calendarSection>summary,#insightSection>summary,#detailsSection>summary,#historySection>summary{min-height:50px;background:rgba(255,255,255,.38)}
+    #machineSection .kicker,#financeSection .kicker,#suggestionSection .kicker,#calendarSection .kicker,#insightSection .kicker,#detailsSection .kicker,#historySection .kicker{background:rgba(101,60,120,.06);border-color:rgba(101,60,120,.08);color:#725b79}
+    #financeSection{order:10}
+    #suggestionSection{order:11}
+    #calendarSection{order:12}
+    #insightSection{order:13}
+    #detailsSection{order:14}
+    #historySection{order:15}
+    #machineSection{order:8}
+    #pmSection{order:7}
+    #addJobSection{order:6}
+    .form-intro-strip{grid-template-columns:1fr auto;background:linear-gradient(135deg,rgba(232,79,183,.06),rgba(157,109,243,.06));border-color:rgba(101,60,120,.10)}
+    .quick-start-grid{grid-template-columns:repeat(5,minmax(110px,1fr));gap:8px}
+    .quick-preset{padding:9px 10px;border-radius:16px;min-height:62px}
+    .form-section{background:rgba(255,255,255,.38)}
+    .form-section:not([open]){padding:10px 12px}
+    .board-toolbar{position:relative;z-index:1}
+    .lane-head{top:76px}
+    .job-card{box-shadow:0 8px 22px rgba(84,38,94,.065)}
+
+    @media(max-width:1100px){
+      .metrics.compact-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .topbar{border-radius:28px;align-items:flex-start}
+      .top-actions{max-width:560px}
+    }
+    @media(max-width:760px){
+      .wrap{width:min(100% - 14px,var(--max));padding-top:8px}
+      .topbar{position:static;border-radius:22px;display:grid;grid-template-columns:1fr;gap:10px;padding:10px;margin-bottom:10px}
+      .brand{gap:10px;width:100%}
+      .logo{width:44px;height:44px;border-radius:15px}
+      .brand h1{font-size:1.32rem;letter-spacing:-.035em}
+      .brand p{font-size:.78rem;line-height:1.25;margin-top:2px}
+      .top-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-width:none}
+      .top-actions .ghost,.top-actions .btn{width:auto!important;min-height:38px;padding:8px 9px;font-size:.74rem;white-space:normal;line-height:1.1;text-align:center;border-radius:16px}
+      .top-actions #jumpAddBtn{grid-column:1/-1;min-height:42px;font-size:.82rem}
+      .hero{grid-template-columns:1fr;gap:10px;margin-bottom:10px}
+      .hero .card{padding:13px;border-radius:22px}
+      .decision-title{align-items:flex-start;margin-bottom:10px}
+      .decision-title h2{font-size:1.75rem!important}
+      #jumpAddBtnHero{width:auto!important;min-height:36px;padding:8px 10px;font-size:.78rem}
+      .metrics.compact-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+      .compact-metrics .metric{min-height:58px;padding:9px;border-radius:15px;grid-template-columns:auto 1fr}
+      .compact-metrics .metric span{font-size:.54rem}
+      .compact-metrics .metric strong{font-size:1rem}
+      .metric-icon{width:28px;height:28px;border-radius:11px;font-size:.92rem}
+      .decision-pill{font-size:.68rem;padding:6px 8px}
+      details.ops-collapse>summary{padding:11px 12px;min-height:48px}
+      details.section-card>summary .summary-title strong{font-size:.9rem}
+      .collapse-body{padding:0 10px 10px}
+      .ops-panel{padding:11px;border-radius:18px}
+      .today-item{grid-template-columns:auto 1fr;gap:9px;padding:10px;border-radius:15px}
+      .today-priority{grid-column:1/-1;justify-content:flex-start;width:max-content;min-width:0}
+      .lanes{grid-template-columns:1fr!important;gap:10px}
+      .lane{min-height:auto;border-radius:19px;padding:9px}
+      .lane-head{position:static;padding:4px 0 8px;background:transparent;backdrop-filter:none}
+      .toolbar.board-toolbar{grid-template-columns:1fr 1fr!important;gap:7px}
+      .toolbar.board-toolbar label:first-child{grid-column:1/-1}
+      .quick-start-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+      .quick-preset{min-height:54px;padding:8px}
+      .form-intro-strip{grid-template-columns:1fr;gap:8px;padding:10px}
+      .form-intro-strip .ghost{width:auto!important;justify-self:start}
+      .form-grid,.form-section-body,.pm-fields,.pm-board,.machine-grid,.suggestion-grid,.insight-grid,.detail-list,.ops-grid{grid-template-columns:1fr!important}
+      .detail-grid,.job-stats,.finance-strip,.finance-summary-grid,.pricing-preview{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      .form-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      .form-actions .btn,.form-actions .ghost{width:auto!important;min-height:40px;padding:8px 10px;border-radius:16px}
+      .mini-btn{min-height:30px;padding:6px 8px;font-size:.68rem}
+      table{min-width:760px}
+    }
+
   </style>
 </head>
 <body>
@@ -601,7 +688,7 @@
       <div class="logo">OP</div>
       <div>
         <h1>Production Control</h1>
-        <p>Print queue, production jobs, PM Lite, inventory handoff, and completed print history.</p>
+        <p>Print queue, production jobs, printer maintenance, inventory handoff, and completed print history.</p>
       </div>
     </div>
     <div class="top-actions">
@@ -806,7 +893,7 @@
   </div></details>
 
   <details class="ops-collapse section-card" id="pmSection">
-    <summary><span class="summary-title"><span class="kicker">PM Lite</span><strong>Printer maintenance shortcuts</strong></span></summary>
+    <summary><span class="summary-title"><span class="kicker">PM</span><strong>Printer maintenance shortcuts</strong></span></summary>
     <div class="collapse-body">
       <div class="pm-board" id="pmBoard"></div>
     </div>
@@ -1305,9 +1392,27 @@
 
   function refreshInventoryMaterialOptions(){
     const list=$('inventoryMaterialOptions');
-    if(!list) return;
     const groups=rawInventoryGroupsForProduction();
-    list.innerHTML = groups.map(g=>`<option value="${esc(inventoryMaterialValue(g))}">${esc(g.material)} / ${esc(g.color)} / ${esc(g.filament || 'No brand')} · ${Math.round(g.remaining)}g · ${g.rolls} roll(s)</option>`).join('');
+    if(list){
+      list.innerHTML = groups.map(g=>`<option value="${esc(inventoryMaterialValue(g))}">${esc(g.material)} / ${esc(g.color)} / ${esc(g.filament || 'No brand')} · ${Math.round(g.remaining)}g · ${g.rolls} roll(s)</option>`).join('');
+    }
+    return groups;
+  }
+
+  function inventorySelectOptions(selectedValue=''){
+    const groups = rawInventoryGroupsForProduction();
+    const values = groups.map(g=>inventoryMaterialValue(g));
+    const selected = String(selectedValue || '').trim();
+    let html = '<option value="">Choose inventory filament...</option>';
+    if(selected && !values.includes(selected)){
+      html += `<option value="${esc(selected)}" selected>Saved legacy value: ${esc(selected)}</option>`;
+    }
+    html += groups.map(g=>{
+      const value = inventoryMaterialValue(g);
+      const label = `${g.material || 'Material?'} / ${g.color || 'Color?'} / ${g.filament || 'No brand'} · ${Math.round(g.remaining)}g · ${g.rolls} roll(s)`;
+      return `<option value="${esc(value)}" ${value===selected?'selected':''}>${esc(label)}</option>`;
+    }).join('');
+    return html;
   }
 
   function applyInventoryPickToRecipeRow(i){
@@ -1382,10 +1487,10 @@
       const r = current[i] || {};
       const pickValue = r.material || r.color || r.filament ? inventoryMaterialValue({material:r.material||'', color:r.color||'', filament:r.filament||''}) : '';
       rows.push(`<div class="recipe-row" data-recipe-row="${i}">
-        <label>Inventory filament ${i+1}<input id="recipeInventoryPick_${i}" list="inventoryMaterialOptions" value="${esc(pickValue)}" placeholder="Choose existing inventory material..."></label>
-        <label>Material ${i+1}<input id="recipeMaterial_${i}" value="${esc(r.material || '')}" placeholder="PLA, PETG..."></label>
-        <label>Filament / Brand ${i+1}<input id="recipeFilament_${i}" value="${esc(r.filament || '')}" placeholder="Bambu Matte, Inland Silk..."></label>
-        <label>Color ${i+1}<input id="recipeColor_${i}" value="${esc(r.color || '')}" placeholder="Pink, white..."></label>
+        <label>Inventory filament ${i+1}<select id="recipeInventoryPick_${i}">${inventorySelectOptions(pickValue)}</select></label>
+        <label>Material ${i+1}<input id="recipeMaterial_${i}" value="${esc(r.material || '')}" placeholder="Auto from inventory" readonly></label>
+        <label>Filament / Brand ${i+1}<input id="recipeFilament_${i}" value="${esc(r.filament || '')}" placeholder="Auto from inventory" readonly></label>
+        <label>Color ${i+1}<input id="recipeColor_${i}" value="${esc(r.color || '')}" placeholder="Auto from inventory" readonly></label>
         <label>g per item<input id="recipeGrams_${i}" type="number" min="0" step="0.1" value="${esc(r.grams_each ?? '')}" placeholder="0"></label>
         <label>Notes<input id="recipeNotes_${i}" value="${esc(r.notes || '')}" placeholder="AMS slot, support, accent..."></label>
       </div>`);
@@ -3572,7 +3677,7 @@
     }
   });
 
-  $('jobForm').addEventListener('input', e=>{
+  function handleJobFormLiveUpdate(e){
     if(e.target.closest('[data-supply-row]')){
       updateSupplyDerivedFields();
       return;
@@ -3588,7 +3693,9 @@
       else { updateRecipeDerivedFields(); updateSupplyDerivedFields(); }
       updatePricingPreview();
     }
-  });
+  }
+  $('jobForm').addEventListener('input', handleJobFormLiveUpdate);
+  $('jobForm').addEventListener('change', handleJobFormLiveUpdate);
   $('jobForm').addEventListener('submit', saveJob);
   $('cancelEditBtn').addEventListener('click', resetForm);
   function openSectionAndScroll(id){
