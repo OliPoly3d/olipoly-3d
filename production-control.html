@@ -679,7 +679,85 @@
       table{min-width:760px}
     }
 
-  </style>
+  
+
+    /* === FINAL PREMIUM PRODUCTION CLEANUP ===
+       Keep the logic/DOM available for safety, but remove unused dashboard drawers from the visible workflow. */
+    #financeSection,
+    #suggestionSection,
+    #calendarSection,
+    #insightSection{
+      display:none !important;
+    }
+
+    #todaySection{order:3 !important;}
+    #queueSection{order:4 !important;}
+    #addJobSection{order:5 !important;}
+    #pmSection{order:6 !important;}
+    #machineSection{order:7 !important;}
+    #detailsSection{order:8 !important;}
+    #historySection{order:9 !important;}
+
+    /* Calmer dashboard: focus on active, printing, open load, due soon, PM alerts. */
+    .metrics.compact-metrics{
+      grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    }
+    .compact-metrics .metric:nth-child(5),
+    .compact-metrics .metric:nth-child(6){
+      display:none !important;
+    }
+
+    /* Tighter, more premium job cards. */
+    .job-card{
+      padding:10px !important;
+      border-radius:18px !important;
+      box-shadow:0 8px 22px rgba(84,38,94,.065) !important;
+    }
+    .job-card h4{font-size:.9rem !important;}
+    .job-icon{width:28px !important;height:28px !important;border-radius:11px !important;}
+    .job-thumb{width:42px !important;height:42px !important;border-radius:12px !important;}
+    .chips{margin:6px 0 !important;gap:5px !important;}
+    .chip{font-size:.61rem !important;padding:4px 7px !important;}
+    .job-stats{gap:4px !important;}
+    .stat{padding:6px !important;border-radius:11px !important;}
+    .stat span{font-size:.53rem !important;}
+    .stat strong{font-size:.73rem !important;}
+    .job-actions{gap:5px !important;}
+
+    /* Make detail/history drawers feel secondary. */
+    #detailsSection,#historySection,#machineSection{
+      background:rgba(255,255,255,.52) !important;
+      box-shadow:0 8px 24px rgba(84,38,94,.05) !important;
+    }
+    #detailsSection>summary,#historySection>summary,#machineSection>summary{
+      min-height:50px !important;
+      background:rgba(255,255,255,.36) !important;
+    }
+
+    @media(max-width:760px){
+      .top-actions{
+        display:grid !important;
+        grid-template-columns:1fr 1fr !important;
+        gap:7px !important;
+      }
+      .top-actions .ghost,.top-actions .btn{
+        min-height:36px !important;
+        padding:8px 9px !important;
+        font-size:.72rem !important;
+        border-radius:15px !important;
+        white-space:normal !important;
+        line-height:1.1 !important;
+      }
+      #jumpAddBtn{
+        grid-column:1/-1 !important;
+        min-height:42px !important;
+        font-size:.82rem !important;
+      }
+      .metrics.compact-metrics{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+      }
+    }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -1005,7 +1083,7 @@
 <div class="modal hidden" id="closeModal" aria-hidden="true">
   <div class="modal-dialog">
     <h2>Complete / close production job</h2>
-    <p class="muted">Enter actuals here so PM Lite and inventory can update from real print activity.</p>
+    <p class="muted">Enter actuals here so printer maintenance and inventory update from real print activity. Inventory deducts good-part grams plus scrap/purge/failed grams.</p>
     <div class="next-box" id="closeJobName"><strong>Job</strong><span>Close-out details</span></div>
     <div class="form-grid" style="margin-top:12px">
       <label>Final Status<select id="closeStatus">
@@ -1022,8 +1100,8 @@
       </select></label>
       <label>Actual Quantity<input id="closeQty" type="number" min="0" step="1"></label>
       <label>Actual Print Hours<input id="closeHours" type="number" min="0" step="0.01"></label>
-      <label>Actual Grams Used<input id="closeGrams" type="number" min="0" step="0.1"></label>
-      <label>Failure / Scrap Grams<input id="closeScrapGrams" type="number" min="0" step="0.1"></label>
+      <label>Good-Part Grams<input id="closeGrams" type="number" min="0" step="0.1" placeholder="grams in finished parts"></label>
+      <label>Scrap / Purge / Failed Grams<input id="closeScrapGrams" type="number" min="0" step="0.1" placeholder="extra grams to deduct"></label>
       <label>Failure Reason<select id="closeFailureReason" class="failure-select">
         <option value="">None / Not failed</option>
         <option value="Adhesion failure">Adhesion failure</option>
@@ -1922,6 +2000,32 @@
     return rows;
   }
 
+
+  function addScrapToBreakdownRows(rows, scrapGrams, fallbackMaterial, fallbackColor){
+    const scrap = num(scrapGrams);
+    const next = Array.isArray(rows) ? rows.map(r=>({...r, grams:num(r.grams)})) : [];
+    if(!scrap) return next;
+    if(next.length){
+      next[0].grams = num(next[0].grams) + scrap;
+      next[0].scrap_added = num(next[0].scrap_added || 0) + scrap;
+    }else{
+      next.push({material:fallbackMaterial || '', color:fallbackColor || '', grams:scrap, scrap_added:scrap});
+    }
+    return next;
+  }
+
+  function addScrapToRollUsages(rows, scrapGrams){
+    const scrap = num(scrapGrams);
+    const next = Array.isArray(rows) ? rows.map(r=>({...r, grams_used:num(r.grams_used)})) : [];
+    if(!scrap) return next;
+    const target = next.find(r=>r.raw_material_roll_id) || next[0];
+    if(target){
+      target.grams_used = num(target.grams_used) + scrap;
+      target.scrap_grams = num(target.scrap_grams || 0) + scrap;
+    }
+    return next;
+  }
+
   function quickAddUsage(){
     const material = $('quickMaterial').value.trim();
     const color = $('quickColor').value.trim();
@@ -1992,18 +2096,20 @@
       scrap_grams:num($('closeScrapGrams').value),
       failure_reason:$('closeFailureReason').value || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
-      roll_usages:closeRollAllocations(),
+      roll_usages:addScrapToRollUsages(closeRollAllocations(), num($('closeScrapGrams').value)),
       finished_roll:closeRollAllocations().some(x=>x.finished_roll),
       spool_freed:closeRollAllocations().some(x=>x.spool_freed),
       close_note:$('closeNote').value.trim() || null,
       pm_hours_applied:true,
       pm_hours_applied_machine:$('closeMachine').value,
       pm_hours_applied_hours:num($('closeHours').value),
+      total_inventory_grams_deducted:num($('closeGrams').value) + num($('closeScrapGrams').value),
       pm_hours_applied_at:now,
       closed_at:now,
       updated_at:now
     };
     const breakdown = parseBreakdown(updated.actual_filament_breakdown, updated.primary_material, updated.primary_color, updated.actual_grams_used);
+    const deductionBreakdown = addScrapToBreakdownRows(breakdown, updated.scrap_grams, updated.primary_material, updated.primary_color);
     const addFinished = $('closeAddFinished').value === 'yes';
     try{
       if(state.user?.id){
@@ -2016,7 +2122,7 @@
               p_actual_machine: updated.actual_machine,
               p_actual_quantity: updated.actual_quantity,
               p_actual_print_hours: updated.actual_print_hours,
-              p_actual_grams_used: updated.actual_grams_used,
+              p_actual_grams_used: num(updated.actual_grams_used) + num(updated.scrap_grams),
               p_actual_filament_breakdown: updated.actual_filament_breakdown,
               p_close_note: updated.close_note,
               p_add_finished_good: addFinished,
@@ -2031,7 +2137,7 @@
       applyPmUsageForCloseout(j, updated);
       if(!updated.exclude_inventory_reduction){
         if(updated.roll_usages && updated.roll_usages.some(x=>x.raw_material_roll_id)) applyRollCloseoutLocal(updated.roll_usages);
-        else applyInventoryLocal(updated, breakdown, addFinished);
+        else applyInventoryLocal(updated, deductionBreakdown, addFinished);
       } else if(addFinished) {
         applyInventoryLocal(updated, [], addFinished);
       }
@@ -2039,7 +2145,7 @@
       localWrite(LS_JOBS,state.jobs);
       closeClose();
       render();
-      toast('Close-out saved. PM and inventory updated.');
+      toast('Close-out saved. PM updated. Inventory deducted good + scrap grams.');
     }catch(err){
       alert(`Could not close job:\n\n${err.message || err}`);
     }
