@@ -339,6 +339,37 @@
     .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:1000;background:rgba(37,24,45,.94);color:#fff;padding:11px 16px;border-radius:999px;box-shadow:0 18px 44px rgba(0,0,0,.22);font-weight:800;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
     @media(max-width:1100px){.hero,.ops-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,1fr)}.cards-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.toolbar,.toolbar.compact{grid-template-columns:1fr 1fr}.span2,.span3{grid-column:span 1}}
     @media(max-width:700px){.wrap{width:min(100% - 16px,var(--max));padding-top:10px}.topbar{border-radius:26px;align-items:flex-start;flex-direction:column;top:8px}.top-actions,.btn,.ghost{width:100%}.metrics,.cards-grid,.form-grid,.toolbar,.toolbar.compact{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}.quick-adjust{grid-template-columns:1fr}.util-row{grid-template-columns:1fr}.card{padding:14px}}
+
+
+    /* === Inventory Control cleanup / board-first polish === */
+    .wrap{display:flex;flex-direction:column}
+    .topbar{order:0}
+    #cloudSection{order:1}
+    .hero{order:2}
+    .hero + .card{order:3}
+    .hero + .card + .card{order:4}
+    #rawEditor,#supplyEditor,#finishedEditor{order:5}
+    #rawPanel,#suppliesPanel,#finishedPanel,#ledgerPanel{order:6}
+    #rawRollDetails{order:7}
+    .top-actions{justify-content:flex-end}
+    .cloud-card{padding:16px}
+    .cloud-main-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+    .cloud-quick-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .compact-tools{margin-top:12px;box-shadow:none;background:rgba(255,255,255,.54)}
+    .compact-tools>summary{min-height:48px;padding:11px 14px;font-size:.9rem}
+    .advanced-tool-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .advanced-tool-row .full{flex-basis:100%;margin:4px 0 0}
+    .hero .card:first-child h2{font-size:clamp(1.9rem,4.2vw,3.4rem)}
+    .inventory-command-grid{grid-template-columns:1.15fr .85fr}
+    .tabs{margin-bottom:8px}
+    #tabHelp{font-size:.9rem}
+    #rawEditor,#supplyEditor,#finishedEditor{box-shadow:0 12px 30px rgba(84,38,94,.08);background:rgba(255,255,255,.68)}
+    #rawEditor>summary,#supplyEditor>summary,#finishedEditor>summary{min-height:54px}
+    #rawPanel,#suppliesPanel,#finishedPanel,#ledgerPanel{padding-top:16px}
+    .raw-roll-details{opacity:.98}
+    .summary-grid{margin-top:10px}
+    @media(max-width:900px){.cloud-main-row{grid-template-columns:1fr}.cloud-quick-actions{justify-content:flex-start}.inventory-command-grid{grid-template-columns:1fr}}
+
   </style>
 </head>
 <body>
@@ -357,18 +388,30 @@
         <button class="ghost" id="exportBtn" type="button">Export Backup</button>
         <button class="ghost" id="importBtn" type="button">Import</button>
         <button class="btn" id="syncCloudBtn" type="button">Sync Inventory to Cloud</button>
-        <button class="ghost" id="forceCloudRebuildBtn" type="button">Force Full Cloud Rebuild</button>
-        <button class="ghost" id="syncSpoolPoolBtn" type="button">Sync Spool Count</button>
-        <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
-        <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
         <input id="importFile" class="hidden" type="file" accept="application/json">
       </div>
     </header>
 
-    <section class="card">
-      <span class="kicker">Cloud sync</span>
-      <div class="decision-pills" id="cloudStatus"><span class="decision-pill">Checking sign-in...</span></div>
-      <p class="muted" id="cloudSyncDetails">Use Export Backup before a full rebuild. Sync pushes local inventory, supplies, finished goods, ledger, and reusable spool pool.</p>
+    <section class="card cloud-card" id="cloudSection">
+      <div class="cloud-main-row">
+        <div>
+          <span class="kicker">Cloud sync</span>
+          <div class="decision-pills" id="cloudStatus"><span class="decision-pill">Checking sign-in...</span></div>
+          <p class="muted" id="cloudSyncDetails">Use Export Backup before a full rebuild. Sync pushes local inventory, supplies, finished goods, ledger, and reusable spool pool.</p>
+        </div>
+        <div class="cloud-quick-actions">
+          <button class="ghost" id="syncSpoolPoolBtn" type="button">Sync Spool Count</button>
+        </div>
+      </div>
+      <details class="ops-collapse compact-tools" id="advancedInventoryTools">
+        <summary>Advanced backup / repair tools</summary>
+        <div class="collapse-body advanced-tool-row">
+          <button class="ghost" id="forceCloudRebuildBtn" type="button">Force Full Cloud Rebuild</button>
+          <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
+          <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
+          <p class="muted full">Use these only after exporting a backup. They are kept here so the daily dashboard stays clean.</p>
+        </div>
+      </details>
     </section>
 
     <section class="hero">
@@ -455,7 +498,7 @@
       <div id="tabHelp" class="muted">Manage filament and spool inventory.</div>
     </section>
 
-    <details class="ops-collapse" id="rawEditor" open>
+    <details class="ops-collapse" id="rawEditor">
       <summary>Quick add / edit raw material</summary>
       <div class="collapse-body">
         <form id="rawForm">
@@ -488,7 +531,7 @@
     </details>
 
 
-    <details class="ops-collapse hidden" id="supplyEditor" open>
+    <details class="ops-collapse hidden" id="supplyEditor">
       <summary>Quick add / edit non-filament supply</summary>
       <div class="collapse-body">
         <form id="supplyForm">
@@ -512,7 +555,7 @@
       </div>
     </details>
 
-    <details class="ops-collapse hidden" id="finishedEditor" open>
+    <details class="ops-collapse hidden" id="finishedEditor">
       <summary>Quick add / edit finished good</summary>
       <div class="collapse-body">
         <form id="finishedForm">
