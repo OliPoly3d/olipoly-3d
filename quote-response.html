@@ -345,5 +345,66 @@ $('acceptBtn').addEventListener('click',()=>respond('accepted'));
 $('declineBtn').addEventListener('click',()=>respond('declined'));
 loadQuote();
 </script>
+
+
+<script>
+/* === Linked Production job update after quote approval ===
+   Requires optional Supabase function link_accepted_quote_to_production from the SQL patch.
+   If the SQL has not been installed yet, the customer approval still succeeds normally.
+*/
+(() => {
+  const originalRespond = window.respond;
+  if(typeof originalRespond !== 'function') return;
+
+  async function linkProductionAfterAccept(result, decision){
+    if(decision !== 'accepted') return;
+    try{
+      const orderNumber = result?.order_number || (typeof quoteNumber === 'string' ? quoteNumber.replace(/^Q-/, 'OP-') : null);
+      await rpc('link_accepted_quote_to_production', {
+        p_quote_number: quoteNumber,
+        p_public_token: token,
+        p_order_number: orderNumber
+      });
+    }catch(error){
+      console.warn('Production link-back RPC unavailable or failed. Quote approval/order creation still succeeded.', error);
+    }
+  }
+
+  window.respond = async function patchedRespond(decision){
+    const beforeFetch = window.fetch;
+    let capturedResult = null;
+    window.fetch = async function patchedFetch(...args){
+      const response = await beforeFetch.apply(this, args);
+      try{
+        const url = String(args[0] || '');
+        if(url.includes('/rest/v1/rpc/respond_to_quote_public')){
+          const clone = response.clone();
+          capturedResult = await clone.json().catch(() => null);
+        }
+      }catch{}
+      return response;
+    };
+    try{
+      const value = await originalRespond(decision);
+      await linkProductionAfterAccept(capturedResult, decision);
+      return value;
+    } finally {
+      window.fetch = beforeFetch;
+    }
+  };
+
+  const accept = document.getElementById('acceptBtn');
+  const decline = document.getElementById('declineBtn');
+  if(accept){
+    accept.replaceWith(accept.cloneNode(true));
+    document.getElementById('acceptBtn').addEventListener('click', () => window.respond('accepted'));
+  }
+  if(decline){
+    decline.replaceWith(decline.cloneNode(true));
+    document.getElementById('declineBtn').addEventListener('click', () => window.respond('declined'));
+  }
+})();
+</script>
+
 </body>
 </html>

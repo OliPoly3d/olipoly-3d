@@ -5817,3 +5817,161 @@ https://olipoly3d.com`;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadQuoteFromUrl);
   else loadQuoteFromUrl();
 })();
+
+/* === Production Control → Quote presentation patch ===
+   Keeps Quote Tool as the customer-facing presentation/response tool while
+   Production Control owns internal material/margin math.
+*/
+(() => {
+  const DRAFT_KEY = 'olipoly_production_to_quote_draft_v1';
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(window.location.search);
+  const money = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
+  function readDraft(){
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); }
+    catch { return null; }
+  }
+
+  function setVal(id, value){
+    const el = $(id);
+    if(!el || value == null || value === '') return;
+    el.value = value;
+    el.dispatchEvent(new Event('input', { bubbles:true }));
+    el.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+
+  function ensureHidden(id){
+    let el = $(id);
+    if(!el){
+      el = document.createElement('input');
+      el.type = 'hidden';
+      el.id = id;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function fieldWrap(id){
+    const el = $(id);
+    return el?.closest('div') || el?.parentElement || null;
+  }
+
+  function buildPriceCard(){
+    const grid = document.querySelector('.grid');
+    if(!grid || $('productionQuotePriceCard')) return null;
+    const card = document.createElement('section');
+    card.className = 'card customer-priority';
+    card.id = 'productionQuotePriceCard';
+    card.innerHTML = `
+      <h3>2. Quote Price & Terms</h3>
+      <p class="sub">Customer-facing price controls. Production Control keeps the internal material, inventory, and margin details.</p>
+      <div class="note hidden" id="productionQuoteSourceNote"></div>
+      <div class="form-grid" id="productionQuotePriceFields"></div>
+    `;
+    const first = grid.querySelector('section.card.customer-priority') || grid.firstElementChild;
+    if(first && first.nextSibling) grid.insertBefore(card, first.nextSibling);
+    else grid.appendChild(card);
+    return card;
+  }
+
+  function movePricingFields(){
+    const card = buildPriceCard();
+    const target = $('productionQuotePriceFields');
+    if(!card || !target) return;
+    ['manualPiecePriceOverride','manualPiecePriceReason','roundingMode','discount','taxPreset','salesTax','paymentTerms','depositPercent'].forEach((id) => {
+      const wrap = fieldWrap(id);
+      if(wrap && !target.contains(wrap)) target.appendChild(wrap);
+    });
+
+    const grid = document.querySelector('.grid');
+    if(grid){
+      const sections = [...grid.querySelectorAll(':scope > section.card')];
+      const legacy = sections.find((s) => /Quick Pricing Inputs/i.test(s.textContent || ''));
+      if(legacy) {
+        legacy.classList.add('legacy-calculator-card');
+        legacy.style.display = 'none';
+      }
+    }
+  }
+
+  function addPresentationStyles(){
+    if($('productionQuotePresentationStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'productionQuotePresentationStyles';
+    style.textContent = `
+      .production-source-card{margin:0 0 18px;padding:16px;border-radius:20px;background:linear-gradient(135deg,rgba(236,72,153,.09),rgba(167,139,250,.09));border:1px solid rgba(236,72,153,.18);color:#5f456a;line-height:1.5}
+      .production-source-card strong{display:block;color:#221827;margin-bottom:4px}
+      #productionQuotePriceCard{border-color:rgba(236,72,153,.22);box-shadow:0 0 0 1px rgba(236,72,153,.06),var(--shadow)}
+      #productionQuoteSourceNote{display:block!important;border-style:solid;background:rgba(255,255,255,.78)}
+      body.production-prefilled .hero .quick-card .note{background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.18);color:#336b4a}
+      body.production-prefilled #sumMargin{filter:blur(3px);opacity:.55}
+      body.production-prefilled .summary-grid .summary:nth-child(5) span::after{content:' internal';text-transform:none;letter-spacing:0;color:#9b8b9a}
+      @media(max-width:760px){#productionQuotePriceFields{grid-template-columns:1fr!important}.production-source-card{padding:13px;border-radius:17px}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function insertSourceCard(draft){
+    const customerCard = document.querySelector('section.card.customer-priority');
+    if(!customerCard || $('productionSourceCard')) return;
+    const card = document.createElement('div');
+    card.id = 'productionSourceCard';
+    card.className = 'production-source-card';
+    card.innerHTML = `<strong>Production estimate linked</strong>This quote draft came from Production Control. Customer-facing pricing can be rounded or adjusted here; internal cost/margin stays in Production.`;
+    customerCard.insertBefore(card, customerCard.querySelector('.quote-type-panel') || customerCard.firstChild);
+  }
+
+  function applyProductionDraft(){
+    const draft = readDraft();
+    if(!draft || (params.get('fromProduction') !== '1' && params.get('production_job_id') !== draft.production_job_id)) return;
+
+    addPresentationStyles();
+    movePricingFields();
+    insertSourceCard(draft);
+    document.body.classList.add('production-prefilled');
+
+    ensureHidden('productionJobId').value = draft.production_job_id || '';
+    ensureHidden('productionQuoteSource').value = 'production-control';
+    ensureHidden('productionSuggestedTotal').value = draft.suggested_total || '';
+    ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price || '';
+
+    setVal('liteQuoteType', draft.quote_type || 'custom');
+    setVal('customerName', draft.customer_name || '');
+    setVal('customerEmail', draft.customer_email || '');
+    setVal('quoteTitle', draft.quote_title || draft.production_job_title || 'Custom 3D printed project');
+    setVal('qty', draft.quantity || 1);
+    setVal('quantity', draft.quantity || 1);
+    setVal('turnaround', draft.turnaround || 'To be confirmed after review');
+    setVal('customerNotes', draft.customer_notes || '');
+    setVal('quoteNotes', draft.internal_notes || '');
+
+    if(Number(draft.suggested_piece_price) > 0){
+      setVal('manualPiecePriceOverride', money(draft.suggested_piece_price));
+      setVal('manualPiecePriceReason', 'Production Control suggested price');
+    } else if(Number(draft.suggested_total) > 0 && Number(draft.quantity) > 0){
+      setVal('manualPiecePriceOverride', money(Number(draft.suggested_total) / Number(draft.quantity)));
+      setVal('manualPiecePriceReason', 'Production Control suggested total');
+    }
+
+    const note = $('productionQuoteSourceNote');
+    if(note){
+      note.classList.remove('hidden');
+      note.innerHTML = `<strong>Linked Production Job:</strong> ${draft.production_job_title || draft.production_job_id}<br><span>Suggested total: ${Number(draft.suggested_total) ? '$' + Number(draft.suggested_total).toFixed(2) : 'not set'} · Adjust/round as needed before sending.</span>`;
+    }
+
+    if(typeof window.render === 'function') window.render();
+    if(typeof window.quotePatchToast === 'function') window.quotePatchToast('Production quote draft loaded.');
+  }
+
+  function run(){
+    addPresentationStyles();
+    movePricingFields();
+    applyProductionDraft();
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+  setTimeout(run, 300);
+  setTimeout(run, 1200);
+})();

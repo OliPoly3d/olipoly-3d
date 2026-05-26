@@ -769,7 +769,14 @@
     .start-chip{display:inline-flex;gap:5px;align-items:center;border-radius:999px;padding:5px 7px;background:rgba(52,199,89,.12);border:1px solid rgba(52,199,89,.18);color:#23763b;font-size:.64rem;font-weight:900}
     @media(max-width:760px){.workflow-strip{grid-template-columns:1fr}.close-roll-row{grid-template-columns:1fr 1fr!important}.close-roll-row label:first-child,.close-roll-row label:nth-child(2){grid-column:1/-1}}
 
-  </style>
+  
+
+/* === Production → Quote integration polish === */
+.integration-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(95,207,255,.13);border:1px solid rgba(95,207,255,.22);color:#1d5d7d;font-size:.66rem;font-weight:900}
+.quote-link-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.18);color:#9a3d80;font-size:.66rem;font-weight:900}
+.mini-btn.quote-action{background:linear-gradient(135deg,rgba(232,79,183,.13),rgba(157,109,243,.13));border-color:rgba(157,109,243,.22);color:#6b3b7a}
+
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -3454,6 +3461,9 @@
     } else if(!isClosed && needsPrinterTime(j)) {
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>`;
     }
+    if(!isClosed){
+      actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
+    }
     actions += `<button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>`;
     actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
@@ -3465,7 +3475,7 @@
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
         </div>
@@ -3957,5 +3967,146 @@
   loadAll();
 })();
 </script>
+
+
+<script>
+/* === Production Control → Quote Tool handoff patch ===
+   Additive: reads existing production localStorage, writes a quote draft, opens quote.html.
+   It does not rename any existing Production keys.
+*/
+(() => {
+  const LS_JOBS = 'olipoly_production_jobs_v3';
+  const QUOTE_DRAFT_KEY = 'olipoly_production_to_quote_draft_v1';
+  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+
+  const readJson = (key, fallback) => {
+    try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+    catch { return fallback; }
+  };
+  const writeJson = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  const num = (v) => Number(String(v ?? '').replace(/[^0-9.-]/g, '')) || 0;
+  const money = (v) => Math.round(num(v) * 100) / 100;
+
+  function toast(message){
+    const existing = document.getElementById('toast');
+    if(existing){
+      existing.textContent = message;
+      existing.classList.add('show');
+      clearTimeout(existing._opTimer);
+      existing._opTimer = setTimeout(() => existing.classList.remove('show'), 2400);
+      return;
+    }
+    alert(message);
+  }
+
+  function recipeSummary(job){
+    let recipe = [];
+    try { recipe = JSON.parse(job.filament_recipe || '[]') || []; } catch {}
+    if(!recipe.length && (job.primary_material || job.primary_color)) {
+      recipe = [{ material: job.primary_material || '', filament: '', color: job.primary_color || '', grams_each: job.estimated_grams_each || 0 }];
+    }
+    const qty = Math.max(1, num(job.quantity) || 1);
+    return recipe.map((r) => {
+      const label = [r.material, r.filament, r.color].filter(Boolean).join(' ') || 'Filament';
+      const grams = num(r.grams_each) * qty;
+      return `${label}: ${Math.round(grams * 10) / 10}g total`;
+    }).join('\n');
+  }
+
+  function suggestedTurnaround(job){
+    if(job.due_date) return `Target date: ${job.due_date}`;
+    const hours = num(job.estimated_total_hours);
+    if(hours >= 8) return 'Estimated after production review';
+    if(hours > 0) return 'Estimated 3–7 business days after approval';
+    return 'To be confirmed after review';
+  }
+
+  function buildQuoteDraft(job){
+    const qty = Math.max(1, num(job.quantity) || 1);
+    const priceEach = num(job.estimated_price_each);
+    const total = priceEach ? priceEach * qty : 0;
+    const materialSummary = recipeSummary(job);
+    const customerNotes = [
+      job.job_title ? `Quote for ${job.job_title}.` : '',
+      qty ? `Quantity: ${qty}.` : '',
+      materialSummary ? `Planned material/color notes:\n${materialSummary}` : '',
+      job.notes ? `Project notes:\n${job.notes}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    return {
+      version: 'production-to-quote-v1',
+      created_at: new Date().toISOString(),
+      production_job_id: job.id,
+      production_job_title: job.job_title || '',
+      customer_name: job.customer_name || '',
+      customer_email: job.customer_email || '',
+      quote_title: job.job_title || 'Custom 3D printed project',
+      quantity: qty,
+      suggested_total: money(total),
+      suggested_piece_price: priceEach ? money(priceEach) : 0,
+      turnaround: suggestedTurnaround(job),
+      customer_notes: customerNotes,
+      internal_notes: [
+        `Linked Production Job: ${job.id}`,
+        job.estimated_total_hours ? `Estimated production hours: ${job.estimated_total_hours}` : '',
+        job.estimated_total_grams ? `Estimated material: ${job.estimated_total_grams}g` : '',
+        job.estimated_material_cost ? `Estimated material cost: $${money(job.estimated_material_cost).toFixed(2)}` : ''
+      ].filter(Boolean).join('\n'),
+      quote_type: job.job_type === 'business_po' ? 'po' : (job.job_type === 'craft_stock' ? 'craft' : 'custom')
+    };
+  }
+
+  async function patchProductionJobHandoff(job, draft){
+    const jobs = readJson(LS_JOBS, []);
+    const updated = {
+      ...job,
+      quote_handoff_status: 'draft_sent_to_quote',
+      quote_handoff_at: new Date().toISOString(),
+      linked_quote_draft: draft,
+      updated_at: new Date().toISOString()
+    };
+    writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? updated : j));
+
+    const token = localStorage.getItem('sb_token');
+    if(!token || !job.id) return;
+    try{
+      await fetch(`${SUPABASE_URL}/rest/v1/production_jobs?id=eq.${encodeURIComponent(job.id)}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ job_payload: updated, updated_at: updated.updated_at })
+      });
+    }catch(error){
+      console.warn('Production handoff cloud marker failed; local draft still created.', error);
+    }
+  }
+
+  async function pushProductionJobToQuote(id){
+    const jobs = readJson(LS_JOBS, []);
+    const job = jobs.find((j) => j.id === id);
+    if(!job) return toast('Could not find that production job.');
+
+    const draft = buildQuoteDraft(job);
+    writeJson(QUOTE_DRAFT_KEY, draft);
+    await patchProductionJobHandoff(job, draft);
+    toast('Quote draft prepared from Production Control.');
+    const url = `quote.html?fromProduction=1&production_job_id=${encodeURIComponent(job.id)}`;
+    window.location.href = url;
+  }
+
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-push-quote]');
+    if(!btn) return;
+    event.preventDefault();
+    pushProductionJobToQuote(btn.dataset.pushQuote);
+  });
+})();
+</script>
+
 </body>
 </html>
