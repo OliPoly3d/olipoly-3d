@@ -700,55 +700,6 @@ body{font-family:Inter,Arial,sans-serif}
   gap:12px;
 }
 
-
-
-/* === Production status panel in Orders Admin === */
-.production-link-panel{grid-column:1/-1;margin:10px 0 6px;padding:14px;border-radius:20px;background:rgba(46,230,196,.055);border:1px solid rgba(46,230,196,.18);color:#dffff5;line-height:1.45}
-.production-link-panel h4{margin:0 0 8px;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#9ff7df}
-.production-link-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.production-link-stat{padding:10px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}.production-link-stat span{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.production-link-stat strong{display:block;margin-top:3px;color:var(--text);font-size:.88rem;overflow-wrap:anywhere}.production-link-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-@media(max-width:720px){.production-link-grid{grid-template-columns:1fr 1fr}.production-link-panel{padding:12px}}
-
-
-
-/* === Orders Admin emergency stability guard ===
-   Keeps hidden PDF/email template DOM from leaking into the visible page and
-   restores the intended dark admin surface if a later patch/style collides.
-*/
-html, body{
-  background:
-    radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),
-    radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),
-    linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%) !important;
-  color:var(--text,#eef4ff) !important;
-}
-.invoice-print-area,
-#invoicePrintArea,
-.pdf-template,
-.pdf-source,
-.email-template,
-.email-source,
-template{
-  display:none !important;
-  visibility:hidden !important;
-  height:0 !important;
-  overflow:hidden !important;
-}
-.email-preview-modal.hidden,
-#invoiceEmailModal.hidden,
-#completionEmailModal.hidden{
-  display:none !important;
-  visibility:hidden !important;
-}
-.topbar,.card,.summary,.order-row{
-  background:var(--panel,rgba(12,19,40,.88)) !important;
-  border-color:var(--line,rgba(126,144,255,.18)) !important;
-}
-.btn-row .btn,.btn-row .btn-ghost,.btn-row .btn-danger,
-.topbar .btn,.topbar .btn-ghost,.topbar .btn-danger{
-  pointer-events:auto !important;
-  opacity:1 !important;
-}
-
 </style>
 </head>
 <body>
@@ -2301,191 +2252,7 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
-
-<script>
-/* === Orders Admin read-only Production status panel ===
-   Looks for a linked production job by OP/order number, quote number, or job_payload.
-   Additive: does not change order save/invoice/track behavior.
-*/
-(() => {
-  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-  const LS_JOBS = 'olipoly_production_jobs_v3';
-  const $ = (id) => document.getElementById(id);
-
-  const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch { return fallback; } };
-  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const statusLabel = (s) => String(s || 'Not linked').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-  async function cloudProductionJobs(){
-    const token = localStorage.getItem('sb_token');
-    if(!token) return [];
-    try{
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/production_jobs?select=*&order=updated_at.desc&limit=250`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
-      });
-      if(!res.ok) return [];
-      return await res.json();
-    }catch{ return []; }
-  }
-
-  function normalize(row){
-    const payload = row?.job_payload || row || {};
-    return { ...payload, id: payload.id || row.id, updated_at: row.updated_at || payload.updated_at };
-  }
-
-  function localProductionJobs(){ return readJson(LS_JOBS, []); }
-
-  function currentOrderNeedles(){
-    const order = $('orderNumber')?.value?.trim() || '';
-    const quote = $('quoteNumber')?.value?.trim() || $('sourceQuoteNumber')?.value?.trim() || '';
-    const title = $('orderTitle')?.value?.trim() || '';
-    const customer = $('customerName')?.value?.trim() || '';
-    return { order, quote, title, customer };
-  }
-
-  function matchJob(j, needles){
-    if(!j) return false;
-    if(needles.order && (j.order_number === needles.order || j.converted_order_number === needles.order)) return true;
-    if(needles.quote && j.quote_number === needles.quote) return true;
-    const hay = [j.job_title, j.customer_name, j.order_number, j.quote_number].filter(Boolean).join(' ').toLowerCase();
-    if(needles.order && hay.includes(needles.order.toLowerCase())) return true;
-    if(needles.title && needles.customer && hay.includes(needles.title.toLowerCase().slice(0,18)) && hay.includes(needles.customer.toLowerCase().slice(0,10))) return true;
-    return false;
-  }
-
-  function ensurePanel(){
-    let panel = $('productionLinkPanel');
-    if(panel) return panel;
-    panel = document.createElement('div');
-    panel.id = 'productionLinkPanel';
-    panel.className = 'production-link-panel hidden';
-    const timeline = $('orderTimeline');
-    if(timeline) timeline.insertAdjacentElement('afterend', panel);
-    else document.querySelector('#detailTitle')?.insertAdjacentElement('afterend', panel);
-    return panel;
-  }
-
-  function renderPanel(job){
-    const panel = ensurePanel();
-    if(!panel) return;
-    if(!job){
-      panel.classList.add('hidden');
-      return;
-    }
-    panel.classList.remove('hidden');
-    panel.innerHTML = `
-      <h4>Linked Production Job</h4>
-      <div class="production-link-grid">
-        <div class="production-link-stat"><span>Status</span><strong>${esc(statusLabel(job.production_status))}</strong></div>
-        <div class="production-link-stat"><span>Machine</span><strong>${esc(job.actual_machine || job.machine_preference || '—')}</strong></div>
-        <div class="production-link-stat"><span>Print Load</span><strong>${esc(job.estimated_total_hours ? job.estimated_total_hours + 'h' : '—')}</strong></div>
-        <div class="production-link-stat"><span>Material</span><strong>${esc([job.primary_material, job.primary_color].filter(Boolean).join(' ') || '—')}</strong></div>
-      </div>
-      <div class="production-link-actions">
-        <a class="btn-ghost" href="production-control.html" target="_blank" rel="noopener">Open Production Control</a>
-        ${job.quote_number ? `<span class="status-pill s-awaiting_approval">${esc(job.quote_number)}</span>` : ''}
-        ${job.order_number ? `<span class="status-pill s-completed">${esc(job.order_number)}</span>` : ''}
-      </div>
-    `;
-  }
-
-  let renderTimer = null;
-  async function refreshProductionPanel(){
-    clearTimeout(renderTimer);
-    renderTimer = setTimeout(async () => {
-      const needles = currentOrderNeedles();
-      if(!needles.order && !needles.quote && !needles.title) return renderPanel(null);
-      const local = localProductionJobs().map(normalize);
-      const cloud = (await cloudProductionJobs()).map(normalize);
-      const all = [...cloud, ...local];
-      renderPanel(all.find((j) => matchJob(j, needles)) || null);
-    }, 150);
-  }
-
-  ['orderNumber','orderTitle','customerName','quoteNumber','sourceQuoteNumber'].forEach((id) => {
-    document.addEventListener('input', (e) => { if(e.target?.id === id) refreshProductionPanel(); });
-    document.addEventListener('change', (e) => { if(e.target?.id === id) refreshProductionPanel(); });
-  });
-  document.addEventListener('click', () => setTimeout(refreshProductionPanel, 250));
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refreshProductionPanel);
-  else refreshProductionPanel();
-})();
-</script>
-
-
-
-<script>
-/* === Orders Admin emergency stability + button repair ===
-   Non-destructive safety layer for the recurring light-background / hidden PDF
-   template leak / topbar button binding issue. It does not change data or sync.
-*/
-(function(){
-  function $(id){ return document.getElementById(id); }
-
-  function hardHideTemplateAreas(){
-    ['invoicePrintArea'].forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      el.setAttribute('aria-hidden','true');
-      el.style.setProperty('display','none','important');
-      el.style.setProperty('visibility','hidden','important');
-      el.style.setProperty('height','0','important');
-      el.style.setProperty('overflow','hidden','important');
-    });
-    ['invoiceEmailModal','completionEmailModal'].forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      if (el.classList.contains('hidden') || el.getAttribute('aria-hidden') === 'true') {
-        el.classList.add('hidden');
-      }
-    });
-  }
-
-  function bindButton(id, fnName){
-    const btn = $(id);
-    if (!btn || btn.dataset.ordersEmergencyBound === 'true') return;
-    btn.dataset.ordersEmergencyBound = 'true';
-    btn.addEventListener('click', function(event){
-      if (typeof window[fnName] !== 'function') return;
-      event.preventDefault();
-      event.stopPropagation();
-      try { window[fnName](); }
-      catch(error){
-        console.error(`Orders Admin ${fnName} failed:`, error);
-        alert(`${fnName} failed: ${error && error.message ? error.message : error}`);
-      }
-    }, true);
-  }
-
-  function repairTopButtons(){
-    bindButton('loginBtn','login');
-    bindButton('signupBtn','signup');
-    bindButton('logoutBtn','logout');
-    bindButton('refreshBtn','fetchOrders');
-    bindButton('newBtn','resetForm');
-    bindButton('generateInvoicePdfBtn','openInvoiceV2FromCurrentOrder');
-    bindButton('prepareInvoiceEmailBtn','prepareInvoiceEmail');
-    bindButton('prepareCompletionEmailBtn','prepareCompletionEmail');
-  }
-
-  function stabilize(){
-    hardHideTemplateAreas();
-    repairTopButtons();
-    document.documentElement.classList.add('orders-admin-stabilized');
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stabilize);
-  else stabilize();
-  window.addEventListener('load', stabilize);
-  setTimeout(stabilize, 250);
-  setTimeout(stabilize, 1000);
-  setTimeout(stabilize, 2500);
-})();
-</script>
-
-</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
@@ -4934,7 +4701,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
 </script>
 
-  <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true" style="display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;">
+  <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true">
     <div class="invoice-sheet">
       <div class="invoice-topbar"></div>
       <div class="invoice-header">
@@ -5875,5 +5642,105 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
 </script>
 
+
+
+<script>
+/* === OliPoly Orders Admin Production Link Status - safe additive layer ===
+   Adds a read-only production status panel without touching invoice/email/template code.
+   Important: no script tags are written inside dynamic HTML strings.
+*/
+(function(){
+  const LS_JOBS = 'olipoly_production_jobs_v3';
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const statusLabel = (value) => String(value || 'Not linked').replace(/_/g,' ').replace(/\b\w/g, ch => ch.toUpperCase());
+  const readJobs = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(LS_JOBS) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  };
+  function orderKey(){ return ($('orderNumber')?.value || '').trim(); }
+  function quoteKey(){ return ($('quoteNumber')?.value || $('sourceQuoteNumber')?.value || '').trim(); }
+  function findLinkedJob(){
+    const order = orderKey();
+    const quote = quoteKey();
+    const jobs = readJobs();
+    return jobs.find(j =>
+      (order && (j.order_number === order || j.linked_order_number === order || j.op_number === order)) ||
+      (quote && (j.quote_number === quote || j.linked_quote_number === quote || j.source_quote_number === quote))
+    ) || null;
+  }
+  function ensurePanel(){
+    let panel = $('productionLinkPanel');
+    if (panel) return panel;
+    const anchor = $('formMessage') || document.querySelector('.action-groups') || document.querySelector('.card');
+    if (!anchor || !anchor.parentElement) return null;
+    panel = document.createElement('div');
+    panel.id = 'productionLinkPanel';
+    panel.className = 'production-link-panel';
+    panel.innerHTML = '<div class="production-link-head"><strong>Production link</strong><span id="productionLinkBadge">Not linked</span></div><div id="productionLinkBody" class="production-link-body">No linked Production Control job found for this order yet.</div>';
+    anchor.parentElement.insertBefore(panel, anchor.nextSibling);
+    return panel;
+  }
+  function renderProductionPanel(){
+    const panel = ensurePanel();
+    if (!panel) return;
+    const badge = $('productionLinkBadge');
+    const body = $('productionLinkBody');
+    const job = findLinkedJob();
+    if (!job) {
+      if (badge) badge.textContent = 'Not linked';
+      if (body) body.innerHTML = 'No linked Production Control job found for this order yet.';
+      return;
+    }
+    const status = statusLabel(job.production_status || job.status);
+    if (badge) badge.textContent = status;
+    if (body) body.innerHTML = [
+      '<div><span>Job</span><strong>' + esc(job.job_title || job.title || 'Production job') + '</strong></div>',
+      '<div><span>Machine</span><strong>' + esc(job.actual_machine || job.machine_preference || '—') + '</strong></div>',
+      '<div><span>Quote</span><strong>' + esc(job.quote_number || job.linked_quote_number || '—') + '</strong></div>',
+      '<div><span>Order</span><strong>' + esc(job.order_number || job.linked_order_number || '—') + '</strong></div>'
+    ].join('');
+  }
+  function bindProductionPanelRefresh(){
+    document.addEventListener('input', (event) => {
+      if (['orderNumber','quoteNumber','sourceQuoteNumber'].includes(event.target?.id)) renderProductionPanel();
+    });
+    document.addEventListener('change', (event) => {
+      if (['orderNumber','quoteNumber','sourceQuoteNumber'].includes(event.target?.id)) renderProductionPanel();
+    });
+    document.addEventListener('click', () => setTimeout(renderProductionPanel, 60), true);
+    setTimeout(renderProductionPanel, 250);
+    setTimeout(renderProductionPanel, 1000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindProductionPanelRefresh);
+  else bindProductionPanelRefresh();
+})();
+</script>
+
+<style>
+/* === Orders Admin production link panel, safe CSS only === */
+.production-link-panel{
+  margin:14px 0;
+  padding:14px;
+  border-radius:20px;
+  border:1px solid rgba(46,230,196,.18);
+  background:rgba(46,230,196,.045);
+  color:var(--text,#eef4ff);
+}
+.production-link-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+.production-link-head strong{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted,#a8b5db)}
+.production-link-head span{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(46,230,196,.10);border:1px solid rgba(46,230,196,.22);font-size:.72rem;font-weight:900;color:#cffff0}
+.production-link-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;color:var(--muted,#a8b5db);font-size:.84rem;line-height:1.45}
+.production-link-body div{padding:9px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(126,144,255,.12)}
+.production-link-body span{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted,#a8b5db);font-weight:900;margin-bottom:2px}
+.production-link-body strong{display:block;color:var(--text,#eef4ff);font-size:.86rem;overflow-wrap:anywhere}
+/* Guard against template leak display if an old cached build still has it */
+.invoice-print-area,.email-preview-modal.hidden,.print-template-hidden{display:none!important}
+@media(max-width:720px){.production-link-body{grid-template-columns:1fr 1fr}}
+</style>
 </body>
 </html>
