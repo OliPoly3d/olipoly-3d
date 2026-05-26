@@ -275,148 +275,6 @@
 
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
-
-/* === Click-first showcase funnel pass === */
-.showcase-click-callout{
-  margin:28px 0 30px;
-  border-radius:34px;
-  padding:clamp(18px,3vw,28px);
-  background:
-    radial-gradient(circle at 9% 18%,rgba(232,79,183,.18),transparent 18rem),
-    radial-gradient(circle at 88% 12%,rgba(157,109,243,.16),transparent 18rem),
-    linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.88));
-  border:1px solid rgba(232,79,183,.22);
-  box-shadow:0 24px 70px rgba(84,38,94,.13);
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:18px;
-  align-items:center;
-  position:relative;
-  overflow:hidden;
-}
-.showcase-click-callout::before{
-  content:"";
-  position:absolute;
-  inset:0 0 auto 0;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);
-}
-.click-callout-kicker{
-  display:inline-flex;
-  width:max-content;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  border-radius:999px;
-  background:rgba(232,79,183,.10);
-  border:1px solid rgba(232,79,183,.15);
-  color:#a03c87;
-  font-size:.74rem;
-  font-weight:900;
-  letter-spacing:.09em;
-  text-transform:uppercase;
-  margin-bottom:10px;
-}
-.showcase-click-callout h3{
-  margin:0;
-  font-family:"Playfair Display",serif;
-  font-size:clamp(1.75rem,3.2vw,3rem);
-  line-height:.95;
-  letter-spacing:-.055em;
-  color:var(--ink);
-}
-.showcase-click-callout p{
-  margin:12px 0 0;
-  color:#6f5c78;
-  line-height:1.6;
-  max-width:780px;
-}
-.click-big-arrow{
-  min-width:190px;
-  min-height:82px;
-  padding:16px 20px;
-  border-radius:999px;
-  display:grid;
-  place-items:center;
-  text-align:center;
-  color:#fff;
-  font-weight:1000;
-  letter-spacing:.02em;
-  background:linear-gradient(135deg,var(--pink),var(--purple));
-  box-shadow:0 18px 42px rgba(214,73,186,.28);
-  transform:rotate(-2deg);
-}
-.click-big-arrow span{display:block;font-size:1.35rem;line-height:1}
-.click-big-arrow small{display:block;margin-top:4px;font-size:.74rem;text-transform:uppercase;letter-spacing:.11em;opacity:.92}
-.showcase-grid{position:relative}
-.showcase-grid::before{
-  content:"Choose a card below ↓";
-  position:absolute;
-  top:-20px;
-  right:4px;
-  z-index:4;
-  display:inline-flex;
-  padding:10px 14px;
-  border-radius:999px;
-  background:rgba(255,255,255,.94);
-  border:1px solid rgba(232,79,183,.18);
-  box-shadow:0 12px 28px rgba(84,38,94,.12);
-  color:#7b4566;
-  font-size:.8rem;
-  font-weight:1000;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-}
-.showcase-card[href]{display:block;color:inherit;text-decoration:none;cursor:pointer}
-.showcase-card[href]::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:2;
-  pointer-events:none;
-  background:radial-gradient(circle at 78% 17%,rgba(255,255,255,.22),transparent 12rem);
-  opacity:0;
-  transition:opacity .22s ease;
-}
-.showcase-card[href]:hover::before{opacity:1}
-.showcase-card[href]:hover{transform:translateY(-7px);box-shadow:0 34px 82px rgba(75,32,85,.22)}
-.showcase-card .pill.action-pill{
-  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.90));
-  color:#5d2670;
-  text-shadow:none;
-  border-color:rgba(255,255,255,.7);
-}
-.click-badge{
-  position:absolute;
-  top:14px;
-  right:14px;
-  z-index:3;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  min-height:38px;
-  padding:9px 12px;
-  border-radius:999px;
-  color:#fff;
-  background:linear-gradient(135deg,rgba(232,79,183,.96),rgba(157,109,243,.96));
-  border:1px solid rgba(255,255,255,.38);
-  box-shadow:0 12px 28px rgba(0,0,0,.20);
-  backdrop-filter:blur(10px);
-  font-size:.7rem;
-  font-weight:1000;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
-.showcase-card[href]:hover .click-badge{transform:translateY(-2px)}
-@media(max-width:720px){
-  .showcase-click-callout{grid-template-columns:1fr;text-align:left;margin:22px 0 24px;border-radius:28px}
-  .click-big-arrow{width:100%;min-height:58px;transform:none}
-  .click-big-arrow span{font-size:1.1rem}
-  .showcase-grid::before{position:relative;top:auto;right:auto;margin:0 0 10px;width:100%;justify-content:center}
-  .click-badge{top:10px;right:10px;font-size:.62rem;min-height:34px;padding:8px 10px}
-}
-
 /* === Category funnel upgrades === */
 .showcase-card[href]{display:block;color:inherit;text-decoration:none;cursor:pointer}
 .showcase-card .pill.action-pill{background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,255,255,.68));color:#5d2670;text-shadow:none;border-color:rgba(255,255,255,.62)}
@@ -478,68 +336,77 @@
       <h2 class="section-title">Not just printed. Thought through.</h2>
       <p class="section-intro">A curated mix of finished pieces, process work, branded items, functional parts, and hand-finished details — showing how OliPoly turns ideas into polished, physical work.</p>
 
-      <div class="showcase-click-callout" aria-label="Interactive showcase instructions">
-        <div>
-          <span class="click-callout-kicker">Interactive gallery</span>
-          <h3>Click the photos — each card is a doorway.</h3>
-          <p>Start with the image that looks closest to your idea. Branded Details has a full deep-dive page now; the other cards route you toward starting that type of project while more category pages are built.</p>
-        </div>
-        <div class="click-big-arrow"><span>Tap a card</span><small>open ideas →</small></div>
-      </div>
-
       <div class="showcase-grid">
-        <a class="showcase-card large" href="start-project.html" aria-label="Start a personal keepsake or lithophane project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card large">
           <img src="images/lit_up_litho.png" alt="Backlit lithophane keepsake" />
-          <div class="showcase-label"><strong>Personal pieces with meaning.</strong><span>Lithophanes, keepsakes, and display pieces that turn photos and memories into something physical.</span><span class="pill action-pill">Start this style →</span></div>
-        </a>
+          <div class="showcase-label"><strong>Personal pieces with meaning.</strong><span>Lithophanes, keepsakes, and display pieces that turn photos and memories into something physical.</span><span class="pill">Gifts & Keepsakes</span></div>
+        </article>
 
-        <a class="showcase-card tall" href="start-project.html" aria-label="Start a playful creative print project">
-          <span class="click-badge">Click to explore</span>
+        <a class="showcase-card tall" href="eye-catching-work.html" aria-label="Explore eye-catching creative prints, articulated toys, dragons, sharks, and playful display pieces">
           <img src="images/event-booth-3.png" alt="Articulated dragon prints photographed for an event table" />
-          <div class="showcase-label"><strong>Playful, eye-catching work.</strong><span>Event favorites, articulated prints, and creative pieces that invite people to pick them up.</span><span class="pill action-pill">Start this style →</span></div>
+          <div class="showcase-label"><strong>Playful, eye-catching work.</strong><span>Event favorites, articulated prints, toy-style pieces, dragons, sharks, and creative builds that invite people to pick them up.</span><span class="pill action-pill">Explore eye-catching work →</span></div>
         </a>
 
         <a class="showcase-card" href="branded-details.html" aria-label="Explore branded detail examples and custom branded project options">
-          <span class="click-badge">Open gallery</span>
           <img src="images/custom-company-logo-coasters.png" alt="Custom company logo coasters" />
-          <div class="showcase-label"><strong>Branded details.</strong><span>Coasters, logo pieces, business gifts, event extras, band/team pieces, and branded work that people can actually use.</span><span class="pill action-pill">Explore branded projects →</span></div>
+          <div class="showcase-label"><strong>Branded details.</strong><span>Coasters, logo pieces, business gifts, event extras, band/team pieces, and branded work that people can actually use.</span><span class="pill action-pill">Explore →</span></div>
         </a>
 
-        <a class="showcase-card" href="start-project.html" aria-label="Start a functional custom part or prototype project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card">
           <img src="images/pocket_door_bracket_actual.png" alt="Functional pocket door bracket 3D printed part" />
-          <div class="showcase-label"><strong>Functional parts.</strong><span>Useful components, brackets, spacers, adapters, and replacement-style parts.</span><span class="pill action-pill">Start this style →</span></div>
-        </a>
+          <div class="showcase-label"><strong>Functional parts.</strong><span>Useful components, brackets, spacers, adapters, and replacement-style parts.</span><span class="pill">Practical</span></div>
+        </article>
 
-        <a class="showcase-card" href="start-project.html" aria-label="Start a small batch or repeat part project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card">
           <img src="images/top_down_spacerplateview.png" alt="Production spacer parts on a print bed" />
-          <div class="showcase-label"><strong>Small-batch repeatability.</strong><span>Production trays, repeated parts, quantity planning, and customer-safe tracking.</span><span class="pill action-pill">Start this style →</span></div>
-        </a>
+          <div class="showcase-label"><strong>Small-batch repeatability.</strong><span>Production trays, repeated parts, quantity planning, and customer-safe tracking.</span><span class="pill">Batch Work</span></div>
+        </article>
 
-        <a class="showcase-card large" href="start-project.html" aria-label="Start a detailed or finished custom print project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card large">
           <img src="images/rex-paint.jpg" alt="Painted dinosaur skull display after finishing" />
-          <div class="showcase-label"><strong>Fine detail and finishing.</strong><span>Some projects need hand cleanup, fitting, paint prep, surface refinement, or post-processing after printing.</span><span class="pill action-pill">Start this style →</span></div>
-        </a>
+          <div class="showcase-label"><strong>Fine detail and finishing.</strong><span>Some projects need hand cleanup, fitting, paint prep, surface refinement, or post-processing after printing.</span><span class="pill">Post Processed</span></div>
+        </article>
 
-        <a class="showcase-card" href="start-project.html" aria-label="Start a polished finished piece project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card">
           <img src="images/print2.png" alt="Finished custom 3D printed piece by OliPoly 3D" />
-          <div class="showcase-label"><strong>Finished work with presence.</strong><span>Clean product presentation helps show the color, texture, shape, and detail that make a custom piece feel complete.</span><span class="pill action-pill">Start this style →</span></div>
-        </a>
+          <div class="showcase-label"><strong>Finished work with presence.</strong><span>Clean product presentation helps show the color, texture, shape, and detail that make a custom piece feel complete.</span><span class="pill">Finished Piece</span></div>
+        </article>
 
-        <a class="showcase-card" href="start-project.html" aria-label="Start a custom design or CAD-to-print project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card">
           <img src="images/coaster_design.png" alt="CAD and design presentation for custom branded coasters" />
-          <div class="showcase-label"><strong>Designed before it is printed.</strong><span>CAD, slicing, material choices, and dimensional planning help turn a creative request into a print-ready project.</span><span class="pill action-pill">Start this style →</span></div>
-        </a>
+          <div class="showcase-label"><strong>Designed before it is printed.</strong><span>CAD, slicing, material choices, and dimensional planning help turn a creative request into a print-ready project.</span><span class="pill">Design Process</span></div>
+        </article>
 
-        <a class="showcase-card" href="start-project.html" aria-label="Start a before-and-after finishing or refinement project">
-          <span class="click-badge">Click to explore</span>
+        <article class="showcase-card">
           <img src="images/unfin-fin-rocky.png" alt="Before and after example of unfinished and finished 3D printed model" />
-          <div class="showcase-label"><strong>From raw print to refined finish.</strong><span>Hand cleanup, sanding, assembly, paint, and surface detail can transform a print into a presentation-ready piece.</span><span class="pill action-pill">Start this style →</span></div>
+          <div class="showcase-label"><strong>From raw print to refined finish.</strong><span>Hand cleanup, sanding, assembly, paint, and surface detail can transform a print into a presentation-ready piece.</span><span class="pill">Before / After</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="categories">
+      <div class="section-kicker">Capabilities</div>
+      <h2 class="section-title">A showcase built around what customers actually need.</h2>
+      <p class="section-intro">The strongest OliPoly projects usually fall into a few overlapping categories: creative, functional, personal, business-ready, or production-focused.</p>
+
+      <div class="category-row">
+        <a class="category-card link-card" href="branded-details.html">
+          <div class="category-icon">🏷️</div>
+          <h3>Branded details</h3>
+          <p>Logo pieces, event extras, team gifts, band merch, table touches, and branded items that help people remember the moment.</p>
+          <span class="category-cta">Explore branded options →</span>
+        </a>
+        <a class="category-card link-card" href="eye-catching-work.html">
+          <div class="category-icon">✨</div>
+          <h3>Creative & personal</h3>
+          <p>Decor, gifts, lithophanes, articulated prints, seasonal pieces, event items, and custom ideas that need personality.</p>
+          <span class="category-cta">Explore creative work →</span>
+        </a>
+        <a class="category-card link-card" href="start-project.html">
+          <div class="category-icon">🛠</div>
+          <h3>Functional & prototype</h3>
+          <p>Replacement-style parts, brackets, spacers, test-fit pieces, concept models, and practical prints built around use.</p>
+          <span class="category-cta">Start a practical project →</span>
         </a>
       </div>
     </section>
