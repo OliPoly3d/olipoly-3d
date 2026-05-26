@@ -32,8 +32,8 @@
       --max:1040px;
     }
 
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html{scroll-behavior:smooth;overflow-x:hidden}
     body{
       margin:0;
       min-height:100vh;
@@ -66,7 +66,7 @@
     .wrap{
       width:min(var(--max),calc(100% - 32px));
       margin:0 auto;
-      padding:18px 0 52px;
+      padding:18px 0 96px;
     }
 
     .topbar{
@@ -79,7 +79,7 @@
       gap:16px;
       min-height:72px;
       padding:12px 14px;
-      margin-bottom:22px;
+      margin-bottom:18px;
       border-radius:999px;
       background:rgba(255,250,254,.88);
       border:1px solid rgba(255,255,255,.74);
@@ -100,7 +100,7 @@
     .brand-name span{color:var(--pink)}
     .brand-sub{display:block;margin-top:4px;color:var(--muted);font-size:.78rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
 
-    .home-link,.pay-btn{
+    .home-link,.pay-btn,.sticky-pay a{
       border:0;border-radius:999px;cursor:pointer;font-weight:900;letter-spacing:-.01em;
       display:inline-flex;align-items:center;justify-content:center;gap:9px;
       transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
@@ -113,14 +113,14 @@
       box-shadow:0 16px 38px rgba(214,73,186,.25);
       white-space:nowrap;
     }
-    .home-link:hover,.pay-btn:hover{transform:translateY(-2px)}
+    .home-link:hover,.pay-btn:hover,.sticky-pay a:hover{transform:translateY(-2px)}
 
-    .fast-title{display:none;text-align:center;margin:0 0 12px;color:#6f5c78;font-size:.92rem;font-weight:900}
+    .fast-title{text-align:center;margin:0 0 12px;color:#6f5c78;font-size:.92rem;font-weight:900}
 
     .hero{
       display:grid;
-      grid-template-columns:minmax(0,.86fr) minmax(360px,1.14fr);
-      gap:22px;
+      grid-template-columns:minmax(0,.82fr) minmax(360px,1.18fr);
+      gap:18px;
       align-items:stretch;
     }
 
@@ -128,7 +128,7 @@
       position:relative;
       overflow:hidden;
       border-radius:38px;
-      padding:26px;
+      padding:24px;
       background:
         radial-gradient(circle at 88% 8%,rgba(255,118,206,.16),transparent 18rem),
         linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,244,253,.84));
@@ -136,124 +136,156 @@
       box-shadow:var(--shadow);
     }
 
-    .intro-card{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:100%}
+    .intro-card{display:flex;flex-direction:column;justify-content:space-between;gap:16px;min-height:100%}
     .eyebrow{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);color:#a93f8a;font-weight:900;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(142,69,150,.1);margin-bottom:14px}
     h1,h2,h3{font-family:"Playfair Display",serif;color:var(--ink);letter-spacing:-.055em}
-    h1{margin:0 0 12px;font-size:clamp(2.8rem,7vw,5.15rem);line-height:.9;max-width:620px}
+    h1{margin:0 0 10px;font-size:clamp(2.55rem,6vw,4.75rem);line-height:.9;max-width:620px}
     .gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .sub{margin:0;color:var(--muted);line-height:1.6;font-size:1.03rem;max-width:620px}
+    .sub{margin:0;color:var(--muted);line-height:1.6;font-size:1rem;max-width:620px}
 
-    .notice-stack{display:grid;gap:12px}
+    .notice-stack{display:grid;gap:10px}
     .notice{
-      padding:14px 15px;
+      padding:13px 14px;
       border-radius:22px;
       background:rgba(255,255,255,.76);
       border:1px solid rgba(104,59,123,.13);
       box-shadow:0 12px 26px rgba(54,24,66,.06);
       color:#6f5c78;
       line-height:1.48;
-      font-size:.94rem;
+      font-size:.91rem;
     }
-    .notice strong{display:block;color:#4b3554;margin-bottom:4px;font-size:.94rem}
+    .notice strong{display:block;color:#4b3554;margin-bottom:4px;font-size:.92rem}
     .notice a{color:#8c55d8;font-weight:900}
 
-    .trust-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:2px}
-    .trust-row span{display:flex;align-items:center;justify-content:center;min-height:38px;padding:8px 9px;border-radius:999px;background:rgba(244,220,255,.58);border:1px solid rgba(104,59,123,.09);color:#6f4b7e;font-size:.74rem;font-weight:900;text-align:center;line-height:1.1}
+    .trust-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:0}
+    .trust-row span{display:flex;align-items:center;justify-content:center;min-height:36px;padding:8px 9px;border-radius:999px;background:rgba(244,220,255,.58);border:1px solid rgba(104,59,123,.09);color:#6f4b7e;font-size:.72rem;font-weight:900;text-align:center;line-height:1.1}
 
-    .pay-card{padding:20px;display:flex;flex-direction:column;justify-content:center}
-    .pay-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px;padding:0 4px}
+    .pay-card{padding:18px;display:flex;flex-direction:column;justify-content:center}
+    .pay-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:12px;padding:0 4px}
     .pay-heading h2{margin:0;font-size:clamp(2rem,4vw,3rem);line-height:.95}
     .pay-heading span{color:#a03c87;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 
-    .pay-grid{display:grid;gap:12px}
+    .amount-helper{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:center;
+      margin-bottom:12px;
+      padding:10px 12px;
+      border-radius:20px;
+      background:rgba(255,255,255,.68);
+      border:1px solid rgba(104,59,123,.10);
+      color:#6f5c78;
+      font-size:.82rem;
+      line-height:1.32;
+    }
+    .amount-helper strong{color:#4b3554}
+    .amount-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.16);color:#a03c87;font-size:.72rem;font-weight:950;padding:7px 10px;white-space:nowrap}
+
+    .pay-grid{display:grid;gap:11px}
     .pay-btn{
       width:100%;
-      min-height:82px;
+      min-height:84px;
       padding:15px 18px;
       border-radius:26px;
-      background:rgba(255,255,255,.86);
+      background:rgba(255,255,255,.88);
       border:1px solid rgba(104,59,123,.13);
       box-shadow:0 16px 36px rgba(84,38,94,.11);
       justify-content:space-between;
       text-align:left;
     }
+    .pay-btn.primary{
+      min-height:92px;
+      background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,240,251,.9));
+      border-color:rgba(232,79,183,.22);
+      box-shadow:0 18px 42px rgba(214,73,186,.16);
+    }
     .pay-main{display:flex;align-items:center;gap:14px;min-width:0}
-    .pay-icon{width:50px;height:50px;border-radius:18px;display:grid;place-items:center;flex:0 0 auto;color:#fff;font-weight:950;font-size:1.1rem;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 12px 24px rgba(214,73,186,.22)}
+    .pay-icon{width:52px;height:52px;border-radius:18px;display:grid;place-items:center;flex:0 0 auto;color:#fff;font-weight:950;font-size:1.1rem;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 12px 24px rgba(214,73,186,.22)}
     .paypal .pay-icon{background:#0070ba}.venmo .pay-icon{background:#3d95ce}
-    .pay-copy{min-width:0}.pay-copy strong{display:block;color:#3f3146;font-size:1.05rem;line-height:1.16}.pay-copy span{display:block;margin-top:4px;color:var(--muted);font-size:.9rem;line-height:1.3}.arrow{color:#9d6df3;font-weight:950;font-size:1.35rem;flex:0 0 auto}
+    .pay-copy{min-width:0}.pay-copy strong{display:block;color:#3f3146;font-size:1.08rem;line-height:1.16}.pay-copy span{display:block;margin-top:4px;color:var(--muted);font-size:.9rem;line-height:1.3}.pay-copy em{display:block;margin-top:3px;color:#5b4a63;font-style:normal;font-size:.8rem;font-weight:900}.arrow{color:#9d6df3;font-weight:950;font-size:1.35rem;flex:0 0 auto}
 
     .event-note{
-      margin-top:14px;
-      padding:15px 16px;
-      border-radius:24px;
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:22px;
       color:#5d4369;
-      line-height:1.46;
+      line-height:1.42;
       background:radial-gradient(circle at 8% 0%,rgba(232,79,183,.12),transparent 8rem),linear-gradient(135deg,rgba(255,255,255,.86),rgba(255,244,253,.78));
       border:1px solid rgba(214,73,186,.17);
       box-shadow:0 12px 28px rgba(84,38,94,.08);
-      font-size:.94rem;
+      font-size:.89rem;
     }
     .event-note strong{color:#4a3550}
 
     .mini-footer{
-      margin-top:18px;
-      padding:18px;
+      margin-top:16px;
+      padding:16px 18px;
       border-radius:26px;
       background:rgba(255,255,255,.58);
       border:1px solid rgba(104,59,123,.10);
       color:#765f80;
       text-align:center;
-      font-size:.86rem;
+      font-size:.84rem;
       line-height:1.55;
     }
     .mini-footer a{color:#8c55d8;font-weight:900}
+    .footer-links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}
+
+    .sticky-pay{
+      display:none;
+      position:fixed;
+      left:10px;
+      right:10px;
+      bottom:10px;
+      z-index:50;
+      gap:7px;
+      padding:8px;
+      border-radius:22px;
+      background:rgba(255,250,254,.92);
+      border:1px solid rgba(255,255,255,.72);
+      box-shadow:0 18px 42px rgba(95,36,112,.2);
+      backdrop-filter:blur(18px);
+    }
+    .sticky-pay a{
+      flex:1;
+      min-height:46px;
+      border-radius:16px;
+      color:#fff;
+      font-size:.78rem;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      box-shadow:0 8px 18px rgba(214,73,186,.18);
+    }
+    .sticky-pay a.paypal-mini{background:#0070ba}
+    .sticky-pay a.venmo-mini{background:#3d95ce}
 
     @media(max-width:820px){
-      .wrap{width:min(100% - 20px,var(--max));padding-top:10px;padding-bottom:32px}
-      .topbar{position:relative;top:auto;border-radius:26px;margin-bottom:12px;padding:10px 12px;min-height:0}
-      .brand-mark{width:44px;height:44px;border-radius:15px}.brand-mark img{width:42px;height:42px}
-      .brand-name{font-size:1.5rem}.brand-sub{font-size:.62rem;max-width:calc(100vw - 170px);overflow:hidden;text-overflow:ellipsis}
-      .home-link{min-height:40px;padding:9px 13px;font-size:.84rem}
-      .fast-title{display:block}
-      .hero{grid-template-columns:1fr;gap:12px}
-      .pay-card{order:-1;border-radius:30px;padding:15px}
-      .pay-heading{margin-bottom:10px}.pay-heading h2{font-size:1.55rem}.pay-heading span{font-size:.7rem}
-      .pay-grid{gap:9px}.pay-btn{min-height:64px;padding:12px 13px;border-radius:20px}.pay-icon{width:40px;height:40px;border-radius:14px;font-size:.95rem}.pay-copy strong{font-size:.97rem}.pay-copy span{font-size:.8rem}.arrow{font-size:1.15rem}
-      .intro-card{padding:18px;border-radius:30px;gap:13px}.eyebrow{display:none}h1{font-size:2.25rem;margin-bottom:8px}.sub{font-size:.94rem;line-height:1.48}
-      .notice{padding:12px 13px;border-radius:19px;font-size:.86rem}.trust-row{grid-template-columns:1fr;gap:7px}.trust-row span{min-height:34px}
-      .event-note{margin-top:10px;padding:12px 13px;border-radius:20px;font-size:.84rem}.mini-footer{font-size:.78rem;border-radius:22px;padding:14px}
+      .wrap{width:min(100% - 18px,var(--max));padding-top:8px;padding-bottom:92px}
+      .topbar{position:relative;top:auto;border-radius:24px;margin-bottom:10px;padding:9px 10px;min-height:0}
+      .brand-mark{width:42px;height:42px;border-radius:15px}.brand-mark img{width:40px;height:40px}
+      .brand-name{font-size:1.45rem}.brand-sub{font-size:.6rem;max-width:calc(100vw - 160px);overflow:hidden;text-overflow:ellipsis}
+      .home-link{min-height:38px;padding:8px 12px;font-size:.82rem}
+      .fast-title{display:block;margin-bottom:8px}
+      .hero{grid-template-columns:1fr;gap:10px}
+      .pay-card{order:-1;border-radius:28px;padding:13px}
+      .pay-heading{margin-bottom:8px}.pay-heading h2{font-size:1.62rem}.pay-heading span{font-size:.68rem}
+      .amount-helper{grid-template-columns:1fr;margin-bottom:9px;padding:9px 10px;border-radius:17px;font-size:.78rem}.amount-pill{justify-self:start;padding:6px 9px}
+      .pay-grid{gap:8px}.pay-btn,.pay-btn.primary{min-height:70px;padding:12px 13px;border-radius:20px}.pay-icon{width:42px;height:42px;border-radius:14px;font-size:.95rem}.pay-copy strong{font-size:1rem}.pay-copy span{font-size:.8rem}.pay-copy em{font-size:.74rem}.arrow{font-size:1.15rem}
+      .intro-card{padding:16px;border-radius:28px;gap:11px}.eyebrow{display:none}h1{font-size:2.08rem;margin-bottom:7px}.sub{font-size:.9rem;line-height:1.48}
+      .notice{padding:11px 12px;border-radius:18px;font-size:.83rem}.trust-row{grid-template-columns:1fr;gap:6px}.trust-row span{min-height:32px}
+      .event-note{margin-top:9px;padding:10px 12px;border-radius:18px;font-size:.8rem}.mini-footer{font-size:.76rem;border-radius:20px;padding:13px;margin-top:12px}
+      .sticky-pay{display:flex}
     }
 
     @media(max-width:520px){
-      .wrap{width:min(100% - 14px,var(--max));padding-top:8px}
-      .topbar{gap:9px}.brand{gap:9px}.brand-name{font-size:1.28rem}.brand-sub{display:none}.home-link{font-size:.8rem;min-width:88px}
-      .pay-heading{align-items:flex-start;flex-direction:column;gap:2px}.pay-btn{min-height:60px}.arrow{display:none}
-      h1{font-size:1.85rem}.sub{display:none}.notice-stack{gap:9px}.notice:first-child{margin-top:0}
+      .wrap{width:min(100% - 12px,var(--max));padding-top:6px}
+      .topbar{gap:8px}.brand{gap:8px}.brand-name{font-size:1.22rem}.brand-sub{display:none}.home-link{font-size:.78rem;min-width:82px}
+      .pay-heading{align-items:flex-start;flex-direction:column;gap:2px}.pay-heading span{display:none}.pay-btn,.pay-btn.primary{min-height:66px}.arrow{display:none}
+      h1{font-size:1.75rem}.sub{display:none}.notice-stack{gap:8px}.notice:first-child{margin-top:0}
+      .pay-copy span{display:none}.pay-copy em{margin-top:4px}
+      .sticky-pay{left:8px;right:8px;bottom:8px;border-radius:20px}.sticky-pay a{min-height:44px;font-size:.72rem}
     }
-  
-/* === Global ecosystem polish pass === */
-html,body{overflow-x:hidden}
-*{-webkit-tap-highlight-color:transparent}
-.btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{min-height:48px}
-img{max-width:100%}
-@media (max-width:720px){
-  body{overflow-x:hidden}
-  .wrap,.container{width:min(100% - 18px,1200px)!important}
-  h1{line-height:1.02!important}
-  p{line-height:1.68!important}
-  .hero-actions,.actions{gap:12px!important}
-  .card,.hero-card,.shell,.cta-band{box-shadow:0 10px 28px rgba(216,107,179,.10)!important}
-  .quicknav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px!important;-ms-overflow-style:none;scrollbar-width:none}
-  .quicknav::-webkit-scrollbar{display:none}
-  .quicknav a{white-space:nowrap}
-}
-@media (max-width:560px){
-  .brand img{width:42px!important;height:42px!important}
-  .wordmark{font-size:1.6rem!important}
-  .btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{width:100%;justify-content:center}
-}
-
-</style>
+  </style>
 </head>
 
 <body>
@@ -308,13 +340,19 @@ img{max-width:100%}
           <span>Tap to open</span>
         </div>
 
+        <div class="amount-helper">
+          <span><strong>At an event?</strong> Tap a payment option, enter the agreed total, then show your confirmation before leaving the table.</span>
+          <span class="amount-pill">Notes: OP/Q # if you have one</span>
+        </div>
+
         <div class="pay-grid">
-          <a class="pay-btn cardpay" href="https://buy.stripe.com/7sYdR2bGL39Y1oLg4h1oI00" target="_blank" rel="noopener">
+          <a class="pay-btn cardpay primary" href="https://buy.stripe.com/7sYdR2bGL39Y1oLg4h1oI00" target="_blank" rel="noopener">
             <span class="pay-main">
               <span class="pay-icon">💳</span>
               <span class="pay-copy">
                 <strong>Card / Apple Pay</strong>
                 <span>Secure checkout through Stripe.</span>
+                <em>Best for card payments</em>
               </span>
             </span>
             <span class="arrow">→</span>
@@ -326,6 +364,7 @@ img{max-width:100%}
               <span class="pay-copy">
                 <strong>PayPal</strong>
                 <span>Balance, bank, or card.</span>
+                <em>PayPal checkout</em>
               </span>
             </span>
             <span class="arrow">→</span>
@@ -337,6 +376,7 @@ img{max-width:100%}
               <span class="pay-copy">
                 <strong>Venmo</strong>
                 <span>Fast mobile payment.</span>
+                <em>@OliPoly3D</em>
               </span>
             </span>
             <span class="arrow">→</span>
@@ -344,15 +384,21 @@ img{max-width:100%}
         </div>
 
         <div class="event-note">
-          <strong>At events:</strong> please show your payment confirmation before leaving the table so your purchase can be marked paid.
+          <strong>Event checkout:</strong> please show your payment confirmation before leaving the table so your purchase can be marked paid.
         </div>
       </section>
     </main>
 
     <p class="mini-footer">
-      Payments are processed by Stripe, PayPal, or Venmo. OliPoly 3D does not store card information on this website.<br />
-      Need your order tracker? <a href="track.html">Track your order here</a>.
+      <span class="footer-links"><a href="track.html">Track your order</a><a href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a><a href="index.html">Home</a></span>
+      Payments are processed by Stripe, PayPal, or Venmo. OliPoly 3D does not store card information on this website.
     </p>
   </div>
+
+  <nav class="sticky-pay" aria-label="Quick payment shortcuts">
+    <a href="https://buy.stripe.com/7sYdR2bGL39Y1oLg4h1oI00" target="_blank" rel="noopener">💳 Card</a>
+    <a class="paypal-mini" href="https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8" target="_blank" rel="noopener">PayPal</a>
+    <a class="venmo-mini" href="https://www.venmo.com/u/OliPoly3D" target="_blank" rel="noopener">Venmo</a>
+  </nav>
 </body>
 </html>
