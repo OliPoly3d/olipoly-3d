@@ -811,6 +811,76 @@ body::before{
   .compact-status-grid{grid-template-columns:1fr;}
 }
 
+
+
+/* === Production-first hub workflow refresh === */
+.workflow-rail-section{
+  background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08)),rgba(255,255,255,.80);
+}
+.workflow-rail{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:9px;
+  margin-top:12px;
+}
+.workflow-node{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-height:132px;
+  padding:13px;
+  border-radius:20px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(101,60,120,.13);
+  box-shadow:0 10px 22px rgba(95,36,112,.06);
+  text-decoration:none;
+  transition:.18s ease;
+}
+.workflow-node:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.10)}
+.workflow-node span{
+  width:30px;
+  height:30px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  font-weight:950;
+  font-size:.84rem;
+}
+.workflow-node strong{color:var(--ink);line-height:1.12}
+.workflow-node small{color:var(--muted);line-height:1.34;font-size:.8rem}
+.workflow-node.primary{border-color:rgba(232,79,183,.24);background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,244,253,.86))}
+.workflow-node:not(:last-child)::after{
+  content:"→";
+  position:absolute;
+  right:-10px;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:2;
+  color:#a03c87;
+  font-weight:950;
+  background:rgba(255,255,255,.92);
+  border:1px solid rgba(101,60,120,.12);
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-size:.78rem;
+}
+.priority-panel:first-child{background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.78))}
+#cloud-login:not([open]){opacity:.92}
+@media(max-width:980px){
+  .workflow-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .workflow-node:not(:last-child)::after{display:none}
+}
+@media(max-width:640px){
+  .workflow-rail{grid-template-columns:1fr;gap:8px}
+  .workflow-node{min-height:auto;border-radius:18px;padding:12px}
+}
+
 </style>
 </head>
 <body>
@@ -823,7 +893,7 @@ body::before{
         </div>
         <div>
           <h1>OliPoly Command Center</h1>
-          <p><span class="brand-mini-badge">Internal OS</span> Quotes • Orders • Finance • Production</p>
+          <p><span class="brand-mini-badge">Internal OS</span> Production • Quote • Orders • Finance</p>
         </div>
       </div>
       <a class="ghost ext" href="index.html">Open Main Site</a>
@@ -834,7 +904,7 @@ body::before{
         <div>
           <span class="os-kicker">Today</span>
           <h2 class="os-title">Run the shop from one calm place.</h2>
-          <p class="os-sub">Start here for quotes, orders, production, inventory, payment, shipping, follow-up, and finance. Built to feel compact, fast, and aligned with the public OliPoly brand.</p>
+          <p class="os-sub">Start most custom work in Production Control, push polished estimates into Quote Tool, manage accepted OP orders in Orders Admin, then close the loop through Inventory and Finance.</p>
         </div>
         <div class="status-strip" aria-label="Hub status">
           <span class="status-pill">Cloud Sync</span>
@@ -852,25 +922,60 @@ body::before{
       </div>
     </section>
 
+    <section class="hub-section workflow-rail-section" aria-label="OliPoly operating flow">
+      <div class="section-title">
+        <span class="os-kicker">Current Workflow</span>
+        <h3>Production → Quote → Order → Track → Finance</h3>
+        <p>The new operating flow starts with real material and production cost, then turns that estimate into a clean customer-facing quote without exposing internal margins.</p>
+      </div>
+      <div class="workflow-rail">
+        <a class="workflow-node primary" href="production-control.html">
+          <span>1</span>
+          <strong>Production Control</strong>
+          <small>Build the internal estimate, check material availability, reserve inventory, and plan the print.</small>
+        </a>
+        <a class="workflow-node" href="quote.html">
+          <span>2</span>
+          <strong>Quote Tool</strong>
+          <small>Use the production estimate as a draft, round/adjust the price, and send the approval package.</small>
+        </a>
+        <a class="workflow-node" href="orders-admin.html">
+          <span>3</span>
+          <strong>Orders Admin</strong>
+          <small>Accepted quotes become OP orders for invoicing, labels, tracking, payment links, and emails.</small>
+        </a>
+        <a class="workflow-node" href="track.html">
+          <span>4</span>
+          <strong>Customer Tracker</strong>
+          <small>Customer-safe status, next milestone, payment options, pickup, shipping, and completion visibility.</small>
+        </a>
+        <a class="workflow-node" href="finance-pro.html">
+          <span>5</span>
+          <strong>Finance Pro</strong>
+          <small>Capture revenue, tax, expenses, mileage, COGS, and reporting after the order is ready to close.</small>
+        </a>
+      </div>
+    </section>
+
     <section class="priority-grid" aria-label="Priority queue and quick actions">
       <div class="priority-panel">
         <span class="os-kicker">Priority Queue</span>
-        <h2 class="priority-title">What needs attention?</h2>
-        <p class="os-sub">Use this as the mental starting point before jumping into the bigger tools.</p>
+        <h2 class="priority-title">Start with the source of truth.</h2>
+        <p class="os-sub">Most custom work now begins in Production Control so pricing, material availability, and production effort are grounded before a quote is sent.</p>
         <div class="priority-list">
           <a class="priority-item high" href="production-control.html">
             <span class="priority-dot"></span>
-            <span><strong>Open Production Control</strong><small>See the print queue, printer lanes, PM Lite, due jobs, and production close-outs.</small></span>
-            <span class="priority-tag">Print</span>
+            <span><strong>Open Production Control</strong><small>Create or review internal estimates, material recipes, reservations, printer lanes, PM hours, and close-outs.</small></span>
+            <span class="priority-tag">Start</span>
           </a>
           <a class="priority-item" href="orders-admin.html">
             <span class="priority-dot"></span>
-            <span><strong>Check Orders Admin</strong><small>Update status, payment, shipping, invoice, labels, or customer emails.</small></span>
+            <span><strong>Manage accepted OP orders</strong><small>After quote acceptance, handle invoice, payment, shipping, labels, tracking, and lifecycle emails.</small></span>
             <span class="priority-tag">Orders</span>
           </a>
           <a class="priority-item" href="quote.html">
             <span class="priority-dot"></span>
-            <span><strong>Create or finish a quote</strong><small>Build quotes, PDFs, approval links, and professional quote emails.</small></span>
+            <span><strong>Polish a customer quote</strong><small>Use the production draft, round/adjust price, generate the PDF, and send the approval link.</small></span>
             <span class="priority-tag">Quote</span>
           </a>
         </div>
@@ -879,10 +984,10 @@ body::before{
       <div class="priority-panel">
         <span class="os-kicker">Quick Actions</span>
         <h2 class="priority-title">Jump straight in.</h2>
-        <p class="os-sub">The highest-frequency actions without scrolling through every document and workflow.</p>
+        <p class="os-sub">Fast links in the order the shop usually runs now.</p>
         <div class="action-pill-grid">
-          <a class="action-pill primary" href="quote.html">+ New Quote</a>
-          <a class="action-pill primary" href="production-control.html">Production Control</a>
+          <a class="action-pill primary" href="production-control.html">+ Start Production Estimate</a>
+          <a class="action-pill primary" href="quote.html">Quote from Estimate</a>
           <a class="action-pill primary" href="inventory-control.html">Inventory Control</a>
           <a class="action-pill" href="orders-admin.html">Update Order</a>
           <a class="action-pill" href="finance-pro.html">Add Sale / Expense</a>
@@ -901,40 +1006,40 @@ body::before{
         <p>Your main operating systems — compact, promoted, and fast to reach.</p>
       </div>
       <div class="core-tools-grid">
-        <a class="core-tool primary" href="orders-admin.html">
-          <span class="tool-icon">📦</span>
-          <span><strong>Orders Admin</strong><small>Orders, tracking, invoices, labels, slips, travelers, emails.</small></span>
+        <a class="core-tool primary" href="production-control.html">
+          <span class="tool-icon">🖨️</span>
+          <span><strong>Production Control</strong><small>Start here for internal estimating, material checks, reservations, printer lanes, PM, and close-outs.</small></span>
         </a>
         <a class="core-tool primary" href="quote.html">
           <span class="tool-icon">🧾</span>
-          <span><strong>Quote Tool</strong><small>Quotes, PDFs, approvals, and quote-to-order flow.</small></span>
+          <span><strong>Quote Tool</strong><small>Customer-facing quote package, PDF, email, response link, rounding, and manual price adjustment.</small></span>
         </a>
-        <a class="core-tool primary" href="production-control.html">
-          <span class="tool-icon">🖨️</span>
-          <span><strong>Production Control</strong><small>Print queue, printer lanes, PM Lite, close-outs, and production history.</small></span>
+        <a class="core-tool primary" href="orders-admin.html">
+          <span class="tool-icon">📦</span>
+          <span><strong>Orders Admin</strong><small>Accepted OP orders, invoices, labels, packing slips, travelers, payment links, and status emails.</small></span>
         </a>
         <a class="core-tool primary" href="inventory-control.html">
           <span class="tool-icon">🧵</span>
-          <span><strong>Inventory Control</strong><small>Raw filament, reorder warnings, finished goods, stock levels, and usage tracking.</small></span>
+          <span><strong>Inventory Control</strong><small>Raw filament, mounted rolls, reservations, scrap deductions, reorder warnings, and usage tracking.</small></span>
         </a>
         <a class="core-tool primary" href="finance-pro.html">
           <span class="tool-icon">💰</span>
-          <span><strong>Finance Pro</strong><small>Sales, expenses, mileage, tax, Schedule C exports.</small></span>
+          <span><strong>Finance Pro</strong><small>Sales, tax, expenses, mileage, COGS, Schedule C exports, and reporting.</small></span>
         </a>
         <a class="core-tool" href="track.html">
           <span class="tool-icon">🔎</span>
-          <span><strong>Tracker</strong><small>Customer-safe public order lookup and payment links.</small></span>
+          <span><strong>Customer Tracker</strong><small>Public-safe order lookup, milestone timeline, payment options, pickup, and shipping details.</small></span>
         </a>
         <a class="core-tool" href="pay.html">
           <span class="tool-icon">💳</span>
-          <span><strong>Pay Page</strong><small>Craft-table, pickup, and quick customer payment handoff.</small></span>
+          <span><strong>Pay Page</strong><small>Mobile-first card, PayPal, and Venmo payment handoff for events and pickup.</small></span>
         </a>
       </div>
     </section>
 
-    <details class="ops-drawer" id="cloud-login" open>
+    <details class="ops-drawer" id="cloud-login">
       <summary>
-        <span><h3 class="ops-title">Cloud Sync</h3><span class="ops-desc">Sign in once to sync notes, reminders, saved quotes, Orders Admin, and Finance Pro on this device.</span></span>
+        <span><h3 class="ops-title">Cloud Sync</h3><span class="ops-desc">Sign in once for Supabase-backed quote, order, production, inventory, reminder, and finance workflows on this device.</span></span>
         <b class="ops-plus">+</b>
       </summary>
       <div class="ops-body">
@@ -965,6 +1070,7 @@ body::before{
           <div class="compact-status ok"><span></span><span id="statusOrders">Orders Admin ready</span></div>
           <div class="compact-status ok"><span></span><span id="statusQuote">Quote Tool ready</span></div>
           <div class="compact-status ok"><span></span><span id="statusFinance">Finance ready</span></div>
+          <div class="compact-status ok"><span></span><span>Production workflow linked</span></div>
         </div>
       </div>
     </details>
@@ -993,12 +1099,12 @@ body::before{
 
     <section class="hub-section">
       <div class="section-title">
-        <span class="os-kicker">Fulfillment</span>
-        <h3>Live order documents & shop-floor tools</h3>
-        <p>Generated documents come from Orders Admin using live customer/order data. Static label/slip templates are no longer the source of truth.</p>
+        <span class="os-kicker">Order fulfillment</span>
+        <h3>Accepted quotes become OP orders</h3>
+        <p>Production creates the internal plan, Quote Tool sends the customer package, and Orders Admin becomes the source for invoices, labels, tracking, payment links, and lifecycle emails.</p>
       </div>
       <div class="workflow-source-card">
-        <strong>Source of truth:</strong> open the order in Orders Admin, confirm the customer/order fields, then generate the Packing Slip, Manufacturing Traveler, Invoice PDF, labels, and lifecycle emails from the live OP order.
+        <strong>Source of truth:</strong> after quote acceptance, manage the live OP order in Orders Admin. Production status stays linked, but invoices, packing slips, labels, travelers, tracking notes, and lifecycle emails are generated from the order record.
       </div>
       <div class="compact-link-grid">
         <a class="utility-link" href="orders-admin.html">Orders Admin / Live Docs <span>→</span></a>
@@ -1013,27 +1119,27 @@ body::before{
 
     <details class="ops-drawer">
       <summary>
-        <span><h3 class="ops-title">Workflow Playbooks</h3><span class="ops-desc">Retail, business/PO, craft-show, and repeat/catalog operating flows. Collapsed by default to keep the hub compact.</span></span>
+        <span><h3 class="ops-title">Workflow Playbooks</h3><span class="ops-desc">Current operating playbooks. Custom and business work should begin in Production Control, then push to Quote Tool, then flow into Orders Admin when accepted.</span></span>
         <b class="ops-plus">+</b>
       </summary>
       <div class="ops-body">
         <div class="workflow-playbook-grid">
           <details class="playbook-details">
-            <summary><span>Retail / custom customer<small>Standard quote approval, payment, production, pickup or shipping.</small></span><b>+</b></summary>
+            <summary><span>Retail / custom customer<small>Production-first estimate, customer quote approval, payment, production, pickup or shipping.</small></span><b>+</b></summary>
             <div class="playbook-body">
               <div class="playbook-steps">
                 <div class="playbook-step"><span>1</span>Receive inquiry or custom request.</div>
-                <div class="playbook-step"><span>2</span>Create quote in Quote Tool.</div>
-                <div class="playbook-step"><span>3</span>Generate Quote PDF v2 and prepare Quote Email v2.</div>
-                <div class="playbook-step"><span>4</span>Send approval link to customer.</div>
-                <div class="playbook-step"><span>5</span>Customer approves quote on Quote Response page.</div>
-                <div class="playbook-step"><span>6</span>Quote converts to OP order and activates Tracker.</div>
-                <div class="playbook-step"><span>7</span>Confirm payment link/status in Orders Admin.</div>
-                <div class="playbook-step"><span>8</span>Produce item; generate traveler/packing slip if helpful.</div>
-                <div class="playbook-step"><span>9</span>Send ready, pickup, shipped, or completion lifecycle email.</div>
-                <div class="playbook-step"><span>10</span>Record sale/tax/costs in Finance Pro.</div>
+                <div class="playbook-step"><span>2</span>Create the internal job in Production Control.</div>
+                <div class="playbook-step"><span>3</span>Add quantity, material recipe, estimated hours, printer, and customer notes.</div>
+                <div class="playbook-step"><span>4</span>Use Push to Quote to open a customer-facing quote draft.</div>
+                <div class="playbook-step"><span>5</span>Round or manually adjust the customer price in Quote Tool.</div>
+                <div class="playbook-step"><span>6</span>Save quote, generate PDF/email, and send the approval link.</div>
+                <div class="playbook-step"><span>7</span>Customer approves quote on Quote Response page.</div>
+                <div class="playbook-step"><span>8</span>Quote converts to OP order, activates Tracker, and links back to Production.</div>
+                <div class="playbook-step"><span>9</span>Produce the item, close out material usage/scrap, and update order status.</div>
+                <div class="playbook-step"><span>10</span>Invoice/payment/tracking are handled in Orders Admin; close revenue/tax in Finance Pro.</div>
               </div>
-              <div class="playbook-note">Best for one-off custom jobs, gifts, small creative builds, local pickup, and normal customer requests.</div>
+              <div class="playbook-note">Best for one-off custom jobs, gifts, small creative builds, local pickup, and normal customer requests where production cost should be checked before quoting.</div>
             </div>
           </details>
 
@@ -1041,18 +1147,18 @@ body::before{
             <summary><span>Business / PO customer<small>Professional quote, vendor docs, PO, live order docs, invoice.</small></span><b>+</b></summary>
             <div class="playbook-body">
               <div class="playbook-steps">
-                <div class="playbook-step"><span>1</span>Receive RFQ, drawings, part details, or print files.</div>
-                <div class="playbook-step"><span>2</span>Create professional/business quote with PO, part, and revision fields.</div>
-                <div class="playbook-step"><span>3</span>Send Quote PDF v2 + Quote Email v2; include W-9/vendor packet if requested.</div>
-                <div class="playbook-step"><span>4</span>Customer approves quote or issues PO.</div>
-                <div class="playbook-step"><span>5</span>Convert quote to OP order and confirm PO/part/revision data.</div>
-                <div class="playbook-step"><span>6</span>Generate Manufacturing Traveler for production.</div>
-                <div class="playbook-step"><span>7</span>Generate Packing Slip from Orders Admin for fulfillment.</div>
-                <div class="playbook-step"><span>8</span>Ship/deliver and send shipping or ready-for-pickup email.</div>
-                <div class="playbook-step"><span>9</span>Generate/send Invoice PDF v2 or invoice email as required.</div>
-                <div class="playbook-step"><span>10</span>Close out in Finance Pro and save catalog part if repeatable.</div>
+                <div class="playbook-step"><span>1</span>Receive RFQ, drawings, part details, PO requirements, or print files.</div>
+                <div class="playbook-step"><span>2</span>Create the production job first to check material, runtime, capacity, and margin.</div>
+                <div class="playbook-step"><span>3</span>Push to Quote and select the professional/business quote format.</div>
+                <div class="playbook-step"><span>4</span>Add PO, part number, revision, billing/shipping, AP, and terms details.</div>
+                <div class="playbook-step"><span>5</span>Send Quote PDF + professional quote email; include W-9/vendor packet if requested.</div>
+                <div class="playbook-step"><span>6</span>Customer approves quote or issues PO; quote converts to OP order.</div>
+                <div class="playbook-step"><span>7</span>Orders Admin owns invoice, packing slip, traveler, labels, and customer-safe tracking.</div>
+                <div class="playbook-step"><span>8</span>Production closeout records actual hours, scrap, and material deductions.</div>
+                <div class="playbook-step"><span>9</span>Ship/deliver, send shipment/ready email, and generate/send invoice as required.</div>
+                <div class="playbook-step"><span>10</span>Close revenue/tax/costs in Finance Pro.</div>
               </div>
-              <div class="playbook-note">Best for PO customers, repeat production, part-numbered jobs, business invoices, and purchasing department workflows.</div>
+              <div class="playbook-note">Best for PO customers, part-numbered jobs, professional invoices, purchasing departments, and production work that needs cost/margin validation before quote release.</div>
             </div>
           </details>
 
@@ -1085,7 +1191,7 @@ body::before{
                 <div class="playbook-step"><span>7</span>Send lifecycle email and close out in Finance Pro.</div>
                 <div class="playbook-step"><span>8</span>Update catalog part notes/revision if anything changed.</div>
               </div>
-              <div class="playbook-note">The Create Reorder Quote automation is intentionally on the backlog; for now, use catalog search/load as the memory layer.</div>
+              <div class="playbook-note">Repeat/reorder automation is intentionally on hold. For now, use Production Control, Orders Admin history, and catalog memory as references without changing the active workflow.</div>
             </div>
           </details>
         </div>
