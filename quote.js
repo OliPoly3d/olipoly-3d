@@ -5864,8 +5864,8 @@ https://olipoly3d.com`;
     card.className = 'card customer-priority';
     card.id = 'productionQuotePriceCard';
     card.innerHTML = `
-      <h3>2. Quote Price & Terms</h3>
-      <p class="sub">Customer-facing price controls. Production Control keeps the internal material, inventory, and margin details.</p>
+      <h3>Quote Price & Terms</h3>
+      <p class="sub">Round or manually adjust the customer-facing price. Production Control keeps the internal material, inventory, and margin details.</p>
       <div class="note hidden" id="productionQuoteSourceNote"></div>
       <div class="form-grid" id="productionQuotePriceFields"></div>
     `;
@@ -5973,5 +5973,75 @@ https://olipoly3d.com`;
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
   setTimeout(run, 300);
+  setTimeout(run, 1200);
+})();
+
+
+/* === Quote presenter simplification helpers ===
+   Keeps quote.html focused on customer presentation while preserving the
+   existing calculator, saved quote, PDF, email, and response-link workflows.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  function fieldWrap(id){
+    const el = $(id);
+    return el?.closest('div') || el?.parentElement || null;
+  }
+
+  function bindProxyButtons(){
+    document.querySelectorAll('[data-proxy-click]').forEach((btn) => {
+      if(btn.dataset.proxyBound === 'true') return;
+      btn.dataset.proxyBound = 'true';
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        const target = $(btn.dataset.proxyClick);
+        if(target) target.click();
+      });
+    });
+  }
+
+  function tuckLegacyCalculator(){
+    document.body.classList.add('quote-presenter-mode');
+
+    const grid = document.querySelector('.grid');
+    if(grid){
+      const sections = [...grid.querySelectorAll(':scope > section.card')];
+      const legacy = sections.find((s) => /Legacy Calculator Inputs|Quick Pricing Inputs/i.test(s.textContent || ''));
+      if(legacy){
+        legacy.classList.add('legacy-calculator-card');
+        legacy.style.display = 'none';
+      }
+    }
+
+    const advanced = $('advancedPanel');
+    const responsePanel = $('responsesPanel');
+    if(advanced && responsePanel && !advanced.contains(responsePanel)){
+      advanced.insertBefore(responsePanel, advanced.firstChild);
+    }
+
+    ['manualPiecePriceOverride','manualPiecePriceReason','roundingMode','discount','taxPreset','salesTax','paymentTerms','depositPercent'].forEach((id) => {
+      const priceTarget = $('productionQuotePriceFields');
+      const wrap = fieldWrap(id);
+      if(priceTarget && wrap && !priceTarget.contains(wrap)) priceTarget.appendChild(wrap);
+    });
+  }
+
+  function renameAdvancedToggle(){
+    const span = document.querySelector('#advancedToggle span');
+    if(span) span.textContent = 'Advanced / legacy calculator, documents, and saved quote details';
+    const small = $('advancedToggleText');
+    if(small && !small.textContent.trim()) small.textContent = 'Show details';
+  }
+
+  function run(){
+    bindProxyButtons();
+    tuckLegacyCalculator();
+    renameAdvancedToggle();
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+  setTimeout(run, 350);
   setTimeout(run, 1200);
 })();

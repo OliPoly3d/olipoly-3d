@@ -1404,6 +1404,27 @@ input:focus,select:focus,textarea:focus{
   .summary-grid{grid-template-columns:1fr!important}
 }
 
+
+
+/* === Quote presenter simplification pass === */
+body.quote-presenter-mode .quick-card{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,244,248,.94));}
+body.quote-presenter-mode .internal-summary{opacity:.55;}
+body.quote-presenter-mode .internal-summary strong{filter:blur(3px);}
+body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
+.send-package-card{margin-top:18px;border-color:rgba(236,72,153,.22)!important;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,246,251,.92))!important;}
+.send-package-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+.send-package-head h3{margin:0;}
+.send-package-pill{display:inline-flex;align-items:center;min-height:32px;padding:7px 11px;border-radius:999px;background:rgba(236,72,153,.10);border:1px solid rgba(236,72,153,.18);color:#9b2f75;font-weight:900;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;}
+.send-package-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;}
+.send-package-actions .btn,.send-package-actions .btn-ghost{width:100%;min-height:48px;text-align:center;justify-content:center;}
+.send-package-note{margin-top:12px;border-style:solid;background:rgba(255,255,255,.72);}
+#responsesPanel{margin-top:0;}
+.advanced-wrap{margin-top:18px;}
+#productionQuotePriceCard h3::before{content:'2. ';}
+#productionQuotePriceCard h3{font-family:"Cormorant Garamond",serif;font-size:1.4rem;}
+@media(max-width:900px){.send-package-actions{grid-template-columns:1fr 1fr}.send-package-actions button:last-child{grid-column:1/-1}}
+@media(max-width:560px){.summary-grid{grid-template-columns:1fr 1fr!important}.send-package-actions{grid-template-columns:1fr}.send-package-card{padding:15px!important}.send-package-pill{font-size:.68rem}}
+
 </style>
 </head>
 <body>
@@ -1415,7 +1436,7 @@ input:focus,select:focus,textarea:focus{
         <div class="icon">🐝</div>
 <div>
           <h1>OliPoly 3D Quote Tool</h1>
-          <p>Quick quote first. Advanced controls stay available when you need them.</p>
+          <p>Customer quote presenter. Production Control owns internal costing.</p>
         </div>
 </div>
 <div class="topbar-actions compact-actions">
@@ -1435,13 +1456,13 @@ input:focus,select:focus,textarea:focus{
 
     <section class="hero">
       <div class="card">
-        <h2>Quote faster without losing your full pricing engine.</h2>
-        <p>Start with the few fields you usually need: customer, project, material, machine time, labor, and delivery. Everything advanced is still here, just tucked away until needed.</p>
+        <h2>Turn production estimates into polished customer quotes.</h2>
+        <p>Start from Production Control when possible, then adjust the customer-facing price, terms, PDF, email, and response link here.</p>
       </div>
       <div class="quick-card">
-        <strong>Quick workflow</strong>
-        <p class="sub">1. Pull from Production or fill customer details<br>2. Round/adjust customer-facing price<br>3. Generate PDF/email + response link</p>
-        <div class="note" id="modeHint">Standard mode is best for regular customer quotes. Advanced options are available below.</div>
+        <strong>Presentation-first workflow</strong>
+        <p class="sub">1. Build cost in Production<br>2. Round/adjust quote price here<br>3. Send PDF/email + response link</p>
+        <div class="note" id="modeHint">Production Control should be the internal source of truth. This page is for clean customer presentation and approval.</div>
       </div>
     </section>
 
@@ -1450,8 +1471,8 @@ input:focus,select:focus,textarea:focus{
       <div class="summary"><span>Price Per Item</span><strong id="sumPerItem">$0.00</strong></div>
       <div class="summary"><span>Deposit Due</span><strong id="sumDeposit">$0.00</strong></div>
       <div class="summary"><span>Balance Due</span><strong id="sumBalance">$0.00</strong></div>
-      <div class="summary"><span>Margin %</span><strong id="sumMargin">0.0%</strong></div>
-      <div class="summary"><span>Quote Confidence</span><strong id="quoteConfidence" class="confidence-ok">Ready</strong></div>
+      <div class="summary internal-summary"><span>Internal Margin</span><strong id="sumMargin">0.0%</strong></div>
+      <div class="summary"><span>Quote Status</span><strong id="quoteConfidence" class="confidence-ok">Ready</strong></div>
     </section>
 
     <div class="note hidden" id="manualPiecePriceNotice"></div>
@@ -1479,7 +1500,7 @@ input:focus,select:focus,textarea:focus{
     <div class="grid">
 <section class="card customer-priority">
         <h3>1. Customer & Project</h3>
-        <p class="sub">The main details needed for the quote and PDF.</p>
+        <p class="sub">Customer-facing details for the PDF, email, and approval page.</p>
 
         <div class="quote-type-panel customer-priority">
           <label for="liteQuoteType">Quote Format / Customer Type</label>
@@ -1517,8 +1538,8 @@ input:focus,select:focus,textarea:focus{
       </section>
 
       <section class="card">
-        <h3>2. Quick Pricing Inputs</h3>
-        <p class="sub">Legacy calculator inputs. In the preferred workflow, Production Control creates the internal estimate and this section stays hidden.</p>
+        <h3>Legacy Calculator Inputs</h3>
+        <p class="sub">Fallback estimator only. Use Production Control first whenever possible.</p>
         <div class="form-grid">
           <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
           <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
@@ -1537,6 +1558,24 @@ input:focus,select:focus,textarea:focus{
         <p class="note" id="simpleSummary">Simple inputs: $0.00 material, $0.00 packaging, $0.00 shipping, $0.00 hardware, $0.00 design labor, $0.00 machine time, $0.00 post-process labor.</p>
       </section>
     </div>
+
+    <section class="card send-package-card" id="sendPackageCard">
+      <div class="send-package-head">
+        <div>
+          <h3>3. Send Package</h3>
+          <p class="sub">Save the quote, create the customer PDF, prepare the customer email, or convert directly when approved.</p>
+        </div>
+        <span class="send-package-pill">Customer-facing</span>
+      </div>
+      <div class="send-package-actions">
+        <button class="btn" type="button" data-proxy-click="saveQuoteBtn">Save / Update Quote</button>
+        <button class="btn" type="button" data-proxy-click="customerPdfBtn">Generate Quote PDF</button>
+        <button class="btn-ghost" type="button" data-proxy-click="prepareCustomerEmailBtn">Prepare Customer Email</button>
+        <button class="btn-ghost" type="button" data-proxy-click="copySummaryBtn">Copy Summary</button>
+        <button class="btn" type="button" data-proxy-click="acceptCreateBtn">Accept + Create Order</button>
+      </div>
+      <p class="note send-package-note">Internal production cost, reservation, scrap, and PM details stay in Production Control. This page only presents the quote to the customer.</p>
+    </section>
 
     <section class="advanced-wrap">
       <button class="advanced-toggle" id="advancedToggle" type="button" aria-controls="advancedPanel" aria-expanded="false">
