@@ -315,6 +315,45 @@ img{max-width:100%}
   .btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{width:100%;justify-content:center}
 }
 
+
+
+/* === Track page customer-safe milestone polish === */
+.customer-milestone-note{
+  margin:-4px 0 14px;
+  padding:12px 14px;
+  border-radius:20px;
+  background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08));
+  border:1px solid rgba(157,109,243,.16);
+  color:#6f5d76;
+  font-size:.92rem;
+  line-height:1.5;
+}
+.customer-milestone-note strong{color:var(--ink)}
+.timeline{padding-top:2px}
+.step-label strong{display:block;color:inherit;font-size:.9rem}
+.step-label small{display:block;margin-top:3px;font-size:.68rem;font-weight:750;color:var(--muted);line-height:1.25}
+.step.active .step-label small{color:#84648b}
+.detail{margin-top:4px}
+.payment-card{order:-1}
+.payment-buttons{grid-template-columns:1fr}
+.payment-btn{font-size:.96rem;box-shadow:0 14px 30px rgba(214,73,186,.18)}
+.payment-btn::before{font-size:1.05rem}
+#paymentBtnStripe::before{content:'💳'}
+#paymentBtnPaypal::before{content:'P';font-weight:950}
+#paymentBtnVenmo::before{content:'V';font-weight:950}
+.status-spotlight small{font-size:.96rem}
+@media(max-width:760px){
+  .result-hero{grid-template-columns:1fr;gap:12px;margin-bottom:14px}
+  .status-stack{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .customer-milestone-note{font-size:.84rem;padding:10px 12px;border-radius:17px}
+  .timeline{grid-template-columns:1fr;gap:10px}
+  .timeline::before,.timeline-fill{display:none}
+  .step{grid-template-columns:30px 1fr;justify-items:start;text-align:left;gap:10px;padding:9px 10px;border-radius:18px;background:rgba(255,255,255,.62);border:1px solid rgba(104,59,123,.10)}
+  .step-dot{width:22px;height:22px}
+  .step-label{max-width:none}
+  .payment-card{padding:14px;border-radius:21px}
+}
+
 </style>
 </head>
 <body>
@@ -395,13 +434,16 @@ img{max-width:100%}
       </div>
 
       <div class="progress" aria-label="Order progress timeline">
+        <div class="customer-milestone-note">
+          <strong>Customer-safe timeline:</strong> this shows where your project is in the process without exposing internal shop notes, material costs, or printer details.
+        </div>
         <div class="timeline">
           <div class="timeline-fill" id="timelineFill"></div>
-          <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label">Approved</div></div>
-          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label">Scheduled</div></div>
-          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label">Printing</div></div>
-          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label">Finishing Touches</div></div>
-          <div class="step" data-step="5"><div class="step-dot"></div><div class="step-label">Packed / Shipped</div></div>
+          <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label"><strong>Approved</strong><small>Details confirmed</small></div></div>
+          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label"><strong>Scheduled</strong><small>Queued for production</small></div></div>
+          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label"><strong>In Production</strong><small>Printing or active prep</small></div></div>
+          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label"><strong>Finishing / QC</strong><small>Cleaned and checked</small></div></div>
+          <div class="step" data-step="5"><div class="step-dot"></div><div class="step-label"><strong>Ready / Shipped</strong><small>Pickup, delivery, or mail</small></div></div>
         </div>
       </div>
 
@@ -510,18 +552,18 @@ img{max-width:100%}
       return {data,error:!res.ok?data:null};
     }
 
-    function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_to_pack:'Ready to Pack',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Completed'})[v]||v;}
+    function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'Preparing File',in_production:'In Production',post_processing:'Finishing / QC',ready_to_pack:'Final Packing',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Completed'})[v]||v;}
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
-    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:2,in_design:3,in_production:3,post_processing:4,ready_to_pack:4,packed:5,ready_for_pickup:5,shipped:5,delivered:5,completed:5})[status]||1;}
+    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:1,in_design:2,in_production:3,post_processing:4,ready_to_pack:4,packed:5,ready_for_pickup:5,shipped:5,delivered:5,completed:5})[status]||1;}
 
     function statusHeadline(status){
-      return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'In Design',in_production:'Currently Printing',post_processing:'Finishing Touches',ready_to_pack:'Ready to Pack',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Order Complete'})[status] || statusLabel(status) || 'Status Update';
+      return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'Preparing for Production',in_production:'In Production',post_processing:'Finishing / QC',ready_to_pack:'Final Packing',packed:'Packed and Ready',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Order Complete'})[status] || statusLabel(status) || 'Status Update';
     }
     function statusHelper(status){
-      return ({quote_sent:'Your quote or order details are being reviewed.',awaiting_approval:'Your project is waiting for approval before production begins.',awaiting_deposit:'A deposit is needed before production can begin.',in_design:'Your project is being prepared for printing.',in_production:'Your parts are actively being printed or queued on a machine.',post_processing:'Your print is off the machine and being cleaned, checked, or finished.',ready_to_pack:'Your project is ready for final packing.',packed:'Your order is packed and ready for handoff.',ready_for_pickup:'Your order is ready for pickup or local handoff.',shipped:'Your order has shipped. Tracking details will appear when available.',delivered:'Your order has been delivered.',completed:'Your order has been completed. Thank you for choosing OliPoly 3D!'})[status] || 'This is the latest customer-safe update from OliPoly 3D.';
+      return ({quote_sent:'Your quote or order details are being reviewed.',awaiting_approval:'Your project is waiting for approval before production begins.',awaiting_deposit:'A deposit is needed before production can begin.',in_design:'Your project is being prepared and scheduled for production.',in_production:'Your order is in the production stage.',post_processing:'Your order is being cleaned, checked, finished, or packed.',ready_to_pack:'Your order is nearly ready for handoff.',packed:'Your order is packed and ready for pickup, delivery, or shipping.',ready_for_pickup:'Your order is ready for pickup or local handoff.',shipped:'Your order has shipped. Tracking details will appear when available.',delivered:'Your order has been delivered.',completed:'Your order has been completed. Thank you for choosing OliPoly 3D!'})[status] || 'This is the latest customer-safe update from OliPoly 3D.';
     }
     function autoNextText(status){
-      return ({quote_sent:'Next, OliPoly 3D will confirm the details and move the project toward approval or production.',awaiting_approval:'Next, approve the quote or confirm any requested details so production can move forward.',awaiting_deposit:'Next, submit the deposit using the available payment options so production can begin.',in_design:'Next, we’ll finish prep work, confirm print settings, and move the project into production.',in_production:'Next, we’ll finish printing, inspect the parts, and move them into cleanup or finishing.',post_processing:'Next, we’ll complete final cleanup, quality checks, and prepare your order for pickup or shipping.',ready_to_pack:'Next, we’ll package your order and prepare it for pickup, delivery, or shipping.',packed:'Next, your order will be handed off, picked up, delivered, or shipped.',ready_for_pickup:'Next, arrange pickup or follow the provided pickup instructions.',shipped:'Next, watch for tracking updates while your package is on the way.',delivered:'Next, check your package and contact OliPoly 3D if anything needs attention.',completed:'Your order is complete. Save your order number if you need a future reorder or matching project.'})[status] || 'We’ll keep this page updated as your order moves forward.';
+      return ({quote_sent:'Next, OliPoly 3D will confirm the details and move the project toward approval or production.',awaiting_approval:'Next, approve the quote or confirm any requested details so production can move forward.',awaiting_deposit:'Next, submit the deposit using the available payment options so production can begin.',in_design:'Next, we’ll finish prep and move the project into the production queue.',in_production:'Next, we’ll finish production, inspect the parts, and move them into finishing or QC.',post_processing:'Next, we’ll complete final cleanup, quality checks, and prepare your order for pickup or shipping.',ready_to_pack:'Next, we’ll package your order and prepare it for pickup, delivery, or shipping.',packed:'Next, your order will be handed off, picked up, delivered, or shipped.',ready_for_pickup:'Next, arrange pickup or follow the provided pickup instructions.',shipped:'Next, watch for tracking updates while your package is on the way.',delivered:'Next, check your package and contact OliPoly 3D if anything needs attention.',completed:'Your order is complete. Save your order number if you need a future reorder or matching project.'})[status] || 'We’ll keep this page updated as your order moves forward.';
     }
     function formatLastChecked(){
       return new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
