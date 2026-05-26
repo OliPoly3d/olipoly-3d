@@ -135,6 +135,9 @@
     .showcase-card.tall{grid-column:span 4;grid-row:span 2;min-height:560px}
     .showcase-card img,.showcase-card video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;transition:transform .5s ease}
     .showcase-card:hover img,.showcase-card:hover video{transform:scale(1.045)}
+    a.showcase-card{display:block;color:inherit;text-decoration:none;cursor:pointer}
+    a.showcase-card:focus-visible{outline:4px solid rgba(232,79,183,.35);outline-offset:5px}
+    a.showcase-card .pill::after{content:" →"}
     .showcase-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(21,9,25,.08) 0%,rgba(21,9,25,.10) 42%,rgba(21,9,25,.82) 100%),linear-gradient(90deg,rgba(21,9,25,.46),transparent 58%);z-index:1}
     .showcase-label{position:absolute;left:18px;right:18px;bottom:18px;z-index:2;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.36)}
     .showcase-label strong{display:block;font-family:"Playfair Display",serif;font-size:clamp(1.45rem,2.4vw,2.15rem);letter-spacing:-.035em;line-height:.96}
@@ -339,10 +342,10 @@
           <div class="showcase-label"><strong>Playful, eye-catching work.</strong><span>Event favorites, articulated prints, and creative pieces that invite people to pick them up.</span><span class="pill">Creative Prints</span></div>
         </article>
 
-        <article class="showcase-card">
+        <a class="showcase-card" href="branded-details.html" aria-label="Explore branded details examples and custom branded project options">
           <img src="images/custom-company-logo-coasters.png" alt="Custom company logo coasters" />
-          <div class="showcase-label"><strong>Branded details.</strong><span>Coasters, logo pieces, business gifts, and customer-facing branded work.</span><span class="pill">Business</span></div>
-        </article>
+          <div class="showcase-label"><strong>Branded details.</strong><span>Coasters, logo pieces, business gifts, and customer-facing branded work.</span><span class="pill">Explore Business</span></div>
+        </a>
 
         <article class="showcase-card">
           <img src="images/pocket_door_bracket_actual.png" alt="Functional pocket door bracket 3D printed part" />
