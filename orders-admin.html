@@ -708,6 +708,47 @@ body{font-family:Inter,Arial,sans-serif}
 .production-link-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.production-link-stat{padding:10px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}.production-link-stat span{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:900}.production-link-stat strong{display:block;margin-top:3px;color:var(--text);font-size:.88rem;overflow-wrap:anywhere}.production-link-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 @media(max-width:720px){.production-link-grid{grid-template-columns:1fr 1fr}.production-link-panel{padding:12px}}
 
+
+
+/* === Orders Admin emergency stability guard ===
+   Keeps hidden PDF/email template DOM from leaking into the visible page and
+   restores the intended dark admin surface if a later patch/style collides.
+*/
+html, body{
+  background:
+    radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),
+    radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),
+    linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%) !important;
+  color:var(--text,#eef4ff) !important;
+}
+.invoice-print-area,
+#invoicePrintArea,
+.pdf-template,
+.pdf-source,
+.email-template,
+.email-source,
+template{
+  display:none !important;
+  visibility:hidden !important;
+  height:0 !important;
+  overflow:hidden !important;
+}
+.email-preview-modal.hidden,
+#invoiceEmailModal.hidden,
+#completionEmailModal.hidden{
+  display:none !important;
+  visibility:hidden !important;
+}
+.topbar,.card,.summary,.order-row{
+  background:var(--panel,rgba(12,19,40,.88)) !important;
+  border-color:var(--line,rgba(126,144,255,.18)) !important;
+}
+.btn-row .btn,.btn-row .btn-ghost,.btn-row .btn-danger,
+.topbar .btn,.topbar .btn-ghost,.topbar .btn-danger{
+  pointer-events:auto !important;
+  opacity:1 !important;
+}
+
 </style>
 </head>
 <body>
@@ -2370,6 +2411,77 @@ const payload = snapshotForm();
   document.addEventListener('click', () => setTimeout(refreshProductionPanel, 250));
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refreshProductionPanel);
   else refreshProductionPanel();
+})();
+</script>
+
+
+
+<script>
+/* === Orders Admin emergency stability + button repair ===
+   Non-destructive safety layer for the recurring light-background / hidden PDF
+   template leak / topbar button binding issue. It does not change data or sync.
+*/
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function hardHideTemplateAreas(){
+    ['invoicePrintArea'].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.setAttribute('aria-hidden','true');
+      el.style.setProperty('display','none','important');
+      el.style.setProperty('visibility','hidden','important');
+      el.style.setProperty('height','0','important');
+      el.style.setProperty('overflow','hidden','important');
+    });
+    ['invoiceEmailModal','completionEmailModal'].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      if (el.classList.contains('hidden') || el.getAttribute('aria-hidden') === 'true') {
+        el.classList.add('hidden');
+      }
+    });
+  }
+
+  function bindButton(id, fnName){
+    const btn = $(id);
+    if (!btn || btn.dataset.ordersEmergencyBound === 'true') return;
+    btn.dataset.ordersEmergencyBound = 'true';
+    btn.addEventListener('click', function(event){
+      if (typeof window[fnName] !== 'function') return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { window[fnName](); }
+      catch(error){
+        console.error(`Orders Admin ${fnName} failed:`, error);
+        alert(`${fnName} failed: ${error && error.message ? error.message : error}`);
+      }
+    }, true);
+  }
+
+  function repairTopButtons(){
+    bindButton('loginBtn','login');
+    bindButton('signupBtn','signup');
+    bindButton('logoutBtn','logout');
+    bindButton('refreshBtn','fetchOrders');
+    bindButton('newBtn','resetForm');
+    bindButton('generateInvoicePdfBtn','openInvoiceV2FromCurrentOrder');
+    bindButton('prepareInvoiceEmailBtn','prepareInvoiceEmail');
+    bindButton('prepareCompletionEmailBtn','prepareCompletionEmail');
+  }
+
+  function stabilize(){
+    hardHideTemplateAreas();
+    repairTopButtons();
+    document.documentElement.classList.add('orders-admin-stabilized');
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stabilize);
+  else stabilize();
+  window.addEventListener('load', stabilize);
+  setTimeout(stabilize, 250);
+  setTimeout(stabilize, 1000);
+  setTimeout(stabilize, 2500);
 })();
 </script>
 
@@ -4822,7 +4934,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
 </script>
 
-  <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true">
+  <div id="invoicePrintArea" class="invoice-print-area" aria-hidden="true" style="display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;">
     <div class="invoice-sheet">
       <div class="invoice-topbar"></div>
       <div class="invoice-header">
