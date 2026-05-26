@@ -458,7 +458,7 @@
 
 
     .close-roll-grid{display:grid;gap:8px;margin-top:10px}
-    .close-roll-row{display:grid;grid-template-columns:1.1fr 1.5fr .7fr .7fr .7fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
+    .close-roll-row{display:grid;grid-template-columns:1.1fr 1.4fr .65fr .65fr .65fr .65fr;gap:8px;align-items:end;padding:10px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid rgba(101,60,120,.10)}
     .close-roll-row label{font-size:.74rem}
     @media(max-width:900px){.close-roll-row{grid-template-columns:1fr 1fr}.close-roll-row label:first-child{grid-column:1/-1}}
 
@@ -757,7 +757,19 @@
         grid-template-columns:repeat(2,minmax(0,1fr)) !important;
       }
     }
-</style>
+
+
+    /* === Cloud-safe production/inventory integration pass === */
+    .workflow-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
+    .workflow-card{border-radius:20px;padding:12px;background:rgba(255,255,255,.70);border:1px solid rgba(101,60,120,.12);box-shadow:0 10px 24px rgba(84,38,94,.06)}
+    .workflow-card span{display:block;font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+    .workflow-card strong{display:block;margin-top:4px;color:var(--ink);font-size:1rem;line-height:1.2}
+    .reservation-chip{display:inline-flex;gap:5px;align-items:center;border-radius:999px;padding:5px 7px;background:rgba(95,207,255,.12);border:1px solid rgba(95,207,255,.20);color:#1d5d7d;font-size:.64rem;font-weight:900}
+    .scrap-chip{display:inline-flex;gap:5px;align-items:center;border-radius:999px;padding:5px 7px;background:rgba(239,71,111,.10);border:1px solid rgba(239,71,111,.18);color:#9a2140;font-size:.64rem;font-weight:900}
+    .start-chip{display:inline-flex;gap:5px;align-items:center;border-radius:999px;padding:5px 7px;background:rgba(52,199,89,.12);border:1px solid rgba(52,199,89,.18);color:#23763b;font-size:.64rem;font-weight:900}
+    @media(max-width:760px){.workflow-strip{grid-template-columns:1fr}.close-roll-row{grid-template-columns:1fr 1fr!important}.close-roll-row label:first-child,.close-roll-row label:nth-child(2){grid-column:1/-1}}
+
+  </style>
 </head>
 <body>
 <div class="wrap">
@@ -1563,7 +1575,7 @@
     const rows = [];
     for(let i=0;i<count;i++){
       const r = current[i] || {};
-      const pickValue = r.material || r.color || r.filament ? inventoryMaterialValue({material:r.material||'', color:r.color||'', filament:r.filament||''}) : '';
+      const pickValue = r.inventory_pick || (r.material || r.color || r.filament ? inventoryMaterialValue({material:r.material||'', color:r.color||'', filament:r.filament||''}) : '');
       rows.push(`<div class="recipe-row" data-recipe-row="${i}">
         <label>Inventory filament ${i+1}<select id="recipeInventoryPick_${i}">${inventorySelectOptions(pickValue)}</select></label>
         <label>Material ${i+1}<input id="recipeMaterial_${i}" value="${esc(r.material || '')}" placeholder="Auto from inventory" readonly></label>
@@ -1805,11 +1817,92 @@
     }
   }
 
+
+  /* === Cloud-safe reservations / started prints / per-material scrap helpers === */
+  function rawRowsForProduction(){ return localRead(LS_RAW, []); }
+  function writeRawRowsForProduction(rows){ localWrite(LS_RAW, rows); }
+  function productionMaterialKeyParts(value){ return parseInventoryMaterialValue(value || ''); }
+  function rawMatchesRecipe(r, rec){
+    const m = String(r.material_type || r.material || '').trim().toLowerCase();
+    const c = String(r.color || '').trim().toLowerCase();
+    const b = String(r.brand || r.filament || '').trim().toLowerCase();
+    return (!rec.material || m === String(rec.material).trim().toLowerCase())
+      && (!rec.color || c === String(rec.color).trim().toLowerCase())
+      && (!rec.filament || b === String(rec.filament).trim().toLowerCase());
+  }
+  function buildMaterialReservations(job){
+    const qty = Math.max(1, num(job.quantity) || 1);
+    const recipe = safeJsonParse(job.filament_recipe, []);
+    const rawRows = rawRowsForProduction();
+    const reservations = [];
+    recipe.forEach((row, idx)=>{
+      const parts = row.inventory_pick ? productionMaterialKeyParts(row.inventory_pick) : {material:row.material, color:row.color, filament:row.filament};
+      let remainingNeed = Math.max(0, num(row.grams_each) * qty);
+      if(!remainingNeed) return;
+      const candidates = rawRows
+        .filter(r=>rawMatchesRecipe(r, parts))
+        .sort((a,b)=>(num(a.remaining_grams)-num(a.reserved_grams)) - (num(b.remaining_grams)-num(b.reserved_grams)));
+      candidates.forEach(r=>{
+        if(remainingNeed <= 0) return;
+        const available = Math.max(0, num(r.remaining_grams) - num(r.reserved_grams));
+        const take = Math.min(available || remainingNeed, remainingNeed);
+        if(take > 0){
+          reservations.push({raw_material_roll_id:r.id, material:parts.material||'', color:parts.color||'', filament:parts.filament||'', grams_reserved:Math.round(take*10)/10, recipe_index:idx});
+          remainingNeed -= take;
+        }
+      });
+      if(remainingNeed > 0){
+        reservations.push({raw_material_roll_id:null, material:parts.material||'', color:parts.color||'', filament:parts.filament||'', grams_reserved:Math.round(remainingNeed*10)/10, recipe_index:idx, shortage:true});
+      }
+    });
+    return reservations;
+  }
+  async function cloudSaveRawFromProduction(r){
+    if(!state.user?.id || !r?.id) return false;
+    const payload = {...r, user_id:state.user.id, updated_at:new Date().toISOString()};
+    try{
+      await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+      return true;
+    }catch(err){ console.warn('Reservation raw cloud save failed', err); return false; }
+  }
+  async function applyReservationDelta(previousJob, nextJob){
+    const rows = rawRowsForProduction();
+    if(!rows.length) return;
+    const delta = new Map();
+    (previousJob?.material_reservations || []).forEach(r=>{ if(r.raw_material_roll_id) delta.set(r.raw_material_roll_id, (delta.get(r.raw_material_roll_id)||0) - num(r.grams_reserved)); });
+    (nextJob?.material_reservations || []).forEach(r=>{ if(r.raw_material_roll_id) delta.set(r.raw_material_roll_id, (delta.get(r.raw_material_roll_id)||0) + num(r.grams_reserved)); });
+    const changed = [];
+    rows.forEach(r=>{
+      const d = num(delta.get(r.id));
+      if(d){ r.reserved_grams = Math.max(0, num(r.reserved_grams) + d); r.updated_at = new Date().toISOString(); changed.push(r); }
+    });
+    if(changed.length){
+      writeRawRowsForProduction(rows);
+      for(const r of changed) await cloudSaveRawFromProduction(r);
+    }
+  }
+  async function releaseReservationForJob(job){
+    if(!job?.material_reservations?.length) return;
+    await applyReservationDelta(job, {...job, material_reservations:[]});
+    job.material_reservations = [];
+  }
+  function reservationSummaryHtml(j){
+    const res = j.material_reservations || [];
+    if(!res.length) return '';
+    const shortage = res.filter(r=>r.shortage).reduce((s,r)=>s+num(r.grams_reserved),0);
+    const reserved = res.filter(r=>!r.shortage).reduce((s,r)=>s+num(r.grams_reserved),0);
+    return `<span class="reservation-chip">📌 ${Math.round(reserved)}g reserved${shortage?` · ⚠ ${Math.round(shortage)}g short`:''}</span>`;
+  }
+  function perMaterialScrapTotal(allocations){ return (allocations||[]).reduce((s,a)=>s+num(a.scrap_grams),0); }
+
   async function saveJob(e){
     e?.preventDefault();
     try{
       const j = formJob();
       if(!j.job_title) throw new Error('Job title is required.');
+      const previousJob = state.jobs.find(x=>x.id===j.id);
+      j.material_reservations = CLOSED.includes(j.production_status) ? [] : buildMaterialReservations(j);
+      await applyReservationDelta(previousJob, j);
 
       state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
       localWrite(LS_JOBS,state.jobs);
@@ -1840,6 +1933,8 @@
       updated.print_started_at = null;
       updated.estimated_finish_at = null;
     }
+    updated.material_reservations = CLOSED.includes(status) ? [] : buildMaterialReservations(updated);
+    await applyReservationDelta(j, updated);
     try{
       await cloudSaveJob(updated);
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
@@ -1853,6 +1948,7 @@
     const j = state.jobs.find(x=>x.id===id);
     if(!j || !confirm(`Delete "${j.job_title}"?`)) return;
     try{
+      await releaseReservationForJob(j);
       if(state.user?.id && !String(id).startsWith('local-')){
         await sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});
       }
@@ -1903,7 +1999,8 @@
       return `<div class="close-roll-row" data-close-roll-row="${i}">
         <label>Filament<input id="closeRollLabel_${i}" value="${esc(label)}" readonly></label>
         <label>Roll used<select id="closeRollId_${i}">${rollOptionHtml(rolls)}</select></label>
-        <label>Actual grams<input id="closeRollGrams_${i}" type="number" min="0" step="0.1" value="${esc(expected || '')}"></label>
+        <label>Good grams<input id="closeRollGoodGrams_${i}" type="number" min="0" step="0.1" value="${esc(expected || '')}"></label>
+        <label>Scrap grams<input id="closeRollScrapGrams_${i}" type="number" min="0" step="0.1" value="${esc(r.scrap_grams || '')}"></label>
         <label>Finished roll?<select id="closeRollFinished_${i}"><option value="no">No</option><option value="yes">Yes</option></select></label>
         <label>Spool freed?<select id="closeRollSpoolFreed_${i}"><option value="no">No</option><option value="yes">Yes</option></select></label>
       </div>`;
@@ -1914,14 +2011,18 @@
     const rows = [...document.querySelectorAll('[data-close-roll-row]')];
     return rows.map(row=>{
       const i = row.dataset.closeRollRow;
+      const good = num($(`closeRollGoodGrams_${i}`)?.value);
+      const scrap = num($(`closeRollScrapGrams_${i}`)?.value);
       return {
         label:$(`closeRollLabel_${i}`)?.value || '',
         raw_material_roll_id:$(`closeRollId_${i}`)?.value || null,
-        grams_used:num($(`closeRollGrams_${i}`)?.value),
+        good_grams:good,
+        scrap_grams:scrap,
+        grams_used:good + scrap,
         finished_roll:$(`closeRollFinished_${i}`)?.value === 'yes',
         spool_freed:$(`closeRollSpoolFreed_${i}`)?.value === 'yes'
       };
-    }).filter(x=>x.raw_material_roll_id || x.grams_used || x.finished_roll || x.spool_freed);
+    }).filter(x=>x.raw_material_roll_id || x.grams_used || x.good_grams || x.scrap_grams || x.finished_roll || x.spool_freed);
   }
 
   function applyRollCloseoutLocal(allocations){
@@ -2083,27 +2184,30 @@
     const j = state.jobs.find(x=>x.id===state.closingId);
     if(!j) return closeClose();
     const now = new Date().toISOString();
+    const closeAllocations = closeRollAllocations();
+    const closeScrapTotal = perMaterialScrapTotal(closeAllocations) || num($('closeScrapGrams').value);
+    const closeGoodTotal = closeAllocations.some(x=>x.raw_material_roll_id || x.good_grams || x.scrap_grams) ? closeAllocations.reduce((s,x)=>s+num(x.good_grams),0) : num($('closeGrams').value);
     const updated = {
       ...j,
       production_status:$('closeStatus').value,
       actual_machine:$('closeMachine').value,
       actual_quantity:num($('closeQty').value),
       actual_print_hours:num($('closeHours').value),
-      actual_grams_used:num($('closeGrams').value),
+      actual_grams_used:closeGoodTotal,
       primary_material:$('closeMaterial').value.trim() || j.primary_material,
       primary_color:$('closeColor').value.trim() || j.primary_color,
       actual_filament_breakdown:$('closeBreakdown').value.trim() || null,
-      scrap_grams:num($('closeScrapGrams').value),
+      scrap_grams:closeScrapTotal,
       failure_reason:$('closeFailureReason').value || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
-      roll_usages:addScrapToRollUsages(closeRollAllocations(), num($('closeScrapGrams').value)),
-      finished_roll:closeRollAllocations().some(x=>x.finished_roll),
-      spool_freed:closeRollAllocations().some(x=>x.spool_freed),
+      roll_usages:closeAllocations,
+      finished_roll:closeAllocations.some(x=>x.finished_roll),
+      spool_freed:closeAllocations.some(x=>x.spool_freed),
       close_note:$('closeNote').value.trim() || null,
       pm_hours_applied:true,
       pm_hours_applied_machine:$('closeMachine').value,
       pm_hours_applied_hours:num($('closeHours').value),
-      total_inventory_grams_deducted:num($('closeGrams').value) + num($('closeScrapGrams').value),
+      total_inventory_grams_deducted:closeGoodTotal + closeScrapTotal,
       pm_hours_applied_at:now,
       closed_at:now,
       updated_at:now
@@ -2112,6 +2216,8 @@
     const deductionBreakdown = addScrapToBreakdownRows(breakdown, updated.scrap_grams, updated.primary_material, updated.primary_color);
     const addFinished = $('closeAddFinished').value === 'yes';
     try{
+      await releaseReservationForJob(j);
+      updated.material_reservations = [];
       if(state.user?.id){
         try{
           await sbApi('/rest/v1/rpc/complete_production_job',{
@@ -3402,7 +3508,7 @@
       return `<article class="detail-card" style="border-left:6px solid ${t.color}">
         <div class="detail-head">
           <div><h3>${t.icon} ${esc(j.job_title)}</h3><div class="chips"><span class="chip type" style="--type-bg:${t.bg};--type-text:${t.text}">${esc(t.label)}</span><span class="chip">${esc(STATUS[j.production_status]||j.production_status)}</span>${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}</div></div>
-          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button><button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
+          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button>${!CLOSED.includes(j.production_status) && j.production_status!=='printing'?`<button class="mini-btn" data-start-print="${j.id}" type="button">Start Print</button>`:''}${!CLOSED.includes(j.production_status)?`<button class="mini-btn danger-btn" data-fail-scrap="${j.id}" type="button">Failed / Scrap</button>`:''}<button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
         </div>
         <div class="detail-grid">
           <div class="detail-item"><span>Customer/Purpose</span><strong>${esc(j.customer_name || '—')}</strong></div>
@@ -3771,6 +3877,10 @@
     if(edit){ const j=state.jobs.find(x=>x.id===edit); if(j) fillForm(j); }
     if(del) deleteJob(del);
     if(close) openClose(close);
+    const startPrint = e.target.closest('[data-start-print]')?.dataset.startPrint;
+    const failScrap = e.target.closest('[data-fail-scrap]')?.dataset.failScrap;
+    if(startPrint) setStatus(startPrint,'printing');
+    if(failScrap){ state.closingId = failScrap; openClose(failScrap); $('closeStatus').value='failed_scrap'; }
     if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
     if(markPm) markPmDone(markPm);
     if(savePm) savePmFromCard(savePm);
@@ -3824,6 +3934,16 @@
   $('closeQty').addEventListener('input', () => {
     const j = state.jobs.find(x=>x.id===state.closingId);
     if(j) populateCloseRollAllocations(j);
+  });
+  document.addEventListener('input', e=>{
+    if(e.target.id && e.target.id.startsWith('closeRollScrapGrams_')){
+      const sum = closeRollAllocations().reduce((s,x)=>s+num(x.scrap_grams),0);
+      if($('closeScrapGrams')) $('closeScrapGrams').value = sum ? String(Math.round(sum*10)/10) : '';
+    }
+    if(e.target.id && e.target.id.startsWith('closeRollGoodGrams_')){
+      const sum = closeRollAllocations().reduce((s,x)=>s+num(x.good_grams),0);
+      if($('closeGrams')) $('closeGrams').value = sum ? String(Math.round(sum*10)/10) : '';
+    }
   });
   $('quickAddUsageBtn').addEventListener('click', quickAddUsage);
   $('searchInput').addEventListener('input', e=>{state.search=e.target.value; render();});
