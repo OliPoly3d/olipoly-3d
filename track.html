@@ -434,9 +434,6 @@ img{max-width:100%}
       </div>
 
       <div class="progress" aria-label="Order progress timeline">
-        <div class="customer-milestone-note">
-          <strong>Customer-safe timeline:</strong> this shows where your project is in the process without exposing internal shop notes, material costs, or printer details.
-        </div>
         <div class="timeline">
           <div class="timeline-fill" id="timelineFill"></div>
           <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label"><strong>Approved</strong><small>Details confirmed</small></div></div>
@@ -492,7 +489,7 @@ img{max-width:100%}
       <a class="btn" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
     </section>
 
-    <p class="footer">OliPoly 3D LLC • Customer-safe order tracking • <a href="start-project.html">Start a new project</a></p>
+    <p class="footer">OliPoly 3D LLC • Order tracking • <a href="start-project.html">Start a new project</a></p>
   </main>
 
   <div class="poly-helper" id="polyHelper">
@@ -743,7 +740,7 @@ if(venmo && canShowPaymentButtons){
       }
 
       const step=progressStep(o.status);
-      els.viewMilestone.textContent = document.querySelector(`.step[data-step="${step}"] .step-label`)?.textContent || '—';
+      els.viewMilestone.textContent = document.querySelector(`.step[data-step="${step}"] .step-label strong`)?.textContent || '—';
       els.timelineFill.style.width=`${(step-1)*25}%`;
       document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active',Number(s.dataset.step)<=step));
 
