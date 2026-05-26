@@ -5644,103 +5644,181 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
 
 
+
 <script>
-/* === OliPoly Orders Admin Production Link Status - safe additive layer ===
-   Adds a read-only production status panel without touching invoice/email/template code.
-   Important: no script tags are written inside dynamic HTML strings.
+/* === OliPoly Orders Admin Production Status Card V2 - safe additive layer ===
+   Read-only panel. Does not write inside PDF/email templates and does not touch invoice generation.
 */
 (function(){
   const LS_JOBS = 'olipoly_production_jobs_v3';
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const statusLabel = (value) => String(value || 'Not linked').replace(/_/g,' ').replace(/\b\w/g, ch => ch.toUpperCase());
+  const fmt = (v) => v ? String(v) : '—';
+  const statusLabel = (value) => String(value || 'not_linked').replace(/_/g,' ').replace(/\b\w/g, ch => ch.toUpperCase());
   const readJobs = () => {
     try {
       const parsed = JSON.parse(localStorage.getItem(LS_JOBS) || '[]');
       return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-      return [];
-    }
+    } catch (_) { return []; }
   };
+  function dateText(value){
+    if (!value) return '—';
+    try { return new Date(value).toLocaleString(); } catch (_) { return String(value); }
+  }
   function orderKey(){ return ($('orderNumber')?.value || '').trim(); }
   function quoteKey(){ return ($('quoteNumber')?.value || $('sourceQuoteNumber')?.value || '').trim(); }
+  function orderTitle(){ return ($('orderTitle')?.value || '').trim(); }
   function findLinkedJob(){
     const order = orderKey();
     const quote = quoteKey();
+    const title = orderTitle().toLowerCase();
     const jobs = readJobs();
     return jobs.find(j =>
-      (order && (j.order_number === order || j.linked_order_number === order || j.op_number === order)) ||
-      (quote && (j.quote_number === quote || j.linked_quote_number === quote || j.source_quote_number === quote))
+      (order && [j.order_number,j.linked_order_number,j.op_number,j.source_order_number].includes(order)) ||
+      (quote && [j.quote_number,j.linked_quote_number,j.source_quote_number].includes(quote)) ||
+      (title && String(j.job_title || j.title || '').toLowerCase() === title)
     ) || null;
   }
   function ensurePanel(){
-    let panel = $('productionLinkPanel');
+    let panel = $('productionStatusPanel');
     if (panel) return panel;
-    const anchor = $('formMessage') || document.querySelector('.action-groups') || document.querySelector('.card');
+    const anchor = $('formMessage') || $('publicPreview') || document.querySelector('.action-groups') || document.querySelector('.card');
     if (!anchor || !anchor.parentElement) return null;
-    panel = document.createElement('div');
-    panel.id = 'productionLinkPanel';
-    panel.className = 'production-link-panel';
-    panel.innerHTML = '<div class="production-link-head"><strong>Production link</strong><span id="productionLinkBadge">Not linked</span></div><div id="productionLinkBody" class="production-link-body">No linked Production Control job found for this order yet.</div>';
+    panel = document.createElement('section');
+    panel.id = 'productionStatusPanel';
+    panel.className = 'production-status-panel';
+    panel.setAttribute('aria-label','Linked production job status');
+    panel.innerHTML = '' +
+      '<div class="production-status-head">' +
+        '<div><span class="workspace-kicker">Production</span><h3>Linked Production Job</h3><p id="productionStatusSub">No linked Production Control job found for this order yet.</p></div>' +
+        '<div class="production-status-actions"><span id="productionStatusBadge">Not linked</span><button class="btn-ghost" id="openProductionBtn" type="button">Open Production</button></div>' +
+      '</div>' +
+      '<div id="productionStatusGrid" class="production-status-grid"></div>' +
+      '<div id="productionStatusNote" class="production-status-note">This is a read-only internal view. Orders Admin remains the invoice, tracking, and fulfillment source.</div>';
     anchor.parentElement.insertBefore(panel, anchor.nextSibling);
     return panel;
   }
-  function renderProductionPanel(){
+  function renderProductionStatusPanel(){
     const panel = ensurePanel();
     if (!panel) return;
-    const badge = $('productionLinkBadge');
-    const body = $('productionLinkBody');
+    const badge = $('productionStatusBadge');
+    const sub = $('productionStatusSub');
+    const grid = $('productionStatusGrid');
+    const note = $('productionStatusNote');
     const job = findLinkedJob();
     if (!job) {
       if (badge) badge.textContent = 'Not linked';
-      if (body) body.innerHTML = 'No linked Production Control job found for this order yet.';
+      if (sub) sub.textContent = 'No linked Production Control job found for this order yet.';
+      if (grid) grid.innerHTML = '';
+      if (note) note.textContent = 'Tip: push the job from Production Control to Quote, then accept the quote so Q/OP numbers can connect the records.';
       return;
     }
     const status = statusLabel(job.production_status || job.status);
     if (badge) badge.textContent = status;
-    if (body) body.innerHTML = [
-      '<div><span>Job</span><strong>' + esc(job.job_title || job.title || 'Production job') + '</strong></div>',
-      '<div><span>Machine</span><strong>' + esc(job.actual_machine || job.machine_preference || '—') + '</strong></div>',
-      '<div><span>Quote</span><strong>' + esc(job.quote_number || job.linked_quote_number || '—') + '</strong></div>',
-      '<div><span>Order</span><strong>' + esc(job.order_number || job.linked_order_number || '—') + '</strong></div>'
-    ].join('');
+    if (sub) sub.textContent = job.job_title || job.title || 'Production job';
+    if (note) note.textContent = 'Production status is pulled from the linked Production Control job in this browser/cloud sync cache.';
+    if (grid) grid.innerHTML = [
+      ['Job', job.job_title || job.title || 'Production job'],
+      ['Machine', job.actual_machine || job.machine || job.machine_preference || '—'],
+      ['Quote', job.quote_number || job.linked_quote_number || job.source_quote_number || '—'],
+      ['Order', job.order_number || job.linked_order_number || job.source_order_number || '—'],
+      ['Started', dateText(job.print_started_at || job.started_at)],
+      ['ETA', dateText(job.estimated_finish_at || job.due_date)],
+      ['Material', [job.primary_material, job.primary_color].filter(Boolean).join(' / ') || 'Recipe rows'],
+      ['Hours', job.actual_print_hours || job.estimated_total_hours || job.estimated_hours_each || '—']
+    ].map(([label,value]) => '<div><span>'+esc(label)+'</span><strong>'+esc(fmt(value))+'</strong></div>').join('');
   }
-  function bindProductionPanelRefresh(){
-    document.addEventListener('input', (event) => {
-      if (['orderNumber','quoteNumber','sourceQuoteNumber'].includes(event.target?.id)) renderProductionPanel();
+  function bindProductionStatusPanel(){
+    const renderSoon = () => setTimeout(renderProductionStatusPanel, 80);
+    ['orderNumber','quoteNumber','sourceQuoteNumber','orderTitle','status'].forEach(id => {
+      $(id)?.addEventListener('input', renderSoon);
+      $(id)?.addEventListener('change', renderSoon);
     });
-    document.addEventListener('change', (event) => {
-      if (['orderNumber','quoteNumber','sourceQuoteNumber'].includes(event.target?.id)) renderProductionPanel();
-    });
-    document.addEventListener('click', () => setTimeout(renderProductionPanel, 60), true);
-    setTimeout(renderProductionPanel, 250);
-    setTimeout(renderProductionPanel, 1000);
+    document.addEventListener('click', (event) => {
+      if (event.target?.id === 'openProductionBtn') {
+        event.preventDefault();
+        const params = new URLSearchParams();
+        if (orderKey()) params.set('order', orderKey());
+        if (quoteKey()) params.set('quote', quoteKey());
+        window.open('production-control.html' + (params.toString() ? '?' + params.toString() : ''), '_blank', 'noopener,noreferrer');
+        return;
+      }
+      if (event.target.closest?.('.order-row') || ['newBtn','newBtnInline','refreshBtn','loginBtn','signupBtn','logoutBtn','saveBtn'].includes(event.target?.id)) renderSoon();
+    }, true);
+    setTimeout(renderProductionStatusPanel, 250);
+    setTimeout(renderProductionStatusPanel, 1000);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindProductionPanelRefresh);
-  else bindProductionPanelRefresh();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindProductionStatusPanel);
+  else bindProductionStatusPanel();
+})();
+</script>
+
+<script>
+/* === Orders Admin final button safety guard ===
+   Rebinds top buttons after all other scripts load. This prevents a late script error from leaving the header dead.
+*/
+(function(){
+  function bindOrdersAdminTopButtonsSafely(){
+    const pairs = [
+      ['loginBtn', 'login'],
+      ['signupBtn', 'signup'],
+      ['logoutBtn', 'logout'],
+      ['refreshBtn', 'fetchOrders'],
+      ['newBtn', 'resetForm']
+    ];
+    pairs.forEach(([id, fnName]) => {
+      const btn = document.getElementById(id);
+      const fn = window[fnName] || (typeof globalThis !== 'undefined' ? globalThis[fnName] : null);
+      if (!btn || typeof fn !== 'function' || btn.dataset.finalTopSafeBound === 'true') return;
+      btn.dataset.finalTopSafeBound = 'true';
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        try { fn(); }
+        catch (error) {
+          console.error('Orders Admin top button failed:', id, error);
+          const msg = document.getElementById('authMessage') || document.getElementById('formMessage');
+          if (msg) { msg.style.display = 'block'; msg.textContent = 'Button failed: ' + (error?.message || error); }
+        }
+      }, true);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindOrdersAdminTopButtonsSafely);
+  else bindOrdersAdminTopButtonsSafely();
+  setTimeout(bindOrdersAdminTopButtonsSafely, 250);
+  setTimeout(bindOrdersAdminTopButtonsSafely, 1000);
+  setTimeout(bindOrdersAdminTopButtonsSafely, 2200);
 })();
 </script>
 
 <style>
-/* === Orders Admin production link panel, safe CSS only === */
-.production-link-panel{
+/* === Orders Admin Production Status Card V2 - safe CSS only === */
+.production-status-panel{
   margin:14px 0;
-  padding:14px;
-  border-radius:20px;
-  border:1px solid rgba(46,230,196,.18);
-  background:rgba(46,230,196,.045);
+  padding:16px;
+  border-radius:24px;
+  border:1px solid rgba(46,230,196,.20);
+  background:linear-gradient(135deg,rgba(46,230,196,.06),rgba(126,123,255,.045));
   color:var(--text,#eef4ff);
+  box-shadow:0 16px 36px rgba(0,0,0,.16);
 }
-.production-link-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
-.production-link-head strong{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted,#a8b5db)}
-.production-link-head span{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(46,230,196,.10);border:1px solid rgba(46,230,196,.22);font-size:.72rem;font-weight:900;color:#cffff0}
-.production-link-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;color:var(--muted,#a8b5db);font-size:.84rem;line-height:1.45}
-.production-link-body div{padding:9px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(126,144,255,.12)}
-.production-link-body span{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted,#a8b5db);font-weight:900;margin-bottom:2px}
-.production-link-body strong{display:block;color:var(--text,#eef4ff);font-size:.86rem;overflow-wrap:anywhere}
-/* Guard against template leak display if an old cached build still has it */
-.invoice-print-area,.email-preview-modal.hidden,.print-template-hidden{display:none!important}
-@media(max-width:720px){.production-link-body{grid-template-columns:1fr 1fr}}
+.production-status-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}
+.production-status-head h3{margin:8px 0 4px;color:var(--text,#eef4ff);font-size:1.28rem;line-height:1}
+.production-status-head p{margin:0;color:var(--muted,#a8b5db);line-height:1.45}
+.production-status-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.production-status-actions span{
+  display:inline-flex;border-radius:999px;padding:7px 10px;background:rgba(46,230,196,.11);
+  border:1px solid rgba(46,230,196,.24);font-size:.72rem;font-weight:900;color:#cffff0;white-space:nowrap
+}
+.production-status-actions .btn-ghost{min-height:34px;padding:7px 10px;font-size:.78rem}
+.production-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.production-status-grid div{padding:10px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(126,144,255,.13)}
+.production-status-grid span{display:block;font-size:.61rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted,#a8b5db);font-weight:900;margin-bottom:3px}
+.production-status-grid strong{display:block;color:var(--text,#eef4ff);font-size:.86rem;overflow-wrap:anywhere}
+.production-status-note{margin-top:10px;color:var(--muted,#a8b5db);font-size:.82rem;line-height:1.45}
+/* Strong guard against template leakage in old cached builds */
+.invoice-print-area,.packing-print-area,.print-template-hidden,.email-preview-modal.hidden{display:none!important}
+@media(max-width:900px){.production-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.production-status-head{display:grid}.production-status-actions{justify-content:flex-start}.production-status-grid{grid-template-columns:1fr}}
 </style>
 </body>
 </html>
