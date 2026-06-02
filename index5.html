@@ -114,10 +114,11 @@
     .mobile-short-sub{display:none}
 
     .nav-links{
-      display:flex;align-items:center;gap:18px;color:#604966;
-      font-family:"Playfair Display",serif;font-weight:700;font-size:1rem;
+      display:flex;align-items:center;gap:16px;color:#604966;
+      font-family:"Playfair Display",serif;font-weight:700;font-size:.98rem;
     }
-    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease}
+    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease;text-align:center;line-height:1.08}
+    .nav-links a.nav-stack{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
     .nav-links a:hover{opacity:1;transform:translateY(-1px)}
 
     .nav-cta,.button-primary,.button-secondary{
@@ -159,12 +160,9 @@
     .hero h1{margin:22px 0 18px;font-family:"Playfair Display",serif;font-size:clamp(3rem,8vw,6.55rem);line-height:.88;letter-spacing:-.075em;max-width:780px}
     .gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}
     .hero-copy{max-width:640px;color:#6f5c78;font-size:clamp(1.02rem,1.7vw,1.16rem);line-height:1.64;margin:0 0 14px}
-    .hero-materials{margin:0 0 26px;color:#8d5d9a;font-size:.88rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;line-height:1.45}
+    .hero-materials{margin:0 0 20px;color:#8d5d9a;font-size:.88rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;line-height:1.45}
     .hero-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:center;max-width:520px}
     .hero-actions .button-primary,.hero-actions .button-secondary{width:100%;min-height:52px;text-align:center}
-    .trust-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin-top:26px;max-width:520px;color:#806a8a;font-size:.86rem;font-weight:900}
-    .trust-row span{display:flex;align-items:center;justify-content:center;min-height:38px;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid var(--line);text-align:center;white-space:nowrap}
-
     .poly-stage{position:relative;min-height:610px;display:grid;place-items:center;isolation:isolate}
     .poly-glow{position:absolute;width:min(92%,430px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,208,245,.95),transparent 64%),radial-gradient(circle at 70% 25%,rgba(135,214,255,.48),transparent 38%);filter:blur(5px);opacity:.9;z-index:-2}
     .poly-card{width:min(100%,430px);border-radius:42px;padding:16px;background:rgba(255,255,255,.74);box-shadow:0 30px 90px rgba(83,41,97,.2);border:1px solid rgba(255,255,255,.78);transform:rotate(1.5deg);animation:floaty 6s ease-in-out infinite}
@@ -334,11 +332,9 @@
       .eyebrow{font-size:.68rem;padding:8px 11px}
       .hero h1{font-size:clamp(3rem,18vw,4.65rem);line-height:.88;margin:18px 0 14px;letter-spacing:-.07em}
       .hero-copy{font-size:.98rem;line-height:1.56;margin-bottom:10px}
-      .hero-materials{font-size:.72rem;letter-spacing:.035em;margin-bottom:18px}
+      .hero-materials{font-size:.72rem;letter-spacing:.035em;margin-bottom:14px}
       .hero-actions{grid-template-columns:1fr;gap:10px;max-width:none}
       .hero-actions .button-primary,.hero-actions .button-secondary{min-height:50px;padding:13px 16px}
-      .trust-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px;font-size:.74rem}
-      .trust-row span{min-height:34px;padding:8px 6px}
       .poly-stage{min-height:410px}
       .poly-card{width:min(92%,330px);border-radius:30px;padding:10px}
       .poly-card img{border-radius:22px;aspect-ratio:4/4.8}
@@ -477,7 +473,7 @@ img{max-width:100%}
         <span class="brand-mark"><img src="images/poly-head.png" alt="Poly mascot" /></span>
         <span class="brand-text">
           <span class="brand-name">Oli<span>Poly</span> 3D</span>
-          <span class="brand-sub brand-sub-full">Custom printing • Creative builds • Prototypes</span>
+          <span class="brand-sub brand-sub-full">Custom printing • Creative builds</span>
           <span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
         </span>
       </a>
@@ -486,12 +482,12 @@ img{max-width:100%}
         <a href="#work">Work</a>
         <a href="showcase.html">Showcase</a>
         <a href="#pricing">Pricing</a>
-        <a href="northeast-ohio-3d-printing.html">Service Area</a>
+        <a class="nav-stack" href="northeast-ohio-3d-printing.html"><span>Service</span><span>Area</span></a>
         <a href="#capabilities">Capabilities</a>
         <a href="#process">Process</a>
         <a href="#studio">Studio</a>
         <a href="faq.html">FAQ</a>
-        <a href="track.html">Track Order</a>
+        <a class="nav-stack" href="track.html"><span>Track</span><span>Order</span></a>
       </div>
 
       <a class="nav-cta" href="start-project.html">Start Your Project</a>
@@ -509,12 +505,6 @@ img{max-width:100%}
         <div class="hero-actions">
           <a class="button-primary" href="start-project.html">Start My Project</a>
           <a class="button-secondary" href="#work">Explore the Work</a>
-        </div>
-        <div class="trust-row" aria-label="OliPoly services">
-          <span>Gifts</span>
-          <span>Branding</span>
-          <span>Prototypes</span>
-          <span>Small batches</span>
         </div>
       </div>
 
@@ -583,12 +573,12 @@ img{max-width:100%}
       <div class="pricing-grid" aria-label="Typical OliPoly project price ranges">
         <article class="price-card">
           <h3>Magnets & keychains</h3>
-          <strong>$5–$25</strong>
+          <strong>$3–$10</strong>
           <span>Simple custom pieces, event favors, and small branded items.</span>
         </article>
         <article class="price-card">
           <h3>Personalized gifts</h3>
-          <strong>$15–$75</strong>
+          <strong>$15–$50</strong>
           <span>Decor, keepsakes, lithophanes, toys, and one-of-a-kind ideas.</span>
         </article>
         <article class="price-card">
@@ -598,12 +588,12 @@ img{max-width:100%}
         </article>
         <article class="price-card">
           <h3>Signs & displays</h3>
-          <strong>$20–$250+</strong>
+          <strong>$15–$100+</strong>
           <span>Custom display pieces, lighted decor, booth pieces, and signs.</span>
         </article>
         <article class="price-card">
           <h3>Business projects</h3>
-          <strong>$50–$500+</strong>
+          <strong>Starting at $50</strong>
           <span>Small batches, branded items, prototypes, and repeatable parts.</span>
         </article>
       </div>
@@ -775,7 +765,7 @@ img{max-width:100%}
       </div>
       <div class="copyright">
         <span>© <span id="year"></span> OliPoly 3D LLC • Ohio</span>
-        <span>Custom printing • Creative builds • Prototypes</span>
+        <span>Custom printing • Creative builds</span>
       </div>
     </div>
   </footer>
