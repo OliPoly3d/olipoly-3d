@@ -871,6 +871,9 @@ body{font-family:Inter,Arial,sans-serif}
 Aurora, OH 44202</textarea></div>
               <div><label for="proCarrier">Carrier</label><input id="proCarrier" placeholder="UPS Ground" /></div>
               <div><label for="proShipDate">Ship Date</label><input id="proShipDate" type="date" /></div>
+              <div><label for="proProductSubtotal">Product Subtotal Override</label><input id="proProductSubtotal" type="number" min="0" step="0.01" placeholder="Leave blank to use Order Total" /></div>
+              <div><label for="proShippingAmount">Freight / Shipping</label><input id="proShippingAmount" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+              <div class="full"><label for="proShippingDescription">Freight / Shipping Description</label><input id="proShippingDescription" placeholder="Freight / Shipping - UPS Ground" /></div>
               <div><label for="proBankName">ACH Bank Name</label><input id="proBankName" autocomplete="off" placeholder="Bank name" /></div>
               <div><label for="proAccountName">ACH Account Name</label><input id="proAccountName" autocomplete="off" value="OliPoly 3D LLC" /></div>
               <div><label for="proRoutingNumber">ACH Routing Number</label><input id="proRoutingNumber" inputmode="numeric" autocomplete="off" placeholder="Routing number" /></div>
@@ -1607,7 +1610,7 @@ function publicTrackingPayload(payload) {
   'paymentLinkPaypal',
   'paymentLinkVenmo',
   'stripeInvoiceId',
-  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','apEmail','billingAddress','shippingAddress',
+  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','proProductSubtotal','proShippingAmount','proShippingDescription','apEmail','billingAddress','shippingAddress',
   'internalNotes',
   'publicStatusText',
   'publicNextStep',
@@ -5420,15 +5423,20 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   function getProfessionalInvoiceData(){
     ensureProfessionalInvoiceDefaults();
     const qty = Number(read('quantity')) || 1;
-    const subtotal = Number(read('orderTotal')) || 0;
+    const productSubtotal = read('proProductSubtotal') ? (Number(read('proProductSubtotal')) || 0) : (Number(read('orderTotal')) || 0);
+    const shippingAmount = Number(read('proShippingAmount')) || 0;
+    const shippingDescription = read('proShippingDescription') || 'Freight / Shipping';
+    const subtotal = productSubtotal;
+    const invoiceSubtotal = productSubtotal + shippingAmount;
     const deposit = Number(read('depositAmount')) || 0;
     const balanceField = Number(read('balanceAmount')) || 0;
     const paymentStatus = read('paymentStatus');
     const taxExempt = read('taxExempt') === 'yes';
     const tax = 0;
-    const total = subtotal + tax;
-    const amountDue = paymentStatus === 'paid' ? 0 : (balanceField > 0 ? balanceField : Math.max(0, total - deposit));
-    const unit = qty ? subtotal / qty : subtotal;
+    const total = invoiceSubtotal + tax;
+    const defaultAmountDue = Math.max(0, total - deposit);
+    const amountDue = paymentStatus === 'paid' ? 0 : (shippingAmount > 0 ? defaultAmountDue : (balanceField > 0 ? balanceField : defaultAmountDue));
+    const unit = qty ? productSubtotal / qty : productSubtotal;
     const materialLine = [read('catalogMaterial'), read('catalogColor')].filter(Boolean).join(' / ');
     const partRefs = [
       read('poPartNumber') ? `Customer Part #: ${read('poPartNumber')}` : '',
@@ -5458,6 +5466,10 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       qty,
       unit,
       subtotal,
+      productSubtotal,
+      shippingAmount,
+      shippingDescription,
+      invoiceSubtotal,
       tax,
       taxExempt,
       total,
@@ -5549,8 +5561,15 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
               <td><strong>${escapeHtml(d.title)}</strong>${descriptionDetails ? `<br><span>${descriptionDetails}</span>` : ''}</td>
               <td>${escapeHtml(d.qty)}</td>
               <td>${fmtMoney(d.unit)}</td>
-              <td>${fmtMoney(d.subtotal)}</td>
+              <td>${fmtMoney(d.productSubtotal)}</td>
             </tr>
+            ${d.shippingAmount > 0 ? `
+            <tr class="freight-row">
+              <td><strong>${escapeHtml(d.shippingDescription)}</strong>${d.carrier || d.trackingNumber ? `<br><span>${[d.carrier ? `Carrier: ${escapeHtml(d.carrier)}` : '', d.trackingNumber ? `Tracking #: ${escapeHtml(d.trackingNumber)}` : ''].filter(Boolean).join('<br>')}</span>` : ''}</td>
+              <td>1</td>
+              <td>${fmtMoney(d.shippingAmount)}</td>
+              <td>${fmtMoney(d.shippingAmount)}</td>
+            </tr>` : ''}
           </tbody>
         </table>
 
@@ -5567,7 +5586,8 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
             </div>
           </div>
           <aside class="totals-box">
-            <div><span>Subtotal</span><strong>${fmtMoney(d.subtotal)}</strong></div>
+            <div><span>Product Subtotal</span><strong>${fmtMoney(d.productSubtotal)}</strong></div>
+            <div><span>Freight / Shipping</span><strong>${fmtMoney(d.shippingAmount)}</strong></div>
             <div><span>Sales Tax</span><strong>${d.taxExempt ? 'Tax Exempt' : fmtMoney(d.tax)}</strong></div>
             <div><span>Deposit / Prior Payments</span><strong>${fmtMoney(d.deposit)}</strong></div>
             <div><span>Total</span><strong>${fmtMoney(d.total)}</strong></div>
@@ -5582,22 +5602,22 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
   function professionalInvoiceCss(){
     return `
-      @page{size:letter portrait;margin:.25in}
+      @page{size:letter portrait;margin:.16in}
       *{box-sizing:border-box}
       html,body{margin:0;padding:0;background:#fff;color:#241b2b;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .pro-invoice-sheet{position:relative;width:8in;min-height:10.5in;margin:0 auto;background:#fff;color:#241b2b;padding:.38in;overflow:hidden;border:1px solid #f2d7e8}
-      .top-strip{height:14px;margin:-.38in -.38in .28in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
+      .pro-invoice-sheet{position:relative;width:8.18in;min-height:auto;margin:0 auto;background:#fff;color:#241b2b;padding:.24in;overflow:hidden;border:1px solid #f2d7e8}
+      .top-strip{height:10px;margin:-.24in -.24in .16in;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4)}
       .pro-invoice-sheet::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at top left,rgba(222,111,184,.08),transparent 32%),radial-gradient(circle at top right,rgba(101,214,196,.07),transparent 30%);pointer-events:none}
       .pro-invoice-sheet>*{position:relative;z-index:1}
-      .pro-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:16px;border-bottom:1px solid #f0c8df;margin-bottom:14px}
-      .brand-name{font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:900;letter-spacing:-.05em;line-height:.95}.brand-name span{color:#9d4df1}.brand-sub{margin-top:6px;color:#826889;font-size:12px}.remit-block{margin-top:14px;font-size:11.5px;line-height:1.45;color:#4f4058}
-      .invoice-title-block{text-align:right}.invoice-title-block h1{margin:0;font-size:36px;letter-spacing:.14em;color:#241b2b}.invoice-num{display:inline-block;margin-top:8px;padding:7px 11px;border-radius:999px;background:#fff7fb;border:1px solid #f0c8df;color:#7c4a82;font-weight:900}
-      .paid-stamp{display:none;position:absolute;right:.55in;bottom:1.15in;transform:rotate(-12deg);border:4px solid rgba(22,163,74,.34);color:rgba(22,163,74,.48);font-size:42px;font-weight:950;letter-spacing:.1em;padding:8px 20px;border-radius:14px;z-index:4}.is-paid .paid-stamp{display:block}
-      .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}.meta-grid div,.panel,.totals-box{border:1px solid #f0c8df;background:#fffafd;border-radius:14px;padding:11px 12px}.meta-grid small{display:block;color:#826889;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.meta-grid strong{display:block;font-size:12px;overflow-wrap:anywhere}
-      .address-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.panel p{margin:0;font-size:11.5px;line-height:1.45;color:#32263a}.chip{display:inline-block;margin-bottom:8px;padding:5px 9px;border-radius:999px;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.compact{margin-bottom:12px}
-      .line-table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #f0c8df;border-radius:14px;overflow:hidden;margin:0 0 12px}.line-table th{background:#fff7fb;color:#826889;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:9px 10px;border-bottom:1px solid #f0c8df}.line-table td{padding:12px 10px;font-size:11.5px;line-height:1.4;vertical-align:top}.line-table td span{color:#604d68}.line-table th:nth-child(2),.line-table td:nth-child(2){text-align:center;width:58px}.line-table th:nth-child(3),.line-table td:nth-child(3),.line-table th:nth-child(4),.line-table td:nth-child(4){text-align:right;width:105px}
-      .bottom-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px}.ach-panel{margin-bottom:10px}.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ach-grid div{padding:8px;border-radius:10px;background:#fff;border:1px solid #f6ddec}.ach-grid span{display:block;color:#826889;font-size:8.5px;text-transform:uppercase;letter-spacing:.07em}.ach-grid strong{display:block;font-size:11px;overflow-wrap:anywhere}.note-line{margin-top:9px!important;color:#604d68!important}.muted-small{font-size:10.5px;color:#826889!important}.terms-panel p{font-size:10.5px;color:#604d68}.totals-box div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #f6ddec;font-size:11.5px}.totals-box div:first-child{padding-top:0}.totals-box span{color:#604d68}.amount-due{margin-top:5px;padding-top:10px!important;border-top:2px solid #f0c8df!important;border-bottom:0!important}.amount-due span,.amount-due strong{font-size:17px!important;color:#241b2b!important;font-weight:900}
-      footer{margin-top:12px;padding-top:9px;border-top:1px solid #f0c8df;text-align:center;color:#826889;font-size:9.5px}
+      .pro-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding-bottom:9px;border-bottom:1px solid #f0c8df;margin-bottom:9px}
+      .brand-name{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:900;letter-spacing:-.05em;line-height:.95}.brand-name span{color:#9d4df1}.brand-sub{margin-top:4px;color:#826889;font-size:10.5px}.remit-block{margin-top:8px;font-size:9.8px;line-height:1.28;color:#4f4058}
+      .invoice-title-block{text-align:right}.invoice-title-block h1{margin:0;font-size:30px;letter-spacing:.14em;color:#241b2b}.invoice-num{display:inline-block;margin-top:6px;padding:5px 9px;border-radius:999px;background:#fff7fb;border:1px solid #f0c8df;color:#7c4a82;font-weight:900;font-size:11px}
+      .paid-stamp{display:none;position:absolute;right:.45in;bottom:.85in;transform:rotate(-12deg);border:3px solid rgba(22,163,74,.34);color:rgba(22,163,74,.48);font-size:34px;font-weight:950;letter-spacing:.1em;padding:6px 16px;border-radius:12px;z-index:4}.is-paid .paid-stamp{display:block}
+      .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}.meta-grid div,.panel,.totals-box{border:1px solid #f0c8df;background:#fffafd;border-radius:11px;padding:7px 8px}.meta-grid small{display:block;color:#826889;font-size:8px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}.meta-grid strong{display:block;font-size:10px;line-height:1.18;overflow-wrap:anywhere}
+      .address-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.panel p{margin:0;font-size:9.6px;line-height:1.28;color:#32263a}.chip{display:inline-block;margin-bottom:5px;padding:4px 7px;border-radius:999px;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;font-size:7.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.compact{margin-bottom:8px}
+      .line-table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #f0c8df;border-radius:11px;overflow:hidden;margin:0 0 8px}.line-table th{background:#fff7fb;color:#826889;font-size:8px;text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:6px 8px;border-bottom:1px solid #f0c8df}.line-table td{padding:7px 8px;font-size:9.8px;line-height:1.24;vertical-align:top}.line-table td span{color:#604d68}.line-table th:nth-child(2),.line-table td:nth-child(2){text-align:center;width:50px}.line-table th:nth-child(3),.line-table td:nth-child(3),.line-table th:nth-child(4),.line-table td:nth-child(4){text-align:right;width:92px}.freight-row td{border-top:1px solid #f6ddec}
+      .bottom-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:8px}.ach-panel{margin-bottom:7px}.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.ach-grid div{padding:6px;border-radius:8px;background:#fff;border:1px solid #f6ddec}.ach-grid span{display:block;color:#826889;font-size:7px;text-transform:uppercase;letter-spacing:.07em}.ach-grid strong{display:block;font-size:9px;overflow-wrap:anywhere}.note-line{margin-top:6px!important;color:#604d68!important}.muted-small{font-size:9px;color:#826889!important}.terms-panel p{font-size:8.8px;color:#604d68;line-height:1.25}.totals-box div{display:flex;justify-content:space-between;gap:9px;padding:5px 0;border-bottom:1px solid #f6ddec;font-size:9.7px}.totals-box div:first-child{padding-top:0}.totals-box span{color:#604d68}.amount-due{margin-top:3px;padding-top:8px!important;border-top:2px solid #f0c8df!important;border-bottom:0!important}.amount-due span,.amount-due strong{font-size:14.5px!important;color:#241b2b!important;font-weight:900}
+      footer{margin-top:7px;padding-top:6px;border-top:1px solid #f0c8df;text-align:center;color:#826889;font-size:8.3px}
       @media print{body{margin:0}.pro-invoice-sheet{width:100%;min-height:auto;border:0}.panel,.totals-box,.meta-grid div{break-inside:avoid}}
     `;
   }
