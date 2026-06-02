@@ -114,10 +114,11 @@
     .mobile-short-sub{display:none}
 
     .nav-links{
-      display:flex;align-items:center;gap:18px;color:#604966;
-      font-family:"Playfair Display",serif;font-weight:700;font-size:1rem;
+      display:flex;align-items:center;gap:16px;color:#604966;
+      font-family:"Playfair Display",serif;font-weight:700;font-size:.98rem;
     }
-    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease}
+    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease;text-align:center;line-height:1.08}
+    .nav-links a.nav-stack{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
     .nav-links a:hover{opacity:1;transform:translateY(-1px)}
 
     .nav-cta,.button-primary,.button-secondary{
@@ -159,12 +160,9 @@
     .hero h1{margin:22px 0 18px;font-family:"Playfair Display",serif;font-size:clamp(3rem,8vw,6.55rem);line-height:.88;letter-spacing:-.075em;max-width:780px}
     .gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}
     .hero-copy{max-width:640px;color:#6f5c78;font-size:clamp(1.02rem,1.7vw,1.16rem);line-height:1.64;margin:0 0 14px}
-    .hero-materials{margin:0 0 26px;color:#8d5d9a;font-size:.88rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;line-height:1.45}
+    .hero-materials{margin:0 0 20px;color:#8d5d9a;font-size:.88rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;line-height:1.45}
     .hero-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:center;max-width:520px}
     .hero-actions .button-primary,.hero-actions .button-secondary{width:100%;min-height:52px;text-align:center}
-    .trust-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin-top:26px;max-width:520px;color:#806a8a;font-size:.86rem;font-weight:900}
-    .trust-row span{display:flex;align-items:center;justify-content:center;min-height:38px;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid var(--line);text-align:center;white-space:nowrap}
-
     .poly-stage{position:relative;min-height:610px;display:grid;place-items:center;isolation:isolate}
     .poly-glow{position:absolute;width:min(92%,430px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,208,245,.95),transparent 64%),radial-gradient(circle at 70% 25%,rgba(135,214,255,.48),transparent 38%);filter:blur(5px);opacity:.9;z-index:-2}
     .poly-card{width:min(100%,430px);border-radius:42px;padding:16px;background:rgba(255,255,255,.74);box-shadow:0 30px 90px rgba(83,41,97,.2);border:1px solid rgba(255,255,255,.78);transform:rotate(1.5deg);animation:floaty 6s ease-in-out infinite}
@@ -218,6 +216,17 @@
     .cap-panel.overlay-card .cap-body{position:absolute;left:20px;right:20px;bottom:20px;z-index:2;color:white;padding:18px;border-radius:24px;background:linear-gradient(180deg,rgba(38,20,47,.36),rgba(38,20,47,.72));border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(12px);text-shadow:0 2px 18px rgba(0,0,0,.35)}
     .cap-panel.overlay-card .cap-body h3{color:#fff}
     .cap-panel.overlay-card .cap-body p{color:rgba(255,255,255,.92)}
+
+
+    .pricing-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:30px}
+    .price-card{position:relative;overflow:hidden;min-height:172px;padding:22px 18px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,244,253,.86));border:1px solid rgba(232,79,183,.14);box-shadow:0 22px 58px rgba(84,38,94,.11);display:flex;flex-direction:column;justify-content:space-between;gap:16px}
+    .price-card::before{content:"";position:absolute;inset:auto -24px -42px auto;width:118px;height:118px;border-radius:50%;background:radial-gradient(circle,rgba(232,79,183,.16),transparent 70%);pointer-events:none}
+    .price-card h3{position:relative;margin:0;font-family:"Playfair Display",serif;font-size:1.45rem;line-height:1;letter-spacing:-.035em;color:#2b1934}
+    .price-card strong{position:relative;display:block;font-size:1.42rem;letter-spacing:-.04em;color:#d844aa;line-height:1}
+    .price-card span{position:relative;color:#76617f;font-size:.86rem;line-height:1.4;font-weight:700}
+    .pricing-note{margin-top:18px;padding:18px 20px;border-radius:24px;background:rgba(255,255,255,.72);border:1px solid rgba(104,59,123,.12);color:#6e5b78;line-height:1.58;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+    .pricing-note p{margin:0;max-width:760px}
+    .pricing-note a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 16px;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--purple));color:white;font-weight:900;box-shadow:0 14px 32px rgba(214,73,186,.24)}
 
     .split-feature{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:34px;align-items:center;margin-top:42px;padding:clamp(18px,3vw,30px);border-radius:42px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.78);box-shadow:0 26px 78px rgba(84,38,94,.12)}
     .split-feature:nth-of-type(even){grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)}
@@ -296,6 +305,7 @@
       .nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}
       .hero{grid-template-columns:1fr;min-height:0}
       .poly-stage{min-height:520px;max-width:540px;margin:0 auto;width:100%}
+      .pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .capabilities{grid-template-columns:1fr}
       .split-feature,.split-feature:nth-of-type(even){grid-template-columns:1fr;gap:18px}
       .split-feature:nth-of-type(even) .split-image{order:0}
@@ -322,11 +332,9 @@
       .eyebrow{font-size:.68rem;padding:8px 11px}
       .hero h1{font-size:clamp(3rem,18vw,4.65rem);line-height:.88;margin:18px 0 14px;letter-spacing:-.07em}
       .hero-copy{font-size:.98rem;line-height:1.56;margin-bottom:10px}
-      .hero-materials{font-size:.72rem;letter-spacing:.035em;margin-bottom:18px}
+      .hero-materials{font-size:.72rem;letter-spacing:.035em;margin-bottom:14px}
       .hero-actions{grid-template-columns:1fr;gap:10px;max-width:none}
       .hero-actions .button-primary,.hero-actions .button-secondary{min-height:50px;padding:13px 16px}
-      .trust-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px;font-size:.74rem}
-      .trust-row span{min-height:34px;padding:8px 6px}
       .poly-stage{min-height:410px}
       .poly-card{width:min(92%,330px);border-radius:30px;padding:10px}
       .poly-card img{border-radius:22px;aspect-ratio:4/4.8}
@@ -347,6 +355,13 @@
       .showcase-label strong{font-size:1.35rem}
       .showcase-label span{font-size:.78rem;max-width:20ch}
       .pill{font-size:.6rem!important;padding:7px 9px}
+
+      .pricing-grid{grid-template-columns:1fr;gap:12px;margin-top:22px}
+      .price-card{min-height:0;padding:18px;border-radius:24px;gap:10px}
+      .price-card h3{font-size:1.35rem}
+      .price-card strong{font-size:1.28rem}
+      .pricing-note{padding:16px;border-radius:22px;font-size:.92rem}
+      .pricing-note a{width:100%}
 
       .capabilities{gap:16px;margin-top:24px}
       .cap-panel,.cap-panel.overlay-card{min-height:395px;border-radius:30px}
@@ -458,7 +473,7 @@ img{max-width:100%}
         <span class="brand-mark"><img src="images/poly-head.png" alt="Poly mascot" /></span>
         <span class="brand-text">
           <span class="brand-name">Oli<span>Poly</span> 3D</span>
-          <span class="brand-sub brand-sub-full">Custom printing • Creative builds • Prototypes</span>
+          <span class="brand-sub brand-sub-full">Custom printing • Creative builds</span>
           <span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
         </span>
       </a>
@@ -466,11 +481,13 @@ img{max-width:100%}
       <div class="nav-links" id="navLinks">
         <a href="#work">Work</a>
         <a href="showcase.html">Showcase</a>
+        <a href="#pricing">Pricing</a>
+        <a class="nav-stack" href="northeast-ohio-3d-printing.html"><span>Service</span><span>Area</span></a>
         <a href="#capabilities">Capabilities</a>
         <a href="#process">Process</a>
         <a href="#studio">Studio</a>
         <a href="faq.html">FAQ</a>
-        <a href="track.html">Track Order</a>
+        <a class="nav-stack" href="track.html"><span>Track</span><span>Order</span></a>
       </div>
 
       <a class="nav-cta" href="start-project.html">Start Your Project</a>
@@ -483,17 +500,11 @@ img{max-width:100%}
       <div>
         <div class="eyebrow">OliPoly 3D • Ohio</div>
         <h1 id="hero-title">Custom 3D printing with a creative <span class="gradient-word">buzz.</span></h1>
-        <p class="hero-copy">Polished gifts, branded pieces, prototypes, and practical parts — made with the right filament, finish, and feel for the job.</p>
-        <p class="hero-materials">PLA • PETG • Nylon • Flexible • Wood-filled • Carbon-fiber blends</p>
+        <p class="hero-copy">Custom gifts, branded pieces, prototypes, and practical parts — designed, printed, and finished with care in Northeast Ohio.</p>
+        <p class="hero-materials">Gifts • Parts • Prototypes • Branded pieces • Small batches</p>
         <div class="hero-actions">
           <a class="button-primary" href="start-project.html">Start My Project</a>
           <a class="button-secondary" href="#work">Explore the Work</a>
-        </div>
-        <div class="trust-row" aria-label="OliPoly services">
-          <span>Gifts</span>
-          <span>Branding</span>
-          <span>Prototypes</span>
-          <span>Small batches</span>
         </div>
       </div>
 
@@ -509,7 +520,7 @@ img{max-width:100%}
     <section class="section" id="work">
       <div class="section-kicker">Featured showcase</div>
       <h2 class="section-title">A little practical. A little playful. All custom.</h2>
-      <p class="section-intro">Browse finished pieces, useful parts, branded work, keepsakes, and process shots from the OliPoly studio.</p>
+      <p class="section-intro">See real examples of custom prints, useful parts, branded pieces, keepsakes, and finished work.</p>
       <div class="showcase-section-action">
         <a class="showcase-pill-link featured-gallery-link" href="showcase.html" aria-label="Open the full OliPoly showcase gallery">See the Full Gallery →</a>
       </div>
@@ -554,17 +565,57 @@ img{max-width:100%}
       </div>
     </section>
 
+    <section class="section" id="pricing">
+      <div class="section-kicker">Typical project ranges</div>
+      <h2 class="section-title">Rough pricing, easier planning.</h2>
+      <p class="section-intro">Every project is custom. These ranges are meant to set expectations before you request a quote — not lock you into a menu price.</p>
+
+      <div class="pricing-grid" aria-label="Typical OliPoly project price ranges">
+        <article class="price-card">
+          <h3>Magnets & keychains</h3>
+          <strong>$3–$10</strong>
+          <span>Simple custom pieces, event favors, and small branded items.</span>
+        </article>
+        <article class="price-card">
+          <h3>Personalized gifts</h3>
+          <strong>$15–$50</strong>
+          <span>Decor, keepsakes, lithophanes, toys, and one-of-a-kind ideas.</span>
+        </article>
+        <article class="price-card">
+          <h3>Replacement-style parts</h3>
+          <strong>$15–$100+</strong>
+          <span>Brackets, spacers, fit-checks, and practical problem-solving parts.</span>
+        </article>
+        <article class="price-card">
+          <h3>Signs & displays</h3>
+          <strong>$15–$100+</strong>
+          <span>Custom display pieces, lighted decor, booth pieces, and signs.</span>
+        </article>
+        <article class="price-card">
+          <h3>Business projects</h3>
+          <strong>Starting at $50</strong>
+          <span>Small batches, branded items, prototypes, and repeatable parts.</span>
+        </article>
+      </div>
+
+      <div class="pricing-note">
+        <p><strong>Planning note:</strong> final pricing depends on size, design time, material, quantity, color changes, finish work, and deadline.</p>
+        <a href="start-project.html">Request a Quote →</a>
+      </div>
+    </section>
+
+
     <section class="section" id="capabilities">
       <div class="section-kicker">Capabilities</div>
-      <h2 class="section-title">Made for the idea, the gift, the booth, or the batch.</h2>
-      <p class="section-intro">Whether you need one special piece or a repeatable run of parts, OliPoly helps shape the project around fit, finish, timing, and real-world use.</p>
+      <h2 class="section-title">Made for gifts, parts, booths, and batches.</h2>
+      <p class="section-intro">One special piece or a repeatable run — built around fit, finish, timing, and real-world use.</p>
 
       <div class="capabilities">
         <article class="cap-panel overlay-card">
           <img src="images/pocket_door_bracket_actual.png" alt="Pocket door bracket printed part" />
           <div class="cap-body">
             <h3>Functional parts</h3>
-            <p>Small components, brackets, spacers, prototypes, and replacement-style parts designed around fit, repeatability, and practical use.</p>
+            <p>Brackets, spacers, prototypes, and practical parts built around fit and repeatability.</p>
           </div>
         </article>
 
@@ -572,7 +623,7 @@ img{max-width:100%}
           <img src="images/custom-nail-powder-organizer-stackable.png" alt="Custom stackable nail powder organizer" />
           <div class="cap-body">
             <h3>Custom organization</h3>
-            <p>Made-to-fit organizers, display trays, storage pieces, craft tools, and useful home, hobby, or booth accessories.</p>
+            <p>Organizers, trays, storage pieces, craft tools, and useful home or booth accessories.</p>
           </div>
         </article>
 
@@ -580,7 +631,7 @@ img{max-width:100%}
           <img src="images/ohio-led-outline-wall-art.png" alt="Ohio outline LED wall art display" />
           <div class="cap-body">
             <h3>Creative gifts</h3>
-            <p>Personalized decor, lighted displays, lithophanes, seasonal pieces, and custom gifts that feel more meaningful than off-the-shelf.</p>
+            <p>Personalized decor, lighted displays, lithophanes, seasonal pieces, and meaningful gifts.</p>
           </div>
         </article>
       </div>
@@ -589,13 +640,13 @@ img{max-width:100%}
     <section class="section" id="process">
       <div class="section-kicker">Project stories</div>
       <h2 class="section-title">From rough idea to finished piece.</h2>
-      <p class="section-intro">Some projects start with a sketch, photo, file, broken part, or quick “can you make this?” The process turns that starting point into something usable, giftable, or production-ready.</p>
+      <p class="section-intro">Start with a sketch, photo, file, broken part, or quick “can you make this?” OliPoly helps turn it into a clear next step.</p>
 
       <article class="split-feature">
         <div class="split-image"><img src="images/pocket-door-bracket-drawing.png" alt="Technical drawing for pocket door bracket" /></div>
         <div class="split-copy">
           <h3>Clear details before the print starts.</h3>
-          <p>For functional work, drawings and reference notes help confirm dimensions, material, finish, and expectations before printing starts.</p>
+          <p>For functional work, drawings and notes help confirm dimensions, material, finish, and expectations before printing.</p>
           <div class="mini-tags"><span>CAD workflow</span><span>Quote reference</span><span>Material planning</span></div>
         </div>
       </article>
@@ -604,7 +655,7 @@ img{max-width:100%}
         <div class="split-image"><img src="images/lit_up_litho.png" alt="Lit lithophane keepsake" /></div>
         <div class="split-copy">
           <h3>Photo memories turned into light.</h3>
-          <p>Lithophanes and personalized pieces turn photos, memories, and family moments into something physical, glowing, and display-worthy.</p>
+          <p>Lithophanes and personalized pieces turn photos and memories into something physical, glowing, and display-worthy.</p>
           <div class="mini-tags"><span>Keepsakes</span><span>Photo gifts</span><span>Custom lighting</span></div>
         </div>
       </article>
@@ -613,7 +664,7 @@ img{max-width:100%}
         <div class="split-image"><video src="images/spacer-cap-video_web.mp4" poster="images/spacer-cap-video_thumb.jpg" autoplay muted loop playsinline></video></div>
         <div class="split-copy">
           <h3>Small-batch work with repeatability in mind.</h3>
-          <p>When a project needs more than one part, OliPoly plans around quantity, timing, material use, consistency, and order tracking.</p>
+          <p>For repeat pieces, OliPoly plans around quantity, timing, material use, consistency, and tracking.</p>
           <div class="mini-tags"><span>Repeatable</span><span>Production</span><span>Quality checks</span></div>
         </div>
       </article>
@@ -621,8 +672,8 @@ img{max-width:100%}
 
     <section class="section" id="studio">
       <div class="section-kicker">Inside the studio</div>
-      <h2 class="section-title">Designed, printed, checked, and finished in-house.</h2>
-      <p class="section-intro">Modern printers, slicing workflows, calibration, and hands-on finishing help keep custom projects moving from idea to finished piece.</p>
+      <h2 class="section-title">Printed, checked, and finished in-house.</h2>
+      <p class="section-intro">Modern printers, calibration, and hands-on finishing help move projects from idea to finished piece.</p>
 
       <div class="studio-grid">
         <div class="studio-tile studio-printer">
@@ -640,14 +691,14 @@ img{max-width:100%}
       </div>
       <div class="studio-note">
         <h3>Built for consistent results.</h3>
-        <p>Real equipment, calibrated workflows, batch checks, and hands-on finishing help each project become a polished, practical, or production-ready piece.</p>
+        <p>Calibrated workflows, batch checks, and hands-on finishing help each project become polished and practical.</p>
       </div>
     </section>
 
     <section class="cta-band" id="contact">
       <div>
         <h2>Ready to make something custom?</h2>
-        <p>Send the basics — a photo, sketch, dimensions, file, or inspiration — and OliPoly will help turn it into a clear next step or quote-ready request.</p>
+        <p>Send a photo, sketch, dimensions, file, or rough idea — and OliPoly will help turn it into a clear next step.</p>
       </div>
       <a class="button-secondary" href="start-project.html">Start Your Project</a>
     </section>
@@ -658,9 +709,10 @@ img{max-width:100%}
       <button class="poly-story-close" type="button" onclick="closePolyStory()" aria-label="Close Poly story">×</button>
       <img class="poly-story-mini" src="images/poly-head.png" alt="Poly the bee mascot" />
       <h3 id="polyStoryTitle">Meet Poly.</h3>
-      <p>Poly is the little bee behind OliPoly’s playful side — drawn with love and brought into the brand as a reminder that custom work can still feel warm, creative, and personal.</p>
-      <p>Like a busy bee, Poly helps guide visitors through ideas, project requests, tracking, and the many ways 3D printing can turn a rough thought into something real.</p>
-      <div class="poly-story-note">Custom printing • Creative builds • Prototypes • Ohio</div>
+      <p>Poly started as a drawing by Oli, age 8 — a cheerful little bee that became the heart of OliPoly’s playful side.</p>
+      <p>We kept Poly in the brand because custom work should feel personal, creative, and a little bit magical — whether it starts as a kid’s sketch, a rough idea, a broken part, or a business logo.</p>
+      <p>Like a busy bee, Poly helps guide visitors through ideas, project requests, tracking, and the many ways 3D printing can turn a thought into something real.</p>
+      <div class="poly-story-note">Drawn by Oli • Built with care • Brought to life in 3D</div>
     </div>
   </div>
 
@@ -695,6 +747,8 @@ img{max-width:100%}
           <h4>Explore</h4>
           <a href="#work">Featured Work</a>
           <a href="showcase.html">Full Showcase</a>
+          <a href="#pricing">Typical Pricing</a>
+          <a href="northeast-ohio-3d-printing.html">Service Area</a>
           <a href="#capabilities">Capabilities</a>
           <a href="#process">Project Stories</a>
           <a href="#studio">Inside the Studio</a>
@@ -712,7 +766,7 @@ img{max-width:100%}
       </div>
       <div class="copyright">
         <span>© <span id="year"></span> OliPoly 3D LLC • Ohio</span>
-        <span>Custom printing • Creative builds • Prototypes</span>
+        <span>Custom printing • Creative builds</span>
       </div>
     </div>
   </footer>
