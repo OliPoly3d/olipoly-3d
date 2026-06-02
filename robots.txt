@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
 
+Disallow: /hub.html
+Disallow: /orders-admin.html
+Disallow: /quote.html
+Disallow: /production-control.html
+Disallow: /inventory-control.html
+Disallow: /finance-pro.html
+
 Sitemap: https://olipoly3d.com/sitemap.xml
