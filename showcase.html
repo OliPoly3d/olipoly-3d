@@ -424,7 +424,38 @@
 .category-card.link-card:hover{transform:translateY(-3px);box-shadow:0 28px 78px rgba(84,38,94,.16);border-color:rgba(232,79,183,.24)}
 .category-card .category-cta{display:inline-flex;margin-top:16px;color:#8a4b99;font-weight:900;font-size:.86rem}
 
-  </style>
+  
+
+/* === Mobile cleanup pass: showcase only (desktop unchanged) === */
+@media (max-width:720px){
+  .site-header{padding-top:8px}
+  .nav{padding:9px 10px;min-height:60px}
+  .brand-name{font-size:1.55rem!important}
+  .mobile-short-sub{max-width:145px!important;white-space:nowrap}
+  .hero{padding:20px 18px 18px!important;gap:14px!important}
+  .hero h1{font-size:clamp(2.55rem,14vw,3.75rem)!important;margin:12px 0 10px!important}
+  .hero-copy{font-size:.92rem!important;line-height:1.45!important;margin-bottom:12px!important}
+  .hero-image-card img{aspect-ratio:4/2.75!important}
+  .hero-mini-row{display:none!important}
+  .section{padding:38px 0!important}
+  .section-title{font-size:clamp(1.95rem,11vw,2.8rem)!important}
+  .section-intro{font-size:.92rem!important;line-height:1.45!important}
+  .showcase-click-callout{display:none!important}
+  .showcase-grid{gap:13px!important;margin-top:18px!important}
+  .showcase-card,.showcase-card.large,.showcase-card.tall{min-height:285px!important}
+  .showcase-card.tall{min-height:340px!important}
+  .showcase-label{padding:13px 14px!important}
+  .showcase-label strong{font-size:1.22rem!important;line-height:1.05!important}
+  .showcase-label span:not(.pill):not(.action-pill){display:none!important}
+  .click-badge{font-size:.65rem!important;padding:7px 9px!important}
+  .action-pill{font-size:.66rem!important;padding:7px 9px!important}
+  .studio-split{margin-top:18px!important}
+  .studio-copy p{font-size:.9rem!important;line-height:1.45!important}
+  .studio-collage img{aspect-ratio:4/3!important}
+  .cta-band{padding:24px 18px!important;margin-bottom:38px!important}
+}
+
+</style>
 </head>
 <body>
   <header class="site-header">

@@ -463,6 +463,47 @@ img{max-width:100%}
   .btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{width:100%;justify-content:center}
 }
 
+
+
+/* === Mobile cleanup pass: homepage only (desktop unchanged) === */
+@media (max-width:720px){
+  .site-header{padding-top:8px}
+  .nav{padding:9px 10px;min-height:60px}
+  .brand-name{font-size:1.55rem!important}
+  .mobile-short-sub{max-width:145px!important;white-space:nowrap}
+  .hero{padding-top:20px!important;padding-bottom:18px!important;gap:14px!important}
+  .hero h1{font-size:clamp(2.6rem,15vw,3.75rem)!important;margin:12px 0 10px!important}
+  .hero-copy{font-size:.95rem!important;line-height:1.48!important;margin-bottom:10px!important}
+  .hero-materials{display:none!important}
+  .hero-actions{gap:9px!important}
+  .poly-stage{min-height:330px!important}
+  .poly-card{width:min(82%,285px)!important}
+  .poly-card img{aspect-ratio:4/4.35!important}
+  .meet-poly{bottom:10px!important;font-size:.76rem!important;padding:9px 11px!important}
+  .section{padding:38px 0!important}
+  .section-title{font-size:clamp(1.95rem,11vw,2.75rem)!important}
+  .section-intro{font-size:.92rem!important;line-height:1.45!important;margin-top:10px!important}
+  .showcase-card{height:285px!important}
+  .showcase-label span:not(.pill){display:none!important}
+  .pricing-grid{gap:10px!important;margin-top:18px!important}
+  .price-card{padding:15px 16px!important;border-radius:22px!important}
+  .price-card h3{font-size:1.18rem!important}
+  .price-card strong{font-size:1.18rem!important}
+  .price-card p{font-size:.84rem!important;line-height:1.4!important}
+  .pricing-note{font-size:.88rem!important;line-height:1.45!important}
+  .cap-panel,.cap-panel.overlay-card{min-height:315px!important}
+  .cap-body p{display:none!important}
+  .split-feature{margin-top:18px!important}
+  .split-copy p{font-size:.9rem!important;line-height:1.45!important}
+  .studio-note p{font-size:.9rem!important;line-height:1.45!important}
+  .cta-band{padding:24px 18px!important;margin-bottom:38px!important}
+}
+@media (max-width:390px){
+  .brand-name{font-size:1.43rem!important}
+  .mobile-short-sub{max-width:128px!important}
+  .hero h1{font-size:2.45rem!important}
+}
+
 </style>
 </head>
 

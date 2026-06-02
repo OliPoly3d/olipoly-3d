@@ -354,6 +354,37 @@ img{max-width:100%}
   .payment-card{padding:14px;border-radius:21px}
 }
 
+
+
+/* === Mobile cleanup pass: track order only (desktop unchanged) === */
+@media (max-width:720px){
+  .site-header{padding-top:8px}
+  .nav{padding:9px 10px;min-height:60px}
+  .brand-name{font-size:1.55rem!important}
+  .mobile-short-sub{max-width:145px!important;white-space:nowrap}
+  .shell,.wrap,.container{width:min(100% - 20px,1100px)!important}
+  .hero,.hero-card{padding:20px 18px!important;border-radius:28px!important}
+  h1{font-size:clamp(2.2rem,12vw,3.2rem)!important;line-height:.95!important;margin-bottom:10px!important}
+  .hero p,.lead{font-size:.92rem!important;line-height:1.45!important}
+  .lookup-layout{gap:14px!important}
+  .lookup-card,.result-shell,.support-card{padding:18px!important;border-radius:26px!important}
+  .customer-confidence-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .confidence-card{padding:14px!important;border-radius:20px!important}
+  .timeline{grid-template-columns:1fr!important;gap:10px!important;text-align:left!important}
+  .timeline::before,.timeline-fill{display:none!important}
+  .step{display:grid!important;grid-template-columns:28px 1fr!important;justify-items:start!important;text-align:left!important;gap:10px!important;padding:8px 0!important}
+  .step-dot{width:20px!important;height:20px!important;box-shadow:none!important}
+  .step-label{max-width:none!important}
+  .step-label small{display:none!important}
+  .status-stack{grid-template-columns:1fr!important;gap:10px!important}
+  .note,.next-explainer-card,.payment-card{padding:15px!important;border-radius:22px!important}
+  .detail .note strong,.next-explainer-card strong{font-size:1.2rem!important}
+  .payment-head strong{font-size:1.35rem!important}
+  .payment-buttons{gap:10px!important}
+  .payment-btn,.btn{width:100%!important;justify-content:center!important}
+  .support-card{grid-template-columns:1fr!important;gap:12px!important}
+}
+
 </style>
 </head>
 <body>
