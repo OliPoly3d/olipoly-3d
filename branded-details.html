@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Branded Details | OliPoly 3D</title>
-  <meta name="description" content="Custom keychains, magnets, event handouts, business gifts, fundraiser pieces, and branded keepsakes created for organizations, businesses, bands, teams, and events." />
+  <meta name="description" content="Custom branded 3D printed details for bands, events, teams, businesses, parties, and memorable handouts by OliPoly 3D in Ohio." />
   <link rel="canonical" href="https://olipoly3d.com/branded-details.html" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#fff7fb" />
 
   <meta property="og:title" content="Custom Branded Details | OliPoly 3D" />
-  <meta property="og:description" content="Custom keychains, magnets, event handouts, business gifts, fundraiser pieces, and branded keepsakes created for organizations, businesses, bands, teams, and events." />
+  <meta property="og:description" content="Custom 3D printed keychains, magnets, coasters, event pieces, and branded keepsakes for businesses, bands, teams, and events." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://olipoly3d.com/branded-details.html" />
   <meta property="og:image" content="https://olipoly3d.com/images/logo-preview.png" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Custom Branded Details | OliPoly 3D" />
-  <meta name="twitter:description" content="Custom keychains, magnets, event handouts, business gifts, fundraiser pieces, and branded keepsakes created for organizations, businesses, bands, teams, and events." />
+  <meta name="twitter:description" content="Custom 3D printed keychains, magnets, coasters, event pieces, and branded keepsakes." />
   <meta name="twitter:image" content="https://olipoly3d.com/images/logo-preview.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -200,20 +200,20 @@
     .hero-side.alt{transform:rotate(-2.5deg)}
     .hero-side img{object-position:center center}
 
-    .idea-grid{
+    .trust-grid{
       display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
       gap:14px;
       margin-top:34px;
     }
-    .idea-card{
+    .trust-card{
       padding:18px;
       border-radius:28px;
       background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,244,253,.78));
       border:1px solid rgba(255,255,255,.8);
       box-shadow:0 18px 48px rgba(84,38,94,.10);
     }
-    .idea-card strong{
+    .trust-card strong{
       display:block;
       font-family:"Playfair Display",serif;
       font-size:1.45rem;
@@ -221,7 +221,7 @@
       letter-spacing:-.04em;
       margin-bottom:7px;
     }
-    .idea-card span{display:block;color:#74617d;line-height:1.45;font-size:.92rem}
+    .trust-card span{display:block;color:#74617d;line-height:1.45;font-size:.92rem}
 
     .story-grid{
       display:grid;
@@ -367,7 +367,7 @@
       .nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}
       .hero{grid-template-columns:1fr}
       .hero-collage{max-width:620px;margin:0 auto;width:100%;min-height:auto}
-      .idea-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .trust-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .story-grid,.feature-row{grid-template-columns:1fr}
       .process-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
       .footer-inner{grid-template-columns:1fr}
@@ -398,8 +398,8 @@
       .hero-main,.hero-side,.hero-side.alt{transform:none;border-radius:28px;aspect-ratio:4/3}
       .section-title{font-size:clamp(2.1rem,13vw,3.25rem)}
       .section-intro{font-size:.96rem;line-height:1.55}
-      .idea-grid{grid-template-columns:1fr;gap:10px;margin-top:24px}
-      .idea-card{padding:16px;border-radius:24px}
+      .trust-grid{grid-template-columns:1fr;gap:10px;margin-top:24px}
+      .trust-card{padding:16px;border-radius:24px}
       .story-grid{gap:16px;margin-top:24px}
       .story-card,.story-card.overlay{border-radius:28px;min-height:auto}
       .story-card img{min-height:260px}
@@ -435,7 +435,78 @@
     }
 
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-  </style>
+  
+
+    .project-spotlight{
+      width:min(var(--max),calc(100% - 32px));
+      margin:34px auto 0;
+      padding:clamp(18px,3vw,28px);
+      border-radius:34px;
+      border:1px solid rgba(101,60,120,.15);
+      background:
+        radial-gradient(circle at 12% 0%,rgba(232,79,183,.12),transparent 24rem),
+        radial-gradient(circle at 92% 100%,rgba(157,109,243,.12),transparent 24rem),
+        rgba(255,255,255,.82);
+      box-shadow:0 24px 62px rgba(84,38,94,.12);
+      display:grid;
+      grid-template-columns:minmax(0,.92fr) minmax(320px,1.08fr);
+      gap:clamp(18px,3vw,34px);
+      align-items:center;
+    }
+    .spotlight-kicker{
+      display:inline-flex;
+      width:fit-content;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(232,79,183,.09);
+      border:1px solid rgba(232,79,183,.16);
+      color:#a03c87;
+      font-size:.72rem;
+      font-weight:1000;
+      letter-spacing:.09em;
+      text-transform:uppercase;
+      margin-bottom:12px;
+    }
+    .project-spotlight h2{
+      margin:0;
+      font-family:"Playfair Display",serif;
+      font-size:clamp(2rem,4.6vw,3.65rem);
+      line-height:.96;
+      letter-spacing:-.055em;
+      color:var(--ink);
+    }
+    .spotlight-copy{margin:14px 0 0;color:var(--muted);font-size:1rem;line-height:1.62;max-width:680px}
+    .spotlight-steps{display:grid;gap:10px;margin-top:20px}
+    .spotlight-step{
+      padding:13px 14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(101,60,120,.12);
+    }
+    .spotlight-step strong{display:block;color:var(--ink);font-size:.86rem;margin-bottom:4px}
+    .spotlight-step span{display:block;color:var(--muted);font-size:.92rem;line-height:1.45}
+    .spotlight-media{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .spotlight-media img{
+      width:100%;
+      aspect-ratio:1;
+      object-fit:cover;
+      border-radius:24px;
+      border:6px solid rgba(255,255,255,.86);
+      box-shadow:0 18px 44px rgba(84,38,94,.14);
+      background:#fff;
+    }
+    .spotlight-media.single{grid-template-columns:1fr}
+    .spotlight-media.single img{aspect-ratio:4/3}
+    @media(max-width:860px){
+      .project-spotlight{grid-template-columns:1fr;margin-top:22px;border-radius:28px}
+      .spotlight-media{order:-1}
+    }
+    @media(max-width:560px){
+      .spotlight-media{grid-template-columns:1fr 1fr;gap:8px}
+      .spotlight-media img{border-width:4px;border-radius:18px}
+      .project-spotlight{padding:16px}
+    }
+</style>
 </head>
 <body>
   <header class="site-header">
@@ -466,7 +537,7 @@
       <div>
         <span class="eyebrow">Branded details</span>
         <h1>Small pieces that make your brand feel <span class="gradient-word">real.</span></h1>
-        <p class="hero-copy">Looking for a unique giveaway, event item, fundraiser piece, business gift, or organization keepsake? These examples show how logos, brands, and ideas can become something people actually keep, display, and use.</p>
+        <p class="hero-copy">Custom keychains, magnets, coasters, event handouts, and logo pieces can turn a band, business, fundraiser, team, or local event into something people take home and keep.</p>
         <div class="hero-actions">
           <a class="button-primary" href="start-project.html">Start Your Custom Branded Project</a>
           <a class="button-secondary" href="showcase.html">Back to Showcase</a>
@@ -487,6 +558,26 @@
       </div>
     </section>
 
+
+    <section class="project-spotlight" aria-labelledby="band-spotlight-title">
+      <div>
+        <span class="spotlight-kicker">Project spotlight</span>
+        <h2 id="band-spotlight-title">Band magnets and keychains</h2>
+        <p class="spotlight-copy">Custom merchandise works best when it feels useful, memorable, and easy for people to take with them. This project turned band artwork into physical keepsakes for fans, events, and community support.</p>
+        <div class="spotlight-steps">
+          <div class="spotlight-step"><strong>The idea</strong><span>Create custom merchandise that supporters would actually keep, display, and use after an event.</span></div>
+          <div class="spotlight-step"><strong>The process</strong><span>Band artwork and branding were adapted into magnets and keychains designed for giveaways, fan engagement, and local events.</span></div>
+          <div class="spotlight-step"><strong>The result</strong><span>Durable keepsakes that help supporters celebrate a local Northeast Ohio music group in a practical, memorable way.</span></div>
+        </div>
+      </div>
+      <div class="spotlight-media">
+        <img src="images/cpb-magnet.png" alt="Custom Chardon Polka Band magnet" />
+        <img src="images/cpb-keyring.png" alt="Custom Chardon Polka Band keychain" />
+      </div>
+    </section>
+
+
+
     <section class="section section-tight">
       <div>
         <span class="section-kicker">Why small branded pieces work</span>
@@ -494,20 +585,20 @@
         <p class="section-intro">A custom keychain, magnet, coaster, or desk piece keeps showing up — on keys, fridges, workbenches, offices, instrument cases, booths, bags, and display tables.</p>
       </div>
 
-      <div class="idea-grid">
-        <div class="idea-card">
+      <div class="trust-grid">
+        <div class="trust-card">
           <strong>Events</strong>
           <span>Memorial days, festivals, fundraisers, reunions, tournaments, and celebration handouts.</span>
         </div>
-        <div class="idea-card">
+        <div class="trust-card">
           <strong>Businesses</strong>
           <span>Logo coasters, thank-you gifts, customer handoffs, desk pieces, and branded leave-behinds.</span>
         </div>
-        <div class="idea-card">
+        <div class="trust-card">
           <strong>Bands</strong>
           <span>Merch-table magnets, keychains, limited-run keepsakes, and fan-friendly designs.</span>
         </div>
-        <div class="idea-card">
+        <div class="trust-card">
           <strong>Teams</strong>
           <span>Spirit pieces, senior gifts, season mementos, awards, bag tags, and custom shapes.</span>
         </div>

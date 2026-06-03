@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>From Raw Print to Refined Finish | OliPoly 3D</title>
-  <meta name="description" content="Raw 3D prints can become finished display pieces through cleanup, fitting, assembly, surface treatment, color, painting, and final presentation." />
+  <meta name="description" content="See how OliPoly 3D turns raw printed parts into refined finished display pieces through cleanup, assembly, paint, texture, and final presentation." />
   <link rel="canonical" href="https://olipoly3d.com/raw-to-refined.html" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#fff7fb" />
 
   <meta property="og:title" content="From Raw Print to Refined Finish | OliPoly 3D" />
-  <meta property="og:description" content="Raw 3D prints can become finished display pieces through cleanup, fitting, assembly, surface treatment, color, painting, and final presentation." />
+  <meta property="og:description" content="Raw 3D prints transformed into finished, display-ready pieces through thoughtful finishing and presentation." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://olipoly3d.com/raw-to-refined.html" />
   <meta property="og:image" content="https://olipoly3d.com/images/finished-rocky.png" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="From Raw Print to Refined Finish | OliPoly 3D" />
-  <meta name="twitter:description" content="Raw 3D prints can become finished display pieces through cleanup, fitting, assembly, surface treatment, color, painting, and final presentation." />
+  <meta name="twitter:description" content="Cleanup, assembly, surface treatment, and presentation turn raw prints into finished custom pieces." />
   <meta name="twitter:image" content="https://olipoly3d.com/images/finished-rocky.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -179,7 +179,78 @@
       .poly-helper-toggle{padding:8px 12px;font-size:.84rem}
       .poly-helper-toggle img{width:34px;height:34px}
     }
-  </style>
+  
+
+    .project-spotlight{
+      width:min(var(--max),calc(100% - 32px));
+      margin:34px auto 0;
+      padding:clamp(18px,3vw,28px);
+      border-radius:34px;
+      border:1px solid rgba(101,60,120,.15);
+      background:
+        radial-gradient(circle at 12% 0%,rgba(232,79,183,.12),transparent 24rem),
+        radial-gradient(circle at 92% 100%,rgba(157,109,243,.12),transparent 24rem),
+        rgba(255,255,255,.82);
+      box-shadow:0 24px 62px rgba(84,38,94,.12);
+      display:grid;
+      grid-template-columns:minmax(0,.92fr) minmax(320px,1.08fr);
+      gap:clamp(18px,3vw,34px);
+      align-items:center;
+    }
+    .spotlight-kicker{
+      display:inline-flex;
+      width:fit-content;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(232,79,183,.09);
+      border:1px solid rgba(232,79,183,.16);
+      color:#a03c87;
+      font-size:.72rem;
+      font-weight:1000;
+      letter-spacing:.09em;
+      text-transform:uppercase;
+      margin-bottom:12px;
+    }
+    .project-spotlight h2{
+      margin:0;
+      font-family:"Playfair Display",serif;
+      font-size:clamp(2rem,4.6vw,3.65rem);
+      line-height:.96;
+      letter-spacing:-.055em;
+      color:var(--ink);
+    }
+    .spotlight-copy{margin:14px 0 0;color:var(--muted);font-size:1rem;line-height:1.62;max-width:680px}
+    .spotlight-steps{display:grid;gap:10px;margin-top:20px}
+    .spotlight-step{
+      padding:13px 14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(101,60,120,.12);
+    }
+    .spotlight-step strong{display:block;color:var(--ink);font-size:.86rem;margin-bottom:4px}
+    .spotlight-step span{display:block;color:var(--muted);font-size:.92rem;line-height:1.45}
+    .spotlight-media{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .spotlight-media img{
+      width:100%;
+      aspect-ratio:1;
+      object-fit:cover;
+      border-radius:24px;
+      border:6px solid rgba(255,255,255,.86);
+      box-shadow:0 18px 44px rgba(84,38,94,.14);
+      background:#fff;
+    }
+    .spotlight-media.single{grid-template-columns:1fr}
+    .spotlight-media.single img{aspect-ratio:4/3}
+    @media(max-width:860px){
+      .project-spotlight{grid-template-columns:1fr;margin-top:22px;border-radius:28px}
+      .spotlight-media{order:-1}
+    }
+    @media(max-width:560px){
+      .spotlight-media{grid-template-columns:1fr 1fr;gap:8px}
+      .spotlight-media img{border-width:4px;border-radius:18px}
+      .project-spotlight{padding:16px}
+    }
+</style>
 </head>
 <body>
   <header class="site-header">
@@ -221,10 +292,30 @@
       </div>
     </section>
 
+
+    <section class="project-spotlight" aria-labelledby="rocky-spotlight-title">
+      <div>
+        <span class="spotlight-kicker">Project spotlight</span>
+        <h2 id="rocky-spotlight-title">Rocky figure restoration</h2>
+        <p class="spotlight-copy">A raw printed figure can become something much more polished with the right finishing work. This project shows how cleanup, assembly, color, and presentation can turn printed parts into a display-ready piece.</p>
+        <div class="spotlight-steps">
+          <div class="spotlight-step"><strong>The idea</strong><span>Transform a raw printed figure into a finished display piece with strong shelf presence.</span></div>
+          <div class="spotlight-step"><strong>The process</strong><span>Printed components were assembled, cleaned, finished, and painted to bring out the detail and improve the final presentation.</span></div>
+          <div class="spotlight-step"><strong>The result</strong><span>A collectible-style piece that shows how post-processing can completely change the look and feel of a 3D printed project.</span></div>
+        </div>
+      </div>
+      <div class="spotlight-media">
+        <img src="images/raw-rocky.png" alt="Raw printed Rocky figure before finishing" />
+        <img src="images/finished-rocky.png" alt="Finished and painted Rocky figure after post-processing" />
+      </div>
+    </section>
+
+
+
     <section class="section" id="transformation">
       <div class="section-kicker">Before and after</div>
       <h2 class="section-title">From visible layers to finished character.</h2>
-      <p class="section-intro">The printing process is only part of the journey. Cleanup, assembly, finishing, painting, and presentation can completely change how a project looks and feels when it is finished.</p>
+      <p class="section-intro">The printing process is only part of the journey. Cleanup, assembly, finishing, painting, and presentation can completely change how a project looks and feels when it's finished.</p>
 
       <div class="before-after">
         <article class="process-card">
