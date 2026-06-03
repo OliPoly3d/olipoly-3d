@@ -40,7 +40,7 @@ const ids = [
 const els = Object.fromEntries(ids.map(id => [id, $(id)]));
 
 const BASE_CATEGORIES = [
-  'Sale','Material','Shipping','Packaging','Marketplace Fee','Machine Maintenance',
+  'Sale','Shipping','Sales Tax Collected','Material','Packaging','Marketplace Fee','Machine Maintenance',
   'Printer Parts / Repairs','Equipment','Admin / Setup','Software / Subscriptions',
   'Advertising / Marketing','Domain / Website','Office Supplies','Home Office',
   'Utilities','Internet / Phone','Vehicle / Delivery Mileage','Fees','Event Booth',

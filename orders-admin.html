@@ -1723,19 +1723,147 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
 
     function calculateFinanceSplitFromOrder(payload) {
-      const total = num(payload.order_total);
       const defaultTaxRate = 7.25;
+      const orderTotal = num(payload.order_total);
+      const productOverride = num($('proProductSubtotal')?.value);
+      const shippingAmount = num($('proShippingAmount')?.value);
+      const hasProfessionalSplit = productOverride > 0 || shippingAmount > 0;
+      const grossTotal = hasProfessionalSplit ? (productOverride + shippingAmount) : orderTotal;
 
       if (payload.tax_exempt) {
-        return { total, defaultTaxRate: 0, net: total, tax: 0, taxExempt: true };
+        return {
+          mode: 'separate_entries',
+          defaultTaxRate: 0,
+          grossTotal,
+          productRevenue: Math.max(0, grossTotal - shippingAmount),
+          shippingRevenue: shippingAmount,
+          tax: 0,
+          taxExempt: true,
+          hasProfessionalSplit
+        };
       }
 
-      // Orders Admin currently stores customer-facing total, but not separate tax/shipping.
-      // This first integration treats order_total as tax-inclusive sales revenue.
-      const net = +(total / (1 + defaultTaxRate / 100)).toFixed(2);
-      const tax = +(total - net).toFixed(2);
+      // Orders Admin usually stores customer-facing totals, not a dedicated sales-tax field.
+      // For Finance Pro Option B, keep the accounting records separate while preserving totals:
+      //   1) Product sale entry
+      //   2) Shipping / freight entry
+      //   3) Sales-tax-collected entry
+      // If a professional invoice shipping amount is filled in, it is separated first;
+      // the remaining customer-facing total is treated as tax-inclusive revenue.
+      const netBeforeTax = +(grossTotal / (1 + defaultTaxRate / 100)).toFixed(2);
+      const tax = +(grossTotal - netBeforeTax).toFixed(2);
+      const productRevenue = +Math.max(0, netBeforeTax - shippingAmount).toFixed(2);
 
-      return { total, defaultTaxRate, net, tax, taxExempt: false };
+      return {
+        mode: 'separate_entries',
+        defaultTaxRate,
+        grossTotal,
+        productRevenue,
+        shippingRevenue: shippingAmount,
+        tax,
+        taxExempt: false,
+        hasProfessionalSplit
+      };
+    }
+
+    function paymentMethodFromOrder(payload) {
+      return payload.payment_link_stripe ? 'Stripe' : (payload.payment_link_paypal ? 'PayPal' : (payload.payment_link_venmo ? 'Venmo' : null));
+    }
+
+    function receiptLinkFromOrder(payload) {
+      return payload.payment_link_stripe || payload.payment_link_paypal || payload.payment_link_venmo || null;
+    }
+
+    function financeBaseNotes(payload, orderNumber) {
+      return [
+        'Pushed from Orders Admin using separate Sale / Shipping / Tax entries.',
+        `Order: ${orderNumber}`,
+        payload.invoice_number ? `Invoice: ${payload.invoice_number}` : '',
+        payload.po_number ? `PO: ${payload.po_number}` : '',
+        payload.customer_name ? `Customer: ${payload.customer_name}` : '',
+        payload.customer_email ? `Email: ${payload.customer_email}` : '',
+        payload.order_title ? `Project: ${payload.order_title}` : '',
+        payload.quantity ? `Quantity: ${payload.quantity}` : '',
+        payload.fulfillment ? `Fulfillment: ${payload.fulfillment}` : '',
+        payload.stripe_invoice_id ? `Stripe Invoice ID: ${payload.stripe_invoice_id}` : ''
+      ].filter(Boolean).join('\n');
+    }
+
+    function buildFinanceEntriesOptionB(payload, split, entryDate) {
+      const orderNumber = payload.order_number;
+      const baseTitle = `${orderNumber}${payload.order_title ? ` - ${payload.order_title}` : ''}`;
+      const baseNotes = financeBaseNotes(payload, orderNumber);
+      const paymentMethod = paymentMethodFromOrder(payload);
+      const receiptLink = receiptLinkFromOrder(payload);
+      const customerName = payload.customer_name || null;
+      const now = new Date().toISOString();
+      const common = {
+        user_id: currentUser.id,
+        type: 'income',
+        entry_date: entryDate,
+        shipping_cost: 0,
+        material_cost: 0,
+        packaging_cost: 0,
+        labor_cost: 0,
+        other_direct_cost: 0,
+        business_use_percent: 100,
+        vendor_name: customerName,
+        payment_method: paymentMethod,
+        receipt_link: receiptLink,
+        updated_at: now
+      };
+
+      const entries = [];
+
+      if (split.productRevenue > 0) {
+        entries.push({
+          ...common,
+          category: 'Sale',
+          tax_category: 'income_sales',
+          title: `Sale - ${baseTitle}`,
+          notes: `${baseNotes}\nFinance split: product / project revenue.`,
+          amount: split.productRevenue,
+          shipping_charged: 0,
+          tax_included: false,
+          sales_tax_rate: split.defaultTaxRate,
+          tax_exempt_sale: !!split.taxExempt,
+          sales_tax_collected: 0
+        });
+      }
+
+      if (split.shippingRevenue > 0) {
+        entries.push({
+          ...common,
+          category: 'Shipping',
+          tax_category: 'income_shipping',
+          title: `Shipping / Freight - ${baseTitle}`,
+          notes: `${baseNotes}\nFinance split: shipping / freight charged to customer.`,
+          amount: 0,
+          shipping_charged: split.shippingRevenue,
+          tax_included: false,
+          sales_tax_rate: 0,
+          tax_exempt_sale: !!split.taxExempt,
+          sales_tax_collected: 0
+        });
+      }
+
+      if (split.tax > 0) {
+        entries.push({
+          ...common,
+          category: 'Sales Tax Collected',
+          tax_category: 'income_sales',
+          title: `Sales Tax Collected - ${baseTitle}`,
+          notes: `${baseNotes}\nFinance split: sales tax collected and tracked separately from revenue.`,
+          amount: 0,
+          shipping_charged: 0,
+          tax_included: false,
+          sales_tax_rate: split.defaultTaxRate,
+          tax_exempt_sale: false,
+          sales_tax_collected: split.tax
+        });
+      }
+
+      return entries;
     }
 
     async function financeEntryExists(orderNumber) {
@@ -1788,12 +1916,12 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       try {
         exists = await financeEntryExists(orderNumber);
       } catch (err) {
-        const okContinue = confirm(`Could not check for an existing Finance Pro entry.\n\n${err.message || err}\n\nContinue and create the entry anyway?`);
+        const okContinue = confirm(`Could not check for an existing Finance Pro entry.\n\n${err.message || err}\n\nContinue and create the entries anyway?`);
         if (!okContinue) return;
       }
 
       if (exists) {
-        const okDuplicate = confirm(`Finance Pro already appears to have an entry for ${orderNumber}.\n\nCreate another entry anyway?`);
+        const okDuplicate = confirm(`Finance Pro already appears to have one or more entries for ${orderNumber}.\n\nCreate another set anyway?`);
         if (!okDuplicate) {
           setMsg($('formMessage'), `Push cancelled. Finance Pro already has an entry for ${orderNumber}.`, true);
           return;
@@ -1802,46 +1930,26 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
       const split = calculateFinanceSplitFromOrder(payload);
       const entryDate = payload.paid_date || today();
+      const financeEntries = buildFinanceEntriesOptionB(payload, split, entryDate);
 
-      const financePayload = {
-        user_id: currentUser.id,
-        type: 'income',
-        entry_date: entryDate,
-        category: 'Sale',
-        tax_category: 'income_sales',
-        title: `Sale - ${orderNumber}${payload.order_title ? ` - ${payload.order_title}` : ''}`,
-        notes: [
-          'Pushed from Orders Admin.',
-          `Order: ${orderNumber}`,
-          payload.customer_name ? `Customer: ${payload.customer_name}` : '',
-          payload.customer_email ? `Email: ${payload.customer_email}` : '',
-          payload.order_title ? `Project: ${payload.order_title}` : '',
-          payload.quantity ? `Quantity: ${payload.quantity}` : '',
-          payload.fulfillment ? `Fulfillment: ${payload.fulfillment}` : '',
-          payload.stripe_invoice_id ? `Stripe Invoice ID: ${payload.stripe_invoice_id}` : ''
-        ].filter(Boolean).join('\n'),
-        amount: split.net,
-        shipping_charged: 0,
-        tax_included: true,
-        sales_tax_rate: split.defaultTaxRate,
-        tax_exempt_sale: !!split.taxExempt,
-        sales_tax_collected: split.tax,
-        shipping_cost: 0,
-        material_cost: 0,
-        packaging_cost: 0,
-        labor_cost: 0,
-        other_direct_cost: 0,
-        business_use_percent: 100,
-        vendor_name: payload.customer_name || null,
-        payment_method: payload.payment_link_stripe ? 'Stripe' : (payload.payment_link_paypal ? 'PayPal' : (payload.payment_link_venmo ? 'Venmo' : null)),
-        receipt_link: payload.payment_link_stripe || payload.payment_link_paypal || payload.payment_link_venmo || null,
-        updated_at: new Date().toISOString()
-      };
+      if (!financeEntries.length) {
+        setMsg($('formMessage'), 'No Finance Pro entries were created because the calculated sale, shipping, and tax amounts are all $0.', true);
+        return;
+      }
+
+      const okSplit = confirm(
+        `Push ${orderNumber} to Finance Pro as separate entries?\n\n` +
+        `Sale revenue: ${money(split.productRevenue)}\n` +
+        `Shipping / freight: ${money(split.shippingRevenue)}\n` +
+        `Sales tax collected: ${money(split.tax)}\n\n` +
+        `This will create ${financeEntries.length} Finance Pro ${financeEntries.length === 1 ? 'entry' : 'entries'}.`
+      );
+      if (!okSplit) return;
 
       const { ok, data, error } = await api('/rest/v1/financial_entries', {
         method: 'POST',
         headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(financePayload)
+        body: JSON.stringify(financeEntries)
       });
 
       if (!ok) {
@@ -1850,7 +1958,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       }
 
       const pushedAt = new Date().toISOString();
-      const note = `Finance Pro entry created ${new Date().toLocaleString()} for ${orderNumber}. Total ${money(split.total)} split as revenue ${money(split.net)} + tax ${money(split.tax)}.`;
+      const note = `Finance Pro entries created ${new Date().toLocaleString()} for ${orderNumber}. Option B split: sale ${money(split.productRevenue)} + shipping ${money(split.shippingRevenue)} + sales tax ${money(split.tax)}.`;
       $('internalNotes').value = [$('internalNotes').value.trim(), note].filter(Boolean).join('\n\n');
 
       const financePatch = {
@@ -1867,11 +1975,11 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       });
 
       if (flagRes.error) {
-        setMsg($('formMessage'), `Finance entry created, but Orders Admin could not save the pushed badge: ${flagRes.error?.message || JSON.stringify(flagRes.error)}`, true);
+        setMsg($('formMessage'), `Finance entries created, but Orders Admin could not save the pushed badge: ${flagRes.error?.message || JSON.stringify(flagRes.error)}`, true);
         return;
       }
 
-      setMsg($('formMessage'), `Pushed ${orderNumber} to Finance Pro. Revenue ${money(split.net)} + sales tax ${money(split.tax)}.`);
+      setMsg($('formMessage'), `Pushed ${orderNumber} to Finance Pro as separate entries: sale ${money(split.productRevenue)}, shipping ${money(split.shippingRevenue)}, tax ${money(split.tax)}.`);
       await fetchOrders();
       const saved = orders.find(o => o.order_number === orderNumber);
       if (saved) {
