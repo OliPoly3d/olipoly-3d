@@ -57,6 +57,12 @@
     .p-finance-not-pushed{background:rgba(255,201,100,.12);border-color:rgba(255,201,100,.24);color:#ffe5ad}
     .finance-status-note{margin-top:12px}
 
+    /* === Finance Ready Queue add-on === */
+    .finance-ready-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .finance-ready-actions .btn,.finance-ready-actions .btn-ghost{min-height:38px;padding:9px 12px;font-size:.84rem}
+    .finance-ready-note{margin-top:8px;color:var(--muted);font-size:.78rem;line-height:1.35}
+
+
     
     .signin-collapsed{
       display:none!important;
@@ -763,6 +769,16 @@ body{font-family:Inter,Arial,sans-serif}
       <div class="summary"><span>Total Value</span><strong id="sumValue">$0.00</strong><small>All order totals combined.</small></div>
       <div class="summary"><span>Deposit Due</span><strong id="sumDepositDue">0</strong><small>Needs payment follow-up.</small></div>
       <div class="summary"><span>In Production</span><strong id="sumInProduction">0</strong><small>Actively being made.</small></div>
+      <div class="summary">
+        <span>Ready For Finance</span>
+        <strong id="sumReadyFinance">0</strong>
+        <small><span id="sumReadyFinanceValue">$0.00</span> pending push.</small>
+        <div class="finance-ready-actions">
+          <button class="btn" id="pushAllFinanceBtn" type="button">Push All Ready</button>
+          <button class="btn-ghost" id="showReadyFinanceBtn" type="button">Show Ready</button>
+        </div>
+        <div class="finance-ready-note">Paid orders not yet pushed to Finance Pro.</div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:22px;">
@@ -1877,6 +1893,98 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       return Array.isArray(data) && data.length > 0;
     }
 
+
+    function isFinanceReadyOrder(o){
+      return !!o && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
+    }
+
+    function readyFinanceOrders(){
+      return orders.filter(isFinanceReadyOrder);
+    }
+
+    async function pushOrderObjectToFinance(order, {skipExistingCheck=false} = {}){
+      if (!currentUser?.id) throw new Error('Log in before pushing orders to Finance Pro.');
+      if (!order?.order_number) throw new Error('Order number is required before pushing to Finance Pro.');
+      if (!isFinanceReadyOrder(order)) throw new Error(`${order.order_number || 'Order'} is not ready for Finance Pro.`);
+
+      if (!skipExistingCheck) {
+        const exists = await financeEntryExists(order.order_number);
+        if (exists) throw new Error(`Finance Pro already appears to have entries for ${order.order_number}.`);
+      }
+
+      const split = calculateFinanceSplitFromOrder(order);
+      const entryDate = order.paid_date || today();
+      const financeEntries = buildFinanceEntriesOptionB(order, split, entryDate);
+
+      if (!financeEntries.length) throw new Error(`No Finance Pro entries were created for ${order.order_number}.`);
+
+      const { ok, error } = await api('/rest/v1/financial_entries', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(financeEntries)
+      });
+      if (!ok) throw new Error(error?.message || JSON.stringify(error) || `Could not push ${order.order_number}.`);
+
+      const pushedAt = new Date().toISOString();
+      const note = `Finance Pro entries created ${new Date().toLocaleString()} for ${order.order_number}. Option B split: sale ${money(split.productRevenue)} + shipping ${money(split.shippingRevenue)} + sales tax ${money(split.tax)}.`;
+      const internalNotes = [order.internal_notes || '', note].filter(Boolean).join('\n\n');
+
+      const flagRes = await api(`/rest/v1/orders?id=eq.${order.id}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          finance_pushed: true,
+          finance_pushed_at: pushedAt,
+          internal_notes: internalNotes
+        })
+      });
+      if (flagRes.error) throw new Error(flagRes.error?.message || JSON.stringify(flagRes.error) || `Finance entries created for ${order.order_number}, but the order was not marked pushed.`);
+
+      return {orderNumber: order.order_number, entries: financeEntries.length, split};
+    }
+
+    async function pushAllReadyFinanceOrders(){
+      clearMsg($('formMessage'));
+      if (!currentUser?.id) {
+        setMsg($('formMessage'), 'Log in before pushing ready orders to Finance Pro.', true);
+        return;
+      }
+
+      const ready = readyFinanceOrders();
+      if (!ready.length) {
+        setMsg($('formMessage'), 'No paid, not-pushed orders are ready for Finance Pro.');
+        return;
+      }
+
+      const total = ready.reduce((s,o)=>s+num(o.order_total),0);
+      const ok = confirm(`Push ${ready.length} ready order${ready.length === 1 ? '' : 's'} to Finance Pro?\n\nPending revenue total: ${money(total)}\n\nEach order will create separate Sale, Shipping / Freight, and Sales Tax Collected entries when applicable.`);
+      if (!ok) return;
+
+      const pushed = [];
+      const skipped = [];
+
+      for (const order of ready) {
+        try {
+          const result = await pushOrderObjectToFinance(order);
+          pushed.push(result);
+        } catch (err) {
+          skipped.push(`${order.order_number || 'Order'}: ${err.message || err}`);
+        }
+      }
+
+      await fetchOrders();
+
+      const pushedText = pushed.length ? `Pushed ${pushed.length} order${pushed.length === 1 ? '' : 's'} to Finance Pro.` : 'No orders were pushed.';
+      const skippedText = skipped.length ? ` Skipped ${skipped.length}: ${skipped.join(' | ')}` : '';
+      setMsg($('formMessage'), pushedText + skippedText, !!skipped.length);
+    }
+
+    function showReadyFinanceOrders(){
+      if ($('financeFilter')) $('financeFilter').value = 'ready';
+      renderList();
+      $('orderList')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
     async function pushCurrentOrderToFinance() {
       clearMsg($('formMessage'));
 
@@ -2128,6 +2236,10 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('sumValue').textContent = money(orders.reduce((s,o)=>s+num(o.order_total),0));
       $('sumDepositDue').textContent = orders.filter(o => o.payment_status === 'deposit_due').length;
       $('sumInProduction').textContent = orders.filter(o => ['in_design','in_production','post_processing'].includes(o.status)).length;
+      const readyFinance = readyFinanceOrders();
+      if ($('sumReadyFinance')) $('sumReadyFinance').textContent = readyFinance.length;
+      if ($('sumReadyFinanceValue')) $('sumReadyFinanceValue').textContent = money(readyFinance.reduce((s,o)=>s+num(o.order_total),0));
+      if ($('pushAllFinanceBtn')) $('pushAllFinanceBtn').disabled = !readyFinance.length;
     }
 
     function renderList(){
@@ -3052,6 +3164,8 @@ if ($('openVenmoBtn')) {
     if (url) window.open(url, '_blank');
   };
 }
+    if ($('pushAllFinanceBtn')) $('pushAllFinanceBtn').onclick = pushAllReadyFinanceOrders;
+    if ($('showReadyFinanceBtn')) $('showReadyFinanceBtn').onclick = showReadyFinanceOrders;
     $('clearFiltersBtn').onclick = () => {
       $('searchInput').value = '';
       $('statusFilter').value = 'all';
@@ -3064,6 +3178,7 @@ if ($('openVenmoBtn')) {
     $('searchInput').addEventListener('input', renderList);
     $('statusFilter').addEventListener('input', renderList);
     $('paymentFilter').addEventListener('input', renderList);
+    $('financeFilter')?.addEventListener('input', renderList);
     $('sortBy').addEventListener('input', renderList);
     ['orderNumber','orderTotal','depositAmount','paymentStatus','status','publicStatusText','publicNextStep','shippingOrPickupNote','trackingNumber','paymentLinkStripe','paymentLinkPaypal','paymentLinkVenmo','paidDate']
   .forEach(id => $(id)?.addEventListener('input', updatePreview));

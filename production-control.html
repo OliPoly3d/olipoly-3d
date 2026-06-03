@@ -1681,6 +1681,9 @@
       scrap_grams: existing?.scrap_grams || null,
       failure_reason: existing?.failure_reason || null,
       exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes',
+      inventory_deducted: existing?.inventory_deducted || false,
+      inventory_deducted_at: existing?.inventory_deducted_at || null,
+      total_inventory_grams_deducted: existing?.total_inventory_grams_deducted || null,
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
       manual_rank: existing?.manual_rank ?? Date.now(),
@@ -2191,6 +2194,7 @@
     const j = state.jobs.find(x=>x.id===state.closingId);
     if(!j) return closeClose();
     const now = new Date().toISOString();
+    const wasInventoryDeducted = !!j.inventory_deducted;
     const closeAllocations = closeRollAllocations();
     const closeScrapTotal = perMaterialScrapTotal(closeAllocations) || num($('closeScrapGrams').value);
     const closeGoodTotal = closeAllocations.some(x=>x.raw_material_roll_id || x.good_grams || x.scrap_grams) ? closeAllocations.reduce((s,x)=>s+num(x.good_grams),0) : num($('closeGrams').value);
@@ -2214,7 +2218,9 @@
       pm_hours_applied:true,
       pm_hours_applied_machine:$('closeMachine').value,
       pm_hours_applied_hours:num($('closeHours').value),
-      total_inventory_grams_deducted:closeGoodTotal + closeScrapTotal,
+      total_inventory_grams_deducted: wasInventoryDeducted ? num(j.total_inventory_grams_deducted) : (closeGoodTotal + closeScrapTotal),
+      inventory_deducted: wasInventoryDeducted || (!j.exclude_inventory_reduction && (closeGoodTotal + closeScrapTotal > 0 || $('closeAddFinished').value === 'yes')),
+      inventory_deducted_at: wasInventoryDeducted ? (j.inventory_deducted_at || now) : ((!j.exclude_inventory_reduction && (closeGoodTotal + closeScrapTotal > 0 || $('closeAddFinished').value === 'yes')) ? now : null),
       pm_hours_applied_at:now,
       closed_at:now,
       updated_at:now
@@ -2239,8 +2245,8 @@
               p_actual_filament_breakdown: updated.actual_filament_breakdown,
               p_close_note: updated.close_note,
               p_add_finished_good: addFinished,
-              p_skip_inventory_reduction: updated.exclude_inventory_reduction,
-              p_roll_usages: updated.roll_usages || []
+              p_skip_inventory_reduction: updated.exclude_inventory_reduction || wasInventoryDeducted,
+              p_roll_usages: wasInventoryDeducted ? [] : (updated.roll_usages || [])
             })
           });
         }catch(rpcErr){
@@ -2248,7 +2254,9 @@
         }
       }
       applyPmUsageForCloseout(j, updated);
-      if(!updated.exclude_inventory_reduction){
+      if(wasInventoryDeducted){
+        // Safety guard: a previously closed job should not subtract filament, supplies, or finished-good quantities a second time.
+      } else if(!updated.exclude_inventory_reduction){
         if(updated.roll_usages && updated.roll_usages.some(x=>x.raw_material_roll_id)) applyRollCloseoutLocal(updated.roll_usages);
         else applyInventoryLocal(updated, deductionBreakdown, addFinished);
       } else if(addFinished) {
@@ -2258,7 +2266,7 @@
       localWrite(LS_JOBS,state.jobs);
       closeClose();
       render();
-      toast('Close-out saved. PM updated. Inventory deducted good + scrap grams.');
+      toast(wasInventoryDeducted ? 'Close-out saved. Inventory was already deducted, so no second deduction was made.' : 'Close-out saved. PM updated. Inventory deducted good + scrap grams.');
     }catch(err){
       alert(`Could not close job:\n\n${err.message || err}`);
     }
@@ -2606,6 +2614,9 @@
       scrap_grams:j.scrap_grams || null,
       failure_reason:j.failure_reason || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
+      inventory_deducted:!!j.inventory_deducted,
+      inventory_deducted_at:j.inventory_deducted_at || null,
+      total_inventory_grams_deducted:num(j.total_inventory_grams_deducted),
       pm_hours_applied:!!j.pm_hours_applied,
       pm_hours_applied_machine:j.pm_hours_applied_machine || null,
       pm_hours_applied_hours:num(j.pm_hours_applied_hours),
