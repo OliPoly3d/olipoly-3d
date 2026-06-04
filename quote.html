@@ -2043,19 +2043,20 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 </script>
 
 
-<script id="reorderQuoteDraftModuleV2">
+<script id="reorderDraftDomModule">
 (function(){
   'use strict';
-  function byId(id){return document.getElementById(id);}
+
+  function byId(id){ return document.getElementById(id); }
   function readDraft(){
-    try{return JSON.parse(localStorage.getItem('olipoly_reorder_quote_draft_v1') || 'null');}
-    catch(e){return null;}
+    try { return JSON.parse(localStorage.getItem('olipoly_reorder_quote_draft_v1') || 'null'); }
+    catch(e){ return null; }
   }
   function applyDraft(){
-    if(window.__reorderQuoteDraftV2Applied) return;
+    if(window.__reorderDraftDomApplied) return;
     var d = readDraft();
     if(!d) return;
-    window.__reorderQuoteDraftV2Applied = true;
+    window.__reorderDraftDomApplied = true;
 
     function set(id,val){
       var el = byId(id);
