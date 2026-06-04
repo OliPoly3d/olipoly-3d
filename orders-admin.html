@@ -1027,12 +1027,13 @@ Aurora, OH 44202</textarea></div>
   <div class="print-template-hidden" id="packingPrintArea"></div>
 
   <script src="js/document-theme.js"></script>
+  <script src="olipoly-auth.js"></script>
 
   <script>
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
-    let accessToken = localStorage.getItem('sb_token') || null;
+    let accessToken = (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null);
     let currentUser = null;
     let orders = [];
     let activeId = null;
@@ -1441,6 +1442,7 @@ Aurora, OH 44202</textarea></div>
     }
 
     async function getCurrentUser(){
+  if (!accessToken && window.OliPolyAuth) { await window.OliPolyAuth.ensure(); accessToken = window.OliPolyAuth.getToken(); }
   if (!accessToken) return null;
   const { data, error } = await api('/auth/v1/user');
 
@@ -1448,7 +1450,7 @@ Aurora, OH 44202</textarea></div>
     currentUser = null;
     accessToken = null;
     updateAuthVisibility();
-    localStorage.removeItem('sb_token');
+    if (window.OliPolyAuth) window.OliPolyAuth.clearSession(); else localStorage.removeItem('sb_token');
     return null;
   }
 
@@ -2306,7 +2308,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       currentUser = null;
       orders = [];
       activeId = null;
-      localStorage.removeItem('sb_token');
+      if (window.OliPolyAuth) window.OliPolyAuth.clearSession(); else localStorage.removeItem('sb_token');
 resetForm();
       renderList();
       updateAuthVisibility();
@@ -3194,7 +3196,7 @@ if ($('openVenmoBtn')) {
       $('signupBtn').classList.add('hidden');
       fetchOrders();
     } else {
-      localStorage.removeItem('sb_token');
+      if (window.OliPolyAuth) window.OliPolyAuth.clearSession(); else localStorage.removeItem('sb_token');
       accessToken = null;
       $('logoutBtn').classList.add('hidden');
       $('loginBtn').classList.remove('hidden');

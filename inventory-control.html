@@ -764,7 +764,8 @@
 
   <div id="toast" class="toast"></div>
 
-<script>
+<script src="olipoly-auth.js"></script>
+  <script>
 (()=>{
   'use strict';
 
@@ -808,7 +809,7 @@
   function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v))}
   function grams(v){const n=num(v);return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`}
   function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
-  function token(){ return localStorage.getItem('sb_token') || null; }
+  function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
   async function sbApi(path, options={}){
     const headers={apikey:SUPABASE_KEY,'Content-Type':'application/json',...(token()?{Authorization:`Bearer ${token()}`}:{}) ,...(options.headers||{})};
     const res=await fetch(`${SUPABASE_URL}${path}`,{...options,headers});

@@ -1075,6 +1075,43 @@ body::before{
       </div>
     </details>
 
+    
+    <section class="hub-section" id="workflowCommandCenter">
+      <div class="section-title">
+        <span class="os-kicker">Command Center</span>
+        <h3>Start the right workflow</h3>
+        <p>Capture the minimum info once, then route it to the right OliPoly tool. This saves a local workflow draft that the next tools can be wired to read.</p>
+      </div>
+      <div class="quick-grid">
+        <label class="label">Request type
+          <select id="workflowType" class="reminder-input">
+            <option value="personal">Personal gift / one-off</option>
+            <option value="business">Business / branded order</option>
+            <option value="replacement">Replacement part</option>
+            <option value="prototype">Prototype / test print</option>
+            <option value="batch">Small batch / repeat item</option>
+          </select>
+        </label>
+        <label class="label">Project / customer
+          <input id="workflowTitle" class="reminder-input" placeholder="Customer, project, or item name">
+        </label>
+        <label class="label">Quantity
+          <input id="workflowQty" class="reminder-input" type="number" min="1" step="1" value="1">
+        </label>
+        <label class="label">Due date
+          <input id="workflowDue" class="reminder-input" type="date">
+        </label>
+      </div>
+      <div class="button-row" style="margin-top:12px;">
+        <button class="btn" id="workflowSaveBtn" type="button">Save Workflow Draft</button>
+        <a class="ghost" id="workflowQuoteBtn" href="quote.html">Open Quote</a>
+        <a class="ghost" id="workflowProductionBtn" href="production-control.html">Open Production</a>
+        <a class="ghost" id="workflowOrdersBtn" href="orders-admin.html">Open Orders</a>
+      </div>
+      <div class="auth-status" id="workflowRecommendation">Choose a request type to see the recommended workflow.</div>
+    </section>
+
+
     <section class="hub-section">
       <div class="section-title">
         <span class="os-kicker">Reminders</span>
@@ -1882,6 +1919,9 @@ body::before{
         const { data } = await supabase.auth.getSession();
         currentSession = data?.session || null;
         currentUser = currentSession?.user || null;
+        if (window.OliPolyAuth && currentSession) {
+          window.OliPolyAuth.writeSession(currentSession);
+        }
         setAuthUi();
 
         if (currentUser) {
@@ -1911,7 +1951,10 @@ body::before{
       setButtonBusy(els.signupBtn, true, 'Creating...', 'Create');
       els.authStatus.textContent = 'Creating account...';
       try {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error, data } = await supabase.auth.signUp({ email, password });
+        if (window.OliPolyAuth && data?.session) {
+          window.OliPolyAuth.writeSession(data.session);
+        }
         if (error) {
           els.authStatus.textContent = `Signup failed: ${error.message}`;
           return;
@@ -1934,6 +1977,7 @@ body::before{
       const cleanupSession = () => {
         currentSession = null;
         currentUser = null;
+        if (window.OliPolyAuth) window.OliPolyAuth.clearSession();
         reminders = [];
         els.notes.value = '';
         renderReminders();
@@ -1958,9 +2002,13 @@ body::before{
     }
 
     async function refreshCloudState() {
-      const { data } = await supabase.auth.getSession();
+      let { data } = await supabase.auth.getSession();
       currentSession = data?.session || null;
+      if (!currentSession && window.OliPolyAuth) {
+        currentSession = await window.OliPolyAuth.ensure();
+      }
       currentUser = currentSession?.user || null;
+      if (window.OliPolyAuth && currentSession) window.OliPolyAuth.writeSession(currentSession);
       setAuthUi();
 
       if (!currentUser) {
@@ -2014,6 +2062,52 @@ body::before{
 
     renderHealthChecks();
     renderReminders();
+
+    function workflowRecommendationText(type) {
+      const map = {
+        personal: 'Recommended: Quote if pricing is needed → Production Control when accepted.',
+        business: 'Recommended: Quote → Orders Admin → Invoice / tracking → Finance push.',
+        replacement: 'Recommended: Production Control first for fit/function → Quote if charging customer.',
+        prototype: 'Recommended: Production Control first → Quote once scope is clear.',
+        batch: 'Recommended: Production Control + Inventory check → Quote / Orders when repeatable.'
+      };
+      return map[type] || 'Choose a request type to see the recommended workflow.';
+    }
+
+    function workflowDraftFromForm() {
+      return {
+        id: `wf-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        request_type: document.getElementById('workflowType')?.value || 'personal',
+        title: document.getElementById('workflowTitle')?.value.trim() || '',
+        quantity: Number(document.getElementById('workflowQty')?.value || 1) || 1,
+        due_date: document.getElementById('workflowDue')?.value || '',
+        source: 'hub'
+      };
+    }
+
+    function saveWorkflowDraft() {
+      const draft = workflowDraftFromForm();
+      localStorage.setItem('olipoly_workflow_draft_v1', JSON.stringify(draft));
+      const el = document.getElementById('workflowRecommendation');
+      if (el) el.textContent = `Draft saved: ${draft.title || draft.request_type}. ${workflowRecommendationText(draft.request_type)}`;
+      return draft;
+    }
+
+    function updateWorkflowRecommendation() {
+      const type = document.getElementById('workflowType')?.value || 'personal';
+      const el = document.getElementById('workflowRecommendation');
+      if (el) el.textContent = workflowRecommendationText(type);
+    }
+
+    document.getElementById('workflowType')?.addEventListener('input', updateWorkflowRecommendation);
+    document.getElementById('workflowSaveBtn')?.addEventListener('click', saveWorkflowDraft);
+    ['workflowQuoteBtn','workflowProductionBtn','workflowOrdersBtn'].forEach(id => {
+      document.getElementById(id)?.addEventListener('click', () => saveWorkflowDraft());
+    });
+    updateWorkflowRecommendation();
+
+
     bootstrap();
   </script>
 </body>

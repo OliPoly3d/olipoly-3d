@@ -1245,7 +1245,8 @@
 
   <div id="toast" class="toast"></div>
 
-<script>
+<script src="olipoly-auth.js"></script>
+  <script>
 (() => {
   'use strict';
 
@@ -1346,7 +1347,7 @@
     draggingId:null
   };
 
-  function token(){ return localStorage.getItem('sb_token') || null; }
+  function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
 
   async function sbApi(path, options = {}){
     const headers = {

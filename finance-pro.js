@@ -1051,6 +1051,7 @@ async function login() {
     hide(els.authMessage);
 
     const { data } = await supabase.auth.getSession();
+    if (window.OliPolyAuth && data?.session) window.OliPolyAuth.writeSession(data.session);
     currentUser = data?.session?.user || null;
     setUI(!!currentUser);
 
@@ -1068,10 +1069,11 @@ async function signup() {
   setAuthMsg('Creating account...');
 
   try {
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email: els.emailInput.value.trim(),
       password: els.passwordInput.value
     });
+    if (window.OliPolyAuth && data?.session) window.OliPolyAuth.writeSession(data.session);
 
     if (error) return setAuthMsg(`Signup failed: ${error.message}`, true);
 
@@ -1083,7 +1085,8 @@ async function signup() {
 
 async function logout() {
   try {
-    await supabase.auth.signOut();
+    if (window.OliPolyAuth) window.OliPolyAuth.clearSession();
+  await supabase.auth.signOut();
   } catch (err) {
     console.warn('Logout cleanup issue:', err);
   }
