@@ -25,6 +25,59 @@
     .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px} .tool{padding:14px;border-radius:20px;background:rgba(255,255,255,.76);border:1px solid var(--line);text-decoration:none} .tool strong{display:block} .tool small{display:block;color:var(--muted);line-height:1.35;margin-top:4px}
     @media(max-width:950px){.hero{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr 1fr}.path,.snap{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:640px){.wrap{width:min(100% - 18px,1120px)}.topbar{position:relative;top:auto;align-items:flex-start;flex-direction:column}.hero,.wizard,.section{border-radius:24px;padding:14px}.type-grid,.form-grid,.path,.snap{grid-template-columns:1fr}.recommend{display:block}.actions{margin-top:10px;display:grid}.btn,.ghost{width:100%}}
+  
+    /* === V4: robust card rendering + cloud search layout fixes === */
+    .command-grid{display:grid!important;grid-template-columns:1.05fr .95fr!important;gap:14px!important;margin-top:14px!important}
+    .focus-card{padding:16px!important;border-radius:26px!important;background:rgba(255,255,255,.84)!important;border:1px solid rgba(255,255,255,.88)!important;box-shadow:0 22px 62px rgba(95,36,112,.13)!important}
+    .work-list,.attention-list,.search-results{display:grid!important;gap:9px!important;margin-top:12px!important}
+    .work-item,.search-item{
+      display:grid!important;
+      grid-template-columns:auto minmax(0,1fr) auto!important;
+      gap:10px!important;
+      align-items:center!important;
+      padding:11px!important;
+      border-radius:18px!important;
+      background:rgba(255,255,255,.82)!important;
+      border:1px solid rgba(101,60,120,.14)!important;
+      text-decoration:none!important;
+      color:inherit!important;
+      box-shadow:0 8px 18px rgba(95,36,112,.05)!important;
+    }
+    .work-item:hover,.search-item:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(95,36,112,.09)!important}
+    .work-icon,.search-icon{
+      width:38px!important;height:38px!important;border-radius:15px!important;
+      display:grid!important;place-items:center!important;color:white!important;
+      background:linear-gradient(135deg,#e84fb7,#9d6df3)!important;font-weight:950!important;text-decoration:none!important;
+    }
+    .work-item strong,.search-item strong{
+      display:block!important;color:#25182d!important;font-size:.95rem!important;
+      line-height:1.15!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;text-decoration:none!important;
+    }
+    .work-item small,.search-item small{
+      display:block!important;color:#74617d!important;font-size:.78rem!important;line-height:1.3!important;margin-top:3px!important;text-decoration:none!important;
+    }
+    .work-item b,.search-item b,.tag{
+      display:inline-flex!important;align-items:center!important;justify-content:center!important;
+      font-size:.66rem!important;text-transform:uppercase!important;letter-spacing:.06em!important;font-weight:950!important;
+      color:#9b4c80!important;background:rgba(232,79,183,.09)!important;border:1px solid rgba(232,79,183,.13)!important;
+      border-radius:999px!important;padding:6px 8px!important;white-space:nowrap!important;text-decoration:none!important;
+    }
+    .attention-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;margin-top:12px!important}
+    .attention-box{padding:13px!important;border-radius:20px!important;background:rgba(255,255,255,.78)!important;border:1px solid rgba(101,60,120,.14)!important}
+    .attention-box h3{margin:0 0 8px!important;font-family:"Playfair Display",serif!important;font-size:1.25rem!important;color:#25182d!important}
+    .mini{display:grid!important;gap:7px!important}
+    .mini a,.mini div{
+      display:block!important;padding:9px!important;border-radius:14px!important;background:rgba(255,255,255,.78)!important;
+      border:1px solid rgba(101,60,120,.10)!important;text-decoration:none!important;color:inherit!important;
+    }
+    .mini strong{display:block!important;font-size:.84rem!important;color:#25182d!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;text-decoration:none!important}
+    .mini small{display:block!important;color:#74617d!important;font-size:.72rem!important;margin-top:2px!important;line-height:1.25!important;text-decoration:none!important}
+    .search-box{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;margin-top:10px!important;padding:10px!important;border-radius:22px!important;background:rgba(255,255,255,.68)!important;border:1px solid rgba(101,60,120,.14)!important}
+    .search-box input{margin:0!important}
+    .empty-note{padding:12px!important;border-radius:18px!important;background:rgba(255,255,255,.68)!important;border:1px dashed rgba(101,60,120,.14)!important;color:#74617d!important;font-weight:800!important;line-height:1.4!important}
+    @media(max-width:980px){.command-grid{grid-template-columns:1fr!important}.attention-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    @media(max-width:640px){.attention-grid{grid-template-columns:1fr!important}.work-item,.search-item{grid-template-columns:auto minmax(0,1fr)!important}.work-item b,.search-item b{grid-column:2!important}.search-box{grid-template-columns:1fr!important}}
+
   </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -314,27 +367,57 @@
 </div>
 
 
+
 <script>
 const $=id=>document.getElementById(id);
 const recs={business:['Recommended: Business / Branded','Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.'],personal:['Recommended: Personal / Gift','Start in Production Control as Personal / Free. Quote only if it becomes a paid customer job.'],replacement:['Recommended: Replacement Part','Start in Production Control as Replacement / Warranty. Confirm fit, function, and material before quoting.'],prototype:['Recommended: Prototype','Start in Production Control as Prototype / Test Print. Quote after scope and iterations are clear.'],batch:['Recommended: Repeat / Batch','Start in Production Control as Craft Stock or Finished Goods Restock. Confirm repeatability, material, and capacity.']};
 const defaults={business:{job_type:'business_po',status:'ready_to_print',priority:'urgent',machine:'P2S'},personal:{job_type:'personal_free',status:'idea',priority:'low',machine:'either'},replacement:{job_type:'replacement_warranty',status:'idea',priority:'high',machine:'either'},prototype:{job_type:'prototype',status:'queued',priority:'normal',machine:'either'},batch:{job_type:'craft_stock',status:'ready_to_print',priority:'normal',machine:'either'}};
+const hubCloud={orders:[],quotes:[],finance:[],loaded:false,error:null};
+
 function setType(t){document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t));$('workflowType').value=t;$('recTitle').textContent=recs[t][0];$('recBody').textContent=recs[t][1];}
 function draft(){const t=$('workflowType').value;return {id:'wf-'+Date.now(),created_at:new Date().toISOString(),request_type:t,title:$('workflowTitle').value.trim(),quantity:Number($('workflowQty').value||1)||1,due_date:$('workflowDue').value,source:'hub',destination:'production-control',production_defaults:defaults[t],workflow_note:recs[t][1]}}
 function saveDraft(){const d=draft();localStorage.setItem('olipoly_workflow_draft_v1',JSON.stringify(d));$('recBody').textContent='Draft saved. Open Production Control and apply the draft banner at the top.';return d;}
-document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
-$('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
 
 function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0)}
 function jobHours(j){return Number(j.estimated_total_hours || (Number(j.estimated_hours_each||0)*Number(j.quantity||1)) || 0)}
-function jobStatus(s){return String(s||'idea').replace(/_/g,' ')}
-function mini(href,title,sub,tag){return `<a href="${href}"><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></a>`}
-function item(href,icon,title,sub,tag){return `<a class="work-item" href="${href}"><span class="work-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b class="tag">${esc(tag||'Open')}</b></a>`}
-function searchItem(href,icon,title,sub,tag){return `<a class="search-item" href="${href}"><span class="search-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b class="tag">${esc(tag||'Open')}</b></a>`}
+function item(href,icon,title,sub,tag){return `<a class="work-item" href="${href}"><span class="work-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b>${esc(tag||'Open')}</b></a>`}
+function searchItem(href,icon,title,sub,tag){return `<a class="search-item" href="${href}"><span class="search-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b>${esc(tag||'Open')}</b></a>`}
+function mini(href,title,sub){return `<a href="${href}"><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></a>`}
 function empty(text){return `<div class="empty-note">${esc(text)}</div>`}
 
-function data(){
+async function sbRest(path){
+  if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
+  const token=window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token');
+  if(!token) throw new Error('No Hub cloud token');
+  const url=(window.OliPolyAuth?.SUPABASE_URL || 'https://alffoktlwhpfothieude.supabase.co') + path;
+  const key=window.OliPolyAuth?.SUPABASE_KEY || 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const res=await fetch(url,{headers:{apikey:key,Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});
+  const data=await res.json().catch(()=>null);
+  if(!res.ok) throw new Error(data?.message || data?.error_description || `Supabase ${res.status}`);
+  return Array.isArray(data)?data:[];
+}
+
+async function loadCloudData(){
+  try{
+    const [orders,quotes,finance]=await Promise.allSettled([
+      sbRest('/rest/v1/orders?select=*&order=updated_at.desc&limit=200'),
+      sbRest('/rest/v1/quotes?select=*&order=updated_at.desc&limit=200'),
+      sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=200')
+    ]);
+    hubCloud.orders=orders.status==='fulfilled'?orders.value:[];
+    hubCloud.quotes=quotes.status==='fulfilled'?quotes.value:[];
+    hubCloud.finance=finance.status==='fulfilled'?finance.value:[];
+    hubCloud.loaded=true;
+    hubCloud.error=null;
+  }catch(err){
+    console.warn('Hub cloud load skipped:',err);
+    hubCloud.error=err;
+  }
+}
+
+function localData(){
   return {
     jobs:read('olipoly_production_jobs_v3'),
     raw:read('olipoly_raw_material_inventory_v3'),
@@ -344,8 +427,17 @@ function data(){
     finance:read('olipoly_finance_entries_v1')
   };
 }
+
+function combinedData(){
+  const l=localData();
+  const cloudOrders=hubCloud.orders.map(o=>({...o,_source:'cloud'}));
+  const cloudQuotes=hubCloud.quotes.map(q=>({...q,_source:'cloud'}));
+  const cloudFinance=hubCloud.finance.map(f=>({...f,_source:'cloud'}));
+  return {...l,orders:[...cloudOrders,...l.orders],quotes:[...cloudQuotes,...l.quotes],finance:[...cloudFinance,...l.finance]};
+}
+
 function renderCommandCenter(){
-  const d=data();
+  const d=combinedData();
   const closed=['completed','failed_scrap','archived'];
   const open=d.jobs.filter(j=>!closed.includes(j.production_status));
   const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));
@@ -353,52 +445,64 @@ function renderCommandCenter(){
   const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));
   const lowRaw=d.raw.filter(r=>Number(r.remaining_grams||0)<=Number(r.reorder_threshold_grams||0));
   const lowSup=d.supplies.filter(s=>Number(s.quantity_on_hand||0)<=Number(s.reorder_threshold||s.reorder_point||0));
-  const readyFinance=d.orders.filter(o=>['paid','deposit_paid'].includes(o.payment_status)&&Number(o.order_total||0)>0&&!o.finance_pushed);
+  const readyFinance=d.orders.filter(o=>['paid','deposit_paid','completed','ready'].includes(o.payment_status||o.status) && Number(o.order_total||o.total||0)>0 && !o.finance_pushed);
 
   const continueRows=[
     ...printing.slice(0,3).map(j=>item('production-control.html','🖨️',j.job_title,`Printing · ${j.machine_preference||j.actual_machine||'machine'}${j.due_date?' · due '+j.due_date:''}`,'Print')),
-    ...post.slice(0,2).map(j=>item('production-control.html','✨',j.job_title,`${jobStatus(j.production_status)}${j.due_date?' · due '+j.due_date:''}`,'Post')),
+    ...post.slice(0,2).map(j=>item('production-control.html','✨',j.job_title,`${String(j.production_status||'post').replace(/_/g,' ')}${j.due_date?' · due '+j.due_date:''}`,'Post')),
     ...ready.slice(0,3).map(j=>item('production-control.html','🟢',j.job_title,`Ready · ${jobHours(j).toFixed(1).replace(/\.0$/,'')}h`,'Next')),
-    ...readyFinance.slice(0,2).map(o=>item('orders-admin.html','💰',o.order_number||o.customer_name,`${money(o.order_total)} ready for Finance`,'Finance'))
+    ...readyFinance.slice(0,2).map(o=>item('orders-admin.html','💰',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready for Finance`,'Finance'))
   ].slice(0,6);
   $('continueWorkingList').innerHTML=continueRows.join('')||empty('No active work found yet. Start with the wizard above.');
-
   $('printNextList').innerHTML=ready.slice(0,3).map(j=>mini('production-control.html',j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');
   $('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini('production-control.html',j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');
   $('lowInventoryList').innerHTML=[...lowRaw.slice(0,3).map(r=>mini('inventory-control.html',`${r.material_type||'Material'} / ${r.color||'No color'}`,`${Math.round(Number(r.remaining_grams||0))}g remaining`)),...lowSup.slice(0,2).map(s=>mini('inventory-control.html',s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))].join('')||empty('No low inventory flagged.');
-  $('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini('orders-admin.html',o.order_number||o.customer_name,`${money(o.order_total)} ready to push`)).join('')||empty('No orders ready for finance push.');
-
-  // keep old ids if present
-  ['openJobs','readyJobs','printingJobs','postJobs','lowStock','financeReady'].forEach(id=>{if($(id))$(id).textContent='0'});
-  if($('openJobs'))$('openJobs').textContent=open.length;
-  if($('readyJobs'))$('readyJobs').textContent=ready.length;
-  if($('printingJobs'))$('printingJobs').textContent=printing.length;
-  if($('postJobs'))$('postJobs').textContent=post.length;
-  if($('lowStock'))$('lowStock').textContent=lowRaw.length+lowSup.length;
-  if($('financeReady'))$('financeReady').textContent=readyFinance.length;
+  $('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini('orders-admin.html',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready to push`)).join('')||empty('No orders ready for finance push.');
 }
+
 function allSearchRows(){
-  const d=data();
+  const d=combinedData();
   return [
     ...d.jobs.map(j=>({href:'production-control.html',icon:'🖨️',tag:'Production',title:j.job_title,sub:[j.customer_name,j.production_status,j.order_ref,j.quote_ref].filter(Boolean).join(' · '),hay:JSON.stringify(j)})),
-    ...d.orders.map(o=>({href:'orders-admin.html',icon:'📦',tag:'Order',title:o.order_number||o.customer_name,sub:[o.customer_name,o.customer_email,o.status,o.payment_status].filter(Boolean).join(' · '),hay:JSON.stringify(o)})),
-    ...d.quotes.map(q=>({href:'quote.html',icon:'🧾',tag:'Quote',title:q.quoteNumber||q.quote_number||q.quoteTitle,sub:[q.customerName||q.customer_name,q.quoteStatus||q.quote_status].filter(Boolean).join(' · '),hay:JSON.stringify(q)})),
-    ...d.finance.map(f=>({href:'finance-pro.html',icon:'💰',tag:'Finance',title:f.description||f.category||'Finance entry',sub:[f.date,f.category,money(f.amount)].filter(Boolean).join(' · '),hay:JSON.stringify(f)}))
+    ...d.orders.map(o=>({href:'orders-admin.html',icon:'📦',tag:o._source==='cloud'?'Cloud Order':'Order',title:o.order_number||o.op_number||o.customer_name,sub:[o.customer_name,o.customer_email,o.status,o.payment_status,o.order_total?money(o.order_total):''].filter(Boolean).join(' · '),hay:JSON.stringify(o)})),
+    ...d.quotes.map(q=>({href:'quote.html',icon:'🧾',tag:q._source==='cloud'?'Cloud Quote':'Quote',title:q.quote_number||q.quoteNumber||q.quote_title||q.quoteTitle,sub:[q.customer_name||q.customerName,q.customer_email||q.customerEmail,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),hay:JSON.stringify(q)})),
+    ...d.finance.map(f=>({href:'finance-pro.html',icon:'💰',tag:f._source==='cloud'?'Cloud Finance':'Finance',title:f.description||f.category||'Finance entry',sub:[f.date,f.category,money(f.amount)].filter(Boolean).join(' · '),hay:JSON.stringify(f)}))
   ];
 }
+
 function renderSearch(){
   const q=($('hubSearchInput').value||'').trim().toLowerCase();
-  if(!q){$('hubSearchResults').innerHTML=empty('Type to search production, quotes, orders, and finance.');return}
-  const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,10);
-  $('hubSearchResults').innerHTML=rows.map(r=>searchItem(r.href,r.icon,r.title,r.sub,r.tag)).join('')||empty('No matching records found in this browser data.');
+  if(!q){
+    const cloudNote=hubCloud.loaded?`Cloud loaded: ${hubCloud.orders.length} orders, ${hubCloud.quotes.length} quotes.`:'Type to search production, quotes, orders, and finance.';
+    $('hubSearchResults').innerHTML=empty(cloudNote);
+    return;
+  }
+  const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,12);
+  $('hubSearchResults').innerHTML=rows.map(r=>searchItem(r.href,r.icon,r.title,r.sub,r.tag)).join('')||empty(hubCloud.loaded?'No matching records found.':'No local match yet. Cloud may still be loading.');
 }
+
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
-$('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
+
+document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
+$('workflowType').addEventListener('input',()=>setType($('workflowType').value));
+$('saveDraftBtn').onclick=saveDraft;
+$('startProductionBtn').addEventListener('click',saveDraft);
+$('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();renderCommandCenter();renderSearch();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
 $('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.'};
 $('hubSearchInput')?.addEventListener('input',renderSearch);
 $('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
-renderCommandCenter();renderSearch();refreshAuth();setType('business');
+
+(async function init(){
+  setType('business');
+  renderCommandCenter();
+  renderSearch();
+  await refreshAuth();
+  await loadCloudData();
+  renderCommandCenter();
+  renderSearch();
+})();
 </script>
+
 
 </body>
 </html>
