@@ -1894,7 +1894,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
   var SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
   function accessToken(){
-    return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null);
+    return localStorage.getItem('sb_token') || null;
   }
 
   window.sbApi = window.sbApi || async function sbApi(path, options){
@@ -1917,7 +1917,6 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 
   window.getCurrentSbUser = window.getCurrentSbUser || async function getCurrentSbUser(){
     var token = accessToken();
-    if (!token && window.OliPolyAuth) { await window.OliPolyAuth.ensure(); token = accessToken(); }
     if (!token) return null;
     var result = await window.sbApi('/auth/v1/user', { method: 'GET' });
     return result.ok ? result.data : null;
@@ -1928,7 +1927,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 
   <script src="js/document-theme.js"></script>
   <script src="olipoly-auth.js"></script>
-  <script src="quote.js?v=quote-followup-20260519"></script>
+  <script src="quote.js?v=quote-auth-bridge-20260604"></script>
 
   <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
 

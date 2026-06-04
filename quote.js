@@ -1,16 +1,24 @@
 
 /* === OliPoly Standalone Supabase Bridge ===
    quote-tool.js is archived, so quote.js provides sbApi/getCurrentSbUser directly.
+   This version waits for OliPolyAuth so Hub login works without opening Orders Admin first.
 */
 (() => {
   const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
-  function accessToken(){
-    return localStorage.getItem('sb_token') || null;
+  async function ensureAuthReady(){
+    if (window.OliPolyAuth?.ensure) {
+      await window.OliPolyAuth.ensure();
+    }
   }
 
-  window.sbApi = window.sbApi || async function sbApi(path, options = {}) {
+  function accessToken(){
+    return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null);
+  }
+
+  window.sbApi = async function sbApi(path, options = {}) {
+    await ensureAuthReady();
     const token = accessToken();
     const headers = {
       apikey: SUPABASE_KEY,
@@ -28,15 +36,20 @@
     };
   };
 
-  window.getCurrentSbUser = window.getCurrentSbUser || async function getCurrentSbUser(){
+  window.getCurrentSbUser = async function getCurrentSbUser(){
+    await ensureAuthReady();
     const token = accessToken();
     if (!token) return null;
+
+    if (window.OliPolyAuth?.getUser) {
+      const user = await window.OliPolyAuth.getUser();
+      if (user) return user;
+    }
 
     const result = await window.sbApi('/auth/v1/user', { method: 'GET' });
     return result.ok ? result.data : null;
   };
 })();
-
 
 
 /* === OliPoly Quote Standalone Base ===
@@ -591,7 +604,8 @@
   }
 
   async function fetchCloudQuotes() {
-    await currentUser(); // returns null if not logged in; RLS/api will also protect
+    const user = await currentUser();
+    if (!user?.id) throw new Error("No shared Hub login found. Log into hub.html first.");
     const rows = await api("/rest/v1/quotes?select=id,quote_number,invoice_number,quote_status,customer_name,customer_email,quote_title,quote_total,po_number,tax_exempt,tax_exempt_reason,exemption_certificate_on_file,po_file_on_file,customer_part_number,po_part_number,olipoly_part_number,part_revision,converted_order_number,updated_at&order=updated_at.desc", {
       method: "GET"
     });
@@ -611,7 +625,7 @@
 
     const user = await currentUser();
     if (!user?.id) {
-      throw new Error("Not logged in. Log into orders-admin.html in this browser first to save cloud quotes.");
+      throw new Error("Not logged in. Log into hub.html first, then return to Quote Tool.");
     }
 
     const quoteNumber = $("quoteNumber")?.value?.trim();
