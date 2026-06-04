@@ -194,6 +194,124 @@
       }
     }
 
+
+    /* === Hub Customer Intelligence Phase A === */
+    .customer-intel-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .customer-intel-box{
+      padding:14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.78);
+      border:1px solid var(--line);
+      min-height:210px;
+      box-shadow:0 8px 18px rgba(95,36,112,.045);
+    }
+    .customer-intel-box h3{
+      font-family:"Playfair Display",serif;
+      font-size:1.24rem;
+      margin:7px 0 8px;
+      color:var(--ink);
+    }
+    .customer-intel-list{
+      display:grid;
+      gap:8px;
+      margin-top:8px;
+    }
+    .customer-intel-item{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:8px;
+      align-items:center;
+      padding:10px;
+      border-radius:15px;
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(101,60,120,.10);
+      text-decoration:none;
+      color:inherit;
+    }
+    .customer-intel-item:hover{
+      transform:translateY(-1px);
+      box-shadow:0 10px 22px rgba(95,36,112,.08);
+    }
+    .customer-intel-item strong{
+      display:block;
+      color:var(--ink);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:.9rem;
+    }
+    .customer-intel-item small{
+      display:block;
+      color:var(--muted);
+      margin-top:3px;
+      font-size:.74rem;
+      line-height:1.28;
+    }
+    .customer-intel-value{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 8px;
+      border-radius:999px;
+      background:rgba(232,79,183,.09);
+      border:1px solid rgba(232,79,183,.13);
+      color:#9b4c80;
+      font-size:.66rem;
+      font-weight:950;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    .customer-timeline-card{
+      margin-top:12px;
+      padding:14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.76);
+      border:1px solid var(--line);
+    }
+    .customer-timeline-card h3{
+      margin:0 0 8px;
+      font-family:"Playfair Display",serif;
+      color:var(--ink);
+      font-size:1.35rem;
+    }
+    .customer-timeline{
+      display:grid;
+      gap:8px;
+    }
+    .customer-timeline-row{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      border-radius:16px;
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(101,60,120,.10);
+      text-decoration:none;
+      color:inherit;
+    }
+    .customer-timeline-dot{
+      width:34px;
+      height:34px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      font-weight:950;
+      font-size:.85rem;
+    }
+    .customer-timeline-row strong{display:block;color:var(--ink)}
+    .customer-timeline-row small{display:block;color:var(--muted);font-size:.76rem;margin-top:2px}
+    @media(max-width:1040px){.customer-intel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.customer-intel-grid{grid-template-columns:1fr}.customer-timeline-row{grid-template-columns:auto minmax(0,1fr)}.customer-timeline-row .tag{grid-column:2;justify-self:start}}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -426,6 +544,45 @@
     </div>
   </section>
 
+
+  <section class="section" id="customerIntelligenceSection">
+    <div class="section-head">
+      <div>
+        <span class="kicker">Customer Intelligence</span>
+        <h2>Repeat business at a glance.</h2>
+        <p>Cloud-first customer insights from Orders and the Customers table.</p>
+      </div>
+      <a class="ghost" href="orders-admin.html">Open Orders</a>
+    </div>
+    <div class="customer-intel-grid">
+      <div class="customer-intel-box">
+        <span class="source-pill" id="sourceCustomersTop">Customers</span>
+        <h3>Top Customers</h3>
+        <div class="customer-intel-list" id="topCustomersList"></div>
+      </div>
+      <div class="customer-intel-box">
+        <span class="source-pill" id="sourceCustomersRepeat">Customers</span>
+        <h3>Repeat Opportunities</h3>
+        <div class="customer-intel-list" id="repeatCustomersList"></div>
+      </div>
+      <div class="customer-intel-box">
+        <span class="source-pill" id="sourceCustomersRecent">Customers</span>
+        <h3>Recent Customers</h3>
+        <div class="customer-intel-list" id="recentCustomersList"></div>
+      </div>
+      <div class="customer-intel-box">
+        <span class="source-pill" id="sourceCustomersOneOrder">Customers</span>
+        <h3>One-Order Customers</h3>
+        <div class="customer-intel-list" id="oneOrderCustomersList"></div>
+      </div>
+    </div>
+    <div class="customer-timeline-card">
+      <h3>Selected Customer Timeline</h3>
+      <div class="customer-timeline" id="selectedCustomerTimeline"></div>
+    </div>
+  </section>
+
+
   <section class="wizard">
     <span class="kicker">Start Order Wizard</span>
     <h2>What are you making?</h2>
@@ -493,7 +650,7 @@
 const $=id=>document.getElementById(id);
 const recs={business:['Recommended: Business / Branded','Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.'],personal:['Recommended: Personal / Gift','Start in Production Control as Personal / Free. Quote only if it becomes a paid customer job.'],replacement:['Recommended: Replacement Part','Start in Production Control as Replacement / Warranty. Confirm fit, function, and material before quoting.'],prototype:['Recommended: Prototype','Start in Production Control as Prototype / Test Print. Quote after scope and iterations are clear.'],batch:['Recommended: Repeat / Batch','Start in Production Control as Craft Stock or Finished Goods Restock. Confirm repeatability, material, and capacity.']};
 const defaults={business:{job_type:'business_po',status:'ready_to_print',priority:'urgent',machine:'P2S'},personal:{job_type:'personal_free',status:'idea',priority:'low',machine:'either'},replacement:{job_type:'replacement_warranty',status:'idea',priority:'high',machine:'either'},prototype:{job_type:'prototype',status:'queued',priority:'normal',machine:'either'},batch:{job_type:'craft_stock',status:'ready_to_print',priority:'normal',machine:'either'}};
-const hubCloud={jobs:[],orders:[],quotes:[],finance:[],raw:[],supplies:[],loaded:false,productionLoaded:false,inventoryLoaded:false,error:null};
+const hubCloud={jobs:[],orders:[],quotes:[],finance:[],raw:[],supplies:[],customers:[],loaded:false,productionLoaded:false,inventoryLoaded:false,customerLoaded:false,error:null};
 function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}}
 function readObj(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -539,13 +696,82 @@ function draft(){const t=$('workflowType').value;return {id:'wf-'+Date.now(),cre
 function saveDraft(){const d=draft();localStorage.setItem('olipoly_workflow_draft_v1',JSON.stringify(d));$('recBody').textContent='Draft saved. Open Production Control and apply the draft banner at the top.';renderCurrentWorkflow();return d;}
 function clearDraft(){localStorage.removeItem('olipoly_workflow_draft_v1');renderCurrentWorkflow();}
 async function sbRest(path){if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();const token=window.OliPolyAuth?.getToken?.()||localStorage.getItem('sb_token');if(!token) throw new Error('No Hub cloud token');const url=(window.OliPolyAuth?.SUPABASE_URL||'https://alffoktlwhpfothieude.supabase.co')+path;const key=window.OliPolyAuth?.SUPABASE_KEY||'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';const res=await fetch(url,{headers:{apikey:key,Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});const data=await res.json().catch(()=>null);if(!res.ok) throw new Error(data?.message||data?.error_description||`Supabase ${res.status}`);return Array.isArray(data)?data:[];}
-async function loadCloudData(){try{const [jobs,orders,quotes,finance,raw,supplies]=await Promise.allSettled([sbRest('/rest/v1/production_jobs?select=*&order=updated_at.desc&limit=400'),sbRest('/rest/v1/orders?select=*&order=updated_at.desc&limit=250'),sbRest('/rest/v1/quotes?select=*&order=updated_at.desc&limit=250'),sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=250'),sbRest('/rest/v1/raw_material_inventory?select=*&order=updated_at.desc&limit=600'),sbRest('/rest/v1/non_filament_materials?select=*&order=updated_at.desc&limit=600')]);hubCloud.jobs=jobs.status==='fulfilled'?jobs.value:[];hubCloud.orders=orders.status==='fulfilled'?orders.value:[];hubCloud.quotes=quotes.status==='fulfilled'?quotes.value:[];hubCloud.finance=finance.status==='fulfilled'?finance.value:[];hubCloud.raw=raw.status==='fulfilled'?raw.value:[];hubCloud.supplies=supplies.status==='fulfilled'?supplies.value:[];hubCloud.loaded=true;hubCloud.productionLoaded=(jobs.status==='fulfilled');hubCloud.inventoryLoaded=(raw.status==='fulfilled'||supplies.status==='fulfilled');hubCloud.error=null;}catch(err){console.warn('Hub cloud load skipped:',err);hubCloud.error=err;}}
+async function loadCloudData(){try{const [jobs,orders,quotes,finance,raw,supplies,customers]=await Promise.allSettled([sbRest('/rest/v1/production_jobs?select=*&order=updated_at.desc&limit=400'),sbRest('/rest/v1/orders?select=*&order=updated_at.desc&limit=500'),sbRest('/rest/v1/quotes?select=*&order=updated_at.desc&limit=250'),sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=250'),sbRest('/rest/v1/raw_material_inventory?select=*&order=updated_at.desc&limit=600'),sbRest('/rest/v1/non_filament_materials?select=*&order=updated_at.desc&limit=600'),sbRest('/rest/v1/customers?select=*&order=updated_at.desc&limit=500')]);hubCloud.jobs=jobs.status==='fulfilled'?jobs.value:[];hubCloud.orders=orders.status==='fulfilled'?orders.value:[];hubCloud.quotes=quotes.status==='fulfilled'?quotes.value:[];hubCloud.finance=finance.status==='fulfilled'?finance.value:[];hubCloud.raw=raw.status==='fulfilled'?raw.value:[];hubCloud.supplies=supplies.status==='fulfilled'?supplies.value:[];hubCloud.customers=customers.status==='fulfilled'?customers.value:[];hubCloud.loaded=true;hubCloud.productionLoaded=(jobs.status==='fulfilled');hubCloud.inventoryLoaded=(raw.status==='fulfilled'||supplies.status==='fulfilled');hubCloud.customerLoaded=(customers.status==='fulfilled');hubCloud.error=null;}catch(err){console.warn('Hub cloud load skipped:',err);hubCloud.error=err;}}
 function normalizeRawHub(r){return {id:r.id,material_type:r.material_type||r.material||'PLA',color:r.color||r.color_name||'',brand:r.brand||'',roll_status:r.roll_status||'active',remaining_grams:Number(r.remaining_grams||r.remaining||0)||0,reserved_grams:Number(r.reserved_grams||0)||0,reorder_threshold_grams:Number(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250)||0}}
 function normalizeSupplyHub(s){return {id:s.id,item_name:s.item_name||s.name||'Supply',category:s.category||'',unit_type:s.unit_type||s.unit||'',quantity_on_hand:Number(s.quantity_on_hand||s.qty||0)||0,reorder_threshold:Number(s.reorder_threshold||s.reorder_point||0)||0}}
 function rawGroupsHub(rows){const map=new Map();rows.map(normalizeRawHub).filter(r=>r.roll_status!=='retired'&&r.roll_status!=='empty').forEach(r=>{const key=[r.material_type,r.color,r.brand].map(x=>String(x||'').trim().toLowerCase()).join('|');if(!map.has(key))map.set(key,{material_type:r.material_type,color:r.color,brand:r.brand,grams:0,reserved:0,available:0,threshold:0,rolls:0});const g=map.get(key);g.grams+=Number(r.remaining_grams)||0;g.reserved+=Number(r.reserved_grams)||0;g.available+=Math.max(0,(Number(r.remaining_grams)||0)-(Number(r.reserved_grams)||0));g.threshold=Math.max(g.threshold,Number(r.reorder_threshold_grams)||0);g.rolls+=1;});return [...map.values()].sort((a,b)=>a.available-b.available);}
 function lowInventoryRows(){const rawRows=hubCloud.inventoryLoaded&&hubCloud.raw.length?hubCloud.raw:read('olipoly_raw_material_inventory_v3');const supplyRows=hubCloud.inventoryLoaded&&hubCloud.supplies.length?hubCloud.supplies:read('olipoly_non_filament_supplies_v1');const lowRaw=rawGroupsHub(rawRows).filter(g=>Number(g.threshold)>0&&Number(g.available)<=Number(g.threshold));const lowSupplies=supplyRows.map(normalizeSupplyHub).filter(s=>Number(s.reorder_threshold)>0&&Number(s.quantity_on_hand)<=Number(s.reorder_threshold));return {lowRaw,lowSupplies,source:(hubCloud.inventoryLoaded?'Cloud':'Browser fallback')};}
 function localData(){return {jobs:read('olipoly_production_jobs_v3'),raw:read('olipoly_raw_material_inventory_v3'),supplies:read('olipoly_non_filament_supplies_v1'),orders:read('olipoly_orders_v1'),quotes:read('olipoly_quote_history_v2'),finance:read('olipoly_finance_entries_v1')}}
-function combinedData(){const l=localData();return {...l,jobs:(hubCloud.productionLoaded&&hubCloud.jobs.length?hubCloud.jobs.map(j=>({...j,_source:'cloud'})):l.jobs),orders:[...hubCloud.orders.map(o=>({...o,_source:'cloud'})),...l.orders],quotes:[...hubCloud.quotes.map(q=>({...q,_source:'cloud'})),...l.quotes],finance:[...hubCloud.finance.map(f=>({...f,_source:'cloud'})),...l.finance]}}
+function combinedData(){const l=localData();return {...l,jobs:(hubCloud.productionLoaded&&hubCloud.jobs.length?hubCloud.jobs.map(j=>({...j,_source:'cloud'})):l.jobs),orders:[...hubCloud.orders.map(o=>({...o,_source:'cloud'})),...l.orders],quotes:[...hubCloud.quotes.map(q=>({...q,_source:'cloud'})),...l.quotes],finance:[...hubCloud.finance.map(f=>({...f,_source:'cloud'})),...l.finance],customers:hubCloud.customers.map(c=>({...c,_source:'cloud'}))}}
+
+function customerKeyFromOrder(o){return String(o?.customer_email||o?.email||o?.customer_name||o?.customerName||'').trim().toLowerCase();}
+function customerDisplayName(c){return c?.company_name||c?.customer_name||c?.customerName||c?.customer_email||c?.email||'Customer';}
+function customerAdminLink(c){const q=c?.email||c?.customer_email||c?.customer_name||c?.customerName||'';return q?`orders-admin.html?customer=${encodeURIComponent(q)}`:'orders-admin.html';}
+function buildCustomerStats(){
+  const d=combinedData();
+  const map=new Map();
+  const fromCustomers=d.customers||[];
+  fromCustomers.forEach(c=>{
+    const key=String(c.email||c.customer_email||c.customer_name||'').trim().toLowerCase();
+    if(!key) return;
+    map.set(key,{
+      key,
+      name:customerDisplayName(c),
+      email:c.email||c.customer_email||'',
+      revenue:Number(c.lifetime_revenue||0)||0,
+      orders:Number(c.order_count||0)||0,
+      lastDate:c.last_order_date||c.updated_at||'',
+      firstDate:c.first_order_date||c.created_at||'',
+      taxExempt:!!c.tax_exempt,
+      poCustomer:!!c.po_customer,
+      source:'customers'
+    });
+  });
+  (d.orders||[]).forEach(o=>{
+    const key=customerKeyFromOrder(o);
+    if(!key) return;
+    if(!map.has(key)) map.set(key,{key,name:o.shipping_company||o.customer_name||o.customer_email||'Customer',email:o.customer_email||'',revenue:0,orders:0,lastDate:'',firstDate:'',taxExempt:false,poCustomer:false,source:o._source||'orders'});
+    const c=map.get(key);
+    c.name=c.name||o.shipping_company||o.customer_name||o.customer_email||'Customer';
+    c.email=c.email||o.customer_email||'';
+    c.revenue += Number(o.order_total||o.total||0)||0;
+    c.orders += 1;
+    const od=o.order_date||o.created_at||o.updated_at||'';
+    if(od && (!c.lastDate || String(od)>String(c.lastDate))) c.lastDate=od;
+    if(od && (!c.firstDate || String(od)<String(c.firstDate))) c.firstDate=od;
+    c.taxExempt = c.taxExempt || !!o.tax_exempt;
+    c.poCustomer = c.poCustomer || !!(o.po_number||o.po_file_on_file||o.po_part_number);
+  });
+  return [...map.values()].filter(c=>c.orders>0||c.revenue>0).sort((a,b)=>b.revenue-a.revenue);
+}
+function daysSince(dateStr){if(!dateStr) return 9999;const t=new Date(dateStr).getTime();if(!Number.isFinite(t)) return 9999;return Math.floor((Date.now()-t)/86400000);}
+function customerIntelItem(c,sub,value){
+  return `<a class="customer-intel-item" href="${customerAdminLink(c)}" data-recent-label="${esc(c.name)}"><span><strong>${esc(c.name)}</strong><small>${esc(sub||'')}</small></span><b class="customer-intel-value">${esc(value||'Open')}</b></a>`;
+}
+function renderCustomerIntelligence(){
+  const source=hubCloud.customerLoaded?'Cloud':(hubCloud.loaded?'Orders Cloud':'Browser fallback');
+  ['sourceCustomersTop','sourceCustomersRepeat','sourceCustomersRecent','sourceCustomersOneOrder'].forEach(id=>setSource(id,'Customers',source));
+  const customers=buildCustomerStats();
+  const top=customers.slice().sort((a,b)=>b.revenue-a.revenue).slice(0,5);
+  const repeat=customers.filter(c=>c.orders>=1&&daysSince(c.lastDate)>=90).sort((a,b)=>daysSince(b.lastDate)-daysSince(a.lastDate)).slice(0,5);
+  const recent=customers.filter(c=>daysSince(c.lastDate)<=30).sort((a,b)=>String(b.lastDate).localeCompare(String(a.lastDate))).slice(0,5);
+  const one=customers.filter(c=>c.orders===1).sort((a,b)=>b.revenue-a.revenue).slice(0,5);
+  $('topCustomersList').innerHTML=top.map(c=>customerIntelItem(c,`${c.orders} order${c.orders===1?'':'s'}${c.email?' · '+c.email:''}`,money(c.revenue))).join('')||empty('No customer totals loaded yet.');
+  $('repeatCustomersList').innerHTML=repeat.map(c=>customerIntelItem(c,`Last order ${daysSince(c.lastDate)} days ago · ${c.orders} order${c.orders===1?'':'s'}`,'Reorder')).join('')||empty('No 90+ day repeat opportunities yet.');
+  $('recentCustomersList').innerHTML=recent.map(c=>customerIntelItem(c,`Last order ${String(c.lastDate||'').slice(0,10)} · ${c.orders} order${c.orders===1?'':'s'}`,money(c.revenue))).join('')||empty('No customers in the last 30 days.');
+  $('oneOrderCustomersList').innerHTML=one.map(c=>customerIntelItem(c,`First order ${String(c.firstDate||c.lastDate||'').slice(0,10)}`,money(c.revenue))).join('')||empty('No one-order customers found.');
+  renderSelectedCustomerTimeline(customers[0]);
+}
+function renderSelectedCustomerTimeline(c){
+  const d=combinedData();
+  const target=c?.key||'';
+  if(!target){$('selectedCustomerTimeline').innerHTML=empty('Customer timeline will appear once customer data loads.');return;}
+  const orderRows=(d.orders||[]).filter(o=>customerKeyFromOrder(o)===target).map(o=>({type:'Order',icon:'📦',date:o.order_date||o.created_at||'',title:o.order_number||o.customer_name||'Order',sub:[o.order_title,o.status,o.payment_status,money(o.order_total||0)].filter(Boolean).join(' · '),href:deepLink('order',o)}));
+  const quoteRows=(d.quotes||[]).filter(q=>String(q.customer_email||q.customerEmail||q.customer_name||q.customerName||'').trim().toLowerCase()===target).map(q=>({type:'Quote',icon:'🧾',date:q.created_at||q.quote_date||'',title:q.quote_number||q.quoteNumber||q.quote_title||'Quote',sub:[q.quote_title||q.quoteTitle,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),href:deepLink('quote',q)}));
+  const rows=[...orderRows,...quoteRows].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8);
+  $('selectedCustomerTimeline').innerHTML=rows.map(r=>`<a class="customer-timeline-row" href="${r.href}" data-recent-label="${esc(r.title)}"><span class="customer-timeline-dot">${r.icon}</span><span><strong>${esc(r.title)}</strong><small>${esc(String(r.date||'').slice(0,10))} · ${esc(r.sub||'')}</small></span><span class="tag">${r.type}</span></a>`).join('')||empty(`No timeline found for ${c.name}.`);
+}
+
 function orderClosed(o){const paid=['paid','refunded','not_required'].includes(o.payment_status)||o.payment_not_required;const finance=o.finance_pushed||o.finance_not_required;const complete=o.status==='completed'||o.status==='closed';return complete&&paid&&finance;}
 function renderHealth(){const inv=lowInventoryRows();const d=combinedData();const jobs=d.jobs||[];const openJobs=jobs.filter(j=>!['completed','failed_scrap','archived'].includes(j.production_status));const ready=openJobs.filter(j=>['ready_to_print','queued'].includes(j.production_status));$('healthQueueHours').textContent=`${ready.reduce((s,j)=>s+jobHours(j),0).toFixed(1).replace(/\.0$/,'')}h`;$('healthActiveJobs').textContent=openJobs.length;$('healthActiveOrders').textContent=d.orders.filter(o=>!orderClosed(o)).length;$('healthPendingQuotes').textContent=d.quotes.filter(q=>!['accepted','declined','expired','converted'].includes(String(q.quote_status||q.quoteStatus||'').toLowerCase())).length;$('healthLowInventory').textContent=inv.lowRaw.length+inv.lowSupplies.length;}
 function healthPill(label,source){const cls=source==='Cloud'?'cloud':(source==='Browser fallback'?'fallback':'off');return `<div class="health-pill"><span class="dot ${cls}"></span><b>${label}</b><span>${source}</span></div>`}
@@ -627,6 +853,16 @@ function allSearchRows(){
   const d=combinedData();
   const inv=lowInventoryRows();
   return [
+    ...buildCustomerStats().map(c=>({
+      href:customerAdminLink(c),
+      icon:'👤',
+      tag:hubCloud.customerLoaded?'Cloud Customer':'Customer',
+      title:c.name,
+      sub:[c.email,`${c.orders} order${c.orders===1?'':'s'}`,money(c.revenue),c.lastDate?`Last ${String(c.lastDate).slice(0,10)}`:''].filter(Boolean).join(' · '),
+      pills:[pill(`${c.orders} Orders`,'good'),pill(money(c.revenue),''),c.poCustomer?pill('PO','good'):'',c.taxExempt?pill('Tax Exempt','good'):''].join(''),
+      hay:JSON.stringify(c)
+    })),
+
     ...d.jobs.map(j=>({
       href:deepLink('job',j),
       icon:'🖨️',
@@ -700,11 +936,11 @@ function recentStore(){return read('olipoly_hub_recent_v1')}
 function writeRecent(label,href){if(!label||!href)return;const rows=recentStore().filter(r=>r.href!==href||r.label!==label);rows.unshift({label,href,at:new Date().toISOString()});localStorage.setItem('olipoly_hub_recent_v1',JSON.stringify(rows.slice(0,10)));}
 function renderRecent(){$('recentList').innerHTML=recentStore().slice(0,6).map(recentItem).join('')||empty('Recently opened items will appear here.');}
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
-async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderAttention();renderSearch();renderRecent();}
+async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderAttention();renderSearch();renderRecent();}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
 $('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
 $('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();fullRender();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
-$('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.';hubCloud.loaded=false;hubCloud.productionLoaded=false;hubCloud.inventoryLoaded=false;hubCloud.jobs=[];fullRender();};
+$('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.';hubCloud.loaded=false;hubCloud.productionLoaded=false;hubCloud.inventoryLoaded=false;hubCloud.customerLoaded=false;hubCloud.jobs=[];hubCloud.customers=[];fullRender();};
 $('hubSearchInput')?.addEventListener('input',renderSearch);$('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-label]');if(a)writeRecent(a.dataset.recentLabel,a.getAttribute('href'));});
 (async function init(){setType('business');fullRender();await refreshAuth();await loadCloudData();fullRender();})();
