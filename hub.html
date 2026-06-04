@@ -1798,6 +1798,206 @@ body.erp-mode #inventoryImpactSection{
   .erp-work-card .erp-badge,.erp-timeline-row .erp-badge{grid-column:2;justify-self:start}
 }
 
+
+
+/* =========================================================
+   ERP Console V1.1 readability + gap fix
+   ========================================================= */
+
+/* Kill the old hero/decorative modules completely so they cannot reserve space */
+body.erp-mode .hero,
+body.erp-mode .poly-stage,
+body.erp-mode #engineDataBoard,
+body.erp-mode #engineActivityStrip,
+body.erp-mode .system-gauge-card,
+body.erp-mode #customerIntelligenceSection,
+body.erp-mode #customerTimelineSection,
+body.erp-mode #inventoryImpactSection{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+
+/* Make the page start like an app, not a website */
+.wrap{
+  align-items:start!important;
+  gap:12px!important;
+}
+.topbar{
+  margin-bottom:8px!important;
+}
+.auth-card{
+  margin-top:8px!important;
+  margin-bottom:8px!important;
+}
+.erp-console{
+  margin-top:8px!important;
+}
+
+/* If the ERP console is inserted after auth, keep it visually high and tight */
+.auth-card + .erp-console{
+  margin-top:8px!important;
+}
+
+/* Stronger readability */
+.engine-nav a{
+  color:#c3d0ec!important;
+  font-weight:900!important;
+  letter-spacing:-.01em!important;
+}
+.engine-nav a.active,
+.engine-nav a:hover{
+  color:#ffffff!important;
+  background:linear-gradient(135deg,rgba(74,125,255,.34),rgba(36,215,255,.16))!important;
+  border-color:rgba(36,215,255,.34)!important;
+}
+.engine-rail-brand strong{
+  font-size:1.05rem!important;
+}
+.engine-rail-brand small{
+  color:#a9b9d6!important;
+}
+.engine-rail-status{
+  background:rgba(14,23,42,.82)!important;
+  border-color:rgba(137,158,255,.22)!important;
+}
+.rail-status-line{
+  color:#b5c4df!important;
+}
+.rail-status-line b{
+  color:#89ffc8!important;
+}
+
+/* Topbar more readable */
+.topbar{
+  background:linear-gradient(135deg,rgba(18,28,50,.98),rgba(12,20,38,.97))!important;
+}
+.brand h1{
+  font-size:1.28rem!important;
+}
+.brand small{
+  color:#b8c5dd!important;
+}
+.ghost,.btn{
+  font-weight:950!important;
+  text-shadow:none!important;
+}
+.ghost{
+  background:rgba(23,35,63,.86)!important;
+  border-color:rgba(137,158,255,.30)!important;
+  color:#f6f9ff!important;
+}
+.btn{
+  border:1px solid rgba(255,255,255,.16)!important;
+}
+
+/* Card contrast */
+.erp-panel,
+.erp-kpi,
+.request-v2,
+.auth-card,
+.section{
+  background:linear-gradient(145deg,rgba(22,34,61,.96),rgba(9,15,29,.96))!important;
+  border-color:rgba(137,158,255,.24)!important;
+}
+.erp-work-card,
+.erp-list-item,
+.erp-timeline-row,
+.request-path,
+.request-v2-panel,
+.record-preview-card,
+.workflow-card,
+.recent-item{
+  background:linear-gradient(145deg,rgba(31,45,78,.92),rgba(13,21,39,.90))!important;
+  border-color:rgba(137,158,255,.20)!important;
+}
+.erp-work-card strong,
+.erp-list-item strong,
+.erp-timeline-row strong,
+.erp-panel-head h2,
+.erp-kpi strong,
+.request-v2 h2,
+.request-v2-panel h3{
+  color:#ffffff!important;
+}
+.erp-work-card small,
+.erp-list-item small,
+.erp-timeline-row small,
+.erp-panel-head p,
+.erp-kpi small{
+  color:#b3c1db!important;
+}
+
+/* More visible colored accents */
+.erp-chip,
+.erp-badge,
+.source-pill,
+.tag{
+  border-width:1px!important;
+  box-shadow:0 0 18px rgba(36,215,255,.08)!important;
+  font-weight:950!important;
+}
+.erp-badge.green{color:#99ffcf!important}
+.erp-badge.amber{color:#ffdc93!important}
+.erp-badge.red{color:#ffa1b2!important}
+
+/* Inputs clearer */
+input,select,textarea{
+  background:rgba(235,243,255,.96)!important;
+  color:#06101f!important;
+  border-color:rgba(137,158,255,.34)!important;
+}
+label{
+  color:#d9e3f7!important;
+}
+
+/* Prevent URL hash from landing below invisible legacy sections */
+.erp-section-anchor,
+#newRequestWizard,
+#hubSearchInput{
+  scroll-margin-top:92px!important;
+}
+
+/* Pulse target section when rail clicked */
+.erp-pulse{
+  animation:erpPulse 900ms ease-out 1;
+}
+@keyframes erpPulse{
+  0%{box-shadow:0 0 0 0 rgba(36,215,255,.0),var(--erp-shadow)}
+  30%{box-shadow:0 0 0 2px rgba(36,215,255,.45),0 0 42px rgba(36,215,255,.22),var(--erp-shadow)}
+  100%{box-shadow:var(--erp-shadow)}
+}
+
+/* More app-like density */
+.erp-kpi-strip{
+  gap:9px!important;
+}
+.erp-kpi{
+  min-height:106px!important;
+  padding:12px!important;
+}
+.erp-kpi strong{
+  font-size:1.55rem!important;
+}
+.erp-workspace,
+.erp-module-grid,
+.erp-module-grid.three{
+  gap:12px!important;
+}
+.erp-panel{
+  padding:13px!important;
+}
+
+/* Fix huge blank if old hidden modules are above auth because of hash/scroll */
+body.erp-mode .topbar + .hero + .engine-data-board + .auth-card,
+body.erp-mode .topbar + .hero + .auth-card{
+  margin-top:8px!important;
+}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -3018,9 +3218,12 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
       '</main>'
     ].join('');
 
-    var auth = document.querySelector('.auth-card');
-    if(auth) auth.insertAdjacentHTML('afterend', html);
-    else document.querySelector('.topbar')?.insertAdjacentHTML('afterend', html);
+    var top = document.querySelector('.topbar');
+    if(top) top.insertAdjacentHTML('afterend', html);
+    else {
+      var auth = document.querySelector('.auth-card');
+      if(auth) auth.insertAdjacentHTML('beforebegin', html);
+    }
 
     // Update rail links to actual ERP sections.
     var nav=document.querySelector('.engine-nav');
@@ -3136,6 +3339,25 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     }
   };
   document.addEventListener('DOMContentLoaded',function(){setTimeout(install,50);setTimeout(renderConsole,900);setTimeout(renderConsole,2200);});
+})();
+</script>
+
+
+
+<script id="erpGapGuard">
+(function(){
+  function fixHash(){
+    if(!location.hash) return;
+    var t=document.querySelector(location.hash);
+    if(!t || getComputedStyle(t).display==='none'){
+      var fallback=document.getElementById('erpToday');
+      if(fallback) fallback.scrollIntoView({block:'start'});
+    }
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(fixHash,250);
+    setTimeout(fixHash,1200);
+  });
 })();
 </script>
 
