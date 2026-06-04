@@ -2628,6 +2628,157 @@ body.erp-mode .wrap > .request-v2{
   body.erp-mode #erpConsole{grid-column:1!important}
 }
 
+
+
+/* =========================================================
+   ERP Console V1.5 REAL gap fix:
+   The sidebar was making CSS grid row 1 full viewport height.
+   This removes the sidebar from grid flow.
+   ========================================================= */
+
+body.erp-mode .wrap{
+  display:block!important;
+  width:min(1560px,calc(100% - 20px))!important;
+  margin:0 auto!important;
+  padding:10px 0 48px!important;
+  position:relative!important;
+}
+
+body.erp-mode .engine-rail{
+  position:fixed!important;
+  top:10px!important;
+  left:max(10px,calc((100vw - min(1560px,calc(100vw - 20px)))/2))!important;
+  width:260px!important;
+  height:calc(100vh - 20px)!important;
+  z-index:30!important;
+  padding:16px!important;
+  overflow:auto!important;
+}
+
+body.erp-mode .topbar,
+body.erp-mode #erpConsole,
+body.erp-mode .auth-card,
+body.erp-mode .request-v2,
+body.erp-mode .section{
+  margin-left:274px!important;
+  width:calc(100% - 274px)!important;
+  grid-column:auto!important;
+}
+
+body.erp-mode .topbar{
+  position:sticky!important;
+  top:10px!important;
+  margin-top:0!important;
+  margin-bottom:10px!important;
+}
+
+body.erp-mode #erpConsole{
+  margin-top:10px!important;
+  display:grid!important;
+  gap:14px!important;
+}
+
+body.erp-mode .auth-card{
+  margin-top:14px!important;
+}
+
+/* Completely suppress legacy visual shells */
+body.erp-mode .hero,
+body.erp-mode .poly-stage,
+body.erp-mode #engineDataBoard,
+body.erp-mode #engineActivityStrip,
+body.erp-mode #engineSystemGauge,
+body.erp-mode #customerIntelligenceSection,
+body.erp-mode #customerTimelineSection,
+body.erp-mode #inventoryImpactSection{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:hidden!important;
+}
+
+/* Better rail/readability while we're here */
+body.erp-mode .engine-nav a{
+  min-height:44px!important;
+  padding:11px 12px!important;
+  font-size:.92rem!important;
+  font-weight:950!important;
+  color:#d8e2f4!important;
+}
+body.erp-mode .engine-nav a.active,
+body.erp-mode .engine-nav a:hover{
+  color:#fff!important;
+  border-color:rgba(36,215,255,.36)!important;
+  background:linear-gradient(135deg,rgba(36,215,255,.24),rgba(155,92,255,.20))!important;
+}
+
+body.erp-mode .erp-kpi-strip{
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:10px!important;
+}
+body.erp-mode .erp-kpi{
+  min-height:126px!important;
+  padding:15px!important;
+  border-radius:20px!important;
+}
+body.erp-mode .erp-kpi strong{
+  font-size:1.95rem!important;
+}
+body.erp-mode .erp-kpi small{
+  font-size:.80rem!important;
+  color:#b8c6de!important;
+}
+body.erp-mode .erp-panel-head h2,
+body.erp-mode .erp-panel h2,
+body.erp-mode .request-v2 h2{
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:1.18rem!important;
+  line-height:1.15!important;
+  color:#fff!important;
+}
+body.erp-mode .erp-work-card strong,
+body.erp-mode .erp-list-item strong,
+body.erp-mode .erp-timeline-row strong{
+  font-size:.95rem!important;
+}
+body.erp-mode .erp-work-card small,
+body.erp-mode .erp-list-item small,
+body.erp-mode .erp-timeline-row small{
+  font-size:.78rem!important;
+  color:#b6c4de!important;
+}
+
+@media(max-width:980px){
+  body.erp-mode .engine-rail{
+    position:relative!important;
+    top:auto!important;
+    left:auto!important;
+    width:100%!important;
+    height:auto!important;
+    margin-bottom:10px!important;
+  }
+  body.erp-mode .topbar,
+  body.erp-mode #erpConsole,
+  body.erp-mode .auth-card,
+  body.erp-mode .request-v2,
+  body.erp-mode .section{
+    margin-left:0!important;
+    width:100%!important;
+  }
+  body.erp-mode .erp-kpi-strip{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:680px){
+  body.erp-mode .erp-kpi-strip{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -4260,6 +4411,29 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
       window.scrollTo({top:0,left:0,behavior:'auto'});
     }
     [100,400,1000,2200].forEach(t=>setTimeout(topPlace,t));
+  });
+})();
+</script>
+
+
+
+<script id="erpFixedSidebarGuardV15">
+(function(){
+  function ensureTop(){
+    document.body.classList.add('erp-mode');
+    var top=document.querySelector('.topbar');
+    var erp=document.getElementById('erpConsole');
+    if(top && erp && top.nextElementSibling!==erp){
+      top.insertAdjacentElement('afterend',erp);
+    }
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    ensureTop();
+    if(['#inventoryImpactSection','#customerIntelligenceSection','#customerTimelineSection','#engineDataBoard','#engineActivityStrip'].includes(location.hash)){
+      history.replaceState(null,'',location.pathname);
+      window.scrollTo({top:0,left:0,behavior:'auto'});
+    }
+    [100,500,1200,2200].forEach(function(t){setTimeout(ensureTop,t);});
   });
 })();
 </script>
