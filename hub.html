@@ -94,6 +94,106 @@
     .hero h2{max-width:980px}
     .health-strip{max-width:980px}
 
+
+    /* === Hub record preview cards === */
+    .record-preview-grid{
+      display:grid;
+      gap:10px;
+      margin-top:12px;
+    }
+    .record-preview-card{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:12px;
+      align-items:start;
+      padding:14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.82);
+      border:1px solid rgba(101,60,120,.14);
+      text-decoration:none;
+      color:inherit;
+      box-shadow:0 10px 24px rgba(95,36,112,.06);
+    }
+    .record-preview-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 30px rgba(95,36,112,.10);
+    }
+    .record-preview-icon{
+      width:44px;
+      height:44px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      font-weight:950;
+      flex:0 0 auto;
+    }
+    .record-preview-main strong{
+      display:block;
+      color:var(--ink);
+      font-size:1rem;
+      line-height:1.15;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .record-preview-main small{
+      display:block;
+      color:var(--muted);
+      line-height:1.35;
+      margin-top:4px;
+      font-size:.82rem;
+    }
+    .record-preview-pills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:9px;
+    }
+    .preview-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:5px 8px;
+      border-radius:999px;
+      font-size:.66rem;
+      font-weight:950;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      background:rgba(101,60,120,.07);
+      border:1px solid rgba(101,60,120,.10);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .preview-pill.good{
+      background:rgba(72,199,116,.10);
+      border-color:rgba(72,199,116,.18);
+      color:#2b7b48;
+    }
+    .preview-pill.warn{
+      background:rgba(255,203,107,.14);
+      border-color:rgba(255,203,107,.25);
+      color:#8a620f;
+    }
+    .preview-pill.danger{
+      background:rgba(255,107,138,.10);
+      border-color:rgba(255,107,138,.20);
+      color:#a3344f;
+    }
+    .record-preview-arrow{
+      align-self:center;
+    }
+    @media(max-width:640px){
+      .record-preview-card{
+        grid-template-columns:auto minmax(0,1fr);
+      }
+      .record-preview-arrow{
+        grid-column:2;
+        justify-self:start;
+      }
+    }
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -452,8 +552,150 @@ function healthPill(label,source){const cls=source==='Cloud'?'cloud':(source==='
 function renderCloudHealth(){const prod=hubCloud.productionLoaded?'Cloud':'Browser fallback';const orders=hubCloud.loaded?'Cloud':'Browser fallback';const quotes=hubCloud.loaded?'Cloud':'Browser fallback';const finance=hubCloud.loaded?'Cloud':'Browser fallback';const inventory=hubCloud.inventoryLoaded?'Cloud':'Browser fallback';$('cloudHealthStrip').innerHTML=[healthPill('Production',prod),healthPill('Orders',orders),healthPill('Inventory',inventory),healthPill('Quotes',quotes),healthPill('Finance',finance)].join('');setSource('sourceProduction1','Production',prod);setSource('sourceProduction2','Production',prod);setSource('sourceInventory','Inventory',inventory);setSource('sourceOrders','Orders',orders);}
 function renderCurrentWorkflow(){const d=readObj('olipoly_workflow_draft_v1');if(!d){$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">＋</span><span><strong>No active Hub draft</strong><small>Use the Start Order Wizard when a new request comes in.</small></span><a class="ghost" href="#workflowType">Start Draft</a></div>`;return;}$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">↪</span><span><strong>${esc(d.title||d.request_type||'Workflow draft')}</strong><small>${esc(d.request_type||'request')} · Qty ${esc(d.quantity||1)}${d.due_date?' · Due '+esc(d.due_date):''}</small></span><div class="actions"><a class="btn" href="${deepLink('job',d.title)}">Open Production</a><a class="ghost" href="quote.html">Quote</a><a class="ghost" href="orders-admin.html">Orders</a><button class="ghost" type="button" onclick="clearDraft()">Clear</button></div></div>`;}
 function renderAttention(){const d=combinedData();const open=d.jobs.filter(j=>!['completed','failed_scrap','archived'].includes(j.production_status));const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));const printing=open.filter(j=>j.production_status==='printing');const inv=lowInventoryRows();const readyFinance=d.orders.filter(o=>!o.finance_pushed&&!o.finance_not_required&&['paid','deposit_paid','completed','ready'].includes(o.payment_status||o.status)&&Number(o.order_total||o.total||0)>0);$('printNextList').innerHTML=ready.slice(0,3).map(j=>mini(deepLink('job',j),j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');$('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini(deepLink('job',j),j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');$('lowInventoryList').innerHTML=[...inv.lowRaw.slice(0,3).map(g=>mini(deepLink('inventory',g),`${g.material_type||'Material'} / ${g.color||'No color'}`,`${grams(g.available)} available · threshold ${grams(g.threshold)}`)),...inv.lowSupplies.slice(0,2).map(s=>mini(deepLink('inventory',s),s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))].join('')||empty('No low inventory flagged.');$('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini(deepLink('order',o),o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready to push`)).join('')||empty('No orders ready for finance push.');const rows=[...printing.slice(0,3).map(j=>workCard(deepLink('job',j),'🖨️',j.job_title,`Printing · ${j.machine_preference||j.actual_machine||'machine'}${j.due_date?' · due '+j.due_date:''}`,'Print')),...post.slice(0,2).map(j=>workCard(deepLink('job',j),'✨',j.job_title,`${String(j.production_status||'post').replace(/_/g,' ')}${j.due_date?' · due '+j.due_date:''}`,'Post')),...ready.slice(0,3).map(j=>workCard(deepLink('job',j),'🟢',j.job_title,`Ready · ${jobHours(j).toFixed(1).replace(/\.0$/,'')}h`,'Next')),...readyFinance.slice(0,2).map(o=>workCard(deepLink('order',o),'💰',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready for Finance`,'Finance'))].slice(0,6);$('continueWorkingList').innerHTML=rows.join('')||empty('No active work found yet. Start with the wizard above.');}
-function allSearchRows(){const d=combinedData();return [...d.jobs.map(j=>({href:deepLink('job',j),icon:'🖨️',tag:'Production',title:j.job_title,sub:[j.customer_name,j.production_status,j.order_ref,j.quote_ref].filter(Boolean).join(' · '),hay:JSON.stringify(j)})),...d.orders.map(o=>({href:deepLink('order',o),icon:'📦',tag:o._source==='cloud'?'Cloud Order':'Order',title:o.order_number||o.op_number||o.customer_name,sub:[o.customer_name,o.customer_email,o.status,o.payment_status,o.order_total?money(o.order_total):''].filter(Boolean).join(' · '),hay:JSON.stringify(o)})),...d.quotes.map(q=>({href:deepLink('quote',q),icon:'🧾',tag:q._source==='cloud'?'Cloud Quote':'Quote',title:q.quote_number||q.quoteNumber||q.quote_title||q.quoteTitle,sub:[q.customer_name||q.customerName,q.customer_email||q.customerEmail,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),hay:JSON.stringify(q)})),...d.finance.map(f=>({href:deepLink('finance',f),icon:'💰',tag:f._source==='cloud'?'Cloud Finance':'Finance',title:f.description||f.category||'Finance entry',sub:[f.date,f.category,money(f.amount)].filter(Boolean).join(' · '),hay:JSON.stringify(f)}))];}
-function renderSearch(){const q=($('hubSearchInput').value||'').trim().toLowerCase();if(!q){$('hubSearchResults').innerHTML=empty(hubCloud.loaded?`Cloud loaded: ${hubCloud.orders.length} orders, ${hubCloud.quotes.length} quotes.`:'Type to search production, quotes, orders, and finance.');return;}const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,12);$('hubSearchResults').innerHTML=rows.map(r=>searchItem(r.href,r.icon,r.title,r.sub,r.tag)).join('')||empty(hubCloud.loaded?'No matching records found.':'No local match yet. Cloud may still be loading.');}
+
+function cleanStatus(v){
+  return String(v||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
+function pill(text,kind=''){
+  if(!text) return '';
+  return `<span class="preview-pill ${kind}">${esc(text)}</span>`;
+}
+function orderPreviewPills(o){
+  const flags = [];
+  const status = String(o.status||'').toLowerCase();
+  const payment = String(o.payment_status||'').toLowerCase();
+  if(status) flags.push(pill(cleanStatus(status), status==='completed'||status==='closed'?'good':''));
+  if(payment) flags.push(pill(cleanStatus(payment), payment==='paid'||payment==='deposit_paid'?'good':(payment==='unpaid'?'warn':'')));
+  if(o.finance_pushed) flags.push(pill('Finance Pushed','good'));
+  else if(o.finance_not_required) flags.push(pill('Finance Not Required','good'));
+  else if(['paid','deposit_paid'].includes(payment)) flags.push(pill('Finance Needed','warn'));
+  if(o.completion_email_sent) flags.push(pill('Email Sent','good'));
+  else if(o.completion_email_not_required) flags.push(pill('Email Not Required','good'));
+  else if(status==='completed') flags.push(pill('Completion Email Needed','warn'));
+  if(o.invoice_number) flags.push(pill(`Invoice ${o.invoice_number}`,''));
+  return flags.join('');
+}
+function quotePreviewPills(q){
+  const flags = [];
+  const status = String(q.quote_status||q.quoteStatus||q.status||'').toLowerCase();
+  if(status) flags.push(pill(cleanStatus(status), status==='accepted'?'good':(status==='declined'||status==='expired'?'danger':'')));
+  const total = q.final_quote || q.quote_total || q.total || q.finalQuote;
+  if(Number(total)) flags.push(pill(money(total),''));
+  if(q.deposit_due || q.depositDue) flags.push(pill('Deposit','warn'));
+  return flags.join('');
+}
+function jobPreviewPills(j){
+  const flags = [];
+  const status = String(j.production_status||j.status||'').toLowerCase();
+  if(status) flags.push(pill(cleanStatus(status), ['completed','closed'].includes(status)?'good':(['printing','ready_to_print','queued'].includes(status)?'warn':'')));
+  if(j.machine_preference || j.actual_machine) flags.push(pill(j.machine_preference||j.actual_machine,''));
+  const h = jobHours(j);
+  if(h) flags.push(pill(`${h.toFixed(1).replace(/\.0$/,'')}h`,''));
+  if(j.due_date) flags.push(pill(`Due ${j.due_date}`,''));
+  if(Number(j.estimated_price_each||0)) flags.push(pill('Price Set','good'));
+  return flags.join('');
+}
+function financePreviewPills(f){
+  const flags = [];
+  if(f.type) flags.push(pill(cleanStatus(f.type), String(f.type).toLowerCase()==='income'?'good':''));
+  if(f.category) flags.push(pill(f.category,''));
+  if(Number(f.amount)) flags.push(pill(money(f.amount),''));
+  if(f.date || f.entry_date) flags.push(pill(f.date||f.entry_date,''));
+  return flags.join('');
+}
+function inventoryPreviewPills(obj){
+  const flags = [];
+  if(obj.available !== undefined) flags.push(pill(`${grams(obj.available)} available`, Number(obj.available) <= Number(obj.threshold||0) ? 'warn' : 'good'));
+  if(obj.threshold) flags.push(pill(`Threshold ${grams(obj.threshold)}`,''));
+  if(obj.rolls) flags.push(pill(`${obj.rolls} roll${obj.rolls===1?'':'s'}`,''));
+  if(obj.quantity_on_hand !== undefined) flags.push(pill(`${obj.quantity_on_hand} ${obj.unit_type||''} on hand`, Number(obj.quantity_on_hand) <= Number(obj.reorder_threshold||0) ? 'warn' : 'good'));
+  return flags.join('');
+}
+function recordPreviewCard(row){
+  return `<a class="record-preview-card" href="${row.href}" data-recent-label="${esc(row.title||'Untitled')}">
+    <span class="record-preview-icon">${row.icon||'↗'}</span>
+    <span class="record-preview-main">
+      <strong>${esc(row.title||'Untitled')}</strong>
+      <small>${esc(row.sub||'')}</small>
+      <span class="record-preview-pills">${row.pills||''}</span>
+    </span>
+    <span class="tag record-preview-arrow">${esc(row.tag||'Open')} →</span>
+  </a>`;
+}
+
+function allSearchRows(){
+  const d=combinedData();
+  const inv=lowInventoryRows();
+  return [
+    ...d.jobs.map(j=>({
+      href:deepLink('job',j),
+      icon:'🖨️',
+      tag:j._source==='cloud'?'Cloud Production':'Production',
+      title:j.job_title,
+      sub:[j.customer_name,j.production_status,j.order_ref,j.quote_ref].filter(Boolean).join(' · '),
+      pills:jobPreviewPills(j),
+      hay:JSON.stringify(j)
+    })),
+    ...d.orders.map(o=>({
+      href:deepLink('order',o),
+      icon:'📦',
+      tag:o._source==='cloud'?'Cloud Order':'Order',
+      title:o.order_number||o.op_number||o.customer_name,
+      sub:[o.customer_name,o.customer_email,o.order_title,o.status,o.payment_status,o.order_total?money(o.order_total):''].filter(Boolean).join(' · '),
+      pills:orderPreviewPills(o),
+      hay:JSON.stringify(o)
+    })),
+    ...d.quotes.map(q=>({
+      href:deepLink('quote',q),
+      icon:'🧾',
+      tag:q._source==='cloud'?'Cloud Quote':'Quote',
+      title:q.quote_number||q.quoteNumber||q.quote_title||q.quoteTitle,
+      sub:[q.customer_name||q.customerName,q.customer_email||q.customerEmail,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),
+      pills:quotePreviewPills(q),
+      hay:JSON.stringify(q)
+    })),
+    ...d.finance.map(f=>({
+      href:deepLink('finance',f),
+      icon:'💰',
+      tag:f._source==='cloud'?'Cloud Finance':'Finance',
+      title:f.description||f.category||'Finance entry',
+      sub:[f.date||f.entry_date,f.category,money(f.amount)].filter(Boolean).join(' · '),
+      pills:financePreviewPills(f),
+      hay:JSON.stringify(f)
+    })),
+    ...inv.lowRaw.map(g=>({
+      href:deepLink('inventory',g),
+      icon:'🧵',
+      tag:inv.source==='Cloud'?'Cloud Inventory':'Inventory',
+      title:`${g.material_type||'Material'} / ${g.color||'No color'}`,
+      sub:[g.brand,`${grams(g.available)} available`,`${grams(g.threshold)} threshold`].filter(Boolean).join(' · '),
+      pills:inventoryPreviewPills(g),
+      hay:JSON.stringify(g)
+    })),
+    ...inv.lowSupplies.map(s=>({
+      href:deepLink('inventory',s),
+      icon:'📎',
+      tag:inv.source==='Cloud'?'Cloud Supply':'Supply',
+      title:s.item_name,
+      sub:[s.category,`${s.quantity_on_hand} ${s.unit_type||''} on hand`].filter(Boolean).join(' · '),
+      pills:inventoryPreviewPills(s),
+      hay:JSON.stringify(s)
+    }))
+  ];
+}
+
+function renderSearch(){
+  const q=($('hubSearchInput').value||'').trim().toLowerCase();
+  if(!q){
+    $('hubSearchResults').innerHTML=empty(hubCloud.loaded?`Cloud loaded: ${hubCloud.orders.length} orders, ${hubCloud.quotes.length} quotes.`:'Type to search production, quotes, orders, inventory, and finance.');
+    return;
+  }
+  const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,12);
+  $('hubSearchResults').innerHTML=rows.length
+    ? `<div class="record-preview-grid">${rows.map(recordPreviewCard).join('')}</div>`
+    : empty(hubCloud.loaded?'No matching records found.':'No local match yet. Cloud may still be loading.');
+}
+
 function recentStore(){return read('olipoly_hub_recent_v1')}
 function writeRecent(label,href){if(!label||!href)return;const rows=recentStore().filter(r=>r.href!==href||r.label!==label);rows.unshift({label,href,at:new Date().toISOString()});localStorage.setItem('olipoly_hub_recent_v1',JSON.stringify(rows.slice(0,10)));}
 function renderRecent(){$('recentList').innerHTML=recentStore().slice(0,6).map(recentItem).join('')||empty('Recently opened items will appear here.');}
