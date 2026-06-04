@@ -7,21 +7,21 @@
   <title>OliPoly Command Center</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <style>
-    :root{--ink:#25182d;--muted:#74617d;--pink:#e84fb7;--purple:#9d6df3;--line:rgba(101,60,120,.14);--shadow:0 22px 62px rgba(95,36,112,.13);--panel:rgba(255,255,255,.82);}
+    :root{--ink:#25182d;--muted:#74617d;--pink:#e84fb7;--purple:#9d6df3;--line:rgba(101,60,120,.14);--shadow:0 22px 62px rgba(95,36,112,.13);--panel:rgba(255,255,255,.84);}
     *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0,rgba(232,79,183,.22),transparent 30rem),radial-gradient(circle at 95% 4%,rgba(157,109,243,.18),transparent 28rem),linear-gradient(180deg,#fff5fc,#fff 45%,#fff8fd);}
     .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:16px 0 56px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:24px;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.85);box-shadow:var(--shadow);position:sticky;top:10px;z-index:10;backdrop-filter:blur(14px)}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:24px;background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.88);box-shadow:var(--shadow);position:sticky;top:10px;z-index:10;backdrop-filter:blur(14px)}
     .brand{display:flex;align-items:center;gap:12px} .brand img{width:44px;height:44px;border-radius:14px;object-fit:contain;background:#fff} h1{margin:0;font-family:"Playfair Display",serif;font-size:1.5rem;line-height:.95} .brand small{color:var(--muted);font-weight:800} a{color:inherit} .btn,.ghost{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:900;border:0;cursor:pointer} .btn{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 14px 30px rgba(214,73,186,.22)} .ghost{background:rgba(255,255,255,.75);border:1px solid var(--line)}
-    .hero{margin-top:14px;padding:20px;border-radius:32px;background:var(--panel);border:1px solid rgba(255,255,255,.86);box-shadow:var(--shadow);display:grid;grid-template-columns:1fr .75fr;gap:18px;align-items:center}
+    .hero{margin-top:14px;padding:20px;border-radius:32px;background:var(--panel);border:1px solid rgba(255,255,255,.88);box-shadow:var(--shadow);display:grid;grid-template-columns:1fr .72fr;gap:18px;align-items:start}
     .kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.15);color:#a03c87;font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
-    .hero h2{font-family:"Playfair Display",serif;font-size:clamp(2.2rem,5vw,4.4rem);line-height:.88;margin:10px 0 10px;letter-spacing:-.055em} .hero p{color:var(--muted);font-size:1rem;line-height:1.5;max-width:680px}
+    .hero h2{font-family:"Playfair Display",serif;font-size:clamp(2.2rem,5vw,4.1rem);line-height:.9;margin:10px 0 10px;letter-spacing:-.055em} .hero p{color:var(--muted);font-size:1rem;line-height:1.5;max-width:680px}
     .path{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px} .path div{padding:10px;border-radius:16px;background:rgba(255,255,255,.75);border:1px solid var(--line);font-size:.78rem;color:var(--muted)} .path strong{display:block;color:var(--ink);font-size:.9rem;margin-bottom:2px}
-    .auth{padding:14px;border-radius:24px;background:rgba(255,255,255,.70);border:1px solid var(--line)} .auth h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:1.55rem} .auth input{width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line);padding:10px 12px;margin:6px 0;background:white} .auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px} #authStatus{margin-top:8px;color:var(--muted);font-weight:800;font-size:.86rem}
-    .wizard{margin-top:14px;padding:18px;border-radius:32px;background:var(--panel);border:1px solid rgba(255,255,255,.86);box-shadow:var(--shadow)} .wizard h2,.section h2{font-family:"Playfair Display",serif;font-size:2.2rem;line-height:.95;margin:8px 0;color:var(--ink)}
-    .type-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px} .type-card{min-height:148px;border-radius:22px;padding:14px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,246,252,.85));text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;transition:.18s} .type-card.active,.type-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.12);border-color:rgba(232,79,183,.30)} .type-card b{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));font-size:1.1rem} .type-card strong{display:block;margin-top:8px} .type-card small{display:block;color:var(--muted);line-height:1.32;margin-top:4px}
+    .auth{padding:14px;border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line)} .auth h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:1.55rem} .auth input{width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line);padding:10px 12px;margin:6px 0;background:white} .auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px} #authStatus{margin-top:8px;color:var(--muted);font-weight:800;font-size:.86rem}
+    .wizard,.section{margin-top:14px;padding:18px;border-radius:32px;background:var(--panel);border:1px solid rgba(255,255,255,.88);box-shadow:var(--shadow)} .wizard h2,.section h2{font-family:"Playfair Display",serif;font-size:2.25rem;line-height:.95;margin:8px 0;color:var(--ink)} .section p,.wizard p{color:var(--muted);line-height:1.45}
+    .type-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px} .type-card{min-height:150px;border-radius:22px;padding:14px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,246,252,.85));text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;transition:.18s} .type-card.active,.type-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.12);border-color:rgba(232,79,183,.30)} .type-card b{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));font-size:1.1rem} .type-card strong{display:block;margin-top:8px} .type-card small{display:block;color:var(--muted);line-height:1.32;margin-top:4px}
     .form-grid{display:grid;grid-template-columns:1fr 1fr .5fr .7fr;gap:10px;margin-top:14px;padding:14px;border-radius:22px;background:rgba(255,255,255,.68);border:1px solid var(--line)} label{font-weight:900;font-size:.86rem} input,select{width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line);padding:10px 12px;margin-top:6px;background:white}
     .recommend{margin-top:12px;padding:14px;border-radius:22px;background:rgba(255,255,255,.78);border:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center} .recommend span{color:var(--muted);line-height:1.4} .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .section{margin-top:14px;padding:16px;border-radius:28px;background:var(--panel);border:1px solid rgba(255,255,255,.86);box-shadow:var(--shadow)} .snap{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px} .snap-card{padding:12px;border-radius:18px;background:rgba(255,255,255,.75);border:1px solid var(--line)} .snap-card span{display:block;color:var(--muted);font-size:.65rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em} .snap-card strong{font-size:1.35rem}
+    .snap{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px} .snap-card{padding:12px;border-radius:18px;background:rgba(255,255,255,.75);border:1px solid var(--line)} .snap-card span{display:block;color:var(--muted);font-size:.65rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em} .snap-card strong{font-size:1.35rem}
     .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px} .tool{padding:14px;border-radius:20px;background:rgba(255,255,255,.76);border:1px solid var(--line);text-decoration:none} .tool strong{display:block} .tool small{display:block;color:var(--muted);line-height:1.35;margin-top:4px}
     @media(max-width:950px){.hero{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr 1fr}.path,.snap{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:640px){.wrap{width:min(100% - 18px,1120px)}.topbar{position:relative;top:auto;align-items:flex-start;flex-direction:column}.hero,.wizard,.section{border-radius:24px;padding:14px}.type-grid,.form-grid,.path,.snap{grid-template-columns:1fr}.recommend{display:block}.actions{margin-top:10px;display:grid}.btn,.ghost{width:100%}}
@@ -215,7 +215,7 @@
     <div>
       <span class="kicker">Start Here</span>
       <h2>Run the job before you quote the job.</h2>
-      <p>Use Hub to start the request, then move into Production Control first. That is where cost, material reservation, capacity, and margin are checked before sending a polished customer quote.</p>
+      <p>Hub is now intentionally simple: pick what you are making, save the draft, then open Production Control first. Production Control remains the engine for cost, material reservation, capacity, and margin.</p>
       <div class="path">
         <div><strong>1 Hub</strong>Capture request</div><div><strong>2 Production</strong>Cost + reserve</div><div><strong>3 Quote</strong>Customer price</div><div><strong>4 Orders</strong>Invoice + track</div><div><strong>5 Finance</strong>Revenue + tax</div>
       </div>
@@ -232,6 +232,7 @@
   <section class="wizard">
     <span class="kicker">Start Order Wizard</span>
     <h2>What are you making?</h2>
+    <p>Choose one path. The big button sends the draft to Production Control, not Quote, so you can check cost and inventory first.</p>
     <div class="type-grid">
       <button class="type-card active" data-type="business"><b>🏢</b><span><strong>Business / Branded</strong><small>Logo items, PO work, organizations, event merch.</small></span></button>
       <button class="type-card" data-type="personal"><b>🎁</b><span><strong>Personal / Gift</strong><small>One-off, family/friend, unpaid personal work.</small></span></button>
@@ -252,8 +253,8 @@
   </section>
 
   <section class="section">
-    <span class="kicker">Snapshot</span>
-    <h2>Quick shop pulse</h2>
+    <span class="kicker">Shop Pulse</span>
+    <h2>Only the numbers that help you decide.</h2>
     <div class="snap">
       <div class="snap-card"><span>Open Jobs</span><strong id="openJobs">0</strong></div>
       <div class="snap-card"><span>Ready</span><strong id="readyJobs">0</strong></div>
@@ -265,8 +266,8 @@
   </section>
 
   <section class="section">
-    <span class="kicker">Tools</span>
-    <h2>Open the source system</h2>
+    <span class="kicker">Source Systems</span>
+    <h2>Open the tool that owns the detail.</h2>
     <div class="tool-grid">
       <a class="tool" href="production-control.html"><strong>Production Control</strong><small>Estimate, cost, reserve material, capacity, margin.</small></a>
       <a class="tool" href="quote.html"><strong>Quote Tool</strong><small>Customer-facing price, PDF, email, approval link.</small></a>
