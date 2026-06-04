@@ -993,6 +993,344 @@
       .health-strip{grid-template-columns:1fr!important}
     }
 
+
+    /* === Engine Layout V2: left command rail, visual cards, charts === */
+    .wrap{
+      display:grid!important;
+      grid-template-columns:230px minmax(0,1fr)!important;
+      gap:14px!important;
+      align-items:start!important;
+      width:min(1500px,calc(100% - 24px))!important;
+    }
+    .engine-rail{
+      position:sticky;
+      top:14px;
+      height:calc(100vh - 28px);
+      padding:14px;
+      border-radius:26px;
+      background:linear-gradient(180deg,rgba(14,23,42,.96),rgba(6,11,23,.96))!important;
+      border:1px solid rgba(129,151,255,.18);
+      box-shadow:var(--engine-glow);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      overflow:auto;
+    }
+    .engine-rail-brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 6px 12px;
+      border-bottom:1px solid rgba(129,151,255,.12);
+    }
+    .engine-rail-brand img{
+      width:42px;
+      height:42px;
+      border-radius:15px;
+      object-fit:contain;
+      background:linear-gradient(135deg,rgba(163,107,255,.18),rgba(57,215,255,.12));
+      border:1px solid rgba(129,151,255,.20);
+      box-shadow:0 0 24px rgba(163,107,255,.22);
+    }
+    .engine-rail-brand strong{
+      display:block;
+      color:#fff;
+      font-family:"Playfair Display",serif;
+      line-height:1;
+      letter-spacing:-.03em;
+    }
+    .engine-rail-brand small{
+      display:block;
+      color:#7f92b9;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-weight:900;
+      font-size:.62rem;
+      margin-top:3px;
+    }
+    .engine-nav{
+      display:grid;
+      gap:7px;
+    }
+    .engine-nav a{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:42px;
+      padding:10px 11px;
+      border-radius:15px;
+      color:#aab9d7;
+      text-decoration:none;
+      border:1px solid transparent;
+      font-weight:850;
+      font-size:.86rem;
+    }
+    .engine-nav a:hover,.engine-nav a.active{
+      color:#fff;
+      background:linear-gradient(135deg,rgba(124,77,255,.24),rgba(57,215,255,.10));
+      border-color:rgba(129,151,255,.18);
+      box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 18px rgba(57,215,255,.06);
+    }
+    .engine-rail-status{
+      margin-top:auto;
+      padding:12px;
+      border-radius:18px;
+      background:rgba(255,255,255,.045);
+      border:1px solid rgba(129,151,255,.14);
+    }
+    .engine-rail-status strong{
+      display:block;
+      color:#fff;
+      margin-bottom:8px;
+    }
+    .rail-status-line{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      color:#95a9cc;
+      font-size:.74rem;
+      line-height:1.4;
+      margin-top:6px;
+    }
+    .rail-status-line b{color:#8dffc7}
+    .engine-main{
+      min-width:0;
+    }
+    .wrap>.topbar,
+    .wrap>.hero,
+    .wrap>.auth-card,
+    .wrap>.section,
+    .wrap>.wizard,
+    .wrap>.request-v2{
+      grid-column:2!important;
+    }
+    .topbar{
+      position:relative!important;
+      top:auto!important;
+      margin-bottom:14px!important;
+    }
+    .hero{
+      min-height:240px;
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) 380px!important;
+      align-items:stretch!important;
+      padding:18px!important;
+    }
+    .hero .poly-stage{
+      display:block!important;
+      min-height:220px!important;
+      border-radius:24px!important;
+    }
+    .hero .poly-stage::after{
+      content:"";
+      position:absolute;
+      inset:18px;
+      border-radius:20px;
+      background:
+        linear-gradient(90deg,transparent,rgba(57,215,255,.16),transparent),
+        repeating-linear-gradient(0deg,transparent 0 18px,rgba(255,255,255,.035) 19px);
+      pointer-events:none;
+      mask-image:linear-gradient(120deg,transparent,black 40%,transparent 80%);
+    }
+    .dashboard-hero-stats{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:10px;
+      margin-top:16px;
+    }
+    .visual-metric-card{
+      min-height:132px;
+      padding:14px;
+      border-radius:20px;
+      background:linear-gradient(145deg,rgba(31,45,82,.92),rgba(12,20,40,.82));
+      border:1px solid rgba(129,151,255,.16);
+      box-shadow:0 12px 28px rgba(0,0,0,.22);
+      position:relative;
+      overflow:hidden;
+    }
+    .visual-metric-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:radial-gradient(circle at 80% 20%,rgba(57,215,255,.15),transparent 34%),radial-gradient(circle at 20% 85%,rgba(163,107,255,.13),transparent 38%);
+      pointer-events:none;
+    }
+    .visual-metric-card span,.visual-metric-card strong,.visual-metric-card small{position:relative;z-index:1}
+    .visual-metric-card span{
+      display:block;
+      color:#9fb2d6;
+      font-size:.67rem;
+      font-weight:950;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .visual-metric-card strong{
+      display:block;
+      color:#fff;
+      font-size:2rem;
+      margin-top:8px;
+      line-height:1;
+    }
+    .visual-metric-card small{
+      display:block;
+      color:#8fa2c5;
+      margin-top:5px;
+      line-height:1.25;
+      font-size:.75rem;
+    }
+    .sparkline{
+      position:absolute;
+      left:12px;
+      right:12px;
+      bottom:10px;
+      height:28px;
+      opacity:.9;
+    }
+    .sparkline svg{width:100%;height:100%;display:block}
+    .visual-metric-card.purple{border-color:rgba(163,107,255,.24)}
+    .visual-metric-card.blue{border-color:rgba(57,215,255,.24)}
+    .visual-metric-card.green{border-color:rgba(53,241,162,.22)}
+    .visual-metric-card.amber{border-color:rgba(255,191,77,.24)}
+    .visual-metric-card.pink{border-color:rgba(255,88,199,.24)}
+    .section{
+      padding:18px!important;
+    }
+    .shop-health{
+      grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    }
+    .metric{
+      min-height:118px;
+      position:relative;
+      overflow:hidden;
+    }
+    .metric::after{
+      content:"";
+      position:absolute;
+      inset:auto 12px 12px 12px;
+      height:26px;
+      background:linear-gradient(90deg,rgba(124,77,255,.1),rgba(57,215,255,.48),rgba(53,241,162,.18));
+      clip-path:polygon(0 70%,12% 50%,24% 62%,36% 24%,48% 58%,60% 35%,73% 50%,86% 18%,100% 42%,100% 100%,0 100%);
+      opacity:.72;
+      border-radius:8px;
+    }
+    .customer-intel-grid,
+    .attention-grid{
+      grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    }
+    .continue-grid{
+      grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    }
+    .inventory-impact-grid,
+    .timeline-tool{
+      grid-template-columns:1.1fr .9fr!important;
+    }
+    .system-gauge-card{
+      padding:14px;
+      border-radius:22px;
+      background:linear-gradient(145deg,rgba(23,35,63,.84),rgba(10,17,34,.74));
+      border:1px solid rgba(129,151,255,.16);
+      box-shadow:0 14px 34px rgba(0,0,0,.22);
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr);
+      gap:16px;
+      align-items:center;
+      margin-top:12px;
+    }
+    .gauge{
+      width:126px;
+      height:126px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at center,#08101f 0 52%,transparent 53%),
+        conic-gradient(var(--engine-green) 0 88%,rgba(255,255,255,.08) 88% 100%);
+      box-shadow:0 0 34px rgba(53,241,162,.18);
+      border:1px solid rgba(53,241,162,.24);
+    }
+    .gauge strong{
+      color:#fff;
+      font-size:1.5rem;
+      line-height:1;
+    }
+    .gauge small{
+      display:block;
+      color:#8dffc7;
+      font-size:.62rem;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      text-align:center;
+      margin-top:4px;
+    }
+    .engine-timeline-strip{
+      display:grid;
+      grid-template-columns:repeat(7,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+      position:relative;
+    }
+    .engine-timeline-strip::before{
+      content:"";
+      position:absolute;
+      left:4%;
+      right:4%;
+      top:22px;
+      height:2px;
+      background:linear-gradient(90deg,var(--engine-purple),var(--engine-cyan),var(--engine-green),var(--engine-amber),var(--engine-pink));
+      opacity:.7;
+      z-index:0;
+    }
+    .engine-timeline-node{
+      position:relative;
+      z-index:1;
+      padding:38px 10px 10px;
+      border-radius:18px;
+      background:linear-gradient(145deg,rgba(25,38,68,.82),rgba(10,17,34,.72));
+      border:1px solid rgba(129,151,255,.15);
+      min-height:108px;
+    }
+    .engine-timeline-node::before{
+      content:"";
+      position:absolute;
+      top:14px;
+      left:50%;
+      transform:translateX(-50%);
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:var(--engine-cyan);
+      box-shadow:0 0 20px rgba(57,215,255,.55);
+    }
+    .engine-timeline-node strong{
+      display:block;
+      color:#fff;
+      font-size:.82rem;
+      text-align:center;
+    }
+    .engine-timeline-node small{
+      display:block;
+      color:#95a9cc;
+      text-align:center;
+      margin-top:4px;
+      font-size:.68rem;
+      line-height:1.25;
+    }
+    @media(max-width:1180px){
+      .wrap{grid-template-columns:1fr!important}
+      .engine-rail{position:relative;height:auto;grid-column:1!important;display:block}
+      .engine-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .wrap>.topbar,.wrap>.hero,.wrap>.auth-card,.wrap>.section,.wrap>.wizard,.wrap>.request-v2{grid-column:1!important}
+      .hero{grid-template-columns:1fr!important}
+      .dashboard-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:760px){
+      .engine-nav{grid-template-columns:1fr 1fr}
+      .customer-intel-grid,.attention-grid,.continue-grid,.inventory-impact-grid,.timeline-tool,.shop-health{grid-template-columns:1fr!important}
+      .dashboard-hero-stats{grid-template-columns:1fr}
+      .engine-timeline-strip{grid-template-columns:1fr}
+      .engine-timeline-strip::before{display:none}
+    }
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -1174,6 +1512,36 @@
 </head>
 <body>
 <div class="wrap">
+
+  <aside class="engine-rail" id="engineRail">
+    <div class="engine-rail-brand">
+      <img src="images/poly-mascot.png" alt="OliPoly">
+      <div>
+        <strong>OliPoly</strong>
+        <small>Engine Core</small>
+      </div>
+    </div>
+    <nav class="engine-nav">
+      <a class="active" href="#cloudHealthStrip">⌘ Hub Home</a>
+      <a href="#newRequestWizard">＋ New Request</a>
+      <a href="#inventoryImpactSection">⚠ Inventory Impact</a>
+      <a href="#customerIntelligenceSection">👥 Customers</a>
+      <a href="#customerTimelineSection">⟡ Timeline</a>
+      <a href="#hubSearchInput">⌕ Search</a>
+      <a href="production-control.html">▣ Production</a>
+      <a href="orders-admin.html">▤ Orders</a>
+      <a href="quote.html">◈ Quote</a>
+      <a href="inventory-control.html">⬢ Inventory</a>
+      <a href="finance-pro.html">$ Finance</a>
+    </nav>
+    <div class="engine-rail-status">
+      <strong>System Status</strong>
+      <div class="rail-status-line"><span>Cloud Sync</span><b>Connected</b></div>
+      <div class="rail-status-line"><span>Data Integrity</span><b>Active</b></div>
+      <div class="rail-status-line"><span>Engine Mode</span><b>Operational</b></div>
+    </div>
+  </aside>
+
   <header class="topbar">
     <a class="brand" href="hub.html">
       <img src="images/poly-mascot.png" alt="Poly mascot">
@@ -1188,6 +1556,15 @@
       <h2>The Engine That Runs OliPoly</h2>
       <p>A connected operations engine for OliPoly: cloud status, current workflow, urgent work, search, and the next handoff across Production, Quotes, Orders, Inventory, and Finance.</p>
       <div class="health-strip" id="cloudHealthStrip"></div>
+
+      <div class="dashboard-hero-stats" id="engineVisualStats">
+        <div class="visual-metric-card purple"><span>Jobs Due</span><strong id="visJobsDue">0</strong><small>This week</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 22 L12 18 L24 20 L36 10 L48 15 L60 7 L72 18 L84 11 L100 16" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
+        <div class="visual-metric-card blue"><span>Quotes Awaiting</span><strong id="visQuotes">0</strong><small>Response</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 18 L12 20 L24 12 L36 16 L48 9 L60 14 L72 7 L84 15 L100 10" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
+        <div class="visual-metric-card green"><span>Active Orders</span><strong id="visOrders">0</strong><small>Need action</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 21 L10 19 L22 14 L34 17 L46 9 L58 13 L70 8 L82 16 L100 6" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
+        <div class="visual-metric-card amber"><span>Inventory Risk</span><strong id="visRisk">0</strong><small>At risk jobs</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 20 L12 14 L24 17 L36 11 L48 18 L60 12 L72 16 L84 9 L100 13" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
+        <div class="visual-metric-card pink"><span>Reorder Ops</span><strong id="visReorders">0</strong><small>90+ days</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 16 L14 18 L28 9 L42 13 L56 7 L70 19 L84 11 L100 15" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
+      </div>
+
     </div>
     <div class="poly-stage" aria-label="OliPoly visual">
       <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
@@ -1331,6 +1708,27 @@
     </div>
     <div class="search-results" id="hubSearchResults"></div>
   </section>
+
+
+  <section class="section" id="engineActivityStrip">
+    <div class="section-head">
+      <div>
+        <span class="kicker">Engine Activity Timeline</span>
+        <h2>Recent movement across the shop.</h2>
+        <p>A visual pulse of quote, production, payment, and customer activity.</p>
+      </div>
+    </div>
+    <div class="engine-timeline-strip" id="engineTimelineStrip">
+      <div class="engine-timeline-node"><strong>Quote Created</strong><small>Customer request</small></div>
+      <div class="engine-timeline-node"><strong>Order Accepted</strong><small>OP workflow</small></div>
+      <div class="engine-timeline-node"><strong>Production</strong><small>Print queue</small></div>
+      <div class="engine-timeline-node"><strong>Inventory</strong><small>Material check</small></div>
+      <div class="engine-timeline-node"><strong>Payment</strong><small>Invoice status</small></div>
+      <div class="engine-timeline-node"><strong>Closed</strong><small>Delivery done</small></div>
+      <div class="engine-timeline-node"><strong>Reorder</strong><small>Repeat opportunity</small></div>
+    </div>
+  </section>
+
 
   <section class="section">
     <div class="section-head"><div><span class="kicker">Recently Opened</span><h2>Your last few jumps.</h2></div></div>
@@ -1966,8 +2364,31 @@ function initRequestWizardV2(){
   renderRequestRoute();
 }
 
+
+function renderEngineVisuals(){
+  try{
+    const d=combinedData();
+    const jobs=d.jobs||[];
+    const openJobs=jobs.filter(j=>!['completed','failed_scrap','archived','closed'].includes(String(j.production_status||j.status||'').toLowerCase()));
+    const dueSoon=openJobs.filter(j=>daysSince(j.due_date)<=0 || (j.due_date && (new Date(j.due_date).getTime()-Date.now())/86400000<=7));
+    const pendingQuotes=(d.quotes||[]).filter(q=>!['accepted','declined','expired','converted'].includes(String(q.quote_status||q.quoteStatus||'').toLowerCase()));
+    const openOrders=(d.orders||[]).filter(o=>!orderClosed(o));
+    const impact=evaluateInventoryImpact ? evaluateInventoryImpact() : {risk:[]};
+    const reorders=buildCustomerStats().filter(c=>c.orders>=1&&daysSince(c.lastDate)>=90);
+    if($('visJobsDue')) $('visJobsDue').textContent=dueSoon.length;
+    if($('visQuotes')) $('visQuotes').textContent=pendingQuotes.length;
+    if($('visOrders')) $('visOrders').textContent=openOrders.length;
+    if($('visRisk')) $('visRisk').textContent=impact.risk.length;
+    if($('visReorders')) $('visReorders').textContent=reorders.length;
+    const health=Math.max(70,100-(impact.risk.length*8)-((pendingQuotes.length>8)?5:0));
+    if($('engineGaugePercent')) $('engineGaugePercent').textContent=health+'%';
+    const gauge=document.querySelector('.gauge');
+    if(gauge) gauge.style.background=`radial-gradient(circle at center,#08101f 0 52%,transparent 53%),conic-gradient(var(--engine-green) 0 ${health}%,rgba(255,255,255,.08) ${health}% 100%)`;
+  }catch(err){console.warn('Engine visuals skipped',err);}
+}
+
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
-async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderCustomerTimeline();renderInventoryImpact();renderAttention();renderSearch();renderRecent();}
+async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderCustomerTimeline();renderInventoryImpact();renderAttention();renderSearch();renderRecent();renderEngineVisuals();}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
 $('workflowType')?.addEventListener('input',()=>setType($('workflowType').value)); if($('saveDraftBtn')) $('saveDraftBtn').onclick=saveDraft; $('startProductionBtn')?.addEventListener('click',saveDraft);
 $('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();fullRender();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
