@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>OliPoly Command Center</title>
+  <title>OliPoly Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -763,6 +763,236 @@
     @media(max-width:1120px){.request-path-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.request-v2-body{grid-template-columns:1fr}}
     @media(max-width:640px){.request-path-grid,.request-form-grid{grid-template-columns:1fr}.request-actions{display:grid}.request-actions .btn,.request-actions .ghost{width:100%}}
 
+
+    /* === Engine Command Center Skin Pass === */
+    :root{
+      --engine-bg:#070b14;
+      --engine-panel:rgba(15,23,42,.86);
+      --engine-panel2:rgba(20,30,54,.82);
+      --engine-card:rgba(18,28,50,.84);
+      --engine-card2:rgba(26,36,64,.78);
+      --engine-line:rgba(129,151,255,.18);
+      --engine-glow:0 18px 60px rgba(0,0,0,.38),0 0 0 1px rgba(129,151,255,.08);
+      --engine-cyan:#39d7ff;
+      --engine-green:#35f1a2;
+      --engine-purple:#a36bff;
+      --engine-pink:#ff58c7;
+      --engine-amber:#ffbf4d;
+      --engine-red:#ff5576;
+    }
+    body{
+      color:#eaf0ff!important;
+      background:
+        radial-gradient(circle at 18% 0%,rgba(163,107,255,.18),transparent 32rem),
+        radial-gradient(circle at 88% 8%,rgba(57,215,255,.14),transparent 34rem),
+        radial-gradient(circle at 48% 38%,rgba(53,241,162,.06),transparent 38rem),
+        linear-gradient(180deg,#050812 0%,#08101f 46%,#060912 100%)!important;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+      background-size:44px 44px;
+      mask-image:linear-gradient(180deg,rgba(0,0,0,.5),transparent 72%);
+      z-index:-1;
+    }
+    .wrap{
+      width:min(1360px,calc(100% - 28px))!important;
+      padding-top:14px!important;
+    }
+    .topbar{
+      background:linear-gradient(135deg,rgba(13,21,39,.96),rgba(19,28,52,.90))!important;
+      border:1px solid rgba(129,151,255,.20)!important;
+      box-shadow:var(--engine-glow)!important;
+      border-radius:22px!important;
+      backdrop-filter:blur(20px)!important;
+    }
+    .brand img{
+      background:linear-gradient(135deg,rgba(163,107,255,.18),rgba(57,215,255,.12))!important;
+      border:1px solid rgba(129,151,255,.20)!important;
+      box-shadow:0 0 28px rgba(163,107,255,.26)!important;
+    }
+    .brand h1,.topbar h1{
+      color:#ffffff!important;
+      text-shadow:0 0 22px rgba(163,107,255,.22)!important;
+    }
+    .brand small{
+      color:#aab9d7!important;
+      letter-spacing:.09em!important;
+    }
+    .pink{color:#d777ff!important}
+    .btn{
+      background:linear-gradient(135deg,#7c4dff,#2fd5ff)!important;
+      box-shadow:0 14px 32px rgba(57,215,255,.20),0 0 0 1px rgba(255,255,255,.08) inset!important;
+      color:#fff!important;
+    }
+    .ghost{
+      color:#eaf0ff!important;
+      background:rgba(255,255,255,.055)!important;
+      border:1px solid rgba(129,151,255,.18)!important;
+      box-shadow:0 8px 22px rgba(0,0,0,.12)!important;
+    }
+    .ghost:hover,.btn:hover{transform:translateY(-1px)}
+    .hero,.auth-card,.section,.wizard,.request-v2{
+      background:linear-gradient(145deg,rgba(18,28,50,.90),rgba(8,13,26,.86))!important;
+      border:1px solid rgba(129,151,255,.18)!important;
+      box-shadow:var(--engine-glow)!important;
+      border-radius:28px!important;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before,.auth-card::before,.section::before,.request-v2::before{
+      content:"";
+      position:absolute;
+      inset:0 0 auto 0;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(57,215,255,.45),rgba(163,107,255,.36),transparent);
+      pointer-events:none;
+    }
+    .hero h2,.section h2,.wizard h2,.request-v2 h2{
+      color:#fff!important;
+      text-shadow:0 0 30px rgba(57,215,255,.10)!important;
+    }
+    .hero p,.section p,.wizard p,.request-v2 p,.status-text{
+      color:#aab9d7!important;
+    }
+    .kicker{
+      background:rgba(163,107,255,.13)!important;
+      border:1px solid rgba(163,107,255,.28)!important;
+      color:#d9c4ff!important;
+      box-shadow:0 0 22px rgba(163,107,255,.08)!important;
+    }
+    .health-strip{
+      grid-template-columns:repeat(5,minmax(0,1fr))!important;
+      gap:10px!important;
+    }
+    .health-pill{
+      background:rgba(7,13,26,.72)!important;
+      border:1px solid rgba(129,151,255,.18)!important;
+      color:#9db0d3!important;
+      box-shadow:0 10px 24px rgba(0,0,0,.16)!important;
+    }
+    .health-pill b{color:#f7fbff!important}
+    .dot.cloud{background:var(--engine-green)!important;box-shadow:0 0 0 4px rgba(53,241,162,.10),0 0 18px rgba(53,241,162,.55)!important}
+    .dot.fallback{background:var(--engine-amber)!important;box-shadow:0 0 0 4px rgba(255,191,77,.10),0 0 18px rgba(255,191,77,.45)!important}
+    .dot.off{background:var(--engine-red)!important;box-shadow:0 0 0 4px rgba(255,85,118,.10),0 0 18px rgba(255,85,118,.45)!important}
+    .metric,.summary,.request-v2-panel,.customer-intel-box,.inventory-impact-panel,.timeline-picker,.timeline-detail,.customer-timeline-card,.attention-box{
+      background:linear-gradient(145deg,rgba(23,35,63,.84),rgba(10,17,34,.74))!important;
+      border:1px solid rgba(129,151,255,.16)!important;
+      box-shadow:0 14px 34px rgba(0,0,0,.22)!important;
+      color:#eaf0ff!important;
+    }
+    .metric span,.summary span,.impact-metric span,.timeline-summary span{
+      color:#8398bf!important;
+    }
+    .metric strong,.summary strong,.impact-metric strong,.timeline-summary strong{
+      color:#ffffff!important;
+    }
+    .type-card,.request-path,.workflow-card,.action-card,.work-card,.record-preview-card,.customer-intel-item,.timeline-customer-btn,.timeline-event,.customer-timeline-row,.impact-card,.mini a,.mini div,.route-step,.recent-item{
+      background:linear-gradient(145deg,rgba(25,38,68,.82),rgba(10,17,34,.72))!important;
+      border:1px solid rgba(129,151,255,.15)!important;
+      color:#eaf0ff!important;
+      box-shadow:0 10px 24px rgba(0,0,0,.18)!important;
+    }
+    .type-card.active,.request-path.active,.timeline-customer-btn.active{
+      border-color:rgba(57,215,255,.42)!important;
+      box-shadow:0 0 0 1px rgba(57,215,255,.15),0 18px 34px rgba(0,0,0,.28),0 0 28px rgba(57,215,255,.10)!important;
+    }
+    .type-card b,.request-path b,.workflow-icon,.card-icon,.record-preview-icon,.timeline-event-icon,.customer-timeline-dot,.impact-icon,.route-step span{
+      background:linear-gradient(135deg,#7c4dff,#27d7ff)!important;
+      box-shadow:0 0 22px rgba(57,215,255,.22)!important;
+    }
+    .type-card strong,.request-path strong,.workflow-card strong,.work-card strong,.record-preview-main strong,.attention-item strong,.recent-item strong,.customer-intel-item strong,.timeline-customer-btn strong,.timeline-event strong,.customer-timeline-row strong,.impact-card strong,.mini strong,.route-step strong{
+      color:#f8fbff!important;
+    }
+    .type-card small,.request-path small,.workflow-card small,.work-card small,.record-preview-main small,.attention-item small,.recent-item small,.customer-intel-item small,.timeline-customer-btn small,.timeline-event small,.customer-timeline-row small,.impact-card small,.mini small,.route-step small{
+      color:#95a9cc!important;
+    }
+    .source-pill,.tag,.customer-intel-value,.preview-pill,.timeline-pill,.impact-short{
+      background:rgba(57,215,255,.09)!important;
+      border:1px solid rgba(57,215,255,.18)!important;
+      color:#8ee8ff!important;
+      box-shadow:0 0 18px rgba(57,215,255,.05)!important;
+    }
+    .source-pill.cloud,.preview-pill.good,.timeline-pill.good,.impact-short.good{
+      background:rgba(53,241,162,.10)!important;
+      border-color:rgba(53,241,162,.20)!important;
+      color:#8dffc7!important;
+    }
+    .source-pill.fallback,.preview-pill.warn,.timeline-pill.warn,.impact-short:not(.good){
+      background:rgba(255,191,77,.11)!important;
+      border-color:rgba(255,191,77,.22)!important;
+      color:#ffd483!important;
+    }
+    .preview-pill.danger,.timeline-pill.danger{
+      background:rgba(255,85,118,.12)!important;
+      border-color:rgba(255,85,118,.24)!important;
+      color:#ff9caf!important;
+    }
+    input,select,textarea{
+      background:rgba(7,13,26,.78)!important;
+      border:1px solid rgba(129,151,255,.18)!important;
+      color:#f8fbff!important;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)!important;
+    }
+    input::placeholder,textarea::placeholder{color:#65789b!important}
+    label{color:#b7c5df!important}
+    .search-box,.timeline-search,.recommend,.draft-status,.impact-metric,.timeline-summary div{
+      background:rgba(7,13,26,.72)!important;
+      border:1px solid rgba(129,151,255,.15)!important;
+    }
+    .empty-note{
+      background:rgba(7,13,26,.62)!important;
+      border:1px dashed rgba(129,151,255,.22)!important;
+      color:#8fa2c5!important;
+    }
+    .poly-stage{
+      background:
+        radial-gradient(circle at 42% 44%,rgba(163,107,255,.35),transparent 30%),
+        linear-gradient(145deg,rgba(16,26,48,.86),rgba(5,9,18,.92))!important;
+      border:1px solid rgba(129,151,255,.18)!important;
+      box-shadow:inset 0 0 60px rgba(57,215,255,.05)!important;
+    }
+    .poly-printer{
+      box-shadow:0 24px 58px rgba(0,0,0,.42),0 0 34px rgba(57,215,255,.12)!important;
+      border:1px solid rgba(129,151,255,.22)!important;
+    }
+    .poly-bee{
+      opacity:.95!important;
+      filter:drop-shadow(0 0 20px rgba(163,107,255,.32))!important;
+    }
+    .shop-health,.attention-grid,.continue-grid,.customer-intel-grid,.inventory-impact-grid,.timeline-tool{
+      gap:12px!important;
+    }
+    .section-head{
+      border-bottom:1px solid rgba(129,151,255,.10);
+      padding-bottom:10px;
+    }
+    .request-v2{
+      border-color:rgba(57,215,255,.20)!important;
+    }
+    .request-v2::after,.hero::after{
+      content:"";
+      position:absolute;
+      width:220px;
+      height:220px;
+      right:-80px;
+      top:-90px;
+      border-radius:999px;
+      background:radial-gradient(circle,rgba(57,215,255,.16),transparent 65%);
+      pointer-events:none;
+    }
+    .record-preview-grid,.timeline-event-list,.impact-list,.customer-intel-list{
+      gap:10px!important;
+    }
+    @media(max-width:640px){
+      .health-strip{grid-template-columns:1fr!important}
+    }
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -947,7 +1177,7 @@
   <header class="topbar">
     <a class="brand" href="hub.html">
       <img src="images/poly-mascot.png" alt="Poly mascot">
-      <div><h1>Oli<span class="pink">Poly</span> 3D</h1><small>Command Center • Internal OS</small></div>
+      <div><h1>Oli<span class="pink">Poly</span> 3D</h1><small>Operations Engine • Internal OS</small></div>
     </a>
     <a class="ghost" href="index.html">Open Main Site</a>
   </header>
@@ -955,8 +1185,8 @@
   <section class="hero">
     <div>
       <span class="kicker">Internal OS</span>
-      <h2>Start the job. Check the cost. Quote with confidence.</h2>
-      <p>Hub is the operating desk for OliPoly: cloud status, current workflow, urgent work, search, and the next handoff across Production, Quotes, Orders, Inventory, and Finance.</p>
+      <h2>The Engine That Runs OliPoly</h2>
+      <p>A connected operations engine for OliPoly: cloud status, current workflow, urgent work, search, and the next handoff across Production, Quotes, Orders, Inventory, and Finance.</p>
       <div class="health-strip" id="cloudHealthStrip"></div>
     </div>
     <div class="poly-stage" aria-label="OliPoly visual">
