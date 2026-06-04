@@ -78,7 +78,61 @@
     @media(max-width:980px){.command-grid{grid-template-columns:1fr!important}.attention-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     @media(max-width:640px){.attention-grid{grid-template-columns:1fr!important}.work-item,.search-item{grid-template-columns:auto minmax(0,1fr)!important}.work-item b,.search-item b{grid-column:2!important}.search-box{grid-template-columns:1fr!important}}
 
-  </style>
+  
+    /* === Hub V5 action-card + cloud inventory accuracy fixes === */
+    .workflow-actions{
+      display:grid!important;
+      grid-template-columns:repeat(4,minmax(0,1fr))!important;
+      gap:10px!important;
+      margin-top:12px!important;
+    }
+    .action-card{
+      display:flex!important;
+      flex-direction:column!important;
+      gap:8px!important;
+      justify-content:space-between!important;
+      min-height:132px!important;
+      padding:15px!important;
+      border-radius:22px!important;
+      background:rgba(255,255,255,.80)!important;
+      border:1px solid rgba(101,60,120,.14)!important;
+      text-decoration:none!important;
+      color:inherit!important;
+      box-shadow:0 10px 24px rgba(95,36,112,.06)!important;
+      overflow:hidden!important;
+    }
+    .action-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.11)!important}
+    .action-card strong{
+      display:block!important;
+      color:#25182d!important;
+      font-size:1rem!important;
+      line-height:1.15!important;
+      text-decoration:none!important;
+    }
+    .action-card small{
+      display:block!important;
+      color:#74617d!important;
+      line-height:1.35!important;
+      font-size:.82rem!important;
+      text-decoration:none!important;
+    }
+    .action-card .tag{
+      align-self:flex-start!important;
+      width:auto!important;
+      display:inline-flex!important;
+      margin-top:auto!important;
+    }
+    .inventory-source-note{
+      display:block;
+      margin-top:8px;
+      color:#74617d;
+      font-size:.78rem;
+      font-weight:800;
+    }
+    @media(max-width:980px){.workflow-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    @media(max-width:640px){.workflow-actions{grid-template-columns:1fr!important}}
+
+</style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
 (function(){
@@ -372,7 +426,7 @@
 const $=id=>document.getElementById(id);
 const recs={business:['Recommended: Business / Branded','Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.'],personal:['Recommended: Personal / Gift','Start in Production Control as Personal / Free. Quote only if it becomes a paid customer job.'],replacement:['Recommended: Replacement Part','Start in Production Control as Replacement / Warranty. Confirm fit, function, and material before quoting.'],prototype:['Recommended: Prototype','Start in Production Control as Prototype / Test Print. Quote after scope and iterations are clear.'],batch:['Recommended: Repeat / Batch','Start in Production Control as Craft Stock or Finished Goods Restock. Confirm repeatability, material, and capacity.']};
 const defaults={business:{job_type:'business_po',status:'ready_to_print',priority:'urgent',machine:'P2S'},personal:{job_type:'personal_free',status:'idea',priority:'low',machine:'either'},replacement:{job_type:'replacement_warranty',status:'idea',priority:'high',machine:'either'},prototype:{job_type:'prototype',status:'queued',priority:'normal',machine:'either'},batch:{job_type:'craft_stock',status:'ready_to_print',priority:'normal',machine:'either'}};
-const hubCloud={orders:[],quotes:[],finance:[],loaded:false,error:null};
+const hubCloud={orders:[],quotes:[],finance:[],raw:[],supplies:[],loaded:false,inventoryLoaded:false,error:null};
 
 function setType(t){document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t));$('workflowType').value=t;$('recTitle').textContent=recs[t][0];$('recBody').textContent=recs[t][1];}
 function draft(){const t=$('workflowType').value;return {id:'wf-'+Date.now(),created_at:new Date().toISOString(),request_type:t,title:$('workflowTitle').value.trim(),quantity:Number($('workflowQty').value||1)||1,due_date:$('workflowDue').value,source:'hub',destination:'production-control',production_defaults:defaults[t],workflow_note:recs[t][1]}}
@@ -399,17 +453,70 @@ async function sbRest(path){
   return Array.isArray(data)?data:[];
 }
 
+
+function normalizeRawHub(r){
+  return {
+    id:r.id,
+    material_type:r.material_type||r.material||'PLA',
+    color:r.color||r.color_name||'',
+    brand:r.brand||'',
+    roll_status:r.roll_status||'active',
+    remaining_grams:Number(r.remaining_grams||r.remaining||0)||0,
+    reserved_grams:Number(r.reserved_grams||0)||0,
+    reorder_threshold_grams:Number(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250)||0
+  };
+}
+function normalizeSupplyHub(s){
+  return {
+    id:s.id,
+    item_name:s.item_name||s.name||'Supply',
+    category:s.category||'',
+    unit_type:s.unit_type||s.unit||'',
+    quantity_on_hand:Number(s.quantity_on_hand||s.qty||0)||0,
+    reorder_threshold:Number(s.reorder_threshold||s.reorder_point||0)||0
+  };
+}
+function rawGroupsHub(rows){
+  const map=new Map();
+  rows.map(normalizeRawHub).filter(r=>r.roll_status!=='retired' && r.roll_status!=='empty').forEach(r=>{
+    const key=[r.material_type,r.color,r.brand].map(x=>String(x||'').trim().toLowerCase()).join('|');
+    if(!map.has(key)) map.set(key,{material_type:r.material_type,color:r.color,brand:r.brand,grams:0,reserved:0,available:0,threshold:0,rolls:0});
+    const g=map.get(key);
+    g.grams += Number(r.remaining_grams)||0;
+    g.reserved += Number(r.reserved_grams)||0;
+    g.available += Math.max(0,(Number(r.remaining_grams)||0)-(Number(r.reserved_grams)||0));
+    g.threshold = Math.max(g.threshold, Number(r.reorder_threshold_grams)||0);
+    g.rolls += 1;
+  });
+  return [...map.values()].sort((a,b)=>a.available-b.available);
+}
+function lowInventoryRows(){
+  const localRaw=read('olipoly_raw_material_inventory_v3');
+  const localSupplies=read('olipoly_non_filament_supplies_v1');
+  const rawRows = hubCloud.inventoryLoaded && hubCloud.raw.length ? hubCloud.raw : localRaw;
+  const supplyRows = hubCloud.inventoryLoaded && hubCloud.supplies.length ? hubCloud.supplies : localSupplies;
+  const lowRaw = rawGroupsHub(rawRows).filter(g => Number(g.threshold)>0 && Number(g.available) <= Number(g.threshold));
+  const lowSupplies = supplyRows.map(normalizeSupplyHub).filter(s => Number(s.reorder_threshold)>0 && Number(s.quantity_on_hand) <= Number(s.reorder_threshold));
+  return {lowRaw,lowSupplies,source:(hubCloud.inventoryLoaded?'cloud':'browser fallback')};
+}
+
+
 async function loadCloudData(){
   try{
-    const [orders,quotes,finance]=await Promise.allSettled([
+    const [orders,quotes,finance,raw,supplies]=await Promise.allSettled([
       sbRest('/rest/v1/orders?select=*&order=updated_at.desc&limit=200'),
       sbRest('/rest/v1/quotes?select=*&order=updated_at.desc&limit=200'),
-      sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=200')
+      sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=200'),
+      sbRest('/rest/v1/raw_material_inventory?select=*&order=updated_at.desc&limit=500'),
+      sbRest('/rest/v1/non_filament_materials?select=*&order=updated_at.desc&limit=500')
     ]);
     hubCloud.orders=orders.status==='fulfilled'?orders.value:[];
     hubCloud.quotes=quotes.status==='fulfilled'?quotes.value:[];
     hubCloud.finance=finance.status==='fulfilled'?finance.value:[];
+    hubCloud.raw=raw.status==='fulfilled'?raw.value:[];
+    hubCloud.supplies=supplies.status==='fulfilled'?supplies.value:[];
     hubCloud.loaded=true;
+    hubCloud.inventoryLoaded=(raw.status==='fulfilled' || supplies.status==='fulfilled');
     hubCloud.error=null;
   }catch(err){
     console.warn('Hub cloud load skipped:',err);
@@ -443,8 +550,9 @@ function renderCommandCenter(){
   const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));
   const printing=open.filter(j=>j.production_status==='printing');
   const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));
-  const lowRaw=d.raw.filter(r=>Number(r.remaining_grams||0)<=Number(r.reorder_threshold_grams||0));
-  const lowSup=d.supplies.filter(s=>Number(s.quantity_on_hand||0)<=Number(s.reorder_threshold||s.reorder_point||0));
+  const inventoryLow=lowInventoryRows();
+  const lowRaw=inventoryLow.lowRaw;
+  const lowSup=inventoryLow.lowSupplies;
   const readyFinance=d.orders.filter(o=>['paid','deposit_paid','completed','ready'].includes(o.payment_status||o.status) && Number(o.order_total||o.total||0)>0 && !o.finance_pushed);
 
   const continueRows=[
@@ -456,7 +564,11 @@ function renderCommandCenter(){
   $('continueWorkingList').innerHTML=continueRows.join('')||empty('No active work found yet. Start with the wizard above.');
   $('printNextList').innerHTML=ready.slice(0,3).map(j=>mini('production-control.html',j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');
   $('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini('production-control.html',j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');
-  $('lowInventoryList').innerHTML=[...lowRaw.slice(0,3).map(r=>mini('inventory-control.html',`${r.material_type||'Material'} / ${r.color||'No color'}`,`${Math.round(Number(r.remaining_grams||0))}g remaining`)),...lowSup.slice(0,2).map(s=>mini('inventory-control.html',s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))].join('')||empty('No low inventory flagged.');
+  $('lowInventoryList').innerHTML=(
+    [...lowRaw.slice(0,3).map(g=>mini('inventory-control.html',`${g.material_type||'Material'} / ${g.color||'No color'}`,`${Math.round(Number(g.available||0))}g available · threshold ${Math.round(Number(g.threshold||0))}g`)),
+     ...lowSup.slice(0,2).map(s=>mini('inventory-control.html',s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))]
+    .join('') || empty('No low inventory flagged.')
+  ) + `<span class="inventory-source-note">Inventory source: ${inventoryLow.source}</span>`;
   $('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini('orders-admin.html',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready to push`)).join('')||empty('No orders ready for finance push.');
 }
 
