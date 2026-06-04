@@ -2587,12 +2587,17 @@ resetForm();
       );
       if(found){
         loadIntoForm(found);
+
+        // Deep links should select the order without filtering the left-hand list.
+        // Leave the user's normal Active / Needs Action / Closed view intact.
         const search = $('searchInput');
-        if(search) search.value = found.order_number || target;
+        if(search) search.value = '';
+
         renderList();
         setMsg($('authMessage'), `Opened ${found.order_number || target} from Hub.`);
         setTimeout(() => document.getElementById('detailTitle')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
       } else {
+        // Only use the search box when there is no exact match.
         const search = $('searchInput');
         if(search) search.value = target;
         renderList();
