@@ -717,6 +717,11 @@
     } catch (err) {
       console.warn("Cloud quote load failed; using browser fallback:", err);
       populateDropdown([], localRows, "local");
+      const summary = $("savedQuotesSummary");
+      if (summary) {
+        const tokenPresent = !!(window.OliPolyAuth?.getToken?.() || localStorage.getItem("sb_token"));
+        summary.innerHTML += `<div class="saved-cloud-status">Debug: token ${tokenPresent ? "found" : "missing"} · ${String(err.message || err)}</div>`;
+      }
       return { source: "local", cloudRows: [], localRows, error: err };
     }
   }
