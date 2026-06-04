@@ -2073,3 +2073,4 @@
 </script>
 </body>
 </html>
+<script>window.inventoryMovementHistory={read(){try{return JSON.parse(localStorage.getItem("olipoly_inventory_movements")||"[]")}catch(e){return[]}},add(entry){const r=this.read();r.unshift({...entry,timestamp:new Date().toISOString()});localStorage.setItem("olipoly_inventory_movements",JSON.stringify(r.slice(0,5000)));}};</script>
