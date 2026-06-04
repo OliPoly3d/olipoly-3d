@@ -1,5 +1,5 @@
-// OliPoly shared auth bridge
-// Loads before Hub/Quote/Orders/Production/Inventory/Finance so one login can power all tools.
+
+/* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
 (function(){
   'use strict';
 
@@ -160,6 +160,16 @@
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       };
     }
+  };
+
+  window.OliPolyHubAuthCheck = function OliPolyHubAuthCheck(){
+    return {
+      bridgeLoaded: typeof window.OliPolyAuth,
+      tokenPresent: !!localStorage.getItem('sb_token'),
+      sessionPresent: !!localStorage.getItem('olipoly_auth_session_v1'),
+      refreshPresent: !!localStorage.getItem('sb_refresh_token'),
+      userPresent: !!localStorage.getItem('sb_user')
+    };
   };
 
   ensure();
