@@ -776,6 +776,18 @@
 .quote-link-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.18);color:#9a3d80;font-size:.66rem;font-weight:900}
 .mini-btn.quote-action{background:linear-gradient(135deg,rgba(232,79,183,.13),rgba(157,109,243,.13));border-color:rgba(157,109,243,.22);color:#6b3b7a}
 
+
+    /* === Analytics + movement logging add-on === */
+    .analytics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+    .analytics-card{padding:13px;border-radius:20px;background:rgba(255,255,255,.76);border:1px solid rgba(101,60,120,.11);box-shadow:0 10px 24px rgba(84,38,94,.06)}
+    .analytics-card span{display:block;color:var(--muted);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .analytics-card strong{display:block;margin-top:5px;color:var(--ink);font-size:1.32rem;line-height:1.05}
+    .analytics-list{display:grid;gap:8px;margin-top:12px}
+    .analytics-row{display:grid;grid-template-columns:1.15fr repeat(3,minmax(80px,.55fr));gap:8px;align-items:center;padding:9px 10px;border-radius:15px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.09);font-size:.82rem}
+    .analytics-row.header{background:transparent;border:0;color:var(--muted);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;padding:0 10px 2px}
+    .analytics-row strong{color:var(--ink)}
+    @media(max-width:900px){.analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-row{grid-template-columns:1fr 1fr}.analytics-row div:nth-child(n+3){display:none}}
+
 </style>
 </head>
 <body>
@@ -1159,7 +1171,27 @@
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
+
+    <section class="card" id="productionAnalyticsPanel">
+      <div class="finance-board-head">
+        <div>
+          <span class="kicker">Production analytics</span>
+          <h2>What the shop is using most.</h2>
+          <p class="muted">Quick read on closed work, material usage, printer hours, revenue estimates, and jobs worth reviewing.</p>
+        </div>
+        <div class="finance-health" id="productionAnalyticsHealth">Based on saved jobs</div>
+      </div>
+      <div class="analytics-grid">
+        <div class="analytics-card"><span>Closed Jobs</span><strong id="analyticsClosedJobs">0</strong></div>
+        <div class="analytics-card"><span>Material Used</span><strong id="analyticsMaterialUsed">0g</strong></div>
+        <div class="analytics-card"><span>Machine Hours</span><strong id="analyticsMachineHours">0h</strong></div>
+        <div class="analytics-card"><span>Estimated Revenue</span><strong id="analyticsRevenue">$0.00</strong></div>
+      </div>
+      <div class="analytics-list" id="analyticsRows"></div>
+    </section>
+
+
+  <div id="toast" class="toast"></div>
 
 <script>
 (() => {
@@ -1300,6 +1332,31 @@
 
   function localRead(key, fallback=[]){ try{return JSON.parse(localStorage.getItem(key)||'null') ?? fallback;}catch{return fallback;} }
   function localWrite(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+
+  const LS_LEDGER = 'olipoly_inventory_ledger_v2';
+
+  function inventoryLedgerRead(){
+    try{return JSON.parse(localStorage.getItem(LS_LEDGER)||'[]')}catch{return []}
+  }
+
+  function inventoryLedgerAdd(entry){
+    const row = {
+      id: uid(),
+      date: new Date().toISOString(),
+      type: entry.type || 'raw_usage',
+      item: entry.item || 'Inventory movement',
+      amount: entry.amount ?? '',
+      note: entry.note || ''
+    };
+    const rows = inventoryLedgerRead();
+    rows.unshift(row);
+    localStorage.setItem(LS_LEDGER, JSON.stringify(rows.slice(0,5000)));
+  }
+
+  function jobRef(j){
+    return j?.order_number || j?.quote_number || j?.job_title || 'Production job';
+  }
+
 
   function mergeUniqueJobs(lists){
     const map = new Map();
@@ -2038,6 +2095,7 @@
   function applyRollCloseoutLocal(allocations){
     if(!Array.isArray(allocations) || !allocations.length) return;
     const rows = rawInventoryRows();
+    const activeJob = state.jobs.find(x=>x.id===state.closingId) || {};
     allocations.forEach(a=>{
       if(!a.raw_material_roll_id) return;
       const idx = rows.findIndex(r=>r.id===a.raw_material_roll_id);
@@ -2055,6 +2113,13 @@
         rows[idx].reusable_spool = true;
       }
       rows[idx].updated_at = new Date().toISOString();
+      const after = num(rows[idx].remaining_grams || 0);
+      inventoryLedgerAdd({
+        type:'raw_usage',
+        item:`${rows[idx].material_type || 'Material'} / ${rows[idx].color || 'No color'}${rows[idx].brand ? ' / '+rows[idx].brand : ''}`,
+        amount:`-${Math.round(Math.max(0,before-after))}g`,
+        note:`Production closeout · ${jobRef(activeJob)} · before ${Math.round(before)}g → after ${Math.round(after)}g${a.scrap_grams ? ' · scrap '+Math.round(num(a.scrap_grams))+'g' : ''}`
+      });
     });
     localStorage.setItem('olipoly_raw_material_inventory_v3', JSON.stringify(rows));
   }
@@ -2157,27 +2222,61 @@
         String(r.color||'').toLowerCase() === String(b.color||'').toLowerCase()
       );
       if(idx >= 0){
-        raw[idx].remaining_grams = Math.max(0, num(raw[idx].remaining_grams) - num(b.grams));
+        const before = num(raw[idx].remaining_grams);
+        raw[idx].remaining_grams = Math.max(0, before - num(b.grams));
         raw[idx].updated_at = new Date().toISOString();
+        const after = num(raw[idx].remaining_grams);
+        inventoryLedgerAdd({
+          type:'raw_usage',
+          item:`${raw[idx].material_type || b.material || 'Material'} / ${raw[idx].color || b.color || 'No color'}${raw[idx].brand ? ' / '+raw[idx].brand : ''}`,
+          amount:`-${Math.round(Math.max(0,before-after))}g`,
+          note:`Production closeout · ${jobRef(j)} · before ${Math.round(before)}g → after ${Math.round(after)}g`
+        });
       }
     });
     localWrite(LS_RAW, raw);
+
+    const supplyRows = safeJsonParse(j.supply_usage || '[]', []);
+    if(Array.isArray(supplyRows) && supplyRows.length){
+      const supplies = localRead(LS_SUPPLIES, []);
+      supplyRows.forEach(u=>{
+        const pick = String(u.supply_pick || '');
+        const id = pick.includes('|') ? pick.split('|')[0] : pick;
+        const idx = supplies.findIndex(s=>s.id===id || String(s.item_name||'').toLowerCase()===String(u.item_name||'').toLowerCase());
+        if(idx >= 0){
+          const before = num(supplies[idx].quantity_on_hand);
+          const change = num(u.quantity);
+          supplies[idx].quantity_on_hand = Math.max(0, before - change);
+          supplies[idx].updated_at = new Date().toISOString();
+          inventoryLedgerAdd({
+            type:'supply_usage',
+            item:`${supplies[idx].item_name || u.item_name || 'Non-filament item'}`,
+            amount:`-${change} ${supplies[idx].unit_type || u.unit_type || ''}`.trim(),
+            note:`Production closeout · ${jobRef(j)} · before ${before} → after ${num(supplies[idx].quantity_on_hand)}`
+          });
+        }
+      });
+      localWrite(LS_SUPPLIES, supplies);
+    }
 
     if(addFinished){
       const finished = localRead(LS_FINISHED, []);
       const sku = j.finished_sku || j.job_title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
       const idx = finished.findIndex(f=>f.sku===sku);
+      const qty = num(j.actual_quantity || j.quantity || 1);
       if(idx >= 0){
-        finished[idx].quantity_on_hand = num(finished[idx].quantity_on_hand) + num(j.actual_quantity || j.quantity || 1);
+        const before = num(finished[idx].quantity_on_hand);
+        finished[idx].quantity_on_hand = before + qty;
         finished[idx].updated_at = new Date().toISOString();
+        inventoryLedgerAdd({type:'fg_adjust', item:finished[idx].product_name || j.job_title, amount:`+${qty}`, note:`Production closeout · ${jobRef(j)} · before ${before} → after ${finished[idx].quantity_on_hand}`});
       } else {
         finished.unshift({
           id:uid(),
           sku,
           product_name:j.job_title,
           category:TYPE[j.job_type]?.label || j.job_type,
-          quantity_on_hand:num(j.actual_quantity || j.quantity || 1),
-          target_quantity:num(j.actual_quantity || j.quantity || 1),
+          quantity_on_hand:qty,
+          target_quantity:qty,
           sale_price:num(j.estimated_price_each),
           material_recipe:j.actual_filament_breakdown || j.filament_breakdown || '',
           print_hours_each:num(j.estimated_hours_each),
@@ -2185,6 +2284,7 @@
           updated_at:new Date().toISOString(),
           created_at:new Date().toISOString()
         });
+        inventoryLedgerAdd({type:'fg_adjust', item:j.job_title, amount:`+${qty}`, note:`Production closeout · ${jobRef(j)} · new finished good`});
       }
       localWrite(LS_FINISHED, finished);
     }
@@ -3792,6 +3892,47 @@
 
   window.OP_DEBUG_FILAMENT_COST = { rawInventoryList, rawCostPerGramForRecipeRow, estimatedMaterialCostForJob };
 
+
+  function formatHours(v){ return `${(num(v)).toFixed(1).replace(/\.0$/,'')}h`; }
+
+  function renderProductionAnalytics(){
+    const panel = $('productionAnalyticsPanel');
+    if(!panel) return;
+    const closed = state.jobs.filter(j=>CLOSED.includes(j.production_status) || j.closed_at);
+    const material = closed.reduce((s,j)=>s+num(j.actual_grams_used || j.estimated_total_grams)+num(j.scrap_grams),0);
+    const hours = closed.reduce((s,j)=>s+num(j.actual_print_hours || j.estimated_total_hours),0);
+    const revenue = closed.reduce((s,j)=>s+projectRevenue(j),0);
+    if($('analyticsClosedJobs')) $('analyticsClosedJobs').textContent = closed.length;
+    if($('analyticsMaterialUsed')) $('analyticsMaterialUsed').textContent = material>=1000 ? `${(material/1000).toFixed(2)}kg` : `${Math.round(material)}g`;
+    if($('analyticsMachineHours')) $('analyticsMachineHours').textContent = formatHours(hours);
+    if($('analyticsRevenue')) $('analyticsRevenue').textContent = money(revenue);
+    if($('productionAnalyticsHealth')) $('productionAnalyticsHealth').textContent = `${closed.length} closed · ${state.jobs.length} total jobs`;
+
+    const byMaterial = {};
+    closed.forEach(j=>{
+      const key = `${j.primary_material || 'Material'} / ${j.primary_color || 'No color'}`;
+      byMaterial[key] ??= {grams:0,hours:0,revenue:0,jobs:0};
+      byMaterial[key].grams += num(j.actual_grams_used || j.estimated_total_grams)+num(j.scrap_grams);
+      byMaterial[key].hours += num(j.actual_print_hours || j.estimated_total_hours);
+      byMaterial[key].revenue += projectRevenue(j);
+      byMaterial[key].jobs += 1;
+    });
+    const topMaterials = Object.entries(byMaterial).sort((a,b)=>b[1].grams-a[1].grams).slice(0,8);
+    const machine = {};
+    closed.forEach(j=>{
+      const key = j.actual_machine || j.machine_preference || 'Unassigned';
+      machine[key] ??= {hours:0,jobs:0};
+      machine[key].hours += num(j.actual_print_hours || j.estimated_total_hours);
+      machine[key].jobs += 1;
+    });
+    const topMachine = Object.entries(machine).sort((a,b)=>b[1].hours-a[1].hours).slice(0,3).map(([k,v])=>`${k}: ${formatHours(v.hours)}`).join(' · ') || 'No closed jobs yet';
+    const rows = $('analyticsRows');
+    if(rows){
+      rows.innerHTML = `<div class="analytics-row header"><div>Top Material</div><div>Used</div><div>Jobs</div><div>Revenue</div></div>` +
+        (topMaterials.length ? topMaterials.map(([k,v])=>`<div class="analytics-row"><div><strong>${esc(k)}</strong><small class="muted">${esc(topMachine)}</small></div><div>${v.grams>=1000?(v.grams/1000).toFixed(2)+'kg':Math.round(v.grams)+'g'}</div><div>${v.jobs}</div><div>${money(v.revenue)}</div></div>`).join('') : '<div class="empty">No closed production jobs yet.</div>');
+    }
+  }
+
   function render(){
     document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
     renderFilters();
@@ -3799,6 +3940,7 @@
     renderUtilization();
     renderMetrics();
     renderFinanceBoard();
+    renderProductionAnalytics();
     renderPm();
     renderMachineBoard();
     renderSuggestions();

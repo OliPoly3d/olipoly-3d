@@ -439,7 +439,17 @@
       table{min-width:760px}
     }
 
-  </style>
+  
+    /* === Inventory history + forecasting add-on === */
+    .forecast-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+    .forecast-card{padding:13px;border-radius:20px;background:rgba(255,255,255,.76);border:1px solid rgba(101,60,120,.11);box-shadow:0 10px 24px rgba(84,38,94,.06)}
+    .forecast-card span{display:block;color:var(--muted);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .forecast-card strong{display:block;margin-top:5px;color:var(--ink);font-size:1.25rem;line-height:1.05}
+    .forecast-table{margin-top:12px}
+    .ledger-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+    @media(max-width:900px){.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -699,13 +709,33 @@
       <div class="cards-grid" id="finishedCards"></div>
     </section>
 
+
+    <section class="card" id="forecastPanel">
+      <span class="kicker">Reorder forecasting</span>
+      <h2 style="margin:0;font-family:'Playfair Display',serif;color:var(--ink);font-size:clamp(1.8rem,3.6vw,3rem);line-height:.95">What may need reordered next.</h2>
+      <p class="muted">Uses recent movement history and current inventory to estimate monthly use, days remaining, and reorder priority.</p>
+      <div class="forecast-grid">
+        <div class="forecast-card"><span>Items Watched</span><strong id="forecastWatched">0</strong></div>
+        <div class="forecast-card"><span>Low / Out</span><strong id="forecastLow">0</strong></div>
+        <div class="forecast-card"><span>Active Usage</span><strong id="forecastActive">0</strong></div>
+        <div class="forecast-card"><span>Highest Risk</span><strong id="forecastRisk">None</strong></div>
+      </div>
+      <div class="table-wrap forecast-table">
+        <table>
+          <thead><tr><th>Material / Item</th><th>On Hand</th><th>Recent Usage</th><th>Est. Days Left</th><th>Recommendation</th></tr></thead>
+          <tbody id="forecastBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+
     <section class="card hidden" id="ledgerPanel">
       <span class="kicker">Usage / movement log</span>
       <div class="toolbar compact">
         <label>Search<input id="ledgerSearch" placeholder="material, product, source..."></label>
-        <label>Type<select id="ledgerType"><option value="all">All</option><option value="raw_adjust">Raw Adjust</option><option value="raw_usage">Raw Usage</option><option value="fg_adjust">Finished Adjust</option><option value="import">Import</option></select></label>
+        <label>Type<select id="ledgerType"><option value="all">All</option><option value="raw_adjust">Raw Adjust</option><option value="raw_usage">Raw Usage</option><option value="supply_usage">Supply Usage</option><option value="fg_adjust">Finished Adjust</option><option value="import">Import</option></select></label>
         <label>Sort<select id="ledgerSort"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
-        <button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
+        <button class="ghost" id="exportLedgerBtn" type="button">Export CSV</button><button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -1074,8 +1104,8 @@
       id:x.id||uid(),
       date:x.date||x.created_at||new Date().toISOString(),
       type:x.type||'adjust',
-      item:x.item||x.label||'Inventory movement',
-      amount:x.amount??x.change??'',
+      item:x.item||x.label||x.item_label||'Inventory movement',
+      amount:x.amount??x.change??x.quantity_change??'',
       note:x.note||x.notes||x.source||''
     };
   }
@@ -1832,6 +1862,81 @@
     }).join(''):'<div class="empty">No finished goods match these filters.</div>';
   }
 
+
+  function parseLedgerAmount(v){
+    const m = String(v||'').match(/-?\d+(\.\d+)?/);
+    return m ? Number(m[0]) : 0;
+  }
+
+  function ledgerUsageForItem(label){
+    const q = norm(label);
+    const cutoff = Date.now() - 90*86400000;
+    return ledger().filter(x=>{
+      const d = new Date(x.date).getTime();
+      return d >= cutoff && ['raw_usage','supply_usage'].includes(x.type) && norm(x.item).includes(q.split('/')[0]?.trim() || q);
+    }).reduce((s,x)=>s+Math.abs(parseLedgerAmount(x.amount)),0);
+  }
+
+  function renderForecast(){
+    const body = $('forecastBody');
+    if(!body) return;
+    const rows = [];
+    rawGroups().forEach(g=>{
+      const label = `${g.material_type || 'Material'} / ${g.color || 'No color'}${g.brand ? ' / '+g.brand : ''}`;
+      const onHand = groupRemaining(g);
+      const usage90 = ledgerUsageForItem(label);
+      const daily = usage90 / 90;
+      const daysLeft = daily > 0 ? Math.floor(onHand / daily) : null;
+      const threshold = num(g.items?.[0]?.reorder_threshold_grams);
+      const low = onHand <= threshold || onHand <= 0;
+      rows.push({label,onHand,unit:'g',usage90,daysLeft,low,sort:(low?0:1)+(daysLeft===null?999:daysLeft/1000)});
+    });
+    supplies().forEach(s=>{
+      const label = s.item_name || 'Supply item';
+      const onHand = num(s.quantity_on_hand);
+      const usage90 = ledgerUsageForItem(label);
+      const daily = usage90 / 90;
+      const daysLeft = daily > 0 ? Math.floor(onHand / daily) : null;
+      const low = onHand <= num(s.reorder_threshold || s.reorder_point);
+      rows.push({label,onHand,unit:s.unit_type||'',usage90,daysLeft,low,sort:(low?0:1)+(daysLeft===null?999:daysLeft/1000)});
+    });
+    rows.sort((a,b)=>a.sort-b.sort);
+    const active = rows.filter(r=>r.usage90>0).length;
+    const low = rows.filter(r=>r.low || (r.daysLeft!==null && r.daysLeft<=30)).length;
+    if($('forecastWatched')) $('forecastWatched').textContent = rows.length;
+    if($('forecastLow')) $('forecastLow').textContent = low;
+    if($('forecastActive')) $('forecastActive').textContent = active;
+    if($('forecastRisk')) $('forecastRisk').textContent = rows.find(r=>r.low || (r.daysLeft!==null && r.daysLeft<=30))?.label || 'None';
+    body.innerHTML = rows.slice(0,18).map(r=>{
+      const onHandText = r.unit==='g' ? grams(r.onHand) : `${r.onHand} ${esc(r.unit)}`.trim();
+      const usageText = r.usage90 ? (r.unit==='g' ? grams(r.usage90) : `${Math.round(r.usage90)} ${esc(r.unit)}`.trim()) + ' / 90d' : 'No recent use';
+      const days = r.daysLeft===null ? 'No usage trend' : `${r.daysLeft} days`;
+      let rec = 'Monitor';
+      if(r.low) rec = 'Reorder now';
+      else if(r.daysLeft!==null && r.daysLeft <= 30) rec = 'Plan reorder';
+      else if(r.daysLeft!==null && r.daysLeft <= 60) rec = 'Watch closely';
+      return `<tr><td><strong>${esc(r.label)}</strong></td><td>${onHandText}</td><td>${usageText}</td><td>${days}</td><td>${rec}</td></tr>`;
+    }).join('') || '<tr><td colspan="5">No inventory records found.</td></tr>';
+  }
+
+  function exportLedgerCsv(){
+    const rows = ledger();
+    const csv = ['Date,Type,Item,Change,Source / Note'].concat(rows.map(x=>[
+      new Date(x.date).toLocaleString(),
+      x.type,
+      x.item,
+      x.amount,
+      x.note
+    ].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','))).join('\\n');
+    const blob = new Blob([csv],{type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `olipoly-inventory-movement-history-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+
   function renderLedger(){
     let rows=ledger(); const q=norm(state.ledgerSearch);
     rows=rows.filter(x=>(state.ledgerType==='all'||x.type===state.ledgerType)&&(!q||[x.type,x.item,x.amount,x.note].some(v=>norm(v).includes(q))));
@@ -1843,7 +1948,7 @@
   window.OP_INVENTORY_DEBUG = { raw, finished, supplies, syncDebugCounts, syncLocalInventoryToCloud, cloudRawCount };
 
   function render(){
-    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderLedger();
+    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderForecast();renderLedger();
   }
 
   function rawFromForm(){
@@ -2059,7 +2164,10 @@
       const ds=e.target.closest('[data-delete-supply]')?.dataset.deleteSupply; if(ds&&confirm('Delete this supply?')){const s=supplies().find(x=>x.id===ds);saveSupplies(supplies().filter(x=>x.id!==ds));addLedger({type:'supply_adjust',item:s?.item_name||'Supply',amount:'Deleted',note:ds});render();toast('Supply deleted.')}
       const as=e.target.closest('[data-adjust-supply]')?.dataset.adjustSupply; if(as)openAdjust('supply',as);
       const ef=e.target.closest('[data-edit-fg]')?.dataset.editFg; if(ef){const f=finished().find(x=>x.id===ef); if(f)fillFg(f)}
-      const df=e.target.closest('[data-delete-fg]')?.dataset.deleteFg; if(df&&confirm('Delete this finished good?')){saveFinished(finished().filter(x=>x.id!==df));addLedger({type:'fg_adjust',item:'Finished good',amount:'Deleted',note:df});render();toast('Finished good deleted.')}
+      const df=e.target.closest('[data-delete-fg]')?.dataset.deleteFg; if(df&&confirm('Delete this finished good?')){saveFinished(finished().filter(x=>x.id!==df));addLedger({type:'fg_adjust',item:'Finished good',amount:'Deleted',note:df});
+  if($('exportLedgerBtn')) $('exportLedgerBtn').onclick = exportLedgerCsv;
+
+  render();toast('Finished good deleted.')}
       const af=e.target.closest('[data-adjust-fg]')?.dataset.adjustFg; if(af)openAdjust('fg',af);
       const qaf=e.target.closest('[data-quick-fg-add]')?.dataset.quickFgAdd; if(qaf)quickFg(qaf,'add');
       const qsf=e.target.closest('[data-quick-fg-sell]')?.dataset.quickFgSell; if(qsf)quickFg(qsf,'sell');
