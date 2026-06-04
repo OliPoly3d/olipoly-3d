@@ -3001,7 +3001,148 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
+<script>
+/* === Customer intelligence button binding fix === */
+(function(){
+  function $id(id){ return document.getElementById(id); }
+
+  function getSelectedOrderFallback(){
+    try {
+      const active = window.activeId || null;
+      const list = Array.isArray(window.orders) ? window.orders : [];
+      if(active) {
+        const found = list.find(o => o.id === active);
+        if(found) return found;
+      }
+    } catch {}
+    return {
+      id: null,
+      order_number: $id('orderNumber')?.value?.trim() || '',
+      order_date: $id('orderDate')?.value || '',
+      customer_name: $id('customerName')?.value?.trim() || '',
+      customer_email: $id('customerEmail')?.value?.trim() || '',
+      order_title: $id('orderTitle')?.value?.trim() || '',
+      quantity: Number($id('quantity')?.value || 1) || 1,
+      order_total: Number($id('orderTotal')?.value || 0) || 0,
+      deposit_amount: Number($id('depositAmount')?.value || 0) || 0,
+      payment_status: $id('paymentStatus')?.value || 'unpaid',
+      status: $id('status')?.value || 'quote_sent',
+      fulfillment: $id('fulfillment')?.value || 'pickup',
+      invoice_terms: $id('invoiceTerms')?.value || '',
+      po_number: $id('poNumber')?.value || '',
+      internal_notes: $id('internalNotes')?.value || ''
+    };
+  }
+
+  function makeReorderDraft(order){
+    return {
+      source: 'orders-admin',
+      source_order_id: order.id || null,
+      source_order_number: order.order_number || null,
+      created_at: new Date().toISOString(),
+      customer_name: order.customer_name || '',
+      customer_email: order.customer_email || '',
+      order_title: `${order.order_title || 'Reorder'} - Reorder`,
+      quantity: order.quantity || 1,
+      order_total: order.order_total || 0,
+      deposit_amount: order.deposit_amount || 0,
+      payment_terms: order.invoice_terms || '',
+      po_number: order.po_number || '',
+      tax_exempt: !!order.tax_exempt,
+      production_notes: order.production_notes || order.internal_notes || '',
+      internal_notes: `Reorder draft created from ${order.order_number || 'previous order'}`
+    };
+  }
+
+  function showCustomerButtonMessage(msg, isError=false){
+    const el = $id('formMessage') || $id('authMessage');
+    if(el){
+      el.textContent = msg;
+      el.style.display = 'block';
+      if(isError) el.classList.add('error');
+      else el.classList.remove('error');
+    } else {
+      alert(msg);
+    }
+  }
+
+  function cloneOrderFallback(){
+    const order = getSelectedOrderFallback();
+    if(!order.customer_name && !order.order_title){
+      showCustomerButtonMessage('Select or fill out an order before cloning.', true);
+      return;
+    }
+
+    if($id('orderNumber')) $id('orderNumber').value = '';
+    if($id('orderDate')) $id('orderDate').value = new Date().toISOString().slice(0,10);
+    if($id('orderTitle')) $id('orderTitle').value = `${order.order_title || 'Order'} - Copy`;
+    if($id('status')) $id('status').value = 'quote_sent';
+    if($id('paymentStatus')) $id('paymentStatus').value = 'unpaid';
+
+    ['trackingNumber','invoiceNumber','invoiceDate','invoiceDueDate','stripeInvoiceId'].forEach(id => {
+      if($id(id)) $id(id).value = '';
+    });
+
+    if(window.activeId !== undefined) window.activeId = null;
+    if($id('detailTitle')) $id('detailTitle').textContent = 'Order Details — New Clone';
+
+    showCustomerButtonMessage('Cloned into a new unsaved order. Review it, assign/save the new order number, then save.');
+  }
+
+  function createReorderQuoteFallback(){
+    const order = getSelectedOrderFallback();
+    if(!order.customer_name && !order.order_title){
+      showCustomerButtonMessage('Select or fill out an order before creating a reorder quote.', true);
+      return;
+    }
+    const draft = makeReorderDraft(order);
+    localStorage.setItem('olipoly_reorder_quote_draft_v1', JSON.stringify(draft));
+    showCustomerButtonMessage(`Reorder quote draft created${order.order_number ? ' from ' + order.order_number : ''}. Opening Quote Tool...`);
+    window.location.href = `quote.html?reorder=${encodeURIComponent(order.order_number || order.order_title || 'reorder')}`;
+  }
+
+  function bindCustomerIntelButtons(){
+    const cloneBtn = $id('cloneOrderBtn');
+    const reorderBtn = $id('createReorderQuoteBtn');
+    const historyBtn = $id('viewCustomerHistoryBtn');
+
+    if(cloneBtn && !cloneBtn.dataset.boundCustomerFix){
+      cloneBtn.dataset.boundCustomerFix = '1';
+      cloneBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof window.cloneCurrentOrder === 'function') window.cloneCurrentOrder();
+        else cloneOrderFallback();
+      });
+    }
+
+    if(reorderBtn && !reorderBtn.dataset.boundCustomerFix){
+      reorderBtn.dataset.boundCustomerFix = '1';
+      reorderBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof window.createReorderQuote === 'function') window.createReorderQuote();
+        else createReorderQuoteFallback();
+      });
+    }
+
+    if(historyBtn && !historyBtn.dataset.boundCustomerFix){
+      historyBtn.dataset.boundCustomerFix = '1';
+      historyBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        $id('customerIntelCard')?.scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', bindCustomerIntelButtons);
+  setTimeout(bindCustomerIntelButtons, 300);
+  setTimeout(bindCustomerIntelButtons, 1200);
+})();
+</script>
+
+</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();
