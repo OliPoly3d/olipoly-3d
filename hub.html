@@ -312,6 +312,126 @@
     @media(max-width:1040px){.customer-intel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:640px){.customer-intel-grid{grid-template-columns:1fr}.customer-timeline-row{grid-template-columns:auto minmax(0,1fr)}.customer-timeline-row .tag{grid-column:2;justify-self:start}}
 
+
+    /* === Hub Inventory Impact Phase B === */
+    .inventory-impact-grid{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    .inventory-impact-panel{
+      padding:14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.78);
+      border:1px solid var(--line);
+      min-height:180px;
+    }
+    .inventory-impact-panel h3{
+      margin:7px 0 8px;
+      color:var(--ink);
+      font-family:"Playfair Display",serif;
+      font-size:1.28rem;
+    }
+    .impact-list{
+      display:grid;
+      gap:8px;
+      margin-top:8px;
+    }
+    .impact-card{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:11px;
+      border-radius:17px;
+      background:rgba(255,255,255,.78);
+      border:1px solid rgba(101,60,120,.10);
+      color:inherit;
+      text-decoration:none;
+      box-shadow:0 8px 18px rgba(95,36,112,.045);
+    }
+    .impact-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 12px 24px rgba(95,36,112,.08);
+    }
+    .impact-icon{
+      width:38px;
+      height:38px;
+      border-radius:15px;
+      display:grid;
+      place-items:center;
+      color:white;
+      font-weight:950;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+    }
+    .impact-icon.warn{background:linear-gradient(135deg,#ffcb6b,#e84fb7)}
+    .impact-icon.good{background:linear-gradient(135deg,#48c774,#65d6c4)}
+    .impact-card strong{
+      display:block;
+      color:var(--ink);
+      font-size:.94rem;
+      line-height:1.16;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .impact-card small{
+      display:block;
+      color:var(--muted);
+      margin-top:3px;
+      line-height:1.32;
+      font-size:.76rem;
+    }
+    .impact-short{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 8px;
+      border-radius:999px;
+      background:rgba(255,203,107,.13);
+      border:1px solid rgba(255,203,107,.25);
+      color:#8a620f;
+      font-size:.66rem;
+      font-weight:950;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    .impact-short.good{
+      background:rgba(72,199,116,.10);
+      border-color:rgba(72,199,116,.18);
+      color:#2b7b48;
+    }
+    .impact-summary-row{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .impact-metric{
+      padding:11px;
+      border-radius:17px;
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .impact-metric span{
+      display:block;
+      color:var(--muted);
+      font-size:.64rem;
+      font-weight:950;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+    }
+    .impact-metric strong{
+      display:block;
+      margin-top:4px;
+      color:var(--ink);
+      font-size:1.1rem;
+    }
+    @media(max-width:980px){.inventory-impact-grid{grid-template-columns:1fr}.impact-summary-row{grid-template-columns:1fr 1fr}}
+    @media(max-width:640px){.impact-card{grid-template-columns:auto minmax(0,1fr)}.impact-short{grid-column:2;justify-self:start}.impact-summary-row{grid-template-columns:1fr}}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -606,6 +726,36 @@
     </div>
   </section>
 
+
+  <section class="section" id="inventoryImpactSection">
+    <div class="section-head">
+      <div>
+        <span class="kicker">Inventory Impact</span>
+        <h2>Can active jobs actually be printed?</h2>
+        <p>Compares active production jobs against available grouped inventory.</p>
+      </div>
+      <a class="ghost" href="inventory-control.html">Open Inventory</a>
+    </div>
+    <div class="inventory-impact-grid">
+      <div class="inventory-impact-panel">
+        <span class="source-pill" id="sourceInventoryImpact">Inventory</span>
+        <h3>Jobs at Risk</h3>
+        <div class="impact-list" id="inventoryRiskList"></div>
+      </div>
+      <div class="inventory-impact-panel">
+        <span class="source-pill" id="sourceInventorySafe">Production</span>
+        <h3>Safe / Watch List</h3>
+        <div class="impact-summary-row">
+          <div class="impact-metric"><span>At Risk</span><strong id="impactAtRiskCount">0</strong></div>
+          <div class="impact-metric"><span>Watch</span><strong id="impactWatchCount">0</strong></div>
+          <div class="impact-metric"><span>Safe</span><strong id="impactSafeCount">0</strong></div>
+        </div>
+        <div class="impact-list" id="inventorySafeList"></div>
+      </div>
+    </div>
+  </section>
+
+
   <section class="section">
     <div class="section-head"><div><span class="kicker">Today</span><h2>What needs attention?</h2></div></div>
     <div class="attention-grid">
@@ -777,6 +927,106 @@ function renderHealth(){const inv=lowInventoryRows();const d=combinedData();cons
 function healthPill(label,source){const cls=source==='Cloud'?'cloud':(source==='Browser fallback'?'fallback':'off');return `<div class="health-pill"><span class="dot ${cls}"></span><b>${label}</b><span>${source}</span></div>`}
 function renderCloudHealth(){const prod=hubCloud.productionLoaded?'Cloud':'Browser fallback';const orders=hubCloud.loaded?'Cloud':'Browser fallback';const quotes=hubCloud.loaded?'Cloud':'Browser fallback';const finance=hubCloud.loaded?'Cloud':'Browser fallback';const inventory=hubCloud.inventoryLoaded?'Cloud':'Browser fallback';$('cloudHealthStrip').innerHTML=[healthPill('Production',prod),healthPill('Orders',orders),healthPill('Inventory',inventory),healthPill('Quotes',quotes),healthPill('Finance',finance)].join('');setSource('sourceProduction1','Production',prod);setSource('sourceProduction2','Production',prod);setSource('sourceInventory','Inventory',inventory);setSource('sourceOrders','Orders',orders);}
 function renderCurrentWorkflow(){const d=readObj('olipoly_workflow_draft_v1');if(!d){$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">＋</span><span><strong>No active Hub draft</strong><small>Use the Start Order Wizard when a new request comes in.</small></span><a class="ghost" href="#workflowType">Start Draft</a></div>`;return;}$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">↪</span><span><strong>${esc(d.title||d.request_type||'Workflow draft')}</strong><small>${esc(d.request_type||'request')} · Qty ${esc(d.quantity||1)}${d.due_date?' · Due '+esc(d.due_date):''}</small></span><div class="actions"><a class="btn" href="${deepLink('job',d.title)}">Open Production</a><a class="ghost" href="quote.html">Quote</a><a class="ghost" href="orders-admin.html">Orders</a><button class="ghost" type="button" onclick="clearDraft()">Clear</button></div></div>`;}
+
+function materialKey(v){return String(v||'').trim().toLowerCase();}
+function jobMaterialNeeds(j){
+  const needs=[];
+  const qty=Math.max(1,Number(j.quantity||j.actual_quantity||1)||1);
+  function pushNeed(material,color,brand,grams,label){
+    const g=Number(grams)||0;
+    if(!g) return;
+    needs.push({
+      material_type:material||'PLA',
+      color:color||'',
+      brand:brand||'',
+      grams:g*qty,
+      label:label||[material,color,brand].filter(Boolean).join(' / ')
+    });
+  }
+  // Current Production Control versions have used a few different field names; support all reasonable variants.
+  ['1','2','3','4','5','6','7','8'].forEach(n=>{
+    pushNeed(
+      j[`material${n}_type`]||j[`filament${n}_type`]||j[`color${n}_material`]||j.material_type,
+      j[`material${n}_color`]||j[`filament${n}_color`]||j[`color${n}`],
+      j[`material${n}_brand`]||j[`filament${n}_brand`]||j.brand,
+      j[`material${n}_grams`]||j[`filament${n}_grams`]||j[`color${n}_grams`]||j[`grams${n}`],
+      null
+    );
+  });
+  if(!needs.length){
+    pushNeed(j.material_type||j.material||'PLA',j.color||j.primary_color||'',j.brand||'',j.grams_per_item||j.grams||j.estimated_grams||j.total_grams,'Primary material');
+  }
+  return needs.filter(n=>n.grams>0);
+}
+function inventoryAvailableMap(){
+  const inv=lowInventoryRows();
+  const rawRows=(hubCloud.inventoryLoaded&&hubCloud.raw.length?hubCloud.raw:read('olipoly_raw_material_inventory_v3'));
+  const groups=rawGroupsHub(rawRows);
+  const map=new Map();
+  groups.forEach(g=>{
+    const broad=[materialKey(g.material_type),materialKey(g.color)].join('|');
+    const full=[materialKey(g.material_type),materialKey(g.color),materialKey(g.brand)].join('|');
+    map.set(full,g);
+    if(!map.has(broad)) map.set(broad,{...g});
+    else {
+      const existing=map.get(broad);
+      existing.available+=Number(g.available)||0;
+      existing.grams+=Number(g.grams)||0;
+      existing.reserved+=Number(g.reserved)||0;
+      existing.rolls+=Number(g.rolls)||0;
+      existing.threshold=Math.max(Number(existing.threshold)||0,Number(g.threshold)||0);
+    }
+  });
+  return {map,source:hubCloud.inventoryLoaded?'Cloud':'Browser fallback'};
+}
+function evaluateInventoryImpact(){
+  const d=combinedData();
+  const inventory=inventoryAvailableMap();
+  const open=(d.jobs||[]).filter(j=>!['completed','failed_scrap','archived','closed'].includes(String(j.production_status||j.status||'').toLowerCase()));
+  const rows=[];
+  open.forEach(j=>{
+    const needs=jobMaterialNeeds(j);
+    if(!needs.length) return;
+    let worst=null;
+    needs.forEach(n=>{
+      const full=[materialKey(n.material_type),materialKey(n.color),materialKey(n.brand)].join('|');
+      const broad=[materialKey(n.material_type),materialKey(n.color)].join('|');
+      const g=inventory.map.get(full)||inventory.map.get(broad);
+      const available=Number(g?.available||0);
+      const short=Math.max(0,Number(n.grams||0)-available);
+      const ratio=available && n.grams ? available/n.grams : 0;
+      const result={job:j,need:n,available,short,ratio,group:g};
+      if(!worst || result.short>worst.short || (result.short===worst.short && result.ratio<worst.ratio)) worst=result;
+    });
+    if(worst) rows.push(worst);
+  });
+  const risk=rows.filter(r=>r.short>0).sort((a,b)=>b.short-a.short);
+  const watch=rows.filter(r=>r.short<=0 && r.ratio<1.5).sort((a,b)=>a.ratio-b.ratio);
+  const safe=rows.filter(r=>r.short<=0 && r.ratio>=1.5).sort((a,b)=>a.ratio-b.ratio);
+  return {risk,watch,safe,source:inventory.source};
+}
+function impactCard(row,kind){
+  const j=row.job,n=row.need;
+  const href=deepLink('job',j);
+  const title=j.job_title||j.title||'Production Job';
+  const mat=[n.material_type,n.color,n.brand].filter(Boolean).join(' / ')||n.label||'Material';
+  const sub=`Needs ${grams(n.grams)} · Available ${grams(row.available)} · ${mat}`;
+  const badge=row.short>0?`SHORT ${grams(row.short)}`:(kind==='watch'?'WATCH':'SAFE');
+  return `<a class="impact-card" href="${href}" data-recent-label="${esc(title)}"><span class="impact-icon ${row.short>0?'warn':(kind==='safe'?'good':'')}">${row.short>0?'!':(kind==='safe'?'✓':'?' )}</span><span><strong>${esc(title)}</strong><small>${esc(sub)}</small></span><b class="impact-short ${row.short>0?'':'good'}">${esc(badge)}</b></a>`;
+}
+function renderInventoryImpact(){
+  if(!$('inventoryImpactSection')) return;
+  const res=evaluateInventoryImpact();
+  setSource('sourceInventoryImpact','Inventory',res.source);
+  setSource('sourceInventorySafe','Production',hubCloud.productionLoaded?'Cloud':'Browser fallback');
+  $('impactAtRiskCount').textContent=res.risk.length;
+  $('impactWatchCount').textContent=res.watch.length;
+  $('impactSafeCount').textContent=res.safe.length;
+  $('inventoryRiskList').innerHTML=res.risk.slice(0,6).map(r=>impactCard(r,'risk')).join('')||empty('No active jobs are short on grouped inventory.');
+  const safeRows=[...res.watch.slice(0,3).map(r=>impactCard(r,'watch')),...res.safe.slice(0,3).map(r=>impactCard(r,'safe'))];
+  $('inventorySafeList').innerHTML=safeRows.join('')||empty('No active jobs with material needs found yet.');
+}
+
 function renderAttention(){const d=combinedData();const open=d.jobs.filter(j=>!['completed','failed_scrap','archived'].includes(j.production_status));const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));const printing=open.filter(j=>j.production_status==='printing');const inv=lowInventoryRows();const readyFinance=d.orders.filter(o=>!o.finance_pushed&&!o.finance_not_required&&['paid','deposit_paid','completed','ready'].includes(o.payment_status||o.status)&&Number(o.order_total||o.total||0)>0);$('printNextList').innerHTML=ready.slice(0,3).map(j=>mini(deepLink('job',j),j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');$('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini(deepLink('job',j),j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');$('lowInventoryList').innerHTML=[...inv.lowRaw.slice(0,3).map(g=>mini(deepLink('inventory',g),`${g.material_type||'Material'} / ${g.color||'No color'}`,`${grams(g.available)} available · threshold ${grams(g.threshold)}`)),...inv.lowSupplies.slice(0,2).map(s=>mini(deepLink('inventory',s),s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))].join('')||empty('No low inventory flagged.');$('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini(deepLink('order',o),o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready to push`)).join('')||empty('No orders ready for finance push.');const rows=[...printing.slice(0,3).map(j=>workCard(deepLink('job',j),'🖨️',j.job_title,`Printing · ${j.machine_preference||j.actual_machine||'machine'}${j.due_date?' · due '+j.due_date:''}`,'Print')),...post.slice(0,2).map(j=>workCard(deepLink('job',j),'✨',j.job_title,`${String(j.production_status||'post').replace(/_/g,' ')}${j.due_date?' · due '+j.due_date:''}`,'Post')),...ready.slice(0,3).map(j=>workCard(deepLink('job',j),'🟢',j.job_title,`Ready · ${jobHours(j).toFixed(1).replace(/\.0$/,'')}h`,'Next')),...readyFinance.slice(0,2).map(o=>workCard(deepLink('order',o),'💰',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready for Finance`,'Finance'))].slice(0,6);$('continueWorkingList').innerHTML=rows.join('')||empty('No active work found yet. Start with the wizard above.');}
 
 function cleanStatus(v){
@@ -936,7 +1186,7 @@ function recentStore(){return read('olipoly_hub_recent_v1')}
 function writeRecent(label,href){if(!label||!href)return;const rows=recentStore().filter(r=>r.href!==href||r.label!==label);rows.unshift({label,href,at:new Date().toISOString()});localStorage.setItem('olipoly_hub_recent_v1',JSON.stringify(rows.slice(0,10)));}
 function renderRecent(){$('recentList').innerHTML=recentStore().slice(0,6).map(recentItem).join('')||empty('Recently opened items will appear here.');}
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
-async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderAttention();renderSearch();renderRecent();}
+async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderInventoryImpact();renderAttention();renderSearch();renderRecent();}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
 $('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
 $('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();fullRender();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
