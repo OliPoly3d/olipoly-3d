@@ -2042,5 +2042,43 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 })();
 </script>
 
+
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function readReorderDraft(){
+    try{return JSON.parse(localStorage.getItem('olipoly_reorder_quote_draft_v1') || 'null')}catch{return null}
+  }
+  function applyReorderDraft(){
+    if(window.__olipolyReorderDraftApplied) return;
+    const draft = readReorderDraft();
+    if(!draft) return;
+    window.__olipolyReorderDraftApplied = true;
+    const set = (id,val) => { const el=$(id); if(el && val !== undefined && val !== null && String(val) !== '') el.value = val; };
+    set('customerName', draft.customer_name);
+    set('customerEmail', draft.customer_email);
+    set('quoteTitle', draft.order_title);
+    set('qty', draft.quantity || 1);
+    set('customerNotes', [
+      draft.source_order_number ? `Reorder based on ${draft.source_order_number}.` : 'Reorder quote draft.',
+      draft.material || draft.color ? `Material/color: ${[draft.material,draft.color].filter(Boolean).join(' / ')}` : '',
+      draft.production_notes || ''
+    ].filter(Boolean).join('\\n'));
+    if($('paymentTerms') && draft.payment_terms) $('paymentTerms').value = draft.payment_terms;
+    if($('simpleHardware') && draft.order_total) $('simpleHardware').value = Number(draft.order_total || 0).toFixed(2);
+    const msg = document.createElement('div');
+    msg.className = 'note';
+    msg.style.margin = '0 0 16px';
+    msg.textContent = `Reorder draft loaded from ${draft.source_order_number || 'previous order'}. Review pricing before sending.`;
+    const hero = document.querySelector('.hero');
+    if(hero && hero.parentNode) hero.parentNode.insertBefore(msg, hero.nextSibling);
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(applyReorderDraft, 350);
+    setTimeout(applyReorderDraft, 1000);
+  });
+})();
+</script>
+
 </body>
 </html>
