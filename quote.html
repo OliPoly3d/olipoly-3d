@@ -2043,14 +2043,14 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 </script>
 
 
-<script id="oreorderQuoteDraftSafeModule">
+<script id="reorderQuoteDraftVisibleModule">
 (function(){
   function $(id){return document.getElementById(id);}
   function draft(){try{return JSON.parse(localStorage.getItem('olipoly_reorder_quote_draft_v1')||'null')}catch{return null}}
   function apply(){
-    if(window.__oreorderApplied) return;
+    if(window.__reorderDraftVisibleApplied) return;
     const d=draft(); if(!d) return;
-    window.__oreorderApplied=true;
+    window.__reorderDraftVisibleApplied=true;
     const set=(id,val)=>{const el=$(id); if(el && val!==undefined && val!==null && String(val)!=='') el.value=val;};
     set('customerName',d.customer_name);
     set('customerEmail',d.customer_email);
