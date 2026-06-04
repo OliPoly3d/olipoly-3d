@@ -1331,6 +1331,170 @@
       .engine-timeline-strip::before{display:none}
     }
 
+
+    /* === True Engine V3: data-first, no decorative hero art === */
+    .hero{
+      grid-template-columns:1fr!important;
+      min-height:auto!important;
+      padding:20px!important;
+    }
+    .hero .poly-stage{
+      display:none!important;
+    }
+    .hero h2{
+      max-width:950px!important;
+      font-size:clamp(2.25rem,4.8vw,4.15rem)!important;
+      line-height:.88!important;
+    }
+    .hero p{
+      max-width:980px!important;
+    }
+    .dashboard-hero-stats{
+      grid-template-columns:repeat(5,minmax(0,1fr))!important;
+      margin-top:18px!important;
+    }
+    .visual-metric-card{
+      min-height:148px!important;
+      display:flex!important;
+      flex-direction:column!important;
+      justify-content:space-between!important;
+    }
+    .visual-metric-card::before{
+      background:radial-gradient(circle at 85% 14%,rgba(57,215,255,.12),transparent 34%)!important;
+    }
+    .sparkline{
+      position:relative!important;
+      left:auto!important;
+      right:auto!important;
+      bottom:auto!important;
+      height:34px!important;
+      margin-top:10px!important;
+      opacity:1!important;
+      z-index:1!important;
+    }
+    .data-bar-wrap{
+      height:9px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+      margin-top:10px;
+      position:relative;
+      z-index:1;
+    }
+    .data-bar{
+      height:100%;
+      border-radius:999px;
+      width:0%;
+      background:linear-gradient(90deg,var(--engine-purple),var(--engine-cyan));
+      box-shadow:0 0 18px rgba(57,215,255,.35);
+      transition:width .3s ease;
+    }
+    .data-bar.green{background:linear-gradient(90deg,#27d17f,var(--engine-green))}
+    .data-bar.amber{background:linear-gradient(90deg,var(--engine-amber),#ff7a4d)}
+    .data-bar.pink{background:linear-gradient(90deg,var(--engine-pink),var(--engine-purple))}
+    .engine-data-board{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:12px;
+      margin-top:14px;
+    }
+    .engine-data-panel{
+      padding:14px;
+      border-radius:22px;
+      background:linear-gradient(145deg,rgba(23,35,63,.84),rgba(10,17,34,.74));
+      border:1px solid rgba(129,151,255,.16);
+      box-shadow:0 14px 34px rgba(0,0,0,.22);
+    }
+    .engine-data-panel h3{
+      margin:0 0 10px;
+      color:#fff;
+      font-family:"Playfair Display",serif;
+      font-size:1.28rem;
+    }
+    .engine-printer-bars{
+      display:grid;
+      gap:10px;
+    }
+    .printer-bar-row{
+      display:grid;
+      grid-template-columns:72px minmax(0,1fr) 72px;
+      gap:10px;
+      align-items:center;
+      color:#eaf0ff;
+      font-size:.82rem;
+      font-weight:850;
+    }
+    .printer-bar-row small{
+      color:#95a9cc;
+      font-weight:800;
+    }
+    .mini-chart-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .mini-chart-card{
+      padding:12px;
+      border-radius:18px;
+      background:rgba(7,13,26,.56);
+      border:1px solid rgba(129,151,255,.12);
+      min-height:110px;
+    }
+    .mini-chart-card span{
+      display:block;
+      color:#95a9cc;
+      font-size:.66rem;
+      font-weight:950;
+      text-transform:uppercase;
+      letter-spacing:.07em;
+    }
+    .mini-chart-card strong{
+      display:block;
+      color:#fff;
+      font-size:1.35rem;
+      margin-top:5px;
+    }
+    .real-bars{
+      display:flex;
+      align-items:end;
+      gap:5px;
+      height:42px;
+      margin-top:12px;
+    }
+    .real-bars i{
+      display:block;
+      flex:1;
+      min-height:4px;
+      border-radius:5px 5px 0 0;
+      background:linear-gradient(180deg,var(--engine-cyan),rgba(57,215,255,.25));
+      box-shadow:0 0 14px rgba(57,215,255,.18);
+    }
+    .engine-hero-note{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:14px;
+      padding:12px;
+      border-radius:18px;
+      background:rgba(7,13,26,.54);
+      border:1px solid rgba(129,151,255,.12);
+      color:#95a9cc;
+      line-height:1.4;
+    }
+    .engine-hero-note b{color:#fff}
+    .system-gauge-card{
+      display:none!important;
+    }
+    @media(max-width:1180px){
+      .dashboard-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      .engine-data-board{grid-template-columns:1fr}
+    }
+    @media(max-width:700px){
+      .dashboard-hero-stats,.mini-chart-grid{grid-template-columns:1fr!important}
+      .printer-bar-row{grid-template-columns:1fr}
+    }
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -1558,13 +1722,28 @@
       <div class="health-strip" id="cloudHealthStrip"></div>
 
       <div class="dashboard-hero-stats" id="engineVisualStats">
-        <div class="visual-metric-card purple"><span>Jobs Due</span><strong id="visJobsDue">0</strong><small>This week</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 22 L12 18 L24 20 L36 10 L48 15 L60 7 L72 18 L84 11 L100 16" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
-        <div class="visual-metric-card blue"><span>Quotes Awaiting</span><strong id="visQuotes">0</strong><small>Response</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 18 L12 20 L24 12 L36 16 L48 9 L60 14 L72 7 L84 15 L100 10" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
-        <div class="visual-metric-card green"><span>Active Orders</span><strong id="visOrders">0</strong><small>Need action</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 21 L10 19 L22 14 L34 17 L46 9 L58 13 L70 8 L82 16 L100 6" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
-        <div class="visual-metric-card amber"><span>Inventory Risk</span><strong id="visRisk">0</strong><small>At risk jobs</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 20 L12 14 L24 17 L36 11 L48 18 L60 12 L72 16 L84 9 L100 13" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
-        <div class="visual-metric-card pink"><span>Reorder Ops</span><strong id="visReorders">0</strong><small>90+ days</small><div class="sparkline"><svg viewBox="0 0 100 28"><path d="M0 16 L14 18 L28 9 L42 13 L56 7 L70 19 L84 11 L100 15" fill="none" stroke="currentColor" stroke-width="3" opacity=".8"/></svg></div></div>
+        <div class="visual-metric-card purple">
+          <span>Jobs Due</span><strong id="visJobsDue">0</strong><small>This week, from production due dates</small>
+          <div class="data-bar-wrap"><div class="data-bar" id="barJobsDue"></div></div>
+        </div>
+        <div class="visual-metric-card blue">
+          <span>Quotes Awaiting</span><strong id="visQuotes">0</strong><small>Open quotes needing response</small>
+          <div class="data-bar-wrap"><div class="data-bar" id="barQuotes"></div></div>
+        </div>
+        <div class="visual-metric-card green">
+          <span>Active Orders</span><strong id="visOrders">0</strong><small>Open OP workload</small>
+          <div class="data-bar-wrap"><div class="data-bar green" id="barOrders"></div></div>
+        </div>
+        <div class="visual-metric-card amber">
+          <span>Inventory Risk</span><strong id="visRisk">0</strong><small>Jobs short on material</small>
+          <div class="data-bar-wrap"><div class="data-bar amber" id="barRisk"></div></div>
+        </div>
+        <div class="visual-metric-card pink">
+          <span>Reorder Ops</span><strong id="visReorders">0</strong><small>Customers 90+ days since order</small>
+          <div class="data-bar-wrap"><div class="data-bar pink" id="barReorders"></div></div>
+        </div>
       </div>
-
+      <div class="engine-hero-note" id="engineHeroNote"><b>Engine mode:</b> Waiting for cloud data...</div>
     </div>
     <div class="poly-stage" aria-label="OliPoly visual">
       <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
@@ -1572,6 +1751,22 @@
       <img class="poly-printer" src="images/p2s-ams2.png" alt="OliPoly printer">
     </div>
   </section>
+
+
+  <section class="engine-data-board" id="engineDataBoard">
+    <div class="engine-data-panel">
+      <h3>Production Load by Printer</h3>
+      <div class="engine-printer-bars" id="enginePrinterBars"></div>
+    </div>
+    <div class="engine-data-panel">
+      <h3>Business Pulse</h3>
+      <div class="mini-chart-grid">
+        <div class="mini-chart-card"><span>Open Quote Value</span><strong id="pulseQuoteValue">$0</strong><div class="real-bars" id="pulseQuoteBars"></div></div>
+        <div class="mini-chart-card"><span>Unpaid / Open Orders</span><strong id="pulseOrderValue">$0</strong><div class="real-bars" id="pulseOrderBars"></div></div>
+      </div>
+    </div>
+  </section>
+
 
   <section class="auth-card">
     <div>
@@ -2365,25 +2560,65 @@ function initRequestWizardV2(){
 }
 
 
+
+function pct(n,max){return Math.max(0,Math.min(100,Math.round((Number(n)||0)/(Number(max)||1)*100)));}
+function setBar(id,value,max){const el=$(id);if(el)el.style.width=pct(value,max)+'%';}
+function renderMiniBars(id,values,kind=''){
+  const el=$(id);if(!el)return;
+  const max=Math.max(1,...values.map(v=>Number(v)||0));
+  el.innerHTML=values.slice(-8).map(v=>`<i style="height:${Math.max(8,pct(v,max))}%;${kind==='green'?'background:linear-gradient(180deg,var(--engine-green),rgba(53,241,162,.22))':''}"></i>`).join('');
+}
+function renderPrinterBars(openJobs){
+  const el=$('enginePrinterBars');if(!el)return;
+  const map=new Map();
+  openJobs.forEach(j=>{
+    const printer=(j.machine_preference||j.actual_machine||j.machine||'Unassigned').toString().toUpperCase();
+    const h=jobHours(j)||0;
+    map.set(printer,(map.get(printer)||0)+h);
+  });
+  const rows=[...map.entries()].sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...rows.map(r=>r[1]));
+  el.innerHTML=(rows.length?rows:[['No active queue',0]]).slice(0,6).map(([name,h])=>`
+    <div class="printer-bar-row">
+      <strong>${esc(name)}</strong>
+      <div class="data-bar-wrap"><div class="data-bar ${h>20?'amber':'green'}" style="width:${pct(h,max)}%"></div></div>
+      <small>${(h||0).toFixed(1).replace(/\.0$/,'')}h</small>
+    </div>
+  `).join('');
+}
 function renderEngineVisuals(){
   try{
     const d=combinedData();
     const jobs=d.jobs||[];
     const openJobs=jobs.filter(j=>!['completed','failed_scrap','archived','closed'].includes(String(j.production_status||j.status||'').toLowerCase()));
-    const dueSoon=openJobs.filter(j=>daysSince(j.due_date)<=0 || (j.due_date && (new Date(j.due_date).getTime()-Date.now())/86400000<=7));
+    const dueSoon=openJobs.filter(j=>j.due_date && (new Date(j.due_date).getTime()-Date.now())/86400000<=7);
     const pendingQuotes=(d.quotes||[]).filter(q=>!['accepted','declined','expired','converted'].includes(String(q.quote_status||q.quoteStatus||'').toLowerCase()));
     const openOrders=(d.orders||[]).filter(o=>!orderClosed(o));
     const impact=evaluateInventoryImpact ? evaluateInventoryImpact() : {risk:[]};
     const reorders=buildCustomerStats().filter(c=>c.orders>=1&&daysSince(c.lastDate)>=90);
+    const quoteValue=pendingQuotes.reduce((s,q)=>s+(Number(q.final_quote||q.quote_total||q.total||q.finalQuote)||0),0);
+    const orderValue=openOrders.reduce((s,o)=>s+(Number(o.order_total||o.total)||0),0);
     if($('visJobsDue')) $('visJobsDue').textContent=dueSoon.length;
     if($('visQuotes')) $('visQuotes').textContent=pendingQuotes.length;
     if($('visOrders')) $('visOrders').textContent=openOrders.length;
     if($('visRisk')) $('visRisk').textContent=impact.risk.length;
     if($('visReorders')) $('visReorders').textContent=reorders.length;
-    const health=Math.max(70,100-(impact.risk.length*8)-((pendingQuotes.length>8)?5:0));
-    if($('engineGaugePercent')) $('engineGaugePercent').textContent=health+'%';
-    const gauge=document.querySelector('.gauge');
-    if(gauge) gauge.style.background=`radial-gradient(circle at center,#08101f 0 52%,transparent 53%),conic-gradient(var(--engine-green) 0 ${health}%,rgba(255,255,255,.08) ${health}% 100%)`;
+    setBar('barJobsDue',dueSoon.length,10);
+    setBar('barQuotes',pendingQuotes.length,10);
+    setBar('barOrders',openOrders.length,20);
+    setBar('barRisk',impact.risk.length,6);
+    setBar('barReorders',reorders.length,10);
+    if($('pulseQuoteValue')) $('pulseQuoteValue').textContent=money(quoteValue);
+    if($('pulseOrderValue')) $('pulseOrderValue').textContent=money(orderValue);
+    renderMiniBars('pulseQuoteBars', pendingQuotes.map(q=>Number(q.final_quote||q.quote_total||q.total||q.finalQuote)||0));
+    renderMiniBars('pulseOrderBars', openOrders.map(o=>Number(o.order_total||o.total)||0),'green');
+    renderPrinterBars(openJobs);
+    if($('engineHeroNote')){
+      const topRisk=impact.risk[0];
+      const msg=topRisk?`Top risk: ${topRisk.job.job_title||'job'} is short ${grams(topRisk.short)} of ${[topRisk.need.material_type,topRisk.need.color].filter(Boolean).join(' / ')}.`:
+        `${openJobs.length} active jobs, ${pendingQuotes.length} open quotes, ${openOrders.length} open orders.`;
+      $('engineHeroNote').innerHTML=`<b>Engine mode:</b> ${esc(msg)}`;
+    }
   }catch(err){console.warn('Engine visuals skipped',err);}
 }
 
