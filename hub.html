@@ -1495,6 +1495,309 @@
       .printer-bar-row{grid-template-columns:1fr}
     }
 
+
+
+/* =========================================================
+   OliPoly ERP Console Rebuild V1
+   Purpose: daily-work ERP console, not a decorative dashboard
+   ========================================================= */
+:root{
+  --erp-bg:#05070d;
+  --erp-rail:#090f1d;
+  --erp-panel:#10182b;
+  --erp-panel2:#141f36;
+  --erp-card:#17233d;
+  --erp-card2:#0d1426;
+  --erp-line:rgba(137,158,255,.18);
+  --erp-text:#f3f7ff;
+  --erp-muted:#91a4c7;
+  --erp-cyan:#24d7ff;
+  --erp-blue:#4a7dff;
+  --erp-purple:#9b5cff;
+  --erp-pink:#ff4fc3;
+  --erp-green:#34f0a0;
+  --erp-amber:#ffbf4d;
+  --erp-red:#ff4f78;
+  --erp-shadow:0 18px 54px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.035);
+}
+html{scroll-behavior:smooth}
+body{
+  color:var(--erp-text)!important;
+  background:
+    radial-gradient(circle at 15% 2%,rgba(155,92,255,.18),transparent 28rem),
+    radial-gradient(circle at 88% 18%,rgba(36,215,255,.14),transparent 32rem),
+    radial-gradient(circle at 50% 82%,rgba(52,240,160,.06),transparent 34rem),
+    linear-gradient(180deg,#04060c 0%,#07101e 48%,#05070d 100%)!important;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.026) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.026) 1px,transparent 1px);
+  background-size:42px 42px;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.16) 55%,transparent);
+  z-index:-1;
+}
+.wrap{
+  width:min(1540px,calc(100% - 24px))!important;
+  display:grid!important;
+  grid-template-columns:238px minmax(0,1fr)!important;
+  gap:14px!important;
+  align-items:start!important;
+  padding:12px 0 48px!important;
+}
+.engine-rail{
+  position:sticky!important;
+  top:12px!important;
+  height:calc(100vh - 24px)!important;
+  padding:14px!important;
+  border-radius:24px!important;
+  background:linear-gradient(180deg,rgba(11,17,32,.98),rgba(5,8,16,.98))!important;
+  border:1px solid var(--erp-line)!important;
+  box-shadow:var(--erp-shadow)!important;
+  z-index:20!important;
+}
+.engine-rail-brand{border-bottom:1px solid rgba(137,158,255,.13)!important}
+.engine-rail-brand img{display:none!important}
+.engine-rail-brand strong{font-family:Inter,system-ui,sans-serif!important;font-size:1rem!important;color:#fff!important}
+.engine-rail-brand small{color:#7f93ba!important}
+.engine-nav a{
+  border-radius:14px!important;
+  color:#9fb0cf!important;
+  background:transparent!important;
+  border:1px solid transparent!important;
+  font-size:.82rem!important;
+}
+.engine-nav a:hover,.engine-nav a.active{
+  color:#fff!important;
+  background:linear-gradient(135deg,rgba(74,125,255,.22),rgba(36,215,255,.10))!important;
+  border-color:rgba(36,215,255,.18)!important;
+  box-shadow:0 0 26px rgba(36,215,255,.07)!important;
+}
+.wrap>.topbar,.wrap>.hero,.wrap>.auth-card,.wrap>.section,.wrap>.wizard,.wrap>.request-v2,.wrap>.engine-data-board,.wrap>.erp-console{
+  grid-column:2!important;
+}
+.topbar{
+  position:sticky!important;
+  top:12px!important;
+  z-index:15!important;
+  margin:0!important;
+  min-height:62px!important;
+  border-radius:20px!important;
+  background:linear-gradient(135deg,rgba(13,20,36,.96),rgba(17,27,48,.92))!important;
+  border:1px solid var(--erp-line)!important;
+  box-shadow:var(--erp-shadow)!important;
+}
+.brand img{display:none!important}
+.brand h1{font-family:Inter,system-ui,sans-serif!important;font-size:1.15rem!important;letter-spacing:-.02em!important;color:#fff!important}
+.brand small{font-size:.68rem!important;color:#8ea2c4!important}
+.topbar .ghost{min-height:36px!important;padding:8px 12px!important;font-size:.8rem!important}
+
+/* Hide homepage-like/decorative areas. ERP content created by JS replaces these. */
+.hero,.engine-data-board,#engineActivityStrip{
+  display:none!important;
+}
+
+/* Compact cloud login strip */
+.auth-card{
+  margin-top:10px!important;
+  padding:12px!important;
+  border-radius:18px!important;
+  background:linear-gradient(145deg,rgba(16,24,43,.86),rgba(8,13,25,.88))!important;
+  border:1px solid rgba(137,158,255,.16)!important;
+  box-shadow:var(--erp-shadow)!important;
+}
+.auth-card .kicker{font-size:.62rem!important}
+.auth-fields{grid-template-columns:1fr 1fr auto auto!important}
+
+/* ERP core layout */
+.erp-console{display:grid;gap:14px;margin-top:10px}
+.erp-kpi-strip{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;
+}
+.erp-kpi{
+  position:relative;
+  overflow:hidden;
+  min-height:118px;
+  padding:13px;
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(25,38,66,.94),rgba(9,15,28,.92));
+  border:1px solid rgba(137,158,255,.16);
+  box-shadow:var(--erp-shadow);
+}
+.erp-kpi::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at 85% 18%,var(--kpi-glow,rgba(36,215,255,.16)),transparent 38%);
+  pointer-events:none;
+}
+.erp-kpi span,.erp-kpi strong,.erp-kpi small,.erp-kpi .erp-bar-wrap{position:relative;z-index:1}
+.erp-kpi span{display:block;color:#8da1c5;font-size:.62rem;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.erp-kpi strong{display:block;color:#fff;font-size:1.75rem;line-height:1;margin-top:7px}
+.erp-kpi small{display:block;color:#8fa2c4;font-size:.72rem;line-height:1.28;margin-top:6px}
+.erp-bar-wrap{height:8px;margin-top:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.erp-bar{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--erp-purple),var(--erp-cyan));box-shadow:0 0 18px rgba(36,215,255,.35);transition:width .25s}
+.erp-bar.green{background:linear-gradient(90deg,#15c97d,var(--erp-green))}
+.erp-bar.amber{background:linear-gradient(90deg,var(--erp-amber),#ff7c4d)}
+.erp-bar.pink{background:linear-gradient(90deg,var(--erp-pink),var(--erp-purple))}
+.erp-bar.red{background:linear-gradient(90deg,var(--erp-red),var(--erp-pink))}
+.erp-workspace{
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(360px,.9fr);
+  gap:14px;
+}
+.erp-panel{
+  border-radius:22px;
+  padding:14px;
+  background:linear-gradient(145deg,rgba(18,28,50,.90),rgba(8,13,25,.92));
+  border:1px solid rgba(137,158,255,.16);
+  box-shadow:var(--erp-shadow);
+}
+.erp-panel-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(137,158,255,.11);
+  margin-bottom:12px;
+}
+.erp-panel-head h2,.erp-panel h2{
+  color:#fff!important;
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:1.05rem!important;
+  letter-spacing:-.01em!important;
+  margin:0!important;
+}
+.erp-panel-head p{color:#8fa2c4!important;font-size:.78rem!important;margin-top:3px!important}
+.erp-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 8px;
+  border-radius:999px;
+  background:rgba(36,215,255,.09);
+  border:1px solid rgba(36,215,255,.18);
+  color:#8be9ff;
+  font-size:.65rem;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+}
+.erp-work-list{display:grid;gap:10px}
+.erp-work-card{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:11px;
+  align-items:center;
+  padding:12px;
+  border-radius:17px;
+  background:linear-gradient(145deg,rgba(26,39,69,.86),rgba(10,16,31,.80));
+  border:1px solid rgba(137,158,255,.13);
+  color:inherit;
+  text-decoration:none;
+}
+.erp-work-card:hover{border-color:rgba(36,215,255,.22);box-shadow:0 0 28px rgba(36,215,255,.07);transform:translateY(-1px)}
+.erp-work-icon{
+  width:40px;height:40px;border-radius:15px;display:grid;place-items:center;color:#fff;font-weight:950;
+  background:linear-gradient(135deg,var(--accent1,var(--erp-blue)),var(--accent2,var(--erp-cyan)));
+  box-shadow:0 0 24px rgba(36,215,255,.14);
+}
+.erp-work-card strong{display:block;color:#fff;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.erp-work-card small{display:block;color:#91a4c7;font-size:.75rem;margin-top:3px;line-height:1.32}
+.erp-badge{
+  display:inline-flex;align-items:center;justify-content:center;padding:6px 8px;border-radius:999px;
+  background:rgba(137,158,255,.08);border:1px solid rgba(137,158,255,.14);color:#b9c5ff;
+  font-size:.62rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;
+}
+.erp-badge.green{background:rgba(52,240,160,.10);border-color:rgba(52,240,160,.20);color:#8dffc8}
+.erp-badge.amber{background:rgba(255,191,77,.11);border-color:rgba(255,191,77,.22);color:#ffd68a}
+.erp-badge.red{background:rgba(255,79,120,.11);border-color:rgba(255,79,120,.22);color:#ff9caf}
+.erp-side-grid{display:grid;gap:14px}
+.erp-bars{display:grid;gap:10px}
+.erp-bar-row{display:grid;grid-template-columns:78px minmax(0,1fr) 70px;gap:10px;align-items:center;color:#eaf0ff;font-size:.78rem;font-weight:850}
+.erp-bar-row small{color:#91a4c7;text-align:right;font-weight:800}
+.erp-chart-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.erp-chart-card{padding:12px;border-radius:17px;background:rgba(6,11,22,.62);border:1px solid rgba(137,158,255,.12)}
+.erp-chart-card span{display:block;color:#91a4c7;font-size:.62rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em}
+.erp-chart-card strong{display:block;color:#fff;font-size:1.2rem;margin-top:5px}
+.erp-vertical-bars{height:44px;display:flex;align-items:end;gap:5px;margin-top:10px}
+.erp-vertical-bars i{flex:1;min-height:5px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--erp-cyan),rgba(36,215,255,.18));box-shadow:0 0 12px rgba(36,215,255,.16)}
+.erp-vertical-bars i.green{background:linear-gradient(180deg,var(--erp-green),rgba(52,240,160,.18))}
+.erp-module-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.erp-module-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.erp-list{display:grid;gap:8px}
+.erp-list-item{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:10px;border-radius:15px;background:rgba(9,15,28,.58);border:1px solid rgba(137,158,255,.12);
+  color:inherit;text-decoration:none;
+}
+.erp-list-item strong{display:block;color:#fff;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.erp-list-item small{display:block;color:#91a4c7;font-size:.72rem;margin-top:3px;line-height:1.25}
+.erp-timeline{display:grid;gap:8px}
+.erp-timeline-row{
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:10px;border-radius:15px;background:rgba(9,15,28,.58);border:1px solid rgba(137,158,255,.12);text-decoration:none;color:inherit;
+}
+.erp-timeline-dot{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--erp-purple),var(--erp-cyan));color:#fff;font-size:.8rem}
+.erp-timeline-row strong{display:block;color:#fff;font-size:.86rem}
+.erp-timeline-row small{display:block;color:#91a4c7;font-size:.72rem;margin-top:2px}
+.erp-section-anchor{scroll-margin-top:90px}
+
+/* Hide older duplicate/dashboard sections but keep their JS and IDs alive. */
+body.erp-mode .hero,
+body.erp-mode #engineDataBoard,
+body.erp-mode #engineActivityStrip,
+body.erp-mode .section:has(#currentWorkflowCard),
+body.erp-mode #customerIntelligenceSection,
+body.erp-mode #customerTimelineSection,
+body.erp-mode #inventoryImpactSection{
+  display:none!important;
+}
+
+/* Restyle remaining existing working modules in ERP language */
+.request-v2,.section,.auth-card{
+  border-radius:22px!important;
+  background:linear-gradient(145deg,rgba(18,28,50,.90),rgba(8,13,25,.92))!important;
+  border:1px solid rgba(137,158,255,.16)!important;
+  box-shadow:var(--erp-shadow)!important;
+}
+.request-path,.request-v2-panel,.timeline-event,.record-preview-card,.work-card,.action-card,.recent-item,.workflow-card{
+  background:linear-gradient(145deg,rgba(26,39,69,.86),rgba(10,16,31,.80))!important;
+  border:1px solid rgba(137,158,255,.13)!important;
+}
+.request-path.active{border-color:rgba(36,215,255,.35)!important;box-shadow:0 0 28px rgba(36,215,255,.08)!important}
+.request-v2 h2,.section h2{font-family:Inter,system-ui,sans-serif!important;font-size:1.15rem!important}
+.request-v2{scroll-margin-top:90px}
+#newRequestWizard{order:3}
+
+@media(max-width:1180px){
+  .wrap{grid-template-columns:1fr!important}
+  .engine-rail{position:relative!important;height:auto!important;grid-column:1!important}
+  .wrap>.topbar,.wrap>.auth-card,.wrap>.section,.wrap>.request-v2,.wrap>.erp-console{grid-column:1!important}
+  .erp-kpi-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .erp-workspace{grid-template-columns:1fr}
+  .erp-module-grid,.erp-module-grid.three{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .erp-kpi-strip{grid-template-columns:1fr}
+  .auth-fields{grid-template-columns:1fr!important}
+  .erp-bar-row{grid-template-columns:1fr}
+  .erp-work-card,.erp-timeline-row{grid-template-columns:auto minmax(0,1fr)}
+  .erp-work-card .erp-badge,.erp-timeline-row .erp-badge{grid-column:2;justify-self:start}
+}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -2633,5 +2936,208 @@ $('timelineCustomerSearch')?.addEventListener('input',()=>{renderCustomerTimelin
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-label]');if(a)writeRecent(a.dataset.recentLabel,a.getAttribute('href'));});
 (async function init(){ if($('workflowType')) setType('business'); initRequestWizardV2(); fullRender(); await refreshAuth(); await loadCloudData(); fullRender(); })();
 </script>
+
+
+<script id="olipolyErpConsoleV1">
+(function(){
+  'use strict';
+
+  function $(id){return document.getElementById(id);}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+  function fmtMoney(v){try{return money(v)}catch(e){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0)}}
+  function pct(n,max){return Math.max(0,Math.min(100,Math.round((Number(n)||0)/(Number(max)||1)*100)));}
+  function bar(width,cls){return '<div class="erp-bar-wrap"><div class="erp-bar '+(cls||'')+'" style="width:'+width+'%"></div></div>'}
+  function hrefJob(j){try{return deepLink('job',j)}catch(e){return 'production-control.html'}}
+  function hrefOrder(o){try{return deepLink('order',o)}catch(e){return 'orders-admin.html'}}
+  function hrefQuote(q){try{return deepLink('quote',q)}catch(e){return 'quote.html'}}
+  function hrefInv(x){try{return deepLink('inventory',x)}catch(e){return 'inventory-control.html'}}
+  function statusKind(v){
+    var s=String(v||'').toLowerCase();
+    if(['paid','completed','closed','accepted','converted','deposit_paid'].indexOf(s)>=0)return 'green';
+    if(['unpaid','deposit_due','quote_sent','awaiting_approval','ready'].indexOf(s)>=0)return 'amber';
+    if(['blocked','declined','expired','cancelled','failed_scrap'].indexOf(s)>=0)return 'red';
+    return '';
+  }
+
+  function baseData(){
+    var d=typeof combinedData==='function'?combinedData():{jobs:[],orders:[],quotes:[],finance:[]};
+    var inv=typeof evaluateInventoryImpact==='function'?evaluateInventoryImpact():{risk:[],watch:[],safe:[],source:'Unknown'};
+    var customers=typeof buildCustomerStats==='function'?buildCustomerStats():[];
+    var openJobs=(d.jobs||[]).filter(function(j){return ['completed','failed_scrap','archived','closed'].indexOf(String(j.production_status||j.status||'').toLowerCase())<0;});
+    var dueJobs=openJobs.filter(function(j){if(!j.due_date)return false; return (new Date(j.due_date).getTime()-Date.now())/86400000<=7;});
+    var pendingQuotes=(d.quotes||[]).filter(function(q){return ['accepted','declined','expired','converted'].indexOf(String(q.quote_status||q.quoteStatus||'').toLowerCase())<0;});
+    var openOrders=(d.orders||[]).filter(function(o){try{return !orderClosed(o)}catch(e){return true}});
+    var quoteValue=pendingQuotes.reduce(function(s,q){return s+(Number(q.final_quote||q.quote_total||q.total||q.finalQuote)||0)},0);
+    var orderValue=openOrders.reduce(function(s,o){return s+(Number(o.order_total||o.total)||0)},0);
+    var reorders=customers.filter(function(c){try{return c.orders>=1&&daysSince(c.lastDate)>=90}catch(e){return false}});
+    return {d:d,inv:inv,customers:customers,openJobs:openJobs,dueJobs:dueJobs,pendingQuotes:pendingQuotes,openOrders:openOrders,quoteValue:quoteValue,orderValue:orderValue,reorders:reorders};
+  }
+
+  function kpiCard(label,value,sub,barPct,cls,color){
+    return '<div class="erp-kpi" style="--kpi-glow:'+color+'"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong><small>'+esc(sub)+'</small>'+bar(barPct,cls)+'</div>';
+  }
+
+  function workCard(icon,title,sub,badge,kind,href,a1,a2){
+    return '<a class="erp-work-card" href="'+href+'" style="--accent1:'+(a1||'var(--erp-blue)')+';--accent2:'+(a2||'var(--erp-cyan)')+'"><span class="erp-work-icon">'+icon+'</span><span><strong>'+esc(title)+'</strong><small>'+esc(sub)+'</small></span><b class="erp-badge '+(kind||'')+'">'+esc(badge||'Open')+'</b></a>';
+  }
+  function listItem(title,sub,value,href,kind){
+    return '<a class="erp-list-item" href="'+href+'"><span><strong>'+esc(title)+'</strong><small>'+esc(sub)+'</small></span><b class="erp-badge '+(kind||'')+'">'+esc(value||'Open')+'</b></a>';
+  }
+  function verticalBars(values,cls){
+    var max=Math.max(1,...values.map(function(v){return Number(v)||0}));
+    return '<div class="erp-vertical-bars">'+values.slice(-8).map(function(v){return '<i class="'+(cls||'')+'" style="height:'+Math.max(8,pct(v,max))+'%"></i>'}).join('')+'</div>';
+  }
+
+  function createConsole(){
+    if($('erpConsole'))return;
+    document.body.classList.add('erp-mode');
+
+    var html = [
+      '<main class="erp-console" id="erpConsole">',
+        '<section class="erp-kpi-strip" id="erpKpiStrip"></section>',
+        '<section class="erp-workspace erp-section-anchor" id="erpToday">',
+          '<div class="erp-panel">',
+            '<div class="erp-panel-head"><div><h2>Today’s Work Queue</h2><p>Recommended operational actions from real shop data.</p></div><span class="erp-chip">Daily Work</span></div>',
+            '<div class="erp-work-list" id="erpTodayWork"></div>',
+          '</div>',
+          '<aside class="erp-side-grid">',
+            '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Shop Health</h2><p>Capacity, risk, and workload.</p></div><span class="erp-chip">Live</span></div><div class="erp-bars" id="erpPrinterLoad"></div></div>',
+            '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Business Pulse</h2><p>Pipeline and order value.</p></div></div><div class="erp-chart-mini" id="erpBusinessPulse"></div></div>',
+          '</aside>',
+        '</section>',
+        '<section class="erp-module-grid erp-section-anchor" id="erpProductionInventory">',
+          '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Production Command</h2><p>Now / next / later queue visibility.</p></div><a class="erp-chip" href="production-control.html">Open</a></div><div class="erp-list" id="erpProductionList"></div></div>',
+          '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Inventory Command</h2><p>Shortages and material risk.</p></div><a class="erp-chip" href="inventory-control.html">Open</a></div><div class="erp-list" id="erpInventoryList"></div></div>',
+        '</section>',
+        '<section class="erp-module-grid three erp-section-anchor" id="erpCustomersFinance">',
+          '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Customer Command</h2><p>Leaderboard and reorder potential.</p></div><a class="erp-chip" href="orders-admin.html">CRM</a></div><div class="erp-list" id="erpCustomerList"></div></div>',
+          '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Quote / Order Pipeline</h2><p>Open value by workflow stage.</p></div><a class="erp-chip" href="quote.html">Quote</a></div><div class="erp-list" id="erpPipelineList"></div></div>',
+          '<div class="erp-panel"><div class="erp-panel-head"><div><h2>Finance Command</h2><p>Ready to push, unpaid, and revenue.</p></div><a class="erp-chip" href="finance-pro.html">Finance</a></div><div class="erp-list" id="erpFinanceList"></div></div>',
+        '</section>',
+        '<section class="erp-panel erp-section-anchor" id="erpTimelinePanel"><div class="erp-panel-head"><div><h2>Activity Timeline</h2><p>Latest quotes, orders, and finance movement.</p></div><span class="erp-chip">Timeline</span></div><div class="erp-timeline" id="erpTimeline"></div></section>',
+      '</main>'
+    ].join('');
+
+    var auth = document.querySelector('.auth-card');
+    if(auth) auth.insertAdjacentHTML('afterend', html);
+    else document.querySelector('.topbar')?.insertAdjacentHTML('afterend', html);
+
+    // Update rail links to actual ERP sections.
+    var nav=document.querySelector('.engine-nav');
+    if(nav){
+      nav.innerHTML=[
+        '<a class="active" href="#erpToday">⌘ Today</a>',
+        '<a href="#newRequestWizard">＋ New Request</a>',
+        '<a href="#erpProductionInventory">▣ Production</a>',
+        '<a href="#erpProductionInventory">⬢ Inventory</a>',
+        '<a href="#erpCustomersFinance">👥 Customers</a>',
+        '<a href="#erpCustomersFinance">◈ Quotes</a>',
+        '<a href="#erpCustomersFinance">$ Finance</a>',
+        '<a href="#erpTimelinePanel">⟡ Timeline</a>',
+        '<a href="#hubSearchInput">⌕ Search</a>',
+        '<a href="production-control.html">Open Production</a>',
+        '<a href="orders-admin.html">Open Orders</a>',
+        '<a href="inventory-control.html">Open Inventory</a>'
+      ].join('');
+      nav.querySelectorAll('a[href^="#"]').forEach(function(a){
+        a.addEventListener('click',function(){
+          nav.querySelectorAll('a').forEach(function(x){x.classList.remove('active')});
+          a.classList.add('active');
+          setTimeout(function(){
+            var t=document.querySelector(a.getAttribute('href'));
+            if(t){t.classList.add('erp-pulse');setTimeout(function(){t.classList.remove('erp-pulse')},900)}
+          },50);
+        });
+      });
+    }
+  }
+
+  function renderConsole(){
+    createConsole();
+    var x=baseData();
+    var jobsMax=Math.max(8,x.openJobs.length);
+    $('erpKpiStrip').innerHTML=[
+      kpiCard('Queue Hours', (x.openJobs.reduce(function(s,j){try{return s+jobHours(j)}catch(e){return s}},0)).toFixed(1).replace(/\.0$/,'')+'h', x.openJobs.length+' active jobs', pct(x.openJobs.length,jobsMax),'','rgba(74,125,255,.18)'),
+      kpiCard('Due This Week', x.dueJobs.length, 'Production due dates', pct(x.dueJobs.length,8),'amber','rgba(255,191,77,.18)'),
+      kpiCard('Open Quote Value', fmtMoney(x.quoteValue), x.pendingQuotes.length+' pending quotes', pct(x.pendingQuotes.length,10),'pink','rgba(255,79,195,.18)'),
+      kpiCard('Active Order Value', fmtMoney(x.orderValue), x.openOrders.length+' open orders', pct(x.openOrders.length,18),'green','rgba(52,240,160,.16)'),
+      kpiCard('Inventory Risks', x.inv.risk.length, 'Jobs short on material', pct(x.inv.risk.length,6),'red','rgba(255,79,120,.18)'),
+      kpiCard('Reorder Ops', x.reorders.length, '90+ days since order', pct(x.reorders.length,10),'','rgba(155,92,255,.18)')
+    ].join('');
+
+    var today=[];
+    x.inv.risk.slice(0,2).forEach(function(r){today.push(workCard('!',r.job.job_title||'Inventory risk','Short '+(typeof grams==='function'?grams(r.short):Math.round(r.short)+'g')+' · '+[r.need.material_type,r.need.color].filter(Boolean).join(' / '),'Blocked','red',hrefJob(r.job),'var(--erp-red)','var(--erp-pink)'))});
+    x.dueJobs.slice(0,2).forEach(function(j){today.push(workCard('P',j.job_title||'Production job','Due '+(j.due_date||'soon')+' · '+(j.machine_preference||j.actual_machine||'machine'),'Print','amber',hrefJob(j),'var(--erp-amber)','var(--erp-pink)'))});
+    x.pendingQuotes.slice(0,2).forEach(function(q){today.push(workCard('Q',q.quote_number||q.quoteTitle||q.quote_title||'Quote awaiting response',[q.customer_name||q.customerName,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),'Follow Up','',hrefQuote(q),'var(--erp-purple)','var(--erp-cyan)'))});
+    x.openOrders.filter(function(o){return !o.finance_pushed && !o.finance_not_required && Number(o.order_total||o.total||0)>0}).slice(0,2).forEach(function(o){today.push(workCard('$',o.order_number||'Order ready for finance',[o.customer_name,o.status,fmtMoney(o.order_total||o.total)].filter(Boolean).join(' · '),'Finance','green',hrefOrder(o),'var(--erp-green)','var(--erp-cyan)'))});
+    $('erpTodayWork').innerHTML=today.slice(0,7).join('') || '<div class="empty-note">No urgent actions found. The shop is clear.</div>';
+
+    var printerMap=new Map();
+    x.openJobs.forEach(function(j){var p=String(j.machine_preference||j.actual_machine||j.machine||'Unassigned').toUpperCase(); var h=0; try{h=jobHours(j)||0}catch(e){} printerMap.set(p,(printerMap.get(p)||0)+h)});
+    var pRows=[...printerMap.entries()].sort(function(a,b){return b[1]-a[1]});
+    var pMax=Math.max(1,...pRows.map(function(r){return r[1]}));
+    $('erpPrinterLoad').innerHTML=(pRows.length?pRows:[['NO QUEUE',0]]).map(function(r){
+      return '<div class="erp-bar-row"><strong>'+esc(r[0])+'</strong>'+bar(pct(r[1],pMax),r[1]>20?'amber':'green')+'<small>'+Number(r[1]).toFixed(1).replace(/\.0$/,'')+'h</small></div>';
+    }).join('');
+
+    $('erpBusinessPulse').innerHTML=[
+      '<div class="erp-chart-card"><span>Quote Pipeline</span><strong>'+fmtMoney(x.quoteValue)+'</strong>'+verticalBars(x.pendingQuotes.map(function(q){return Number(q.final_quote||q.quote_total||q.total||q.finalQuote)||0}))+'</div>',
+      '<div class="erp-chart-card"><span>Order Workload</span><strong>'+fmtMoney(x.orderValue)+'</strong>'+verticalBars(x.openOrders.map(function(o){return Number(o.order_total||o.total)||0}),'green')+'</div>'
+    ].join('');
+
+    $('erpProductionList').innerHTML=x.openJobs.slice().sort(function(a,b){return String(a.due_date||'9999').localeCompare(String(b.due_date||'9999'))}).slice(0,7).map(function(j,i){
+      return listItem(j.job_title||'Production job',[j.production_status,j.machine_preference||j.actual_machine,(j.due_date?'Due '+j.due_date:'')].filter(Boolean).join(' · '),i===0?'NOW':'NEXT',hrefJob(j),i===0?'green':'');
+    }).join('') || '<div class="empty-note">No active production jobs.</div>';
+
+    $('erpInventoryList').innerHTML=x.inv.risk.slice(0,6).map(function(r){
+      return listItem(r.job.job_title||'Job shortage',[r.need.material_type,r.need.color,'Need '+(typeof grams==='function'?grams(r.need.grams):r.need.grams),'Have '+(typeof grams==='function'?grams(r.available):r.available)].filter(Boolean).join(' · '),'SHORT '+(typeof grams==='function'?grams(r.short):Math.round(r.short)+'g'),hrefJob(r.job),'red');
+    }).join('') || '<div class="empty-note">No material shortages blocking jobs.</div>';
+
+    $('erpCustomerList').innerHTML=x.customers.slice().sort(function(a,b){return b.revenue-a.revenue}).slice(0,6).map(function(c){
+      return listItem(c.name,[c.orders+' orders',c.email].filter(Boolean).join(' · '),fmtMoney(c.revenue),typeof customerAdminLink==='function'?customerAdminLink(c):'orders-admin.html','green');
+    }).join('') || '<div class="empty-note">Customer data will appear after cloud load.</div>';
+
+    $('erpPipelineList').innerHTML=[
+      listItem('Pending Quotes',x.pendingQuotes.length+' quotes awaiting action',fmtMoney(x.quoteValue),'quote.html',''),
+      listItem('Active Orders',x.openOrders.length+' open orders',fmtMoney(x.orderValue),'orders-admin.html','green'),
+      listItem('Reorder Opportunities',x.reorders.length+' customers 90+ days since order','Review','orders-admin.html','amber')
+    ].join('');
+
+    var financeReady=x.openOrders.filter(function(o){return !o.finance_pushed && !o.finance_not_required && Number(o.order_total||o.total||0)>0});
+    $('erpFinanceList').innerHTML=[
+      listItem('Ready to Push',financeReady.length+' orders with value',fmtMoney(financeReady.reduce(function(s,o){return s+(Number(o.order_total||o.total)||0)},0)),'orders-admin.html','amber'),
+      listItem('Open Order Value',x.openOrders.length+' orders',fmtMoney(x.orderValue),'orders-admin.html','green'),
+      listItem('Finance Entries Loaded',(x.d.finance||[]).length+' entries','Open','finance-pro.html','')
+    ].join('');
+
+    var events=[];
+    x.openOrders.slice(0,6).forEach(function(o){events.push({date:o.order_date||o.created_at||'',icon:'O',title:o.order_number||'Order',sub:[o.customer_name,o.status,fmtMoney(o.order_total||0)].filter(Boolean).join(' · '),href:hrefOrder(o),type:'Order',kind:statusKind(o.status)})});
+    x.pendingQuotes.slice(0,6).forEach(function(q){events.push({date:q.quote_date||q.created_at||'',icon:'Q',title:q.quote_number||q.quoteTitle||q.quote_title||'Quote',sub:[q.customer_name||q.customerName,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),href:hrefQuote(q),type:'Quote',kind:statusKind(q.quote_status||q.quoteStatus)})});
+    events.sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))});
+    $('erpTimeline').innerHTML=events.slice(0,10).map(function(e){
+      return '<a class="erp-timeline-row" href="'+e.href+'"><span class="erp-timeline-dot">'+esc(e.icon)+'</span><span><strong>'+esc(e.title)+'</strong><small>'+esc(String(e.date||'').slice(0,10))+' · '+esc(e.sub)+'</small></span><b class="erp-badge '+e.kind+'">'+esc(e.type)+'</b></a>';
+    }).join('') || '<div class="empty-note">Timeline will populate after cloud data loads.</div>';
+  }
+
+  var prevFullRender=window.fullRender;
+  // fullRender is declared as a function in the page, not always on window in all browsers.
+  var install=function(){
+    createConsole();
+    renderConsole();
+    var old=typeof fullRender==='function'?fullRender:null;
+    if(old && !old.__erpWrapped){
+      var wrapped=async function(){
+        var result=await old.apply(this,arguments);
+        renderConsole();
+        return result;
+      };
+      wrapped.__erpWrapped=true;
+      fullRender=wrapped;
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(install,50);setTimeout(renderConsole,900);setTimeout(renderConsole,2200);});
+})();
+</script>
+
 </body>
 </html>
