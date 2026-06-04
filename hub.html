@@ -432,6 +432,197 @@
     @media(max-width:980px){.inventory-impact-grid{grid-template-columns:1fr}.impact-summary-row{grid-template-columns:1fr 1fr}}
     @media(max-width:640px){.impact-card{grid-template-columns:auto minmax(0,1fr)}.impact-short{grid-column:2;justify-self:start}.impact-summary-row{grid-template-columns:1fr}}
 
+
+    /* === Hub Customer Timeline Phase C === */
+    .timeline-tool{
+      display:grid;
+      grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+      gap:10px;
+      margin-top:12px;
+    }
+    .timeline-picker,.timeline-detail{
+      padding:14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.78);
+      border:1px solid var(--line);
+      min-height:220px;
+    }
+    .timeline-picker h3,.timeline-detail h3{
+      margin:7px 0 8px;
+      color:var(--ink);
+      font-family:"Playfair Display",serif;
+      font-size:1.28rem;
+    }
+    .timeline-search{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:8px;
+      margin:10px 0;
+      padding:8px;
+      border-radius:18px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .timeline-search input{margin:0}
+    .timeline-customer-list{
+      display:grid;
+      gap:8px;
+      max-height:380px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .timeline-customer-btn{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:8px;
+      align-items:center;
+      padding:10px;
+      border-radius:16px;
+      border:1px solid rgba(101,60,120,.10);
+      background:rgba(255,255,255,.75);
+      text-align:left;
+      cursor:pointer;
+      color:inherit;
+    }
+    .timeline-customer-btn.active,
+    .timeline-customer-btn:hover{
+      border-color:rgba(232,79,183,.24);
+      box-shadow:0 10px 22px rgba(95,36,112,.08);
+      transform:translateY(-1px);
+    }
+    .timeline-customer-btn strong{
+      display:block;
+      color:var(--ink);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:.9rem;
+    }
+    .timeline-customer-btn small{
+      display:block;
+      color:var(--muted);
+      margin-top:3px;
+      font-size:.74rem;
+      line-height:1.28;
+    }
+    .timeline-summary{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:8px;
+      margin:10px 0;
+    }
+    .timeline-summary div{
+      padding:10px;
+      border-radius:16px;
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .timeline-summary span{
+      display:block;
+      color:var(--muted);
+      font-size:.62rem;
+      font-weight:950;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+    }
+    .timeline-summary strong{
+      display:block;
+      margin-top:4px;
+      color:var(--ink);
+      font-size:1.04rem;
+    }
+    .timeline-event-list{
+      display:grid;
+      gap:8px;
+      margin-top:10px;
+    }
+    .timeline-event{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:11px;
+      border-radius:17px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(101,60,120,.10);
+      color:inherit;
+      text-decoration:none;
+      box-shadow:0 8px 18px rgba(95,36,112,.045);
+    }
+    .timeline-event:hover{
+      transform:translateY(-1px);
+      box-shadow:0 12px 24px rgba(95,36,112,.08);
+    }
+    .timeline-event-icon{
+      width:38px;
+      height:38px;
+      border-radius:15px;
+      display:grid;
+      place-items:center;
+      color:white;
+      font-weight:950;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+    }
+    .timeline-event strong{
+      display:block;
+      color:var(--ink);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:.94rem;
+    }
+    .timeline-event small{
+      display:block;
+      color:var(--muted);
+      margin-top:3px;
+      line-height:1.32;
+      font-size:.76rem;
+    }
+    .timeline-pills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:5px;
+      margin-top:7px;
+    }
+    .timeline-pill{
+      display:inline-flex;
+      padding:4px 7px;
+      border-radius:999px;
+      font-size:.62rem;
+      font-weight:950;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      background:rgba(101,60,120,.07);
+      border:1px solid rgba(101,60,120,.10);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .timeline-pill.good{
+      background:rgba(72,199,116,.10);
+      border-color:rgba(72,199,116,.18);
+      color:#2b7b48;
+    }
+    .timeline-pill.warn{
+      background:rgba(255,203,107,.14);
+      border-color:rgba(255,203,107,.25);
+      color:#8a620f;
+    }
+    .timeline-pill.danger{
+      background:rgba(255,107,138,.10);
+      border-color:rgba(255,107,138,.20);
+      color:#a3344f;
+    }
+    @media(max-width:980px){
+      .timeline-tool{grid-template-columns:1fr}
+      .timeline-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:640px){
+      .timeline-search{grid-template-columns:1fr}
+      .timeline-summary{grid-template-columns:1fr}
+      .timeline-event{grid-template-columns:auto minmax(0,1fr)}
+      .timeline-event>.tag{grid-column:2;justify-self:start}
+    }
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -727,6 +918,41 @@
   </section>
 
 
+
+  <section class="section" id="customerTimelineSection">
+    <div class="section-head">
+      <div>
+        <span class="kicker">Customer Timeline</span>
+        <h2>Quotes, orders, and finance in one customer view.</h2>
+        <p>Select a customer to see their activity history and jump to the source record.</p>
+      </div>
+      <a class="ghost" href="orders-admin.html">Open Orders</a>
+    </div>
+    <div class="timeline-tool">
+      <div class="timeline-picker">
+        <span class="source-pill" id="sourceTimelineCustomers">Customers</span>
+        <h3>Choose Customer</h3>
+        <div class="timeline-search">
+          <input id="timelineCustomerSearch" placeholder="Search customer or email..." />
+          <button class="ghost" id="timelineCustomerClear" type="button">Clear</button>
+        </div>
+        <div class="timeline-customer-list" id="timelineCustomerList"></div>
+      </div>
+      <div class="timeline-detail">
+        <span class="source-pill" id="sourceTimelineEvents">Timeline</span>
+        <h3 id="timelineCustomerTitle">Customer Timeline</h3>
+        <div class="timeline-summary">
+          <div><span>Revenue</span><strong id="timelineRevenue">$0.00</strong></div>
+          <div><span>Orders</span><strong id="timelineOrders">0</strong></div>
+          <div><span>Quotes</span><strong id="timelineQuotes">0</strong></div>
+          <div><span>Last Activity</span><strong id="timelineLast">—</strong></div>
+        </div>
+        <div class="timeline-event-list" id="timelineEventList"></div>
+      </div>
+    </div>
+  </section>
+
+
   <section class="section" id="inventoryImpactSection">
     <div class="section-head">
       <div>
@@ -927,6 +1153,100 @@ function renderHealth(){const inv=lowInventoryRows();const d=combinedData();cons
 function healthPill(label,source){const cls=source==='Cloud'?'cloud':(source==='Browser fallback'?'fallback':'off');return `<div class="health-pill"><span class="dot ${cls}"></span><b>${label}</b><span>${source}</span></div>`}
 function renderCloudHealth(){const prod=hubCloud.productionLoaded?'Cloud':'Browser fallback';const orders=hubCloud.loaded?'Cloud':'Browser fallback';const quotes=hubCloud.loaded?'Cloud':'Browser fallback';const finance=hubCloud.loaded?'Cloud':'Browser fallback';const inventory=hubCloud.inventoryLoaded?'Cloud':'Browser fallback';$('cloudHealthStrip').innerHTML=[healthPill('Production',prod),healthPill('Orders',orders),healthPill('Inventory',inventory),healthPill('Quotes',quotes),healthPill('Finance',finance)].join('');setSource('sourceProduction1','Production',prod);setSource('sourceProduction2','Production',prod);setSource('sourceInventory','Inventory',inventory);setSource('sourceOrders','Orders',orders);}
 function renderCurrentWorkflow(){const d=readObj('olipoly_workflow_draft_v1');if(!d){$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">＋</span><span><strong>No active Hub draft</strong><small>Use the Start Order Wizard when a new request comes in.</small></span><a class="ghost" href="#workflowType">Start Draft</a></div>`;return;}$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">↪</span><span><strong>${esc(d.title||d.request_type||'Workflow draft')}</strong><small>${esc(d.request_type||'request')} · Qty ${esc(d.quantity||1)}${d.due_date?' · Due '+esc(d.due_date):''}</small></span><div class="actions"><a class="btn" href="${deepLink('job',d.title)}">Open Production</a><a class="ghost" href="quote.html">Quote</a><a class="ghost" href="orders-admin.html">Orders</a><button class="ghost" type="button" onclick="clearDraft()">Clear</button></div></div>`;}
+
+
+let selectedTimelineCustomerKey='';
+function timelineStatusPill(text,kind=''){return text?`<span class="timeline-pill ${kind}">${esc(text)}</span>`:'';}
+function timelineKindFromStatus(status){
+  const s=String(status||'').toLowerCase();
+  if(['paid','completed','closed','accepted','converted','deposit_paid'].includes(s)) return 'good';
+  if(['unpaid','deposit_due','quote_sent','awaiting_approval','ready'].includes(s)) return 'warn';
+  if(['declined','expired','refunded','cancelled'].includes(s)) return 'danger';
+  return '';
+}
+function timelineCustomerList(){
+  return buildCustomerStats().sort((a,b)=>String(b.lastDate||'').localeCompare(String(a.lastDate||'')));
+}
+function timelineEventsForCustomer(c){
+  const d=combinedData();
+  const key=c?.key||'';
+  if(!key) return [];
+  const orderEvents=(d.orders||[]).filter(o=>customerKeyFromOrder(o)===key).map(o=>({
+    type:'Order',
+    icon:'📦',
+    date:o.order_date||o.created_at||o.updated_at||'',
+    title:o.order_number||o.order_title||'Order',
+    sub:[o.order_title,o.status,o.payment_status,money(o.order_total||0)].filter(Boolean).join(' · '),
+    href:deepLink('order',o),
+    pills:[
+      timelineStatusPill(cleanStatus(o.status),timelineKindFromStatus(o.status)),
+      timelineStatusPill(cleanStatus(o.payment_status),timelineKindFromStatus(o.payment_status)),
+      o.finance_pushed?timelineStatusPill('Finance Pushed','good'):'',
+      o.completion_email_sent?timelineStatusPill('Email Sent','good'):''
+    ].join('')
+  }));
+  const quoteEvents=(d.quotes||[]).filter(q=>String(q.customer_email||q.customerEmail||q.customer_name||q.customerName||'').trim().toLowerCase()===key).map(q=>({
+    type:'Quote',
+    icon:'🧾',
+    date:q.quote_date||q.created_at||q.updated_at||'',
+    title:q.quote_number||q.quoteNumber||q.quote_title||q.quoteTitle||'Quote',
+    sub:[q.quote_title||q.quoteTitle,q.quote_status||q.quoteStatus,q.final_quote?money(q.final_quote):''].filter(Boolean).join(' · '),
+    href:deepLink('quote',q),
+    pills:[
+      timelineStatusPill(cleanStatus(q.quote_status||q.quoteStatus),timelineKindFromStatus(q.quote_status||q.quoteStatus)),
+      q.final_quote?timelineStatusPill(money(q.final_quote),''):''
+    ].join('')
+  }));
+  const financeEvents=(d.finance||[]).filter(f=>String(f.customer_email||f.customer_name||f.customer||f.description||'').toLowerCase().includes(key) || String(f.order_number||'').trim()).map(f=>({
+    type:'Finance',
+    icon:'💰',
+    date:f.date||f.entry_date||f.created_at||'',
+    title:f.description||f.category||'Finance Entry',
+    sub:[f.category,money(f.amount)].filter(Boolean).join(' · '),
+    href:deepLink('finance',f),
+    pills:[timelineStatusPill(f.category,''),timelineStatusPill(money(f.amount),'good')].join('')
+  }));
+  // Finance entries are often not customer-keyed yet, so prefer order/quote events and only include finance entries that explicitly match.
+  return [...orderEvents,...quoteEvents,...financeEvents.filter(e=>String(e.title+' '+e.sub).toLowerCase().includes(key))]
+    .filter(e=>e.date||e.title)
+    .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+}
+function renderTimelineCustomerList(){
+  if(!$('customerTimelineSection')) return;
+  const q=($('timelineCustomerSearch')?.value||'').trim().toLowerCase();
+  const customers=timelineCustomerList().filter(c=>!q || `${c.name} ${c.email}`.toLowerCase().includes(q)).slice(0,30);
+  if(!selectedTimelineCustomerKey && customers[0]) selectedTimelineCustomerKey=customers[0].key;
+  setSource('sourceTimelineCustomers','Customers',hubCloud.customerLoaded?'Cloud':(hubCloud.loaded?'Orders Cloud':'Browser fallback'));
+  setSource('sourceTimelineEvents','Timeline',hubCloud.loaded?'Cloud':'Browser fallback');
+  $('timelineCustomerList').innerHTML=customers.map(c=>`<button class="timeline-customer-btn ${c.key===selectedTimelineCustomerKey?'active':''}" type="button" data-timeline-customer="${esc(c.key)}"><span><strong>${esc(c.name)}</strong><small>${esc([c.email,`${c.orders} order${c.orders===1?'':'s'}`,money(c.revenue)].filter(Boolean).join(' · '))}</small></span><span class="tag">${daysSince(c.lastDate)}d</span></button>`).join('')||empty('No customers found.');
+  document.querySelectorAll('[data-timeline-customer]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      selectedTimelineCustomerKey=btn.dataset.timelineCustomer;
+      renderCustomerTimeline();
+    });
+  });
+}
+function renderCustomerTimeline(){
+  if(!$('customerTimelineSection')) return;
+  renderTimelineCustomerList();
+  const customer=timelineCustomerList().find(c=>c.key===selectedTimelineCustomerKey);
+  if(!customer){
+    $('timelineCustomerTitle').textContent='Customer Timeline';
+    $('timelineRevenue').textContent=money(0);
+    $('timelineOrders').textContent='0';
+    $('timelineQuotes').textContent='0';
+    $('timelineLast').textContent='—';
+    $('timelineEventList').innerHTML=empty('Select a customer to view timeline.');
+    return;
+  }
+  const events=timelineEventsForCustomer(customer);
+  $('timelineCustomerTitle').textContent=customer.name;
+  $('timelineRevenue').textContent=money(customer.revenue);
+  $('timelineOrders').textContent=String(customer.orders);
+  $('timelineQuotes').textContent=String(events.filter(e=>e.type==='Quote').length);
+  $('timelineLast').textContent=String(customer.lastDate||events[0]?.date||'—').slice(0,10)||'—';
+  $('timelineEventList').innerHTML=events.slice(0,14).map(e=>`<a class="timeline-event" href="${e.href}" data-recent-label="${esc(e.title)}"><span class="timeline-event-icon">${e.icon}</span><span><strong>${esc(e.title)}</strong><small>${esc(String(e.date||'').slice(0,10))} · ${esc(e.sub||'')}</small><span class="timeline-pills">${e.pills||''}</span></span><span class="tag">${e.type}</span></a>`).join('')||empty('No quote/order activity found for this customer.');
+}
 
 function materialKey(v){return String(v||'').trim().toLowerCase();}
 function jobMaterialNeeds(j){
@@ -1186,12 +1506,13 @@ function recentStore(){return read('olipoly_hub_recent_v1')}
 function writeRecent(label,href){if(!label||!href)return;const rows=recentStore().filter(r=>r.href!==href||r.label!==label);rows.unshift({label,href,at:new Date().toISOString()});localStorage.setItem('olipoly_hub_recent_v1',JSON.stringify(rows.slice(0,10)));}
 function renderRecent(){$('recentList').innerHTML=recentStore().slice(0,6).map(recentItem).join('')||empty('Recently opened items will appear here.');}
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
-async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderInventoryImpact();renderAttention();renderSearch();renderRecent();}
+async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderCustomerTimeline();renderInventoryImpact();renderAttention();renderSearch();renderRecent();}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
 $('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
 $('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();fullRender();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
 $('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.';hubCloud.loaded=false;hubCloud.productionLoaded=false;hubCloud.inventoryLoaded=false;hubCloud.customerLoaded=false;hubCloud.jobs=[];hubCloud.customers=[];fullRender();};
 $('hubSearchInput')?.addEventListener('input',renderSearch);$('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
+$('timelineCustomerSearch')?.addEventListener('input',()=>{renderCustomerTimeline();});$('timelineCustomerClear')?.addEventListener('click',()=>{$('timelineCustomerSearch').value='';renderCustomerTimeline();});
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-label]');if(a)writeRecent(a.dataset.recentLabel,a.getAttribute('href'));});
 (async function init(){setType('business');fullRender();await refreshAuth();await loadCloudData();fullRender();})();
 </script>
