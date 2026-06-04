@@ -881,6 +881,114 @@ body::before{
   .workflow-node{min-height:auto;border-radius:18px;padding:12px}
 }
 
+
+/* === Hub Command Center V2: production-first workflow layer === */
+.start-work-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.start-work-card{
+  min-height:145px;
+  padding:15px;
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,246,252,.82));
+  border:1px solid rgba(101,60,120,.13);
+  box-shadow:0 10px 22px rgba(95,36,112,.07);
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  justify-content:space-between;
+  text-decoration:none;
+  transition:.18s ease;
+}
+.start-work-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.11)}
+.start-work-card .work-icon{
+  width:40px;height:40px;border-radius:15px;display:grid;place-items:center;
+  color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));font-weight:950;
+}
+.start-work-card strong{color:var(--ink);line-height:1.12;font-size:1rem}
+.start-work-card small{color:var(--muted);line-height:1.35;font-size:.84rem}
+.workflow-intake-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr .55fr .75fr;
+  gap:10px;
+  align-items:end;
+  margin-top:12px;
+}
+.queue-health-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.queue-health-card{
+  padding:12px;
+  border-radius:18px;
+  background:rgba(255,255,255,.76);
+  border:1px solid rgba(101,60,120,.12);
+}
+.queue-health-card span{
+  display:block;
+  color:var(--muted);
+  font-size:.64rem;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  margin-bottom:5px;
+}
+.queue-health-card strong{display:block;color:var(--ink);font-size:1.25rem;line-height:1}
+.queue-health-card.warn strong{color:#7a5400}
+.queue-health-card.danger strong{color:#9a2140}
+.queue-list-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.queue-panel{
+  padding:13px;
+  border-radius:20px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(101,60,120,.12);
+}
+.queue-panel h4{margin:0 0 8px;color:var(--ink)}
+.queue-mini-list{display:grid;gap:7px}
+.queue-mini-item{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  padding:9px 10px;
+  border-radius:15px;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(101,60,120,.09);
+  text-decoration:none;
+}
+.queue-mini-item strong{display:block;color:var(--ink);font-size:.86rem;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue-mini-item small{display:block;color:var(--muted);font-size:.72rem;line-height:1.25;margin-top:2px}
+.queue-mini-item b{
+  font-size:.62rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#9b4c80;
+  background:rgba(232,79,183,.09);
+  border:1px solid rgba(232,79,183,.13);
+  border-radius:999px;
+  padding:5px 7px;
+  white-space:nowrap;
+}
+@media(max-width:980px){
+  .workflow-intake-grid{grid-template-columns:1fr 1fr}
+  .queue-health-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .queue-list-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .workflow-intake-grid,.queue-health-grid{grid-template-columns:1fr}
+  .start-work-grid{grid-template-columns:1fr}
+}
+
 </style>
 
 <script>
@@ -1254,14 +1362,37 @@ body::before{
       </div>
     </details>
 
-    
     <section class="hub-section" id="workflowCommandCenter">
       <div class="section-title">
-        <span class="os-kicker">Command Center</span>
-        <h3>Start the right workflow</h3>
-        <p>Capture the minimum info once, then route it to the right OliPoly tool. This saves a local workflow draft that the next tools can be wired to read.</p>
+        <span class="os-kicker">Command Center V2</span>
+        <h3>Start work where cost and inventory are real.</h3>
+        <p>Hub starts a lightweight workflow draft, then sends the job to Production Control first for actual cost, material reservation, capacity, and margin before anything becomes a customer quote.</p>
       </div>
-      <div class="quick-grid">
+
+      <div class="start-work-grid" aria-label="Start a production-first workflow">
+        <a class="start-work-card" href="production-control.html" data-start-work="personal">
+          <span class="work-icon">🎁</span>
+          <span><strong>Personal Project</strong><small>Gift, one-off, family/friend request, or non-sales work. Starts in Production Control.</small></span>
+        </a>
+        <a class="start-work-card" href="production-control.html" data-start-work="business">
+          <span class="work-icon">🏢</span>
+          <span><strong>Business / Branded Order</strong><small>Logo items, PO work, branded merchandise, or professional quote request.</small></span>
+        </a>
+        <a class="start-work-card" href="production-control.html" data-start-work="replacement">
+          <span class="work-icon">🧩</span>
+          <span><strong>Replacement Part</strong><small>Functional print, fit check, repair support, or part recreation workflow.</small></span>
+        </a>
+        <a class="start-work-card" href="production-control.html" data-start-work="prototype">
+          <span class="work-icon">🧪</span>
+          <span><strong>Prototype</strong><small>Test print, first article, product idea, measurement check, or design iteration.</small></span>
+        </a>
+        <a class="start-work-card" href="production-control.html" data-start-work="batch">
+          <span class="work-icon">🔁</span>
+          <span><strong>Repeat / Small Batch</strong><small>Restock, repeatable item, event merch, or multiple-piece production run.</small></span>
+        </a>
+      </div>
+
+      <div class="workflow-intake-grid">
         <label class="label">Request type
           <select id="workflowType" class="reminder-input">
             <option value="personal">Personal gift / one-off</option>
@@ -1281,17 +1412,47 @@ body::before{
           <input id="workflowDue" class="reminder-input" type="date">
         </label>
       </div>
-      <div class="button-row" style="margin-top:12px;">
-        <button class="btn" id="workflowSaveBtn" type="button">Save Workflow Draft</button>
-        <a class="ghost" id="workflowQuoteBtn" href="quote.html">Open Quote</a>
-        <a class="ghost" id="workflowProductionBtn" href="production-control.html">Open Production</a>
-        <a class="ghost" id="workflowOrdersBtn" href="orders-admin.html">Open Orders</a>
+
+      <div class="action-pill-grid">
+        <button class="action-pill primary" id="workflowSaveBtn" type="button">Save Draft</button>
+        <a class="action-pill primary" id="workflowProductionBtn" href="production-control.html">Start in Production Control</a>
+        <a class="action-pill" id="workflowQuoteBtn" href="quote.html">Open Quote Tool</a>
+        <a class="action-pill" id="workflowOrdersBtn" href="orders-admin.html">Open Orders</a>
       </div>
-      <div class="auth-status" id="workflowRecommendation">Choose a request type to see the recommended workflow.</div>
+      <div class="auth-status" id="workflowRecommendation">Production Control remains the estimating engine: cost → reserve material → check margin → quote.</div>
     </section>
 
+    <section class="hub-section" id="operationsSnapshot">
+      <div class="section-title">
+        <span class="os-kicker">Operations Snapshot</span>
+        <h3>Queues pulled from your current browser/cloud-backed tools.</h3>
+        <p>These cards summarize local tool data when available. Use them as a command-center shortcut, not a replacement for Production Control, Inventory Control, Orders Admin, or Finance Pro.</p>
+      </div>
+      <div class="queue-health-grid">
+        <div class="queue-health-card"><span>Open Jobs</span><strong id="hubOpenJobs">0</strong></div>
+        <div class="queue-health-card"><span>Ready / Queued</span><strong id="hubReadyJobs">0</strong></div>
+        <div class="queue-health-card"><span>Printing</span><strong id="hubPrintingJobs">0</strong></div>
+        <div class="queue-health-card"><span>Post-Print</span><strong id="hubPostPrintJobs">0</strong></div>
+        <div class="queue-health-card warn"><span>Low Inventory</span><strong id="hubLowInventory">0</strong></div>
+        <div class="queue-health-card"><span>Ready Finance</span><strong id="hubReadyFinance">0</strong></div>
+      </div>
+      <div class="queue-list-grid">
+        <div class="queue-panel">
+          <h4>Ready to estimate / quote</h4>
+          <div class="queue-mini-list" id="hubReadyQuoteList"></div>
+        </div>
+        <div class="queue-panel">
+          <h4>Needs production attention</h4>
+          <div class="queue-mini-list" id="hubProductionAttentionList"></div>
+        </div>
+        <div class="queue-panel">
+          <h4>Inventory / finance attention</h4>
+          <div class="queue-mini-list" id="hubOpsAttentionList"></div>
+        </div>
+      </div>
+    </section>
 
-    <section class="hub-section">
+<section class="hub-section">
       <div class="section-title">
         <span class="os-kicker">Reminders</span>
         <h3>Today & follow-ups</h3>
@@ -2250,34 +2411,51 @@ body::before{
     renderHealthChecks();
     renderReminders();
 
+
     function workflowRecommendationText(type) {
       const map = {
-        personal: 'Recommended: Quote if pricing is needed → Production Control when accepted.',
-        business: 'Recommended: Quote → Orders Admin → Invoice / tracking → Finance push.',
-        replacement: 'Recommended: Production Control first for fit/function → Quote if charging customer.',
-        prototype: 'Recommended: Production Control first → Quote once scope is clear.',
-        batch: 'Recommended: Production Control + Inventory check → Quote / Orders when repeatable.'
+        personal: 'Recommended: Start in Production Control as Personal / Free. Use Quote only if this becomes a paid customer job.',
+        business: 'Recommended: Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.',
+        replacement: 'Recommended: Start in Production Control as Replacement / Warranty. Confirm fit/function and material before quoting.',
+        prototype: 'Recommended: Start in Production Control as Prototype / Test Print. Quote only after scope and iteration count are clear.',
+        batch: 'Recommended: Start in Production Control as Craft Stock or Finished Goods Restock. Confirm repeatability, material, and capacity before quoting.'
       };
-      return map[type] || 'Choose a request type to see the recommended workflow.';
+      return map[type] || 'Production Control remains the estimating engine: cost → reserve material → check margin → quote.';
     }
 
-    function workflowDraftFromForm() {
+    function workflowTypeToProductionDefaults(type) {
+      const map = {
+        personal: { job_type:'personal_free', status:'idea', priority:'low', machine:'either' },
+        business: { job_type:'business_po', status:'ready_to_print', priority:'urgent', machine:'P2S' },
+        replacement: { job_type:'replacement_warranty', status:'idea', priority:'high', machine:'either' },
+        prototype: { job_type:'prototype', status:'queued', priority:'normal', machine:'either' },
+        batch: { job_type:'craft_stock', status:'ready_to_print', priority:'normal', machine:'either' }
+      };
+      return map[type] || map.personal;
+    }
+
+    function workflowDraftFromForm(typeOverride) {
+      const type = typeOverride || document.getElementById('workflowType')?.value || 'personal';
       return {
         id: `wf-${Date.now()}`,
         created_at: new Date().toISOString(),
-        request_type: document.getElementById('workflowType')?.value || 'personal',
+        request_type: type,
         title: document.getElementById('workflowTitle')?.value.trim() || '',
         quantity: Number(document.getElementById('workflowQty')?.value || 1) || 1,
         due_date: document.getElementById('workflowDue')?.value || '',
-        source: 'hub'
+        source: 'hub',
+        destination: 'production-control',
+        production_defaults: workflowTypeToProductionDefaults(type),
+        workflow_note: workflowRecommendationText(type)
       };
     }
 
-    function saveWorkflowDraft() {
-      const draft = workflowDraftFromForm();
+    function saveWorkflowDraft(typeOverride) {
+      if (typeOverride && document.getElementById('workflowType')) document.getElementById('workflowType').value = typeOverride;
+      const draft = workflowDraftFromForm(typeOverride);
       localStorage.setItem('olipoly_workflow_draft_v1', JSON.stringify(draft));
       const el = document.getElementById('workflowRecommendation');
-      if (el) el.textContent = `Draft saved: ${draft.title || draft.request_type}. ${workflowRecommendationText(draft.request_type)}`;
+      if (el) el.textContent = `Draft saved for Production Control: ${draft.title || draft.request_type}. ${workflowRecommendationText(draft.request_type)}`;
       return draft;
     }
 
@@ -2287,12 +2465,81 @@ body::before{
       if (el) el.textContent = workflowRecommendationText(type);
     }
 
+    function safeReadJson(key, fallback = []) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
+      catch { return fallback; }
+    }
+
+    function money(v){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0); }
+
+    function hubJobHours(j){
+      return Number(j.estimated_total_hours || (Number(j.estimated_hours_each || 0) * Number(j.quantity || 1)) || 0);
+    }
+
+    function renderHubOpsSnapshot(){
+      const jobs = safeReadJson('olipoly_production_jobs_v3', []);
+      const raw = safeReadJson('olipoly_raw_material_inventory_v3', []);
+      const supplies = safeReadJson('olipoly_non_filament_supplies_v1', []);
+      const orders = safeReadJson('olipoly_orders_v1', []);
+
+      const closed = new Set(['completed','failed_scrap','archived']);
+      const post = new Set(['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered']);
+      const openJobs = jobs.filter(j => !closed.has(j.production_status));
+      const readyJobs = openJobs.filter(j => ['ready_to_print','queued'].includes(j.production_status));
+      const printing = openJobs.filter(j => j.production_status === 'printing');
+      const postPrint = openJobs.filter(j => post.has(j.production_status));
+      const lowRaw = raw.filter(r => Number(r.remaining_grams || 0) <= Number(r.reorder_threshold_grams || 0));
+      const lowSupplies = supplies.filter(s => Number(s.quantity_on_hand || 0) <= Number(s.reorder_threshold || s.reorder_point || 0));
+      const readyFinance = orders.filter(o => ['paid','deposit_paid'].includes(o.payment_status) && Number(o.order_total || 0) > 0 && !o.finance_pushed);
+
+      const set = (id,val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+      set('hubOpenJobs', openJobs.length);
+      set('hubReadyJobs', readyJobs.length);
+      set('hubPrintingJobs', printing.length);
+      set('hubPostPrintJobs', postPrint.length);
+      set('hubLowInventory', lowRaw.length + lowSupplies.length);
+      set('hubReadyFinance', readyFinance.length);
+
+      const item = (href,title,sub,tag) => `<a class="queue-mini-item" href="${href}"><span><strong>${String(title||'Untitled').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</strong><small>${String(sub||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</small></span><b>${tag}</b></a>`;
+      const empty = text => `<div class="auth-status">${text}</div>`;
+
+      const readyQuote = readyJobs
+        .filter(j => Number(j.estimated_price_each || 0) || Number(j.estimated_material_cost || 0) || hubJobHours(j))
+        .slice(0,5)
+        .map(j => item('production-control.html', j.job_title, `${j.customer_name || j.job_type || 'Production'} · ${hubJobHours(j).toFixed(1).replace(/\.0$/,'')}h`, 'Estimate'))
+        .join('');
+
+      const productionAttention = openJobs
+        .filter(j => ['idea','awaiting_approval','ready_to_print','queued','printing','on_hold'].includes(j.production_status))
+        .sort((a,b)=>String(a.due_date||'9999').localeCompare(String(b.due_date||'9999')))
+        .slice(0,5)
+        .map(j => item('production-control.html', j.job_title, `${j.production_status || 'status'}${j.due_date ? ' · due '+j.due_date : ''}`, 'Prod'))
+        .join('');
+
+      const opsAttention = [
+        ...lowRaw.slice(0,3).map(r => item('inventory-control.html', `${r.material_type || 'Material'} / ${r.color || 'No color'}`, `${Math.round(Number(r.remaining_grams||0))}g remaining`, 'Low')),
+        ...lowSupplies.slice(0,2).map(s => item('inventory-control.html', s.item_name, `${Number(s.quantity_on_hand||0)} ${s.unit_type || ''} on hand`, 'Supply')),
+        ...readyFinance.slice(0,3).map(o => item('orders-admin.html', o.order_number || o.customer_name || 'Order', `${money(o.order_total)} ready to push`, 'Finance'))
+      ].join('');
+
+      const rq = document.getElementById('hubReadyQuoteList');
+      const pa = document.getElementById('hubProductionAttentionList');
+      const oa = document.getElementById('hubOpsAttentionList');
+      if(rq) rq.innerHTML = readyQuote || empty('No ready-to-quote production jobs found in this browser yet.');
+      if(pa) pa.innerHTML = productionAttention || empty('No active production attention items found.');
+      if(oa) oa.innerHTML = opsAttention || empty('No low inventory or finance attention items found.');
+    }
+
     document.getElementById('workflowType')?.addEventListener('input', updateWorkflowRecommendation);
-    document.getElementById('workflowSaveBtn')?.addEventListener('click', saveWorkflowDraft);
+    document.getElementById('workflowSaveBtn')?.addEventListener('click', () => saveWorkflowDraft());
+    document.querySelectorAll('[data-start-work]').forEach(card => {
+      card.addEventListener('click', () => saveWorkflowDraft(card.dataset.startWork));
+    });
     ['workflowQuoteBtn','workflowProductionBtn','workflowOrdersBtn'].forEach(id => {
       document.getElementById(id)?.addEventListener('click', () => saveWorkflowDraft());
     });
     updateWorkflowRecommendation();
+    renderHubOpsSnapshot();
 
 
     bootstrap();

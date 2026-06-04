@@ -815,6 +815,26 @@
     @media(max-width:1000px){.capacity-summary-grid,.capacity-machine-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:700px){.capacity-summary-grid,.capacity-machine-grid,.capacity-detail-grid{grid-template-columns:1fr 1fr}.capacity-machine{grid-column:1/-1}}
 
+
+    /* === Hub draft intake banner === */
+    .hub-draft-banner{
+      display:none;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      padding:13px 14px;
+      border-radius:20px;
+      margin-bottom:14px;
+      background:linear-gradient(135deg,rgba(232,79,183,.10),rgba(157,109,243,.10)),rgba(255,255,255,.82);
+      border:1px solid rgba(101,60,120,.13);
+      box-shadow:0 10px 26px rgba(84,38,94,.07);
+    }
+    .hub-draft-banner.show{display:flex}
+    .hub-draft-banner strong{color:var(--ink)}
+    .hub-draft-banner span{color:var(--muted);font-weight:800;font-size:.88rem;line-height:1.35}
+    .hub-draft-actions{display:flex;gap:8px;flex-wrap:wrap}
+    @media(max-width:800px){.hub-draft-banner{align-items:stretch;flex-direction:column}.hub-draft-actions .mini-btn{width:100%}}
+
 </style>
 </head>
 <body>
@@ -837,6 +857,19 @@
       <button class="btn" id="jumpAddBtn" type="button">+ Add Job</button>
     </div>
   </header>
+
+
+  <div class="hub-draft-banner" id="hubDraftBanner">
+    <div>
+      <strong id="hubDraftTitle">Hub workflow draft ready</strong>
+      <span id="hubDraftSub">Apply the Hub draft to this production job form.</span>
+    </div>
+    <div class="hub-draft-actions">
+      <button class="mini-btn" id="applyHubDraftBtn" type="button">Apply Draft</button>
+      <button class="mini-btn" id="dismissHubDraftBtn" type="button">Dismiss</button>
+    </div>
+  </div>
+
 
   <section class="hero">
     <div class="card section-title">
@@ -4068,6 +4101,57 @@
     }
   }
 
+
+  function hubDraftRead(){
+    try{return JSON.parse(localStorage.getItem('olipoly_workflow_draft_v1') || 'null')}catch{return null}
+  }
+
+  function hubDraftTypeToProduction(type){
+    const map = {
+      personal:{job_type:'personal_free', status:'idea', priority:'low', machine:'either'},
+      business:{job_type:'business_po', status:'ready_to_print', priority:'urgent', machine:'P2S'},
+      replacement:{job_type:'replacement_warranty', status:'idea', priority:'high', machine:'either'},
+      prototype:{job_type:'prototype', status:'queued', priority:'normal', machine:'either'},
+      batch:{job_type:'craft_stock', status:'ready_to_print', priority:'normal', machine:'either'}
+    };
+    return map[type] || map.personal;
+  }
+
+  function renderHubDraftBanner(){
+    const draft = hubDraftRead();
+    const banner = $('hubDraftBanner');
+    if(!banner) return;
+    if(!draft || draft.dismissed){
+      banner.classList.remove('show');
+      return;
+    }
+    $('hubDraftTitle').textContent = `Hub draft: ${draft.title || draft.request_type || 'New workflow'}`;
+    $('hubDraftSub').textContent = `${draft.workflow_note || 'Apply this to the Production Control form first, then cost/reserve material before quoting.'}`;
+    banner.classList.add('show');
+  }
+
+  function applyHubWorkflowDraft(){
+    const draft = hubDraftRead();
+    if(!draft) return toast('No Hub workflow draft found.');
+    const defaults = draft.production_defaults || hubDraftTypeToProduction(draft.request_type);
+    resetForm();
+    if($('jobTitle')) $('jobTitle').value = draft.title || '';
+    if($('jobType')) $('jobType').value = defaults.job_type || 'customer_custom';
+    if($('productionStatus')) $('productionStatus').value = defaults.status || 'idea';
+    if($('priority')) $('priority').value = defaults.priority || 'normal';
+    if($('machine')) $('machine').value = defaults.machine || 'either';
+    if($('quantity')) $('quantity').value = Math.max(1, Number(draft.quantity || 1));
+    if($('dueDate')) $('dueDate').value = draft.due_date || '';
+    if($('notes')) {
+      const line = `Started from Hub Command Center · ${draft.request_type || 'workflow'} · ${draft.created_at ? new Date(draft.created_at).toLocaleString() : new Date().toLocaleString()}`;
+      $('notes').value = [$('notes').value, line, draft.workflow_note || ''].filter(Boolean).join('\\n');
+    }
+    updatePricingPreview();
+    if($('addJobSection')) $('addJobSection').open = true;
+    $('addJobSection')?.scrollIntoView({behavior:'smooth', block:'start'});
+    toast('Hub draft applied to Production Control.');
+  }
+
   function render(){
     document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
     renderFilters();
@@ -4085,6 +4169,7 @@
     renderLanes();
     renderDetails();
     renderHistory();
+    renderHubDraftBanner();
   }
 
   function applyPreset(type){
@@ -4219,6 +4304,8 @@
     section?.scrollIntoView({behavior:'smooth', block:'start'});
   }
   $('jumpAddBtn').addEventListener('click', () => openSectionAndScroll('addJobSection'));
+  $('applyHubDraftBtn')?.addEventListener('click', applyHubWorkflowDraft);
+  $('dismissHubDraftBtn')?.addEventListener('click', () => { const d=hubDraftRead(); if(d){ localStorage.setItem('olipoly_workflow_draft_v1', JSON.stringify({...d,dismissed:true})); } renderHubDraftBanner(); });
   const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', () => openSectionAndScroll('addJobSection'));
   const clearForm = $('clearFormBtn'); if(clearForm) clearForm.addEventListener('click', resetForm);
   $('exportBackupBtn')?.addEventListener('click', exportProductionBackup);
