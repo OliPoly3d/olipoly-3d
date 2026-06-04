@@ -706,6 +706,98 @@ body{font-family:Inter,Arial,sans-serif}
   gap:12px;
 }
 
+
+    /* === Orders Admin closure/archiving add-on: scoped === */
+    .oa-view-tabs{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin:12px 0;
+      padding:8px;
+      border-radius:18px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+    }
+    .oa-view-tab{
+      min-height:40px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      font-weight:900;
+      cursor:pointer;
+    }
+    .oa-view-tab.active{
+      background:linear-gradient(135deg,rgba(46,230,196,.16),rgba(126,123,255,.18));
+      border-color:rgba(46,230,196,.36);
+      box-shadow:0 0 0 1px rgba(46,230,196,.10) inset;
+    }
+    .oa-waiver-panel{
+      margin:12px 0;
+      padding:12px;
+      border-radius:18px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+    .oa-waiver-panel h4{
+      margin:0 0 8px;
+      font-family:inherit;
+      color:var(--text);
+    }
+    .oa-waiver-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+    .oa-waiver-btn{
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      min-height:42px;
+      font-weight:900;
+      cursor:pointer;
+      padding:8px 10px;
+      text-align:center;
+    }
+    .oa-waiver-btn.active{
+      background:rgba(46,230,196,.13);
+      border-color:rgba(46,230,196,.35);
+      color:#cffff0;
+    }
+    .oa-closed-note{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1.4;
+    }
+    .payment-pill.p-not-required,
+    .payment-pill.p-closed-ready{
+      background:rgba(46,230,196,.12);
+      border-color:rgba(46,230,196,.25);
+      color:#cffff0;
+    }
+    .payment-pill.p-needs-action{
+      background:rgba(255,202,105,.12);
+      border-color:rgba(255,202,105,.28);
+      color:#ffe3a2;
+    }
+    .order-list-heading{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .order-list-count{
+      color:var(--muted);
+      font-size:.82rem;
+      font-weight:900;
+    }
+    @media(max-width:760px){
+      .oa-view-tabs,.oa-waiver-grid{grid-template-columns:1fr}
+    }
+
 </style>
 </head>
 <body>
@@ -723,17 +815,7 @@ body{font-family:Inter,Arial,sans-serif}
       </div>
     </div>
 
-    <div class="hero">
-      <section class="card">
-        <h2>Manage quote-to-order production from one internal dashboard.</h2>
-        <p>Create and update orders, add internal notes, record payment progress, manage fulfillment, and keep the public tracking fields customer-safe and current.</p>
-      </section>
-      <section class="card">
-        <h3>Stripe invoice workflow</h3>
-        <p class="sub">Create one Stripe invoice per order, copy the hosted invoice URL, paste it below, and save. When you mark an order as paid, the paid date will fill automatically.</p>
-        <div class="stripe-note">Recommended flow: create order → create Stripe invoice → copy hosted invoice URL → paste Stripe Invoice URL → save → mark paid when Stripe is paid.</div>
-      </section>
-    </div>
+
 
     <div class="card" id="signinCard" style="margin-bottom:22px;">
       <h3>Sign in</h3>
@@ -745,7 +827,20 @@ body{font-family:Inter,Arial,sans-serif}
     </div>
 
 
-    <div class="workspace-bar" id="workspaceBar">
+    
+
+    <div class="hero">
+      <section class="card">
+        <h2>Manage quote-to-order production from one internal dashboard.</h2>
+        <p>Create and update orders, add internal notes, record payment progress, manage fulfillment, and keep the public tracking fields customer-safe and current.</p>
+      </section>
+      <section class="card">
+        <h3>Stripe invoice workflow</h3>
+        <p class="sub">Create one Stripe invoice per order, copy the hosted invoice URL, paste it below, and save. When you mark an order as paid, the paid date will fill automatically.</p>
+        <div class="stripe-note">Recommended flow: create order → create Stripe invoice → copy hosted invoice URL → paste Stripe Invoice URL → save → mark paid when Stripe is paid.</div>
+      </section>
+    </div>
+<div class="workspace-bar" id="workspaceBar">
       <div class="workspace-id">
         <span class="workspace-kicker">Active Order</span>
         <strong id="workspaceOrderNumber">No order selected</strong>
@@ -796,8 +891,18 @@ body{font-family:Inter,Arial,sans-serif}
 
     <div class="grid">
       <section class="card">
-        <h3>Order List</h3>
-        <p class="sub">Select an order to view or update it.</p>
+        <div class="order-list-heading">
+          <div>
+            <h3>Order List</h3>
+            <p class="sub">Active work stays visible. Closed orders move out of the daily list but remain searchable.</p>
+          </div>
+          <div class="order-list-count" id="orderListCount">0 shown</div>
+        </div>
+        <div class="oa-view-tabs" role="tablist" aria-label="Order list view">
+          <button class="oa-view-tab active" id="ordersActiveTab" type="button" data-order-view="active">Active</button>
+          <button class="oa-view-tab" id="ordersNeedsTab" type="button" data-order-view="needs">Needs Action</button>
+          <button class="oa-view-tab" id="ordersClosedTab" type="button" data-order-view="closed">Closed</button>
+        </div>
         <div class="list" id="orderList"></div>
       </section>
 
@@ -926,6 +1031,15 @@ Aurora, OH 44202</textarea></div>
               <button class="btn-ghost" id="markInvoiceSentBtn" type="button">Mark Invoice Sent</button>
               <button class="btn-ghost hidden" id="unmarkCompleteEmailBtn" type="button">Unmark Completion Sent</button>
             </div>
+            <div class="oa-waiver-panel">
+              <h4>Closeout exceptions</h4>
+              <div class="oa-waiver-grid">
+                <button class="oa-waiver-btn" id="paymentNotRequiredBtn" type="button">Payment Not Required</button>
+                <button class="oa-waiver-btn" id="financeNotRequiredBtn" type="button">Finance Not Required</button>
+                <button class="oa-waiver-btn" id="completionEmailNotRequiredBtn" type="button">Completion Email Not Required</button>
+              </div>
+              <div class="oa-closed-note" id="closureStatusNote">Closed orders require payment paid/not required, finance pushed/not required, and completion email sent/not required.</div>
+            </div>
           </div>
 
           <div class="action-group document-actions">
@@ -1037,6 +1151,7 @@ Aurora, OH 44202</textarea></div>
     let currentUser = null;
     let orders = [];
     let activeId = null;
+    let orderViewMode = 'active';
 
     const $ = id => document.getElementById(id);
     const num = v => Number(v) || 0;
@@ -1044,7 +1159,88 @@ Aurora, OH 44202</textarea></div>
     const today = () => new Date().toISOString().slice(0,10);
 
     const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed'})[v] || v;
-    const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v] || v;
+    const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
+
+    const CLOSURE_KEY = 'olipoly_order_closure_overrides_v1';
+
+    function closureStore(){
+      try { return JSON.parse(localStorage.getItem(CLOSURE_KEY) || '{}'); }
+      catch { return {}; }
+    }
+
+    function closureKey(order){
+      return order?.id || order?.order_number || $('orderNumber')?.value?.trim() || '';
+    }
+
+    function orderClosureFlags(order){
+      const key = closureKey(order);
+      const byNumber = order?.order_number ? closureStore()[order.order_number] : null;
+      return { payment_not_required:false, finance_not_required:false, completion_email_not_required:false, ...(closureStore()[key] || byNumber || {}) };
+    }
+
+    function saveClosureFlags(order, patch){
+      const key = closureKey(order);
+      if(!key) return;
+      const store = closureStore();
+      const next = { ...(store[key] || {}), ...patch, updated_at:new Date().toISOString() };
+      store[key] = next;
+      if(order?.order_number) store[order.order_number] = next;
+      localStorage.setItem(CLOSURE_KEY, JSON.stringify(store));
+    }
+
+    function paymentIsClosed(order){
+      const f = orderClosureFlags(order);
+      return f.payment_not_required || ['paid','refunded'].includes(order?.payment_status);
+    }
+
+    function financeIsClosed(order){
+      const f = orderClosureFlags(order);
+      return f.finance_not_required || !!order?.finance_pushed || num(order?.order_total) <= 0;
+    }
+
+    function completionEmailIsClosed(order){
+      const f = orderClosureFlags(order);
+      return f.completion_email_not_required || !!order?.completion_email_sent;
+    }
+
+    function orderNeedsAction(order){
+      if(!order) return false;
+      if(order.status !== 'completed') return true;
+      return !(paymentIsClosed(order) && financeIsClosed(order) && completionEmailIsClosed(order));
+    }
+
+    function orderIsClosed(order){
+      return !!order && order.status === 'completed' && !orderNeedsAction(order);
+    }
+
+    function activeOrders(){
+      return orders.filter(o => !orderIsClosed(o));
+    }
+
+    function needsActionOrders(){
+      return orders.filter(orderNeedsAction);
+    }
+
+    function closedOrders(){
+      return orders.filter(orderIsClosed);
+    }
+
+    function setOrderViewMode(mode){
+      orderViewMode = mode || 'active';
+      document.querySelectorAll('[data-order-view]').forEach(btn => btn.classList.toggle('active', btn.dataset.orderView === orderViewMode));
+      renderList();
+    }
+
+    function closureStatusLabel(order){
+      const f = orderClosureFlags(order);
+      const parts = [];
+      parts.push(paymentIsClosed(order) ? (f.payment_not_required ? 'Payment Not Required' : 'Payment Complete') : 'Payment Needed');
+      parts.push(financeIsClosed(order) ? (f.finance_not_required ? 'Finance Not Required' : 'Finance Complete') : 'Finance Needed');
+      parts.push(completionEmailIsClosed(order) ? (f.completion_email_not_required ? 'Completion Email Not Required' : 'Completion Email Complete') : 'Completion Email Needed');
+      return parts.join(' • ');
+    }
+
+
 
 
     function dateOnly(value){
@@ -1110,12 +1306,16 @@ Aurora, OH 44202</textarea></div>
 
     function financeStatusLabel(order){
       if (!order) return null;
+      const flags = orderClosureFlags(order);
+      if (flags.finance_not_required) return 'Finance Not Required';
       if (order.finance_pushed) return 'Finance Pushed';
       if (['paid','deposit_paid'].includes(order.payment_status) && num(order.order_total) > 0) return 'Not Pushed';
       return null;
     }
 
     function financeStatusClass(order){
+      const flags = orderClosureFlags(order);
+      if (flags.finance_not_required) return 'p-not-required';
       return order?.finance_pushed ? 'p-finance-pushed' : 'p-finance-not-pushed';
     }
 
@@ -1657,6 +1857,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       updateInvoiceStatusNote(null);
       updateFinanceStatusNote(null);
       updateFinancePushButton(null);
+      updateClosureButtons(null);
       clearMsg($('formMessage'));
     }
 
@@ -1715,6 +1916,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       updateInvoiceStatusNote(o);
       updateFinanceStatusNote(o);
       updateFinancePushButton(o);
+      updateClosureButtons(o);
       updatePreview();
     }
 
@@ -1737,6 +1939,45 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         unmarkBtn.disabled = !sent;
         unmarkBtn.title = sent ? 'Clear the completion-email-sent flag if it was marked by mistake.' : '';
       }
+    }
+
+
+
+    function updateClosureButtons(order = null){
+      const current = order || (activeId ? orders.find(o => o.id === activeId) : null);
+      const flags = orderClosureFlags(current || {});
+      const map = [
+        ['paymentNotRequiredBtn','payment_not_required'],
+        ['financeNotRequiredBtn','finance_not_required'],
+        ['completionEmailNotRequiredBtn','completion_email_not_required']
+      ];
+      map.forEach(([id,key]) => {
+        const btn = $(id);
+        if(!btn) return;
+        btn.classList.toggle('active', !!flags[key]);
+        btn.textContent = ({
+          payment_not_required: flags[key] ? 'Payment: Not Required' : 'Mark Payment Not Required',
+          finance_not_required: flags[key] ? 'Finance: Not Required' : 'Mark Finance Not Required',
+          completion_email_not_required: flags[key] ? 'Completion Email: Not Required' : 'Mark Completion Email Not Required'
+        })[key];
+        btn.disabled = !current?.order_number && !activeId;
+      });
+      if($('closureStatusNote')) {
+        $('closureStatusNote').textContent = current?.order_number
+          ? `${closureStatusLabel(current)}${orderIsClosed(current) ? ' • This order is eligible for Closed Orders.' : ' • This order stays active/needs action.'}`
+          : 'Closed orders require payment paid/not required, finance pushed/not required, and completion email sent/not required.';
+      }
+    }
+
+    function toggleClosureFlag(flag){
+      const current = activeId ? orders.find(o => o.id === activeId) : null;
+      if(!current && !$('orderNumber')?.value.trim()) return setMsg($('formMessage'), 'Select or save an order before marking closeout exceptions.', true);
+      const order = current || snapshotForm();
+      const flags = orderClosureFlags(order);
+      saveClosureFlags(order, { [flag]: !flags[flag] });
+      updateClosureButtons(order);
+      renderList();
+      setMsg($('formMessage'), 'Closeout exception updated. Save the order if you also changed form fields.');
     }
 
 
@@ -1897,7 +2138,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
 
     function isFinanceReadyOrder(o){
-      return !!o && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
+      return !!o && !orderClosureFlags(o).finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
     }
 
     function readyFinanceOrders(){
@@ -2201,7 +2442,12 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
     function filteredOrders(){
       const q = $('searchInput').value.trim().toLowerCase();
       let list = [...orders];
-      if (q) list = list.filter(o => `${o.order_number || ''} ${o.customer_name || ''} ${o.customer_email || ''} ${o.order_title || ''}`.toLowerCase().includes(q));
+
+      if (orderViewMode === 'active') list = activeOrders();
+      else if (orderViewMode === 'needs') list = needsActionOrders();
+      else if (orderViewMode === 'closed') list = closedOrders();
+
+      if (q) list = list.filter(o => `${o.order_number || ''} ${o.customer_name || ''} ${o.customer_email || ''} ${o.order_title || ''} ${o.po_number || ''}`.toLowerCase().includes(q));
       if ($('statusFilter').value !== 'all') list = list.filter(o => o.status === $('statusFilter').value);
       if ($('paymentFilter').value !== 'all') list = list.filter(o => o.payment_status === $('paymentFilter').value);
       if ($('invoiceFilter') && $('invoiceFilter').value !== 'all') {
@@ -2218,9 +2464,10 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('financeFilter') && $('financeFilter').value !== 'all') {
         const financeState = $('financeFilter').value;
         list = list.filter(o => {
-          const ready = ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0;
+          const flags = orderClosureFlags(o);
+          const ready = !flags.finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0;
           if (financeState === 'pushed') return !!o.finance_pushed;
-          if (financeState === 'not_pushed') return !o.finance_pushed;
+          if (financeState === 'not_pushed') return !o.finance_pushed && !flags.finance_not_required;
           if (financeState === 'ready') return ready && !o.finance_pushed;
           return true;
         });
@@ -2233,8 +2480,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
     function renderSummary(){
       $('sumOrders').textContent = orders.length;
-      $('sumOpen').textContent = orders.filter(o => o.status !== 'completed').length;
-      $('sumCompleted').textContent = orders.filter(o => o.status === 'completed').length;
+      $('sumOpen').textContent = activeOrders().length;
+      $('sumCompleted').textContent = closedOrders().length;
       $('sumValue').textContent = money(orders.reduce((s,o)=>s+num(o.order_total),0));
       $('sumDepositDue').textContent = orders.filter(o => o.payment_status === 'deposit_due').length;
       $('sumInProduction').textContent = orders.filter(o => ['in_design','in_production','post_processing'].includes(o.status)).length;
@@ -2247,16 +2494,19 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
     function renderList(){
       const list = filteredOrders();
       renderSummary();
-      if(!list.length){ $('orderList').innerHTML = '<div class="empty">No orders yet.</div>'; return; }
+      if($('orderListCount')) $('orderListCount').textContent = `${list.length} shown · ${activeOrders().length} active · ${needsActionOrders().length} need action · ${closedOrders().length} closed`;
+      if(!list.length){ $('orderList').innerHTML = '<div class="empty">No orders in this view.</div>'; return; }
+      if($('orderListCount')) $('orderListCount').textContent = `${list.length} shown · ${activeOrders().length} active · ${needsActionOrders().length} need action · ${closedOrders().length} closed`;
       $('orderList').innerHTML = list.map(o => `
         <div class="order-row ${o.id===activeId?'active':''}" data-id="${o.id}">
           <div class="order-head"><div><strong>${o.order_number || 'No #'}</strong><p>${o.order_title || 'Untitled order'}</p></div><div>${money(o.order_total || 0)}</div></div>
           <div class="order-meta">
             <span class="status-pill s-${o.status}">${statusLabel(o.status)}</span>
-            <span class="payment-pill p-${o.payment_status}">${paymentLabel(o.payment_status)}</span>
+            <span class="payment-pill ${orderClosureFlags(o).payment_not_required ? 'p-not-required' : `p-${o.payment_status}`}">${orderClosureFlags(o).payment_not_required ? 'Payment Not Required' : paymentLabel(o.payment_status)}</span>
             ${invoiceStatusLabel(o) ? `<span class="payment-pill ${invoiceStatusClass(o)}">${invoiceStatusLabel(o)}</span>` : ''}
             ${financeStatusLabel(o) ? `<span class="payment-pill ${financeStatusClass(o)}">${financeStatusLabel(o)}</span>` : ''}
-            ${o.status === 'completed' ? `<span class="payment-pill ${o.completion_email_sent ? 'p-paid' : 'p-unpaid'}">${o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email'}</span>` : ''}
+            ${o.status === 'completed' ? `<span class="payment-pill ${completionEmailIsClosed(o) ? 'p-not-required' : 'p-needs-action'}">${orderClosureFlags(o).completion_email_not_required ? 'Completion Email Not Required' : (o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email')}</span>` : ''}
+            ${orderIsClosed(o) ? `<span class="payment-pill p-closed-ready">Closed</span>` : ''}
           </div>
           <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
         </div>
@@ -2294,6 +2544,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if(error) return setMsg($('authMessage'),error.error_description || error.message || 'Login failed',true);
       accessToken = data.access_token;
       localStorage.setItem('sb_token', accessToken);
+      if (window.OliPolyAuth) window.OliPolyAuth.writeSession({access_token:data.access_token, refresh_token:data.refresh_token, user:data.user, expires_at:data.expires_at, expires_in:data.expires_in});
       await getCurrentUser();
       setMsg($('authMessage'),`Logged in as ${currentUser?.email || email}`);
       updateAuthVisibility();
@@ -3097,7 +3348,13 @@ https://olipoly3d.com`;
       }
     }
 
-    if ($('signupBtn')) $('signupBtn').onclick = signup;
+    
+if ($('paymentNotRequiredBtn')) $('paymentNotRequiredBtn').onclick = () => toggleClosureFlag('payment_not_required');
+if ($('financeNotRequiredBtn')) $('financeNotRequiredBtn').onclick = () => toggleClosureFlag('finance_not_required');
+if ($('completionEmailNotRequiredBtn')) $('completionEmailNotRequiredBtn').onclick = () => toggleClosureFlag('completion_email_not_required');
+document.querySelectorAll('[data-order-view]').forEach(btn => btn.addEventListener('click', () => setOrderViewMode(btn.dataset.orderView)));
+
+if ($('signupBtn')) $('signupBtn').onclick = signup;
 if ($('loginBtn')) $('loginBtn').onclick = login;
 if ($('logoutBtn')) $('logoutBtn').onclick = logout;
 if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
