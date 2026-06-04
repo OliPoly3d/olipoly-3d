@@ -2569,6 +2569,38 @@ resetForm();
       $('signupBtn').classList.remove('hidden');
     }
 
+
+    function deepLinkOrderParam(){
+      const p = new URLSearchParams(window.location.search);
+      return (p.get('order') || p.get('op') || p.get('id') || '').trim();
+    }
+
+    function tryOpenDeepLinkedOrder(){
+      const target = deepLinkOrderParam();
+      if(!target || !orders.length) return;
+      const t = target.toLowerCase();
+      const found = orders.find(o =>
+        String(o.id || '').toLowerCase() === t ||
+        String(o.order_number || '').toLowerCase() === t ||
+        String(o.order_title || '').toLowerCase().includes(t) ||
+        String(o.customer_name || '').toLowerCase().includes(t)
+      );
+      if(found){
+        loadIntoForm(found);
+        const search = $('searchInput');
+        if(search) search.value = found.order_number || target;
+        renderList();
+        setMsg($('authMessage'), `Opened ${found.order_number || target} from Hub.`);
+        setTimeout(() => document.getElementById('detailTitle')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+      } else {
+        const search = $('searchInput');
+        if(search) search.value = target;
+        renderList();
+        setMsg($('authMessage'), `No exact order match for "${target}". Showing search results if any.`, true);
+      }
+    }
+
+
     async function fetchOrders(){
       await getCurrentUser();
       if(!currentUser){ updateAuthVisibility(); return setMsg($('authMessage'),'Login first',true); }
@@ -2577,6 +2609,7 @@ resetForm();
       orders = data || [];
       renderList();
       setMsg($('authMessage'),`Loaded ${orders.length} orders.`);
+      tryOpenDeepLinkedOrder();
     }
 
     async function saveOrder(){

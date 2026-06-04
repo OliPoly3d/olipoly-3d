@@ -4177,6 +4177,39 @@
     toast('Hub draft applied to Production Control.');
   }
 
+
+  function deepLinkJobParam(){
+    const p = new URLSearchParams(window.location.search);
+    return (p.get('job') || p.get('production') || p.get('id') || '').trim();
+  }
+
+  function tryOpenDeepLinkedJob(){
+    if(window.__olipolyJobDeepLinkOpened) return;
+    const target = deepLinkJobParam();
+    if(!target || !state.jobs?.length) return;
+    const t = target.toLowerCase();
+    const found = state.jobs.find(j =>
+      String(j.id || '').toLowerCase() === t ||
+      String(j.job_title || '').toLowerCase().includes(t) ||
+      String(j.customer_name || '').toLowerCase().includes(t) ||
+      String(j.order_ref || '').toLowerCase() === t ||
+      String(j.quote_ref || '').toLowerCase() === t
+    );
+    if(found){
+      window.__olipolyJobDeepLinkOpened = true;
+      editJob(found.id);
+      const search = $('searchInput') || $('jobSearch') || $('historySearch');
+      if(search) search.value = found.job_title || target;
+      toast(`Opened production job: ${found.job_title || target}`);
+      setTimeout(() => $('addJobSection')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    } else {
+      const search = $('searchInput') || $('jobSearch') || $('historySearch');
+      if(search) search.value = target;
+      toast(`No exact production job match for ${target}.`);
+    }
+  }
+
+
   function render(){
     document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
     renderFilters();
@@ -4195,6 +4228,7 @@
     renderDetails();
     renderHistory();
     renderHubDraftBanner();
+    setTimeout(tryOpenDeepLinkedJob, 0);
   }
 
   function applyPreset(type){

@@ -2006,5 +2006,41 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
     </div>
   </div>
 
+
+<script>
+(function(){
+  function quoteParam(){
+    const p = new URLSearchParams(window.location.search);
+    return (p.get('quote') || p.get('q') || '').trim();
+  }
+  function tryOpenDeepLinkedQuote(){
+    if(window.__olipolyQuoteDeepLinkOpened) return;
+    const target = quoteParam();
+    if(!target) return;
+    const select = document.getElementById('savedQuotesSelect');
+    if(!select) return;
+    const t = target.toLowerCase();
+    const opt = [...select.options].find(o =>
+      String(o.value||'').toLowerCase() === t ||
+      String(o.textContent||'').toLowerCase().includes(t)
+    );
+    if(opt){
+      window.__olipolyQuoteDeepLinkOpened = true;
+      select.value = opt.value;
+      document.getElementById('loadQuoteBtn')?.click();
+      setTimeout(() => document.getElementById('savedQuotesInline')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    } else {
+      const summary = document.getElementById('historySummary');
+      if(summary) summary.textContent = `Deep link requested "${target}". No exact saved quote match found yet.`;
+    }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(tryOpenDeepLinkedQuote, 700);
+    setTimeout(tryOpenDeepLinkedQuote, 1600);
+    setTimeout(tryOpenDeepLinkedQuote, 3200);
+  });
+})();
+</script>
+
 </body>
 </html>

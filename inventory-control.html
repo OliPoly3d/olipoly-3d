@@ -1673,6 +1673,7 @@
     renderMetrics();
     renderAttention();
     renderMaterialBalance();
+    setTimeout(tryOpenDeepLinkedInventory,0);
     toast(`${qty} empty reusable spool${qty===1?'':'s'} added.`);
   }
 
@@ -1947,6 +1948,26 @@
 
 
   window.OP_INVENTORY_DEBUG = { raw, finished, supplies, syncDebugCounts, syncLocalInventoryToCloud, cloudRawCount };
+
+
+  function deepLinkInventoryParam(){
+    const p = new URLSearchParams(window.location.search);
+    return (p.get('inventory') || p.get('material') || p.get('item') || '').trim();
+  }
+
+  function tryOpenDeepLinkedInventory(){
+    if(window.__olipolyInventoryDeepLinkOpened) return;
+    const target = deepLinkInventoryParam();
+    if(!target) return;
+    window.__olipolyInventoryDeepLinkOpened = true;
+    state.tab = 'raw';
+    state.rawSearch = target;
+    if($('rawSearch')) $('rawSearch').value = target;
+    render();
+    setTimeout(() => $('rawPanel')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    toast(`Filtered inventory for: ${target}`);
+  }
+
 
   function render(){
     renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderForecast();renderLedger();
