@@ -798,6 +798,148 @@ body{font-family:Inter,Arial,sans-serif}
       .oa-view-tabs,.oa-waiver-grid{grid-template-columns:1fr}
     }
 
+
+    /* === Customer History Module v2: scoped, dark-safe === */
+    .chm-card{
+      margin:0 0 22px;
+      padding:18px;
+      border-radius:26px;
+      background:linear-gradient(135deg,rgba(46,230,196,.075),rgba(126,123,255,.07)),rgba(20,30,58,.94);
+      border:1px solid rgba(46,230,196,.20);
+      box-shadow:0 14px 34px rgba(0,0,0,.18);
+      color:var(--text);
+      position:relative;
+      overflow:hidden;
+    }
+    .chm-card *{box-sizing:border-box}
+    .chm-card::before{
+      content:"";
+      position:absolute;
+      inset:0 0 auto 0;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+      pointer-events:none;
+    }
+    .chm-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+    .chm-head h3{
+      margin:7px 0 0;
+      color:var(--text);
+      font-size:1.2rem;
+    }
+    .chm-head p{
+      margin:5px 0 0;
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .chm-kicker{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:5px 8px;
+      border-radius:999px;
+      background:rgba(46,230,196,.12);
+      border:1px solid rgba(46,230,196,.24);
+      color:#cffff0;
+      font-weight:900;
+      font-size:.68rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .chm-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .chm-actions button{
+      min-height:40px;
+    }
+    .chm-metrics{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .chm-metrics>div{
+      padding:12px;
+      border-radius:18px;
+      background:rgba(255,255,255,.055);
+      border:1px solid rgba(255,255,255,.09);
+    }
+    .chm-metrics span{
+      display:block;
+      color:var(--muted);
+      font-size:.66rem;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .chm-metrics strong{
+      display:block;
+      margin-top:5px;
+      color:var(--text);
+      font-size:1.12rem;
+    }
+    .chm-list{
+      display:grid;
+      gap:8px;
+      margin-top:12px;
+    }
+    .chm-row{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.09);
+      color:var(--text);
+      cursor:pointer;
+    }
+    .chm-row:hover{
+      border-color:rgba(46,230,196,.25);
+      background:rgba(46,230,196,.06);
+    }
+    .chm-row strong{display:block;color:var(--text)}
+    .chm-row small{display:block;color:var(--muted);margin-top:2px;line-height:1.3}
+    .chm-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:5px 8px;
+      border-radius:999px;
+      background:rgba(46,230,196,.12);
+      border:1px solid rgba(46,230,196,.22);
+      color:#cffff0;
+      font-weight:900;
+      font-size:.68rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    .chm-empty{
+      padding:12px;
+      border-radius:16px;
+      border:1px dashed rgba(255,255,255,.14);
+      color:var(--muted);
+      line-height:1.45;
+    }
+    @media(max-width:900px){
+      .chm-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .chm-row{grid-template-columns:1fr}
+      .chm-actions .btn,.chm-actions .btn-ghost{flex:1}
+    }
+    @media(max-width:560px){
+      .chm-metrics{grid-template-columns:1fr}
+    }
+
 </style>
 </head>
 <body>
@@ -856,6 +998,33 @@ body{font-family:Inter,Arial,sans-serif}
         <button class="btn-ghost" id="quickPaidBtn" type="button">Mark Paid</button>
       </div>
     </div>
+
+
+    <section class="chm-card" id="chmCard">
+      <div class="chm-head">
+        <div>
+          <span class="chm-kicker">Customer History</span>
+          <h3 id="chmName">No customer selected</h3>
+          <p id="chmSub">Select an order to see customer revenue, recent orders, and reorder tools.</p>
+        </div>
+        <div class="chm-actions">
+          <button class="btn-ghost" id="chmRefreshBtn" type="button">Refresh History</button>
+          <button class="btn-ghost" id="chmCloneBtn" type="button">Clone Order</button>
+          <button class="btn" id="chmReorderBtn" type="button">Create Reorder Quote</button>
+        </div>
+      </div>
+      <div class="chm-metrics">
+        <div><span>Lifetime Revenue</span><strong id="chmRevenue">$0.00</strong></div>
+        <div><span>Orders</span><strong id="chmCount">0</strong></div>
+        <div><span>Average Order</span><strong id="chmAverage">$0.00</strong></div>
+        <div><span>Last Order</span><strong id="chmLast">—</strong></div>
+        <div><span>Flags</span><strong id="chmFlags">—</strong></div>
+      </div>
+      <div class="chm-list" id="chmList">
+        <div class="chm-empty">Customer history will appear here after you select an order.</div>
+      </div>
+    </section>
+
 
     <div class="summary-grid">
       <div class="summary"><span>Orders Loaded</span><strong id="sumOrders">0</strong><small>All loaded records.</small></div>
@@ -6373,5 +6542,249 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 @media(max-width:900px){.production-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.production-status-head{display:grid}.production-status-actions{justify-content:flex-start}.production-status-grid{grid-template-columns:1fr}}
 </style>
+
+<script id="customerHistoryModuleV2">
+(function(){
+  'use strict';
+
+  var SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  var loadedOrders = [];
+  var lastCustomerKey = '';
+
+  function byId(id){ return document.getElementById(id); }
+  function safeText(v){ return String(v == null ? '' : v); }
+  function esc(v){
+    return safeText(v).replace(/[&<>"']/g,function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  function money(v){
+    return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0);
+  }
+  function token(){
+    if(window.OliPolyAuth && typeof window.OliPolyAuth.getToken === 'function'){
+      return window.OliPolyAuth.getToken() || '';
+    }
+    return localStorage.getItem('sb_token') || '';
+  }
+
+  function currentOrder(){
+    return {
+      order_number: byId('orderNumber') ? byId('orderNumber').value.trim() : '',
+      order_date: byId('orderDate') ? byId('orderDate').value : '',
+      customer_name: byId('customerName') ? byId('customerName').value.trim() : '',
+      customer_email: byId('customerEmail') ? byId('customerEmail').value.trim() : '',
+      order_title: byId('orderTitle') ? byId('orderTitle').value.trim() : '',
+      quantity: Number(byId('quantity') ? byId('quantity').value : 1) || 1,
+      order_total: Number(byId('orderTotal') ? byId('orderTotal').value : 0) || 0,
+      deposit_amount: Number(byId('depositAmount') ? byId('depositAmount').value : 0) || 0,
+      status: byId('status') ? byId('status').value : '',
+      payment_status: byId('paymentStatus') ? byId('paymentStatus').value : '',
+      fulfillment: byId('fulfillment') ? byId('fulfillment').value : '',
+      invoice_terms: byId('invoiceTerms') ? byId('invoiceTerms').value : '',
+      po_number: byId('poNumber') ? byId('poNumber').value : '',
+      shipping_company: byId('shippingCompany') ? byId('shippingCompany').value : '',
+      internal_notes: byId('internalNotes') ? byId('internalNotes').value : ''
+    };
+  }
+
+  function customerKey(o){
+    return safeText(o.customer_email || o.customer_name).trim().toLowerCase();
+  }
+
+  async function fetchCloudOrders(){
+    var t = token();
+    if(!t) return [];
+    try{
+      var res = await fetch(SUPABASE_URL + '/rest/v1/orders?select=*&order=order_date.desc,updated_at.desc&limit=700',{
+        headers:{
+          apikey: SUPABASE_KEY,
+          Authorization: 'Bearer ' + t,
+          'Content-Type': 'application/json'
+        }
+      });
+      if(!res.ok) return [];
+      var data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }catch(err){
+      console.warn('Customer history fetch failed', err);
+      return [];
+    }
+  }
+
+  function matchingRows(){
+    var cur = currentOrder();
+    var key = customerKey(cur);
+    if(!key) return {current:cur,key:key,rows:[]};
+
+    var rows = loadedOrders.filter(function(o){ return customerKey(o) === key; });
+
+    if(cur.order_number && !rows.some(function(o){ return o.order_number === cur.order_number; })){
+      rows.unshift(cur);
+    }
+
+    return {current:cur,key:key,rows:rows};
+  }
+
+  function renderCustomerHistory(){
+    if(!byId('chmCard')) return;
+
+    var bundle = matchingRows();
+    var cur = bundle.current;
+    var rows = bundle.rows;
+
+    if(!bundle.key){
+      byId('chmName').textContent = 'No customer selected';
+      byId('chmSub').textContent = 'Select an order to see customer revenue, recent orders, and reorder tools.';
+      byId('chmRevenue').textContent = money(0);
+      byId('chmCount').textContent = '0';
+      byId('chmAverage').textContent = money(0);
+      byId('chmLast').textContent = '—';
+      byId('chmFlags').textContent = '—';
+      byId('chmList').innerHTML = '<div class="chm-empty">Customer history will appear here after you select an order.</div>';
+      return;
+    }
+
+    var sorted = rows.slice().sort(function(a,b){
+      return safeText(b.order_date || b.created_at).localeCompare(safeText(a.order_date || a.created_at));
+    });
+    var total = rows.reduce(function(sum,o){ return sum + (Number(o.order_total)||0); },0);
+    var last = sorted[0] || null;
+    var taxExempt = rows.some(function(o){ return !!o.tax_exempt; });
+    var poCustomer = rows.some(function(o){ return !!(o.po_number || o.po_file_on_file || o.po_part_number); });
+
+    byId('chmName').textContent = cur.shipping_company || cur.customer_name || cur.customer_email || 'Customer';
+    byId('chmSub').textContent = [cur.customer_email, taxExempt ? 'Tax exempt' : '', poCustomer ? 'PO customer' : ''].filter(Boolean).join(' • ') || 'Customer history from loaded orders.';
+    byId('chmRevenue').textContent = money(total);
+    byId('chmCount').textContent = String(rows.length);
+    byId('chmAverage').textContent = money(rows.length ? total / rows.length : 0);
+    byId('chmLast').textContent = last ? (last.order_date || safeText(last.created_at).slice(0,10) || '—') : '—';
+    byId('chmFlags').textContent = [taxExempt ? 'Tax Exempt' : '', poCustomer ? 'PO' : ''].filter(Boolean).join(' / ') || 'Standard';
+
+    if(!sorted.length){
+      byId('chmList').innerHTML = '<div class="chm-empty">No previous orders found for this customer.</div>';
+      return;
+    }
+
+    byId('chmList').innerHTML = sorted.slice(0,8).map(function(o){
+      var status = safeText(o.status || 'order').replace(/_/g,' ');
+      var orderNo = safeText(o.order_number);
+      return '<div class="chm-row" data-chm-order="' + esc(orderNo) + '">' +
+        '<span class="chm-pill">' + esc(status) + '</span>' +
+        '<span><strong>' + esc(orderNo || 'No #') + '</strong><small>' + esc(o.order_title || 'Untitled') + ' · ' + esc(o.order_date || '') + '</small></span>' +
+        '<strong>' + money(o.order_total || 0) + '</strong>' +
+      '</div>';
+    }).join('');
+
+    document.querySelectorAll('[data-chm-order]').forEach(function(row){
+      row.addEventListener('click',function(){
+        var n = row.getAttribute('data-chm-order');
+        if(n) window.location.href = 'orders-admin.html?order=' + encodeURIComponent(n);
+      });
+    });
+  }
+
+  async function refreshCustomerHistory(){
+    loadedOrders = await fetchCloudOrders();
+    renderCustomerHistory();
+  }
+
+  function showMsg(msg,isError){
+    var el = byId('formMessage') || byId('authMessage');
+    if(el){
+      el.textContent = msg;
+      el.style.display = 'block';
+      if(isError) el.classList.add('error');
+      else el.classList.remove('error');
+    }else{
+      alert(msg);
+    }
+  }
+
+  function cloneVisibleOrder(){
+    var o = currentOrder();
+    if(!o.customer_name && !o.order_title){
+      showMsg('Select or fill out an order before cloning.', true);
+      return;
+    }
+    if(byId('orderNumber')) byId('orderNumber').value = '';
+    if(byId('orderDate')) byId('orderDate').value = new Date().toISOString().slice(0,10);
+    if(byId('orderTitle')) byId('orderTitle').value = (o.order_title || 'Order') + ' - Copy';
+    if(byId('status')) byId('status').value = 'quote_sent';
+    if(byId('paymentStatus')) byId('paymentStatus').value = 'unpaid';
+    ['trackingNumber','invoiceNumber','invoiceDate','invoiceDueDate','stripeInvoiceId'].forEach(function(id){
+      if(byId(id)) byId(id).value = '';
+    });
+    if(byId('detailTitle')) byId('detailTitle').textContent = 'Order Details — New Clone';
+    showMsg('Cloned into a new unsaved order. Review it, assign/save the new order number, then save.');
+    setTimeout(renderCustomerHistory,50);
+  }
+
+  function createReorderQuote(){
+    var o = currentOrder();
+    if(!o.customer_name && !o.order_title){
+      showMsg('Select or fill out an order before creating a reorder quote.', true);
+      return;
+    }
+
+    var draft = {
+      source:'orders-admin',
+      source_order_number:o.order_number || null,
+      created_at:new Date().toISOString(),
+      customer_name:o.customer_name || '',
+      customer_email:o.customer_email || '',
+      order_title:(o.order_title || 'Reorder') + ' - Reorder',
+      quantity:o.quantity || 1,
+      order_total:o.order_total || 0,
+      deposit_amount:o.deposit_amount || 0,
+      payment_terms:o.invoice_terms || '',
+      po_number:o.po_number || '',
+      production_notes:o.internal_notes || '',
+      internal_notes:'Reorder draft created from ' + (o.order_number || 'previous order')
+    };
+
+    localStorage.setItem('olipoly_reorder_quote_draft_v1', JSON.stringify(draft));
+    showMsg('Reorder quote draft created. Opening Quote Tool...');
+    setTimeout(function(){
+      window.location.href = 'quote.html?reorder=' + encodeURIComponent(o.order_number || o.order_title || 'reorder');
+    },250);
+  }
+
+  function bindCustomerHistory(){
+    if(byId('chmRefreshBtn')) byId('chmRefreshBtn').addEventListener('click', refreshCustomerHistory);
+    if(byId('chmCloneBtn')) byId('chmCloneBtn').addEventListener('click', cloneVisibleOrder);
+    if(byId('chmReorderBtn')) byId('chmReorderBtn').addEventListener('click', createReorderQuote);
+
+    ['customerName','customerEmail','shippingCompany','orderTitle','orderTotal','orderNumber','status','paymentStatus','poNumber'].forEach(function(id){
+      var el = byId(id);
+      if(el){
+        el.addEventListener('input', function(){ setTimeout(renderCustomerHistory,0); });
+        el.addEventListener('change', function(){ setTimeout(renderCustomerHistory,0); });
+      }
+    });
+
+    document.addEventListener('click', function(e){
+      if(e.target && e.target.closest && e.target.closest('.order-row')){
+        setTimeout(renderCustomerHistory,150);
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    bindCustomerHistory();
+    refreshCustomerHistory();
+    setTimeout(renderCustomerHistory,500);
+    setInterval(function(){
+      var key = customerKey(currentOrder());
+      if(key !== lastCustomerKey){
+        lastCustomerKey = key;
+        renderCustomerHistory();
+      }
+    },800);
+  });
+})();
+</script>
+
 </body>
 </html>

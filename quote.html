@@ -2042,5 +2042,51 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 })();
 </script>
 
+
+<script id="reorderQuoteDraftModuleV2">
+(function(){
+  'use strict';
+  function byId(id){return document.getElementById(id);}
+  function readDraft(){
+    try{return JSON.parse(localStorage.getItem('olipoly_reorder_quote_draft_v1') || 'null');}
+    catch(e){return null;}
+  }
+  function applyDraft(){
+    if(window.__reorderQuoteDraftV2Applied) return;
+    var d = readDraft();
+    if(!d) return;
+    window.__reorderQuoteDraftV2Applied = true;
+
+    function set(id,val){
+      var el = byId(id);
+      if(el && val !== undefined && val !== null && String(val) !== '') el.value = val;
+    }
+
+    set('customerName', d.customer_name);
+    set('customerEmail', d.customer_email);
+    set('quoteTitle', d.order_title);
+    set('qty', d.quantity || 1);
+    set('customerNotes', [
+      d.source_order_number ? 'Reorder based on ' + d.source_order_number + '.' : 'Reorder quote draft.',
+      d.production_notes || ''
+    ].filter(Boolean).join('\n'));
+
+    if(byId('paymentTerms') && d.payment_terms) byId('paymentTerms').value = d.payment_terms;
+
+    var note = document.createElement('div');
+    note.className = 'note';
+    note.style.margin = '0 0 16px';
+    note.textContent = 'Reorder draft loaded. Review pricing before sending.';
+    var hero = document.querySelector('.hero');
+    if(hero && hero.parentNode) hero.parentNode.insertBefore(note, hero.nextSibling);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(applyDraft,300);
+    setTimeout(applyDraft,1000);
+  });
+})();
+</script>
+
 </body>
 </html>
