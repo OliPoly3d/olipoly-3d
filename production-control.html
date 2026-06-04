@@ -815,44 +815,6 @@
     @media(max-width:1000px){.capacity-summary-grid,.capacity-machine-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:700px){.capacity-summary-grid,.capacity-machine-grid,.capacity-detail-grid{grid-template-columns:1fr 1fr}.capacity-machine{grid-column:1/-1}}
 
-
-    /* === Production Control usability / empty-state fix === */
-    .hub-draft-banner{
-      display:none; gap:12px; align-items:center; justify-content:space-between;
-      padding:15px; border-radius:22px; margin-bottom:14px;
-      background:linear-gradient(135deg,rgba(232,79,183,.14),rgba(157,109,243,.12)),rgba(255,255,255,.86);
-      border:1px solid rgba(101,60,120,.14); box-shadow:0 12px 30px rgba(84,38,94,.08);
-    }
-    .hub-draft-banner.show{display:flex}
-    .hub-draft-banner strong{display:block;color:var(--ink);font-size:1rem}
-    .hub-draft-banner span{display:block;color:var(--muted);font-weight:800;font-size:.88rem;line-height:1.35;margin-top:3px}
-    .hub-draft-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .section-empty-state{
-      padding:14px;
-      border-radius:18px;
-      background:rgba(255,255,255,.72);
-      border:1px dashed rgba(101,60,120,.18);
-      color:var(--muted);
-      line-height:1.45;
-      margin-top:10px;
-    }
-    .section-empty-state strong{display:block;color:var(--ink);margin-bottom:3px}
-    .section-helper-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-      gap:9px;
-      margin-top:10px;
-    }
-    .section-helper-card{
-      padding:12px;
-      border-radius:16px;
-      background:rgba(255,255,255,.75);
-      border:1px solid rgba(101,60,120,.11);
-    }
-    .section-helper-card strong{display:block;color:var(--ink);font-size:.9rem;margin-bottom:3px}
-    .section-helper-card small{display:block;color:var(--muted);line-height:1.35}
-    @media(max-width:800px){.hub-draft-banner{align-items:stretch;flex-direction:column}.hub-draft-actions .mini-btn{width:100%}}
-
 </style>
 </head>
 <body>
@@ -875,19 +837,6 @@
       <button class="btn" id="jumpAddBtn" type="button">+ Add Job</button>
     </div>
   </header>
-
-
-  <div class="hub-draft-banner" id="hubDraftBanner">
-    <div>
-      <strong id="hubDraftTitle">Hub workflow draft ready</strong>
-      <span id="hubDraftSub">Apply the Hub draft to this production job form, then estimate cost, reserve inventory, and check margin before quoting.</span>
-    </div>
-    <div class="hub-draft-actions">
-      <button class="mini-btn" id="applyHubDraftBtn" type="button">Apply Draft to Job Form</button>
-      <button class="mini-btn" id="dismissHubDraftBtn" type="button">Dismiss</button>
-    </div>
-  </div>
-
 
   <section class="hero">
     <div class="card section-title">
@@ -1107,15 +1056,6 @@
   <details class="ops-collapse section-card" id="pmSection">
     <summary><span class="summary-title"><span class="kicker">PM</span><strong>Printer maintenance shortcuts</strong></span></summary>
     <div class="collapse-body">
-    <div class="section-empty-state">
-      <strong>Printer maintenance shortcut panel</strong>
-      PM cards will appear here for each printer. Use this section to review hours since PM, next maintenance timing, and quickly mark maintenance done after service.
-      <div class="section-helper-grid">
-        <div class="section-helper-card"><strong>P1S / P2S PM</strong><small>Track hours, date-based PM, and maintenance notes.</small></div>
-        <div class="section-helper-card"><strong>After close-out</strong><small>Closed jobs can add print hours to PM tracking automatically.</small></div>
-      </div>
-    </div>
-
       <div class="pm-board" id="pmBoard"></div>
     </div>
   </details>
@@ -1123,15 +1063,6 @@
   <details class="ops-collapse section-card" id="machineSection">
     <summary><span class="summary-title"><span class="kicker">Printer command center</span><strong>Printer status + next queue guidance</strong></span></summary>
     <div class="collapse-body">
-    <div class="section-empty-state">
-      <strong>Printer command center</strong>
-      Queue guidance appears here when active jobs exist. Use it to see what should print next, which machine is loaded, and where work is blocked.
-      <div class="section-helper-grid">
-        <div class="section-helper-card"><strong>Next queue</strong><small>Ready/queued jobs are prioritized by urgency, due date, and status.</small></div>
-        <div class="section-helper-card"><strong>Capacity</strong><small>The capacity dashboard above shows open printer hours and bottlenecks.</small></div>
-      </div>
-    </div>
-
       <div class="machine-grid" id="machineBoard"></div>
     </div>
   </details>
@@ -1210,11 +1141,6 @@
   <details class="ops-collapse section-card" id="detailsSection">
     <summary><span class="summary-title"><span class="kicker">Full detail cards</span><strong>Expanded production job records</strong></span></summary>
     <div class="collapse-body">
-    <div class="section-empty-state">
-      <strong>Expanded production job records</strong>
-      Full detail cards show here when jobs exist. Each card is used for edit, close-out, status changes, inventory exclusion, and quote handoff.
-    </div>
-
       <div id="detailList" class="detail-list"></div>
     </div>
   </details>
@@ -1222,11 +1148,6 @@
   <details class="ops-collapse section-card" id="historySection">
     <summary><span class="summary-title"><span class="kicker">Completed / history</span><strong>Closed jobs and production history</strong></span></summary>
     <div class="collapse-body">
-    <div class="section-empty-state" id="historyEmptyHelper">
-      <strong>No closed jobs yet</strong>
-      Completed, archived, failed/scrap, and closed production jobs will appear in this history table after close-out.
-    </div>
-
       <div class="history-top">
         <label>Search history<input id="historySearch" placeholder="Search closed jobs, customer, material, note..."></label>
       </div>
@@ -4109,6 +4030,14 @@
 
   function formatHours(v){ return `${(num(v)).toFixed(1).replace(/\.0$/,'')}h`; }
 
+
+  function projectRevenue(j){
+    const qty = Math.max(1, num(j?.actual_quantity || j?.quantity || 1));
+    const explicit = num(j?.actual_revenue || j?.revenue || j?.estimated_revenue || j?.quote_total || j?.order_total);
+    if(explicit) return explicit;
+    return num(j?.estimated_price_each || j?.price_each || j?.piece_price) * qty;
+  }
+
   function renderProductionAnalytics(){
     const panel = $('productionAnalyticsPanel');
     if(!panel) return;
@@ -4147,51 +4076,6 @@
     }
   }
 
-
-  function hubDraftRead(){
-    try{return JSON.parse(localStorage.getItem('olipoly_workflow_draft_v1') || 'null')}catch{return null}
-  }
-  function hubDraftTypeToProduction(type){
-    const map = {
-      personal:{job_type:'personal_free', status:'idea', priority:'low', machine:'either'},
-      business:{job_type:'business_po', status:'ready_to_print', priority:'urgent', machine:'P2S'},
-      replacement:{job_type:'replacement_warranty', status:'idea', priority:'high', machine:'either'},
-      prototype:{job_type:'prototype', status:'queued', priority:'normal', machine:'either'},
-      batch:{job_type:'craft_stock', status:'ready_to_print', priority:'normal', machine:'either'}
-    };
-    return map[type] || map.business;
-  }
-  function renderHubDraftBanner(){
-    const draft = hubDraftRead();
-    const banner = $('hubDraftBanner');
-    if(!banner) return;
-    if(!draft || draft.dismissed){ banner.classList.remove('show'); return; }
-    $('hubDraftTitle').textContent = `Hub draft ready: ${draft.title || draft.request_type || 'New workflow'}`;
-    $('hubDraftSub').textContent = `${draft.workflow_note || 'Apply this to Production Control first, then cost/reserve material before quoting.'}`;
-    banner.classList.add('show');
-  }
-  function applyHubWorkflowDraft(){
-    const draft = hubDraftRead();
-    if(!draft) return toast('No Hub workflow draft found.');
-    const defaults = draft.production_defaults || hubDraftTypeToProduction(draft.request_type);
-    resetForm();
-    if($('jobTitle')) $('jobTitle').value = draft.title || '';
-    if($('jobType')) $('jobType').value = defaults.job_type || 'business_po';
-    if($('productionStatus')) $('productionStatus').value = defaults.status || 'ready_to_print';
-    if($('priority')) $('priority').value = defaults.priority || 'normal';
-    if($('machine')) $('machine').value = defaults.machine || 'either';
-    if($('quantity')) $('quantity').value = Math.max(1, Number(draft.quantity || 1));
-    if($('dueDate')) $('dueDate').value = draft.due_date || '';
-    if($('notes')) {
-      const line = `Started from Hub Command Center · ${draft.request_type || 'workflow'} · ${draft.created_at ? new Date(draft.created_at).toLocaleString() : new Date().toLocaleString()}`;
-      $('notes').value = [$('notes').value, line, draft.workflow_note || ''].filter(Boolean).join('\\n');
-    }
-    updatePricingPreview();
-    if($('addJobSection')) $('addJobSection').open = true;
-    $('addJobSection')?.scrollIntoView({behavior:'smooth', block:'start'});
-    toast('Hub draft applied to Production Control.');
-  }
-
   function render(){
     document.body.classList.toggle('manual-mode', state.sortBy === 'manual');
     renderFilters();
@@ -4200,7 +4084,7 @@
     renderCapacityDashboard();
     renderMetrics();
     renderFinanceBoard();
-    renderProductionAnalytics();
+    try{ renderProductionAnalytics(); }catch(err){ console.warn('Production analytics skipped:', err); }
     renderPm();
     renderMachineBoard();
     renderSuggestions();
@@ -4209,7 +4093,6 @@
     renderLanes();
     renderDetails();
     renderHistory();
-    renderHubDraftBanner();
   }
 
   function applyPreset(type){
@@ -4344,8 +4227,6 @@
     section?.scrollIntoView({behavior:'smooth', block:'start'});
   }
   $('jumpAddBtn').addEventListener('click', () => openSectionAndScroll('addJobSection'));
-  $('applyHubDraftBtn')?.addEventListener('click', applyHubWorkflowDraft);
-  $('dismissHubDraftBtn')?.addEventListener('click', () => { const d=hubDraftRead(); if(d){ localStorage.setItem('olipoly_workflow_draft_v1', JSON.stringify({...d,dismissed:true})); } renderHubDraftBanner(); });
   const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', () => openSectionAndScroll('addJobSection'));
   const clearForm = $('clearFormBtn'); if(clearForm) clearForm.addEventListener('click', resetForm);
   $('exportBackupBtn')?.addEventListener('click', exportProductionBackup);
