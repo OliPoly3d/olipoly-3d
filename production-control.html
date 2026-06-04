@@ -872,6 +872,21 @@
   </header>
 
 
+
+  <details class="ops-collapse section-card" id="authSection" open><summary>Cloud login / sync</summary><div class="collapse-body">
+    <span class="kicker">Cloud login</span>
+    <div class="auth-grid">
+      <label>Email<input id="email" type="email" autocomplete="email" placeholder="OliPoly login email"></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label>
+      <button class="btn" id="loginBtn" type="button">Log In</button>
+      <button class="ghost" id="signupBtn" type="button">Create</button>
+      <button class="ghost hidden" id="logoutBtn" type="button">Log Out</button>
+    </div>
+    <div id="authStatus" class="auth-status">Checking sign-in.</div>
+  </div></details>
+
+
+
   <div class="hub-draft-banner" id="hubDraftBanner">
     <div>
       <strong id="hubDraftTitle">Hub workflow draft ready</strong>
@@ -947,17 +962,6 @@
     </div>
   </details>
 
-  <details class="ops-collapse" id="authSection"><summary>Cloud login / sync</summary><div class="collapse-body">
-    <span class="kicker">Cloud login</span>
-    <div class="auth-grid">
-      <label>Email<input id="email" type="email" autocomplete="email" placeholder="OliPoly login email"></label>
-      <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label>
-      <button class="btn" id="loginBtn" type="button">Log In</button>
-      <button class="ghost" id="signupBtn" type="button">Create</button>
-      <button class="ghost hidden" id="logoutBtn" type="button">Log Out</button>
-    </div>
-    <div id="authStatus" class="auth-status">Checking sign-in.</div>
-  </div></details>
 
   <details class="ops-collapse section-card" id="addJobSection"><summary><span class="summary-title"><span class="kicker">Job editor</span><strong>Quick add / edit production job</strong></span></summary><div class="collapse-body">
     <div class="form-intro-strip"><div><span class="kicker">Quick add</span><h2>Add the minimum. Enrich later.</h2><p>Title, type, status, priority, machine, due date, and time drive the board.</p></div><button class="ghost" type="button" id="clearFormBtn">Clear</button></div>
@@ -1572,7 +1576,10 @@
     if(!email || !password) return toast('Enter email and password.');
     try{
       const data = await sbApi('/auth/v1/token?grant_type=password',{method:'POST', body:JSON.stringify({email,password})});
-      if(data?.access_token) localStorage.setItem('sb_token', data.access_token);
+      if(data?.access_token) {
+        localStorage.setItem('sb_token', data.access_token);
+        if(window.OliPolyAuth) window.OliPolyAuth.writeSession?.({access_token:data.access_token, refresh_token:data.refresh_token, user:data.user, expires_at:data.expires_at, expires_in:data.expires_in});
+      }
       state.user = await getUser();
       updateAuthUI();
       await loadAll();
@@ -1588,7 +1595,10 @@
     if(!email || !password) return toast('Enter email and password.');
     try{
       const data = await sbApi('/auth/v1/signup',{method:'POST', body:JSON.stringify({email,password})});
-      if(data?.access_token) localStorage.setItem('sb_token', data.access_token);
+      if(data?.access_token) {
+        localStorage.setItem('sb_token', data.access_token);
+        if(window.OliPolyAuth) window.OliPolyAuth.writeSession?.({access_token:data.access_token, refresh_token:data.refresh_token, user:data.user, expires_at:data.expires_at, expires_in:data.expires_in});
+      }
       state.user = await getUser();
       updateAuthUI();
       await loadAll();
