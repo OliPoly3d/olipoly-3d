@@ -2558,6 +2558,76 @@ body.erp-mode .erp-section-anchor{
   body.erp-mode .erp-kpi-strip{grid-template-columns:1fr!important}
 }
 
+
+
+/* =========================================================
+   ERP Console V1.4 static placement fix
+   This makes the ERP console real HTML directly after the app header.
+   ========================================================= */
+body.erp-mode #erpConsole{
+  grid-column:2!important;
+  margin:10px 0 0!important;
+  padding:0!important;
+  display:grid!important;
+  gap:14px!important;
+  align-self:start!important;
+  min-height:0!important;
+}
+body.erp-mode #erpConsole:first-of-type{
+  margin-top:10px!important;
+}
+body.erp-mode .topbar + #erpConsole{
+  margin-top:10px!important;
+}
+body.erp-mode .topbar + #erpConsole + .hero{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+body.erp-mode .hero,
+body.erp-mode .hero *,
+body.erp-mode #engineDataBoard,
+body.erp-mode #engineDataBoard *,
+body.erp-mode #engineActivityStrip,
+body.erp-mode #engineActivityStrip *{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:hidden!important;
+}
+body.erp-mode .auth-card{
+  margin-top:14px!important;
+}
+/* Make the first visible row start immediately and clearly */
+body.erp-mode .erp-kpi-strip{
+  margin:0!important;
+  transform:none!important;
+}
+body.erp-mode .erp-kpi{
+  min-height:118px!important;
+}
+/* Undo any old decorative section ordering oddities */
+body.erp-mode .wrap > #erpConsole{
+  order:0!important;
+}
+body.erp-mode .wrap > .auth-card{
+  order:1!important;
+}
+body.erp-mode .wrap > .request-v2{
+  order:2!important;
+}
+@media(max-width:920px){
+  body.erp-mode #erpConsole{grid-column:1!important}
+}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -2776,6 +2846,118 @@ body.erp-mode .erp-section-anchor{
     </a>
     <a class="ghost" href="index.html">Open Main Site</a>
   </header>
+
+
+  <main class="erp-console" id="erpConsole">
+    <section class="erp-kpi-strip" id="erpKpiStrip"></section>
+
+    <section class="erp-workspace erp-section-anchor" id="erpToday">
+      <div class="erp-panel">
+        <div class="erp-panel-head">
+          <div>
+            <h2>Today’s Work Queue</h2>
+            <p>Recommended operational actions from real shop data.</p>
+          </div>
+          <span class="erp-chip">Daily Work</span>
+        </div>
+        <div class="erp-work-list" id="erpTodayWork"></div>
+      </div>
+
+      <aside class="erp-side-grid">
+        <div class="erp-panel">
+          <div class="erp-panel-head">
+            <div>
+              <h2>Shop Health</h2>
+              <p>Capacity, risk, and workload.</p>
+            </div>
+            <span class="erp-chip">Live</span>
+          </div>
+          <div class="erp-bars" id="erpPrinterLoad"></div>
+        </div>
+
+        <div class="erp-panel">
+          <div class="erp-panel-head">
+            <div>
+              <h2>Business Pulse</h2>
+              <p>Pipeline and order value.</p>
+            </div>
+          </div>
+          <div class="erp-chart-mini" id="erpBusinessPulse"></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="erp-module-grid erp-section-anchor" id="erpProductionInventory">
+      <div class="erp-panel">
+        <div class="erp-panel-head">
+          <div>
+            <h2>Production Command</h2>
+            <p>Now / next / later queue visibility.</p>
+          </div>
+          <a class="erp-chip" href="production-control.html">Open</a>
+        </div>
+        <div class="erp-list" id="erpProductionList"></div>
+      </div>
+
+      <div class="erp-panel">
+        <div class="erp-panel-head">
+          <div>
+            <h2>Inventory Command</h2>
+            <p>Shortages and material risk.</p>
+          </div>
+          <a class="erp-chip" href="inventory-control.html">Open</a>
+        </div>
+        <div class="erp-list" id="erpInventoryList"></div>
+      </div>
+    </section>
+
+    <section class="erp-module-grid three erp-section-anchor" id="erpCustomersFinance">
+      <div class="erp-panel">
+        <div class="erp-panel-head">
+          <div>
+            <h2>Customer Command</h2>
+            <p>Leaderboard and reorder potential.</p>
+          </div>
+          <a class="erp-chip" href="orders-admin.html">CRM</a>
+        </div>
+        <div class="erp-list" id="erpCustomerList"></div>
+      </div>
+
+      <div class="erp-panel">
+        <div class="erp-panel-head">
+          <div>
+            <h2>Quote / Order Pipeline</h2>
+            <p>Open value by workflow stage.</p>
+          </div>
+          <a class="erp-chip" href="quote.html">Quote</a>
+        </div>
+        <div class="erp-list" id="erpPipelineList"></div>
+      </div>
+
+      <div class="erp-panel">
+        <div class="erp-panel-head">
+          <div>
+            <h2>Finance Command</h2>
+            <p>Ready to push, unpaid, and revenue.</p>
+          </div>
+          <a class="erp-chip" href="finance-pro.html">Finance</a>
+        </div>
+        <div class="erp-list" id="erpFinanceList"></div>
+      </div>
+    </section>
+
+    <section class="erp-panel erp-section-anchor" id="erpTimelinePanel">
+      <div class="erp-panel-head">
+        <div>
+          <h2>Activity Timeline</h2>
+          <p>Latest quotes, orders, and finance movement.</p>
+        </div>
+        <span class="erp-chip">Timeline</span>
+      </div>
+      <div class="erp-timeline" id="erpTimeline"></div>
+    </section>
+  </main>
+
 
   <section class="hero">
     <div>
@@ -3748,9 +3930,41 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     return '<div class="erp-vertical-bars">'+values.slice(-8).map(function(v){return '<i class="'+(cls||'')+'" style="height:'+Math.max(8,pct(v,max))+'%"></i>'}).join('')+'</div>';
   }
 
+
+  function updateErpRailNav(){
+    var nav=document.querySelector('.engine-nav');
+    if(!nav) return;
+    nav.innerHTML=[
+      '<a class="active" href="#erpToday">⌘ Today</a>',
+      '<a href="#newRequestWizard">＋ New Request</a>',
+      '<a href="#erpProductionInventory">▣ Production</a>',
+      '<a href="#erpProductionInventory">⬢ Inventory</a>',
+      '<a href="#erpCustomersFinance">👥 Customers</a>',
+      '<a href="#erpCustomersFinance">◈ Quotes</a>',
+      '<a href="#erpCustomersFinance">$ Finance</a>',
+      '<a href="#erpTimelinePanel">⟡ Timeline</a>',
+      '<a href="#hubSearchInput">⌕ Search</a>',
+      '<a href="production-control.html">Open Production</a>',
+      '<a href="orders-admin.html">Open Orders</a>',
+      '<a href="inventory-control.html">Open Inventory</a>'
+    ].join('');
+    nav.querySelectorAll('a[href^="#"]').forEach(function(a){
+      a.addEventListener('click',function(e){
+        var target=document.querySelector(a.getAttribute('href'));
+        if(target){
+          e.preventDefault();
+          history.replaceState(null,'',location.pathname+a.getAttribute('href'));
+          target.scrollIntoView({behavior:'smooth',block:'start'});
+          nav.querySelectorAll('a').forEach(function(x){x.classList.remove('active')});
+          a.classList.add('active');
+        }
+      });
+    });
+  }
+
   function createConsole(){
-    if($('erpConsole'))return;
     document.body.classList.add('erp-mode');
+    if($('erpConsole')){ updateErpRailNav(); return; }
 
     var html = [
       '<main class="erp-console" id="erpConsole">',
@@ -4023,6 +4237,29 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     [50,250,800,1600,2600].forEach(t=>setTimeout(moveErpFirst,t));
     [100,900,1800].forEach(t=>setTimeout(fixHash,t));
     setTimeout(wireRail,600);
+  });
+})();
+</script>
+
+
+
+<script id="erpStaticPlacementGuardV14">
+(function(){
+  function topPlace(){
+    document.body.classList.add('erp-mode');
+    const top=document.querySelector('.topbar');
+    const erp=document.getElementById('erpConsole');
+    if(top && erp && top.nextElementSibling!==erp){
+      top.insertAdjacentElement('afterend',erp);
+    }
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    topPlace();
+    if(!location.hash || ['#inventoryImpactSection','#customerIntelligenceSection','#customerTimelineSection','#engineDataBoard'].includes(location.hash)){
+      history.replaceState(null,'',location.pathname);
+      window.scrollTo({top:0,left:0,behavior:'auto'});
+    }
+    [100,400,1000,2200].forEach(t=>setTimeout(topPlace,t));
   });
 })();
 </script>
