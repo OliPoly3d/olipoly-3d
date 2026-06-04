@@ -2779,6 +2779,102 @@ body.erp-mode .erp-timeline-row small{
   }
 }
 
+
+
+/* =========================================================
+   ERP Console V1.6 section pill/title spacing fix
+   ========================================================= */
+
+/* Legacy sections: force badge above title, never overlapping */
+body.erp-mode .section-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+  padding-bottom:12px!important;
+  margin-bottom:12px!important;
+}
+body.erp-mode .section-head > div{
+  display:grid!important;
+  gap:7px!important;
+  min-width:0!important;
+}
+body.erp-mode .section-head .kicker,
+body.erp-mode .section-head .source-pill,
+body.erp-mode .section-head .tag{
+  grid-row:auto!important;
+  align-self:start!important;
+  justify-self:start!important;
+  margin:0!important;
+}
+body.erp-mode .section-head h2{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:1.12!important;
+}
+
+/* Non-section legacy stacked headers */
+body.erp-mode .section > .kicker + h2,
+body.erp-mode .request-v2 > .kicker + h2,
+body.erp-mode .wizard > .kicker + h2{
+  display:block!important;
+  margin-top:8px!important;
+  clear:both!important;
+}
+body.erp-mode .section > .kicker,
+body.erp-mode .request-v2 > .kicker,
+body.erp-mode .wizard > .kicker{
+  display:inline-flex!important;
+  margin-bottom:8px!important;
+  vertical-align:top!important;
+}
+
+/* Fix specific old sections that use kicker immediately before text/title */
+body.erp-mode #currentWorkflowSection .kicker,
+body.erp-mode #currentWorkflowSection h2,
+body.erp-mode #currentWorkflowSection p,
+body.erp-mode #hubSearchSection .kicker,
+body.erp-mode #hubSearchSection h2,
+body.erp-mode #hubSearchSection p{
+  position:relative!important;
+  z-index:1!important;
+}
+body.erp-mode #currentWorkflowSection h2,
+body.erp-mode #hubSearchSection h2{
+  margin-top:8px!important;
+}
+
+/* Improve readability in these older fallback sections */
+body.erp-mode .section h2{
+  font-size:1.14rem!important;
+}
+body.erp-mode .section p{
+  font-size:.82rem!important;
+  color:#b7c6df!important;
+}
+
+/* Recent/continue/search cards tighter */
+body.erp-mode .continue-grid,
+body.erp-mode .recent-list,
+body.erp-mode .search-results{
+  margin-top:10px!important;
+}
+
+/* Search input section clarity */
+body.erp-mode .search-box{
+  margin-top:10px!important;
+  padding:9px!important;
+  border-radius:16px!important;
+}
+
+/* Prevent pill from absolute/inline baseline weirdness anywhere inside ERP mode */
+body.erp-mode .kicker{
+  height:auto!important;
+  min-height:0!important;
+  line-height:1!important;
+}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
