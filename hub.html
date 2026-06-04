@@ -253,17 +253,51 @@
   </section>
 
   <section class="section">
-    <span class="kicker">Shop Pulse</span>
-    <h2>Only the numbers that help you decide.</h2>
-    <div class="snap">
-      <div class="snap-card"><span>Open Jobs</span><strong id="openJobs">0</strong></div>
-      <div class="snap-card"><span>Ready</span><strong id="readyJobs">0</strong></div>
-      <div class="snap-card"><span>Printing</span><strong id="printingJobs">0</strong></div>
-      <div class="snap-card"><span>Post Print</span><strong id="postJobs">0</strong></div>
-      <div class="snap-card"><span>Low Stock</span><strong id="lowStock">0</strong></div>
-      <div class="snap-card"><span>Finance Ready</span><strong id="financeReady">0</strong></div>
+    <span class="kicker">Continue Working</span>
+    <h2>Pick up the next real thing.</h2>
+    <p>These are pulled from the current browser-backed tool data. Open the source system when you need the full record.</p>
+    <div class="command-grid">
+      <div class="focus-card">
+        <span class="kicker">Active Work</span>
+        <h2>Continue</h2>
+        <div class="work-list" id="continueWorkingList"></div>
+      </div>
+      <div class="focus-card">
+        <span class="kicker">Unified Search</span>
+        <h2>Find anything</h2>
+        <p>Search customer, project, quote number, order number, or finance text.</p>
+        <div class="search-box">
+          <input id="hubSearchInput" placeholder="Search Q-123, OP-123, customer, project..." />
+          <button class="ghost" id="hubSearchClear" type="button">Clear</button>
+        </div>
+        <div class="search-results" id="hubSearchResults"></div>
+      </div>
     </div>
   </section>
+
+  <section class="section">
+    <span class="kicker">Today</span>
+    <h2>What needs attention?</h2>
+    <div class="attention-grid">
+      <div class="attention-box"><h3>Print Next</h3><div class="mini" id="printNextList"></div></div>
+      <div class="attention-box"><h3>Ready to Quote</h3><div class="mini" id="readyQuoteList"></div></div>
+      <div class="attention-box"><h3>Low Inventory</h3><div class="mini" id="lowInventoryList"></div></div>
+      <div class="attention-box"><h3>Ready Finance</h3><div class="mini" id="readyFinanceList"></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <span class="kicker">Workflow Actions</span>
+    <h2>Shortcut to the right owner.</h2>
+    <div class="workflow-actions">
+      <a class="action-card" href="production-control.html"><strong>Open Print Queue</strong><small>Review cards, swim lanes, capacity, close-outs, and Hub drafts.</small><span class="tag">Production</span></a>
+      <a class="action-card" href="quote.html"><strong>Generate Quote</strong><small>Use after production cost and margin have been checked.</small><span class="tag">Quote</span></a>
+      <a class="action-card" href="orders-admin.html"><strong>Manage Orders</strong><small>Invoice, labels, tracker, completion email, and finance push.</small><span class="tag">Orders</span></a>
+      <a class="action-card" href="inventory-control.html"><strong>Check Inventory</strong><small>Low stock, raw rolls, supplies, reservations, and history.</small><span class="tag">Inventory</span></a>
+    </div>
+  </section>
+
+
 
   <section class="section">
     <span class="kicker">Source Systems</span>
@@ -279,6 +313,7 @@
   </section>
 </div>
 
+
 <script>
 const $=id=>document.getElementById(id);
 const recs={business:['Recommended: Business / Branded','Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.'],personal:['Recommended: Personal / Gift','Start in Production Control as Personal / Free. Quote only if it becomes a paid customer job.'],replacement:['Recommended: Replacement Part','Start in Production Control as Replacement / Warranty. Confirm fit, function, and material before quoting.'],prototype:['Recommended: Prototype','Start in Production Control as Prototype / Test Print. Quote after scope and iterations are clear.'],batch:['Recommended: Repeat / Batch','Start in Production Control as Craft Stock or Finished Goods Restock. Confirm repeatability, material, and capacity.']};
@@ -288,12 +323,82 @@ function draft(){const t=$('workflowType').value;return {id:'wf-'+Date.now(),cre
 function saveDraft(){const d=draft();localStorage.setItem('olipoly_workflow_draft_v1',JSON.stringify(d));$('recBody').textContent='Draft saved. Open Production Control and apply the draft banner at the top.';return d;}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
 $('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
+
 function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}}
-function snapshot(){const jobs=read('olipoly_production_jobs_v3');const raw=read('olipoly_raw_material_inventory_v3');const supplies=read('olipoly_non_filament_supplies_v1');const orders=read('olipoly_orders_v1');const closed=['completed','failed_scrap','archived'];const post=['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];const open=jobs.filter(j=>!closed.includes(j.production_status));$('openJobs').textContent=open.length;$('readyJobs').textContent=open.filter(j=>['ready_to_print','queued'].includes(j.production_status)).length;$('printingJobs').textContent=open.filter(j=>j.production_status==='printing').length;$('postJobs').textContent=open.filter(j=>post.includes(j.production_status)).length;$('lowStock').textContent=raw.filter(r=>Number(r.remaining_grams||0)<=Number(r.reorder_threshold_grams||0)).length+supplies.filter(s=>Number(s.quantity_on_hand||0)<=Number(s.reorder_threshold||s.reorder_point||0)).length;$('financeReady').textContent=orders.filter(o=>['paid','deposit_paid'].includes(o.payment_status)&&Number(o.order_total||0)>0&&!o.finance_pushed).length;}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0)}
+function jobHours(j){return Number(j.estimated_total_hours || (Number(j.estimated_hours_each||0)*Number(j.quantity||1)) || 0)}
+function jobStatus(s){return String(s||'idea').replace(/_/g,' ')}
+function mini(href,title,sub,tag){return `<a href="${href}"><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></a>`}
+function item(href,icon,title,sub,tag){return `<a class="work-item" href="${href}"><span class="work-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b class="tag">${esc(tag||'Open')}</b></a>`}
+function searchItem(href,icon,title,sub,tag){return `<a class="search-item" href="${href}"><span class="search-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b class="tag">${esc(tag||'Open')}</b></a>`}
+function empty(text){return `<div class="empty-note">${esc(text)}</div>`}
+
+function data(){
+  return {
+    jobs:read('olipoly_production_jobs_v3'),
+    raw:read('olipoly_raw_material_inventory_v3'),
+    supplies:read('olipoly_non_filament_supplies_v1'),
+    orders:read('olipoly_orders_v1'),
+    quotes:read('olipoly_quote_history_v2'),
+    finance:read('olipoly_finance_entries_v1')
+  };
+}
+function renderCommandCenter(){
+  const d=data();
+  const closed=['completed','failed_scrap','archived'];
+  const open=d.jobs.filter(j=>!closed.includes(j.production_status));
+  const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));
+  const printing=open.filter(j=>j.production_status==='printing');
+  const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));
+  const lowRaw=d.raw.filter(r=>Number(r.remaining_grams||0)<=Number(r.reorder_threshold_grams||0));
+  const lowSup=d.supplies.filter(s=>Number(s.quantity_on_hand||0)<=Number(s.reorder_threshold||s.reorder_point||0));
+  const readyFinance=d.orders.filter(o=>['paid','deposit_paid'].includes(o.payment_status)&&Number(o.order_total||0)>0&&!o.finance_pushed);
+
+  const continueRows=[
+    ...printing.slice(0,3).map(j=>item('production-control.html','🖨️',j.job_title,`Printing · ${j.machine_preference||j.actual_machine||'machine'}${j.due_date?' · due '+j.due_date:''}`,'Print')),
+    ...post.slice(0,2).map(j=>item('production-control.html','✨',j.job_title,`${jobStatus(j.production_status)}${j.due_date?' · due '+j.due_date:''}`,'Post')),
+    ...ready.slice(0,3).map(j=>item('production-control.html','🟢',j.job_title,`Ready · ${jobHours(j).toFixed(1).replace(/\.0$/,'')}h`,'Next')),
+    ...readyFinance.slice(0,2).map(o=>item('orders-admin.html','💰',o.order_number||o.customer_name,`${money(o.order_total)} ready for Finance`,'Finance'))
+  ].slice(0,6);
+  $('continueWorkingList').innerHTML=continueRows.join('')||empty('No active work found yet. Start with the wizard above.');
+
+  $('printNextList').innerHTML=ready.slice(0,3).map(j=>mini('production-control.html',j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');
+  $('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini('production-control.html',j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');
+  $('lowInventoryList').innerHTML=[...lowRaw.slice(0,3).map(r=>mini('inventory-control.html',`${r.material_type||'Material'} / ${r.color||'No color'}`,`${Math.round(Number(r.remaining_grams||0))}g remaining`)),...lowSup.slice(0,2).map(s=>mini('inventory-control.html',s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))].join('')||empty('No low inventory flagged.');
+  $('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini('orders-admin.html',o.order_number||o.customer_name,`${money(o.order_total)} ready to push`)).join('')||empty('No orders ready for finance push.');
+
+  // keep old ids if present
+  ['openJobs','readyJobs','printingJobs','postJobs','lowStock','financeReady'].forEach(id=>{if($(id))$(id).textContent='0'});
+  if($('openJobs'))$('openJobs').textContent=open.length;
+  if($('readyJobs'))$('readyJobs').textContent=ready.length;
+  if($('printingJobs'))$('printingJobs').textContent=printing.length;
+  if($('postJobs'))$('postJobs').textContent=post.length;
+  if($('lowStock'))$('lowStock').textContent=lowRaw.length+lowSup.length;
+  if($('financeReady'))$('financeReady').textContent=readyFinance.length;
+}
+function allSearchRows(){
+  const d=data();
+  return [
+    ...d.jobs.map(j=>({href:'production-control.html',icon:'🖨️',tag:'Production',title:j.job_title,sub:[j.customer_name,j.production_status,j.order_ref,j.quote_ref].filter(Boolean).join(' · '),hay:JSON.stringify(j)})),
+    ...d.orders.map(o=>({href:'orders-admin.html',icon:'📦',tag:'Order',title:o.order_number||o.customer_name,sub:[o.customer_name,o.customer_email,o.status,o.payment_status].filter(Boolean).join(' · '),hay:JSON.stringify(o)})),
+    ...d.quotes.map(q=>({href:'quote.html',icon:'🧾',tag:'Quote',title:q.quoteNumber||q.quote_number||q.quoteTitle,sub:[q.customerName||q.customer_name,q.quoteStatus||q.quote_status].filter(Boolean).join(' · '),hay:JSON.stringify(q)})),
+    ...d.finance.map(f=>({href:'finance-pro.html',icon:'💰',tag:'Finance',title:f.description||f.category||'Finance entry',sub:[f.date,f.category,money(f.amount)].filter(Boolean).join(' · '),hay:JSON.stringify(f)}))
+  ];
+}
+function renderSearch(){
+  const q=($('hubSearchInput').value||'').trim().toLowerCase();
+  if(!q){$('hubSearchResults').innerHTML=empty('Type to search production, quotes, orders, and finance.');return}
+  const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,10);
+  $('hubSearchResults').innerHTML=rows.map(r=>searchItem(r.href,r.icon,r.title,r.sub,r.tag)).join('')||empty('No matching records found in this browser data.');
+}
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
 $('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
 $('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.'};
-snapshot();refreshAuth();setType('business');
+$('hubSearchInput')?.addEventListener('input',renderSearch);
+$('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
+renderCommandCenter();renderSearch();refreshAuth();setType('business');
 </script>
+
 </body>
 </html>
