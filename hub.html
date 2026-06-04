@@ -1922,6 +1922,9 @@ body::before{
         if (window.OliPolyAuth && currentSession) {
           window.OliPolyAuth.writeSession(currentSession);
         }
+        if (window.OliPolyAuth && currentSession) {
+          window.OliPolyAuth.writeSession(currentSession);
+        }
         setAuthUi();
 
         if (currentUser) {
@@ -1977,6 +1980,7 @@ body::before{
       const cleanupSession = () => {
         currentSession = null;
         currentUser = null;
+        if (window.OliPolyAuth) window.OliPolyAuth.clearSession();
         if (window.OliPolyAuth) window.OliPolyAuth.clearSession();
         reminders = [];
         els.notes.value = '';
