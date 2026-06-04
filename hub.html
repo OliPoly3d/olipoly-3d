@@ -7,132 +7,83 @@
   <title>OliPoly Command Center</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <style>
-    :root{--ink:#25182d;--muted:#74617d;--pink:#e84fb7;--purple:#9d6df3;--line:rgba(101,60,120,.14);--shadow:0 22px 62px rgba(95,36,112,.13);--panel:rgba(255,255,255,.84);}
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0,rgba(232,79,183,.22),transparent 30rem),radial-gradient(circle at 95% 4%,rgba(157,109,243,.18),transparent 28rem),linear-gradient(180deg,#fff5fc,#fff 45%,#fff8fd);}
-    .wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:16px 0 56px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:24px;background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.88);box-shadow:var(--shadow);position:sticky;top:10px;z-index:10;backdrop-filter:blur(14px)}
-    .brand{display:flex;align-items:center;gap:12px} .brand img{width:44px;height:44px;border-radius:14px;object-fit:contain;background:#fff} h1{margin:0;font-family:"Playfair Display",serif;font-size:1.5rem;line-height:.95} .brand small{color:var(--muted);font-weight:800} a{color:inherit} .btn,.ghost{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:900;border:0;cursor:pointer} .btn{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 14px 30px rgba(214,73,186,.22)} .ghost{background:rgba(255,255,255,.75);border:1px solid var(--line)}
-    .hero{margin-top:14px;padding:20px;border-radius:32px;background:var(--panel);border:1px solid rgba(255,255,255,.88);box-shadow:var(--shadow);display:grid;grid-template-columns:1fr .72fr;gap:18px;align-items:start}
-    .kicker{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.15);color:#a03c87;font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
-    .hero h2{font-family:"Playfair Display",serif;font-size:clamp(2.2rem,5vw,4.1rem);line-height:.9;margin:10px 0 10px;letter-spacing:-.055em} .hero p{color:var(--muted);font-size:1rem;line-height:1.5;max-width:680px}
-    .path{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px} .path div{padding:10px;border-radius:16px;background:rgba(255,255,255,.75);border:1px solid var(--line);font-size:.78rem;color:var(--muted)} .path strong{display:block;color:var(--ink);font-size:.9rem;margin-bottom:2px}
-    .auth{padding:14px;border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line)} .auth h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:1.55rem} .auth input{width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line);padding:10px 12px;margin:6px 0;background:white} .auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px} #authStatus{margin-top:8px;color:var(--muted);font-weight:800;font-size:.86rem}
-    .wizard,.section{margin-top:14px;padding:18px;border-radius:32px;background:var(--panel);border:1px solid rgba(255,255,255,.88);box-shadow:var(--shadow)} .wizard h2,.section h2{font-family:"Playfair Display",serif;font-size:2.25rem;line-height:.95;margin:8px 0;color:var(--ink)} .section p,.wizard p{color:var(--muted);line-height:1.45}
-    .type-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px} .type-card{min-height:150px;border-radius:22px;padding:14px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,246,252,.85));text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;transition:.18s} .type-card.active,.type-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.12);border-color:rgba(232,79,183,.30)} .type-card b{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));font-size:1.1rem} .type-card strong{display:block;margin-top:8px} .type-card small{display:block;color:var(--muted);line-height:1.32;margin-top:4px}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr .5fr .7fr;gap:10px;margin-top:14px;padding:14px;border-radius:22px;background:rgba(255,255,255,.68);border:1px solid var(--line)} label{font-weight:900;font-size:.86rem} input,select{width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line);padding:10px 12px;margin-top:6px;background:white}
-    .recommend{margin-top:12px;padding:14px;border-radius:22px;background:rgba(255,255,255,.78);border:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center} .recommend span{color:var(--muted);line-height:1.4} .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .snap{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px} .snap-card{padding:12px;border-radius:18px;background:rgba(255,255,255,.75);border:1px solid var(--line)} .snap-card span{display:block;color:var(--muted);font-size:.65rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em} .snap-card strong{font-size:1.35rem}
-    .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px} .tool{padding:14px;border-radius:20px;background:rgba(255,255,255,.76);border:1px solid var(--line);text-decoration:none} .tool strong{display:block} .tool small{display:block;color:var(--muted);line-height:1.35;margin-top:4px}
-    @media(max-width:950px){.hero{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr 1fr}.path,.snap{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.wrap{width:min(100% - 18px,1120px)}.topbar{position:relative;top:auto;align-items:flex-start;flex-direction:column}.hero,.wizard,.section{border-radius:24px;padding:14px}.type-grid,.form-grid,.path,.snap{grid-template-columns:1fr}.recommend{display:block}.actions{margin-top:10px;display:grid}.btn,.ghost{width:100%}}
-  
-    /* === V4: robust card rendering + cloud search layout fixes === */
-    .command-grid{display:grid!important;grid-template-columns:1.05fr .95fr!important;gap:14px!important;margin-top:14px!important}
-    .focus-card{padding:16px!important;border-radius:26px!important;background:rgba(255,255,255,.84)!important;border:1px solid rgba(255,255,255,.88)!important;box-shadow:0 22px 62px rgba(95,36,112,.13)!important}
-    .work-list,.attention-list,.search-results{display:grid!important;gap:9px!important;margin-top:12px!important}
-    .work-item,.search-item{
-      display:grid!important;
-      grid-template-columns:auto minmax(0,1fr) auto!important;
-      gap:10px!important;
-      align-items:center!important;
-      padding:11px!important;
-      border-radius:18px!important;
-      background:rgba(255,255,255,.82)!important;
-      border:1px solid rgba(101,60,120,.14)!important;
-      text-decoration:none!important;
-      color:inherit!important;
-      box-shadow:0 8px 18px rgba(95,36,112,.05)!important;
+    :root{
+      --ink:#25182d;--muted:#74617d;--pink:#e84fb7;--purple:#9d6df3;--mint:#65d6c4;
+      --line:rgba(101,60,120,.14);--shadow:0 22px 62px rgba(95,36,112,.13);--panel:rgba(255,255,255,.84);
     }
-    .work-item:hover,.search-item:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(95,36,112,.09)!important}
-    .work-icon,.search-icon{
-      width:38px!important;height:38px!important;border-radius:15px!important;
-      display:grid!important;place-items:center!important;color:white!important;
-      background:linear-gradient(135deg,#e84fb7,#9d6df3)!important;font-weight:950!important;text-decoration:none!important;
-    }
-    .work-item strong,.search-item strong{
-      display:block!important;color:#25182d!important;font-size:.95rem!important;
-      line-height:1.15!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;text-decoration:none!important;
-    }
-    .work-item small,.search-item small{
-      display:block!important;color:#74617d!important;font-size:.78rem!important;line-height:1.3!important;margin-top:3px!important;text-decoration:none!important;
-    }
-    .work-item b,.search-item b,.tag{
-      display:inline-flex!important;align-items:center!important;justify-content:center!important;
-      font-size:.66rem!important;text-transform:uppercase!important;letter-spacing:.06em!important;font-weight:950!important;
-      color:#9b4c80!important;background:rgba(232,79,183,.09)!important;border:1px solid rgba(232,79,183,.13)!important;
-      border-radius:999px!important;padding:6px 8px!important;white-space:nowrap!important;text-decoration:none!important;
-    }
-    .attention-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;margin-top:12px!important}
-    .attention-box{padding:13px!important;border-radius:20px!important;background:rgba(255,255,255,.78)!important;border:1px solid rgba(101,60,120,.14)!important}
-    .attention-box h3{margin:0 0 8px!important;font-family:"Playfair Display",serif!important;font-size:1.25rem!important;color:#25182d!important}
-    .mini{display:grid!important;gap:7px!important}
-    .mini a,.mini div{
-      display:block!important;padding:9px!important;border-radius:14px!important;background:rgba(255,255,255,.78)!important;
-      border:1px solid rgba(101,60,120,.10)!important;text-decoration:none!important;color:inherit!important;
-    }
-    .mini strong{display:block!important;font-size:.84rem!important;color:#25182d!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;text-decoration:none!important}
-    .mini small{display:block!important;color:#74617d!important;font-size:.72rem!important;margin-top:2px!important;line-height:1.25!important;text-decoration:none!important}
-    .search-box{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;margin-top:10px!important;padding:10px!important;border-radius:22px!important;background:rgba(255,255,255,.68)!important;border:1px solid rgba(101,60,120,.14)!important}
-    .search-box input{margin:0!important}
-    .empty-note{padding:12px!important;border-radius:18px!important;background:rgba(255,255,255,.68)!important;border:1px dashed rgba(101,60,120,.14)!important;color:#74617d!important;font-weight:800!important;line-height:1.4!important}
-    @media(max-width:980px){.command-grid{grid-template-columns:1fr!important}.attention-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-    @media(max-width:640px){.attention-grid{grid-template-columns:1fr!important}.work-item,.search-item{grid-template-columns:auto minmax(0,1fr)!important}.work-item b,.search-item b{grid-column:2!important}.search-box{grid-template-columns:1fr!important}}
-
-  
-    /* === Hub V5 action-card + cloud inventory accuracy fixes === */
-    .workflow-actions{
-      display:grid!important;
-      grid-template-columns:repeat(4,minmax(0,1fr))!important;
-      gap:10px!important;
-      margin-top:12px!important;
-    }
-    .action-card{
-      display:flex!important;
-      flex-direction:column!important;
-      gap:8px!important;
-      justify-content:space-between!important;
-      min-height:132px!important;
-      padding:15px!important;
-      border-radius:22px!important;
-      background:rgba(255,255,255,.80)!important;
-      border:1px solid rgba(101,60,120,.14)!important;
-      text-decoration:none!important;
-      color:inherit!important;
-      box-shadow:0 10px 24px rgba(95,36,112,.06)!important;
-      overflow:hidden!important;
-    }
-    .action-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.11)!important}
-    .action-card strong{
-      display:block!important;
-      color:#25182d!important;
-      font-size:1rem!important;
-      line-height:1.15!important;
-      text-decoration:none!important;
-    }
-    .action-card small{
-      display:block!important;
-      color:#74617d!important;
-      line-height:1.35!important;
-      font-size:.82rem!important;
-      text-decoration:none!important;
-    }
-    .action-card .tag{
-      align-self:flex-start!important;
-      width:auto!important;
-      display:inline-flex!important;
-      margin-top:auto!important;
-    }
-    .inventory-source-note{
-      display:block;
-      margin-top:8px;
-      color:#74617d;
-      font-size:.78rem;
-      font-weight:800;
-    }
-    @media(max-width:980px){.workflow-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-    @media(max-width:640px){.workflow-actions{grid-template-columns:1fr!important}}
-
-</style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0,rgba(232,79,183,.22),transparent 30rem),radial-gradient(circle at 95% 4%,rgba(157,109,243,.18),transparent 28rem),linear-gradient(180deg,#fff5fc,#fff 45%,#fff8fd);}
+    a{color:inherit}
+    .wrap{width:min(1160px,calc(100% - 28px));margin:0 auto;padding:16px 0 56px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:24px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.90);box-shadow:var(--shadow);position:sticky;top:10px;z-index:10;backdrop-filter:blur(14px)}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+    .brand img{width:46px;height:46px;border-radius:15px;object-fit:contain;background:#fff;box-shadow:0 8px 20px rgba(95,36,112,.10)}
+    h1,h2,h3,p{margin:0}
+    h1{font-family:"Playfair Display",serif;font-size:1.52rem;line-height:.95;letter-spacing:-.035em}
+    .brand small{display:block;color:var(--muted);font-weight:850;margin-top:3px}
+    .btn,.ghost{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:900;border:0;cursor:pointer;white-space:nowrap}
+    .btn{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 14px 30px rgba(214,73,186,.22)}
+    .ghost{background:rgba(255,255,255,.74);border:1px solid var(--line);color:var(--ink)}
+    .kicker{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.15);color:#a03c87;font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+    .hero{margin-top:14px;padding:18px;border-radius:34px;background:linear-gradient(135deg,rgba(232,79,183,.13),rgba(157,109,243,.12)),var(--panel);border:1px solid rgba(255,255,255,.90);box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1.08fr) minmax(300px,.82fr);gap:18px;align-items:center;overflow:hidden;position:relative}
+    .hero h2{font-family:"Playfair Display",serif;font-size:clamp(2.3rem,5vw,4.3rem);line-height:.88;margin:10px 0;letter-spacing:-.06em}
+    .hero p{color:var(--muted);font-size:1rem;line-height:1.48;max-width:680px}
+    .poly-stage{min-height:280px;border-radius:28px;background:radial-gradient(circle at 30% 16%,rgba(255,255,255,.95),rgba(255,255,255,.25) 34%,transparent 58%),linear-gradient(135deg,rgba(255,255,255,.56),rgba(255,246,252,.36));border:1px solid rgba(101,60,120,.12);position:relative;overflow:hidden;padding:14px}
+    .poly-printer{position:absolute;right:16px;bottom:16px;width:72%;max-width:430px;border-radius:24px;box-shadow:0 20px 46px rgba(95,36,112,.16);border:1px solid rgba(255,255,255,.85)}
+    .poly-bee{position:absolute;left:18px;top:18px;width:35%;max-width:158px;filter:drop-shadow(0 14px 22px rgba(95,36,112,.18));animation:floatPoly 4.5s ease-in-out infinite}
+    .spark{position:absolute;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--purple));opacity:.30}
+    .spark.s1{width:14px;height:14px;left:45%;top:14%}.spark.s2{width:22px;height:22px;right:17%;top:21%;background:var(--mint)}.spark.s3{width:10px;height:10px;left:25%;bottom:24%}
+    @keyframes floatPoly{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(4deg)}}
+    .health-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:16px}
+    .health-pill{padding:10px;border-radius:17px;background:rgba(255,255,255,.72);border:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:.78rem;font-weight:900;color:var(--muted)}
+    .health-pill b{color:var(--ink)}.dot{width:10px;height:10px;border-radius:99px;background:#bbb;box-shadow:0 0 0 4px rgba(0,0,0,.03)}.dot.cloud{background:#48c774}.dot.fallback{background:#ffcb6b}.dot.off{background:#ff6b8a}
+    .auth-card,.section,.wizard{margin-top:14px;padding:16px;border-radius:30px;background:var(--panel);border:1px solid rgba(255,255,255,.90);box-shadow:var(--shadow)}
+    .auth-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+    .auth-fields{display:grid;grid-template-columns:1fr 1fr auto auto;gap:9px;align-items:end}
+    label{font-weight:900;font-size:.84rem;color:var(--ink)}
+    input,select{width:100%;min-height:44px;border-radius:15px;border:1px solid var(--line);padding:10px 12px;margin-top:6px;background:#fff;color:var(--ink)}
+    .status-text{margin-top:8px;color:var(--muted);font-weight:850;font-size:.86rem}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+    .section h2,.wizard h2{font-family:"Playfair Display",serif;font-size:2.1rem;line-height:.95;letter-spacing:-.035em}
+    .section p,.wizard p{color:var(--muted);line-height:1.45}
+    .shop-health{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+    .metric{padding:13px;border-radius:18px;background:rgba(255,255,255,.75);border:1px solid var(--line)}
+    .metric span{display:block;color:var(--muted);font-size:.66rem;font-weight:950;letter-spacing:.07em;text-transform:uppercase}
+    .metric strong{display:block;margin-top:5px;color:var(--ink);font-size:1.32rem;line-height:1}
+    .workflow-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border-radius:22px;background:rgba(255,255,255,.76);border:1px solid var(--line)}
+    .workflow-icon,.card-icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));font-weight:950}
+    .workflow-card strong,.work-card strong,.attention-item strong,.recent-item strong{display:block;color:var(--ink);line-height:1.15}
+    .workflow-card small,.work-card small,.attention-item small,.recent-item small{display:block;color:var(--muted);font-size:.8rem;line-height:1.32;margin-top:3px}
+    .type-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+    .type-card{min-height:140px;border-radius:22px;padding:14px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,246,252,.85));text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;transition:.18s}
+    .type-card.active,.type-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.12);border-color:rgba(232,79,183,.30)}
+    .type-card b{width:40px;height:40px;border-radius:16px;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));font-size:1.05rem}
+    .type-card strong{display:block;margin-top:8px} .type-card small{display:block;color:var(--muted);line-height:1.32;margin-top:4px;font-size:.78rem}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr .5fr .7fr;gap:10px;margin-top:14px;padding:14px;border-radius:22px;background:rgba(255,255,255,.68);border:1px solid var(--line)}
+    .recommend{margin-top:12px;padding:14px;border-radius:22px;background:rgba(255,255,255,.78);border:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .attention-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .attention-box{padding:14px;border-radius:22px;background:rgba(255,255,255,.78);border:1px solid var(--line);min-height:190px}
+    .attention-box h3{font-family:"Playfair Display",serif;font-size:1.25rem;margin:7px 0 8px}
+    .source-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:rgba(101,60,120,.07);border:1px solid rgba(101,60,120,.10);color:var(--muted);font-size:.66rem;font-weight:950;text-transform:uppercase;letter-spacing:.04em}
+    .source-pill.cloud{background:rgba(72,199,116,.10);border-color:rgba(72,199,116,.18);color:#2b7b48}.source-pill.fallback{background:rgba(255,203,107,.13);border-color:rgba(255,203,107,.25);color:#8a620f}
+    .mini{display:grid;gap:7px;margin-top:8px}
+    .mini a,.mini div{display:block;padding:9px;border-radius:14px;background:rgba(255,255,255,.78);border:1px solid rgba(101,60,120,.10);text-decoration:none;color:inherit}
+    .mini strong{display:block;font-size:.84rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mini small{display:block;color:var(--muted);font-size:.72rem;margin-top:2px;line-height:1.25}
+    .continue-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .work-card,.recent-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:20px;background:rgba(255,255,255,.78);border:1px solid var(--line);text-decoration:none;color:inherit;box-shadow:0 8px 18px rgba(95,36,112,.05)}
+    .work-card:hover,.recent-item:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(95,36,112,.09)}
+    .tag{display:inline-flex;align-items:center;justify-content:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;font-weight:950;color:#9b4c80;background:rgba(232,79,183,.09);border:1px solid rgba(232,79,183,.13);border-radius:999px;padding:6px 8px;white-space:nowrap;text-decoration:none}
+    .search-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:10px;padding:10px;border-radius:22px;background:rgba(255,255,255,.68);border:1px solid var(--line)}
+    .search-box input{margin:0}.search-results,.recent-list{display:grid;gap:9px;margin-top:12px}
+    .empty-note{padding:12px;border-radius:18px;background:rgba(255,255,255,.68);border:1px dashed var(--line);color:var(--muted);font-weight:800;line-height:1.4}
+    .workflow-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+    .action-card{display:flex;flex-direction:column;gap:8px;justify-content:space-between;min-height:132px;padding:15px;border-radius:22px;background:rgba(255,255,255,.80);border:1px solid var(--line);text-decoration:none;color:inherit;box-shadow:0 10px 24px rgba(95,36,112,.06);overflow:hidden}
+    .action-card:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(95,36,112,.11)}.action-card strong{display:block;color:var(--ink)}.action-card small{display:block;color:var(--muted);line-height:1.35;font-size:.82rem}.action-card .tag{align-self:flex-start;margin-top:auto}
+    @media(max-width:1040px){.hero,.auth-card{grid-template-columns:1fr}.health-strip,.shop-health{grid-template-columns:repeat(2,1fr)}.type-grid,.attention-grid,.continue-grid,.workflow-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid,.auth-fields{grid-template-columns:1fr 1fr}}
+    @media(max-width:640px){.wrap{width:min(100% - 18px,1160px)}.topbar{position:relative;top:auto;align-items:flex-start;flex-direction:column}.hero,.wizard,.section,.auth-card{border-radius:24px;padding:14px}.poly-stage{min-height:220px}.health-strip,.shop-health,.type-grid,.attention-grid,.continue-grid,.workflow-actions,.form-grid,.auth-fields{grid-template-columns:1fr}.recommend,.workflow-card{grid-template-columns:1fr}.actions{display:grid;justify-content:stretch}.btn,.ghost{width:100%}}
+  </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
 (function(){
@@ -314,32 +265,60 @@
 <body>
 <div class="wrap">
   <header class="topbar">
-    <div class="brand"><img src="images/logo-preview.png" alt=""><div><h1>OliPoly Command Center</h1><small>Production-first shop workflow</small></div></div>
+    <a class="brand" href="hub.html">
+      <img src="images/logo-preview.png" alt="OliPoly logo">
+      <div><h1>OliPoly Command Center</h1><small>Start the job. Check the cost. Quote with confidence.</small></div>
+    </a>
     <a class="ghost" href="index.html">Open Main Site</a>
   </header>
 
   <section class="hero">
     <div>
-      <span class="kicker">Start Here</span>
-      <h2>Run the job before you quote the job.</h2>
-      <p>Hub is now intentionally simple: pick what you are making, save the draft, then open Production Control first. Production Control remains the engine for cost, material reservation, capacity, and margin.</p>
-      <div class="path">
-        <div><strong>1 Hub</strong>Capture request</div><div><strong>2 Production</strong>Cost + reserve</div><div><strong>3 Quote</strong>Customer price</div><div><strong>4 Orders</strong>Invoice + track</div><div><strong>5 Finance</strong>Revenue + tax</div>
-      </div>
+      <span class="kicker">Internal OS</span>
+      <h2>Where OliPoly work starts moving.</h2>
+      <p>Capture the request, check production and inventory first, then move cleanly through Quote, Orders, and Finance without guessing where the next step lives.</p>
+      <div class="health-strip" id="cloudHealthStrip"></div>
     </div>
-    <div class="auth">
-      <h3>Cloud Sync</h3>
-      <input id="hubEmail" type="email" placeholder="Email">
-      <input id="hubPassword" type="password" placeholder="Password">
-      <div class="auth-actions"><button class="btn" id="hubLoginBtn">Log In</button><button class="ghost" id="hubLogoutBtn">Log Out</button></div>
-      <div id="authStatus">Checking session...</div>
+    <div class="poly-stage" aria-label="OliPoly visual">
+      <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
+      <img class="poly-bee" src="images/poly-mascot.png" alt="Flying Poly mascot">
+      <img class="poly-printer" src="images/p2s-ams2.png" alt="OliPoly printer">
+    </div>
+  </section>
+
+  <section class="auth-card">
+    <div>
+      <span class="kicker">Cloud Sync</span>
+      <div class="status-text" id="authStatus">Checking session...</div>
+    </div>
+    <div class="auth-fields">
+      <label>Email<input id="hubEmail" type="email" placeholder="OliPoly login email"></label>
+      <label>Password<input id="hubPassword" type="password" placeholder="Password"></label>
+      <button class="btn" id="hubLoginBtn">Log In</button>
+      <button class="ghost" id="hubLogoutBtn">Log Out</button>
+    </div>
+  </section>
+
+  <section class="section" id="currentWorkflowSection">
+    <div class="section-head"><div><span class="kicker">Current Workflow</span><h2>Keep the handoff visible.</h2></div></div>
+    <div id="currentWorkflowCard"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><span class="kicker">Shop Health</span><h2>Five-second business pulse.</h2></div></div>
+    <div class="shop-health">
+      <div class="metric"><span>Queue Hours</span><strong id="healthQueueHours">0h</strong></div>
+      <div class="metric"><span>Active Jobs</span><strong id="healthActiveJobs">0</strong></div>
+      <div class="metric"><span>Active Orders</span><strong id="healthActiveOrders">0</strong></div>
+      <div class="metric"><span>Pending Quotes</span><strong id="healthPendingQuotes">0</strong></div>
+      <div class="metric"><span>Low Inventory</span><strong id="healthLowInventory">0</strong></div>
     </div>
   </section>
 
   <section class="wizard">
     <span class="kicker">Start Order Wizard</span>
     <h2>What are you making?</h2>
-    <p>Choose one path. The big button sends the draft to Production Control, not Quote, so you can check cost and inventory first.</p>
+    <p>Choose one path. The big button sends the draft to Production Control first, so cost and inventory are checked before quoting.</p>
     <div class="type-grid">
       <button class="type-card active" data-type="business"><b>🏢</b><span><strong>Business / Branded</strong><small>Logo items, PO work, organizations, event merch.</small></span></button>
       <button class="type-card" data-type="personal"><b>🎁</b><span><strong>Personal / Gift</strong><small>One-off, family/friend, unpaid personal work.</small></span></button>
@@ -360,261 +339,95 @@
   </section>
 
   <section class="section">
-    <span class="kicker">Continue Working</span>
-    <h2>Pick up the next real thing.</h2>
-    <p>These are pulled from the current browser-backed tool data. Open the source system when you need the full record.</p>
-    <div class="command-grid">
-      <div class="focus-card">
-        <span class="kicker">Active Work</span>
-        <h2>Continue</h2>
-        <div class="work-list" id="continueWorkingList"></div>
-      </div>
-      <div class="focus-card">
-        <span class="kicker">Unified Search</span>
-        <h2>Find anything</h2>
-        <p>Search customer, project, quote number, order number, or finance text.</p>
-        <div class="search-box">
-          <input id="hubSearchInput" placeholder="Search Q-123, OP-123, customer, project..." />
-          <button class="ghost" id="hubSearchClear" type="button">Clear</button>
-        </div>
-        <div class="search-results" id="hubSearchResults"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <span class="kicker">Today</span>
-    <h2>What needs attention?</h2>
+    <div class="section-head"><div><span class="kicker">Today</span><h2>What needs attention?</h2></div></div>
     <div class="attention-grid">
-      <div class="attention-box"><h3>Print Next</h3><div class="mini" id="printNextList"></div></div>
-      <div class="attention-box"><h3>Ready to Quote</h3><div class="mini" id="readyQuoteList"></div></div>
-      <div class="attention-box"><h3>Low Inventory</h3><div class="mini" id="lowInventoryList"></div></div>
-      <div class="attention-box"><h3>Ready Finance</h3><div class="mini" id="readyFinanceList"></div></div>
+      <div class="attention-box"><span class="source-pill" id="sourceProduction1">Production</span><h3>Print Next</h3><div class="mini" id="printNextList"></div></div>
+      <div class="attention-box"><span class="source-pill" id="sourceProduction2">Production</span><h3>Ready to Quote</h3><div class="mini" id="readyQuoteList"></div></div>
+      <div class="attention-box"><span class="source-pill" id="sourceInventory">Inventory</span><h3>Low Inventory</h3><div class="mini" id="lowInventoryList"></div></div>
+      <div class="attention-box"><span class="source-pill" id="sourceOrders">Orders</span><h3>Ready Finance</h3><div class="mini" id="readyFinanceList"></div></div>
     </div>
   </section>
 
   <section class="section">
-    <span class="kicker">Workflow Actions</span>
-    <h2>Shortcut to the right owner.</h2>
+    <div class="section-head"><div><span class="kicker">Continue Working</span><h2>Pick up the next real thing.</h2></div></div>
+    <div class="continue-grid" id="continueWorkingList"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><span class="kicker">Unified Search</span><h2>Find anything.</h2><p>Search production jobs, quotes, orders, finance entries, customer names, Q numbers, and OP numbers.</p></div></div>
+    <div class="search-box">
+      <input id="hubSearchInput" placeholder="Search Q-123, OP-123, customer, project..." />
+      <button class="ghost" id="hubSearchClear" type="button">Clear</button>
+    </div>
+    <div class="search-results" id="hubSearchResults"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><span class="kicker">Recently Opened</span><h2>Your last few jumps.</h2></div></div>
+    <div class="recent-list" id="recentList"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div><span class="kicker">Workflow Actions</span><h2>Shortcut to the right owner.</h2></div></div>
     <div class="workflow-actions">
-      <a class="action-card" href="production-control.html"><strong>Open Print Queue</strong><small>Review cards, swim lanes, capacity, close-outs, and Hub drafts.</small><span class="tag">Production</span></a>
-      <a class="action-card" href="quote.html"><strong>Generate Quote</strong><small>Use after production cost and margin have been checked.</small><span class="tag">Quote</span></a>
-      <a class="action-card" href="orders-admin.html"><strong>Manage Orders</strong><small>Invoice, labels, tracker, completion email, and finance push.</small><span class="tag">Orders</span></a>
-      <a class="action-card" href="inventory-control.html"><strong>Check Inventory</strong><small>Low stock, raw rolls, supplies, reservations, and history.</small><span class="tag">Inventory</span></a>
-    </div>
-  </section>
-
-
-
-  <section class="section">
-    <span class="kicker">Source Systems</span>
-    <h2>Open the tool that owns the detail.</h2>
-    <div class="tool-grid">
-      <a class="tool" href="production-control.html"><strong>Production Control</strong><small>Estimate, cost, reserve material, capacity, margin.</small></a>
-      <a class="tool" href="quote.html"><strong>Quote Tool</strong><small>Customer-facing price, PDF, email, approval link.</small></a>
-      <a class="tool" href="orders-admin.html"><strong>Orders Admin</strong><small>Accepted OP orders, invoices, labels, tracker, finance push.</small></a>
-      <a class="tool" href="inventory-control.html"><strong>Inventory Control</strong><small>Material, rolls, supplies, low stock, movement history.</small></a>
-      <a class="tool" href="finance-pro.html"><strong>Finance Pro</strong><small>Sales, tax, COGS, expenses, reporting.</small></a>
-      <a class="tool" href="track.html"><strong>Customer Tracker</strong><small>Public status lookup and payment handoff.</small></a>
+      <a class="action-card" data-recent-label="Production Control" href="production-control.html"><strong>Open Print Queue</strong><small>Review cards, swim lanes, capacity, close-outs, and Hub drafts.</small><span class="tag">Production</span></a>
+      <a class="action-card" data-recent-label="Quote Tool" href="quote.html"><strong>Generate Quote</strong><small>Use after production cost and margin have been checked.</small><span class="tag">Quote</span></a>
+      <a class="action-card" data-recent-label="Orders Admin" href="orders-admin.html"><strong>Manage Orders</strong><small>Invoice, labels, tracker, completion email, and finance push.</small><span class="tag">Orders</span></a>
+      <a class="action-card" data-recent-label="Inventory Control" href="inventory-control.html"><strong>Check Inventory</strong><small>Low stock, raw rolls, supplies, reservations, and history.</small><span class="tag">Inventory</span></a>
     </div>
   </section>
 </div>
-
-
 
 <script>
 const $=id=>document.getElementById(id);
 const recs={business:['Recommended: Business / Branded','Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.'],personal:['Recommended: Personal / Gift','Start in Production Control as Personal / Free. Quote only if it becomes a paid customer job.'],replacement:['Recommended: Replacement Part','Start in Production Control as Replacement / Warranty. Confirm fit, function, and material before quoting.'],prototype:['Recommended: Prototype','Start in Production Control as Prototype / Test Print. Quote after scope and iterations are clear.'],batch:['Recommended: Repeat / Batch','Start in Production Control as Craft Stock or Finished Goods Restock. Confirm repeatability, material, and capacity.']};
 const defaults={business:{job_type:'business_po',status:'ready_to_print',priority:'urgent',machine:'P2S'},personal:{job_type:'personal_free',status:'idea',priority:'low',machine:'either'},replacement:{job_type:'replacement_warranty',status:'idea',priority:'high',machine:'either'},prototype:{job_type:'prototype',status:'queued',priority:'normal',machine:'either'},batch:{job_type:'craft_stock',status:'ready_to_print',priority:'normal',machine:'either'}};
 const hubCloud={orders:[],quotes:[],finance:[],raw:[],supplies:[],loaded:false,inventoryLoaded:false,error:null};
-
-function setType(t){document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t));$('workflowType').value=t;$('recTitle').textContent=recs[t][0];$('recBody').textContent=recs[t][1];}
-function draft(){const t=$('workflowType').value;return {id:'wf-'+Date.now(),created_at:new Date().toISOString(),request_type:t,title:$('workflowTitle').value.trim(),quantity:Number($('workflowQty').value||1)||1,due_date:$('workflowDue').value,source:'hub',destination:'production-control',production_defaults:defaults[t],workflow_note:recs[t][1]}}
-function saveDraft(){const d=draft();localStorage.setItem('olipoly_workflow_draft_v1',JSON.stringify(d));$('recBody').textContent='Draft saved. Open Production Control and apply the draft banner at the top.';return d;}
-
 function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}}
+function readObj(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0)}
+function grams(v){const n=Number(v)||0;return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`}
 function jobHours(j){return Number(j.estimated_total_hours || (Number(j.estimated_hours_each||0)*Number(j.quantity||1)) || 0)}
-function item(href,icon,title,sub,tag){return `<a class="work-item" href="${href}"><span class="work-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b>${esc(tag||'Open')}</b></a>`}
-function searchItem(href,icon,title,sub,tag){return `<a class="search-item" href="${href}"><span class="search-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b>${esc(tag||'Open')}</b></a>`}
-function mini(href,title,sub){return `<a href="${href}"><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></a>`}
+function sourceText(source, label){return `${label} • ${source}`;}
+function setSource(id, label, source){const el=$(id);if(!el)return;el.textContent=sourceText(source,label);el.classList.toggle('cloud',source==='Cloud');el.classList.toggle('fallback',source!=='Cloud');}
 function empty(text){return `<div class="empty-note">${esc(text)}</div>`}
-
-async function sbRest(path){
-  if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
-  const token=window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token');
-  if(!token) throw new Error('No Hub cloud token');
-  const url=(window.OliPolyAuth?.SUPABASE_URL || 'https://alffoktlwhpfothieude.supabase.co') + path;
-  const key=window.OliPolyAuth?.SUPABASE_KEY || 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-  const res=await fetch(url,{headers:{apikey:key,Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});
-  const data=await res.json().catch(()=>null);
-  if(!res.ok) throw new Error(data?.message || data?.error_description || `Supabase ${res.status}`);
-  return Array.isArray(data)?data:[];
-}
-
-
-function normalizeRawHub(r){
-  return {
-    id:r.id,
-    material_type:r.material_type||r.material||'PLA',
-    color:r.color||r.color_name||'',
-    brand:r.brand||'',
-    roll_status:r.roll_status||'active',
-    remaining_grams:Number(r.remaining_grams||r.remaining||0)||0,
-    reserved_grams:Number(r.reserved_grams||0)||0,
-    reorder_threshold_grams:Number(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250)||0
-  };
-}
-function normalizeSupplyHub(s){
-  return {
-    id:s.id,
-    item_name:s.item_name||s.name||'Supply',
-    category:s.category||'',
-    unit_type:s.unit_type||s.unit||'',
-    quantity_on_hand:Number(s.quantity_on_hand||s.qty||0)||0,
-    reorder_threshold:Number(s.reorder_threshold||s.reorder_point||0)||0
-  };
-}
-function rawGroupsHub(rows){
-  const map=new Map();
-  rows.map(normalizeRawHub).filter(r=>r.roll_status!=='retired' && r.roll_status!=='empty').forEach(r=>{
-    const key=[r.material_type,r.color,r.brand].map(x=>String(x||'').trim().toLowerCase()).join('|');
-    if(!map.has(key)) map.set(key,{material_type:r.material_type,color:r.color,brand:r.brand,grams:0,reserved:0,available:0,threshold:0,rolls:0});
-    const g=map.get(key);
-    g.grams += Number(r.remaining_grams)||0;
-    g.reserved += Number(r.reserved_grams)||0;
-    g.available += Math.max(0,(Number(r.remaining_grams)||0)-(Number(r.reserved_grams)||0));
-    g.threshold = Math.max(g.threshold, Number(r.reorder_threshold_grams)||0);
-    g.rolls += 1;
-  });
-  return [...map.values()].sort((a,b)=>a.available-b.available);
-}
-function lowInventoryRows(){
-  const localRaw=read('olipoly_raw_material_inventory_v3');
-  const localSupplies=read('olipoly_non_filament_supplies_v1');
-  const rawRows = hubCloud.inventoryLoaded && hubCloud.raw.length ? hubCloud.raw : localRaw;
-  const supplyRows = hubCloud.inventoryLoaded && hubCloud.supplies.length ? hubCloud.supplies : localSupplies;
-  const lowRaw = rawGroupsHub(rawRows).filter(g => Number(g.threshold)>0 && Number(g.available) <= Number(g.threshold));
-  const lowSupplies = supplyRows.map(normalizeSupplyHub).filter(s => Number(s.reorder_threshold)>0 && Number(s.quantity_on_hand) <= Number(s.reorder_threshold));
-  return {lowRaw,lowSupplies,source:(hubCloud.inventoryLoaded?'cloud':'browser fallback')};
-}
-
-
-async function loadCloudData(){
-  try{
-    const [orders,quotes,finance,raw,supplies]=await Promise.allSettled([
-      sbRest('/rest/v1/orders?select=*&order=updated_at.desc&limit=200'),
-      sbRest('/rest/v1/quotes?select=*&order=updated_at.desc&limit=200'),
-      sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=200'),
-      sbRest('/rest/v1/raw_material_inventory?select=*&order=updated_at.desc&limit=500'),
-      sbRest('/rest/v1/non_filament_materials?select=*&order=updated_at.desc&limit=500')
-    ]);
-    hubCloud.orders=orders.status==='fulfilled'?orders.value:[];
-    hubCloud.quotes=quotes.status==='fulfilled'?quotes.value:[];
-    hubCloud.finance=finance.status==='fulfilled'?finance.value:[];
-    hubCloud.raw=raw.status==='fulfilled'?raw.value:[];
-    hubCloud.supplies=supplies.status==='fulfilled'?supplies.value:[];
-    hubCloud.loaded=true;
-    hubCloud.inventoryLoaded=(raw.status==='fulfilled' || supplies.status==='fulfilled');
-    hubCloud.error=null;
-  }catch(err){
-    console.warn('Hub cloud load skipped:',err);
-    hubCloud.error=err;
-  }
-}
-
-function localData(){
-  return {
-    jobs:read('olipoly_production_jobs_v3'),
-    raw:read('olipoly_raw_material_inventory_v3'),
-    supplies:read('olipoly_non_filament_supplies_v1'),
-    orders:read('olipoly_orders_v1'),
-    quotes:read('olipoly_quote_history_v2'),
-    finance:read('olipoly_finance_entries_v1')
-  };
-}
-
-function combinedData(){
-  const l=localData();
-  const cloudOrders=hubCloud.orders.map(o=>({...o,_source:'cloud'}));
-  const cloudQuotes=hubCloud.quotes.map(q=>({...q,_source:'cloud'}));
-  const cloudFinance=hubCloud.finance.map(f=>({...f,_source:'cloud'}));
-  return {...l,orders:[...cloudOrders,...l.orders],quotes:[...cloudQuotes,...l.quotes],finance:[...cloudFinance,...l.finance]};
-}
-
-function renderCommandCenter(){
-  const d=combinedData();
-  const closed=['completed','failed_scrap','archived'];
-  const open=d.jobs.filter(j=>!closed.includes(j.production_status));
-  const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));
-  const printing=open.filter(j=>j.production_status==='printing');
-  const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));
-  const inventoryLow=lowInventoryRows();
-  const lowRaw=inventoryLow.lowRaw;
-  const lowSup=inventoryLow.lowSupplies;
-  const readyFinance=d.orders.filter(o=>['paid','deposit_paid','completed','ready'].includes(o.payment_status||o.status) && Number(o.order_total||o.total||0)>0 && !o.finance_pushed);
-
-  const continueRows=[
-    ...printing.slice(0,3).map(j=>item('production-control.html','🖨️',j.job_title,`Printing · ${j.machine_preference||j.actual_machine||'machine'}${j.due_date?' · due '+j.due_date:''}`,'Print')),
-    ...post.slice(0,2).map(j=>item('production-control.html','✨',j.job_title,`${String(j.production_status||'post').replace(/_/g,' ')}${j.due_date?' · due '+j.due_date:''}`,'Post')),
-    ...ready.slice(0,3).map(j=>item('production-control.html','🟢',j.job_title,`Ready · ${jobHours(j).toFixed(1).replace(/\.0$/,'')}h`,'Next')),
-    ...readyFinance.slice(0,2).map(o=>item('orders-admin.html','💰',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready for Finance`,'Finance'))
-  ].slice(0,6);
-  $('continueWorkingList').innerHTML=continueRows.join('')||empty('No active work found yet. Start with the wizard above.');
-  $('printNextList').innerHTML=ready.slice(0,3).map(j=>mini('production-control.html',j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');
-  $('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini('production-control.html',j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');
-  $('lowInventoryList').innerHTML=(
-    [...lowRaw.slice(0,3).map(g=>mini('inventory-control.html',`${g.material_type||'Material'} / ${g.color||'No color'}`,`${Math.round(Number(g.available||0))}g available · threshold ${Math.round(Number(g.threshold||0))}g`)),
-     ...lowSup.slice(0,2).map(s=>mini('inventory-control.html',s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))]
-    .join('') || empty('No low inventory flagged.')
-  ) + `<span class="inventory-source-note">Inventory source: ${inventoryLow.source}</span>`;
-  $('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini('orders-admin.html',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready to push`)).join('')||empty('No orders ready for finance push.');
-}
-
-function allSearchRows(){
-  const d=combinedData();
-  return [
-    ...d.jobs.map(j=>({href:'production-control.html',icon:'🖨️',tag:'Production',title:j.job_title,sub:[j.customer_name,j.production_status,j.order_ref,j.quote_ref].filter(Boolean).join(' · '),hay:JSON.stringify(j)})),
-    ...d.orders.map(o=>({href:'orders-admin.html',icon:'📦',tag:o._source==='cloud'?'Cloud Order':'Order',title:o.order_number||o.op_number||o.customer_name,sub:[o.customer_name,o.customer_email,o.status,o.payment_status,o.order_total?money(o.order_total):''].filter(Boolean).join(' · '),hay:JSON.stringify(o)})),
-    ...d.quotes.map(q=>({href:'quote.html',icon:'🧾',tag:q._source==='cloud'?'Cloud Quote':'Quote',title:q.quote_number||q.quoteNumber||q.quote_title||q.quoteTitle,sub:[q.customer_name||q.customerName,q.customer_email||q.customerEmail,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),hay:JSON.stringify(q)})),
-    ...d.finance.map(f=>({href:'finance-pro.html',icon:'💰',tag:f._source==='cloud'?'Cloud Finance':'Finance',title:f.description||f.category||'Finance entry',sub:[f.date,f.category,money(f.amount)].filter(Boolean).join(' · '),hay:JSON.stringify(f)}))
-  ];
-}
-
-function renderSearch(){
-  const q=($('hubSearchInput').value||'').trim().toLowerCase();
-  if(!q){
-    const cloudNote=hubCloud.loaded?`Cloud loaded: ${hubCloud.orders.length} orders, ${hubCloud.quotes.length} quotes.`:'Type to search production, quotes, orders, and finance.';
-    $('hubSearchResults').innerHTML=empty(cloudNote);
-    return;
-  }
-  const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,12);
-  $('hubSearchResults').innerHTML=rows.map(r=>searchItem(r.href,r.icon,r.title,r.sub,r.tag)).join('')||empty(hubCloud.loaded?'No matching records found.':'No local match yet. Cloud may still be loading.');
-}
-
+function mini(href,title,sub){return `<a href="${href}" data-recent-label="${esc(title||'Untitled')}"><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></a>`}
+function workCard(href,icon,title,sub,tag){return `<a class="work-card" href="${href}" data-recent-label="${esc(title||'Untitled')}"><span class="card-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b class="tag">${esc(tag||'Open')}</b></a>`}
+function recentItem(r){return `<a class="recent-item" href="${r.href}"><span class="card-icon">↗</span><span><strong>${esc(r.label)}</strong><small>${esc(r.href)} · ${new Date(r.at).toLocaleString()}</small></span><b class="tag">Recent</b></a>`}
+function searchItem(href,icon,title,sub,tag){return `<a class="work-card" href="${href}" data-recent-label="${esc(title||'Untitled')}"><span class="card-icon">${icon}</span><span><strong>${esc(title||'Untitled')}</strong><small>${esc(sub||'')}</small></span><b class="tag">${esc(tag||'Open')}</b></a>`}
+function setType(t){document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t));$('workflowType').value=t;$('recTitle').textContent=recs[t][0];$('recBody').textContent=recs[t][1];}
+function draft(){const t=$('workflowType').value;return {id:'wf-'+Date.now(),created_at:new Date().toISOString(),request_type:t,title:$('workflowTitle').value.trim(),quantity:Number($('workflowQty').value||1)||1,due_date:$('workflowDue').value,source:'hub',destination:'production-control',production_defaults:defaults[t],workflow_note:recs[t][1]}}
+function saveDraft(){const d=draft();localStorage.setItem('olipoly_workflow_draft_v1',JSON.stringify(d));$('recBody').textContent='Draft saved. Open Production Control and apply the draft banner at the top.';renderCurrentWorkflow();return d;}
+function clearDraft(){localStorage.removeItem('olipoly_workflow_draft_v1');renderCurrentWorkflow();}
+async function sbRest(path){if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();const token=window.OliPolyAuth?.getToken?.()||localStorage.getItem('sb_token');if(!token) throw new Error('No Hub cloud token');const url=(window.OliPolyAuth?.SUPABASE_URL||'https://alffoktlwhpfothieude.supabase.co')+path;const key=window.OliPolyAuth?.SUPABASE_KEY||'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';const res=await fetch(url,{headers:{apikey:key,Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});const data=await res.json().catch(()=>null);if(!res.ok) throw new Error(data?.message||data?.error_description||`Supabase ${res.status}`);return Array.isArray(data)?data:[];}
+async function loadCloudData(){try{const [orders,quotes,finance,raw,supplies]=await Promise.allSettled([sbRest('/rest/v1/orders?select=*&order=updated_at.desc&limit=250'),sbRest('/rest/v1/quotes?select=*&order=updated_at.desc&limit=250'),sbRest('/rest/v1/finance_entries?select=*&order=date.desc&limit=250'),sbRest('/rest/v1/raw_material_inventory?select=*&order=updated_at.desc&limit=600'),sbRest('/rest/v1/non_filament_materials?select=*&order=updated_at.desc&limit=600')]);hubCloud.orders=orders.status==='fulfilled'?orders.value:[];hubCloud.quotes=quotes.status==='fulfilled'?quotes.value:[];hubCloud.finance=finance.status==='fulfilled'?finance.value:[];hubCloud.raw=raw.status==='fulfilled'?raw.value:[];hubCloud.supplies=supplies.status==='fulfilled'?supplies.value:[];hubCloud.loaded=true;hubCloud.inventoryLoaded=(raw.status==='fulfilled'||supplies.status==='fulfilled');hubCloud.error=null;}catch(err){console.warn('Hub cloud load skipped:',err);hubCloud.error=err;}}
+function normalizeRawHub(r){return {id:r.id,material_type:r.material_type||r.material||'PLA',color:r.color||r.color_name||'',brand:r.brand||'',roll_status:r.roll_status||'active',remaining_grams:Number(r.remaining_grams||r.remaining||0)||0,reserved_grams:Number(r.reserved_grams||0)||0,reorder_threshold_grams:Number(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||250)||0}}
+function normalizeSupplyHub(s){return {id:s.id,item_name:s.item_name||s.name||'Supply',category:s.category||'',unit_type:s.unit_type||s.unit||'',quantity_on_hand:Number(s.quantity_on_hand||s.qty||0)||0,reorder_threshold:Number(s.reorder_threshold||s.reorder_point||0)||0}}
+function rawGroupsHub(rows){const map=new Map();rows.map(normalizeRawHub).filter(r=>r.roll_status!=='retired'&&r.roll_status!=='empty').forEach(r=>{const key=[r.material_type,r.color,r.brand].map(x=>String(x||'').trim().toLowerCase()).join('|');if(!map.has(key))map.set(key,{material_type:r.material_type,color:r.color,brand:r.brand,grams:0,reserved:0,available:0,threshold:0,rolls:0});const g=map.get(key);g.grams+=Number(r.remaining_grams)||0;g.reserved+=Number(r.reserved_grams)||0;g.available+=Math.max(0,(Number(r.remaining_grams)||0)-(Number(r.reserved_grams)||0));g.threshold=Math.max(g.threshold,Number(r.reorder_threshold_grams)||0);g.rolls+=1;});return [...map.values()].sort((a,b)=>a.available-b.available);}
+function lowInventoryRows(){const rawRows=hubCloud.inventoryLoaded&&hubCloud.raw.length?hubCloud.raw:read('olipoly_raw_material_inventory_v3');const supplyRows=hubCloud.inventoryLoaded&&hubCloud.supplies.length?hubCloud.supplies:read('olipoly_non_filament_supplies_v1');const lowRaw=rawGroupsHub(rawRows).filter(g=>Number(g.threshold)>0&&Number(g.available)<=Number(g.threshold));const lowSupplies=supplyRows.map(normalizeSupplyHub).filter(s=>Number(s.reorder_threshold)>0&&Number(s.quantity_on_hand)<=Number(s.reorder_threshold));return {lowRaw,lowSupplies,source:(hubCloud.inventoryLoaded?'Cloud':'Browser fallback')};}
+function localData(){return {jobs:read('olipoly_production_jobs_v3'),raw:read('olipoly_raw_material_inventory_v3'),supplies:read('olipoly_non_filament_supplies_v1'),orders:read('olipoly_orders_v1'),quotes:read('olipoly_quote_history_v2'),finance:read('olipoly_finance_entries_v1')}}
+function combinedData(){const l=localData();return {...l,orders:[...hubCloud.orders.map(o=>({...o,_source:'cloud'})),...l.orders],quotes:[...hubCloud.quotes.map(q=>({...q,_source:'cloud'})),...l.quotes],finance:[...hubCloud.finance.map(f=>({...f,_source:'cloud'})),...l.finance]}}
+function orderClosed(o){const paid=['paid','refunded','not_required'].includes(o.payment_status)||o.payment_not_required;const finance=o.finance_pushed||o.finance_not_required;const complete=o.status==='completed'||o.status==='closed';return complete&&paid&&finance;}
+function renderHealth(){const inv=lowInventoryRows();const d=combinedData();const jobs=d.jobs||[];const openJobs=jobs.filter(j=>!['completed','failed_scrap','archived'].includes(j.production_status));const ready=openJobs.filter(j=>['ready_to_print','queued'].includes(j.production_status));$('healthQueueHours').textContent=`${ready.reduce((s,j)=>s+jobHours(j),0).toFixed(1).replace(/\.0$/,'')}h`;$('healthActiveJobs').textContent=openJobs.length;$('healthActiveOrders').textContent=d.orders.filter(o=>!orderClosed(o)).length;$('healthPendingQuotes').textContent=d.quotes.filter(q=>!['accepted','declined','expired','converted'].includes(String(q.quote_status||q.quoteStatus||'').toLowerCase())).length;$('healthLowInventory').textContent=inv.lowRaw.length+inv.lowSupplies.length;}
+function healthPill(label,source){const cls=source==='Cloud'?'cloud':(source==='Browser fallback'?'fallback':'off');return `<div class="health-pill"><span class="dot ${cls}"></span><b>${label}</b><span>${source}</span></div>`}
+function renderCloudHealth(){const prod=read('olipoly_production_jobs_v3').length?'Browser fallback':'Browser fallback';const orders=hubCloud.loaded?'Cloud':'Browser fallback';const quotes=hubCloud.loaded?'Cloud':'Browser fallback';const finance=hubCloud.loaded?'Cloud':'Browser fallback';const inventory=hubCloud.inventoryLoaded?'Cloud':'Browser fallback';$('cloudHealthStrip').innerHTML=[healthPill('Production',prod),healthPill('Orders',orders),healthPill('Inventory',inventory),healthPill('Quotes',quotes),healthPill('Finance',finance)].join('');setSource('sourceProduction1','Production',prod);setSource('sourceProduction2','Production',prod);setSource('sourceInventory','Inventory',inventory);setSource('sourceOrders','Orders',orders);}
+function renderCurrentWorkflow(){const d=readObj('olipoly_workflow_draft_v1');if(!d){$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">＋</span><span><strong>No active Hub draft</strong><small>Use the Start Order Wizard when a new request comes in.</small></span><a class="ghost" href="#workflowType">Start Draft</a></div>`;return;}$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">↪</span><span><strong>${esc(d.title||d.request_type||'Workflow draft')}</strong><small>${esc(d.request_type||'request')} · Qty ${esc(d.quantity||1)}${d.due_date?' · Due '+esc(d.due_date):''}</small></span><div class="actions"><a class="btn" href="production-control.html">Open Production</a><a class="ghost" href="quote.html">Quote</a><a class="ghost" href="orders-admin.html">Orders</a><button class="ghost" type="button" onclick="clearDraft()">Clear</button></div></div>`;}
+function renderAttention(){const d=combinedData();const open=d.jobs.filter(j=>!['completed','failed_scrap','archived'].includes(j.production_status));const ready=open.filter(j=>['ready_to_print','queued'].includes(j.production_status));const post=open.filter(j=>['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status));const printing=open.filter(j=>j.production_status==='printing');const inv=lowInventoryRows();const readyFinance=d.orders.filter(o=>!o.finance_pushed&&!o.finance_not_required&&['paid','deposit_paid','completed','ready'].includes(o.payment_status||o.status)&&Number(o.order_total||o.total||0)>0);$('printNextList').innerHTML=ready.slice(0,3).map(j=>mini('production-control.html',j.job_title,`${jobHours(j).toFixed(1).replace(/\.0$/,'')}h · ${j.machine_preference||'either'}`)).join('')||empty('Nothing ready to print.');$('readyQuoteList').innerHTML=ready.filter(j=>Number(j.estimated_price_each||0)||Number(j.estimated_material_cost||0)||jobHours(j)).slice(0,3).map(j=>mini('production-control.html',j.job_title,`${j.job_type||'job'} · cost checked`)).join('')||empty('No production jobs look ready to quote.');$('lowInventoryList').innerHTML=[...inv.lowRaw.slice(0,3).map(g=>mini('inventory-control.html',`${g.material_type||'Material'} / ${g.color||'No color'}`,`${grams(g.available)} available · threshold ${grams(g.threshold)}`)),...inv.lowSupplies.slice(0,2).map(s=>mini('inventory-control.html',s.item_name,`${Number(s.quantity_on_hand||0)} ${s.unit_type||''} on hand`))].join('')||empty('No low inventory flagged.');$('readyFinanceList').innerHTML=readyFinance.slice(0,3).map(o=>mini('orders-admin.html',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready to push`)).join('')||empty('No orders ready for finance push.');const rows=[...printing.slice(0,3).map(j=>workCard('production-control.html','🖨️',j.job_title,`Printing · ${j.machine_preference||j.actual_machine||'machine'}${j.due_date?' · due '+j.due_date:''}`,'Print')),...post.slice(0,2).map(j=>workCard('production-control.html','✨',j.job_title,`${String(j.production_status||'post').replace(/_/g,' ')}${j.due_date?' · due '+j.due_date:''}`,'Post')),...ready.slice(0,3).map(j=>workCard('production-control.html','🟢',j.job_title,`Ready · ${jobHours(j).toFixed(1).replace(/\.0$/,'')}h`,'Next')),...readyFinance.slice(0,2).map(o=>workCard('orders-admin.html','💰',o.order_number||o.customer_name,`${money(o.order_total||o.total)} ready for Finance`,'Finance'))].slice(0,6);$('continueWorkingList').innerHTML=rows.join('')||empty('No active work found yet. Start with the wizard above.');}
+function allSearchRows(){const d=combinedData();return [...d.jobs.map(j=>({href:'production-control.html',icon:'🖨️',tag:'Production',title:j.job_title,sub:[j.customer_name,j.production_status,j.order_ref,j.quote_ref].filter(Boolean).join(' · '),hay:JSON.stringify(j)})),...d.orders.map(o=>({href:'orders-admin.html',icon:'📦',tag:o._source==='cloud'?'Cloud Order':'Order',title:o.order_number||o.op_number||o.customer_name,sub:[o.customer_name,o.customer_email,o.status,o.payment_status,o.order_total?money(o.order_total):''].filter(Boolean).join(' · '),hay:JSON.stringify(o)})),...d.quotes.map(q=>({href:'quote.html',icon:'🧾',tag:q._source==='cloud'?'Cloud Quote':'Quote',title:q.quote_number||q.quoteNumber||q.quote_title||q.quoteTitle,sub:[q.customer_name||q.customerName,q.customer_email||q.customerEmail,q.quote_status||q.quoteStatus].filter(Boolean).join(' · '),hay:JSON.stringify(q)})),...d.finance.map(f=>({href:'finance-pro.html',icon:'💰',tag:f._source==='cloud'?'Cloud Finance':'Finance',title:f.description||f.category||'Finance entry',sub:[f.date,f.category,money(f.amount)].filter(Boolean).join(' · '),hay:JSON.stringify(f)}))];}
+function renderSearch(){const q=($('hubSearchInput').value||'').trim().toLowerCase();if(!q){$('hubSearchResults').innerHTML=empty(hubCloud.loaded?`Cloud loaded: ${hubCloud.orders.length} orders, ${hubCloud.quotes.length} quotes.`:'Type to search production, quotes, orders, and finance.');return;}const rows=allSearchRows().filter(r=>String(r.hay||'').toLowerCase().includes(q)).slice(0,12);$('hubSearchResults').innerHTML=rows.map(r=>searchItem(r.href,r.icon,r.title,r.sub,r.tag)).join('')||empty(hubCloud.loaded?'No matching records found.':'No local match yet. Cloud may still be loading.');}
+function recentStore(){return read('olipoly_hub_recent_v1')}
+function writeRecent(label,href){if(!label||!href)return;const rows=recentStore().filter(r=>r.href!==href||r.label!==label);rows.unshift({label,href,at:new Date().toISOString()});localStorage.setItem('olipoly_hub_recent_v1',JSON.stringify(rows.slice(0,10)));}
+function renderRecent(){$('recentList').innerHTML=recentStore().slice(0,6).map(recentItem).join('')||empty('Recently opened items will appear here.');}
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
-
+async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderAttention();renderSearch();renderRecent();}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
-$('workflowType').addEventListener('input',()=>setType($('workflowType').value));
-$('saveDraftBtn').onclick=saveDraft;
-$('startProductionBtn').addEventListener('click',saveDraft);
-$('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();renderCommandCenter();renderSearch();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
-$('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.'};
-$('hubSearchInput')?.addEventListener('input',renderSearch);
-$('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
-
-(async function init(){
-  setType('business');
-  renderCommandCenter();
-  renderSearch();
-  await refreshAuth();
-  await loadCloudData();
-  renderCommandCenter();
-  renderSearch();
-})();
+$('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
+$('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();fullRender();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
+$('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.';hubCloud.loaded=false;hubCloud.inventoryLoaded=false;fullRender();};
+$('hubSearchInput')?.addEventListener('input',renderSearch);$('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-label]');if(a)writeRecent(a.dataset.recentLabel,a.getAttribute('href'));});
+(async function init(){setType('business');fullRender();await refreshAuth();await loadCloudData();fullRender();})();
 </script>
-
-
 </body>
 </html>
