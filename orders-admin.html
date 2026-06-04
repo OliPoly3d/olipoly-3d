@@ -799,6 +799,28 @@ body{font-family:Inter,Arial,sans-serif}
     }
 
 </style>
+
+  <style id="ocustomerScopedStyles">
+    .ocustomer-card{margin:0 0 22px;padding:18px;border-radius:26px;background:linear-gradient(135deg,rgba(46,230,196,.07),rgba(126,123,255,.07)),rgba(255,255,255,.035);border:1px solid rgba(46,230,196,.18);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+    .ocustomer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+    .ocustomer-head h3{margin:7px 0 0;font-size:1.22rem;color:var(--text)}
+    .ocustomer-head p{margin:5px 0 0;color:var(--muted);line-height:1.45}
+    .ocustomer-kicker{display:inline-flex;align-items:center;justify-content:center;padding:5px 8px;border-radius:999px;background:rgba(46,230,196,.10);border:1px solid rgba(46,230,196,.20);color:#cffff0;font-weight:900;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}
+    .ocustomer-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .ocustomer-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+    .ocustomer-metrics>div{padding:12px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+    .ocustomer-metrics span{display:block;color:var(--muted);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+    .ocustomer-metrics strong{display:block;margin-top:5px;font-size:1.15rem;color:var(--text)}
+    .ocustomer-history{display:grid;gap:8px;margin-top:12px}
+    .ocustomer-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);cursor:pointer}
+    .ocustomer-row strong{display:block;color:var(--text)}
+    .ocustomer-row small{display:block;color:var(--muted);margin-top:2px;line-height:1.3}
+    .ocustomer-pill{display:inline-flex;align-items:center;justify-content:center;padding:5px 8px;border-radius:999px;background:rgba(46,230,196,.10);border:1px solid rgba(46,230,196,.20);color:#cffff0;font-weight:900;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}
+    .ocustomer-empty{padding:12px;border-radius:16px;border:1px dashed rgba(255,255,255,.12);color:var(--muted);line-height:1.45}
+    @media(max-width:900px){.ocustomer-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.ocustomer-row{grid-template-columns:1fr}.ocustomer-actions .btn,.ocustomer-actions .btn-ghost{flex:1}}
+    @media(max-width:560px){.ocustomer-metrics{grid-template-columns:1fr}}
+  </style>
+
 </head>
 <body>
   <div class="wrap">
@@ -856,6 +878,32 @@ body{font-family:Inter,Arial,sans-serif}
         <button class="btn-ghost" id="quickPaidBtn" type="button">Mark Paid</button>
       </div>
     </div>
+
+    <section class="ocustomer-card" id="ocustomerCard">
+      <div class="ocustomer-head">
+        <div>
+          <span class="ocustomer-kicker">Customer Intel</span>
+          <h3 id="ocustomerName">No customer selected</h3>
+          <p id="ocustomerSub">Select an order to see customer history, totals, and reorder tools.</p>
+        </div>
+        <div class="ocustomer-actions">
+          <button class="btn-ghost" id="ocustomerRefreshBtn" type="button">Refresh History</button>
+          <button class="btn-ghost" id="ocustomerCloneBtn" type="button">Clone Order</button>
+          <button class="btn" id="ocustomerReorderBtn" type="button">Create Reorder Quote</button>
+        </div>
+      </div>
+      <div class="ocustomer-metrics">
+        <div><span>Lifetime Revenue</span><strong id="ocustomerRevenue">$0.00</strong></div>
+        <div><span>Orders</span><strong id="ocustomerCount">0</strong></div>
+        <div><span>Average Order</span><strong id="ocustomerAverage">$0.00</strong></div>
+        <div><span>Last Order</span><strong id="ocustomerLast">—</strong></div>
+        <div><span>Flags</span><strong id="ocustomerFlags">—</strong></div>
+      </div>
+      <div class="ocustomer-history" id="ocustomerHistory">
+        <div class="ocustomer-empty">Customer history will appear after you select an order.</div>
+      </div>
+    </section>
+
 
     <div class="summary-grid">
       <div class="summary"><span>Orders Loaded</span><strong id="sumOrders">0</strong><small>All loaded records.</small></div>
@@ -6373,5 +6421,172 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 @media(max-width:900px){.production-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.production-status-head{display:grid}.production-status-actions{justify-content:flex-start}.production-status-grid{grid-template-columns:1fr}}
 </style>
+
+<script id="ocustomerSafeModule">
+(function(){
+  'use strict';
+  const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const $=id=>document.getElementById(id);
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0);
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  let cachedOrders=[];
+  let lastKey='';
+
+  function token(){
+    return (window.OliPolyAuth && window.OliPolyAuth.getToken && window.OliPolyAuth.getToken()) || localStorage.getItem('sb_token') || '';
+  }
+
+  async function cloudOrders(){
+    const t=token();
+    if(!t) return [];
+    const res=await fetch(SUPABASE_URL + '/rest/v1/orders?select=*&order=order_date.desc,updated_at.desc&limit=500',{
+      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+t,'Content-Type':'application/json'}
+    });
+    if(!res.ok) return [];
+    const data=await res.json().catch(()=>[]);
+    return Array.isArray(data)?data:[];
+  }
+
+  function formOrder(){
+    return {
+      id:null,
+      order_number:$('orderNumber')?.value?.trim() || '',
+      order_date:$('orderDate')?.value || '',
+      customer_name:$('customerName')?.value?.trim() || '',
+      customer_email:$('customerEmail')?.value?.trim() || '',
+      order_title:$('orderTitle')?.value?.trim() || '',
+      quantity:Number($('quantity')?.value || 1) || 1,
+      order_total:Number($('orderTotal')?.value || 0) || 0,
+      deposit_amount:Number($('depositAmount')?.value || 0) || 0,
+      payment_status:$('paymentStatus')?.value || 'unpaid',
+      status:$('status')?.value || 'quote_sent',
+      fulfillment:$('fulfillment')?.value || 'pickup',
+      invoice_terms:$('invoiceTerms')?.value || '',
+      po_number:$('poNumber')?.value || '',
+      shipping_company:$('shippingCompany')?.value || '',
+      internal_notes:$('internalNotes')?.value || ''
+    };
+  }
+
+  function keyFor(o){
+    return String(o.customer_email || o.customer_name || '').trim().toLowerCase();
+  }
+
+  function selectedCustomerRows(){
+    const current=formOrder();
+    const key=keyFor(current);
+    if(!key) return {current,key,rows:[]};
+    const rows=cachedOrders.filter(o=>keyFor(o)===key);
+    if(current.order_number && !rows.some(o=>o.order_number===current.order_number)){
+      rows.unshift(current);
+    }
+    return {current,key,rows};
+  }
+
+  function render(){
+    const card=$('ocustomerCard');
+    if(!card) return;
+    const {current,key,rows}=selectedCustomerRows();
+    if(!key){
+      $('ocustomerName').textContent='No customer selected';
+      $('ocustomerSub').textContent='Select an order to see customer history, totals, and reorder tools.';
+      $('ocustomerRevenue').textContent=money(0);
+      $('ocustomerCount').textContent='0';
+      $('ocustomerAverage').textContent=money(0);
+      $('ocustomerLast').textContent='—';
+      $('ocustomerFlags').textContent='—';
+      $('ocustomerHistory').innerHTML='<div class="ocustomer-empty">Customer history will appear after you select an order.</div>';
+      return;
+    }
+    const total=rows.reduce((s,o)=>s+(Number(o.order_total)||0),0);
+    const sorted=rows.slice().sort((a,b)=>String(b.order_date||b.created_at||'').localeCompare(String(a.order_date||a.created_at||'')));
+    const last=sorted[0];
+    const taxExempt=rows.some(o=>!!o.tax_exempt);
+    const poCustomer=rows.some(o=>!!(o.po_number||o.po_file_on_file||o.po_part_number));
+    $('ocustomerName').textContent=current.shipping_company || current.customer_name || current.customer_email || 'Customer';
+    $('ocustomerSub').textContent=[current.customer_email, taxExempt?'Tax exempt':'', poCustomer?'PO customer':''].filter(Boolean).join(' • ') || 'Customer history from loaded orders.';
+    $('ocustomerRevenue').textContent=money(total);
+    $('ocustomerCount').textContent=String(rows.length);
+    $('ocustomerAverage').textContent=money(rows.length?total/rows.length:0);
+    $('ocustomerLast').textContent=last ? (last.order_date || String(last.created_at||'').slice(0,10) || '—') : '—';
+    $('ocustomerFlags').textContent=[taxExempt?'Tax Exempt':'',poCustomer?'PO':''].filter(Boolean).join(' / ') || 'Standard';
+    $('ocustomerHistory').innerHTML=sorted.length ? sorted.slice(0,8).map(o=>{
+      const label=(o.status||'order').replace(/_/g,' ');
+      return '<div class="ocustomer-row" data-order-number="'+esc(o.order_number||'')+'"><span class="ocustomer-pill">'+esc(label)+'</span><span><strong>'+esc(o.order_number||'No #')+'</strong><small>'+esc(o.order_title||'Untitled')+' · '+esc(o.order_date||'')+'</small></span><strong>'+money(o.order_total||0)+'</strong></div>';
+    }).join('') : '<div class="ocustomer-empty">No previous orders found for this customer.</div>';
+    document.querySelectorAll('.ocustomer-row[data-order-number]').forEach(row=>{
+      row.onclick=()=>{ const n=row.dataset.orderNumber; if(n) window.location.href='orders-admin.html?order='+encodeURIComponent(n); };
+    });
+  }
+
+  async function refresh(){
+    cachedOrders=await cloudOrders();
+    render();
+  }
+
+  function cloneOrder(){
+    const o=formOrder();
+    if(!o.customer_name && !o.order_title){ message('Select or fill out an order before cloning.',true); return; }
+    if($('orderNumber')) $('orderNumber').value='';
+    if($('orderDate')) $('orderDate').value=new Date().toISOString().slice(0,10);
+    if($('orderTitle')) $('orderTitle').value=(o.order_title || 'Order') + ' - Copy';
+    if($('status')) $('status').value='quote_sent';
+    if($('paymentStatus')) $('paymentStatus').value='unpaid';
+    ['trackingNumber','invoiceNumber','invoiceDate','invoiceDueDate','stripeInvoiceId'].forEach(id=>{ if($(id)) $(id).value=''; });
+    if($('detailTitle')) $('detailTitle').textContent='Order Details — New Clone';
+    message('Cloned into a new unsaved order. Review it, assign/save the new order number, then save.');
+    setTimeout(render,50);
+  }
+
+  function reorderQuote(){
+    const o=formOrder();
+    if(!o.customer_name && !o.order_title){ message('Select or fill out an order before creating a reorder quote.',true); return; }
+    const draft={
+      source:'orders-admin',
+      source_order_number:o.order_number||null,
+      created_at:new Date().toISOString(),
+      customer_name:o.customer_name||'',
+      customer_email:o.customer_email||'',
+      order_title:(o.order_title||'Reorder') + ' - Reorder',
+      quantity:o.quantity||1,
+      order_total:o.order_total||0,
+      deposit_amount:o.deposit_amount||0,
+      payment_terms:o.invoice_terms||'',
+      po_number:o.po_number||'',
+      production_notes:o.internal_notes||'',
+      internal_notes:'Reorder draft created from '+(o.order_number||'previous order')
+    };
+    localStorage.setItem('olipoly_reorder_quote_draft_v1',JSON.stringify(draft));
+    message('Reorder quote draft created. Opening Quote Tool...');
+    setTimeout(()=>{ window.location.href='quote.html?reorder='+encodeURIComponent(o.order_number||o.order_title||'reorder'); },250);
+  }
+
+  function message(msg,isError){
+    const el=$('formMessage')||$('authMessage');
+    if(el){
+      el.textContent=msg;
+      el.style.display='block';
+      if(isError) el.classList.add('error'); else el.classList.remove('error');
+    }else alert(msg);
+  }
+
+  function bind(){
+    $('ocustomerRefreshBtn')?.addEventListener('click',refresh);
+    $('ocustomerCloneBtn')?.addEventListener('click',cloneOrder);
+    $('ocustomerReorderBtn')?.addEventListener('click',reorderQuote);
+    ['customerName','customerEmail','shippingCompany','orderTitle','orderTotal','orderNumber','status','paymentStatus','poNumber'].forEach(id=>{
+      $(id)?.addEventListener('input',()=>setTimeout(render,0));
+      $(id)?.addEventListener('change',()=>setTimeout(render,0));
+    });
+    document.addEventListener('click',e=>{
+      if(e.target.closest('.order-row')) setTimeout(render,100);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{ bind(); refresh(); setTimeout(render,500); setInterval(()=>{ const k=keyFor(formOrder()); if(k!==lastKey){ lastKey=k; render(); } },700); });
+})();
+</script>
+
 </body>
 </html>
