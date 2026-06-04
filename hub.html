@@ -623,6 +623,146 @@
       .timeline-event>.tag{grid-column:2;justify-self:start}
     }
 
+
+    /* === Hub New Request Wizard V2 Phase D === */
+    .request-v2{
+      margin-top:14px;
+      padding:18px;
+      border-radius:32px;
+      background:linear-gradient(135deg,rgba(232,79,183,.10),rgba(157,109,243,.09)),var(--panel);
+      border:1px solid rgba(255,255,255,.90);
+      box-shadow:var(--shadow);
+    }
+    .request-v2 h2{
+      font-family:"Playfair Display",serif;
+      font-size:2.25rem;
+      line-height:.95;
+      letter-spacing:-.035em;
+      margin:8px 0;
+    }
+    .request-v2 p{color:var(--muted);line-height:1.45}
+    .request-path-grid{
+      display:grid;
+      grid-template-columns:repeat(6,minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    .request-path{
+      min-height:156px;
+      border-radius:22px;
+      padding:13px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,246,252,.85));
+      text-align:left;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      transition:.18s;
+      color:inherit;
+    }
+    .request-path.active,.request-path:hover{
+      transform:translateY(-2px);
+      box-shadow:0 16px 30px rgba(95,36,112,.12);
+      border-color:rgba(232,79,183,.30);
+    }
+    .request-path b{
+      width:40px;
+      height:40px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      color:white;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      font-size:1.05rem;
+    }
+    .request-path strong{display:block;margin-top:8px;color:var(--ink)}
+    .request-path small{display:block;color:var(--muted);line-height:1.32;margin-top:4px;font-size:.76rem}
+    .request-v2-body{
+      display:grid;
+      grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);
+      gap:12px;
+      margin-top:14px;
+    }
+    .request-v2-panel{
+      padding:14px;
+      border-radius:24px;
+      background:rgba(255,255,255,.72);
+      border:1px solid var(--line);
+    }
+    .request-v2-panel h3{
+      font-family:"Playfair Display",serif;
+      font-size:1.35rem;
+      margin:0 0 8px;
+      color:var(--ink);
+    }
+    .request-form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .request-form-grid .full{grid-column:1/-1}
+    .request-form-grid textarea{
+      width:100%;
+      min-height:86px;
+      border-radius:15px;
+      border:1px solid var(--line);
+      padding:10px 12px;
+      margin-top:6px;
+      background:#fff;
+      color:var(--ink);
+      font-family:inherit;
+      resize:vertical;
+    }
+    .request-route{
+      display:grid;
+      gap:8px;
+      margin-top:8px;
+    }
+    .route-step{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr);
+      gap:9px;
+      align-items:start;
+      padding:10px;
+      border-radius:17px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(101,60,120,.10);
+    }
+    .route-step span{
+      width:32px;
+      height:32px;
+      border-radius:13px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      background:linear-gradient(135deg,var(--pink),var(--purple));
+      font-weight:950;
+      font-size:.8rem;
+    }
+    .route-step strong{display:block;color:var(--ink);font-size:.9rem}
+    .route-step small{display:block;color:var(--muted);line-height:1.32;margin-top:2px;font-size:.76rem}
+    .request-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      justify-content:flex-end;
+    }
+    .draft-status{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(101,60,120,.10);
+      color:var(--muted);
+      font-weight:850;
+      font-size:.85rem;
+      line-height:1.35;
+    }
+    @media(max-width:1120px){.request-path-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.request-v2-body{grid-template-columns:1fr}}
+    @media(max-width:640px){.request-path-grid,.request-form-grid{grid-template-columns:1fr}.request-actions{display:grid}.request-actions .btn,.request-actions .ghost{width:100%}}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -894,89 +1034,45 @@
   </section>
 
 
-  <section class="wizard">
-    <span class="kicker">Start Order Wizard</span>
-    <h2>What are you making?</h2>
-    <p>Choose one path. The big button sends the draft to Production Control first, so cost and inventory are checked before quoting.</p>
-    <div class="type-grid">
-      <button class="type-card active" data-type="business"><b>🏢</b><span><strong>Business / Branded</strong><small>Logo items, PO work, organizations, event merch.</small></span></button>
-      <button class="type-card" data-type="personal"><b>🎁</b><span><strong>Personal / Gift</strong><small>One-off, family/friend, unpaid personal work.</small></span></button>
-      <button class="type-card" data-type="replacement"><b>🧩</b><span><strong>Replacement Part</strong><small>Functional fit, repair, broken-part recreation.</small></span></button>
-      <button class="type-card" data-type="prototype"><b>🧪</b><span><strong>Prototype</strong><small>First article, test print, product idea.</small></span></button>
-      <button class="type-card" data-type="batch"><b>🔁</b><span><strong>Repeat / Batch</strong><small>Multiple pieces, restock, craft/event inventory.</small></span></button>
-    </div>
-    <div class="form-grid">
-      <label>Customer / project<input id="workflowTitle" placeholder="Example: Chardon band keychains"></label>
-      <label>Request type<select id="workflowType"><option value="business">Business / branded</option><option value="personal">Personal / gift</option><option value="replacement">Replacement part</option><option value="prototype">Prototype</option><option value="batch">Repeat / batch</option></select></label>
-      <label>Qty<input id="workflowQty" type="number" min="1" value="1"></label>
-      <label>Due date<input id="workflowDue" type="date"></label>
-    </div>
-    <div class="recommend">
-      <div><strong id="recTitle">Recommended: Business / Branded</strong><br><span id="recBody">Start in Production Control as Business / PO. Confirm material, margin, capacity, then push to Quote and Orders Admin.</span></div>
-      <div class="actions"><button class="ghost" id="saveDraftBtn">Save Draft</button><a class="btn" id="startProductionBtn" href="production-control.html">Start in Production Control</a></div>
-    </div>
-  </section>
 
+  <section class="request-v2" id="newRequestWizard">
+    <span class="kicker">New Request Wizard V2</span>
+    <h2>Start the right workflow the first time.</h2>
+    <p>Pick the request type, capture the minimum details, then launch into Production, Quote, or Orders with the right defaults.</p>
 
-
-  <section class="section" id="customerTimelineSection">
-    <div class="section-head">
-      <div>
-        <span class="kicker">Customer Timeline</span>
-        <h2>Quotes, orders, and finance in one customer view.</h2>
-        <p>Select a customer to see their activity history and jump to the source record.</p>
-      </div>
-      <a class="ghost" href="orders-admin.html">Open Orders</a>
+    <div class="request-path-grid">
+      <button class="request-path active" type="button" data-request-type="retail"><b>🛍️</b><span><strong>Retail Customer</strong><small>Paid custom order, quote first, production cost check required.</small></span></button>
+      <button class="request-path" type="button" data-request-type="business"><b>🏢</b><span><strong>Business / PO</strong><small>Branded work, tax exempt, PO, Net terms, invoice workflow.</small></span></button>
+      <button class="request-path" type="button" data-request-type="repeat"><b>🔁</b><span><strong>Repeat Customer</strong><small>Reorder from prior customer/order, fastest quote or production path.</small></span></button>
+      <button class="request-path" type="button" data-request-type="prototype"><b>🧪</b><span><strong>Prototype</strong><small>Test part, fit/function, iteration, production estimate first.</small></span></button>
+      <button class="request-path" type="button" data-request-type="personal"><b>🎁</b><span><strong>Personal / Free</strong><small>Family/friend/internal job, usually no payment or finance push.</small></span></button>
+      <button class="request-path" type="button" data-request-type="stock"><b>📦</b><span><strong>Craft Show / Stock</strong><small>Batch inventory, no customer yet, production-first restock path.</small></span></button>
     </div>
-    <div class="timeline-tool">
-      <div class="timeline-picker">
-        <span class="source-pill" id="sourceTimelineCustomers">Customers</span>
-        <h3>Choose Customer</h3>
-        <div class="timeline-search">
-          <input id="timelineCustomerSearch" placeholder="Search customer or email..." />
-          <button class="ghost" id="timelineCustomerClear" type="button">Clear</button>
+
+    <div class="request-v2-body">
+      <div class="request-v2-panel">
+        <h3>Minimum Request Details</h3>
+        <div class="request-form-grid">
+          <label>Customer / company<input id="requestCustomer" placeholder="Customer, company, or internal"></label>
+          <label>Email<input id="requestEmail" type="email" placeholder="optional"></label>
+          <label>Project / item<input id="requestTitle" placeholder="What are we making?"></label>
+          <label>Quantity<input id="requestQty" type="number" min="1" value="1"></label>
+          <label>Due date<input id="requestDue" type="date"></label>
+          <label>Estimated budget / quote total<input id="requestBudget" type="number" min="0" step="0.01" placeholder="optional"></label>
+          <label class="full">Notes<textarea id="requestNotes" placeholder="Material, color, size, PO terms, customer expectations, delivery notes..."></textarea></label>
         </div>
-        <div class="timeline-customer-list" id="timelineCustomerList"></div>
       </div>
-      <div class="timeline-detail">
-        <span class="source-pill" id="sourceTimelineEvents">Timeline</span>
-        <h3 id="timelineCustomerTitle">Customer Timeline</h3>
-        <div class="timeline-summary">
-          <div><span>Revenue</span><strong id="timelineRevenue">$0.00</strong></div>
-          <div><span>Orders</span><strong id="timelineOrders">0</strong></div>
-          <div><span>Quotes</span><strong id="timelineQuotes">0</strong></div>
-          <div><span>Last Activity</span><strong id="timelineLast">—</strong></div>
-        </div>
-        <div class="timeline-event-list" id="timelineEventList"></div>
-      </div>
-    </div>
-  </section>
 
-
-  <section class="section" id="inventoryImpactSection">
-    <div class="section-head">
-      <div>
-        <span class="kicker">Inventory Impact</span>
-        <h2>Can active jobs actually be printed?</h2>
-        <p>Compares active production jobs against available grouped inventory.</p>
-      </div>
-      <a class="ghost" href="inventory-control.html">Open Inventory</a>
-    </div>
-    <div class="inventory-impact-grid">
-      <div class="inventory-impact-panel">
-        <span class="source-pill" id="sourceInventoryImpact">Inventory</span>
-        <h3>Jobs at Risk</h3>
-        <div class="impact-list" id="inventoryRiskList"></div>
-      </div>
-      <div class="inventory-impact-panel">
-        <span class="source-pill" id="sourceInventorySafe">Production</span>
-        <h3>Safe / Watch List</h3>
-        <div class="impact-summary-row">
-          <div class="impact-metric"><span>At Risk</span><strong id="impactAtRiskCount">0</strong></div>
-          <div class="impact-metric"><span>Watch</span><strong id="impactWatchCount">0</strong></div>
-          <div class="impact-metric"><span>Safe</span><strong id="impactSafeCount">0</strong></div>
+      <div class="request-v2-panel">
+        <h3 id="requestRouteTitle">Recommended Workflow</h3>
+        <div class="request-route" id="requestRouteSteps"></div>
+        <div class="draft-status" id="requestDraftStatus">No draft saved yet.</div>
+        <div class="request-actions">
+          <button class="ghost" id="saveRequestDraftBtn" type="button">Save Draft</button>
+          <a class="btn" id="startRequestPrimaryBtn" href="production-control.html">Start Primary Step</a>
+          <a class="ghost" id="startRequestQuoteBtn" href="quote.html">Open Quote</a>
+          <a class="ghost" id="startRequestOrdersBtn" href="orders-admin.html">Open Orders</a>
         </div>
-        <div class="impact-list" id="inventorySafeList"></div>
       </div>
     </div>
   </section>
@@ -1152,7 +1248,7 @@ function orderClosed(o){const paid=['paid','refunded','not_required'].includes(o
 function renderHealth(){const inv=lowInventoryRows();const d=combinedData();const jobs=d.jobs||[];const openJobs=jobs.filter(j=>!['completed','failed_scrap','archived'].includes(j.production_status));const ready=openJobs.filter(j=>['ready_to_print','queued'].includes(j.production_status));$('healthQueueHours').textContent=`${ready.reduce((s,j)=>s+jobHours(j),0).toFixed(1).replace(/\.0$/,'')}h`;$('healthActiveJobs').textContent=openJobs.length;$('healthActiveOrders').textContent=d.orders.filter(o=>!orderClosed(o)).length;$('healthPendingQuotes').textContent=d.quotes.filter(q=>!['accepted','declined','expired','converted'].includes(String(q.quote_status||q.quoteStatus||'').toLowerCase())).length;$('healthLowInventory').textContent=inv.lowRaw.length+inv.lowSupplies.length;}
 function healthPill(label,source){const cls=source==='Cloud'?'cloud':(source==='Browser fallback'?'fallback':'off');return `<div class="health-pill"><span class="dot ${cls}"></span><b>${label}</b><span>${source}</span></div>`}
 function renderCloudHealth(){const prod=hubCloud.productionLoaded?'Cloud':'Browser fallback';const orders=hubCloud.loaded?'Cloud':'Browser fallback';const quotes=hubCloud.loaded?'Cloud':'Browser fallback';const finance=hubCloud.loaded?'Cloud':'Browser fallback';const inventory=hubCloud.inventoryLoaded?'Cloud':'Browser fallback';$('cloudHealthStrip').innerHTML=[healthPill('Production',prod),healthPill('Orders',orders),healthPill('Inventory',inventory),healthPill('Quotes',quotes),healthPill('Finance',finance)].join('');setSource('sourceProduction1','Production',prod);setSource('sourceProduction2','Production',prod);setSource('sourceInventory','Inventory',inventory);setSource('sourceOrders','Orders',orders);}
-function renderCurrentWorkflow(){const d=readObj('olipoly_workflow_draft_v1');if(!d){$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">＋</span><span><strong>No active Hub draft</strong><small>Use the Start Order Wizard when a new request comes in.</small></span><a class="ghost" href="#workflowType">Start Draft</a></div>`;return;}$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">↪</span><span><strong>${esc(d.title||d.request_type||'Workflow draft')}</strong><small>${esc(d.request_type||'request')} · Qty ${esc(d.quantity||1)}${d.due_date?' · Due '+esc(d.due_date):''}</small></span><div class="actions"><a class="btn" href="${deepLink('job',d.title)}">Open Production</a><a class="ghost" href="quote.html">Quote</a><a class="ghost" href="orders-admin.html">Orders</a><button class="ghost" type="button" onclick="clearDraft()">Clear</button></div></div>`;}
+function renderCurrentWorkflow(){const d=readObj('olipoly_workflow_draft_v1');if(!d){$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">＋</span><span><strong>No active Hub draft</strong><small>Use the Start Order Wizard when a new request comes in.</small></span><a class="ghost" href="#workflowType">Start Draft</a></div>`;return;}$('currentWorkflowCard').innerHTML=`<div class="workflow-card"><span class="workflow-icon">↪</span><span><strong>${esc(d.title||d.request_type||'Workflow draft')}</strong><small>${esc(d.request_type||'request')} · Qty ${esc(d.quantity||1)}${d.due_date?' · Due '+esc(d.due_date):''}</small></span><div class="actions"><a class="btn" href="${d.primary_destination||deepLink('job',d.title)}">Open Primary</a><a class="ghost" href="quote.html">Quote</a><a class="ghost" href="orders-admin.html">Orders</a><button class="ghost" type="button" onclick="clearDraft()">Clear</button></div></div>`;}
 
 
 let selectedTimelineCustomerKey='';
@@ -1505,16 +1601,151 @@ function renderSearch(){
 function recentStore(){return read('olipoly_hub_recent_v1')}
 function writeRecent(label,href){if(!label||!href)return;const rows=recentStore().filter(r=>r.href!==href||r.label!==label);rows.unshift({label,href,at:new Date().toISOString()});localStorage.setItem('olipoly_hub_recent_v1',JSON.stringify(rows.slice(0,10)));}
 function renderRecent(){$('recentList').innerHTML=recentStore().slice(0,6).map(recentItem).join('')||empty('Recently opened items will appear here.');}
+
+const requestFlows={
+  retail:{
+    title:'Retail Customer Workflow',
+    primary:'production-control.html',
+    steps:[
+      ['Production','Create production job, estimate real cost, check inventory.'],
+      ['Quote','Generate customer quote after margin check.'],
+      ['Orders','Accepted quote becomes OP order.'],
+      ['Finance','Push paid order to Finance Pro.']
+    ],
+    production_defaults:{job_type:'custom_order',status:'idea',priority:'normal',machine:'either'},
+    quote_defaults:{payment_terms:'due_on_receipt',customer_mode:'retail'},
+    order_defaults:{status:'quote_sent',payment_status:'unpaid',finance_required:true}
+  },
+  business:{
+    title:'Business / PO Workflow',
+    primary:'production-control.html',
+    steps:[
+      ['Production','Confirm material, capacity, unit cost, and repeatability.'],
+      ['Quote','Use professional/PO terms and tax-exempt handling if applicable.'],
+      ['Orders','Create OP order when PO or approval is received.'],
+      ['Invoice','Generate invoice and track Net terms.']
+    ],
+    production_defaults:{job_type:'business_po',status:'ready_to_print',priority:'urgent',machine:'P2S'},
+    quote_defaults:{payment_terms:'customer_terms',customer_mode:'business'},
+    order_defaults:{status:'quote_sent',payment_status:'unpaid',invoice_terms:'Net 30',finance_required:true}
+  },
+  repeat:{
+    title:'Repeat Customer Workflow',
+    primary:'orders-admin.html',
+    steps:[
+      ['Orders','Find prior customer/order history and clone or reorder.'],
+      ['Quote','Create reorder quote with customer/project carried over.'],
+      ['Production','Confirm current material availability and queue timing.'],
+      ['Finance','Push completed paid reorder.']
+    ],
+    production_defaults:{job_type:'custom_order',status:'queued',priority:'normal',machine:'either'},
+    quote_defaults:{payment_terms:'customer_terms',customer_mode:'repeat'},
+    order_defaults:{status:'quote_sent',payment_status:'unpaid',reorder:true}
+  },
+  prototype:{
+    title:'Prototype Workflow',
+    primary:'production-control.html',
+    steps:[
+      ['Production','Start as prototype/test print and capture assumptions.'],
+      ['Inventory','Reserve only what is needed for testing.'],
+      ['Quote','Quote later after iterations are clearer.'],
+      ['Orders','Convert only when scope is stable.']
+    ],
+    production_defaults:{job_type:'prototype',status:'queued',priority:'normal',machine:'either'},
+    quote_defaults:{payment_terms:'due_on_completion',customer_mode:'prototype'},
+    order_defaults:{status:'in_design',payment_status:'unpaid',finance_required:false}
+  },
+  personal:{
+    title:'Personal / Free Workflow',
+    primary:'production-control.html',
+    steps:[
+      ['Production','Track print time/material but mark as personal/free.'],
+      ['Inventory','Optionally exclude inventory if historical or gifted.'],
+      ['Orders','Usually no order needed unless you want tracking.'],
+      ['Finance','Mark payment/finance not required if order is created.']
+    ],
+    production_defaults:{job_type:'personal_free',status:'idea',priority:'low',machine:'either',exclude_inventory:true},
+    quote_defaults:{payment_terms:'not_required',customer_mode:'personal'},
+    order_defaults:{status:'completed',payment_status:'not_required',finance_required:false,completion_email_required:false}
+  },
+  stock:{
+    title:'Craft Show / Stock Workflow',
+    primary:'production-control.html',
+    steps:[
+      ['Production','Create batch/restock job with quantity.'],
+      ['Inventory','Reserve/deduct materials against stock production.'],
+      ['Orders','No customer order until sold.'],
+      ['Finance','Record sales later through Finance Pro/event sales.']
+    ],
+    production_defaults:{job_type:'craft_stock',status:'ready_to_print',priority:'normal',machine:'either'},
+    quote_defaults:{payment_terms:'not_required',customer_mode:'stock'},
+    order_defaults:{status:'completed',payment_status:'not_required',finance_required:false}
+  }
+};
+let activeRequestType='retail';
+function requestDraft(){
+  const flow=requestFlows[activeRequestType]||requestFlows.retail;
+  return {
+    id:'req-'+Date.now(),
+    source:'hub_request_wizard_v2',
+    created_at:new Date().toISOString(),
+    request_type:activeRequestType,
+    title:$('requestTitle')?.value?.trim()||'New request',
+    customer_name:$('requestCustomer')?.value?.trim()||'',
+    customer_email:$('requestEmail')?.value?.trim()||'',
+    quantity:Number($('requestQty')?.value||1)||1,
+    due_date:$('requestDue')?.value||'',
+    budget:Number($('requestBudget')?.value||0)||0,
+    notes:$('requestNotes')?.value?.trim()||'',
+    primary_destination:flow.primary,
+    production_defaults:flow.production_defaults,
+    quote_defaults:flow.quote_defaults,
+    order_defaults:flow.order_defaults,
+    workflow_note:flow.steps.map(s=>`${s[0]}: ${s[1]}`).join(' | ')
+  };
+}
+function renderRequestRoute(){
+  const flow=requestFlows[activeRequestType]||requestFlows.retail;
+  if($('requestRouteTitle')) $('requestRouteTitle').textContent=flow.title;
+  if($('requestRouteSteps')) $('requestRouteSteps').innerHTML=flow.steps.map((s,i)=>`<div class="route-step"><span>${i+1}</span><div><strong>${esc(s[0])}</strong><small>${esc(s[1])}</small></div></div>`).join('');
+  if($('startRequestPrimaryBtn')) $('startRequestPrimaryBtn').href=flow.primary;
+  if($('startRequestQuoteBtn')) $('startRequestQuoteBtn').href='quote.html';
+  if($('startRequestOrdersBtn')) $('startRequestOrdersBtn').href='orders-admin.html';
+}
+function saveRequestDraftV2(){
+  const d=requestDraft();
+  localStorage.setItem('olipoly_workflow_draft_v1',JSON.stringify(d));
+  localStorage.setItem('olipoly_request_draft_v2',JSON.stringify(d));
+  if($('requestDraftStatus')) $('requestDraftStatus').textContent=`Draft saved: ${d.title} · ${requestFlows[activeRequestType].title}`;
+  renderCurrentWorkflow();
+  return d;
+}
+function initRequestWizardV2(){
+  if(!$('newRequestWizard')) return;
+  document.querySelectorAll('[data-request-type]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      activeRequestType=btn.dataset.requestType||'retail';
+      document.querySelectorAll('[data-request-type]').forEach(b=>b.classList.toggle('active',b===btn));
+      renderRequestRoute();
+    });
+  });
+  $('saveRequestDraftBtn')?.addEventListener('click',saveRequestDraftV2);
+  $('startRequestPrimaryBtn')?.addEventListener('click',saveRequestDraftV2);
+  $('startRequestQuoteBtn')?.addEventListener('click',saveRequestDraftV2);
+  $('startRequestOrdersBtn')?.addEventListener('click',saveRequestDraftV2);
+  renderRequestRoute();
+}
+
 async function refreshAuth(){const s=await window.OliPolyAuth?.ensure?.();const user=await window.OliPolyAuth?.getUser?.();$('authStatus').textContent=user?.email?'Signed in: '+user.email:'Not signed in';}
 async function fullRender(){renderCloudHealth();renderCurrentWorkflow();renderHealth();renderCustomerIntelligence();renderCustomerTimeline();renderInventoryImpact();renderAttention();renderSearch();renderRecent();}
 document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>setType(b.dataset.type)));
-$('workflowType').addEventListener('input',()=>setType($('workflowType').value));$('saveDraftBtn').onclick=saveDraft;$('startProductionBtn').addEventListener('click',saveDraft);
+$('workflowType')?.addEventListener('input',()=>setType($('workflowType').value)); if($('saveDraftBtn')) $('saveDraftBtn').onclick=saveDraft; $('startProductionBtn')?.addEventListener('click',saveDraft);
 $('hubLoginBtn').onclick=async()=>{try{await window.OliPolyAuth.login($('hubEmail').value.trim(),$('hubPassword').value);await refreshAuth();await loadCloudData();fullRender();}catch(e){$('authStatus').textContent='Login failed: '+(e.message||e)}};
 $('hubLogoutBtn').onclick=()=>{window.OliPolyAuth?.clearSession?.();$('authStatus').textContent='Signed out.';hubCloud.loaded=false;hubCloud.productionLoaded=false;hubCloud.inventoryLoaded=false;hubCloud.customerLoaded=false;hubCloud.jobs=[];hubCloud.customers=[];fullRender();};
 $('hubSearchInput')?.addEventListener('input',renderSearch);$('hubSearchClear')?.addEventListener('click',()=>{$('hubSearchInput').value='';renderSearch();});
 $('timelineCustomerSearch')?.addEventListener('input',()=>{renderCustomerTimeline();});$('timelineCustomerClear')?.addEventListener('click',()=>{$('timelineCustomerSearch').value='';renderCustomerTimeline();});
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-label]');if(a)writeRecent(a.dataset.recentLabel,a.getAttribute('href'));});
-(async function init(){setType('business');fullRender();await refreshAuth();await loadCloudData();fullRender();})();
+(async function init(){ if($('workflowType')) setType('business'); initRequestWizardV2(); fullRender(); await refreshAuth(); await loadCloudData(); fullRender(); })();
 </script>
 </body>
 </html>
