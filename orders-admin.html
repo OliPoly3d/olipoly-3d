@@ -2575,6 +2575,15 @@ resetForm();
       return (p.get('order') || p.get('op') || p.get('id') || '').trim();
     }
 
+    function clearOrderSearchForDeepLink(){
+      const search = $('searchInput');
+      if(search) {
+        search.value = '';
+        search.dispatchEvent(new Event('input', { bubbles:true }));
+        search.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+    }
+
     function tryOpenDeepLinkedOrder(){
       const target = deepLinkOrderParam();
       if(!target || !orders.length) return;
@@ -2585,26 +2594,30 @@ resetForm();
         String(o.order_title || '').toLowerCase().includes(t) ||
         String(o.customer_name || '').toLowerCase().includes(t)
       );
+
       if(found){
+        // Deep links should select the order without filtering the left-hand order list.
+        clearOrderSearchForDeepLink();
         loadIntoForm(found);
-
-        // Deep links should select the order without filtering the left-hand list.
-        // Leave the user's normal Active / Needs Action / Closed view intact.
-        const search = $('searchInput');
-        if(search) search.value = '';
-
+        clearOrderSearchForDeepLink();
         renderList();
+        clearOrderSearchForDeepLink();
+
+        // Some browser restore/autofill behavior can repopulate the search after render.
+        setTimeout(() => { clearOrderSearchForDeepLink(); renderList(); }, 50);
+        setTimeout(() => { clearOrderSearchForDeepLink(); renderList(); }, 250);
+        setTimeout(() => { clearOrderSearchForDeepLink(); renderList(); }, 700);
+
         setMsg($('authMessage'), `Opened ${found.order_number || target} from Hub.`);
         setTimeout(() => document.getElementById('detailTitle')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
       } else {
-        // Only use the search box when there is no exact match.
+        // Only use the search box if no exact match exists.
         const search = $('searchInput');
         if(search) search.value = target;
         renderList();
         setMsg($('authMessage'), `No exact order match for "${target}". Showing search results if any.`, true);
       }
     }
-
 
     async function fetchOrders(){
       await getCurrentUser();
