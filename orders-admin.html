@@ -6493,9 +6493,12 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       status: byId('status') ? byId('status').value : '',
       payment_status: byId('paymentStatus') ? byId('paymentStatus').value : '',
       fulfillment: byId('fulfillment') ? byId('fulfillment').value : '',
+      tracking_number: byId('trackingNumber') ? byId('trackingNumber').value : '',
+      shipping_or_pickup_note: byId('shippingOrPickupNote') ? byId('shippingOrPickupNote').value : '',
       invoice_terms: byId('invoiceTerms') ? byId('invoiceTerms').value : '',
       po_number: byId('poNumber') ? byId('poNumber').value : '',
       shipping_company: byId('shippingCompany') ? byId('shippingCompany').value : '',
+      shipping_contact_name: byId('shippingContactName') ? byId('shippingContactName').value : '',
       internal_notes: byId('internalNotes') ? byId('internalNotes').value : ''
     };
   }
@@ -6605,6 +6608,32 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     setTimeout(render,50);
   }
 
+
+  function safeCustomerNameFromOrder(o){
+    var name = (o.customer_name || '').trim();
+    var company = (o.shipping_company || '').trim();
+    var carrierWords = ['ups','usps','fedex','pickup','delivery','ship','shipping','local pickup'];
+    var lowerCompany = company.toLowerCase();
+    var companyLooksLikeCarrier = carrierWords.some(function(w){ return lowerCompany === w || lowerCompany.indexOf(w + ' ') === 0; });
+    return name || (companyLooksLikeCarrier ? '' : company) || '';
+  }
+
+  function safeProjectTitleFromOrder(o){
+    var title = (o.order_title || '').trim();
+    var bad = ['ups','usps','fedex','pickup','delivery','ship','shipping','local pickup'];
+    if(bad.indexOf(title.toLowerCase()) !== -1) return 'Reorder';
+    return title || 'Reorder';
+  }
+
+  function quoteShippingModeFromOrder(o){
+    var text = [o.fulfillment, o.shipping_or_pickup_note, o.tracking_number].join(' ').toLowerCase();
+    if(text.indexOf('pickup') !== -1) return 'pickup';
+    if(text.indexOf('delivery') !== -1) return 'delivery';
+    if(text.indexOf('ship') !== -1 || text.indexOf('ups') !== -1 || text.indexOf('usps') !== -1 || text.indexOf('fedex') !== -1) return 'ship_estimated';
+    return o.fulfillment || '';
+  }
+
+
   function createReorderQuote(){
     var o = currentOrder();
     if(!o.customer_name && !o.order_title){
@@ -6615,14 +6644,18 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       source:'orders-admin',
       source_order_number:o.order_number || null,
       created_at:new Date().toISOString(),
-      customer_name:o.customer_name || '',
+      customer_name:safeCustomerNameFromOrder(o),
       customer_email:o.customer_email || '',
-      order_title:(o.order_title || 'Reorder') + ' - Reorder',
+      order_title:safeProjectTitleFromOrder(o) + ' - Reorder',
       quantity:o.quantity || 1,
       order_total:o.order_total || 0,
       deposit_amount:o.deposit_amount || 0,
       payment_terms:o.invoice_terms || '',
       po_number:o.po_number || '',
+      fulfillment:o.fulfillment || '',
+      shipping_mode:quoteShippingModeFromOrder(o),
+      shipping_or_pickup_note:o.shipping_or_pickup_note || '',
+      tracking_number:o.tracking_number || '',
       production_notes:o.internal_notes || '',
       internal_notes:'Reorder draft created from ' + (o.order_number || 'previous order')
     };
