@@ -1328,14 +1328,22 @@
 
   async function cloudSaveLedger(l){
     if(!state.cloud || !state.user?.id) return;
+    const row=normalizeLedger(l||{});
+    const safeType=row.type || 'adjust';
     const payload={
-      id:l.id,
+      id:row.id || uid(),
       user_id:state.user.id,
-      date:l.date,
-      type:l.type,
-      item:l.item,
-      amount:l.amount,
-      note:l.note
+      date:row.date || new Date().toISOString(),
+      created_at:row.date || new Date().toISOString(),
+      type:safeType,
+      transaction_type:safeType,
+      item:row.item || 'Inventory movement',
+      item_label:row.item || 'Inventory movement',
+      amount:String(row.amount ?? ''),
+      quantity_change:parseLedgerAmount(row.amount),
+      note:row.note || '',
+      notes:row.note || '',
+      source:row.note || ''
     };
     await sbApi('/rest/v1/inventory_transactions?on_conflict=id',{
       method:'POST',
@@ -1635,14 +1643,23 @@
     if(!state.cloud || !state.user?.id) return null;
     const uid=encodeURIComponent(state.user.id);
     async function countFor(table){
-      const token=localStorage.getItem(SB_TOKEN_KEY)||'';
-      const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${uid}&select=id`,{
-        headers:{apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${token}`, Prefer:'count=exact'}
-      });
-      if(!res.ok) return null;
-      const range=res.headers.get('content-range')||'';
-      const total=Number((range.split('/')[1]||'').trim());
-      return Number.isFinite(total)?total:null;
+      try{
+        const authToken=token();
+        const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${uid}&select=id`,{
+          headers:{
+            apikey:SUPABASE_KEY,
+            ...(authToken?{Authorization:`Bearer ${authToken}`}:{ }),
+            Prefer:'count=exact'
+          }
+        });
+        if(!res.ok) return null;
+        const range=res.headers.get('content-range')||'';
+        const total=Number((range.split('/')[1]||'').trim());
+        return Number.isFinite(total)?total:null;
+      }catch(err){
+        console.warn(`${table} cloud count failed`, err);
+        return null;
+      }
     }
     return {
       raw: await countFor('raw_material_inventory'),
@@ -1877,6 +1894,14 @@
       const d = new Date(x.date).getTime();
       return d >= cutoff && ['raw_usage','supply_usage'].includes(x.type) && norm(x.item).includes(q.split('/')[0]?.trim() || q);
     }).reduce((s,x)=>s+Math.abs(parseLedgerAmount(x.amount)),0);
+  }
+
+  function groupRemaining(g){
+    if(!g) return 0;
+    if(Array.isArray(g.items)){
+      return g.items.reduce((sum,item)=>sum+num(item.remaining_grams ?? item.remaining ?? 0),0);
+    }
+    return num(g.remaining_grams ?? g.remaining ?? 0);
   }
 
   function renderForecast(){
