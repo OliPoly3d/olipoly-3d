@@ -4534,5 +4534,270 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
 })();
 </script>
 
+
+<!-- === OliPoly ERP Strength Upgrade: Action Center + Purchase Planner + Audit Center === -->
+<style id="olipolyErpStrengthV2Styles">
+  body.erp-mode .erp-decision-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);
+    gap:12px;
+    margin-top:14px;
+  }
+  body.erp-mode .erp-next-action{
+    position:relative;
+    overflow:hidden;
+    min-height:190px;
+    border-radius:24px;
+    padding:18px;
+    background:linear-gradient(145deg,rgba(26,43,78,.92),rgba(8,14,29,.84));
+    border:1px solid rgba(57,215,255,.22);
+    box-shadow:0 18px 48px rgba(0,0,0,.28),0 0 36px rgba(57,215,255,.08);
+  }
+  body.erp-mode .erp-next-action::before{
+    content:"";
+    position:absolute;
+    inset:0 0 auto 0;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(57,215,255,.65),rgba(163,107,255,.38),transparent);
+  }
+  body.erp-mode .erp-next-action h3{
+    margin:8px 0 6px;
+    color:#fff;
+    font-size:clamp(1.45rem,3vw,2.15rem);
+    line-height:.98;
+    letter-spacing:-.04em;
+  }
+  body.erp-mode .erp-next-action p{color:#9fb2d6;line-height:1.42;margin:0;max-width:760px}
+  body.erp-mode .erp-action-footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:14px}
+  body.erp-mode .erp-action-list{display:grid;gap:9px}
+  body.erp-mode .erp-action-row,
+  body.erp-mode .erp-purchase-row,
+  body.erp-mode .erp-audit-row{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+    padding:11px;
+    border-radius:17px;
+    background:linear-gradient(145deg,rgba(25,38,68,.82),rgba(10,17,34,.72));
+    border:1px solid rgba(129,151,255,.15);
+    text-decoration:none;
+    color:#eaf0ff;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+  }
+  body.erp-mode .erp-action-row:hover,
+  body.erp-mode .erp-purchase-row:hover,
+  body.erp-mode .erp-audit-row:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.24)}
+  body.erp-mode .erp-action-icon,
+  body.erp-mode .erp-audit-icon{
+    width:38px;height:38px;border-radius:15px;display:grid;place-items:center;color:#fff;font-weight:950;
+    background:linear-gradient(135deg,#7c4dff,#27d7ff);box-shadow:0 0 22px rgba(57,215,255,.18);
+  }
+  body.erp-mode .erp-action-icon.red,.erp-audit-icon.red{background:linear-gradient(135deg,#ff5576,#ff58c7)!important}
+  body.erp-mode .erp-action-icon.amber,.erp-audit-icon.amber{background:linear-gradient(135deg,#ffbf4d,#ff7a4d)!important}
+  body.erp-mode .erp-action-icon.green,.erp-audit-icon.green{background:linear-gradient(135deg,#35f1a2,#39d7ff)!important}
+  body.erp-mode .erp-action-row strong,
+  body.erp-mode .erp-purchase-row strong,
+  body.erp-mode .erp-audit-row strong{display:block;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.94rem}
+  body.erp-mode .erp-action-row small,
+  body.erp-mode .erp-purchase-row small,
+  body.erp-mode .erp-audit-row small{display:block;color:#95a9cc;margin-top:3px;line-height:1.32;font-size:.76rem}
+  body.erp-mode .erp-audit-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  body.erp-mode .erp-mini-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(57,215,255,.09);border:1px solid rgba(57,215,255,.18);color:#8ee8ff;font-size:.64rem;font-weight:950;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  body.erp-mode .erp-mini-pill.warn{background:rgba(255,191,77,.11);border-color:rgba(255,191,77,.22);color:#ffd483}
+  body.erp-mode .erp-mini-pill.red{background:rgba(255,85,118,.12);border-color:rgba(255,85,118,.24);color:#ff9caf}
+  body.erp-mode .erp-mini-pill.green{background:rgba(53,241,162,.10);border-color:rgba(53,241,162,.20);color:#8dffc7}
+  body.erp-mode .erp-purchase-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:14px}
+  body.erp-mode .erp-purchase-list{display:grid;gap:9px}
+  body.erp-mode .erp-audit-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}
+  body.erp-mode .erp-audit-toolbar input,
+  body.erp-mode .erp-audit-toolbar select{max-width:280px;margin:0;min-height:38px;border-radius:14px}
+  body.erp-mode .erp-audit-list{display:grid;gap:9px;max-height:560px;overflow:auto;padding-right:4px}
+  @media(max-width:980px){
+    body.erp-mode .erp-decision-grid,
+    body.erp-mode .erp-purchase-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:640px){
+    body.erp-mode .erp-action-row,
+    body.erp-mode .erp-purchase-row,
+    body.erp-mode .erp-audit-row{grid-template-columns:auto minmax(0,1fr)}
+    body.erp-mode .erp-action-row .erp-chip,
+    body.erp-mode .erp-purchase-row .erp-chip,
+    body.erp-mode .erp-audit-row .erp-chip{grid-column:2;justify-self:start}
+  }
+</style>
+
+<script id="olipolyErpStrengthV2Script">
+(function(){
+  'use strict';
+  var ledgerCache=[];
+  var ledgerLoaded=false;
+
+  function $(id){return document.getElementById(id);}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+  function read(k,f){try{return JSON.parse(localStorage.getItem(k)||'null')||f||[]}catch(e){return f||[]}}
+  function money(v){try{return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0)}catch(e){return '$'+(Number(v)||0).toFixed(2)}}
+  function grams(v){var n=Number(v)||0;return n>=1000?(n/1000).toFixed(2).replace(/\.00$/,'')+'kg':Math.round(n)+'g'}
+  function token(){return window.OliPolyAuth?.getToken?.()||localStorage.getItem('sb_token')||null;}
+  async function rest(path){
+    if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
+    var t=token(); if(!t) throw new Error('No token');
+    var url=(window.OliPolyAuth?.SUPABASE_URL||'https://alffoktlwhpfothieude.supabase.co')+path;
+    var key=window.OliPolyAuth?.SUPABASE_KEY||'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+    var res=await fetch(url,{headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'}});
+    var data=await res.json().catch(function(){return null});
+    if(!res.ok) throw new Error(data?.message||data?.hint||'Supabase '+res.status);
+    return Array.isArray(data)?data:[];
+  }
+  function linkJob(j){var key=j?.id||j?.job_title||j?.order_ref||j?.order_number||'';return key?'production-control.html?job='+encodeURIComponent(key):'production-control.html';}
+  function linkOrder(o){var key=o?.order_number||o?.id||o?.customer_name||'';return key?'orders-admin.html?order='+encodeURIComponent(key):'orders-admin.html';}
+  function linkQuote(q){var key=q?.quote_number||q?.quoteNumber||q?.id||'';return key?'quote.html?quote='+encodeURIComponent(key):'quote.html';}
+  function linkInv(x){var key=[x?.material_type||x?.material,x?.color||x?.color_name,x?.brand||x?.item_name||x?.name].filter(Boolean).join(' ');return key?'inventory-control.html?inventory='+encodeURIComponent(key):'inventory-control.html';}
+  function isClosedJob(j){return ['closed','completed','archived','failed_scrap','cancelled','canceled'].indexOf(String(j?.production_status||j?.status||'').toLowerCase())>=0;}
+  function isClosedOrder(o){return ['closed','completed','cancelled','canceled','archived'].indexOf(String(o?.status||o?.order_status||'').toLowerCase())>=0;}
+  function jobHours(j){return Number(j?.machine_hours||j?.estimated_hours||j?.estimated_total_hours||j?.hours||0)||0;}
+  function getCombined(){
+    var d=typeof combinedData==='function'?combinedData():{};
+    return {
+      jobs:Array.isArray(d.jobs)?d.jobs:read('olipoly_production_jobs_v3',[]),
+      orders:Array.isArray(d.orders)?d.orders:read('olipoly_orders_v1',[]),
+      quotes:Array.isArray(d.quotes)?d.quotes:read('olipoly_quote_history_v2',[]),
+      finance:Array.isArray(d.finance)?d.finance:read('olipoly_finance_entries_v1',[]),
+      raw:Array.isArray(d.raw)?d.raw:read('olipoly_raw_material_inventory_v3',[]),
+      supplies:Array.isArray(d.supplies)?d.supplies:read('olipoly_non_filament_supplies_v1',[])
+    };
+  }
+  function buildBase(){
+    var d=getCombined();
+    var inv=typeof evaluateInventoryImpact==='function'?evaluateInventoryImpact():{risk:[],watch:[],safe:[]};
+    var openJobs=(d.jobs||[]).filter(function(j){return !isClosedJob(j)});
+    var dueJobs=openJobs.filter(function(j){if(!j.due_date)return false;var days=(new Date(j.due_date).getTime()-Date.now())/86400000;return days<=7;}).sort(function(a,b){return String(a.due_date||'9999').localeCompare(String(b.due_date||'9999'))});
+    var pendingQuotes=(d.quotes||[]).filter(function(q){return ['accepted','declined','expired','converted'].indexOf(String(q.quote_status||q.quoteStatus||q.status||'').toLowerCase())<0;});
+    var openOrders=(d.orders||[]).filter(function(o){return !isClosedOrder(o)});
+    var financeReady=openOrders.filter(function(o){return !o.finance_pushed && !o.finance_not_required && Number(o.order_total||o.total||0)>0});
+    return {d:d,inv:inv,openJobs:openJobs,dueJobs:dueJobs,pendingQuotes:pendingQuotes,openOrders:openOrders,financeReady:financeReady};
+  }
+  function panelSkeleton(){
+    var consoleEl=$('erpConsole'); if(!consoleEl) return;
+    if(!$('erpActionCenterV2')){
+      consoleEl.insertAdjacentHTML('afterbegin',[
+        '<section class="erp-panel erp-section-anchor" id="erpActionCenterV2">',
+          '<div class="erp-panel-head"><div><h2>Today’s Required Actions</h2><p>One prioritized operating list across production, inventory, orders, quotes, and finance.</p></div><span class="erp-chip">ERP Brain</span></div>',
+          '<div class="erp-decision-grid"><div class="erp-next-action" id="erpNextBestAction"></div><div class="erp-action-list" id="erpRequiredActions"></div></div>',
+        '</section>'
+      ].join(''));
+    }
+    if(!$('erpPurchasePlannerV2')){
+      var after=$('erpProductionInventory')||$('erpActionCenterV2');
+      after.insertAdjacentHTML('afterend',[
+        '<section class="erp-panel erp-section-anchor" id="erpPurchasePlannerV2">',
+          '<div class="erp-panel-head"><div><h2>Purchase Planner</h2><p>What to buy before it blocks active work.</p></div><a class="erp-chip" href="inventory-control.html">Inventory</a></div>',
+          '<div class="erp-purchase-grid"><div><span class="erp-mini-pill warn">Needs attention</span><div class="erp-purchase-list" id="erpPurchaseUrgent"></div></div><div><span class="erp-mini-pill">Watch list</span><div class="erp-purchase-list" id="erpPurchaseWatch"></div></div></div>',
+        '</section>'
+      ].join(''));
+    }
+    if(!$('erpAuditCenterV2')){
+      var timeline=$('erpTimelinePanel')||consoleEl;
+      timeline.insertAdjacentHTML('afterend',[
+        '<section class="erp-panel erp-section-anchor" id="erpAuditCenterV2">',
+          '<div class="erp-panel-head"><div><h2>Audit / Movement Center</h2><p>What changed, which job caused it, and where to investigate.</p></div><span class="erp-chip">Traceability</span></div>',
+          '<div class="erp-audit-toolbar"><input id="erpAuditSearch" placeholder="Search job, order, material, customer..."><select id="erpAuditType"><option value="all">All movement</option><option value="inventory">Inventory</option><option value="production">Production</option><option value="order">Orders</option><option value="quote">Quotes</option><option value="finance">Finance</option></select></div>',
+          '<div class="erp-audit-list" id="erpAuditList"></div>',
+        '</section>'
+      ].join(''));
+      $('erpAuditSearch')?.addEventListener('input',renderAudit);
+      $('erpAuditType')?.addEventListener('input',renderAudit);
+    }
+    var nav=document.querySelector('.engine-nav');
+    if(nav && !nav.querySelector('a[href="#erpActionCenterV2"]')){
+      nav.insertAdjacentHTML('afterbegin','<a href="#erpActionCenterV2">⚡ Required Actions</a><a href="#erpPurchasePlannerV2">🛒 Purchase Plan</a><a href="#erpAuditCenterV2">↻ Audit Trail</a>');
+    }
+  }
+  function actionRow(a){return '<a class="erp-action-row" href="'+esc(a.href||'#')+'"><span class="erp-action-icon '+esc(a.kind||'')+'">'+esc(a.icon||'!')+'</span><span><strong>'+esc(a.title||'Action')+'</strong><small>'+esc(a.sub||'')+'</small></span><b class="erp-chip '+esc(a.kind||'')+'">'+esc(a.tag||'Open')+'</b></a>';}
+  function buildActions(){
+    var b=buildBase(), actions=[];
+    (b.inv.risk||[]).slice(0,4).forEach(function(r){actions.push({score:100,kind:'red',icon:'!',title:r.job?.job_title||'Inventory blocks production',sub:'Short '+grams(r.short)+' · '+[r.need?.material_type,r.need?.color].filter(Boolean).join(' / '),tag:'Blocked',href:linkJob(r.job)});});
+    b.openJobs.filter(function(j){var s=String(j.production_status||j.status||'').toLowerCase();return ['printing','post-print','post_print','delivery scheduled','delivery_scheduled'].indexOf(s)>=0;}).slice(0,4).forEach(function(j){actions.push({score:88,kind:'amber',icon:'✓',title:'Move job forward: '+(j.job_title||'Production job'),sub:[j.production_status||j.status,j.machine_preference||j.actual_machine,j.order_ref||j.order_number].filter(Boolean).join(' · '),tag:'Update',href:linkJob(j)});});
+    b.dueJobs.slice(0,4).forEach(function(j){actions.push({score:80,kind:'amber',icon:'P',title:'Print due job: '+(j.job_title||'Production job'),sub:'Due '+(j.due_date||'soon')+' · '+(j.machine_preference||j.actual_machine||'assign machine')+' · '+(jobHours(j)||0)+'h',tag:'Print',href:linkJob(j)});});
+    b.financeReady.slice(0,3).forEach(function(o){actions.push({score:70,kind:'green',icon:'$',title:'Push order to finance: '+(o.order_number||'Order'),sub:[o.customer_name,o.status,money(o.order_total||o.total)].filter(Boolean).join(' · '),tag:'Finance',href:linkOrder(o)});});
+    b.pendingQuotes.slice(0,4).forEach(function(q){actions.push({score:58,kind:'',icon:'Q',title:'Follow up quote: '+(q.quote_number||q.quoteTitle||q.quote_title||'Quote'),sub:[q.customer_name||q.customerName,q.quote_status||q.quoteStatus,money(q.final_quote||q.quote_total||q.total||q.finalQuote)].filter(Boolean).join(' · '),tag:'Follow Up',href:linkQuote(q)});});
+    var lows=typeof lowInventoryRows==='function'?lowInventoryRows():{lowRaw:[],lowSupplies:[]};
+    (lows.lowRaw||[]).slice(0,3).forEach(function(g){actions.push({score:62,kind:'amber',icon:'🛒',title:'Reorder '+[g.material_type,g.color].filter(Boolean).join(' '),sub:'Available '+grams(g.available)+' · threshold '+grams(g.threshold),tag:'Buy',href:linkInv(g)});});
+    return actions.sort(function(a,b){return b.score-a.score});
+  }
+  function renderActions(){
+    panelSkeleton();
+    var actions=buildActions();
+    var next=actions[0];
+    var nextBox=$('erpNextBestAction');
+    if(nextBox){
+      nextBox.innerHTML=next?[
+        '<span class="erp-mini-pill '+(next.kind==='red'?'red':next.kind==='amber'?'warn':next.kind==='green'?'green':'')+'">Next best action</span>',
+        '<h3>'+esc(next.title)+'</h3>',
+        '<p>'+esc(next.sub||'Open the linked tool and complete the next operational step.')+'</p>',
+        '<div class="erp-action-footer"><span class="erp-mini-pill">Priority '+Math.round(next.score)+'</span><a class="erp-chip '+esc(next.kind||'')+'" href="'+esc(next.href)+'">'+esc(next.tag||'Open')+'</a></div>'
+      ].join(''):'<span class="erp-mini-pill green">Clear</span><h3>No urgent required actions.</h3><p>The ERP did not find a material block, due job, finance exception, or quote follow-up.</p>';
+    }
+    if($('erpRequiredActions')) $('erpRequiredActions').innerHTML=actions.slice(1,8).map(actionRow).join('')||'<div class="empty-note">No secondary actions found.</div>';
+  }
+  function purchaseRow(p){var pill=p.kind==='red'?'red':p.kind==='amber'?'warn':'green';return '<a class="erp-purchase-row" href="'+esc(p.href||'inventory-control.html')+'"><span class="erp-action-icon '+esc(p.kind||'')+'">🛒</span><span><strong>'+esc(p.title)+'</strong><small>'+esc(p.sub)+'</small></span><b class="erp-mini-pill '+pill+'">'+esc(p.tag)+'</b></a>';}
+  function renderPurchasePlanner(){
+    panelSkeleton();
+    var lows=typeof lowInventoryRows==='function'?lowInventoryRows():{lowRaw:[],lowSupplies:[]};
+    var urgent=[], watch=[];
+    (lows.lowRaw||[]).forEach(function(g){urgent.push({kind:g.available<=0?'red':'amber',title:[g.material_type,g.color,g.brand].filter(Boolean).join(' / '),sub:'Available '+grams(g.available)+' · threshold '+grams(g.threshold)+' · '+(g.rolls||0)+' roll(s)',tag:g.available<=0?'Out':'Low',href:linkInv(g)});});
+    (lows.lowSupplies||[]).forEach(function(s){urgent.push({kind:s.quantity_on_hand<=0?'red':'amber',title:s.item_name,sub:'On hand '+s.quantity_on_hand+' '+(s.unit_type||'')+' · threshold '+s.reorder_threshold,tag:s.quantity_on_hand<=0?'Out':'Low',href:linkInv(s)});});
+    var b=buildBase();
+    (b.inv.watch||[]).slice(0,8).forEach(function(w){var g=w.group||w;watch.push({kind:'',title:[g.material_type,g.color,g.brand].filter(Boolean).join(' / '),sub:'Watch balance before scheduling more work · available '+grams(g.available||g.grams||0),tag:'Watch',href:linkInv(g)});});
+    if($('erpPurchaseUrgent')) $('erpPurchaseUrgent').innerHTML=urgent.slice(0,8).map(purchaseRow).join('')||'<div class="empty-note">No immediate purchase blocks found.</div>';
+    if($('erpPurchaseWatch')) $('erpPurchaseWatch').innerHTML=watch.slice(0,8).map(purchaseRow).join('')||'<div class="empty-note">No watch-list materials found.</div>';
+  }
+  async function loadLedger(){
+    if(ledgerLoaded) return ledgerCache;
+    try{ledgerCache=await rest('/rest/v1/inventory_transactions?select=*&order=created_at.desc&limit=250');ledgerLoaded=true;}
+    catch(e){console.warn('Hub ledger cloud load skipped:',e);ledgerCache=read('olipoly_inventory_ledger_v2',[]);ledgerLoaded=true;}
+    return ledgerCache;
+  }
+  function auditRow(e){
+    var kind=e.kind||'';
+    return '<a class="erp-audit-row" href="'+esc(e.href||'#')+'"><span class="erp-audit-icon '+esc(e.level||'')+'">'+esc(e.icon||'•')+'</span><span><strong>'+esc(e.title||'Movement')+'</strong><small>'+esc(e.sub||'')+'</small><span class="erp-audit-meta"><b class="erp-mini-pill">'+esc(kind)+'</b><b class="erp-mini-pill">'+esc(e.date||'')+'</b></span></span><b class="erp-chip '+esc(e.level||'')+'">'+esc(e.tag||'Open')+'</b></a>';
+  }
+  function buildAuditEvents(){
+    var b=buildBase(), events=[];
+    (ledgerCache||[]).forEach(function(t){
+      var type=t.transaction_type||t.type||'inventory';
+      var item=t.item_label||t.item||[t.material_type,t.color||t.color_name,t.brand].filter(Boolean).join(' ')||'Inventory movement';
+      var qty=t.quantity_change||t.quantity_delta||t.qty_grams||t.amount||t.quantity||'';
+      var note=t.notes||t.note||t.source||t.order_ref||t.job_id||'';
+      events.push({kind:'inventory',level:String(type).includes('usage')?'amber':'',icon:'I',date:String(t.created_at||t.date||'').slice(0,10),title:item,sub:[type,qty,note].filter(Boolean).join(' · '),tag:'Inventory',href:'inventory-control.html?ledger='+encodeURIComponent(item)});
+    });
+    (b.openJobs||[]).slice(0,30).forEach(function(j){events.push({kind:'production',level:String(j.production_status||j.status||'').includes('printing')?'green':'',icon:'P',date:String(j.updated_at||j.due_date||j.created_at||'').slice(0,10),title:j.job_title||'Production job',sub:[j.production_status||j.status,j.order_ref||j.order_number,j.machine_preference||j.actual_machine].filter(Boolean).join(' · '),tag:'Job',href:linkJob(j)});});
+    (b.openOrders||[]).slice(0,30).forEach(function(o){events.push({kind:'order',level:'green',icon:'O',date:String(o.updated_at||o.order_date||o.created_at||'').slice(0,10),title:o.order_number||'Order',sub:[o.customer_name,o.status,money(o.order_total||o.total)].filter(Boolean).join(' · '),tag:'Order',href:linkOrder(o)});});
+    (b.pendingQuotes||[]).slice(0,25).forEach(function(q){events.push({kind:'quote',level:'',icon:'Q',date:String(q.updated_at||q.quote_date||q.created_at||'').slice(0,10),title:q.quote_number||q.quoteTitle||q.quote_title||'Quote',sub:[q.customer_name||q.customerName,q.quote_status||q.quoteStatus,money(q.final_quote||q.quote_total||q.total||q.finalQuote)].filter(Boolean).join(' · '),tag:'Quote',href:linkQuote(q)});});
+    (b.d.finance||[]).slice(0,25).forEach(function(f){events.push({kind:'finance',level:'green',icon:'$',date:String(f.date||f.created_at||'').slice(0,10),title:f.description||f.category||'Finance entry',sub:[f.type||f.category,money(f.amount)].filter(Boolean).join(' · '),tag:'Finance',href:'finance-pro.html'});});
+    return events.sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+  }
+  function renderAudit(){
+    panelSkeleton();
+    var q=String($('erpAuditSearch')?.value||'').toLowerCase();
+    var type=$('erpAuditType')?.value||'all';
+    var events=buildAuditEvents().filter(function(e){
+      var hay=[e.kind,e.title,e.sub,e.tag,e.date].join(' ').toLowerCase();
+      return (type==='all'||e.kind===type) && (!q||hay.indexOf(q)>=0);
+    });
+    if($('erpAuditList')) $('erpAuditList').innerHTML=events.slice(0,80).map(auditRow).join('')||'<div class="empty-note">No matching activity found.</div>';
+  }
+  function renderAll(){renderActions();renderPurchasePlanner();renderAudit();}
+  async function boot(){panelSkeleton();renderAll();await loadLedger();renderAll();setTimeout(renderAll,900);setTimeout(renderAll,2400);}
+  document.addEventListener('DOMContentLoaded',boot);
+  window.addEventListener('olipoly-auth-changed',function(){ledgerLoaded=false;ledgerCache=[];boot();});
+  var oldFull=window.fullRender;
+  if(typeof oldFull==='function' && !oldFull.__erpStrengthWrapped){
+    window.fullRender=async function(){var r=await oldFull.apply(this,arguments);renderAll();return r;};
+    window.fullRender.__erpStrengthWrapped=true;
+  }
+})();
+</script>
+
 </body>
 </html>
