@@ -5335,5 +5335,165 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
 })();
 </script>
 
+
+<style id="olipolyInventoryTraceabilityV1Styles">
+  body.erp-mode .trace-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}
+  body.erp-mode .trace-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+  body.erp-mode .trace-kpi{padding:12px;border-radius:18px;background:rgba(7,13,26,.56);border:1px solid rgba(129,151,255,.12);min-height:92px}
+  body.erp-mode .trace-kpi span{display:block;color:#95a9cc;font-size:.64rem;font-weight:950;letter-spacing:.07em;text-transform:uppercase}
+  body.erp-mode .trace-kpi strong{display:block;color:#fff;font-size:1.35rem;margin-top:5px}
+  body.erp-mode .trace-toolbar{display:grid;grid-template-columns:minmax(0,1fr) .65fr .65fr auto;gap:8px;margin-top:12px;padding:10px;border-radius:18px;background:rgba(7,13,26,.52);border:1px solid rgba(129,151,255,.12)}
+  body.erp-mode .trace-toolbar input,body.erp-mode .trace-toolbar select{margin:0;min-height:38px;border-radius:13px;font-size:.84rem}
+  body.erp-mode .trace-list{display:grid;gap:10px;margin-top:10px}
+  body.erp-mode .trace-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:18px;background:linear-gradient(145deg,rgba(25,38,68,.82),rgba(10,17,34,.72));border:1px solid rgba(129,151,255,.15);color:#eaf0ff;text-decoration:none;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  body.erp-mode .trace-row:hover{border-color:rgba(36,215,255,.22);box-shadow:0 0 28px rgba(36,215,255,.07);transform:translateY(-1px)}
+  body.erp-mode .trace-icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;color:#fff;font-weight:950;background:linear-gradient(135deg,#7c4dff,#24d7ff);box-shadow:0 0 22px rgba(36,215,255,.18)}
+  body.erp-mode .trace-icon.red{background:linear-gradient(135deg,#ff4f78,#ff4fc3)}
+  body.erp-mode .trace-icon.amber{background:linear-gradient(135deg,#ffbf4d,#ff58c7)}
+  body.erp-mode .trace-icon.green{background:linear-gradient(135deg,#34f0a0,#24d7ff)}
+  body.erp-mode .trace-row strong{display:block;color:#fff;font-size:.93rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.erp-mode .trace-row small{display:block;color:#95a9cc;margin-top:3px;line-height:1.32;font-size:.76rem}
+  body.erp-mode .trace-pill-strip{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  body.erp-mode .trace-detail-panel{padding:14px;border-radius:22px;background:linear-gradient(145deg,rgba(23,35,63,.84),rgba(10,17,34,.74));border:1px solid rgba(129,151,255,.16);box-shadow:0 14px 34px rgba(0,0,0,.22);min-height:260px}
+  body.erp-mode .trace-detail-panel h3{margin:0 0 8px;color:#fff;font-family:"Playfair Display",serif;font-size:1.28rem}
+  body.erp-mode .trace-detail-body{display:grid;gap:8px;margin-top:10px}
+  body.erp-mode .trace-detail-card{padding:11px;border-radius:17px;background:rgba(7,13,26,.56);border:1px solid rgba(129,151,255,.12)}
+  body.erp-mode .trace-detail-card span{display:block;color:#95a9cc;font-size:.64rem;font-weight:950;letter-spacing:.07em;text-transform:uppercase}
+  body.erp-mode .trace-detail-card strong{display:block;color:#fff;font-size:.98rem;margin-top:4px;overflow-wrap:anywhere}
+  body.erp-mode .trace-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+  body.erp-mode .trace-empty{padding:14px;border-radius:18px;background:rgba(7,13,26,.54);border:1px dashed rgba(129,151,255,.22);color:#8fa2c5;font-weight:850;line-height:1.4}
+  body.erp-mode .trace-action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  @media(max-width:980px){body.erp-mode .trace-grid{grid-template-columns:1fr}body.erp-mode .trace-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body.erp-mode .trace-toolbar{grid-template-columns:1fr 1fr}}
+  @media(max-width:640px){body.erp-mode .trace-row{grid-template-columns:auto minmax(0,1fr)}body.erp-mode .trace-row>.erp-chip{grid-column:2;justify-self:start}body.erp-mode .trace-kpi-grid,body.erp-mode .trace-source-grid,body.erp-mode .trace-toolbar{grid-template-columns:1fr}}
+</style>
+<script id="olipolyInventoryTraceabilityV1Script">
+(()=>{
+  'use strict';
+  const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const num=v=>Number(v)||0;
+  const norm=v=>String(v||'').trim().toLowerCase();
+  const grams=v=>{const n=num(v);return Math.abs(n)>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`;};
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
+  function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
+  function many(keys){for(const k of keys){const v=read(k,null);if(Array.isArray(v)&&v.length)return v;}return []}
+  function token(){return window.OliPolyAuth?.getToken?.()||localStorage.getItem('sb_token')||localStorage.getItem('supabase.auth.token')||null}
+  async function api(path){
+    const headers={apikey:SUPABASE_KEY,'Content-Type':'application/json',...(token()?{Authorization:`Bearer ${token()}`}:{})};
+    const res=await fetch(`${SUPABASE_URL}${path}`,{headers});
+    const txt=await res.text(); let data=[]; try{data=txt?JSON.parse(txt):[]}catch{data=[]}
+    if(!res.ok) throw new Error(data?.message||txt||`Supabase ${res.status}`);
+    return data;
+  }
+  function baseData(){const d=window.__olipolyHubData||window.olipolyHubData||{};return {jobs:Array.isArray(d.jobs)?d.jobs:many(['olipoly_production_jobs_v3','olipoly_production_jobs_v2','olipoly_production_jobs','production_jobs']),orders:Array.isArray(d.orders)?d.orders:many(['olipoly_orders_v3','olipoly_orders_v2','olipoly_orders','orders']),quotes:Array.isArray(d.quotes)?d.quotes:many(['olipoly_quotes_v3','olipoly_quotes_v2','olipoly_quotes','quotes']),localLedger:many(['olipoly_inventory_ledger_v2','olipoly_inventory_ledger_v1'])}}
+  function jobName(j){return j?.job_title||j?.title||j?.project_name||j?.order_title||j?.name||j?.order_ref||j?.order_number||j?.quote_ref||'Production job'}
+  function jobRef(j){return j?.order_ref||j?.order_number||j?.op_number||j?.quote_ref||j?.quote_number||j?.id||''}
+  function jobLink(j){const q=jobRef(j)||j?.id||'';return 'production-control.html'+(q?'?job='+encodeURIComponent(q):'')}
+  function invLink(t){const q=t.item_label||t.item||t.material_type||t.color||t.brand||'';return 'inventory-control.html'+(q?'?inventory='+encodeURIComponent(q):'')}
+  function findJob(t,data){
+    const keys=[t.production_job_id,t.job_id,t.reference_id,t.order_ref,t.quote_ref,t.source].filter(Boolean).map(String);
+    if(!keys.length)return null;
+    return (data.jobs||[]).find(j=>keys.some(k=>[j.id,j.production_job_id,j.job_id,j.order_ref,j.order_number,j.op_number,j.quote_ref,j.quote_number].filter(Boolean).map(String).includes(k)) || keys.some(k=>String(j.notes||'').includes(k)));
+  }
+  function normalizeCloud(t){
+    const type=t.transaction_type||t.type||t.inventory_kind||'movement';
+    const item=t.item_label||t.item||[t.material_type,t.color||t.color_name,t.brand].filter(Boolean).join(' / ')||'Inventory item';
+    const qtyRaw=t.quantity_change??t.quantity_delta??t.quantity??t.amount??t.qty_grams??t.qty_units??0;
+    const unit=t.unit||((t.qty_grams!==undefined||/raw|gram|filament/i.test(type))?'g':'units');
+    const source=t.source||t.order_ref||t.quote_ref||t.job_id||t.production_job_id||t.reference_id||'';
+    const note=t.notes||t.note||t.description||'';
+    return {...t,_origin:'cloud',_type:type,_item:item,_qty:qtyRaw,_unit:unit,_source:source,_note:note,_date:t.created_at||t.date||new Date().toISOString()};
+  }
+  function normalizeLocal(t){
+    const type=t.type||t.transaction_type||'local_movement';
+    const item=t.item||t.item_label||t.label||'Inventory item';
+    const amount=t.amount||t.change||t.quantity_change||'';
+    const numeric=String(amount).match(/-?[0-9]+(\.[0-9]+)?/);
+    return {...t,_origin:'local',_type:type,_item:item,_qty:numeric?Number(numeric[0]):amount,_unit:/g\b|gram/i.test(String(amount))?'g':(t.unit||'units'),_source:t.source||t.reference_id||'',_note:t.note||t.notes||'',_date:t.date||t.created_at||new Date().toISOString()};
+  }
+  function classify(t){
+    const s=norm([t._type,t._source,t._note,t.production_job_id,t.job_id,t.order_ref].join(' '));
+    if(s.includes('raw_usage')||s.includes('supply_usage')||s.includes('production')||s.includes('closeout')||s.includes('close out')||s.includes('op-'))return 'production';
+    if(s.includes('adjust')||s.includes('manual')||s.includes('set'))return 'manual';
+    if(s.includes('import')||s.includes('sync'))return 'sync';
+    if(num(t._qty)<0)return 'deduction';
+    return 'other';
+  }
+  function isDeduction(t){return num(t._qty)<0 || /usage|deduct|subtract|closeout|close out/i.test(String(t._type+' '+t._note));}
+  function displayQty(t){
+    if(t._unit==='g'||/gram|g\b/i.test(String(t._unit))) return (num(t._qty)<0?'-':'')+grams(Math.abs(num(t._qty)));
+    return String(t._qty||'').match(/^-?\d/)?`${num(t._qty)>0?'+':''}${Math.round(num(t._qty)*100)/100} ${esc(t._unit||'units')}`:esc(t._qty||'change');
+  }
+  let traceState={items:[],selected:null,loaded:false,error:'',query:'',type:'all',source:'all'};
+  async function loadTransactions(){
+    const data=baseData(); let cloud=[];
+    try{cloud=await api('/rest/v1/inventory_transactions?select=*&order=created_at.desc&limit=250');traceState.error='';}
+    catch(e){traceState.error=e.message||'Cloud trace unavailable';}
+    const local=(data.localLedger||[]).map(normalizeLocal);
+    const seen=new Set();
+    const merged=[...(cloud||[]).map(normalizeCloud),...local].filter(t=>{
+      const key=[t.id,t._date,t._type,t._item,t._qty,t._source].join('|');
+      if(seen.has(key))return false; seen.add(key); return true;
+    }).map(t=>{const j=findJob(t,data);return {...t,_class:classify(t),_isDeduction:isDeduction(t),_job:j,_customer:j?.customer_name||j?.customer||t.customer_name||'',_link:j?jobLink(j):invLink(t)}}).sort((a,b)=>String(b._date).localeCompare(String(a._date)));
+    traceState.items=merged; traceState.loaded=true; if(!traceState.selected&&merged[0]) traceState.selected=merged[0];
+  }
+  function filtered(){return traceState.items.filter(t=>{
+    const q=norm(traceState.query); const hay=norm([t._item,t._type,t._source,t._note,t._customer,t.order_ref,t.quote_ref,t.job_id,t.production_job_id,t._job&&jobName(t._job)].join(' '));
+    const typeOk=traceState.type==='all'||(traceState.type==='deductions'?t._isDeduction:t._class===traceState.type);
+    const sourceOk=traceState.source==='all'||t._origin===traceState.source;
+    return (!q||hay.includes(q))&&typeOk&&sourceOk;
+  })}
+  function icon(t){if(t._class==='production')return '🏭';if(t._class==='manual')return '✍️';if(t._class==='sync')return '☁️';if(t._isDeduction)return '−';return '↕'}
+  function row(t,i){
+    const cls=t._class==='production'?'green':t._class==='manual'?'amber':t._isDeduction?'red':'';
+    const when=t._date?new Date(t._date).toLocaleString([], {month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'}):'No date';
+    const ref=t._job?jobName(t._job):(t._source||t.order_ref||t.quote_ref||t.reference_id||'Inventory record');
+    return '<a href="#erpInventoryTraceabilityV1" class="trace-row" data-trace-index="'+i+'"><span class="trace-icon '+cls+'">'+esc(icon(t))+'</span><span><strong>'+esc(t._item)+'</strong><small>'+esc(ref)+' · '+esc(when)+'</small><span class="trace-pill-strip"><b class="erp-mini-pill '+(t._isDeduction?'red':'green')+'">'+displayQty(t)+'</b><b class="erp-mini-pill '+(t._class==='production'?'green':t._class==='manual'?'warn':'')+'">'+esc(t._class)+'</b><b class="erp-mini-pill">'+esc(t._origin)+'</b></span></span><b class="erp-chip '+(cls||'')+'">Trace</b></a>';
+  }
+  function skeleton(){
+    const consoleEl=$('erpConsole'); if(!consoleEl||$('erpInventoryTraceabilityV1'))return;
+    const after=$('erpPurchasePlannerV2')||$('erpSchedulerEngineV1')||$('erpActionCenterV2')||consoleEl.firstElementChild;
+    (after||consoleEl).insertAdjacentHTML(after?'afterend':'afterbegin',[
+      '<section class="erp-panel erp-section-anchor" id="erpInventoryTraceabilityV1">',
+        '<div class="erp-panel-head"><div><h2>Inventory Traceability</h2><p>See what changed inventory, which job caused it, and where to investigate.</p></div><span class="erp-chip green">Audit Trail</span></div>',
+        '<div class="trace-kpi-grid" id="traceKpis"></div>',
+        '<div class="trace-toolbar"><input id="traceSearch" placeholder="Search material, job, OP number, customer..."><select id="traceType"><option value="all">All movement</option><option value="deductions">Deductions only</option><option value="production">Production use</option><option value="manual">Manual adjustments</option><option value="sync">Imports / sync</option></select><select id="traceSource"><option value="all">Cloud + local</option><option value="cloud">Cloud only</option><option value="local">Local only</option></select><button class="ghost" id="traceRefreshBtn" type="button">Refresh</button></div>',
+        '<div class="trace-grid"><div><div class="trace-list" id="traceList"></div></div><aside class="trace-detail-panel" id="traceDetail"></aside></div>',
+      '</section>'
+    ].join(''));
+    const nav=document.querySelector('.engine-nav');
+    if(nav && !nav.querySelector('a[href="#erpInventoryTraceabilityV1"]')) nav.insertAdjacentHTML('afterbegin','<a href="#erpInventoryTraceabilityV1">🔎 Traceability</a>');
+    $('traceSearch')?.addEventListener('input',e=>{traceState.query=e.target.value;renderTrace(false)});
+    $('traceType')?.addEventListener('change',e=>{traceState.type=e.target.value;renderTrace(false)});
+    $('traceSource')?.addEventListener('change',e=>{traceState.source=e.target.value;renderTrace(false)});
+    $('traceRefreshBtn')?.addEventListener('click',()=>boot(true));
+    $('traceList')?.addEventListener('click',e=>{const a=e.target.closest('[data-trace-index]'); if(!a)return; e.preventDefault(); const list=filtered(); traceState.selected=list[Number(a.dataset.traceIndex)]||list[0]||null; renderTrace(false);});
+  }
+  function detail(t){
+    if(!t)return '<h3>No movement selected</h3><div class="trace-empty">Select a movement line to inspect the source record.</div>';
+    const j=t._job; const fields=[
+      ['Item',t._item],['Change',displayQty(t)],['Type',t._type],['Source',t._source||'Not provided'],['Date',t._date?new Date(t._date).toLocaleString():'No date'],['Origin',t._origin],['Note',t._note||'No note'],['Linked job',j?jobName(j):'No matching production job found']
+    ];
+    return '<h3>'+esc(t._item)+'</h3><p style="color:#95a9cc!important;margin:0;line-height:1.38">'+esc(j?'This movement is linked to a production job record.':'No production job link was found. It may be a manual adjustment, import, or legacy transaction.')+'</p><div class="trace-detail-body">'+fields.map(f=>'<div class="trace-detail-card"><span>'+esc(f[0])+'</span><strong>'+f[1]+'</strong></div>').join('')+'</div><div class="trace-action-row"><a class="erp-chip green" href="'+esc(t._link)+'">'+esc(j?'Open Production Job':'Open Inventory')+'</a><a class="erp-chip" href="inventory-control.html#ledgerPanel">Movement Log</a></div>';
+  }
+  function renderTrace(updateInputs=true){
+    skeleton();
+    const list=filtered(); const deductions=traceState.items.filter(t=>t._isDeduction).length, production=traceState.items.filter(t=>t._class==='production').length, manual=traceState.items.filter(t=>t._class==='manual').length, cloud=traceState.items.filter(t=>t._origin==='cloud').length;
+    if($('traceKpis')) $('traceKpis').innerHTML=['<div class="trace-kpi"><span>Total movements</span><strong>'+traceState.items.length+'</strong></div>','<div class="trace-kpi"><span>Deductions</span><strong>'+deductions+'</strong></div>','<div class="trace-kpi"><span>Production linked</span><strong>'+production+'</strong></div>','<div class="trace-kpi"><span>Cloud rows</span><strong>'+cloud+'</strong></div>'].join('');
+    if(updateInputs){if($('traceSearch'))$('traceSearch').value=traceState.query;if($('traceType'))$('traceType').value=traceState.type;if($('traceSource'))$('traceSource').value=traceState.source;}
+    if($('traceList')) $('traceList').innerHTML=(traceState.error?'<div class="trace-empty">Cloud trace warning: '+esc(traceState.error)+' — showing local data if available.</div>':'')+(list.slice(0,80).map(row).join('')||'<div class="trace-empty">No inventory movements match the current filters.</div>');
+    if(traceState.selected && !list.includes(traceState.selected)) traceState.selected=list[0]||null;
+    if($('traceDetail')) $('traceDetail').innerHTML=detail(traceState.selected);
+  }
+  async function boot(force){skeleton(); if(force||!traceState.loaded){await loadTransactions();} renderTrace();}
+  document.addEventListener('DOMContentLoaded',()=>boot(false));
+  window.addEventListener('olipoly-auth-changed',()=>boot(true));
+  const old=window.fullRender;
+  if(typeof old==='function' && !old.__traceabilityWrapped){window.fullRender=async function(){const r=await old.apply(this,arguments);boot(false);return r};window.fullRender.__traceabilityWrapped=true;}
+})();
+</script>
+
 </body>
 </html>
