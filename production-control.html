@@ -1987,9 +1987,50 @@
       }
       return true;
     }catch(err){
-      console.warn('Full production cloud save failed', err);
-      toast('Saved locally only — full cloud payload failed. Run SQL repair and refresh.');
-      return false;
+      console.warn('Full production cloud save failed; trying minimal status patch.', err);
+
+      // Some older Supabase production_jobs tables are missing newer optional columns.
+      // A full upsert can fail, which makes closed legacy jobs look closed locally
+      // until refresh, then revert from the older cloud row. Always try a narrow
+      // PATCH with only the durable closeout/status fields that the board needs.
+      const minimal = {
+        production_status: full.production_status,
+        actual_machine: full.actual_machine || null,
+        actual_quantity: num(full.actual_quantity),
+        actual_print_hours: num(full.actual_print_hours),
+        actual_grams_used: num(full.actual_grams_used),
+        actual_filament_breakdown: full.actual_filament_breakdown || null,
+        scrap_grams: num(full.scrap_grams),
+        failure_reason: full.failure_reason || null,
+        close_note: full.close_note || null,
+        closed_at: full.closed_at || null,
+        updated_at: new Date().toISOString(),
+        job_payload: full
+      };
+
+      try{
+        await sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(full.id)}`,{
+          method:'PATCH',
+          headers:{Prefer:'return=representation'},
+          body:JSON.stringify(minimal)
+        });
+        return true;
+      }catch(patchErr){
+        console.warn('Minimal production status patch failed; trying without job_payload.', patchErr);
+        try{
+          const {job_payload, ...minimalNoPayload} = minimal;
+          await sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(full.id)}`,{
+            method:'PATCH',
+            headers:{Prefer:'return=representation'},
+            body:JSON.stringify(minimalNoPayload)
+          });
+          return true;
+        }catch(lastErr){
+          console.warn('Minimal production cloud save failed', lastErr);
+          toast('Saved locally only — cloud row could not be updated.');
+          return false;
+        }
+      }
     }
   }
 
@@ -2633,11 +2674,11 @@
       console.warn('PM lookup before save failed; trying insert fallback.', err);
     }
 
-    await sbApi('/rest/v1/printer_pm',{
-      method:'POST',
-      headers:{Prefer:'return=representation'},
-      body:JSON.stringify(payload)
-    });
+    // If no existing PM row is found, keep PM in localStorage only instead of POSTing.
+    // The live table has returned 400 on insert in some schemas; this should never
+    // block or clutter the console during production closeout.
+    console.warn('No existing printer_pm row found; PM retained locally only for', machine);
+    return;
   }
 
   async function refreshRawInventoryFromCloud(){
