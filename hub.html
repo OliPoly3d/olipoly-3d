@@ -4799,5 +4799,541 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
 })();
 </script>
 
+
+<!-- === OliPoly ERP Upgrade: Production Scheduler Engine === -->
+<style id="olipolyProductionSchedulerEngineStyles">
+  body.erp-mode .erp-scheduler-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+    gap:12px;
+    margin-top:14px;
+  }
+  body.erp-mode .scheduler-hero{
+    position:relative;
+    overflow:hidden;
+    min-height:210px;
+    border-radius:24px;
+    padding:18px;
+    background:linear-gradient(145deg,rgba(31,49,88,.94),rgba(8,14,29,.86));
+    border:1px solid rgba(57,215,255,.24);
+    box-shadow:0 18px 48px rgba(0,0,0,.30),0 0 42px rgba(57,215,255,.08);
+  }
+  body.erp-mode .scheduler-hero::before{
+    content:"";
+    position:absolute;
+    inset:0 0 auto 0;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(57,215,255,.72),rgba(53,241,162,.42),transparent);
+  }
+  body.erp-mode .scheduler-hero h3{
+    margin:9px 0 7px;
+    color:#fff;
+    font-size:clamp(1.55rem,3vw,2.25rem);
+    line-height:.98;
+    letter-spacing:-.045em;
+  }
+  body.erp-mode .scheduler-hero p{
+    margin:0;
+    color:#9fb2d6;
+    line-height:1.42;
+    max-width:760px;
+  }
+  body.erp-mode .scheduler-score-ring{
+    width:92px;
+    height:92px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    background:
+      radial-gradient(circle at center,#08101f 0 54%,transparent 55%),
+      conic-gradient(var(--engine-green) 0 var(--scoreDeg,70%),rgba(255,255,255,.08) var(--scoreDeg,70%) 100%);
+    border:1px solid rgba(53,241,162,.22);
+    box-shadow:0 0 28px rgba(53,241,162,.14);
+    color:#fff;
+    font-weight:950;
+  }
+  body.erp-mode .scheduler-hero-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+  }
+  body.erp-mode .scheduler-hero-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:14px;
+  }
+  body.erp-mode .scheduler-reason-list{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  body.erp-mode .scheduler-ranked-list,
+  body.erp-mode .scheduler-machine-list,
+  body.erp-mode .scheduler-blocker-list{
+    display:grid;
+    gap:9px;
+  }
+  body.erp-mode .scheduler-row{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+    padding:11px;
+    border-radius:17px;
+    background:linear-gradient(145deg,rgba(25,38,68,.82),rgba(10,17,34,.72));
+    border:1px solid rgba(129,151,255,.15);
+    color:#eaf0ff;
+    text-decoration:none;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+  }
+  body.erp-mode .scheduler-row:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.24)}
+  body.erp-mode .scheduler-rank{
+    width:38px;
+    height:38px;
+    border-radius:15px;
+    display:grid;
+    place-items:center;
+    color:#fff;
+    font-weight:950;
+    background:linear-gradient(135deg,#7c4dff,#27d7ff);
+    box-shadow:0 0 22px rgba(57,215,255,.18);
+  }
+  body.erp-mode .scheduler-rank.red{background:linear-gradient(135deg,#ff5576,#ff58c7)!important}
+  body.erp-mode .scheduler-rank.amber{background:linear-gradient(135deg,#ffbf4d,#ff7a4d)!important}
+  body.erp-mode .scheduler-rank.green{background:linear-gradient(135deg,#35f1a2,#39d7ff)!important}
+  body.erp-mode .scheduler-row strong{display:block;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.94rem}
+  body.erp-mode .scheduler-row small{display:block;color:#95a9cc;margin-top:3px;line-height:1.32;font-size:.76rem}
+  body.erp-mode .scheduler-machine-card{
+    padding:12px;
+    border-radius:18px;
+    background:rgba(7,13,26,.56);
+    border:1px solid rgba(129,151,255,.12);
+  }
+  body.erp-mode .scheduler-machine-head{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  body.erp-mode .scheduler-machine-head strong{color:#fff}
+  body.erp-mode .scheduler-machine-head small{color:#95a9cc;font-weight:850}
+  body.erp-mode .scheduler-util-bar{
+    height:10px;
+    border-radius:999px;
+    background:rgba(255,255,255,.08);
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.06);
+  }
+  body.erp-mode .scheduler-util-fill{
+    height:100%;
+    border-radius:999px;
+    width:0%;
+    background:linear-gradient(90deg,var(--engine-purple),var(--engine-cyan));
+    box-shadow:0 0 18px rgba(57,215,255,.25);
+  }
+  body.erp-mode .scheduler-util-fill.warn{background:linear-gradient(90deg,var(--engine-amber),#ff7a4d)}
+  body.erp-mode .scheduler-util-fill.good{background:linear-gradient(90deg,#27d17f,var(--engine-green))}
+  body.erp-mode .scheduler-mini-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;
+    margin-top:12px;
+  }
+  body.erp-mode .scheduler-mini-metric{
+    padding:10px;
+    border-radius:16px;
+    background:rgba(7,13,26,.62);
+    border:1px solid rgba(129,151,255,.12);
+  }
+  body.erp-mode .scheduler-mini-metric span{
+    display:block;
+    color:#95a9cc;
+    font-size:.62rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+  }
+  body.erp-mode .scheduler-mini-metric strong{
+    display:block;
+    color:#fff;
+    margin-top:4px;
+    font-size:1.15rem;
+  }
+  @media(max-width:980px){
+    body.erp-mode .erp-scheduler-grid{grid-template-columns:1fr}
+    body.erp-mode .scheduler-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(max-width:640px){
+    body.erp-mode .scheduler-hero-top{display:block}
+    body.erp-mode .scheduler-score-ring{margin-top:12px}
+    body.erp-mode .scheduler-row{grid-template-columns:auto minmax(0,1fr)}
+    body.erp-mode .scheduler-row .erp-chip{grid-column:2;justify-self:start}
+    body.erp-mode .scheduler-mini-grid{grid-template-columns:1fr}
+  }
+</style>
+
+<script id="olipolyProductionSchedulerEngineScript">
+(function(){
+  'use strict';
+
+  function $(id){return document.getElementById(id);}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+  function read(k,f){try{return JSON.parse(localStorage.getItem(k)||'null')||f||[]}catch(e){return f||[]}}
+  function grams(v){var n=Number(v)||0;return n>=1000?(n/1000).toFixed(2).replace(/\.00$/,'')+'kg':Math.round(n)+'g'}
+  function dueDays(date){if(!date)return 999;var d=new Date(date);if(isNaN(d.getTime()))return 999;return Math.ceil((d.getTime()-Date.now())/86400000);}
+  function jobHours(j){return Number(j?.machine_hours||j?.estimated_hours||j?.estimated_total_hours||j?.hours||j?.print_hours||0)||0;}
+  function statusOf(j){return String(j?.production_status||j?.status||'').toLowerCase().trim();}
+  function isClosed(j){return ['closed','completed','archived','failed_scrap','cancelled','canceled'].indexOf(statusOf(j))>=0;}
+  function linkJob(j){var key=j?.id||j?.job_title||j?.order_ref||j?.order_number||'';return key?'production-control.html?job='+encodeURIComponent(key):'production-control.html';}
+  function linkInv(x){var key=[x?.material_type||x?.material,x?.color||x?.color_name,x?.brand||x?.item_name||x?.name].filter(Boolean).join(' ');return key?'inventory-control.html?inventory='+encodeURIComponent(key):'inventory-control.html';}
+  function machineName(j){return String(j?.actual_machine||j?.machine_name||j?.machine_preference||j?.printer||j?.preferred_machine||'Unassigned').trim()||'Unassigned';}
+  function combined(){
+    var d=typeof combinedData==='function'?combinedData():{};
+    return {
+      jobs:Array.isArray(d.jobs)?d.jobs:read('olipoly_production_jobs_v3',[]),
+      raw:Array.isArray(d.raw)?d.raw:read('olipoly_raw_material_inventory_v3',[]),
+      supplies:Array.isArray(d.supplies)?d.supplies:read('olipoly_non_filament_supplies_v1',[])
+    };
+  }
+  function materialKey(parts){return parts.filter(Boolean).map(function(x){return String(x).toLowerCase().trim();}).join('|');}
+  function rawGroups(raw){
+    var m={};
+    (raw||[]).forEach(function(r){
+      var k=materialKey([r.material_type||r.material,r.color||r.color_name,r.brand]);
+      if(!k)return;
+      if(!m[k])m[k]={material_type:r.material_type||r.material||'',color:r.color||r.color_name||'',brand:r.brand||'',available:0,threshold:0,rolls:0};
+      m[k].available+=Number(r.remaining_grams||r.remaining||r.grams||0)||0;
+      m[k].threshold=Math.max(m[k].threshold,Number(r.reorder_threshold_grams||r.reorder_threshold||r.threshold||0)||0);
+      m[k].rolls+=1;
+    });
+    return m;
+  }
+  function parseNeedLine(line){
+    var s=String(line||'').trim();
+    if(!s)return null;
+    var gm=s.match(/(-?\d+(?:\.\d+)?)\s*g\b/i);
+    var kg=s.match(/(-?\d+(?:\.\d+)?)\s*kg\b/i);
+    var qty=gm?Number(gm[1]):kg?Number(kg[1])*1000:0;
+    var clean=s.replace(/[-–—:]?\s*-?\d+(?:\.\d+)?\s*(kg|g)\b/ig,' ').replace(/\s+/g,' ').trim();
+    var bits=clean.split(/[\/|,]/).map(function(x){return x.trim();}).filter(Boolean);
+    return {material_type:bits[0]||clean||'',color:bits[1]||'',brand:bits[2]||'',grams:qty,label:clean||s};
+  }
+  function jobNeeds(j){
+    var out=[];
+    if(Array.isArray(j.filament_recipe)){
+      j.filament_recipe.forEach(function(n){out.push({material_type:n.material_type||n.material||'',color:n.color||n.color_name||'',brand:n.brand||'',grams:Number(n.grams||n.total_grams||n.grams_per_item||0)*(Number(j.quantity||j.qty||1)||1),label:[n.material_type||n.material,n.color||n.color_name,n.brand].filter(Boolean).join(' / ')});});
+    }
+    if(typeof j.filament_recipe==='string'){
+      j.filament_recipe.split(/\n|;/).forEach(function(line){var p=parseNeedLine(line); if(p) out.push(p);});
+    }
+    ['material_recipe','recipe','materials_needed','filament_notes'].forEach(function(k){
+      if(typeof j[k]==='string') j[k].split(/\n|;/).forEach(function(line){var p=parseNeedLine(line); if(p) out.push(p);});
+    });
+    if(!out.length && (j.material_type||j.color||j.grams_per_item||j.total_grams||j.estimated_grams)){
+      out.push({material_type:j.material_type||j.material||'Material',color:j.color||j.color_name||'',brand:j.brand||'',grams:Number(j.total_grams||j.estimated_grams||j.grams_per_item||0)*(Number(j.quantity||j.qty||1)||1),label:[j.material_type||j.material,j.color||j.color_name,j.brand].filter(Boolean).join(' / ')});
+    }
+    return out.filter(function(n){return n.material_type||n.color||n.label;});
+  }
+  function materialStatus(j, groups){
+    var needs=jobNeeds(j), shortage=0, unknown=0, labels=[];
+    needs.forEach(function(n){
+      var keys=[
+        materialKey([n.material_type,n.color,n.brand]),
+        materialKey([n.material_type,n.color]),
+        materialKey([n.material_type])
+      ];
+      var g=null;
+      for(var i=0;i<keys.length;i++){ if(groups[keys[i]]){g=groups[keys[i]];break;} }
+      if(!g){ unknown++; labels.push((n.label||[n.material_type,n.color].filter(Boolean).join(' '))+' unknown'); return; }
+      var need=Number(n.grams)||0;
+      if(need>0 && g.available<need){shortage+=need-g.available; labels.push((n.label||g.material_type+' '+g.color)+' short '+grams(need-g.available));}
+    });
+    return {needs:needs,shortage:shortage,unknown:unknown,labels:labels,ok:shortage<=0};
+  }
+  function rankJobs(){
+    var d=combined();
+    var groups=rawGroups(d.raw);
+    return (d.jobs||[]).filter(function(j){return !isClosed(j);}).map(function(j){
+      var status=statusOf(j), days=dueDays(j.due_date||j.due||j.target_date), hours=jobHours(j), ms=materialStatus(j,groups), machine=machineName(j);
+      var score=20, reasons=[];
+      if(status==='printing'){score+=65;reasons.push('already printing');}
+      else if(status.indexOf('post')>=0){score+=55;reasons.push('ready for post-print');}
+      else if(status.indexOf('scheduled')>=0){score+=45;reasons.push('scheduled');}
+      else if(status.indexOf('accepted')>=0 || status.indexOf('ready')>=0){score+=35;reasons.push('accepted/ready');}
+      if(days<=0){score+=45;reasons.push('due now/overdue');}
+      else if(days<=1){score+=38;reasons.push('due tomorrow');}
+      else if(days<=3){score+=28;reasons.push('due in '+days+' days');}
+      else if(days<=7){score+=16;reasons.push('due this week');}
+      if(String(j.priority||'').toLowerCase().includes('urgent')){score+=24;reasons.push('urgent priority');}
+      else if(String(j.priority||'').toLowerCase().includes('high')){score+=14;reasons.push('high priority');}
+      if(ms.shortage>0){score-=60;reasons.push('blocked by '+grams(ms.shortage));}
+      else if(ms.needs.length){score+=10;reasons.push('materials available');}
+      else if(ms.unknown){score-=8;reasons.push('material check needed');}
+      if(hours>0 && hours<=3){score+=7;reasons.push('quick print');}
+      if(machine && machine!=='Unassigned') score+=5;
+      var level=ms.shortage>0?'red':days<=1?'amber':'green';
+      return {job:j,score:Math.max(0,Math.round(score)),reasons:reasons.slice(0,5),material:ms,machine:machine,hours:hours,days:days,level:level};
+    }).sort(function(a,b){return b.score-a.score;});
+  }
+  function schedulerSkeleton(){
+    var consoleEl=$('erpConsole'); if(!consoleEl)return;
+    if($('erpSchedulerEngineV1'))return;
+    var after=$('erpActionCenterV2')||consoleEl.firstElementChild;
+    (after||consoleEl).insertAdjacentHTML(after?'afterend':'afterbegin',[
+      '<section class="erp-panel erp-section-anchor" id="erpSchedulerEngineV1">',
+        '<div class="erp-panel-head"><div><h2>Production Scheduler Engine</h2><p>Ranked print queue by due date, status, machine load, material availability, and priority.</p></div><span class="erp-chip">Scheduler</span></div>',
+        '<div class="erp-scheduler-grid">',
+          '<div>',
+            '<div class="scheduler-hero" id="schedulerHero"></div>',
+            '<div class="scheduler-mini-grid" id="schedulerMiniMetrics"></div>',
+          '</div>',
+          '<div class="scheduler-ranked-list" id="schedulerRankedList"></div>',
+        '</div>',
+        '<div class="erp-scheduler-grid">',
+          '<div class="engine-data-panel"><h3>Machine Load</h3><div class="scheduler-machine-list" id="schedulerMachineLoad"></div></div>',
+          '<div class="engine-data-panel"><h3>Blocked / Needs Review</h3><div class="scheduler-blocker-list" id="schedulerBlockers"></div></div>',
+        '</div>',
+      '</section>'
+    ].join(''));
+    var nav=document.querySelector('.engine-nav');
+    if(nav && !nav.querySelector('a[href="#erpSchedulerEngineV1"]')) nav.insertAdjacentHTML('afterbegin','<a href="#erpSchedulerEngineV1">🧠 Scheduler</a>');
+  }
+  function row(r,i){
+    var j=r.job;
+    var sub=[j.production_status||j.status||'open',r.machine,r.days<999?(r.days<=0?'due now':'due in '+r.days+'d'):'no due date',r.hours?((Math.round(r.hours*10)/10)+'h'):'hours n/a'].filter(Boolean).join(' · ');
+    var tag=r.material.shortage>0?'Blocked':r.score>=80?'Print Next':'Queue';
+    return '<a class="scheduler-row" href="'+esc(linkJob(j))+'"><span class="scheduler-rank '+esc(r.level)+'">#'+(i+1)+'</span><span><strong>'+esc(j.job_title||j.title||j.order_ref||'Production job')+'</strong><small>'+esc(sub)+'</small><span class="scheduler-reason-list">'+r.reasons.map(function(x){return '<b class="erp-mini-pill '+(x.indexOf('blocked')>=0?'red':x.indexOf('due')>=0?'warn':'')+'">'+esc(x)+'</b>';}).join('')+'</span></span><b class="erp-chip '+esc(r.level)+'">'+esc(tag)+'</b></a>';
+  }
+  function machineLoad(ranked){
+    var m={};
+    ranked.forEach(function(r){var name=r.machine||'Unassigned'; if(!m[name])m[name]={hours:0,count:0,urgent:0}; m[name].hours+=r.hours||0; m[name].count++; if(r.days<=3)m[name].urgent++;});
+    ['P2S','P1S','Unassigned'].forEach(function(name){if(!m[name])m[name]={hours:0,count:0,urgent:0};});
+    return Object.keys(m).sort(function(a,b){return (m[b].hours+m[b].urgent*2)-(m[a].hours+m[a].urgent*2);}).map(function(name){var x=m[name], pct=Math.min(100,Math.round((x.hours/24)*100)); return '<div class="scheduler-machine-card"><div class="scheduler-machine-head"><strong>'+esc(name)+'</strong><small>'+esc((Math.round(x.hours*10)/10)+'h · '+x.count+' job(s)')+'</small></div><div class="scheduler-util-bar"><div class="scheduler-util-fill '+(pct>80?'warn':pct<35?'good':'')+'" style="width:'+pct+'%"></div></div></div>';}).join('');
+  }
+  function renderScheduler(){
+    schedulerSkeleton();
+    var ranked=rankJobs();
+    var next=ranked[0];
+    var hero=$('schedulerHero');
+    if(hero){
+      if(next){
+        var j=next.job, scoreDeg=Math.min(100,next.score)+'%';
+        hero.style.setProperty('--scoreDeg',scoreDeg);
+        hero.innerHTML=[
+          '<div class="scheduler-hero-top"><div><span class="erp-mini-pill '+(next.level==='red'?'red':next.level==='amber'?'warn':'green')+'">Recommended first action</span><h3>'+esc(next.material.shortage>0?'Resolve material block: '+(j.job_title||'Production job'):'Print / advance: '+(j.job_title||'Production job'))+'</h3><p>'+esc(next.material.shortage>0?('Short '+grams(next.material.shortage)+' before this job can safely run. Open the job or inventory record to resolve it.'):('Best current queue candidate based on due date, status, priority, material readiness, and machine assignment.'))+'</p></div><div class="scheduler-score-ring"><div><strong>'+esc(next.score)+'</strong><small>score</small></div></div></div>',
+          '<div class="scheduler-reason-list">'+next.reasons.map(function(x){return '<b class="erp-mini-pill '+(x.indexOf('blocked')>=0?'red':x.indexOf('due')>=0?'warn':'green')+'">'+esc(x)+'</b>';}).join('')+'</div>',
+          '<div class="scheduler-hero-actions"><span class="erp-mini-pill">'+esc(next.machine)+' · '+esc(next.hours?((Math.round(next.hours*10)/10)+'h'):'hours n/a')+'</span><a class="erp-chip '+esc(next.level)+'" href="'+esc(linkJob(j))+'">Open Job</a></div>'
+        ].join('');
+      }else{
+        hero.innerHTML='<span class="erp-mini-pill green">Queue clear</span><h3>No open production jobs found.</h3><p>Create or accept a job, then the scheduler will rank it automatically.</p>';
+      }
+    }
+    var open=ranked.length, blocked=ranked.filter(function(r){return r.material.shortage>0;}).length, dueSoon=ranked.filter(function(r){return r.days<=3;}).length, hours=ranked.reduce(function(s,r){return s+(r.hours||0);},0);
+    if($('schedulerMiniMetrics')) $('schedulerMiniMetrics').innerHTML=[
+      '<div class="scheduler-mini-metric"><span>Open jobs</span><strong>'+open+'</strong></div>',
+      '<div class="scheduler-mini-metric"><span>Due ≤ 3 days</span><strong>'+dueSoon+'</strong></div>',
+      '<div class="scheduler-mini-metric"><span>Blocked</span><strong>'+blocked+'</strong></div>',
+      '<div class="scheduler-mini-metric"><span>Queued hours</span><strong>'+Math.round(hours*10)/10+'</strong></div>'
+    ].join('');
+    if($('schedulerRankedList')) $('schedulerRankedList').innerHTML=ranked.slice(0,8).map(row).join('')||'<div class="empty-note">No ranked jobs yet.</div>';
+    if($('schedulerMachineLoad')) $('schedulerMachineLoad').innerHTML=machineLoad(ranked);
+    if($('schedulerBlockers')) $('schedulerBlockers').innerHTML=ranked.filter(function(r){return r.material.shortage>0||r.material.unknown>0;}).slice(0,8).map(function(r,i){return row(r,i);}).join('')||'<div class="empty-note">No material-blocked jobs found.</div>';
+  }
+  function boot(){renderScheduler();setTimeout(renderScheduler,800);setTimeout(renderScheduler,2400);}
+  document.addEventListener('DOMContentLoaded',boot);
+  window.addEventListener('olipoly-auth-changed',boot);
+  var old=window.fullRender;
+  if(typeof old==='function' && !old.__schedulerWrapped){
+    window.fullRender=async function(){var result=await old.apply(this,arguments);renderScheduler();return result;};
+    window.fullRender.__schedulerWrapped=true;
+  }
+})();
+</script>
+
+<style id="olipolyPurchasePlannerV2Styles">
+  body.erp-mode .purchase-planner-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:12px;margin-top:12px}
+  body.erp-mode .purchase-hero{padding:14px;border-radius:22px;background:linear-gradient(145deg,rgba(31,45,82,.92),rgba(12,20,40,.82));border:1px solid rgba(129,151,255,.16);box-shadow:0 14px 34px rgba(0,0,0,.22)}
+  body.erp-mode .purchase-hero h3{margin:8px 0 6px;color:#fff;font-family:"Playfair Display",serif;font-size:1.45rem;line-height:1.05}
+  body.erp-mode .purchase-hero p{color:#95a9cc!important;line-height:1.38;font-size:.86rem!important}
+  body.erp-mode .purchase-action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+  body.erp-mode .purchase-card-list{display:grid;gap:10px}
+  body.erp-mode .purchase-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:18px;background:linear-gradient(145deg,rgba(25,38,68,.82),rgba(10,17,34,.72));border:1px solid rgba(129,151,255,.15);color:#eaf0ff;text-decoration:none;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  body.erp-mode .purchase-row:hover{border-color:rgba(36,215,255,.22);box-shadow:0 0 28px rgba(36,215,255,.07);transform:translateY(-1px)}
+  body.erp-mode .purchase-icon{width:40px;height:40px;border-radius:16px;display:grid;place-items:center;color:#fff;font-weight:950;background:linear-gradient(135deg,#ffbf4d,#ff4fc3);box-shadow:0 0 22px rgba(255,191,77,.18)}
+  body.erp-mode .purchase-icon.red{background:linear-gradient(135deg,#ff4f78,#ff4fc3)}
+  body.erp-mode .purchase-icon.green{background:linear-gradient(135deg,#34f0a0,#24d7ff)}
+  body.erp-mode .purchase-row strong{display:block;color:#fff;font-size:.93rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.erp-mode .purchase-row small{display:block;color:#95a9cc;margin-top:3px;line-height:1.32;font-size:.76rem}
+  body.erp-mode .purchase-pill-strip{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  body.erp-mode .purchase-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+  body.erp-mode .purchase-kpi{padding:12px;border-radius:18px;background:rgba(7,13,26,.56);border:1px solid rgba(129,151,255,.12);min-height:92px}
+  body.erp-mode .purchase-kpi span{display:block;color:#95a9cc;font-size:.64rem;font-weight:950;letter-spacing:.07em;text-transform:uppercase}
+  body.erp-mode .purchase-kpi strong{display:block;color:#fff;font-size:1.35rem;margin-top:5px}
+  body.erp-mode .purchase-blocked-jobs{display:grid;gap:8px;margin-top:10px}
+  body.erp-mode .purchase-blocked-job{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px;border-radius:16px;background:rgba(7,13,26,.54);border:1px solid rgba(129,151,255,.12);text-decoration:none;color:inherit}
+  body.erp-mode .purchase-blocked-job strong{color:#fff;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.erp-mode .purchase-blocked-job small{display:block;color:#95a9cc;margin-top:2px;font-size:.72rem}
+  body.erp-mode .purchase-empty{padding:14px;border-radius:18px;background:rgba(7,13,26,.54);border:1px dashed rgba(129,151,255,.22);color:#8fa2c5;font-weight:850;line-height:1.4}
+  @media(max-width:980px){body.erp-mode .purchase-planner-grid{grid-template-columns:1fr}body.erp-mode .purchase-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:640px){body.erp-mode .purchase-row{grid-template-columns:auto minmax(0,1fr)}body.erp-mode .purchase-row>.erp-chip{grid-column:2;justify-self:start}body.erp-mode .purchase-kpi-grid{grid-template-columns:1fr}}
+</style>
+<script id="olipolyMaterialPurchasePlannerV2Script">
+(()=>{
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const num=v=>Number(v)||0;
+  const norm=v=>String(v||'').trim().toLowerCase();
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
+  const grams=v=>{const n=num(v);return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`;};
+  function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
+  function many(keys){for(const k of keys){const v=read(k,null);if(Array.isArray(v)&&v.length)return v;}return []}
+  function data(){
+    const d=window.__olipolyHubData||window.olipolyHubData||{};
+    return {
+      raw:Array.isArray(d.raw)?d.raw:many(['olipoly_raw_material_inventory_v3','olipoly_inventory_raw_v3','olipoly_inventory_raw_v2','raw_materials']),
+      supplies:Array.isArray(d.supplies)?d.supplies:many(['olipoly_non_filament_supplies_v1','olipoly_supplies_v1','non_filament_supplies']),
+      jobs:Array.isArray(d.jobs)?d.jobs:many(['olipoly_production_jobs_v3','olipoly_production_jobs_v2','olipoly_production_jobs','production_jobs'])
+    };
+  }
+  function matKey(parts){return parts.filter(Boolean).map(norm).join('|')}
+  function displayMaterial(x){return [x.material_type||x.material,x.color||x.color_name,x.brand].filter(Boolean).join(' / ')||x.label||'Material';}
+  function displaySupply(x){return x.item_name||x.name||x.item||x.label||'Supply';}
+  function rawGroups(raw){
+    const m={};
+    (raw||[]).forEach(r=>{
+      const status=norm(r.roll_status||r.status);
+      if(status==='retired'||status==='empty')return;
+      const keys=[matKey([r.material_type||r.material,r.color||r.color_name,r.brand]),matKey([r.material_type||r.material,r.color||r.color_name]),matKey([r.material_type||r.material])].filter(Boolean);
+      keys.forEach((k,i)=>{
+        if(!m[k])m[k]={kind:'raw',material_type:r.material_type||r.material||'',color:r.color||r.color_name||'',brand:i===0?(r.brand||''):'',available:0,threshold:0,costPerGram:0,reorderLink:'',reorderQty:0,rolls:0,label:i===0?displayMaterial(r):[r.material_type||r.material,r.color||r.color_name].filter(Boolean).join(' / ')};
+        if(i===0){m[k].available+=num(r.remaining_grams??r.remaining);m[k].threshold=Math.max(m[k].threshold,num(r.reorder_threshold_grams??r.reorder_threshold??r.threshold));m[k].rolls+=1;}
+        if(!m[k].costPerGram){const cost=num(r.cost_per_gram)||((num(r.spool_cost)||num(r.cost))/(num(r.starting_grams)||1000));m[k].costPerGram=cost||0;}
+        if(!m[k].reorderLink)m[k].reorderLink=r.reorder_link||r.supplier_link||'';
+        if(!m[k].reorderQty)m[k].reorderQty=num(r.reorder_qty||r.reorder_quantity||1)||1;
+      });
+    });
+    return m;
+  }
+  function supplyGroups(supplies){
+    const m={};
+    (supplies||[]).forEach(s=>{
+      const k=matKey([s.item_name||s.name||s.item,s.category]);
+      if(!k)return;
+      m[k]={kind:'supply',label:displaySupply(s),category:s.category||'',available:num(s.quantity_on_hand??s.qty_on_hand??s.qty),threshold:num(s.reorder_threshold??s.threshold),costPerUnit:num(s.cost_per_unit??s.unit_cost??s.cost),unit:s.unit_type||s.unit||'each',reorderLink:s.reorder_link||s.supplier_link||'',reorderQty:num(s.reorder_qty||s.reorder_quantity||1)||1};
+    });
+    return m;
+  }
+  function isClosed(j){return /closed|complete|completed|cancel/i.test(String(j.production_status||j.status||''));}
+  function jobName(j){return j.job_title||j.title||j.project_name||j.order_ref||j.order_number||j.quote_ref||'Production job'}
+  function jobQty(j){return num(j.quantity||j.qty)||1}
+  function jobLink(j){const key=j.id||j.production_job_id||j.order_ref||j.order_number||j.quote_ref||jobName(j);return 'production-control.html?job='+encodeURIComponent(key)}
+  function parseNeedLine(s){
+    const txt=String(s||'').trim(); if(!txt)return null;
+    const m=txt.match(/(.+?)(?:[:\-–])?\s*(\d+(?:\.\d+)?)\s*(g|gram|grams|ea|each|pcs|piece|pieces|pack|packs)?\b/i);
+    if(!m)return null;
+    const label=m[1].trim().replace(/[:\-–]$/,'');
+    const bits=label.split(/[\/|,]+/).map(x=>x.trim()).filter(Boolean);
+    return {label,material_type:bits[0]||label,color:bits[1]||'',brand:bits[2]||'',qty:num(m[2]),unit:(m[3]||'g').toLowerCase()};
+  }
+  function rawNeeds(j){
+    const out=[];
+    if(Array.isArray(j.filament_recipe)) j.filament_recipe.forEach(n=>out.push({label:[n.material_type||n.material,n.color||n.color_name,n.brand].filter(Boolean).join(' / '),material_type:n.material_type||n.material||'',color:n.color||n.color_name||'',brand:n.brand||'',qty:num(n.grams||n.total_grams||n.grams_per_item)*jobQty(j),unit:'g'}));
+    ['material_recipe','recipe','materials_needed','filament_notes'].forEach(k=>{const v=j[k]; if(typeof v==='string') v.split(/\n|;/).forEach(line=>{const n=parseNeedLine(line); if(n && (!n.unit || n.unit.startsWith('g'))) out.push({...n,qty:n.qty*jobQty(j),unit:'g'});});});
+    if(!out.length && (j.material_type||j.color||j.grams_per_item||j.total_grams||j.estimated_grams)) out.push({label:[j.material_type||j.material,j.color||j.color_name,j.brand].filter(Boolean).join(' / '),material_type:j.material_type||j.material||'Material',color:j.color||j.color_name||'',brand:j.brand||'',qty:num(j.total_grams||j.estimated_grams||j.grams_per_item)*jobQty(j),unit:'g'});
+    return out.filter(n=>n.qty>0 || n.label);
+  }
+  function supplyNeeds(j){
+    const out=[];
+    const arrays=[j.supply_usage,j.supplies_usage,j.non_filament_usage,j.non_filament_materials].filter(Array.isArray);
+    arrays.forEach(arr=>arr.forEach(n=>out.push({label:n.item_name||n.name||n.item||n.label||'Supply',category:n.category||'',qty:num(n.quantity||n.qty||n.amount||n.units)*jobQty(j),unit:n.unit_type||n.unit||'each'})));
+    ['supplies_needed','non_filament_notes','supply_notes'].forEach(k=>{const v=j[k]; if(typeof v==='string') v.split(/\n|;/).forEach(line=>{const n=parseNeedLine(line); if(n && !String(n.unit||'').startsWith('g')) out.push({label:n.label,category:'',qty:n.qty*jobQty(j),unit:n.unit||'each'});});});
+    return out.filter(n=>n.qty>0 || n.label);
+  }
+  function buildPlan(){
+    const d=data(), raw=rawGroups(d.raw), sup=supplyGroups(d.supplies), active=(d.jobs||[]).filter(j=>!isClosed(j));
+    const req={};
+    active.forEach(j=>{
+      rawNeeds(j).forEach(n=>{
+        const keys=[matKey([n.material_type,n.color,n.brand]),matKey([n.material_type,n.color]),matKey([n.material_type])].filter(Boolean); let k=keys.find(x=>raw[x])||keys[0]||matKey([n.label]);
+        if(!req['raw|'+k]) req['raw|'+k]={kind:'raw',key:k,label:n.label||[n.material_type,n.color,n.brand].filter(Boolean).join(' / '),needed:0,jobs:[],matched:raw[k]};
+        req['raw|'+k].needed+=num(n.qty); req['raw|'+k].jobs.push(j); if(!req['raw|'+k].matched && raw[k]) req['raw|'+k].matched=raw[k];
+      });
+      supplyNeeds(j).forEach(n=>{
+        const k=matKey([n.label,n.category]);
+        const existing=Object.keys(sup).find(x=>x.indexOf(norm(n.label))>=0||norm(sup[x].label)===norm(n.label));
+        const finalK=existing||k;
+        if(!req['supply|'+finalK]) req['supply|'+finalK]={kind:'supply',key:finalK,label:n.label,needed:0,jobs:[],matched:sup[finalK]};
+        req['supply|'+finalK].needed+=num(n.qty); req['supply|'+finalK].jobs.push(j); if(!req['supply|'+finalK].matched && sup[finalK]) req['supply|'+finalK].matched=sup[finalK];
+      });
+    });
+    Object.keys(raw).forEach(k=>{const g=raw[k]; if(k.split('|').length>2 && g.threshold>0 && g.available<=g.threshold){const id='raw|'+k; if(!req[id]) req[id]={kind:'raw',key:k,label:g.label,needed:0,jobs:[],matched:g,belowThreshold:true}; else req[id].belowThreshold=true;}});
+    Object.keys(sup).forEach(k=>{const g=sup[k]; if(g.threshold>0 && g.available<=g.threshold){const id='supply|'+k; if(!req[id]) req[id]={kind:'supply',key:k,label:g.label,needed:0,jobs:[],matched:g,belowThreshold:true}; else req[id].belowThreshold=true;}});
+    return Object.values(req).map(x=>{
+      const g=x.matched||{}; const available=num(g.available); const threshold=num(g.threshold); const needed=num(x.needed); const shortage=Math.max(0,needed-available); const reorderBase=x.kind==='raw'?1000:Math.max(1,num(g.reorderQty)||1); const buffer=x.kind==='raw'?Math.max(threshold,250):Math.max(threshold,0);
+      const buyNeed=Math.max(shortage, x.belowThreshold?Math.max(0,buffer+needed-available):0);
+      const suggested=x.kind==='raw'?Math.max(buyNeed?1:0,Math.ceil(buyNeed/reorderBase)):Math.max(buyNeed?1:0,Math.ceil(buyNeed/(num(g.reorderQty)||1))*(num(g.reorderQty)||1));
+      const estCost=x.kind==='raw'?suggested*1000*num(g.costPerGram||0):suggested*num(g.costPerUnit||0);
+      const risk=shortage>0?'red':x.belowThreshold?'amber':'green';
+      return {...x,available,threshold,needed,shortage,suggested,estCost,risk,reorderLink:g.reorderLink||'',unit:x.kind==='raw'?'g':(g.unit||'each')};
+    }).filter(x=>x.shortage>0||x.belowThreshold||x.needed>0).sort((a,b)=>({red:3,amber:2,green:1}[b.risk]-{red:3,amber:2,green:1}[a.risk])||(b.shortage-a.shortage)||(b.needed-a.needed));
+  }
+  function skeleton(){
+    const consoleEl=$('erpConsole'); if(!consoleEl||$('erpPurchasePlannerV2'))return;
+    const after=$('erpSchedulerEngineV1')||$('erpActionCenterV2')||consoleEl.firstElementChild;
+    (after||consoleEl).insertAdjacentHTML(after?'afterend':'afterbegin',[
+      '<section class="erp-panel erp-section-anchor" id="erpPurchasePlannerV2">',
+        '<div class="erp-panel-head"><div><h2>Material Purchase Planner</h2><p>Forecasts shortages from active jobs plus reorder thresholds so you know what to buy before production stalls.</p></div><span class="erp-chip amber">Planner</span></div>',
+        '<div class="purchase-kpi-grid" id="purchaseKpis"></div>',
+        '<div class="purchase-planner-grid">',
+          '<div><div class="purchase-hero" id="purchaseHero"></div><div class="purchase-card-list" id="purchaseList" style="margin-top:10px"></div></div>',
+          '<div class="engine-data-panel"><h3>Jobs at Risk</h3><div class="purchase-blocked-jobs" id="purchaseBlockedJobs"></div></div>',
+        '</div>',
+      '</section>'
+    ].join(''));
+    const nav=document.querySelector('.engine-nav');
+    if(nav && !nav.querySelector('a[href="#erpPurchasePlannerV2"]')) nav.insertAdjacentHTML('afterbegin','<a href="#erpPurchasePlannerV2">🛒 Purchase Plan</a>');
+  }
+  function row(x){
+    const url=x.reorderLink||('inventory-control.html?inventory='+encodeURIComponent(x.label||''));
+    const change=x.kind==='raw'?(`${grams(x.available)} on hand · ${grams(x.needed)} needed`):(`${x.available} ${esc(x.unit)} on hand · ${Math.round(x.needed*100)/100} needed`);
+    const rec=x.shortage>0?(x.kind==='raw'?`Short ${grams(x.shortage)}`:`Short ${Math.round(x.shortage*100)/100} ${x.unit}`):(x.belowThreshold?'Below threshold':'Needed soon');
+    const buy=x.kind==='raw'?`${x.suggested} roll${x.suggested===1?'':'s'} suggested`:`Buy ${Math.round(x.suggested*100)/100} ${x.unit}`;
+    return '<a class="purchase-row" href="'+esc(url)+'" target="'+(x.reorderLink?'_blank':'_self')+'"><span class="purchase-icon '+(x.risk==='red'?'red':x.risk==='green'?'green':'')+'">'+(x.kind==='raw'?'🧵':'🧰')+'</span><span><strong>'+esc(x.label||'Material')+'</strong><small>'+esc(change)+'</small><span class="purchase-pill-strip"><b class="erp-mini-pill '+(x.risk==='red'?'red':x.risk==='amber'?'warn':'green')+'">'+esc(rec)+'</b><b class="erp-mini-pill">'+esc(buy)+'</b><b class="erp-mini-pill">'+esc(x.estCost?money(x.estCost):'cost n/a')+'</b></span></span><b class="erp-chip '+(x.risk==='red'?'red':x.risk==='amber'?'amber':'green')+'">'+(x.reorderLink?'Order':'Open')+'</b></a>';
+  }
+  function render(){
+    skeleton();
+    const plan=buildPlan(), urgent=plan.filter(x=>x.risk==='red'), threshold=plan.filter(x=>x.risk==='amber'), spend=plan.reduce((s,x)=>s+(x.estCost||0),0), blockedJobs=[...new Map(urgent.flatMap(x=>x.jobs||[]).map(j=>[(j.id||j.order_ref||j.order_number||jobName(j)),j])).values()];
+    const k=$('purchaseKpis'); if(k) k.innerHTML=[
+      '<div class="purchase-kpi"><span>Items to review</span><strong>'+plan.length+'</strong></div>',
+      '<div class="purchase-kpi"><span>Blocking jobs</span><strong>'+blockedJobs.length+'</strong></div>',
+      '<div class="purchase-kpi"><span>Below threshold</span><strong>'+threshold.length+'</strong></div>',
+      '<div class="purchase-kpi"><span>Est. spend</span><strong>'+money(spend)+'</strong></div>'
+    ].join('');
+    const hero=$('purchaseHero'); if(hero){
+      const first=plan[0];
+      if(first) hero.innerHTML='<span class="erp-mini-pill '+(first.risk==='red'?'red':first.risk==='amber'?'warn':'green')+'">Top purchase action</span><h3>'+esc(first.shortage>0?'Buy before printing: '+first.label:'Reorder soon: '+first.label)+'</h3><p>'+esc(first.shortage>0?'Active jobs need more than you currently have. Buying this prevents production from stalling.':'This item is at or below its reorder threshold. Restock before it blocks upcoming work.')+'</p><div class="purchase-action-row"><span class="erp-mini-pill">'+esc(first.kind==='raw'?grams(first.available)+' available':first.available+' '+first.unit+' available')+'</span><span class="erp-mini-pill">'+esc(first.kind==='raw'?grams(first.needed)+' needed':Math.round(first.needed*100)/100+' needed')+'</span><a class="erp-chip amber" href="'+esc(first.reorderLink||'inventory-control.html?inventory='+encodeURIComponent(first.label||''))+'" '+(first.reorderLink?'target="_blank"':'')+'>'+esc(first.reorderLink?'Open reorder link':'Open Inventory')+'</a></div>';
+      else hero.innerHTML='<span class="erp-mini-pill green">Materials clear</span><h3>No purchase blockers detected.</h3><p>Active jobs appear covered by current inventory and no tracked item is below its reorder threshold.</p><div class="purchase-action-row"><a class="erp-chip green" href="inventory-control.html">Open Inventory</a></div>';
+    }
+    const list=$('purchaseList'); if(list) list.innerHTML=plan.slice(0,10).map(row).join('')||'<div class="purchase-empty">No purchase recommendations found.</div>';
+    const bj=$('purchaseBlockedJobs'); if(bj) bj.innerHTML=blockedJobs.slice(0,8).map(j=>'<a class="purchase-blocked-job" href="'+esc(jobLink(j))+'"><span><strong>'+esc(jobName(j))+'</strong><small>'+esc(j.order_ref||j.order_number||j.quote_ref||j.production_status||j.status||'Open production job')+'</small></span><b class="erp-chip red">Blocked</b></a>').join('')||'<div class="purchase-empty">No material-blocked jobs detected.</div>';
+  }
+  function boot(){render();setTimeout(render,800);setTimeout(render,2400)}
+  document.addEventListener('DOMContentLoaded',boot);
+  window.addEventListener('olipoly-auth-changed',boot);
+  const old=window.fullRender;
+  if(typeof old==='function' && !old.__purchasePlannerWrapped){
+    window.fullRender=async function(){const r=await old.apply(this,arguments);render();return r};
+    window.fullRender.__purchasePlannerWrapped=true;
+  }
+})();
+</script>
+
 </body>
 </html>
