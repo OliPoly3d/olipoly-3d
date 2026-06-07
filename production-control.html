@@ -2033,9 +2033,24 @@
     });
     return reservations;
   }
+  function rawCostPerGramSafe(r){
+    const explicit = explicitCostPerGram(r);
+    if(explicit) return explicit;
+    const cost = totalCost(r);
+    const grams = startingGrams(r);
+    return cost && grams ? cost / grams : 0;
+  }
+
   async function cloudSaveRawFromProduction(r){
     if(!state.user?.id || !r?.id) return false;
-    const payload = {...r, user_id:state.user.id, updated_at:new Date().toISOString()};
+    const payload = {
+      ...r,
+      user_id:state.user.id,
+      cost_per_gram: rawCostPerGramSafe(r),
+      reserved_grams: num(r.reserved_grams),
+      remaining_grams: num(r.remaining_grams || r.remaining),
+      updated_at:new Date().toISOString()
+    };
     try{
       await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
       return true;
@@ -2176,7 +2191,7 @@
         <label>Filament<input id="closeRollLabel_${i}" value="${esc(label)}" readonly></label>
         <label>Roll used<select id="closeRollId_${i}">${rollOptionHtml(rolls)}</select></label>
         <label>Good grams<input id="closeRollGoodGrams_${i}" type="number" min="0" step="0.1" value="${esc(expected || '')}"></label>
-        <label>Scrap grams<input id="closeRollScrapGrams_${i}" type="number" min="0" step="0.1" value="${esc(r.scrap_grams || '')}"></label>
+        <label>Scrap grams<input id="closeRollScrapGrams_${i}" type="number" min="0" step="0.1" value="${esc(row.scrap_grams || row.scrap || '')}"></label>
         <label>Finished roll?<select id="closeRollFinished_${i}"><option value="no">No</option><option value="yes">Yes</option></select></label>
         <label>Spool freed?<select id="closeRollSpoolFreed_${i}"><option value="no">No</option><option value="yes">Yes</option></select></label>
       </div>`;
