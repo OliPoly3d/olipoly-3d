@@ -2034,10 +2034,41 @@
     return reservations;
   }
   function rawCostPerGramSafe(r){
-    const explicit = explicitCostPerGram(r);
+    // Closeout/reservation saves run before the recipe-pricing helper scope, so keep this
+    // fully self-contained for legacy inventory rows. Supabase requires cost_per_gram.
+    const explicit = num(
+      r?.cost_per_gram ??
+      r?.cost_per_g ??
+      r?.unit_cost_per_gram ??
+      r?.unit_cost_g ??
+      r?.price_per_gram ??
+      r?.price_per_g ??
+      0
+    );
     if(explicit) return explicit;
-    const cost = totalCost(r);
-    const grams = startingGrams(r);
+    const cost = num(
+      r?.spool_cost ??
+      r?.total_cost ??
+      r?.purchase_cost ??
+      r?.purchase_price ??
+      r?.cost ??
+      r?.price ??
+      r?.raw_cost ??
+      r?.material_cost ??
+      0
+    );
+    const grams = Math.max(1, num(
+      r?.starting_grams ??
+      r?.starting ??
+      r?.total_grams ??
+      r?.original_grams ??
+      r?.initial_grams ??
+      r?.purchased_grams ??
+      r?.spool_size_grams ??
+      r?.size_grams ??
+      r?.nominal_grams ??
+      1000
+    ));
     return cost && grams ? cost / grams : 0;
   }
 
@@ -2565,12 +2596,46 @@
     toast(`${machine} PM settings saved.`);
   }
 
+  function cleanPmPayload(pm){
+    const machine = pm.machine || pm.printer_name || pm.name || pm.printer || 'Printer';
+    return {
+      user_id:state.user?.id,
+      machine,
+      hours_since_pm:num(pm.hours_since_pm || pm.nozzle_hours),
+      pm_hour_interval:num(pm.pm_hour_interval || pm.pm_interval_hours || pm.interval_hours) || 250,
+      last_pm_date:pm.last_pm_date || pm.last_maintenance_date || null,
+      pm_day_interval:num(pm.pm_day_interval || pm.pm_interval_days || pm.interval_days) || 30,
+      next_pm_date:pm.next_pm_date || null,
+      notes:pm.notes || '',
+      updated_at:new Date().toISOString()
+    };
+  }
+
   async function cloudSavePm(pm){
     if(!state.user?.id) return;
-    const payload = {...pm, user_id:state.user.id};
-    await sbApi('/rest/v1/printer_pm?on_conflict=user_id,machine',{
+    const payload = cleanPmPayload(pm);
+    const machine = payload.machine;
+
+    // Do not use on_conflict here. Some existing Supabase projects do not have
+    // a unique constraint on (user_id, machine), which makes PostgREST return
+    // 400 Bad Request. Instead, find the existing row first, then PATCH it.
+    try{
+      const existing = await sbApi(`/rest/v1/printer_pm?select=id&user_id=eq.${encodeURIComponent(state.user.id)}&machine=eq.${encodeURIComponent(machine)}&limit=1`,{method:'GET'});
+      if(Array.isArray(existing) && existing[0]?.id){
+        await sbApi(`/rest/v1/printer_pm?id=eq.${encodeURIComponent(existing[0].id)}`,{
+          method:'PATCH',
+          headers:{Prefer:'return=representation'},
+          body:JSON.stringify(payload)
+        });
+        return;
+      }
+    }catch(err){
+      console.warn('PM lookup before save failed; trying insert fallback.', err);
+    }
+
+    await sbApi('/rest/v1/printer_pm',{
       method:'POST',
-      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+      headers:{Prefer:'return=representation'},
       body:JSON.stringify(payload)
     });
   }
