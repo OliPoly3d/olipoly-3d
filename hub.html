@@ -5431,17 +5431,40 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     if(t._unit==='g'||/gram|g\b/i.test(String(t._unit))) return (num(t._qty)<0?'-':'')+grams(Math.abs(num(t._qty)));
     return String(t._qty||'').match(/^-?\d/)?`${num(t._qty)>0?'+':''}${Math.round(num(t._qty)*100)/100} ${esc(t._unit||'units')}`:esc(t._qty||'change');
   }
-  let traceState={items:[],selected:null,loaded:false,error:'',query:'',type:'all',source:'all'};
+  let traceState={items:[],selected:null,loaded:false,error:'',query:'',type:'all',source:'all',rawCount:0,collapsedCount:0};
+  function traceDateBucket(t){
+    const d=new Date(t._date||t.created_at||t.date||0);
+    if(Number.isNaN(d.getTime())) return String(t._date||'').slice(0,16);
+    // Minute-level bucket. Repeated cloud/local syncs of the same movement often receive different IDs but the same visible timestamp.
+    return d.toISOString().slice(0,16);
+  }
+  function traceSemanticKey(t){
+    return [norm(t._type),norm(t._item),String(num(t._qty)||t._qty||''),norm(t._source||t._note||''),traceDateBucket(t)].join('|');
+  }
+  function collapseTraceDuplicates(rows){
+    const map=new Map();
+    rows.forEach(t=>{
+      const key=traceSemanticKey(t);
+      const existing=map.get(key);
+      if(!existing){map.set(key,{...t,_dupeCount:1,_origins:new Set([t._origin])});return;}
+      existing._dupeCount=(existing._dupeCount||1)+1;
+      existing._origins.add(t._origin);
+      // Prefer cloud as the primary source, but keep local-only records when no cloud copy exists.
+      if(existing._origin!=='cloud' && t._origin==='cloud') Object.assign(existing,t,{_dupeCount:existing._dupeCount,_origins:existing._origins});
+    });
+    return [...map.values()].map(t=>({...t,_origin:[...t._origins].sort().join('+')}));
+  }
   async function loadTransactions(){
     const data=baseData(); let cloud=[];
-    try{cloud=await api('/rest/v1/inventory_transactions?select=*&order=created_at.desc&limit=250');traceState.error='';}
+    try{cloud=await api('/rest/v1/inventory_transactions?select=*&order=created_at.desc&limit=500');traceState.error='';}
     catch(e){traceState.error=e.message||'Cloud trace unavailable';}
     const local=(data.localLedger||[]).map(normalizeLocal);
-    const seen=new Set();
-    const merged=[...(cloud||[]).map(normalizeCloud),...local].filter(t=>{
-      const key=[t.id,t._date,t._type,t._item,t._qty,t._source].join('|');
-      if(seen.has(key))return false; seen.add(key); return true;
-    }).map(t=>{const j=findJob(t,data);return {...t,_class:classify(t),_isDeduction:isDeduction(t),_job:j,_customer:j?.customer_name||j?.customer||t.customer_name||'',_link:j?jobLink(j):invLink(t)}}).sort((a,b)=>String(b._date).localeCompare(String(a._date)));
+    const rawRows=[...(cloud||[]).map(normalizeCloud),...local];
+    traceState.rawCount=rawRows.length;
+    const merged=collapseTraceDuplicates(rawRows)
+      .map(t=>{const j=findJob(t,data);return {...t,_class:classify(t),_isDeduction:isDeduction(t),_job:j,_customer:j?.customer_name||j?.customer||t.customer_name||'',_link:j?jobLink(j):invLink(t)}})
+      .sort((a,b)=>String(b._date).localeCompare(String(a._date)));
+    traceState.collapsedCount=Math.max(0, traceState.rawCount-merged.length);
     traceState.items=merged; traceState.loaded=true; if(!traceState.selected&&merged[0]) traceState.selected=merged[0];
   }
   function filtered(){return traceState.items.filter(t=>{
@@ -5455,7 +5478,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     const cls=t._class==='production'?'green':t._class==='manual'?'amber':t._isDeduction?'red':'';
     const when=t._date?new Date(t._date).toLocaleString([], {month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'}):'No date';
     const ref=t._job?jobName(t._job):(t._source||t.order_ref||t.quote_ref||t.reference_id||'Inventory record');
-    return '<a href="#erpInventoryTraceabilityV1" class="trace-row" data-trace-index="'+i+'"><span class="trace-icon '+cls+'">'+esc(icon(t))+'</span><span><strong>'+esc(t._item)+'</strong><small>'+esc(ref)+' · '+esc(when)+'</small><span class="trace-pill-strip"><b class="erp-mini-pill '+(t._isDeduction?'red':'green')+'">'+displayQty(t)+'</b><b class="erp-mini-pill '+(t._class==='production'?'green':t._class==='manual'?'warn':'')+'">'+esc(t._class)+'</b><b class="erp-mini-pill">'+esc(t._origin)+'</b></span></span><b class="erp-chip '+(cls||'')+'">Trace</b></a>';
+    const duplicatePill=(t._dupeCount&&t._dupeCount>1)?'<b class="erp-mini-pill warn">collapsed ×'+esc(t._dupeCount)+'</b>':'';
+    return '<a href="#erpInventoryTraceabilityV1" class="trace-row" data-trace-index="'+i+'"><span class="trace-icon '+cls+'">'+esc(icon(t))+'</span><span><strong>'+esc(t._item)+'</strong><small>'+esc(ref)+' · '+esc(when)+'</small><span class="trace-pill-strip"><b class="erp-mini-pill '+(t._isDeduction?'red':'green')+'">'+displayQty(t)+'</b><b class="erp-mini-pill '+(t._class==='production'?'green':t._class==='manual'?'warn':'')+'">'+esc(t._class)+'</b><b class="erp-mini-pill">'+esc(t._origin)+'</b>'+duplicatePill+'</span></span><b class="erp-chip '+(cls||'')+'">Trace</b></a>';
   }
   function skeleton(){
     const consoleEl=$('erpConsole'); if(!consoleEl||$('erpInventoryTraceabilityV1'))return;
@@ -5479,14 +5503,14 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
   function detail(t){
     if(!t)return '<h3>No movement selected</h3><div class="trace-empty">Select a movement line to inspect the source record.</div>';
     const j=t._job; const fields=[
-      ['Item',t._item],['Change',displayQty(t)],['Type',t._type],['Source',t._source||'Not provided'],['Date',t._date?new Date(t._date).toLocaleString():'No date'],['Origin',t._origin],['Note',t._note||'No note'],['Linked job',j?jobName(j):'No matching production job found']
+      ['Item',t._item],['Change',displayQty(t)],['Type',t._type],['Source',t._source||'Not provided'],['Date',t._date?new Date(t._date).toLocaleString():'No date'],['Origin',t._origin],['Collapsed repeats',t._dupeCount&&t._dupeCount>1?String(t._dupeCount)+' matching rows were shown as one':'None'],['Note',t._note||'No note'],['Linked job',j?jobName(j):'No matching production job found']
     ];
     return '<h3>'+esc(t._item)+'</h3><p style="color:#95a9cc!important;margin:0;line-height:1.38">'+esc(j?'This movement is linked to a production job record.':'No production job link was found. It may be a manual adjustment, import, or legacy transaction.')+'</p><div class="trace-detail-body">'+fields.map(f=>'<div class="trace-detail-card"><span>'+esc(f[0])+'</span><strong>'+f[1]+'</strong></div>').join('')+'</div><div class="trace-action-row"><a class="erp-chip green" href="'+esc(t._link)+'">'+esc(j?'Open Production Job':'Open Inventory')+'</a><a class="erp-chip" href="inventory-control.html#ledgerPanel">Movement Log</a></div>';
   }
   function renderTrace(updateInputs=true){
     skeleton();
-    const list=filtered(); const deductions=traceState.items.filter(t=>t._isDeduction).length, production=traceState.items.filter(t=>t._class==='production').length, manual=traceState.items.filter(t=>t._class==='manual').length, cloud=traceState.items.filter(t=>t._origin==='cloud').length;
-    if($('traceKpis')) $('traceKpis').innerHTML=['<div class="trace-kpi"><span>Total movements</span><strong>'+traceState.items.length+'</strong></div>','<div class="trace-kpi"><span>Deductions</span><strong>'+deductions+'</strong></div>','<div class="trace-kpi"><span>Production linked</span><strong>'+production+'</strong></div>','<div class="trace-kpi"><span>Cloud rows</span><strong>'+cloud+'</strong></div>'].join('');
+    const list=filtered(); const deductions=traceState.items.filter(t=>t._isDeduction).length, production=traceState.items.filter(t=>t._class==='production').length, manual=traceState.items.filter(t=>t._class==='manual').length, cloud=traceState.items.filter(t=>String(t._origin).includes('cloud')).length;
+    if($('traceKpis')) $('traceKpis').innerHTML=['<div class="trace-kpi"><span>Unique movements</span><strong>'+traceState.items.length+'</strong></div>','<div class="trace-kpi"><span>Deductions</span><strong>'+deductions+'</strong></div>','<div class="trace-kpi"><span>Production linked</span><strong>'+production+'</strong></div>','<div class="trace-kpi"><span>Collapsed repeats</span><strong>'+traceState.collapsedCount+'</strong></div>'].join('');
     if(updateInputs){if($('traceSearch'))$('traceSearch').value=traceState.query;if($('traceType'))$('traceType').value=traceState.type;if($('traceSource'))$('traceSource').value=traceState.source;}
     if($('traceList')) $('traceList').innerHTML=(traceState.error?'<div class="trace-empty">Cloud trace warning: '+esc(traceState.error)+' — showing local data if available.</div>':'')+(list.slice(0,80).map(row).join('')||'<div class="trace-empty">No inventory movements match the current filters.</div>');
     if(traceState.selected && !list.includes(traceState.selected)) traceState.selected=list[0]||null;

@@ -1092,7 +1092,21 @@
   function finished(){return read(FG_KEY,[]).map(normalizeFg)}
   function saveFinished(list){write(FG_KEY,list.map(normalizeFg))}
   function ledger(){return read(LEDGER_KEY,[]).map(normalizeLedger)}
-  function saveLedger(list){write(LEDGER_KEY,list.map(normalizeLedger))}
+  function ledgerFingerprint(x){
+    const r=normalizeLedger(x||{});
+    const d=new Date(r.date||0);
+    const bucket=Number.isNaN(d.getTime()) ? String(r.date||'').slice(0,16) : d.toISOString().slice(0,16);
+    return [norm(r.type),norm(r.item),String(r.amount),norm(r.note),bucket].join('|');
+  }
+  function dedupeLedgerRows(list){
+    const map=new Map();
+    (list||[]).map(normalizeLedger).forEach(r=>{
+      const key=r.id || ledgerFingerprint(r);
+      if(!map.has(key)) map.set(key,r);
+    });
+    return [...map.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  }
+  function saveLedger(list){write(LEDGER_KEY,dedupeLedgerRows(list))}
 
   function supplies(){return read(SUPPLY_KEY,[]).map(normalizeSupply)}
   function saveSupplies(list){write(SUPPLY_KEY,list.map(normalizeSupply))}
@@ -1174,7 +1188,10 @@
 
   function addLedger(entry){
     const rows=ledger();
-    rows.unshift(normalizeLedger({...entry,id:uid(),date:new Date().toISOString()}));
+    const next=normalizeLedger({...entry,id:uid(),date:new Date().toISOString()});
+    const nextFp=ledgerFingerprint(next);
+    if(rows.some(r=>ledgerFingerprint(r)===nextFp)) return;
+    rows.unshift(next);
     saveLedger(rows);
   }
 
@@ -1347,7 +1364,17 @@
         const merged=mergeByIdOrFingerprint([...supplies(),...supplyRows], normalizeSupply, x=>`${norm(x.item_name)}|${norm(x.category)}|${norm(x.unit_type)}`);
         write(SUPPLY_KEY, merged);
       }
-      if(Array.isArray(ledgerRows) && ledgerRows.length) write(LEDGER_KEY,ledgerRows.map(x=>normalizeLedger({date:x.created_at,type:x.transaction_type,item:x.item_label,amount:x.quantity_change,note:x.note})));
+      if(Array.isArray(ledgerRows) && ledgerRows.length){
+        const cloudLedger=ledgerRows.map(x=>normalizeLedger({
+          id:x.id,
+          date:x.created_at||x.date,
+          type:x.transaction_type||x.type,
+          item:x.item_label||x.item,
+          amount:x.amount ?? x.quantity_change,
+          note:x.note||x.notes||x.source||''
+        }));
+        saveLedger(dedupeLedgerRows([...ledger(),...cloudLedger]));
+      }
       await syncLocalInventoryToCloud();
     }catch(err){console.warn(err); toast('Cloud inventory load failed. Using browser data.')}
   }
@@ -1391,8 +1418,9 @@
     if(!state.cloud || !state.user?.id) return;
     const row=normalizeLedger(l||{});
     const safeType=row.type || 'adjust';
+    const stableId = row.id || ('ledger_' + btoa(unescape(encodeURIComponent(ledgerFingerprint(row)))).replace(/[^a-zA-Z0-9]/g,'').slice(0,42));
     const payload={
-      id:row.id || uid(),
+      id:stableId,
       user_id:state.user.id,
       date:row.date || new Date().toISOString(),
       created_at:row.date || new Date().toISOString(),
