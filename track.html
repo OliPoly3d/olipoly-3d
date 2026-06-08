@@ -1,30 +1,27 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Track Your Order | OliPoly 3D</title>
-  <meta name="description" content="Track an OliPoly 3D quote or order number and see the latest customer-safe project status, payment options, and pickup or shipping details." />
-  <link rel="canonical" href="https://olipoly3d.com/track.html" />
-  <meta name="robots" content="index, follow" />
-  <meta name="theme-color" content="#fff7fb" />
-
-  <meta property="og:title" content="Track Your Order | OliPoly 3D" />
-  <meta property="og:description" content="Follow your OliPoly 3D project from approval to printing, finishing, pickup, delivery, or shipping." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://olipoly3d.com/track.html" />
-  <meta property="og:image" content="https://olipoly3d.com/images/logo-preview.png" />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Track Your Order | OliPoly 3D" />
-  <meta name="twitter:description" content="Follow your OliPoly 3D project from approval to printing, finishing, pickup, delivery, or shipping." />
-  <meta name="twitter:image" content="https://olipoly3d.com/images/logo-preview.png" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Track Your Order | OliPoly 3D</title>
+<meta content="Track an OliPoly 3D quote or order number and see the latest customer-safe project status, payment options, and pickup or shipping details." name="description"/>
+<link href="https://olipoly3d.com/track.html" rel="canonical"/>
+<meta content="index, follow" name="robots"/>
+<meta content="#fff7fb" name="theme-color"/>
+<meta content="Track Your Order | OliPoly 3D" property="og:title"/>
+<meta content="Follow your OliPoly 3D project from approval to printing, finishing, pickup, delivery, or shipping." property="og:description"/>
+<meta content="website" property="og:type"/>
+<meta content="https://olipoly3d.com/track.html" property="og:url"/>
+<meta content="https://olipoly3d.com/images/logo-preview.png" property="og:image"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Track Your Order | OliPoly 3D" name="twitter:title"/>
+<meta content="Follow your OliPoly 3D project from approval to printing, finishing, pickup, delivery, or shipping." name="twitter:description"/>
+<meta content="https://olipoly3d.com/images/logo-preview.png" name="twitter:image"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Playfair+Display:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>
     :root{
       --ink:#25182d;
       --muted:#74617d;
@@ -386,163 +383,150 @@ img{max-width:100%}
 }
 
 </style>
-  <link rel="stylesheet" href="assets/erp-upgrade.css">
+<link href="assets/erp-upgrade.css" rel="stylesheet"/>
 </head>
 <body>
-  <header class="site-header">
-    <nav class="nav" aria-label="Main navigation">
-      <a class="brand" href="index.html" aria-label="OliPoly 3D home">
-        <span class="brand-mark"><img src="images/poly-head.png" alt="Poly mascot" /></span>
-        <span class="brand-text">
-          <span class="brand-name">Oli<span>Poly</span> 3D</span>
-          <span class="brand-sub">Custom printing • Creative builds • Prototypes</span>
-        </span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html#work">Work</a>
-        <a href="events.html">Events</a>
-        <a href="faq.html">FAQ</a>
-        <a href="start-project.html">Start Project</a>
-      </div>
-      <a class="btn-ghost" href="index.html">Back Home</a>
-    </nav>
-  </header>
-
-  <main class="wrap">
-    <section class="card lookup-card">
-      <div class="lookup-layout">
-        <div class="lookup-copy">
-          <span class="eyebrow">Order Tracking</span>
-          <h1>Follow your project through the <span class="gradient-word">studio.</span></h1>
-          <p class="sub">Enter your quote or order number to see the latest customer-safe update from OliPoly 3D — including status, next steps, payment options, and pickup or shipping details when available.</p>
-        </div>
-        <div class="lookup-form">
-          <div class="search-row">
-            <div>
-              <label for="orderLookup">Quote or Order Number</label>
-              <input id="orderLookup" placeholder="Example: Q-000205 or OP-000205" autocomplete="off" />
-            </div>
-            <div class="search-action"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
-          </div>
-          <div class="lookup-note" id="lookupMessage">Enter your order number to see the current status.</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card hidden result-shell" id="resultCard">
-      <div class="result-hero">
-        <div>
-          <span class="eyebrow">Current Project</span>
-          <h2 id="viewProject">—</h2>
-          <p class="order-ref">Order <strong id="viewOrderNumber">—</strong></p>
-          <div class="status-spotlight" id="statusSpotlight">
-            <span class="spotlight-kicker">Current Status</span>
-            <strong id="viewStatusHeadline">—</strong>
-            <small id="viewStatusHelper">We’ll show the latest public update here once your order is found.</small>
-          </div>
-        </div>
-        <div class="status-stack">
-          <div><span>Status</span><strong id="viewStatus">—</strong></div>
-          <div><span>Payment</span><strong id="viewPayment">—</strong></div>
-        </div>
-      </div>
-
-      <div class="info-grid compact">
-        <div class="mini"><span>Total</span><strong id="viewTotal">—</strong></div>
-        <div class="mini"><span>Next milestone</span><strong id="viewMilestone">—</strong></div>
-      </div>
-
-      <div class="customer-confidence-grid">
-        <div class="confidence-card">
-          <span>Last checked</span>
-          <strong id="viewLastChecked">Just now</strong>
-          <small>Showing the latest customer-safe tracking record.</small>
-        </div>
-        <div class="confidence-card">
-          <span>Need help?</span>
-          <strong>We’re here</strong>
-          <small>Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a> with your order number.</small>
-        </div>
-      </div>
-
-      <div class="progress" aria-label="Order progress timeline">
-        <div class="timeline">
-          <div class="timeline-fill" id="timelineFill"></div>
-          <div class="step" data-step="1"><div class="step-dot"></div><div class="step-label"><strong>Approved</strong><small>Details confirmed</small></div></div>
-          <div class="step" data-step="2"><div class="step-dot"></div><div class="step-label"><strong>Scheduled</strong><small>Queued for production</small></div></div>
-          <div class="step" data-step="3"><div class="step-dot"></div><div class="step-label"><strong>In Production</strong><small>Printing or active prep</small></div></div>
-          <div class="step" data-step="4"><div class="step-dot"></div><div class="step-label"><strong>Finishing / QC</strong><small>Cleaned and checked</small></div></div>
-          <div class="step" data-step="5"><div class="step-dot"></div><div class="step-label"><strong>Ready / Shipped</strong><small>Pickup, delivery, or mail</small></div></div>
-        </div>
-      </div>
-
-      <div class="detail">
-        <div class="next-explainer-card" id="nextExplainerCard">
-          <strong>What happens next?</strong>
-          <span id="viewAutoNext">We’ll show the next step once your order is found.</span>
-        </div>
-        <div class="note update-card"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
-        <div class="note" id="nextStepWrap"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
-        <div class="note" id="fulfillmentWrap"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
-        <div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
-        <div class="note hidden" id="paidDateWrap"><strong>Paid</strong><span id="viewPaidDate">—</span></div>
-        <div class="payment-card hidden" id="paymentWrap">
-          <div class="payment-head">
-            <strong>Payment</strong>
-            <span id="paymentBadge" class="payment-badge">Unpaid</span>
-          </div>
-          <p id="paymentMessage" class="payment-text">Your secure payment options are ready below.</p>
-
-          <div id="businessTermsNote" class="business-terms-note hidden">
-            <strong>Business purchasing terms</strong>
-            <span id="businessTermsMessage">Payment will be handled according to the agreed purchasing terms.</span>
-          </div>
-
-          <div id="cashOption" class="cash-option hidden">
-            <strong>Cash available</strong>
-            <span id="cashMessage">Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.</span>
-          </div>
-
-          <div id="paymentButtons" class="payment-buttons">
-            <a id="paymentBtnStripe" class="payment-btn hidden" href="#" target="_blank" rel="noopener">Pay with Card / Apple Pay</a>
-            <a id="paymentBtnPaypal" class="payment-btn paypal-btn hidden" href="#" target="_blank" rel="noopener">Pay with PayPal</a>
-            <a id="paymentBtnVenmo" class="payment-btn venmo-btn hidden" href="#" target="_blank" rel="noopener">Pay with Venmo</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="support-card">
-      <div>
-        <span class="eyebrow">Need help?</span>
-        <h3>Questions about your order?</h3>
-        <p>Email us with your quote or order number and we’ll help confirm the latest status.</p>
-      </div>
-      <a class="btn" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
-    </section>
-
-    <p class="footer">OliPoly 3D LLC • Order tracking • <a href="start-project.html">Start a new project</a></p>
-  </main>
-
-  <div class="poly-helper" id="polyHelper">
-    <div class="poly-helper-panel">
-      <button class="poly-helper-close" type="button" onclick="togglePolyHelper()" aria-label="Close Poly helper">×</button>
-      <h3>Need a quick path?</h3>
-      <p>Poly can point you toward the most useful next step.</p>
-      <div class="poly-helper-links">
-        <a href="start-project.html">Start a project <span>→</span></a>
-        <a href="track.html">Track an order <span>→</span></a>
-        <a href="faq.html">Read the FAQ <span>→</span></a>
-        <a href="mailto:OliPoly3D@gmail.com">Email OliPoly <span>→</span></a>
-      </div>
-    </div>
-    <button class="poly-helper-toggle" type="button" onclick="togglePolyHelper()" aria-label="Open Poly helper">
-      <img src="images/poly-head.png" alt="" />
-      <span>Ask Poly</span>
-    </button>
-  </div>
-
-  <script>
+<header class="site-header">
+<nav aria-label="Main navigation" class="nav">
+<a aria-label="OliPoly 3D home" class="brand" href="index.html">
+<span class="brand-mark"><img alt="Poly mascot" decoding="async" loading="lazy" src="images/poly-head.png"/></span>
+<span class="brand-text">
+<span class="brand-name">Oli<span>Poly</span> 3D</span>
+<span class="brand-sub">Custom printing • Creative builds • Prototypes</span>
+</span>
+</a>
+<div class="nav-links">
+<a href="index.html#work">Work</a>
+<a href="events.html">Events</a>
+<a href="faq.html">FAQ</a>
+<a href="start-project.html">Start Project</a>
+</div>
+<a class="btn-ghost" href="index.html">Back Home</a>
+</nav>
+</header>
+<main class="wrap">
+<section class="card lookup-card">
+<div class="lookup-layout">
+<div class="lookup-copy">
+<span class="eyebrow">Order Tracking</span>
+<h1>Follow your project through the <span class="gradient-word">studio.</span></h1>
+<p class="sub">Enter your quote or order number to see the latest customer-safe update from OliPoly 3D — including status, next steps, payment options, and pickup or shipping details when available.</p>
+</div>
+<div class="lookup-form">
+<div class="search-row">
+<div>
+<label for="orderLookup">Quote or Order Number</label>
+<input autocomplete="off" id="orderLookup" placeholder="Example: Q-000205 or OP-000205"/>
+</div>
+<div class="search-action"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
+</div>
+<div class="lookup-note" id="lookupMessage">Enter your order number to see the current status.</div>
+</div>
+</div>
+</section>
+<section class="card hidden result-shell" id="resultCard">
+<div class="result-hero">
+<div>
+<span class="eyebrow">Current Project</span>
+<h2 id="viewProject">—</h2>
+<p class="order-ref">Order <strong id="viewOrderNumber">—</strong></p>
+<div class="status-spotlight" id="statusSpotlight">
+<span class="spotlight-kicker">Current Status</span>
+<strong id="viewStatusHeadline">—</strong>
+<small id="viewStatusHelper">We’ll show the latest public update here once your order is found.</small>
+</div>
+</div>
+<div class="status-stack">
+<div><span>Status</span><strong id="viewStatus">—</strong></div>
+<div><span>Payment</span><strong id="viewPayment">—</strong></div>
+</div>
+</div>
+<div class="info-grid compact">
+<div class="mini"><span>Total</span><strong id="viewTotal">—</strong></div>
+<div class="mini"><span>Next milestone</span><strong id="viewMilestone">—</strong></div>
+</div>
+<div class="customer-confidence-grid">
+<div class="confidence-card">
+<span>Last checked</span>
+<strong id="viewLastChecked">Just now</strong>
+<small>Showing the latest customer-safe tracking record.</small>
+</div>
+<div class="confidence-card">
+<span>Need help?</span>
+<strong>We’re here</strong>
+<small>Email <a href="mailto:OliPoly3D@gmail.com">OliPoly3D@gmail.com</a> with your order number.</small>
+</div>
+</div>
+<div aria-label="Order progress timeline" class="progress">
+<div class="timeline">
+<div class="timeline-fill" id="timelineFill"></div>
+<div class="step" data-step="1"><div class="step-dot"></div><div class="step-label"><strong>Approved</strong><small>Details confirmed</small></div></div>
+<div class="step" data-step="2"><div class="step-dot"></div><div class="step-label"><strong>Scheduled</strong><small>Queued for production</small></div></div>
+<div class="step" data-step="3"><div class="step-dot"></div><div class="step-label"><strong>In Production</strong><small>Printing or active prep</small></div></div>
+<div class="step" data-step="4"><div class="step-dot"></div><div class="step-label"><strong>Finishing / QC</strong><small>Cleaned and checked</small></div></div>
+<div class="step" data-step="5"><div class="step-dot"></div><div class="step-label"><strong>Ready / Shipped</strong><small>Pickup, delivery, or mail</small></div></div>
+</div>
+</div>
+<div class="detail">
+<div class="next-explainer-card" id="nextExplainerCard">
+<strong>What happens next?</strong>
+<span id="viewAutoNext">We’ll show the next step once your order is found.</span>
+</div>
+<div class="note update-card"><strong>Current Update</strong><span id="viewPublicStatus">—</span></div>
+<div class="note" id="nextStepWrap"><strong>Next Step</strong><span id="viewNextStep">—</span></div>
+<div class="note" id="fulfillmentWrap"><strong>Pickup / Shipping</strong><span id="viewFulfillment">—</span></div>
+<div class="note hidden" id="trackingWrap"><strong>Tracking Number</strong><span id="viewTracking">—</span></div>
+<div class="note hidden" id="paidDateWrap"><strong>Paid</strong><span id="viewPaidDate">—</span></div>
+<div class="payment-card hidden" id="paymentWrap">
+<div class="payment-head">
+<strong>Payment</strong>
+<span class="payment-badge" id="paymentBadge">Unpaid</span>
+</div>
+<p class="payment-text" id="paymentMessage">Your secure payment options are ready below.</p>
+<div class="business-terms-note hidden" id="businessTermsNote">
+<strong>Business purchasing terms</strong>
+<span id="businessTermsMessage">Payment will be handled according to the agreed purchasing terms.</span>
+</div>
+<div class="cash-option hidden" id="cashOption">
+<strong>Cash available</strong>
+<span id="cashMessage">Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.</span>
+</div>
+<div class="payment-buttons" id="paymentButtons">
+<a class="payment-btn hidden" href="#" id="paymentBtnStripe" rel="noopener" target="_blank">Pay with Card / Apple Pay</a>
+<a class="payment-btn paypal-btn hidden" href="#" id="paymentBtnPaypal" rel="noopener" target="_blank">Pay with PayPal</a>
+<a class="payment-btn venmo-btn hidden" href="#" id="paymentBtnVenmo" rel="noopener" target="_blank">Pay with Venmo</a>
+</div>
+</div>
+</div>
+</section>
+<section class="support-card">
+<div>
+<span class="eyebrow">Need help?</span>
+<h3>Questions about your order?</h3>
+<p>Email us with your quote or order number and we’ll help confirm the latest status.</p>
+</div>
+<a class="btn" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
+</section>
+<p class="footer">OliPoly 3D LLC • Order tracking • <a href="start-project.html">Start a new project</a></p>
+</main>
+<div class="poly-helper" id="polyHelper">
+<div class="poly-helper-panel">
+<button aria-label="Close Poly helper" class="poly-helper-close" onclick="togglePolyHelper()" type="button">×</button>
+<h3>Need a quick path?</h3>
+<p>Poly can point you toward the most useful next step.</p>
+<div class="poly-helper-links">
+<a href="start-project.html">Start a project <span>→</span></a>
+<a href="track.html">Track an order <span>→</span></a>
+<a href="faq.html">Read the FAQ <span>→</span></a>
+<a href="mailto:OliPoly3D@gmail.com">Email OliPoly <span>→</span></a>
+</div>
+</div>
+<button aria-label="Open Poly helper" class="poly-helper-toggle" onclick="togglePolyHelper()" type="button">
+<img alt="" decoding="async" loading="lazy" src="images/poly-head.png"/>
+<span>Ask Poly</span>
+</button>
+</div>
+<script>
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
@@ -824,6 +808,6 @@ if (incomingOrder) {
       document.getElementById('polyHelper').classList.toggle('active');
     }
   </script>
-  <script src="assets/erp-upgrade.js" defer></script>
+<script defer="" src="assets/erp-upgrade.js"></script>
 </body>
 </html>

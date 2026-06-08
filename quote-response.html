@@ -1,14 +1,16 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>OliPoly 3D | Quote Response</title>
-<meta name="description" content="Review, approve, or request changes to your OliPoly 3D project quote." />
-<meta name="theme-color" content="#fff7fb" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<meta content="Review, approve, or request changes to your OliPoly 3D project quote." name="description"/><link href="https://olipoly3d.com/quote-response.html" rel="canonical"/>
+  
+<meta content="#fff7fb" name="theme-color"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Playfair+Display:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
 <style>
 :root{
   --ink:#25182d;
@@ -158,134 +160,122 @@ img{max-width:100%}
 }
 
 </style>
-  <link rel="stylesheet" href="assets/erp-upgrade.css">
+<link href="assets/erp-upgrade.css" rel="stylesheet"/>
 </head>
 <body>
 <header class="site-header">
-  <nav class="nav">
-    <a class="brand" href="index.html" aria-label="OliPoly 3D home">
-      <span class="brand-mark"><img src="images/poly-head.png" alt="Poly mascot" onerror="this.style.display='none'"></span>
-      <span>
-        <span class="brand-name">Oli<span>Poly</span> 3D</span>
-        <span class="brand-sub">Quote review</span>
-      </span>
-    </a>
-    <a class="track-link" style="margin:0;" href="index.html">Back to Home</a>
-  </nav>
+<nav class="nav">
+<a aria-label="OliPoly 3D home" class="brand" href="index.html">
+<span class="brand-mark"><img alt="Poly mascot" decoding="async" loading="lazy" onerror="this.style.display='none'" src="images/poly-head.png"/></span>
+<span>
+<span class="brand-name">Oli<span>Poly</span> 3D</span>
+<span class="brand-sub">Quote review</span>
+</span>
+</a>
+<a class="track-link" href="index.html" style="margin:0;">Back to Home</a>
+</nav>
 </header>
-
 <main class="wrap">
-  <section class="card hero-card" id="loadingCard">
-    <div class="hero-grid">
-      <div>
-        <span class="eyebrow">Loading Quote</span>
-        <h1>Pulling up your custom project<span class="loading-dots"></span></h1>
-        <p class="sub">Please wait while we load the quote details from OliPoly 3D.</p>
-      </div>
-      <div class="project-visual">
-        <img src="images/poly-head.png" alt="Poly mascot" onerror="this.style.display='none'">
-        <strong>Almost there</strong>
-        <span>Your review link is opening securely.</span>
-      </div>
-    </div>
-    <div class="status" id="loadStatus" style="margin-top:16px;">Loading...</div>
-  </section>
-
-  <section class="card hero-card hidden" id="quoteCard">
-    <div class="hero-grid">
-      <div>
-        <span class="eyebrow">Your Quote Is Ready</span>
-        <h1>Your OliPoly project quote is ready</h1>
-        <p class="sub">Review the details below, then approve the quote to start your order or request changes first.</p>
-        <div class="quote-status-hero">
-          <span>Quote Review</span>
-          <strong id="quoteHeroTotal">—</strong>
-          <small id="quoteHeroSub">Secure quote review prepared by OliPoly 3D.</small>
-        </div>
-      </div>
-      <div class="project-visual">
-        <img src="images/poly-head.png" alt="Poly mascot" onerror="this.style.display='none'">
-        <strong id="projectVisualTitle">Custom 3D print</strong>
-        <span>Creative 3D printing brought to life in Ohio.</span>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="mini"><span>Quote Number</span><strong id="quoteNumber">—</strong></div>
-      <div class="mini"><span>Project</span><strong id="projectTitle">—</strong></div>
-      <div class="mini total"><span>Estimated Total</span><strong id="quoteTotal">—</strong></div>
-      <div class="mini"><span>Estimated Timing</span><strong id="turnaround">—</strong></div>
-    </div>
-
-    <div class="quote-ref-grid" id="quoteRefGrid">
-      <div class="mini"><span>PO Reference</span><strong id="poReference">—</strong></div>
-      <div class="mini"><span>OliPoly Part #</span><strong id="olipolyPart">—</strong></div>
-      <div class="mini"><span>Customer Part #</span><strong id="customerPart">—</strong></div>
-      <div class="mini"><span>Revision</span><strong id="partRevision">—</strong></div>
-    </div>
-
-    <div class="note"><strong>Quote Notes</strong><span id="quoteNotes">—</span></div>
-    <div class="note"><strong>Assumptions</strong><span id="assumptions">—</span></div>
-
-    <div class="note" style="border-style:solid;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,244,250,.92));">
-      <strong>What happens after approval?</strong>
-      <div class="next-box">
-        <div class="next-step"><b>1</b><strong>Order created</strong><span>Your quote becomes an OP- order.</span></div>
-        <div class="next-step"><b>2</b><strong>Scheduling begins</strong><span>OliPoly reviews final details and timing.</span></div>
-        <div class="next-step"><b>3</b><strong>Payment options</strong><span>Card, PayPal, Venmo, or cash options may be available.</span></div>
-        <div class="next-step"><b>4</b><strong>Track anytime</strong><span>Your order page shows progress and next steps.</span></div>
-      </div>
-    </div>
-
-    <label for="responseMessage">Message to OliPoly 3D</label>
-    <textarea id="responseMessage" placeholder="Optional: confirm color, pickup timing, requested changes, or anything you want us to know."></textarea>
-
-    <div class="quote-decision-card">
-      <h3>Ready to move forward?</h3>
-      <p>Approving this quote lets OliPoly 3D begin scheduling, production planning, and order setup based on the details shown above. Request changes first if anything needs adjusted.</p>
-    </div>
-
-    <div class="actions v2-actions">
-      <button class="btn" id="acceptBtn" type="button">Approve Quote & Start Order</button>
-      <button class="btn-secondary" id="declineBtn" type="button">Request Changes First</button>
-    </div>
-    <div class="status hidden" id="responseStatus" style="margin-top:16px;"></div>
-  </section>
-
-  <section class="card hero-card hidden" id="doneCard">
-    <div class="done-hero">
-      <span class="eyebrow" id="doneEyebrow">Response Received</span>
-      <h1 id="doneTitle">Thank you</h1>
-      <div id="orderNumberPill" class="order-number hidden"></div>
-      <div class="status success" id="doneMessage"></div>
-    </div>
-    <div class="success-grid hidden" id="acceptedPanels">
-      <div class="success-panel">
-        <h3>Track your project</h3>
-        <p>Your order is now live in the OliPoly tracker. Use it anytime to view progress, payment options, and next steps.</p>
-        <a class="track-link hidden" id="trackLink" href="track.html">Track Order</a>
-      </div>
-      <div class="success-panel">
-        <h3>Payment options</h3>
-        <p>Use your tracking page for card payment, or use PayPal/Venmo below when those options apply.</p>
-        <div class="payment-buttons">
-          <a class="pay-link paypal" href="https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8" target="_blank" rel="noopener">Pay with PayPal</a>
-          <a class="pay-link venmo" href="https://www.venmo.com/u/OliPoly3D" target="_blank" rel="noopener">Pay with Venmo</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="support-strip">
-    <div>
-      <h3>Questions before moving forward?</h3>
-      <p>Reply to your quote email or contact OliPoly 3D before approving if anything needs changed.</p>
-    </div>
-    <a class="btn-secondary" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
-  </section>
-  <p class="footer">OliPoly 3D quote review • customer-safe approval flow</p>
+<section class="card hero-card" id="loadingCard">
+<div class="hero-grid">
+<div>
+<span class="eyebrow">Loading Quote</span>
+<h1>Pulling up your custom project<span class="loading-dots"></span></h1>
+<p class="sub">Please wait while we load the quote details from OliPoly 3D.</p>
+</div>
+<div class="project-visual">
+<img alt="Poly mascot" decoding="async" loading="lazy" onerror="this.style.display='none'" src="images/poly-head.png"/>
+<strong>Almost there</strong>
+<span>Your review link is opening securely.</span>
+</div>
+</div>
+<div class="status" id="loadStatus" style="margin-top:16px;">Loading...</div>
+</section>
+<section class="card hero-card hidden" id="quoteCard">
+<div class="hero-grid">
+<div>
+<span class="eyebrow">Your Quote Is Ready</span>
+<h1>Your OliPoly project quote is ready</h1>
+<p class="sub">Review the details below, then approve the quote to start your order or request changes first.</p>
+<div class="quote-status-hero">
+<span>Quote Review</span>
+<strong id="quoteHeroTotal">—</strong>
+<small id="quoteHeroSub">Secure quote review prepared by OliPoly 3D.</small>
+</div>
+</div>
+<div class="project-visual">
+<img alt="Poly mascot" decoding="async" loading="lazy" onerror="this.style.display='none'" src="images/poly-head.png"/>
+<strong id="projectVisualTitle">Custom 3D print</strong>
+<span>Creative 3D printing brought to life in Ohio.</span>
+</div>
+</div>
+<div class="grid">
+<div class="mini"><span>Quote Number</span><strong id="quoteNumber">—</strong></div>
+<div class="mini"><span>Project</span><strong id="projectTitle">—</strong></div>
+<div class="mini total"><span>Estimated Total</span><strong id="quoteTotal">—</strong></div>
+<div class="mini"><span>Estimated Timing</span><strong id="turnaround">—</strong></div>
+</div>
+<div class="quote-ref-grid" id="quoteRefGrid">
+<div class="mini"><span>PO Reference</span><strong id="poReference">—</strong></div>
+<div class="mini"><span>OliPoly Part #</span><strong id="olipolyPart">—</strong></div>
+<div class="mini"><span>Customer Part #</span><strong id="customerPart">—</strong></div>
+<div class="mini"><span>Revision</span><strong id="partRevision">—</strong></div>
+</div>
+<div class="note"><strong>Quote Notes</strong><span id="quoteNotes">—</span></div>
+<div class="note"><strong>Assumptions</strong><span id="assumptions">—</span></div>
+<div class="note" style="border-style:solid;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,244,250,.92));">
+<strong>What happens after approval?</strong>
+<div class="next-box">
+<div class="next-step"><b>1</b><strong>Order created</strong><span>Your quote becomes an OP- order.</span></div>
+<div class="next-step"><b>2</b><strong>Scheduling begins</strong><span>OliPoly reviews final details and timing.</span></div>
+<div class="next-step"><b>3</b><strong>Payment options</strong><span>Card, PayPal, Venmo, or cash options may be available.</span></div>
+<div class="next-step"><b>4</b><strong>Track anytime</strong><span>Your order page shows progress and next steps.</span></div>
+</div>
+</div>
+<label for="responseMessage">Message to OliPoly 3D</label>
+<textarea id="responseMessage" placeholder="Optional: confirm color, pickup timing, requested changes, or anything you want us to know."></textarea>
+<div class="quote-decision-card">
+<h3>Ready to move forward?</h3>
+<p>Approving this quote lets OliPoly 3D begin scheduling, production planning, and order setup based on the details shown above. Request changes first if anything needs adjusted.</p>
+</div>
+<div class="actions v2-actions">
+<button class="btn" id="acceptBtn" type="button">Approve Quote &amp; Start Order</button>
+<button class="btn-secondary" id="declineBtn" type="button">Request Changes First</button>
+</div>
+<div class="status hidden" id="responseStatus" style="margin-top:16px;"></div>
+</section>
+<section class="card hero-card hidden" id="doneCard">
+<div class="done-hero">
+<span class="eyebrow" id="doneEyebrow">Response Received</span>
+<h1 id="doneTitle">Thank you</h1>
+<div class="order-number hidden" id="orderNumberPill"></div>
+<div class="status success" id="doneMessage"></div>
+</div>
+<div class="success-grid hidden" id="acceptedPanels">
+<div class="success-panel">
+<h3>Track your project</h3>
+<p>Your order is now live in the OliPoly tracker. Use it anytime to view progress, payment options, and next steps.</p>
+<a class="track-link hidden" href="track.html" id="trackLink">Track Order</a>
+</div>
+<div class="success-panel">
+<h3>Payment options</h3>
+<p>Use your tracking page for card payment, or use PayPal/Venmo below when those options apply.</p>
+<div class="payment-buttons">
+<a class="pay-link paypal" href="https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8" rel="noopener" target="_blank">Pay with PayPal</a>
+<a class="pay-link venmo" href="https://www.venmo.com/u/OliPoly3D" rel="noopener" target="_blank">Pay with Venmo</a>
+</div>
+</div>
+</div>
+</section>
+<section class="support-strip">
+<div>
+<h3>Questions before moving forward?</h3>
+<p>Reply to your quote email or contact OliPoly 3D before approving if anything needs changed.</p>
+</div>
+<a class="btn-secondary" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
+</section>
+<p class="footer">OliPoly 3D quote review • customer-safe approval flow</p>
 </main>
-
 <script>
 const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co';
 const SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
@@ -346,8 +336,6 @@ $('acceptBtn').addEventListener('click',()=>respond('accepted'));
 $('declineBtn').addEventListener('click',()=>respond('declined'));
 loadQuote();
 </script>
-
-
 <script>
 /* === Linked Production job update after quote approval ===
    Requires optional Supabase function link_accepted_quote_to_production from the SQL patch.
@@ -406,7 +394,6 @@ loadQuote();
   }
 })();
 </script>
-
-  <script src="assets/erp-upgrade.js" defer></script>
+<script defer="" src="assets/erp-upgrade.js"></script>
 </body>
 </html>
