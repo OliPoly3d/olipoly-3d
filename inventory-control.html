@@ -543,6 +543,7 @@
           <button class="ghost" id="forceCloudRebuildBtn" type="button">Force Full Cloud Rebuild</button>
           <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
           <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
+          <button class="ghost" id="cleanDuplicateLedgerBtn" type="button">Clean Duplicate Ledger Rows</button>
           <p class="muted full">Use these only after exporting a backup. They are kept here so the daily dashboard stays clean.</p>
         </div>
       </details>
@@ -790,7 +791,7 @@
         <label>Search<input id="ledgerSearch" placeholder="material, product, source..."></label>
         <label>Type<select id="ledgerType"><option value="all">All</option><option value="raw_adjust">Raw Adjust</option><option value="raw_usage">Raw Usage</option><option value="supply_usage">Supply Usage</option><option value="fg_adjust">Finished Adjust</option><option value="import">Import</option></select></label>
         <label>Sort<select id="ledgerSort"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
-        <button class="ghost" id="exportLedgerBtn" type="button">Export CSV</button><button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
+        <button class="ghost" id="exportLedgerBtn" type="button">Export CSV</button><button class="ghost" id="cleanDuplicateLedgerBtn2" type="button">Clean Duplicates</button><button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
       </div>
 
       <div class="closeout-audit-strip" id="closeoutAuditStrip">
@@ -1076,6 +1077,81 @@
     return result;
   }
 
+  async function cleanDuplicateLedgerRows(){
+    if(!confirm('Clean duplicate movement rows? This keeps one row per identical movement/minute and removes repeated cloud/local copies. Export a backup first if you are unsure.')) return;
+
+    // Always clean local first. This corrects cached rows and prevents re-upload loops.
+    const beforeLocal=ledger().length;
+    const localClean=dedupeLedgerRows(ledger());
+    saveLedger(localClean);
+    const localRemoved=Math.max(0,beforeLocal-localClean.length);
+
+    let cloudRemoved=0;
+    let cloudGroups=0;
+
+    if(state.cloud && state.user?.id){
+      try{
+        const uid=encodeURIComponent(state.user.id);
+        const rows=await sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${uid}&order=created_at.desc`,{method:'GET'});
+        const groups=new Map();
+        (Array.isArray(rows)?rows:[]).forEach(x=>{
+          const normalized=normalizeLedger({
+            id:x.id,
+            date:x.created_at||x.date,
+            type:x.transaction_type||x.type,
+            item:x.item_label||x.item,
+            amount:x.amount ?? x.quantity_change,
+            note:x.note||x.notes||x.source||''
+          });
+          const key=ledgerFingerprint(normalized);
+          if(!groups.has(key)) groups.set(key,[]);
+          groups.get(key).push({raw:x,normalized});
+        });
+
+        const deleteIds=[];
+        groups.forEach(group=>{
+          if(group.length<=1) return;
+          cloudGroups++;
+          // Keep the newest row, delete repeated copies that have the same operation, item, quantity, note, and minute.
+          group.sort((a,b)=>String(b.raw.created_at||b.raw.date||'').localeCompare(String(a.raw.created_at||a.raw.date||'')));
+          group.slice(1).forEach(g=>{ if(g.raw.id) deleteIds.push(g.raw.id); });
+        });
+
+        for(const id of deleteIds){
+          try{
+            await sbApi(`/rest/v1/inventory_transactions?id=eq.${encodeURIComponent(id)}&user_id=eq.${uid}`,{method:'DELETE'});
+            cloudRemoved++;
+          }catch(err){
+            console.warn('duplicate ledger delete failed', id, err);
+          }
+        }
+
+        // Reload the cleaned cloud ledger into local cache so Hub and Inventory agree immediately.
+        const cleaned=await sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${uid}&order=created_at.desc`,{method:'GET'}).catch(()=>[]);
+        if(Array.isArray(cleaned)){
+          const cleanedLocal=cleaned.map(x=>normalizeLedger({
+            id:x.id,
+            date:x.created_at||x.date,
+            type:x.transaction_type||x.type,
+            item:x.item_label||x.item,
+            amount:x.amount ?? x.quantity_change,
+            note:x.note||x.notes||x.source||''
+          }));
+          saveLedger(dedupeLedgerRows(cleanedLocal));
+        }
+      }catch(err){
+        console.warn('cloud duplicate ledger cleanup failed', err);
+        toast(`Local duplicate cleanup complete, but cloud cleanup failed: ${err.message||err}`);
+        render();
+        return;
+      }
+    }
+
+    updateCloudStatus();
+    render();
+    toast(`Duplicate ledger cleanup complete: removed ${localRemoved} local repeat(s) and ${cloudRemoved} cloud repeat(s) across ${cloudGroups} duplicate group(s).`);
+  }
+
   async function recoverLocalInventory(){
     const result=migrate();
     render();
@@ -1101,7 +1177,10 @@
   function dedupeLedgerRows(list){
     const map=new Map();
     (list||[]).map(normalizeLedger).forEach(r=>{
-      const key=r.id || ledgerFingerprint(r);
+      // Ledger movements are de-duped by operational fingerprint, not ID.
+      // Cloud sync bugs can create hundreds of different IDs for the same exact deduction.
+      // Keeping the first/newest row prevents real multi-roll inventory from being mistaken for duplicate ledger spam.
+      const key=ledgerFingerprint(r);
       if(!map.has(key)) map.set(key,r);
     });
     return [...map.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
@@ -2291,6 +2370,8 @@
     $('syncSpoolPoolBtn')?.addEventListener('click',manualSyncSpoolPool);
     $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
     $('cleanBadImportsBtn')?.addEventListener('click',cleanBadProductionImports);
+    $('cleanDuplicateLedgerBtn')?.addEventListener('click',cleanDuplicateLedgerRows);
+    $('cleanDuplicateLedgerBtn2')?.addEventListener('click',cleanDuplicateLedgerRows);
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
     $('addEmptySpoolBtn')?.addEventListener('click', addEmptySpool);
     $('retireSpoolBtn')?.addEventListener('click', retireSpool);
