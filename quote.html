@@ -1426,6 +1426,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 @media(max-width:560px){.summary-grid{grid-template-columns:1fr 1fr!important}.send-package-actions{grid-template-columns:1fr}.send-package-card{padding:15px!important}.send-package-pill{font-size:.68rem}}
 
 </style>
+  <link rel="stylesheet" href="assets/erp-upgrade.css">
 </head>
 <body>
 <!-- QUOTE_TOOL_LITE_SUPABASE_QUOTES_V6 -->
@@ -1858,11 +1859,11 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
             <div class="pdf-line"><span>Balance Due</span><strong id="pdfBalance">$0.00</strong></div>
           </div>
           <div class="pdf-total-card invoice-only hidden">
-            <div class="pdf-line"><span>Subtotal</span><strong id="pdfSubtotal">$0.00</strong></div>
-            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfTax">$0.00</strong></div>
-            <div class="pdf-line"><span>Total</span><strong id="pdfTotal">$0.00</strong></div>
-            <div class="pdf-line"><span>Deposit</span><strong id="pdfDeposit">$0.00</strong></div>
-            <div class="pdf-line"><span>Balance</span><strong id="pdfBalance">$0.00</strong></div>
+            <div class="pdf-line"><span>Subtotal</span><strong id="pdfInvoiceSubtotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfInvoiceTax">$0.00</strong></div>
+            <div class="pdf-line"><span>Total</span><strong id="pdfInvoiceTotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Deposit</span><strong id="pdfInvoiceDeposit">$0.00</strong></div>
+            <div class="pdf-line"><span>Balance</span><strong id="pdfInvoiceBalance">$0.00</strong></div>
             <div class="pdf-line"><span>Invoice Amount</span><strong id="pdfInvoiceAmount">$0.00</strong></div>
           </div>
         </div>
@@ -1960,16 +1961,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
   </div>
 
 
-  <!-- Quote engine compatibility fields: invoicing now lives in Orders Admin, but the legacy calculator still expects these values. -->
-  <div class="quote-engine-compat" aria-hidden="true" style="display:none!important;">
-    <input id="invoiceNumber" type="hidden" value="" />
-    <select id="invoiceType">
-      <option value="deposit" selected>deposit</option>
-      <option value="full">full</option>
-    </select>
-    <textarea id="invoiceNotes"></textarea>
-  </div>
-
+  <!-- Quote engine compatibility fields removed: real advanced invoice fields are now the single source of truth. -->
 
   <div class="email-preview-modal hidden" id="quoteEmailPreviewModal" aria-hidden="true">
     <div class="email-preview-backdrop" id="quoteEmailPreviewBackdrop"></div>
@@ -2089,5 +2081,6 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 })();
 </script>
 
+  <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>

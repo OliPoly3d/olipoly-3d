@@ -251,6 +251,7 @@
       .project-spotlight{padding:16px}
     }
 </style>
+  <link rel="stylesheet" href="assets/erp-upgrade.css">
 </head>
 <body>
   <header class="site-header">
@@ -474,5 +475,6 @@
     document.getElementById('year').textContent = new Date().getFullYear();
     document.querySelectorAll('.nav-links a').forEach((link)=>{link.addEventListener('click',()=>document.getElementById('nav').classList.remove('open'));});
   </script>
+  <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>

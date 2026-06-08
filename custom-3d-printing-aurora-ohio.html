@@ -69,6 +69,7 @@
     @media(max-width:1040px){.nav-links{display:none}.mobile-menu-button{display:inline-flex}.nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:82px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}.nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}.hero,.showcase-section,.showcase-section.reverse,.wide-panel,.cta-band{grid-template-columns:1fr}.showcase-section.reverse .image-card,.showcase-section.reverse .copy-card{order:initial}.quick-grid,.steps-grid{grid-template-columns:1fr 1fr}.image-card img{min-height:330px}}
     @media(max-width:720px){html{scroll-padding-top:74px}.nav{width:min(100% - 20px,var(--max));min-height:64px}.brand-mark{width:42px;height:42px}.brand-mark img{width:40px;height:40px}.brand-name{font-size:1.68rem}.brand-sub{font-size:.58rem;letter-spacing:.065em}.nav-cta{display:none}.hero{width:min(100% - 20px,1220px);margin:16px auto 0;padding:26px 18px;border-radius:32px}.hero h1{font-size:clamp(3rem,18vw,4.65rem)}.hero-actions{display:grid}.button-primary,.button-secondary{width:100%}.hero-card{padding:20px}.section{width:min(100% - 24px,var(--max));padding:48px 0}.quick-grid,.steps-grid{grid-template-columns:1fr}.showcase-section{gap:18px}.image-card img{min-height:260px}.image-card.fit img{padding:6px}.cta-band{width:min(100% - 24px,var(--max));margin:14px auto 52px;padding:28px 20px;border-radius:32px}.footer-inner{width:min(100% - 24px,var(--max));display:grid}}
   </style>
+  <link rel="stylesheet" href="assets/erp-upgrade.css">
 </head>
 <body>
   <header class="site-header">
@@ -273,5 +274,6 @@
     document.addEventListener('keydown',function(event){if(event.key==='Escape'){closeImageLightbox()}});
     document.getElementById('year').textContent=new Date().getFullYear();
   </script>
+  <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>

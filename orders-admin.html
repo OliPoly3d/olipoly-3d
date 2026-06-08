@@ -799,6 +799,7 @@ body{font-family:Inter,Arial,sans-serif}
     }
 
 </style>
+  <link rel="stylesheet" href="assets/erp-upgrade.css">
 </head>
 <body>
   <div class="wrap">
@@ -2779,7 +2780,8 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}</body></html>`);
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}  <script src="assets/erp-upgrade.js" defer></script>
+</body></html>`);
       win.document.close();
       setTimeout(() => {
         win.focus();

@@ -450,6 +450,7 @@
     @media(max-width:900px){.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 </style>
+  <link rel="stylesheet" href="assets/erp-upgrade.css">
 </head>
 <body>
   <div class="wrap">
@@ -2226,6 +2227,7 @@
   loadCloudInventory().finally(render);
 })();
 </script>
+  <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>
 <script>window.inventoryMovementHistory={read(){try{return JSON.parse(localStorage.getItem("olipoly_inventory_movements")||"[]")}catch(e){return[]}},add(entry){const r=this.read();r.unshift({...entry,timestamp:new Date().toISOString()});localStorage.setItem("olipoly_inventory_movements",JSON.stringify(r.slice(0,5000)));}};</script>
