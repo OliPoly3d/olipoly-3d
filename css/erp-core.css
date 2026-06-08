@@ -1,0 +1,118 @@
+/* OliPoly ERP Core Hardening Layer - shared internal UI helpers
+   Safe to include on any internal page. It only adds opt-in classes and a lightweight toast area. */
+:root{
+  --erp-core-dock-bg: rgba(255,255,255,.88);
+  --erp-core-dock-line: rgba(101,60,120,.16);
+  --erp-core-dock-shadow: 0 -18px 44px rgba(54,24,68,.14);
+  --erp-core-focus: 0 0 0 4px rgba(236,72,153,.18);
+}
+.erp-toast-stack{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  gap: 10px;
+  z-index: 99999;
+  width: min(390px, calc(100vw - 28px));
+  pointer-events: none;
+}
+.erp-toast{
+  pointer-events: auto;
+  border: 1px solid rgba(101,60,120,.18);
+  background: rgba(255,255,255,.94);
+  color: #25182d;
+  box-shadow: 0 18px 48px rgba(45,20,54,.16);
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
+  backdrop-filter: blur(14px);
+  animation: erpToastIn .18s ease-out;
+  font-family: Inter, system-ui, sans-serif;
+}
+.erp-toast strong{display:block;font-size:13px;margin-bottom:3px;letter-spacing:.01em;}
+.erp-toast span{display:block;font-size:12px;line-height:1.35;color:#6f5a78;}
+.erp-toast button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;opacity:.7;}
+.erp-toast button:hover{opacity:1;}
+.erp-toast[data-type="success"]{border-color:rgba(22,163,74,.25)}
+.erp-toast[data-type="warning"]{border-color:rgba(245,158,11,.32)}
+.erp-toast[data-type="error"]{border-color:rgba(244,63,94,.28)}
+.erp-toast[data-type="info"]{border-color:rgba(99,102,241,.25)}
+@keyframes erpToastIn{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+.erp-cloud-status{
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 99990;
+  max-width: min(360px, calc(100vw - 28px));
+  border: 1px solid rgba(101,60,120,.16);
+  background: rgba(255,255,255,.90);
+  box-shadow: 0 14px 34px rgba(45,20,54,.12);
+  border-radius: 16px;
+  padding: 10px 12px;
+  font: 700 12px/1.35 Inter, system-ui, sans-serif;
+  color: #25182d;
+  display:none;
+  backdrop-filter: blur(14px);
+}
+.erp-cloud-status.show{display:block;}
+.erp-mobile-dock{
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 9000;
+  display:none;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 8px;
+  border:1px solid var(--erp-core-dock-line);
+  border-radius: 22px;
+  background: var(--erp-core-dock-bg);
+  box-shadow: var(--erp-core-dock-shadow);
+  backdrop-filter: blur(18px);
+}
+.erp-mobile-dock a,
+.erp-mobile-dock button{
+  appearance:none;
+  border:0;
+  background:transparent;
+  border-radius: 16px;
+  min-height: 48px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  color:#3b2944;
+  text-decoration:none;
+  font:800 10px/1 Inter, system-ui, sans-serif;
+  cursor:pointer;
+}
+.erp-mobile-dock a:focus-visible,
+.erp-mobile-dock button:focus-visible{outline:none;box-shadow:var(--erp-core-focus);}
+.erp-mobile-dock .ico{font-size:17px;line-height:1;}
+.erp-mobile-safe-bottom{padding-bottom:90px!important;}
+.erp-section-compact{content-visibility:auto;contain-intrinsic-size:1px 520px;}
+.erp-tap-target{min-height:44px;min-width:44px;}
+.erp-error-card{
+  border:1px solid rgba(244,63,94,.22);
+  background:rgba(255,241,244,.92);
+  color:#5b1728;
+  border-radius:18px;
+  padding:14px;
+  font:700 13px/1.4 Inter,system-ui,sans-serif;
+}
+.erp-muted-note{font-size:12px;line-height:1.45;color:#78657f;}
+@media (max-width: 760px){
+  body.erp-has-mobile-dock{padding-bottom:86px;}
+  .erp-mobile-dock{display:grid;}
+  .erp-toast-stack{right:14px;bottom:96px;}
+  .erp-cloud-status{bottom:96px;}
+  input,select,textarea,button{font-size:16px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .erp-toast{animation:none;}
+}
