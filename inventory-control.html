@@ -450,6 +450,56 @@
     .ledger-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
     @media(max-width:900px){.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+    /* === Inventory Control mobile polish patch 2026-06-08 === */
+    .inventory-mobile-summary{display:none}
+    .inventory-mobile-dock{display:none}
+    .inventory-mobile-safe-note{display:none}
+    @media(max-width:760px){
+      body{padding-bottom:92px}
+      .inventory-mobile-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px}
+      .inventory-mobile-summary a{min-height:58px;border-radius:18px;background:rgba(255,255,255,.78);border:1px solid var(--line);box-shadow:0 8px 22px rgba(84,38,94,.07);padding:9px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-weight:900;color:var(--ink)}
+      .inventory-mobile-summary span{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px}
+      .inventory-mobile-safe-note{display:block;margin:8px 0 0;font-size:.78rem;color:var(--muted);line-height:1.35}
+      .inventory-mobile-dock{position:fixed;left:8px;right:8px;bottom:8px;z-index:80;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:8px;border-radius:22px;background:rgba(255,250,254,.94);border:1px solid rgba(101,60,120,.16);box-shadow:0 18px 50px rgba(84,38,94,.22);backdrop-filter:blur(16px)}
+      .inventory-mobile-dock button{min-height:48px;border:0;border-radius:16px;background:rgba(255,255,255,.88);color:#5f456a;font-size:.68rem;font-weight:900;line-height:1.05;padding:7px 5px;box-shadow:inset 0 0 0 1px rgba(101,60,120,.11)}
+      .inventory-mobile-dock button.primary{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 10px 24px rgba(214,73,186,.24)}
+      #rawPanel,#suppliesPanel,#finishedPanel,#ledgerPanel,#forecastPanel{scroll-margin-top:12px}
+      #rawRollDetails{scroll-margin-top:12px}
+      .attention-list{display:grid;gap:8px}
+      .attention-item,.attention-card{border-radius:16px!important;padding:10px!important}
+      .summary-grid,.cards-grid{gap:9px!important}
+      .inventory-card,.supply-card,.summary-card,.finished-card{border-radius:18px!important;padding:12px!important}
+      .inventory-card h3,.supply-card h3,.summary-card h3,.finished-card h3{font-size:1rem!important;line-height:1.12;margin-bottom:6px!important}
+      .material-primary-stats,.summary-stats,.stat-grid{gap:7px!important}
+      .material-stat,.stat,.summary-stat,.spool-hero-card,.supply-hero-card{min-height:62px;border-radius:16px!important;padding:9px!important}
+      .material-stat span,.stat span,.summary-stat span,.spool-hero-card span,.supply-hero-card span{font-size:.56rem!important;line-height:1.05!important}
+      .material-stat strong,.stat strong,.summary-stat strong,.spool-hero-card strong,.supply-hero-card strong{font-size:1.06rem!important;line-height:1.05!important}
+      input,select,textarea{font-size:16px!important;min-height:44px;border-radius:15px!important}
+      textarea{min-height:82px!important}
+      label{font-size:.72rem!important}
+      .form-grid{gap:9px!important}
+      .form-grid label,.form-grid .span2,.form-grid .full{grid-column:1/-1!important}
+      .toolbar label,.toolbar.compact label{grid-column:1/-1!important}
+      .toolbar .ghost,.toolbar.compact .ghost{min-height:40px;border-radius:15px;font-size:.74rem;padding:8px 9px}
+      .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border-radius:18px;border:1px solid var(--line)}
+      .table-wrap table{margin:0}
+      th,td{font-size:.76rem;padding:9px 8px!important}
+      .modal{padding:8px!important;align-items:flex-end!important}
+      .modal-dialog{width:100%!important;max-height:88vh;overflow:auto;border-radius:24px 24px 18px 18px!important;padding:16px!important}
+      .modal-dialog h2{font-size:1.35rem!important}
+      .modal-dialog .actions{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.96));padding-top:10px}
+      #forecastPanel{display:block!important}
+      #forecastPanel.hidden{display:none!important}
+      #forecastPanel .forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px}
+      .forecast-card{border-radius:16px!important;padding:10px!important}
+      .forecast-card strong{font-size:1.02rem!important}
+      .closeout-audit-cards{display:grid;gap:8px}
+      .closeout-audit-card{border-radius:16px!important;padding:10px!important}
+      details.ops-collapse[open]>.collapse-body{padding-top:8px}
+      #advancedInventoryTools:not([open]){display:none}
+    }
+
 </style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
   <script defer src="js/erp-core.js"></script>
@@ -2247,6 +2297,45 @@
 })();
 </script>
   <script src="assets/erp-upgrade.js" defer></script>
+
+<script>
+/* Inventory mobile polish helpers: local page only, no shared CSS leakage. */
+(function(){
+  function $(id){return document.getElementById(id)}
+  function showTab(tab){
+    var btn=document.querySelector('.tab[data-tab="'+tab+'"]');
+    if(btn){btn.click();return true;}
+    return false;
+  }
+  function openEditorFor(tab){
+    var map={raw:'rawEditor',supplies:'supplyEditor',finished:'finishedEditor'};
+    var el=$(map[tab]||'rawEditor');
+    if(el){el.open=true;el.classList.remove('hidden');el.scrollIntoView({behavior:'smooth',block:'start'});}
+  }
+  function go(tab,target){
+    showTab(tab);
+    setTimeout(function(){
+      var el=$(target);
+      if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    },80);
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-inv-mobile]');
+    if(!b) return;
+    var action=b.getAttribute('data-inv-mobile');
+    e.preventDefault();
+    if(action==='add'){
+      var active=document.querySelector('.tab.active')?.dataset?.tab || 'raw';
+      if(active==='ledger') active='raw';
+      showTab(active); setTimeout(function(){openEditorFor(active)},80); return;
+    }
+    if(action==='raw') return go('raw','rawPanel');
+    if(action==='supplies') return go('supplies','suppliesPanel');
+    if(action==='ledger') return go('ledger','ledgerPanel');
+  });
+})();
+</script>
+
 </body>
 </html>
 <script>window.inventoryMovementHistory={read(){try{return JSON.parse(localStorage.getItem("olipoly_inventory_movements")||"[]")}catch(e){return[]}},add(entry){const r=this.read();r.unshift({...entry,timestamp:new Date().toISOString()});localStorage.setItem("olipoly_inventory_movements",JSON.stringify(r.slice(0,5000)));}};</script>
