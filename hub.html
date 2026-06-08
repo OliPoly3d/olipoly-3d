@@ -5778,6 +5778,112 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Upgrade: Executive Dashboard / Reliability Polish === -->
+<style id="olipolyExecutiveDashboardStyles">
+.exec-dashboard-shell{display:grid;gap:14px}.exec-kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.exec-kpi{border:1px solid rgba(148,163,184,.18);border-radius:18px;background:linear-gradient(180deg,rgba(15,23,42,.62),rgba(15,23,42,.34));padding:13px;min-height:92px}.exec-kpi span{display:block;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.exec-kpi strong{display:block;font-size:22px;margin-top:6px;color:#f9fafb}.exec-kpi small{display:block;color:#9ca3af;margin-top:5px;line-height:1.35}.exec-dashboard-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}.exec-box{border:1px solid rgba(148,163,184,.18);border-radius:18px;background:rgba(2,6,23,.24);padding:14px}.exec-box h3{margin:0 0 10px;font-size:15px}.exec-list{display:grid;gap:8px}.exec-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-top:1px solid rgba(148,163,184,.12);padding-top:8px}.exec-row:first-child{border-top:0;padding-top:0}.exec-row strong{font-size:13px}.exec-row small{display:block;color:#9ca3af;margin-top:2px}.exec-meter{height:9px;border-radius:999px;background:rgba(148,163,184,.16);overflow:hidden;margin-top:8px}.exec-meter i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(74,222,128,.9),rgba(250,204,21,.9),rgba(248,113,113,.9));width:0%}.exec-status-pill{border:1px solid rgba(148,163,184,.24);border-radius:999px;padding:5px 8px;font-size:11px;color:#d1d5db;background:rgba(15,23,42,.58);white-space:nowrap}.exec-status-pill.red{border-color:rgba(248,113,113,.5);color:#fecaca;background:rgba(127,29,29,.22)}.exec-status-pill.amber{border-color:rgba(251,191,36,.5);color:#fde68a;background:rgba(120,53,15,.22)}.exec-status-pill.green{border-color:rgba(74,222,128,.5);color:#bbf7d0;background:rgba(20,83,45,.22)}.exec-attention{display:grid;gap:8px}.exec-attention-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid rgba(148,163,184,.16);border-radius:14px;background:rgba(15,23,42,.34);padding:10px}.exec-score{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(244,114,182,.14);border:1px solid rgba(244,114,182,.32);font-weight:800;color:#fce7f3}.exec-empty{border:1px dashed rgba(148,163,184,.28);border-radius:16px;padding:16px;text-align:center;color:#9ca3af}.erp-mobile-safe input,.erp-mobile-safe button,.erp-mobile-safe a{min-height:40px}.erp-reliability-bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}.erp-reliability-badge{border:1px solid rgba(148,163,184,.2);border-radius:999px;padding:6px 9px;font-size:11px;color:#cbd5e1;background:rgba(15,23,42,.48)}.erp-reliability-badge.red{border-color:rgba(248,113,113,.5);color:#fecaca}.erp-reliability-badge.amber{border-color:rgba(251,191,36,.5);color:#fde68a}.erp-reliability-badge.green{border-color:rgba(74,222,128,.5);color:#bbf7d0}@media(max-width:1050px){.exec-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.exec-dashboard-grid{grid-template-columns:1fr}}@media(max-width:680px){body{overflow-x:hidden}.exec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.exec-kpi{padding:11px;min-height:82px}.exec-kpi strong{font-size:18px}.exec-attention-item,.exec-row{grid-template-columns:1fr}.exec-score{width:max-content;padding:6px 10px;height:auto}.erp-panel,.engine-card,.exec-box{border-radius:16px}.engine-nav{position:sticky;top:0;z-index:20;overflow:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}.engine-nav a{display:inline-flex;align-items:center;min-height:38px}.erp-panel-head{gap:10px}.erp-panel-head h2{font-size:18px}.erp-panel-head p{font-size:13px}}
+</style>
+<script id="olipolyExecutiveDashboardScript">
+(function(){
+  if(window.OliPolyExecutiveDashboardLoaded)return; window.OliPolyExecutiveDashboardLoaded=true;
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(v)||0);
+  const num=v=>Number(v)||0;
+  const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
+  const today=new Date(); const todayKey=today.toISOString().slice(0,10);
+  const startMonth=new Date(today.getFullYear(),today.getMonth(),1); const startYear=new Date(today.getFullYear(),0,1);
+  const dateOf=o=>{const v=o?.date||o?.created_at||o?.updated_at||o?.order_date||o?.quote_date||o?.due_date||o?.closed_at||''; const d=new Date(v); return isNaN(d)?null:d};
+  const dueOf=o=>{const v=o?.due_date||o?.dueDate||o?.needed_by||o?.target_date||''; const d=new Date(v); return isNaN(d)?null:d};
+  const status=o=>String(o?.status||o?.order_status||o?.production_status||o?.quote_status||o?.payment_status||'').toLowerCase();
+  const total=o=>num(o?.total||o?.grand_total||o?.quote_total||o?.order_total||o?.amount||o?.revenue||o?.price_total||o?.balance_due||o?.piece_price_total||o?.estimated_revenue);
+  const grams=o=>num(o?.grams||o?.grams_total||o?.total_grams||o?.remaining_grams||o?.available_grams||o?.stock_grams||o?.qty_grams||o?.weight_grams);
+  const hours=o=>num(o?.hours||o?.machine_hours||o?.print_hours||o?.estimated_hours||o?.hours_per_item)*Math.max(1,num(o?.quantity||o?.qty)||1);
+  const isOpen=o=>!/closed|complete|completed|delivered|cancel|declined|lost|paid/i.test(status(o));
+  function data(){const h=window.hubCloud||{}; return {
+    orders:(h.loaded&&h.orders?.length?h.orders:read('olipoly_orders_v1'))||[],
+    quotes:(h.loaded&&h.quotes?.length?h.quotes:read('olipoly_quotes_v1'))||[],
+    jobs:(h.productionLoaded&&h.jobs?.length?h.jobs:read('olipoly_production_jobs_v3'))||[],
+    inventory:(h.inventoryLoaded&&h.inventory?.length?h.inventory:read('olipoly_inventory_v2').concat(read('olipoly_filament_inventory_v1')))||[],
+    finance:(h.loaded&&h.finance?.length?h.finance:read('olipoly_finance_entries_v1'))||[]
+  }}
+  function revenue(entries,from){return entries.filter(e=>{const d=dateOf(e); const type=String(e.type||e.category||e.kind||'').toLowerCase(); return d&&d>=from&&(/sale|revenue|payment|income/.test(type)||total(e)>0&&!/expense|material|shipping|fee|equipment/.test(type));}).reduce((s,e)=>s+Math.abs(total(e)),0)}
+  function ageDays(d){return d?Math.floor((today-d)/86400000):0}
+  function skeleton(){
+    const consoleEl=$('erpConsole'); if(!consoleEl||$('erpExecutiveDashboard'))return;
+    const html='<section class="erp-panel erp-section-anchor" id="erpExecutiveDashboard"><div class="erp-panel-head"><div><h2>Executive Dashboard / Owner Command Center</h2><p>One owner view for revenue, production load, inventory risk, machine capacity, and reliability warnings.</p><div class="erp-reliability-bar" id="execReliabilityBar"></div></div><span class="erp-chip green">Owner View</span></div><div class="exec-dashboard-shell"><div class="exec-kpi-grid" id="execKpiGrid"></div><div class="exec-dashboard-grid"><div class="exec-box"><h3>Top 10 Things That Need Attention</h3><div class="exec-attention" id="execAttention"></div></div><div class="exec-box"><h3>Business Health Snapshot</h3><div class="exec-list" id="execHealth"></div></div><div class="exec-box"><h3>Production + Printer Capacity</h3><div class="exec-list" id="execProduction"></div></div><div class="exec-box"><h3>Inventory + Purchasing Risk</h3><div class="exec-list" id="execInventory"></div></div></div></div></section>';
+    consoleEl.insertAdjacentHTML('afterbegin',html);
+    const nav=document.querySelector('.engine-nav'); if(nav&&!nav.querySelector('a[href="#erpExecutiveDashboard"]')) nav.insertAdjacentHTML('afterbegin','<a href="#erpExecutiveDashboard">📊 Owner View</a>');
+    document.body.classList.add('erp-mobile-safe');
+  }
+  function kpi(label,value,note){return '<div class="exec-kpi"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong><small>'+esc(note||'')+'</small></div>'}
+  function pill(txt,cls){return '<span class="exec-status-pill '+(cls||'')+'">'+esc(txt)+'</span>'}
+  function row(title,sub,right,cls){return '<div class="exec-row"><div><strong>'+esc(title)+'</strong><small>'+esc(sub||'')+'</small></div>'+pill(right||'Open',cls)+'</div>'}
+  function attention(score,title,sub,href,cls){return '<a class="exec-attention-item" href="'+esc(href||'#')+'"><span class="exec-score">'+Math.round(score)+'</span><div><strong>'+esc(title)+'</strong><small>'+esc(sub||'')+'</small></div>'+pill(score>=85?'Critical':score>=65?'Soon':'Watch',cls|| (score>=85?'red':score>=65?'amber':'green'))+'</a>'}
+  function colorFor(score){return score>=85?'red':score>=65?'amber':'green'}
+  function build(){
+    const d=data(); const openOrders=d.orders.filter(isOpen), activeJobs=d.jobs.filter(isOpen), openQuotes=d.quotes.filter(isOpen);
+    const overdueJobs=activeJobs.filter(j=>{const due=dueOf(j);return due&&due<new Date(todayKey+'T00:00:00')});
+    const dueWeek=activeJobs.filter(j=>{const due=dueOf(j);return due&&due>=new Date(todayKey+'T00:00:00')&&due<=new Date(Date.now()+7*86400000)});
+    const openOrderValue=openOrders.reduce((s,o)=>s+total(o),0); const openQuoteValue=openQuotes.reduce((s,q)=>s+total(q),0);
+    const outstanding=d.orders.filter(o=>!/paid|closed|complete/i.test(String(o.payment_status||o.status||''))).reduce((s,o)=>s+total(o),0);
+    const mtd=revenue(d.finance,startMonth); const ytd=revenue(d.finance,startYear);
+    const lowInv=d.inventory.filter(i=>{const g=grams(i); const thresh=num(i.reorder_threshold||i.threshold_grams||i.low_stock_threshold||250); return g>0&&g<=thresh;});
+    const criticalInv=d.inventory.filter(i=>{const g=grams(i); const thresh=num(i.reorder_threshold||i.threshold_grams||i.low_stock_threshold||250); return g>0&&g<=Math.max(100,thresh*.5);});
+    const invValue=d.inventory.reduce((s,i)=>s+(grams(i)*num(i.cost_per_gram||i.unit_cost||i.costPerGram||0)),0);
+    const hours7=dueWeek.reduce((s,j)=>s+hours(j),0); const capacity=80; const util=Math.min(100,Math.round(hours7/capacity*100));
+    return {d,openOrders,activeJobs,openQuotes,overdueJobs,dueWeek,openOrderValue,openQuoteValue,outstanding,mtd,ytd,lowInv,criticalInv,invValue,hours7,util};
+  }
+  function render(){
+    skeleton(); if(!$('erpExecutiveDashboard'))return; const b=build();
+    $('execKpiGrid').innerHTML=[
+      kpi('MTD Revenue',money(b.mtd),'Finance entries this month'),
+      kpi('YTD Revenue',money(b.ytd),'Finance entries this year'),
+      kpi('Open Quotes',money(b.openQuoteValue),b.openQuotes.length+' quote(s) still active'),
+      kpi('Open Orders',money(b.openOrderValue),b.openOrders.length+' order(s) in flight'),
+      kpi('Outstanding',money(b.outstanding),'Unpaid / not closed orders')
+    ].join('');
+    const attentionItems=[];
+    b.overdueJobs.forEach(j=>attention(98, j.job_title||j.title||'Overdue production job', 'Due '+(j.due_date||j.dueDate||'unknown')+' · '+(j.printer||j.machine||'printer not assigned'), 'production-control.html', 'red'));
+    b.criticalInv.forEach(i=>attention(92, 'Critical reorder: '+[i.material_type||i.type,i.color,i.brand].filter(Boolean).join(' '), Math.round(grams(i))+'g remaining', 'inventory-control.html', 'red'));
+    b.openQuotes.filter(q=>ageDays(dateOf(q))>14).forEach(q=>attention(78, 'Follow up quote '+(q.quote_number||''), (q.customer_name||q.customerName||'Customer')+' · '+ageDays(dateOf(q))+' days old', 'quote.html', 'amber'));
+    if(b.outstanding>0)attentionItems.push(attention(84,'Collect outstanding balance',money(b.outstanding)+' open across unpaid/not closed orders','orders-admin.html','amber'));
+    b.dueWeek.slice(0,5).forEach(j=>attention(65, 'Due this week: '+(j.job_title||j.title||'Production job'), (j.due_date||j.dueDate||'No due date')+' · '+Math.round(hours(j))+'h est.', 'production-control.html', 'amber'));
+    b.lowInv.slice(0,5).forEach(i=>attention(58, 'Low stock: '+[i.material_type||i.type,i.color,i.brand].filter(Boolean).join(' '), Math.round(grams(i))+'g remaining', 'inventory-control.html', 'green'));
+    $('execAttention').innerHTML=(attentionItems.join('') || '<div class="exec-empty">No critical actions found. Check production, inventory, and finance after your next sync.</div>');
+    $('execHealth').innerHTML=[
+      row('Quote Conversion Signal', b.openQuotes.length+' open quote(s); accepted/closed quotes improve this metric', b.openQuotes.length?'Follow up':'Healthy', b.openQuotes.length?'amber':'green'),
+      row('Cash Collection', money(b.outstanding)+' outstanding', b.outstanding?'Needs review':'Clear', b.outstanding?'amber':'green'),
+      row('Active Workload', b.activeJobs.length+' active production job(s)', b.activeJobs.length>10?'Heavy':'Normal', b.activeJobs.length>10?'amber':'green'),
+      row('Data Coverage', [b.d.orders.length+' orders',b.d.quotes.length+' quotes',b.d.jobs.length+' jobs',b.d.inventory.length+' inventory'].join(' · '), 'Loaded', 'green')
+    ].join('');
+    $('execProduction').innerHTML=[
+      row('Jobs Due This Week', b.dueWeek.length+' job(s), about '+Math.round(b.hours7)+' machine hour(s)', b.dueWeek.length?'Plan':'Clear', b.dueWeek.length?'amber':'green'),
+      row('Overdue Jobs', b.overdueJobs.length+' overdue job(s)', b.overdueJobs.length?'Critical':'Clear', b.overdueJobs.length?'red':'green'),
+      '<div class="exec-row"><div><strong>7-Day Printer Utilization</strong><small>'+Math.round(b.hours7)+'h scheduled against assumed '+80+'h two-printer capacity</small><div class="exec-meter"><i style="width:'+Math.min(100,b.util)+'%"></i></div></div>'+pill(b.util+'%',colorFor(b.util))+'</div>',
+      row('Unassigned Printer Risk', b.activeJobs.filter(j=>!(j.printer||j.machine)).length+' active job(s) without printer assignment', b.activeJobs.some(j=>!(j.printer||j.machine))?'Assign':'Good', b.activeJobs.some(j=>!(j.printer||j.machine))?'amber':'green')
+    ].join('');
+    $('execInventory').innerHTML=[
+      row('Inventory Value', money(b.invValue)+' estimated material value', 'Estimate', 'green'),
+      row('Critical Reorders', b.criticalInv.length+' item(s) below critical threshold', b.criticalInv.length?'Buy now':'Clear', b.criticalInv.length?'red':'green'),
+      row('Low Stock Materials', b.lowInv.length+' item(s) at or below reorder point', b.lowInv.length?'Watch':'Healthy', b.lowInv.length?'amber':'green'),
+      row('Purchase Planner', 'Use Material Purchase Planner for projected shortage list', 'Open', 'green')
+    ].join('');
+    const h=window.hubCloud||{}; const badges=[];
+    badges.push({txt:navigator.onLine?'Online':'Offline',cls:navigator.onLine?'green':'red'});
+    badges.push({txt:(h.loaded||h.productionLoaded||h.inventoryLoaded)?'Cloud data loaded':'Using local/cache data',cls:(h.loaded||h.productionLoaded||h.inventoryLoaded)?'green':'amber'});
+    badges.push({txt:localStorage.length+' local storage keys',cls:'green'});
+    badges.push({txt:'Last refresh '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}),cls:'green'});
+    $('execReliabilityBar').innerHTML=badges.map(b=>'<span class="erp-reliability-badge '+b.cls+'">'+esc(b.txt)+'</span>').join('');
+  }
+  document.addEventListener('DOMContentLoaded',()=>{render();setTimeout(render,1000);setTimeout(render,2800)});
+  window.addEventListener('online',render); window.addEventListener('offline',render); window.addEventListener('storage',()=>setTimeout(render,200)); window.addEventListener('olipoly-auth-changed',()=>setTimeout(render,1200));
+  const oldFull=window.fullRender; if(typeof oldFull==='function'&&!oldFull.__executiveWrapped){window.fullRender=async function(){const r=await oldFull.apply(this,arguments);render();return r};window.fullRender.__executiveWrapped=true;}
+  window.OliPolyExecutiveDashboard={render,build};
+})();
+</script>
+
   <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>
