@@ -1,0 +1,8 @@
+/* OliPoly upgrade compatibility layer.
+   Restores missing asset references without changing page themes. */
+:root{--olipoly-upgrade-loaded:1}
+img[loading="lazy"]{content-visibility:auto}
+@media (max-width:760px){
+  .erp-mobile-stack{display:grid!important;grid-template-columns:1fr!important}
+  .erp-mobile-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
