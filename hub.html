@@ -2876,6 +2876,57 @@ body.erp-mode .kicker{
   line-height:1!important;
 }
 
+
+
+/* === Hub Docs + Knowledge Cleanup Pass 2026-06-08 === */
+.topbar-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.topbar-actions .ghost{
+  min-height:40px!important;
+  padding:9px 13px!important;
+}
+.topbar-actions .ghost.docs-link{
+  background:linear-gradient(135deg,rgba(124,77,255,.18),rgba(57,215,255,.09))!important;
+  border-color:rgba(129,151,255,.26)!important;
+}
+.topbar-actions .ghost.knowledge-link{
+  background:linear-gradient(135deg,rgba(53,241,162,.12),rgba(57,215,255,.08))!important;
+  border-color:rgba(53,241,162,.22)!important;
+}
+.engine-nav-label{
+  display:block;
+  padding:13px 10px 5px;
+  color:#65789b;
+  font-size:.62rem;
+  font-weight:950;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+.engine-nav a.doc-nav-link{
+  color:#eaf0ff!important;
+  background:linear-gradient(135deg,rgba(124,77,255,.18),rgba(57,215,255,.08));
+  border-color:rgba(129,151,255,.16);
+}
+.engine-nav a.knowledge-nav-link{
+  color:#eaf0ff!important;
+  background:linear-gradient(135deg,rgba(53,241,162,.12),rgba(57,215,255,.07));
+  border-color:rgba(53,241,162,.16);
+}
+.engine-rail-status .rail-status-line a{
+  color:#8ee8ff;
+  text-decoration:none;
+  font-weight:900;
+}
+@media(max-width:760px){
+  .topbar-actions{width:100%;display:grid;grid-template-columns:1fr;gap:8px}
+  .topbar-actions .ghost{width:100%!important}
+}
+
 </style>
   <script>
 /* === OliPoly Inline Shared Auth Bridge - no external file dependency === */
@@ -3071,25 +3122,29 @@ body.erp-mode .kicker{
       </div>
     </div>
     <nav class="engine-nav">
-      <a class="active" href="#cloudHealthStrip">⌘ Hub Home</a>
+      <span class="engine-nav-label">Daily Work</span>
+      <a class="active" href="#erpToday">⌘ Today</a>
+      <a href="#erpActionCenterV2">⚡ Required Actions</a>
       <a href="#newRequestWizard">＋ New Request</a>
-      <a href="#inventoryImpactSection">⚠ Inventory Impact</a>
-      <a href="#customerIntelligenceSection">👥 Customers</a>
-      <a href="#customerTimelineSection">⟡ Timeline</a>
-      <a href="#hubSearchInput">⌕ Search</a>
+      <span class="engine-nav-label">Operations</span>
       <a href="production-control.html">▣ Production</a>
       <a href="orders-admin.html">▤ Orders</a>
       <a href="quote.html">◈ Quote</a>
       <a href="inventory-control.html">⬢ Inventory</a>
       <a href="finance-pro.html">$ Finance</a>
-      <a href="erp-handbook.html">☰ Handbook</a>
-      <a href="erp-knowledge-library.html">◆ Knowledge</a>
+      <span class="engine-nav-label">Reference</span>
+      <a class="doc-nav-link" href="erp-handbook.html">☰ ERP Handbook</a>
+      <a class="knowledge-nav-link" href="erp-knowledge-library.html">◆ Knowledge Library</a>
+      <span class="engine-nav-label">Tools</span>
+      <a href="#hubSearchInput">⌕ Search</a>
     </nav>
     <div class="engine-rail-status">
       <strong>System Status</strong>
       <div class="rail-status-line"><span>Cloud Sync</span><b>Connected</b></div>
       <div class="rail-status-line"><span>Data Integrity</span><b>Active</b></div>
       <div class="rail-status-line"><span>Engine Mode</span><b>Operational</b></div>
+      <div class="rail-status-line"><span>Docs</span><a href="erp-handbook.html">Handbook</a></div>
+      <div class="rail-status-line"><span>Recipes</span><a href="erp-knowledge-library.html">Knowledge</a></div>
     </div>
   </aside>
 
@@ -3098,7 +3153,11 @@ body.erp-mode .kicker{
       <img src="images/poly-mascot.png" alt="Poly mascot">
       <div><h1>Oli<span class="pink">Poly</span> 3D</h1><small>Operations Engine • Internal OS</small></div>
     </a>
-    <a class="ghost" href="index.html">Open Main Site</a>
+    <div class="topbar-actions" aria-label="Hub quick links">
+      <a class="ghost" href="index.html">Open Main Site</a>
+      <a class="ghost docs-link" href="erp-handbook.html">ERP Handbook</a>
+      <a class="ghost knowledge-link" href="erp-knowledge-library.html">Knowledge Library</a>
+    </div>
   </header>
 
 
@@ -4191,18 +4250,24 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     var nav=document.querySelector('.engine-nav');
     if(!nav) return;
     nav.innerHTML=[
+      '<span class="engine-nav-label">Daily Work</span>',
       '<a class="active" href="#erpToday">⌘ Today</a>',
+      '<a href="#erpActionCenterV2">⚡ Required Actions</a>',
       '<a href="#newRequestWizard">＋ New Request</a>',
-      '<a href="#erpProductionInventory">▣ Production</a>',
-      '<a href="#erpProductionInventory">⬢ Inventory</a>',
-      '<a href="#erpCustomersFinance">👥 Customers</a>',
-      '<a href="#erpCustomersFinance">◈ Quotes</a>',
-      '<a href="#erpCustomersFinance">$ Finance</a>',
-      '<a href="#erpTimelinePanel">⟡ Timeline</a>',
-      '<a href="#hubSearchInput">⌕ Search</a>',
-      '<a href="production-control.html">Open Production</a>',
-      '<a href="orders-admin.html">Open Orders</a>',
-      '<a href="inventory-control.html">Open Inventory</a>'
+      '<a href="#erpSchedulerEngineV1">▦ Scheduler</a>',
+      '<span class="engine-nav-label">Operations</span>',
+      '<a href="production-control.html">▣ Production</a>',
+      '<a href="orders-admin.html">▤ Orders</a>',
+      '<a href="quote.html">◈ Quote</a>',
+      '<a href="inventory-control.html">⬢ Inventory</a>',
+      '<a href="finance-pro.html">$ Finance</a>',
+      '<span class="engine-nav-label">Reference</span>',
+      '<a class="doc-nav-link" href="erp-handbook.html">☰ ERP Handbook</a>',
+      '<a class="knowledge-nav-link" href="erp-knowledge-library.html">◆ Knowledge Library</a>',
+      '<span class="engine-nav-label">Health</span>',
+      '<a href="#erpDataQuality">✓ Data Health</a>',
+      '<a href="#erpInventoryTraceabilityV1">↻ Traceability</a>',
+      '<a href="#hubSearchInput">⌕ Search</a>'
     ].join('');
     nav.querySelectorAll('a[href^="#"]').forEach(function(a){
       a.addEventListener('click',function(e){
