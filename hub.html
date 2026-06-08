@@ -5664,6 +5664,120 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Upgrade: Customer 360 / CRM Panel === -->
+<style id="olipolyCustomer360Styles">
+.customer360-shell{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(320px,1.4fr);gap:16px;align-items:start}.customer360-search{display:flex;gap:10px;align-items:center;margin:10px 0 14px}.customer360-search input{width:100%;border:1px solid rgba(148,163,184,.28);border-radius:14px;padding:12px 14px;background:rgba(15,23,42,.55);color:#e5e7eb;outline:none}.customer360-list{display:grid;gap:10px;max-height:680px;overflow:auto;padding-right:4px}.customer360-card{border:1px solid rgba(148,163,184,.22);border-radius:16px;background:rgba(15,23,42,.42);padding:12px;text-align:left;color:#e5e7eb;cursor:pointer;display:grid;gap:6px}.customer360-card:hover,.customer360-card.active{border-color:rgba(244,114,182,.75);background:rgba(244,114,182,.09)}.customer360-card strong{font-size:14px}.customer360-card small{color:#9ca3af;line-height:1.35}.customer360-detail{border:1px solid rgba(148,163,184,.22);border-radius:20px;background:linear-gradient(180deg,rgba(15,23,42,.64),rgba(15,23,42,.38));padding:16px;min-height:300px}.customer360-hero{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:1px solid rgba(148,163,184,.16);padding-bottom:14px;margin-bottom:14px}.customer360-hero h3{margin:0;font-size:24px}.customer360-hero p{margin:6px 0 0;color:#9ca3af}.customer360-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.customer360-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.customer360-metric{border:1px solid rgba(148,163,184,.18);border-radius:15px;background:rgba(2,6,23,.3);padding:11px}.customer360-metric span{display:block;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.customer360-metric strong{display:block;font-size:18px;margin-top:4px}.customer360-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.customer360-box{border:1px solid rgba(148,163,184,.18);border-radius:16px;background:rgba(2,6,23,.22);padding:12px}.customer360-box h4{margin:0 0 10px;font-size:13px;color:#f9fafb}.customer360-timeline{display:grid;gap:8px}.customer360-event{display:grid;grid-template-columns:88px 1fr auto;gap:10px;align-items:center;border-top:1px solid rgba(148,163,184,.12);padding-top:8px}.customer360-event:first-child{border-top:0;padding-top:0}.customer360-event small{color:#9ca3af}.customer360-pill{border:1px solid rgba(148,163,184,.22);border-radius:999px;padding:5px 8px;font-size:11px;color:#d1d5db;background:rgba(15,23,42,.55);white-space:nowrap}.customer360-pill.red{border-color:rgba(248,113,113,.45);color:#fecaca;background:rgba(127,29,29,.25)}.customer360-pill.amber{border-color:rgba(251,191,36,.45);color:#fde68a;background:rgba(120,53,15,.25)}.customer360-pill.green{border-color:rgba(74,222,128,.45);color:#bbf7d0;background:rgba(20,83,45,.25)}.customer360-empty{border:1px dashed rgba(148,163,184,.28);border-radius:16px;padding:18px;color:#9ca3af;text-align:center}.customer360-insights{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}@media(max-width:850px){.customer360-shell{grid-template-columns:1fr}.customer360-list{max-height:360px}.customer360-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.customer360-grid{grid-template-columns:1fr}.customer360-hero{display:block}.customer360-actions{justify-content:flex-start;margin-top:10px}.customer360-event{grid-template-columns:1fr}.customer360-event .customer360-pill{width:max-content}}
+</style>
+<script id="olipolyCustomer360Script">
+(function(){
+  if(window.OliPolyCustomer360Loaded)return; window.OliPolyCustomer360Loaded=true;
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0);
+  const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
+  const dateOnly=v=>String(v||'').slice(0,10);
+  const clean=v=>String(v||'').trim();
+  const keyOf=o=> clean(o.customer_email||o.email||o.billing_email||o.contact_email||'').toLowerCase() || clean(o.customer_name||o.customerName||o.company||o.company_name||o.name||o.client_name||'').toLowerCase();
+  const nameOf=o=> clean(o.customer_name||o.customerName||o.company||o.company_name||o.name||o.client_name||o.email||o.customer_email||'Unknown Customer');
+  const emailOf=o=> clean(o.customer_email||o.email||o.billing_email||o.contact_email||'');
+  const phoneOf=o=> clean(o.customer_phone||o.phone||o.phone_number||'');
+  const companyOf=o=> clean(o.company||o.company_name||o.business_name||'');
+  const statusOf=o=> clean(o.status||o.order_status||o.quote_status||o.payment_status||'');
+  const totalOf=o=> Number(o.total||o.grand_total||o.quote_total||o.order_total||o.amount||o.revenue||o.price_total||o.balance_due||0)||0;
+  const linkOrder=o=> typeof deepLink==='function'?deepLink('order',o,'orders-admin.html'):'orders-admin.html';
+  const linkQuote=o=> typeof deepLink==='function'?deepLink('quote',o,'quote.html'):'quote.html';
+  const linkJob=o=> typeof deepLink==='function'?deepLink('job',o,'production-control.html'):'production-control.html';
+  const linkFinance=o=> typeof deepLink==='function'?deepLink('finance',o,'finance-pro.html'):'finance-pro.html';
+  let state={query:'',active:null};
+  function data(){
+    const cloud=window.hubCloud||{};
+    return {
+      customers:(cloud.customerLoaded&&cloud.customers?.length?cloud.customers:read('olipoly_customers_v1'))||[],
+      orders:(cloud.loaded&&cloud.orders?.length?cloud.orders:read('olipoly_orders_v1'))||[],
+      quotes:(cloud.loaded&&cloud.quotes?.length?cloud.quotes:read('olipoly_quotes_v1'))||[],
+      jobs:(cloud.productionLoaded&&cloud.jobs?.length?cloud.jobs:read('olipoly_production_jobs_v3'))||[],
+      finance:(cloud.loaded&&cloud.finance?.length?cloud.finance:read('olipoly_finance_entries_v1'))||[]
+    };
+  }
+  function add(map,obj,type){
+    const k=keyOf(obj); if(!k)return;
+    if(!map.has(k)) map.set(k,{key:k,name:nameOf(obj),email:emailOf(obj),phone:phoneOf(obj),company:companyOf(obj),taxExempt:false,poCustomer:false,orders:[],quotes:[],jobs:[],finance:[],events:[],sources:new Set()});
+    const c=map.get(k); c.name=c.name==='Unknown Customer'?nameOf(obj):c.name; c.email=c.email||emailOf(obj); c.phone=c.phone||phoneOf(obj); c.company=c.company||companyOf(obj);
+    c.taxExempt=c.taxExempt||!!(obj.tax_exempt||obj.taxExempt||obj.exempt_certificate||String(obj.tax_status||'').toLowerCase().includes('exempt'));
+    c.poCustomer=c.poCustomer||!!(obj.po_number||obj.poNumber||obj.purchase_order||String(obj.payment_terms||obj.terms||'').toLowerCase().includes('net'));
+    c.sources.add(type);
+    c[type].push(obj);
+    const dt=dateOnly(obj.updated_at||obj.created_at||obj.date||obj.order_date||obj.quote_date||obj.due_date);
+    const title= type==='orders' ? (obj.order_number||obj.op_number||'Order') : type==='quotes' ? (obj.quote_number||'Quote') : type==='jobs' ? (obj.job_title||obj.title||'Production job') : type==='finance' ? (obj.description||obj.category||'Finance entry') : 'Customer note';
+    c.events.push({date:dt||'—',type,title,status:statusOf(obj),amount:totalOf(obj),href:type==='orders'?linkOrder(obj):type==='quotes'?linkQuote(obj):type==='jobs'?linkJob(obj):type==='finance'?linkFinance(obj):'#'});
+  }
+  function buildCustomers(){
+    const d=data(), map=new Map();
+    d.customers.forEach(x=>add(map,x,'customers'));
+    d.orders.forEach(x=>add(map,x,'orders'));
+    d.quotes.forEach(x=>add(map,x,'quotes'));
+    d.jobs.forEach(x=>add(map,x,'jobs'));
+    d.finance.forEach(x=>add(map,x,'finance'));
+    const arr=[...map.values()].map(c=>{
+      const revenue=c.orders.reduce((s,o)=>s+totalOf(o),0)+c.finance.filter(f=>String(f.type||f.category||'').toLowerCase().includes('sale')).reduce((s,f)=>s+totalOf(f),0);
+      const openBalance=c.orders.filter(o=>!/paid|closed|complete/i.test(String(o.payment_status||o.status||''))).reduce((s,o)=>s+totalOf(o),0);
+      const dates=c.events.map(e=>e.date).filter(x=>x&&x!=='—').sort();
+      c.revenue=revenue; c.openBalance=openBalance; c.firstDate=dates[0]||'—'; c.lastDate=dates[dates.length-1]||'—';
+      c.openQuotes=c.quotes.filter(q=>!/accepted|declined|closed|lost|cancel/i.test(String(q.quote_status||q.status||''))).length;
+      c.openOrders=c.orders.filter(o=>!/closed|complete|delivered|cancel/i.test(String(o.order_status||o.status||''))).length;
+      return c;
+    });
+    return arr.sort((a,b)=>(b.openBalance-a.openBalance)||(b.revenue-a.revenue)||(String(b.lastDate).localeCompare(String(a.lastDate))));
+  }
+  function insights(c){
+    const out=[]; const daysLast=c.lastDate&&c.lastDate!=='—'?Math.floor((Date.now()-new Date(c.lastDate+'T00:00:00').getTime())/86400000):null;
+    if(c.openBalance>0) out.push({txt:'Open balance '+money(c.openBalance),cls:'red'});
+    if(c.openQuotes>0) out.push({txt:c.openQuotes+' open quote'+(c.openQuotes>1?'s':''),cls:'amber'});
+    if(c.openOrders>0) out.push({txt:c.openOrders+' active order'+(c.openOrders>1?'s':''),cls:'green'});
+    if(daysLast!==null&&daysLast>90) out.push({txt:'No activity in '+daysLast+' days',cls:'amber'});
+    if(c.poCustomer) out.push({txt:'PO / terms customer',cls:'green'});
+    if(c.taxExempt) out.push({txt:'Tax exempt',cls:'green'});
+    return out;
+  }
+  function skeleton(){
+    const consoleEl=$('erpConsole'); if(!consoleEl||$('erpCustomer360'))return;
+    const after=$('erpUnifiedActionQueue')||consoleEl.firstElementChild;
+    const html='<section class="erp-panel erp-section-anchor" id="erpCustomer360"><div class="erp-panel-head"><div><h2>Customer 360 / CRM</h2><p>One customer view across quotes, orders, production jobs, finance entries, and follow-up signals.</p></div><span class="erp-chip green">CRM Brain</span></div><div class="customer360-search"><input id="customer360Search" placeholder="Search customers, companies, email, order or quote history..."><a class="erp-chip" href="quote.html">New Quote</a><a class="erp-chip" href="orders-admin.html">Orders</a></div><div class="customer360-shell"><div class="customer360-list" id="customer360List"></div><div class="customer360-detail" id="customer360Detail"></div></div></section>';
+    if(after) after.insertAdjacentHTML('afterend',html); else consoleEl.insertAdjacentHTML('afterbegin',html);
+    const nav=document.querySelector('.engine-nav'); if(nav&&!nav.querySelector('a[href="#erpCustomer360"]')) nav.insertAdjacentHTML('beforeend','<a href="#erpCustomer360">👤 Customer 360</a>');
+    $('customer360Search')?.addEventListener('input',e=>{state.query=e.target.value||'';render();});
+  }
+  function listCard(c){
+    const sub=[c.email,c.company,c.openOrders?c.openOrders+' active order(s)':'',c.openQuotes?c.openQuotes+' open quote(s)':''].filter(Boolean).join(' · ');
+    return '<button class="customer360-card '+(state.active===c.key?'active':'')+'" data-customer-key="'+esc(c.key)+'"><strong>'+esc(c.name)+'</strong><small>'+esc(sub||'No contact details found')+'</small><small>'+esc(money(c.revenue))+' lifetime · last '+esc(c.lastDate)+'</small></button>';
+  }
+  function eventRow(e){return '<div class="customer360-event"><small>'+esc(e.date||'—')+'</small><a href="'+esc(e.href)+'"><strong>'+esc(e.title)+'</strong><small>'+esc([e.type,e.status,e.amount?money(e.amount):''].filter(Boolean).join(' · '))+'</small></a><span class="customer360-pill">Open</span></div>';}
+  function detail(c){
+    if(!c)return '<div class="customer360-empty">Select a customer to see quotes, orders, production jobs, finance activity, and follow-up intelligence.</div>';
+    const ins=insights(c).map(i=>'<span class="customer360-pill '+i.cls+'">'+esc(i.txt)+'</span>').join('')||'<span class="customer360-pill green">No urgent customer flags</span>';
+    const recent=c.events.sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,12).map(eventRow).join('')||'<div class="customer360-empty">No timeline activity found.</div>';
+    const avg=c.orders.length?c.revenue/c.orders.length:0;
+    return '<div class="customer360-hero"><div><h3>'+esc(c.name)+'</h3><p>'+esc([c.email,c.phone,c.company].filter(Boolean).join(' · ')||'No contact details captured yet')+'</p><div class="customer360-insights">'+ins+'</div></div><div class="customer360-actions"><a class="erp-chip" href="quote.html?customer='+encodeURIComponent(c.name)+'">New Quote</a><a class="erp-chip" href="orders-admin.html?customer='+encodeURIComponent(c.name)+'">Orders</a><a class="erp-chip" href="production-control.html?customer='+encodeURIComponent(c.name)+'">Production</a></div></div><div class="customer360-metrics"><div class="customer360-metric"><span>Lifetime Revenue</span><strong>'+money(c.revenue)+'</strong></div><div class="customer360-metric"><span>Open Balance</span><strong>'+money(c.openBalance)+'</strong></div><div class="customer360-metric"><span>Avg Order</span><strong>'+money(avg)+'</strong></div><div class="customer360-metric"><span>Last Activity</span><strong>'+esc(c.lastDate)+'</strong></div></div><div class="customer360-grid"><div class="customer360-box"><h4>Customer Snapshot</h4><div class="customer360-timeline"><div class="customer360-event"><small>Email</small><strong>'+esc(c.email||'—')+'</strong><span class="customer360-pill">Contact</span></div><div class="customer360-event"><small>Terms</small><strong>'+esc(c.poCustomer?'PO / Net terms':'Retail / standard')+'</strong><span class="customer360-pill '+(c.poCustomer?'green':'')+'">Terms</span></div><div class="customer360-event"><small>Tax</small><strong>'+esc(c.taxExempt?'Tax exempt':'Standard tax')+'</strong><span class="customer360-pill '+(c.taxExempt?'green':'')+'">Tax</span></div><div class="customer360-event"><small>First</small><strong>'+esc(c.firstDate)+'</strong><span class="customer360-pill">History</span></div></div></div><div class="customer360-box"><h4>ERP Counts</h4><div class="customer360-timeline"><div class="customer360-event"><small>Quotes</small><strong>'+c.quotes.length+' total · '+c.openQuotes+' open</strong><span class="customer360-pill amber">Sales</span></div><div class="customer360-event"><small>Orders</small><strong>'+c.orders.length+' total · '+c.openOrders+' active</strong><span class="customer360-pill green">Ops</span></div><div class="customer360-event"><small>Jobs</small><strong>'+c.jobs.length+' production record(s)</strong><span class="customer360-pill">Shop</span></div><div class="customer360-event"><small>Finance</small><strong>'+c.finance.length+' finance entr'+(c.finance.length===1?'y':'ies')+'</strong><span class="customer360-pill">Money</span></div></div></div><div class="customer360-box" style="grid-column:1/-1"><h4>Activity Timeline</h4><div class="customer360-timeline">'+recent+'</div></div></div>';
+  }
+  function render(){
+    skeleton(); if(!$('erpCustomer360'))return;
+    const customers=buildCustomers(); const q=state.query.toLowerCase();
+    const filtered=customers.filter(c=>!q||[c.name,c.email,c.phone,c.company,c.events.map(e=>e.title).join(' ')].join(' ').toLowerCase().includes(q));
+    if(!state.active && filtered[0]) state.active=filtered[0].key;
+    const active=filtered.find(c=>c.key===state.active)||filtered[0]||null; if(active) state.active=active.key;
+    $('customer360List').innerHTML=filtered.slice(0,80).map(listCard).join('')||'<div class="customer360-empty">No customers found yet. Customer 360 builds itself from Quotes, Orders, Production, Finance, and Customers records.</div>';
+    $('customer360Detail').innerHTML=detail(active);
+  }
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-customer-key]'); if(!b)return; state.active=b.dataset.customerKey; render();});
+  document.addEventListener('DOMContentLoaded',()=>{render();setTimeout(render,1000);setTimeout(render,2600)});
+  window.addEventListener('olipoly-auth-changed',()=>setTimeout(render,1200));
+  const oldFull=window.fullRender; if(typeof oldFull==='function'&&!oldFull.__customer360Wrapped){window.fullRender=async function(){const r=await oldFull.apply(this,arguments);render();return r};window.fullRender.__customer360Wrapped=true;}
+  window.OliPolyCustomer360={render,buildCustomers};
+})();
+</script>
+
   <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>
