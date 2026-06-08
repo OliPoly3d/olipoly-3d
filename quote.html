@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Quote Tool Lite</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/erp-core.css" />
   <style>
 :root{
   --bg:#f5eef7; --panel:rgba(255,255,255,.92); --panel2:rgba(255,246,251,.94); --line:rgba(236,72,153,.14);
@@ -1426,7 +1427,8 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 @media(max-width:560px){.summary-grid{grid-template-columns:1fr 1fr!important}.send-package-actions{grid-template-columns:1fr}.send-package-card{padding:15px!important}.send-package-pill{font-size:.68rem}}
 
 </style>
-  <link rel="stylesheet" href="assets/erp-upgrade.css">
+  <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
+  <script defer src="js/erp-core.js"></script>
 </head>
 <body>
 <!-- QUOTE_TOOL_LITE_SUPABASE_QUOTES_V6 -->
@@ -1859,11 +1861,11 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
             <div class="pdf-line"><span>Balance Due</span><strong id="pdfBalance">$0.00</strong></div>
           </div>
           <div class="pdf-total-card invoice-only hidden">
-            <div class="pdf-line"><span>Subtotal</span><strong id="pdfInvoiceSubtotal">$0.00</strong></div>
-            <div class="pdf-line"><span>Sales Tax</span><strong id="pdfInvoiceTax">$0.00</strong></div>
-            <div class="pdf-line"><span>Total</span><strong id="pdfInvoiceTotal">$0.00</strong></div>
-            <div class="pdf-line"><span>Deposit</span><strong id="pdfInvoiceDeposit">$0.00</strong></div>
-            <div class="pdf-line"><span>Balance</span><strong id="pdfInvoiceBalance">$0.00</strong></div>
+            <div class="pdf-line"><span>Subtotal</span><strong data-sync-id="pdfSubtotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Sales Tax</span><strong data-sync-id="pdfTax">$0.00</strong></div>
+            <div class="pdf-line"><span>Total</span><strong data-sync-id="pdfTotal">$0.00</strong></div>
+            <div class="pdf-line"><span>Deposit</span><strong data-sync-id="pdfDeposit">$0.00</strong></div>
+            <div class="pdf-line"><span>Balance</span><strong data-sync-id="pdfBalance">$0.00</strong></div>
             <div class="pdf-line"><span>Invoice Amount</span><strong id="pdfInvoiceAmount">$0.00</strong></div>
           </div>
         </div>
@@ -1961,7 +1963,8 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
   </div>
 
 
-  <!-- Quote engine compatibility fields removed: real advanced invoice fields are now the single source of truth. -->
+
+  <!-- Compatibility invoice fields removed: visible professional invoice controls are now the single source of truth. -->
 
   <div class="email-preview-modal hidden" id="quoteEmailPreviewModal" aria-hidden="true">
     <div class="email-preview-backdrop" id="quoteEmailPreviewBackdrop"></div>
@@ -2081,6 +2084,6 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 })();
 </script>
 
-  <script src="assets/erp-upgrade.js" defer></script>
+  <script src="js/erp-polish.js?v=20260608"></script>
 </body>
 </html>

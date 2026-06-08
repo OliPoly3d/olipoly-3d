@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OliPoly 3D | Orders Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/erp-core.css" />
   <style>
     :root{
       --bg:#08101f; --panel:rgba(12,19,40,.88); --panel2:rgba(17,26,52,.92); --line:rgba(126,144,255,.18);
@@ -799,7 +800,8 @@ body{font-family:Inter,Arial,sans-serif}
     }
 
 </style>
-  <link rel="stylesheet" href="assets/erp-upgrade.css">
+  <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
+  <script defer src="js/erp-core.js"></script>
 </head>
 <body>
   <div class="wrap">
@@ -2780,7 +2782,7 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}  <script src="assets/erp-upgrade.js" defer></script>
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}  <script src="js/erp-polish.js?v=20260608"></script>
 </body></html>`);
       win.document.close();
       setTimeout(() => {
