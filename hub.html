@@ -5496,6 +5496,174 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
 })();
 </script>
 
+
+<!-- === OliPoly ERP Upgrade: True Unified Action Queue === -->
+<style id="olipolyUnifiedActionQueueStyles">
+  body.erp-mode #erpUnifiedActionQueue{
+    border:1px solid rgba(151,246,212,.28);
+    background:linear-gradient(135deg,rgba(12,20,42,.97),rgba(18,24,48,.94) 48%,rgba(28,18,42,.92));
+    box-shadow:0 26px 80px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  body.erp-mode .unified-queue-top{
+    display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px;align-items:stretch;margin-top:14px;
+  }
+  body.erp-mode .queue-hero{
+    border:1px solid rgba(151,246,212,.18);border-radius:22px;padding:18px;background:linear-gradient(135deg,rgba(151,246,212,.13),rgba(255,91,174,.08));min-height:190px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;
+  }
+  body.erp-mode .queue-hero:after{content:"";position:absolute;right:-70px;top:-80px;width:210px;height:210px;border-radius:999px;background:radial-gradient(circle,rgba(151,246,212,.22),transparent 66%);pointer-events:none;}
+  body.erp-mode .queue-hero h3{font-size:clamp(1.35rem,2.6vw,2.15rem);line-height:1.05;margin:10px 0 8px;color:#f7fbff!important;letter-spacing:-.04em;position:relative;z-index:1;}
+  body.erp-mode .queue-hero p{color:#b8c5db!important;line-height:1.45;margin:0;position:relative;z-index:1;}
+  body.erp-mode .queue-hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative;z-index:1;}
+  body.erp-mode .queue-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+  body.erp-mode .queue-kpi{border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:13px;background:rgba(255,255,255,.045);min-height:96px;}
+  body.erp-mode .queue-kpi span{display:block;color:#8fa1c2!important;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:900;}
+  body.erp-mode .queue-kpi strong{display:block;color:#fff!important;font-size:1.7rem;margin:6px 0 2px;}
+  body.erp-mode .queue-kpi small{color:#9fb0cd!important;line-height:1.3;display:block;}
+  body.erp-mode .queue-filterbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px;align-items:center;}
+  body.erp-mode .queue-filterbar button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#dce8ff;border-radius:999px;padding:9px 12px;font-weight:900;cursor:pointer;font-size:.82rem;}
+  body.erp-mode .queue-filterbar button.active{background:linear-gradient(135deg,var(--erp-green),var(--erp-pink));color:#061120;border-color:transparent;box-shadow:0 10px 28px rgba(151,246,212,.13);}
+  body.erp-mode .queue-filterbar input{margin-left:auto;min-width:230px;max-width:360px;flex:1;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.2);color:#fff;border-radius:999px;padding:10px 13px;outline:none;}
+  body.erp-mode .unified-action-list{display:grid;gap:9px;}
+  body.erp-mode .unified-action-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;text-decoration:none;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px;background:rgba(255,255,255,.045);transition:transform .18s ease,border-color .18s ease,background .18s ease;}
+  body.erp-mode .unified-action-row:hover{transform:translateY(-1px);border-color:rgba(151,246,212,.32);background:rgba(151,246,212,.065);}
+  body.erp-mode .unified-action-row strong{display:block;color:#f7fbff!important;font-size:.98rem;line-height:1.2;}
+  body.erp-mode .unified-action-row small{display:block;color:#9fb0cd!important;margin-top:4px;line-height:1.32;}
+  body.erp-mode .queue-score{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;font-weight:1000;color:#061120;background:linear-gradient(135deg,var(--erp-green),var(--erp-pink));box-shadow:0 12px 25px rgba(0,0,0,.22);}
+  body.erp-mode .queue-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+  body.erp-mode .queue-dismiss{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#cfe0ff;border-radius:999px;padding:8px 10px;font-weight:900;cursor:pointer;}
+  body.erp-mode .queue-dismiss:hover{background:rgba(255,91,174,.14);border-color:rgba(255,91,174,.3);}
+  body.erp-mode .queue-empty{border:1px dashed rgba(151,246,212,.3);border-radius:18px;padding:18px;color:#b8c5db!important;background:rgba(151,246,212,.04);}
+  body.erp-mode .queue-red .queue-score{background:linear-gradient(135deg,#ff5b7a,#ffb56b);color:#22050b;}
+  body.erp-mode .queue-amber .queue-score{background:linear-gradient(135deg,#ffd166,#ff9f1c);color:#211300;}
+  body.erp-mode .queue-green .queue-score{background:linear-gradient(135deg,#97f6d4,#75e0ff);}
+  @media(max-width:900px){
+    body.erp-mode .unified-queue-top{grid-template-columns:1fr;}
+    body.erp-mode .queue-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    body.erp-mode .queue-filterbar input{min-width:100%;margin-left:0;}
+    body.erp-mode .unified-action-row{grid-template-columns:auto minmax(0,1fr);}
+    body.erp-mode .unified-action-row .erp-chip,body.erp-mode .queue-dismiss{grid-column:auto;justify-self:start;}
+  }
+</style>
+<script id="olipolyUnifiedActionQueueScript">
+(function(){
+  if(window.__olipolyUnifiedActionQueueV1)return; window.__olipolyUnifiedActionQueueV1=true;
+  var $=function(id){return document.getElementById(id)};
+  var state={filter:'all',search:''};
+  var DISMISS_KEY='olipoly_unified_action_queue_dismissed_v1';
+  function readLS(k,fallback){try{return JSON.parse(localStorage.getItem(k)||'null')??fallback}catch(e){return fallback}}
+  function writeLS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function money(v){try{return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0)}catch(e){return '$'+(Number(v)||0).toFixed(2)}}
+  function grams(v){var n=Number(v)||0;return n>=1000?(n/1000).toFixed(2).replace(/\.00$/,'')+'kg':Math.round(n)+'g'}
+  function daysUntil(d){if(!d)return null;var t=new Date(String(d).slice(0,10)+'T12:00:00').getTime();if(!isFinite(t))return null;return Math.ceil((t-Date.now())/86400000)}
+  function cleanStatus(v){return String(v||'').toLowerCase().replace(/[\s-]+/g,'_')}
+  function closedStatus(s){return ['closed','completed','archived','failed_scrap','cancelled','canceled','declined','expired'].indexOf(cleanStatus(s))>=0}
+  function readData(){
+    var d=typeof combinedData==='function'?combinedData():{};
+    function r(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return []}}
+    return {
+      jobs:Array.isArray(d.jobs)?d.jobs:r('olipoly_production_jobs_v3'),
+      orders:Array.isArray(d.orders)?d.orders:r('olipoly_orders_v1'),
+      quotes:Array.isArray(d.quotes)?d.quotes:r('olipoly_quote_history_v2'),
+      finance:Array.isArray(d.finance)?d.finance:r('olipoly_finance_entries_v1')
+    };
+  }
+  function linkJob(j){var key=j?.id||j?.job_title||j?.order_ref||j?.order_number||'';return key?'production-control.html?job='+encodeURIComponent(key):'production-control.html'}
+  function linkOrder(o){var key=o?.order_number||o?.id||o?.customer_name||'';return key?'orders-admin.html?order='+encodeURIComponent(key):'orders-admin.html'}
+  function linkQuote(q){var key=q?.quote_number||q?.quoteNumber||q?.id||'';return key?'quote.html?quote='+encodeURIComponent(key):'quote.html'}
+  function linkInv(x){var key=[x?.material_type||x?.material,x?.color||x?.color_name,x?.brand||x?.item_name||x?.name].filter(Boolean).join(' ');return key?'inventory-control.html?inventory='+encodeURIComponent(key):'inventory-control.html'}
+  function idFor(kind,obj,extra){return [kind,obj?.id,obj?.job_id,obj?.order_number,obj?.quote_number,obj?.job_title,obj?.customer_name,extra].filter(Boolean).join('|').toLowerCase().slice(0,220)}
+  function push(list,a){a.score=Math.max(1,Math.min(100,Math.round(a.score||50)));a.id=a.id||idFor(a.category||'action',{},a.title+a.sub);list.push(a)}
+  function quoteTotal(q){return Number(q.final_quote||q.quote_total||q.total||q.finalQuote||q.grand_total||0)||0}
+  function orderTotal(o){return Number(o.order_total||o.total||o.grand_total||o.invoice_total||0)||0}
+  function buildQueue(){
+    var d=readData(), actions=[];
+    var dismissed=readLS(DISMISS_KEY,{}), now=Date.now();
+    Object.keys(dismissed).forEach(function(k){if(now-dismissed[k]>36*3600000) delete dismissed[k]});writeLS(DISMISS_KEY,dismissed);
+    var inv=typeof evaluateInventoryImpact==='function'?evaluateInventoryImpact():{risk:[],watch:[]};
+    (inv.risk||[]).forEach(function(r){
+      var material=[r.need?.material_type,r.need?.color,r.need?.brand].filter(Boolean).join(' / ')||'tracked material';
+      push(actions,{category:'blocked',severity:'red',score:100,title:'Material blocks '+(r.job?.job_title||'production job'),sub:'Short '+grams(r.short)+' of '+material+'. Buy or change material before printing.',tag:'Blocked',href:linkInv(r.need||r.group||{}),source:'Inventory + Production',why:'Active production demand exceeds available stock',id:idFor('blocked',r.job,material)});
+    });
+    var openJobs=(d.jobs||[]).filter(function(j){return !closedStatus(j.production_status||j.status)});
+    openJobs.forEach(function(j){
+      var st=cleanStatus(j.production_status||j.status), due=daysUntil(j.due_date), hrs=Number(j.machine_hours||j.estimated_hours||j.estimated_total_hours||j.hours||0)||0;
+      if(due!==null && due<0) push(actions,{category:'production',severity:'red',score:96+Math.min(4,Math.abs(due)),title:'Overdue production: '+(j.job_title||'Production job'),sub:'Due '+j.due_date+' · '+Math.abs(due)+' day(s) late · '+(hrs?hrs+'h estimate':'hours not set'),tag:'Overdue',href:linkJob(j),source:'Production',why:'Past due date',id:idFor('job-overdue',j,j.due_date)});
+      else if(due!==null && due<=2) push(actions,{category:'production',severity:'amber',score:86+(2-due)*3,title:'Due soon: '+(j.job_title||'Production job'),sub:'Due '+j.due_date+' · '+(j.machine_preference||j.actual_machine||'machine not assigned')+' · '+(hrs?hrs+'h':'hours not set'),tag:'Schedule',href:linkJob(j),source:'Production',why:'Due within 48 hours',id:idFor('job-due',j,j.due_date)});
+      if(['idea_request','idea','request','accepted','ready_to_quote'].indexOf(st)>=0 && (Number(j.estimated_material_cost||0)||hrs||Number(j.estimated_price_each||0))) push(actions,{category:'customer',severity:'green',score:68,title:'Quote-ready job: '+(j.job_title||'Production job'),sub:'Cost data exists. Review price/terms and send quote.',tag:'Quote',href:'quote.html?fromJob='+encodeURIComponent(j.id||j.job_title||''),source:'Production → Quote',why:'Job has enough estimate data to quote',id:idFor('job-quote',j,'quote')});
+      if(['printing','post_processing','post_print','packaging','ready','ready_for_pickup','delivery_scheduled'].indexOf(st)>=0) push(actions,{category:'production',severity:st==='printing'?'green':'amber',score:74,title:'Advance workflow: '+(j.job_title||'Production job'),sub:String(j.production_status||j.status||'active').replace(/_/g,' ')+' · update status, closeout, or delivery step.',tag:'Update',href:linkJob(j),source:'Production',why:'Job is mid-workflow',id:idFor('job-advance',j,st)});
+    });
+    (d.orders||[]).filter(function(o){return !closedStatus(o.order_status||o.status)}).forEach(function(o){
+      var pay=cleanStatus(o.payment_status||o.paymentStatus||o.status), total=orderTotal(o), due=daysUntil(o.due_date||o.promise_date||o.delivery_date);
+      if(total>0 && ['unpaid','deposit_due','payment_due','invoice_sent'].indexOf(pay)>=0) push(actions,{category:'finance',severity:'amber',score:82,title:'Payment needs action: '+(o.order_number||o.customer_name||'Order'),sub:[o.customer_name,money(total),String(o.payment_status||'payment due').replace(/_/g,' ')].filter(Boolean).join(' · '),tag:'Collect',href:linkOrder(o),source:'Orders + Finance',why:'Open order has unpaid balance/deposit',id:idFor('order-pay',o,pay)});
+      if(total>0 && !o.finance_pushed && !o.finance_not_required && ['paid','deposit_paid','completed','ready'].indexOf(pay)>=0) push(actions,{category:'finance',severity:'green',score:72,title:'Push to Finance Pro: '+(o.order_number||'Order'),sub:[o.customer_name,money(total),'not yet recorded'].filter(Boolean).join(' · '),tag:'Finance',href:linkOrder(o),source:'Orders → Finance',why:'Revenue appears ready but not pushed',id:idFor('order-finance',o,'push')});
+      if(due!==null && due<=2) push(actions,{category:'orders',severity:due<0?'red':'amber',score:due<0?90:76,title:(due<0?'Overdue order: ':'Upcoming order: ')+(o.order_number||o.customer_name||'Order'),sub:[o.customer_name,'due '+(o.due_date||o.promise_date||o.delivery_date),money(total)].filter(Boolean).join(' · '),tag:due<0?'Overdue':'Due',href:linkOrder(o),source:'Orders',why:'Order due date requires attention',id:idFor('order-due',o,due)});
+    });
+    (d.quotes||[]).filter(function(q){return !closedStatus(q.quote_status||q.quoteStatus||q.status)}).forEach(function(q){
+      var age=daysUntil(q.follow_up_date||q.quote_date||q.created_at); var ageDays=age===null?null:-age;
+      var score=ageDays!==null&&ageDays>=3?73:58;
+      push(actions,{category:'customer',severity:ageDays!==null&&ageDays>=7?'amber':'',score:score,title:'Follow up quote: '+(q.quote_number||q.quoteTitle||q.quote_title||'Quote'),sub:[q.customer_name||q.customerName,quoteTotal(q)?money(quoteTotal(q)):'no total',q.quote_status||q.quoteStatus||'pending'].filter(Boolean).join(' · '),tag:'Follow Up',href:linkQuote(q),source:'Quote',why:ageDays!==null?'Quote has aged '+Math.max(0,ageDays)+' day(s)':'Open quote awaiting response',id:idFor('quote-followup',q,'pending')});
+    });
+    var lows=typeof lowInventoryRows==='function'?lowInventoryRows():{lowRaw:[],lowSupplies:[]};
+    (lows.lowRaw||[]).forEach(function(g){push(actions,{category:'inventory',severity:Number(g.available)<=0?'red':'amber',score:Number(g.available)<=0?88:64,title:'Reorder '+[g.material_type,g.color,g.brand].filter(Boolean).join(' / '),sub:'Available '+grams(g.available)+' · threshold '+grams(g.threshold),tag:Number(g.available)<=0?'Out':'Low',href:linkInv(g),source:'Inventory',why:'At or below reorder threshold',id:idFor('low-raw',g,'raw')});});
+    (lows.lowSupplies||[]).forEach(function(s){push(actions,{category:'inventory',severity:Number(s.quantity_on_hand)<=0?'red':'amber',score:Number(s.quantity_on_hand)<=0?86:62,title:'Reorder supply: '+(s.item_name||'Supply'),sub:'On hand '+(s.quantity_on_hand||0)+' '+(s.unit_type||'')+' · threshold '+(s.reorder_threshold||0),tag:Number(s.quantity_on_hand)<=0?'Out':'Low',href:linkInv(s),source:'Inventory',why:'Supply is at or below reorder threshold',id:idFor('low-supply',s,'supply')});});
+    actions=actions.filter(function(a){return !dismissed[a.id]});
+    return actions.sort(function(a,b){return b.score-a.score});
+  }
+  function skeleton(){
+    var consoleEl=$('erpConsole'); if(!consoleEl||$('erpUnifiedActionQueue'))return;
+    consoleEl.insertAdjacentHTML('afterbegin',[
+      '<section class="erp-panel erp-section-anchor" id="erpUnifiedActionQueue">',
+        '<div class="erp-panel-head"><div><h2>Unified ERP Action Queue</h2><p>One ranked list across Production, Inventory, Orders, Quotes, Finance, and customer follow-up.</p></div><span class="erp-chip green">Command Queue</span></div>',
+        '<div class="unified-queue-top"><div class="queue-hero" id="queueHero"></div><div class="queue-kpi-grid">',
+          '<div class="queue-kpi"><span>Blocked</span><strong id="queueBlocked">0</strong><small>Material or overdue blockers</small></div>',
+          '<div class="queue-kpi"><span>Production</span><strong id="queueProduction">0</strong><small>Jobs to schedule/update</small></div>',
+          '<div class="queue-kpi"><span>Customer</span><strong id="queueCustomer">0</strong><small>Quotes or approvals</small></div>',
+          '<div class="queue-kpi"><span>Finance</span><strong id="queueFinance">0</strong><small>Payment or posting</small></div>',
+        '</div></div>',
+        '<div class="queue-filterbar" id="queueFilters">',
+          '<button data-filter="all" class="active">All</button><button data-filter="blocked">Blocked</button><button data-filter="production">Production</button><button data-filter="inventory">Inventory</button><button data-filter="customer">Customer</button><button data-filter="finance">Finance</button><button data-filter="orders">Orders</button>',
+          '<input id="queueSearch" placeholder="Search actions, customers, materials...">',
+        '</div>',
+        '<div class="unified-action-list" id="unifiedActionList"></div>',
+      '</section>'
+    ].join(''));
+    var nav=document.querySelector('.engine-nav');
+    if(nav && !nav.querySelector('a[href="#erpUnifiedActionQueue"]')) nav.insertAdjacentHTML('afterbegin','<a href="#erpUnifiedActionQueue">⚡ Action Queue</a>');
+    $('queueFilters')?.addEventListener('click',function(e){var b=e.target.closest('button[data-filter]');if(!b)return;state.filter=b.dataset.filter;Array.from($('queueFilters').querySelectorAll('button')).forEach(function(x){x.classList.toggle('active',x===b)});render();});
+    $('queueSearch')?.addEventListener('input',function(e){state.search=e.target.value||'';render();});
+  }
+  function row(a){
+    var cls=a.severity==='red'?'queue-red':a.severity==='amber'?'queue-amber':a.severity==='green'?'queue-green':'';
+    return '<div class="unified-action-row '+cls+'" data-action-id="'+esc(a.id)+'"><a class="queue-score" href="'+esc(a.href||'#')+'">'+esc(a.score)+'</a><a href="'+esc(a.href||'#')+'"><strong>'+esc(a.title)+'</strong><small>'+esc(a.sub||'')+'</small><span class="queue-meta"><b class="erp-mini-pill">'+esc(a.source||a.category)+'</b><b class="erp-mini-pill">'+esc(a.why||'Ranked by urgency')+'</b></span></a><a class="erp-chip '+(a.severity==='red'?'red':a.severity==='amber'?'amber':a.severity==='green'?'green':'')+'" href="'+esc(a.href||'#')+'">'+esc(a.tag||'Open')+'</a><button class="queue-dismiss" data-dismiss="'+esc(a.id)+'">Done for now</button></div>'
+  }
+  function render(){
+    skeleton(); if(!$('erpUnifiedActionQueue'))return;
+    var actions=buildQueue();
+    var counts={blocked:0,production:0,customer:0,finance:0};
+    actions.forEach(function(a){if(a.category==='blocked'||a.severity==='red')counts.blocked++; if(a.category==='production')counts.production++; if(a.category==='customer')counts.customer++; if(a.category==='finance')counts.finance++;});
+    if($('queueBlocked'))$('queueBlocked').textContent=counts.blocked;
+    if($('queueProduction'))$('queueProduction').textContent=counts.production;
+    if($('queueCustomer'))$('queueCustomer').textContent=counts.customer;
+    if($('queueFinance'))$('queueFinance').textContent=counts.finance;
+    var next=actions[0];
+    if($('queueHero')) $('queueHero').innerHTML=next?'<div><span class="erp-mini-pill '+(next.severity==='red'?'red':next.severity==='amber'?'warn':'green')+'">Next best action</span><h3>'+esc(next.title)+'</h3><p>'+esc(next.sub||next.why||'Open the source tool and resolve this item first.')+'</p></div><div class="queue-hero-actions"><a class="erp-chip '+(next.severity==='red'?'red':next.severity==='amber'?'amber':'green')+'" href="'+esc(next.href||'#')+'">Open '+esc(next.tag||'Action')+'</a><span class="erp-mini-pill">Score '+esc(next.score)+'</span><span class="erp-mini-pill">'+esc(next.source||'ERP')+'</span></div>':'<div><span class="erp-mini-pill green">Clear</span><h3>No required actions found.</h3><p>Nothing is currently blocked, overdue, unpaid, low-stock, or waiting on customer follow-up based on available ERP data.</p></div><div class="queue-hero-actions"><a class="erp-chip green" href="production-control.html">Open Production</a><a class="erp-chip" href="inventory-control.html">Open Inventory</a></div>';
+    var q=state.search.toLowerCase();
+    var filtered=actions.filter(function(a){var hay=[a.category,a.title,a.sub,a.source,a.why,a.tag].join(' ').toLowerCase();return (state.filter==='all'||a.category===state.filter||(state.filter==='blocked'&&(a.category==='blocked'||a.severity==='red'))) && (!q||hay.indexOf(q)>=0)});
+    if($('unifiedActionList')) $('unifiedActionList').innerHTML=filtered.slice(0,40).map(row).join('')||'<div class="queue-empty">No matching actions. Try another filter or clear dismissed items by waiting 36 hours.</div>';
+  }
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-dismiss]');if(!b)return;e.preventDefault();var d=readLS(DISMISS_KEY,{});d[b.dataset.dismiss]=Date.now();writeLS(DISMISS_KEY,d);render();});
+  document.addEventListener('DOMContentLoaded',function(){render();setTimeout(render,900);setTimeout(render,2500);});
+  window.addEventListener('olipoly-auth-changed',function(){setTimeout(render,1200)});
+  var oldFull=window.fullRender;
+  if(typeof oldFull==='function' && !oldFull.__unifiedQueueWrapped){
+    window.fullRender=async function(){var r=await oldFull.apply(this,arguments);render();return r};
+    window.fullRender.__unifiedQueueWrapped=true;
+  }
+  window.OliPolyUnifiedActionQueue={render:render,buildQueue:buildQueue};
+})();
+</script>
+
   <script src="assets/erp-upgrade.js" defer></script>
 </body>
 </html>
