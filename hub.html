@@ -3082,7 +3082,6 @@ body.erp-mode .kicker{
       <a href="quote.html">◈ Quote</a>
       <a href="inventory-control.html">⬢ Inventory</a>
       <a href="finance-pro.html">$ Finance</a>
-      <a href="erp-handbook.html">? Handbook</a>
     </nav>
     <div class="engine-rail-status">
       <strong>System Status</strong>
@@ -3097,7 +3096,7 @@ body.erp-mode .kicker{
       <img src="images/poly-mascot.png" alt="Poly mascot">
       <div><h1>Oli<span class="pink">Poly</span> 3D</h1><small>Operations Engine • Internal OS</small></div>
     </a>
-    <div class="actions"><a class="ghost" href="erp-handbook.html">ERP Handbook</a><a class="ghost" href="index.html">Open Main Site</a></div>
+    <a class="ghost" href="index.html">Open Main Site</a>
   </header>
 
 
@@ -3435,7 +3434,6 @@ body.erp-mode .kicker{
       <a class="action-card" data-recent-label="Quote Tool" href="quote.html"><strong>Generate Quote</strong><small>Use after production cost and margin have been checked.</small><span class="tag">Quote</span></a>
       <a class="action-card" data-recent-label="Orders Admin" href="orders-admin.html"><strong>Manage Orders</strong><small>Invoice, labels, tracker, completion email, and finance push.</small><span class="tag">Orders</span></a>
       <a class="action-card" data-recent-label="Inventory Control" href="inventory-control.html"><strong>Check Inventory</strong><small>Low stock, raw rolls, supplies, reservations, and history.</small><span class="tag">Inventory</span></a>
-      <a class="action-card" data-recent-label="ERP Handbook" href="erp-handbook.html"><strong>Open ERP Handbook</strong><small>End-to-end instructions, customer paths, troubleshooting, and what-step-next guidance.</small><span class="tag">Guide</span></a>
     </div>
   </section>
 </div>
@@ -5917,6 +5915,22 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
   function quoteNo(x){return String(x.quote_number||x.quoteNo||x.quote_id||x.id||'').trim()}
   function jobNo(x){return String(x.job_number||x.jobNo||x.order_number||x.order_ref||x.orderRef||x.id||'').trim()}
   function invKey(r){return [r.material_type||r.material||r.type,r.color||r.color_name,r.brand].map(norm).join('|')}
+  function invLabelFromKey(k){return String(k||'').split('|').map(x=>x||'—').join(' / ')}
+  function invLabel(r){return [r.material_type||r.material||r.type||'Material',r.color||r.color_name,r.brand].filter(Boolean).join(' / ')}
+  function invAvailable(r){return num(r.available_grams||r.grams_remaining||r.quantity_grams||r.remaining_grams||r.current_grams||r.currentWeight||r.remaining||r.available||r.qty||r.quantity)}
+  function invCostBasis(r){
+    const direct=[r.cost_per_gram,r.costPerGram,r.price_per_gram,r.pricePerGram,r.unit_cost_per_gram,r.cost_per_unit_gram].some(v=>num(v)>0);
+    const total=[r.cost,r.purchase_cost,r.purchaseCost,r.roll_cost,r.rollCost,r.spool_cost,r.spoolCost,r.total_cost,r.totalCost,r.price_paid,r.pricePaid,r.purchase_price,r.purchasePrice,r.unit_cost,r.unitCost,r.cost_basis,r.costBasis,r.item_cost,r.itemCost].some(v=>num(v)>0);
+    const calcTotal=num(r.purchase_price||r.purchasePrice||r.price_paid||r.pricePaid||r.total_cost||r.totalCost||r.roll_cost||r.rollCost||r.cost||r.purchase_cost||r.purchaseCost);
+    const calcGrams=num(r.original_grams||r.starting_grams||r.spool_grams||r.roll_grams||r.total_grams||r.quantity_grams||r.grams||r.weight_grams||r.net_weight_grams||r.netWeightGrams||r.startingWeight);
+    return direct||total||(calcTotal>0&&calcGrams>0);
+  }
+  function looksLikeInventoryClone(a,b){
+    const fields=['material_type','material','type','color','color_name','brand','available_grams','grams_remaining','quantity_grams','remaining_grams','qty','cost_per_gram','costPerGram','purchase_cost','purchaseCost','roll_cost','rollCost','created_at','date_added','lot','lot_id','roll_id','id'];
+    let matches=0, compared=0;
+    fields.forEach(f=>{if(a[f]!=null&&b[f]!=null){compared++; if(norm(a[f])===norm(b[f]))matches++;}});
+    return compared>=8 && matches===compared;
+  }
   function issue(out,sev,cat,title,detail,href,id,extra){out.push({sev,cat,title,detail,href:href||'hub.html',id:id||cat+'-'+out.length,extra:extra||''})}
   function buildIssues(){
     const d=rows(); const out=[]; const seen={};
@@ -5927,8 +5941,27 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     d.orders.filter(o=>!email(o)&&!isClosedOrder(o)).slice(0,30).forEach(o=>issue(out,'amber','Customer','Order missing customer email',(orderNo(o)||customerName(o)||'Order')+' has no email, which can break follow-up, invoicing, and tracking.','orders-admin.html','order-email-'+(orderNo(o)||Math.random())));
     d.quotes.filter(q=>!email(q)&&!['declined','expired','converted','accepted'].includes(norm(q.quote_status||q.status))).slice(0,30).forEach(q=>issue(out,'amber','Customer','Open quote missing email',(quoteNo(q)||customerName(q)||'Quote')+' has no customer email.','quote.html','quote-email-'+(quoteNo(q)||Math.random())));
 
-    const invMap={}; (d.raw||[]).forEach(r=>{const k=invKey(r); if(k!=='||')(invMap[k]||(invMap[k]=[])).push(r); const available=num(r.available_grams||r.grams_remaining||r.quantity_grams||r.remaining_grams||r.available||r.qty); if(available<0)issue(out,'red','Inventory','Negative raw material inventory',[r.material_type||r.material||'Material',r.color||r.color_name,r.brand].filter(Boolean).join(' / ')+' is '+Math.round(available)+'g. Reconcile roll quantities.','inventory-control.html','inv-neg-'+k); const cpg=num(r.cost_per_gram||r.costPerGram); const cost=num(r.cost||r.purchase_cost||r.roll_cost); if(available>0&&!cpg&&!cost)issue(out,'amber','Inventory','Material missing cost',[r.material_type||r.material||'Material',r.color||r.color_name,r.brand].filter(Boolean).join(' / ')+' has stock but no cost basis. Profit estimates may be wrong.','inventory-control.html','inv-cost-'+k); if(num(r.reorder_threshold||r.threshold_grams||r.reorderThreshold)<0)issue(out,'amber','Inventory','Invalid reorder threshold',[r.material_type||r.material||'Material',r.color||r.color_name,r.brand].filter(Boolean).join(' / ')+' has a negative reorder threshold.','inventory-control.html','inv-thresh-'+k);});
-    Object.entries(invMap).filter(([,a])=>a.length>1).slice(0,30).forEach(([k,a])=>issue(out,'amber','Inventory','Duplicate material/color/brand','Same material grouping appears '+a.length+' times: '+k.replace(/\|/g,' / ')+'. Confirm this is intentional roll-level tracking, not duplicate master data.','inventory-control.html','inv-dupe-'+k));
+    const invMap={};
+    (d.raw||[]).forEach(r=>{
+      const k=invKey(r);
+      if(k!=='||')(invMap[k]||(invMap[k]=[])).push(r);
+      const available=invAvailable(r);
+      if(available<0)issue(out,'red','Inventory','Negative raw material inventory',invLabel(r)+' is '+Math.round(available)+'g. Reconcile roll quantities.','inventory-control.html','inv-neg-'+k);
+      if(num(r.reorder_threshold||r.threshold_grams||r.reorderThreshold)<0)issue(out,'amber','Inventory','Invalid reorder threshold',invLabel(r)+' has a negative reorder threshold.','inventory-control.html','inv-thresh-'+k);
+    });
+    Object.entries(invMap).forEach(([k,a])=>{
+      const totalAvailable=a.reduce((sum,r)=>sum+invAvailable(r),0);
+      const anyCost=a.some(invCostBasis);
+      if(totalAvailable>0&&!anyCost){
+        issue(out,'amber','Inventory','Material missing cost basis',invLabelFromKey(k)+' has '+Math.round(totalAvailable)+'g available across '+a.length+' roll/refill record(s), but no usable cost basis was found on any record in that material group.','inventory-control.html','inv-cost-group-'+k);
+      }
+      for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){
+        if(looksLikeInventoryClone(a[i],a[j])){
+          issue(out,'amber','Inventory','Possible accidental duplicate roll record',invLabelFromKey(k)+' has two records that appear identical. Multi-roll/refill groups are expected; this only flags likely double-saves.','inventory-control.html','inv-clone-'+k+'-'+i+'-'+j);
+          return;
+        }
+      }
+    });
     (d.supplies||[]).forEach(s=>{const qty=num(s.quantity_on_hand||s.quantity||s.qty||s.available); if(qty<0)issue(out,'red','Inventory','Negative non-filament supply',(s.item_name||s.name||'Supply')+' has quantity '+qty+'.','inventory-control.html','supply-neg-'+(s.id||s.item_name)); if(qty>0&&!num(s.cost_per_unit||s.unit_cost||s.cost))issue(out,'amber','Inventory','Supply missing unit cost',(s.item_name||s.name||'Supply')+' has stock but no unit cost.','inventory-control.html','supply-cost-'+(s.id||s.item_name));});
 
     d.jobs.filter(j=>!isClosedJob(j)).forEach(j=>{const label=j.job_title||j.title||jobNo(j)||'Production job'; if(!dateVal(j.due_date||j.dueDate))issue(out,'amber','Production','Active job missing due date',label+' has no due date. Scheduler and Action Queue prioritization may be weak.','production-control.html','job-due-'+(j.id||label)); if(!(j.printer||j.machine||j.machine_preference||j.actual_machine))issue(out,'amber','Production','Active job missing printer assignment',label+' is not assigned to P1S/P2S/either.','production-control.html','job-printer-'+(j.id||label)); if(ageDays(j.due_date||j.dueDate)<0&&num(j.estimated_hours||j.machine_hours||j.print_hours)<=0)issue(out,'amber','Production','Scheduled job missing machine hours',label+' is due soon but has no machine-hour estimate.','production-control.html','job-hours-'+(j.id||label));});
@@ -5945,7 +5978,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
   function card(x){return '<a class="data-health-issue" href="'+esc(x.href)+'" data-dq-cat="'+esc(x.cat)+'" data-dq-sev="'+esc(x.sev)+'" data-dq-text="'+esc((x.title+' '+x.detail+' '+x.cat).toLowerCase())+'"><span class="data-health-sev '+esc(x.sev)+'">'+esc(severityLabel(x.sev))+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.detail)+'</small></span><span class="data-health-tag '+esc(x.sev)+'">'+esc(x.cat)+'</span></a>'}
   function skeleton(){
     const consoleEl=$('erpConsole'); if(!consoleEl||$('erpDataQuality'))return;
-    const html='<section class="erp-panel erp-section-anchor" id="erpDataQuality"><div class="erp-panel-head"><div><h2>Data Quality & Reconciliation</h2><p>Automated checks for duplicate customers, inventory inconsistencies, orphan orders/quotes/jobs, missing costs, and finance mismatches.</p></div><span class="erp-chip amber">Data Health</span></div><div class="data-health-shell"><div class="data-health-kpis" id="dqKpis"></div><div class="data-health-toolbar"><input id="dqSearch" placeholder="Search issues, customers, orders, materials..."><select id="dqSeverity"><option value="all">All severity</option><option value="red">Critical only</option><option value="amber">Warnings only</option></select><select id="dqCategory"><option value="all">All categories</option></select></div><div class="data-health-grid"><div class="data-health-box"><h3>Reconciliation Issues</h3><div class="data-health-list" id="dqIssues"></div></div><div class="data-health-box"><h3>Data Health Summary</h3><div class="data-health-breakdown" id="dqBreakdown"></div><div class="data-health-actions"><a href="hub.html#erpUnifiedActionQueue">Open Action Queue</a><a href="inventory-control.html">Open Inventory</a><a href="orders-admin.html">Open Orders</a><button type="button" id="dqCopyReport">Copy Report</button></div><p class="data-health-note">These checks are non-destructive. They flag likely data issues only; use the source tool to confirm before changing records.</p></div></div></div></section>';
+    const html='<section class="erp-panel erp-section-anchor" id="erpDataQuality"><div class="erp-panel-head"><div><h2>Data Quality & Reconciliation</h2><p>Automated checks for customer follow-up gaps, inventory inconsistencies, orphan orders/quotes/jobs, true cost-basis gaps, and finance mismatches. Multi-roll inventory groups are treated as normal.</p></div><span class="erp-chip amber">Data Health</span></div><div class="data-health-shell"><div class="data-health-kpis" id="dqKpis"></div><div class="data-health-toolbar"><input id="dqSearch" placeholder="Search issues, customers, orders, materials..."><select id="dqSeverity"><option value="all">All severity</option><option value="red">Critical only</option><option value="amber">Warnings only</option></select><select id="dqCategory"><option value="all">All categories</option></select></div><div class="data-health-grid"><div class="data-health-box"><h3>Reconciliation Issues</h3><div class="data-health-list" id="dqIssues"></div></div><div class="data-health-box"><h3>Data Health Summary</h3><div class="data-health-breakdown" id="dqBreakdown"></div><div class="data-health-actions"><a href="hub.html#erpUnifiedActionQueue">Open Action Queue</a><a href="inventory-control.html">Open Inventory</a><a href="orders-admin.html">Open Orders</a><button type="button" id="dqCopyReport">Copy Report</button></div><p class="data-health-note">These checks are non-destructive. Multiple rolls/refills of the same material are normal and are aggregated before cost checks. Use the source tool to confirm before changing records.</p></div></div></div></section>';
     const after=$('erpExecutiveDashboard')||$('erpUnifiedActionQueue')||consoleEl.firstElementChild; if(after)after.insertAdjacentHTML('afterend',html); else consoleEl.insertAdjacentHTML('afterbegin',html);
     const nav=document.querySelector('.engine-nav'); if(nav&&!nav.querySelector('a[href="#erpDataQuality"]'))nav.insertAdjacentHTML('afterbegin','<a href="#erpDataQuality">🧹 Data Health</a>');
     ['dqSearch','dqSeverity','dqCategory'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',render); if(el)el.addEventListener('change',render);});
@@ -5953,7 +5986,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
   }
   function render(){
     skeleton(); if(!$('erpDataQuality'))return; const issues=buildIssues(); const red=issues.filter(x=>x.sev==='red').length, amber=issues.filter(x=>x.sev==='amber').length; const cats=[...new Set(issues.map(x=>x.cat))].sort(); const rowsData=rows();
-    $('dqKpis').innerHTML=[kpi('Critical',red,red?'Fix before relying on totals':'No critical issues'),kpi('Warnings',amber,amber?'Review when cleaning data':'No warning issues'),kpi('Customers',rowsData.customers.length||'—','Cloud/customer records plus inferred data'),kpi('Inventory Rows',(rowsData.raw.length+rowsData.supplies.length),'Raw materials + supplies'),kpi('Open Jobs',rowsData.jobs.filter(j=>!isClosedJob(j)).length,'Active production records')].join('');
+    const invGroups={}; rowsData.raw.forEach(r=>{const k=invKey(r); if(k!=='||')(invGroups[k]||(invGroups[k]=[])).push(r);}); const multiRollGroups=Object.values(invGroups).filter(a=>a.length>1).length;
+    $('dqKpis').innerHTML=[kpi('Critical',red,red?'Fix before relying on totals':'No critical issues'),kpi('Warnings',amber,amber?'Review when cleaning data':'No warning issues'),kpi('Customers',rowsData.customers.length||'—','Cloud/customer records plus inferred data'),kpi('Inventory Groups',Object.keys(invGroups).length,'Aggregated material/color/brand groups'),kpi('Multi-Roll Groups',multiRollGroups,'Expected roll/refill tracking')].join('');
     const catSel=$('dqCategory'); if(catSel){const cur=catSel.value; catSel.innerHTML='<option value="all">All categories</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join(''); catSel.value=cats.includes(cur)?cur:'all';}
     const q=norm($('dqSearch')?.value||''), sev=$('dqSeverity')?.value||'all', cat=$('dqCategory')?.value||'all';
     const filtered=issues.filter(x=>(sev==='all'||x.sev===sev)&&(cat==='all'||x.cat===cat)&&(!q||norm(x.title+' '+x.detail+' '+x.cat).includes(q)));
