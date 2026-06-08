@@ -1212,6 +1212,19 @@
   </details>
 
 
+  <details class="ops-collapse section-card" id="closeoutAuditSection">
+    <summary><span class="summary-title"><span class="kicker">Closeout audit</span><strong>Inventory deductions, scrap, and margin checks</strong></span></summary>
+    <div class="collapse-body">
+      <p class="muted">This is the trust log for closed production work. It records expected vs actual usage, inventory deduction status, scrap, roll allocations, and estimated closeout margin.</p>
+      <div class="audit-toolbar">
+        <label>Search audit<input id="closeoutAuditSearch" placeholder="job, customer, material, note..."></label>
+        <button class="ghost" id="exportCloseoutAuditBtn" type="button">Export Closeout CSV</button>
+      </div>
+      <div class="audit-list" id="closeoutAuditList"></div>
+    </div>
+  </details>
+
+
 </div>
 
 <div class="modal hidden" id="closeModal" aria-hidden="true">
@@ -1219,6 +1232,14 @@
     <h2>Complete / close production job</h2>
     <p class="muted">Enter actuals here so printer maintenance and inventory update from real print activity. Inventory deducts good-part grams plus scrap/purge/failed grams.</p>
     <div class="next-box" id="closeJobName"><strong>Job</strong><span>Close-out details</span></div>
+
+    <div class="closeout-summary" id="closeoutSummary">
+      <div class="closeout-summary-card"><span>Expected grams</span><strong id="closeExpectedGrams">—</strong></div>
+      <div class="closeout-summary-card"><span>Actual + scrap</span><strong id="closeActualTotalGrams">—</strong></div>
+      <div class="closeout-summary-card"><span>Scrap rate</span><strong id="closeScrapRate">—</strong></div>
+      <div class="closeout-summary-card"><span>Est. closeout profit</span><strong id="closeoutProfit">—</strong></div>
+    </div>
+    <div class="closeout-warning hidden" id="closeoutWarning"></div>
     <div class="form-grid" style="margin-top:12px">
       <label>Final Status<select id="closeStatus">
         <option value="completed">Completed</option>
@@ -1266,6 +1287,8 @@
         </div>
       </div>
       <label class="full">Close Note<textarea id="closeNote" placeholder="QC, delivery, scrap reason, customer handoff, etc."></textarea></label>
+
+      <label class="full closeout-check"><input id="closeConfirmDeduct" type="checkbox"> <span>I reviewed the actual grams/scrap and understand this closeout may deduct inventory or finished-good quantities unless inventory reduction is excluded or already deducted.</span></label>
     </div>
     <div class="modal-actions">
       <button class="ghost" id="cancelCloseBtn" type="button">Cancel</button>
@@ -1310,6 +1333,8 @@
   const LS_FINISHED = 'olipoly_finished_goods_inventory_v3';
   const LS_SUPPLIES = 'olipoly_non_filament_supplies_v1';
   const LS_SPOOL_POOL = 'olipoly_spool_pool_v1';
+
+  const LS_CLOSEOUT_AUDIT = 'olipoly_production_closeout_audit_v1';
   const PROD_BACKUP_KEYS = [LS_JOBS, LS_PM, LS_RAW, LS_FINISHED, LS_SUPPLIES, LS_SPOOL_POOL, 'olipoly_hub_workflow_v3'];
 
   // Legacy/local fallback keys from earlier Projects + Production Control builds.
@@ -2322,6 +2347,94 @@
   }
 
 
+
+  function closeoutAuditRead(){ return localRead(LS_CLOSEOUT_AUDIT, []); }
+  function closeoutAuditWrite(rows){ localWrite(LS_CLOSEOUT_AUDIT, Array.isArray(rows) ? rows.slice(0,1000) : []); }
+  function closeoutExpectedGrams(j){
+    const qty = num($('closeQty')?.value || j?.actual_quantity || j?.quantity || 1) || 1;
+    const recipe = jobRecipeRows(j || {});
+    const recipeTotal = recipe.reduce((sum,r)=>sum + num(r.grams_each) * qty, 0);
+    return recipeTotal || num(j?.estimated_total_grams) || (num(j?.estimated_grams_each) * qty) || 0;
+  }
+  function closeoutActualTotals(){
+    const allocations = closeRollAllocations();
+    const good = allocations.length ? allocations.reduce((s,x)=>s+num(x.good_grams),0) : num($('closeGrams')?.value);
+    const scrap = allocations.length ? perMaterialScrapTotal(allocations) : num($('closeScrapGrams')?.value);
+    return {good,scrap,total:good+scrap,allocations};
+  }
+  function updateCloseoutSummary(){
+    if(!$('closeoutSummary') || !state.closingId) return;
+    const j = state.jobs.find(x=>x.id===state.closingId) || {};
+    const expected = closeoutExpectedGrams(j);
+    const actual = closeoutActualTotals();
+    const fin = jobFinancials({...j,actual_grams_used:actual.good,scrap_grams:actual.scrap,actual_quantity:num($('closeQty')?.value||j.quantity),actual_print_hours:num($('closeHours')?.value||j.estimated_total_hours)});
+    const rate = actual.total ? (actual.scrap / actual.total) * 100 : 0;
+    if($('closeExpectedGrams')) $('closeExpectedGrams').textContent = fmtG(expected);
+    if($('closeActualTotalGrams')) $('closeActualTotalGrams').textContent = fmtG(actual.total);
+    if($('closeScrapRate')) $('closeScrapRate').textContent = actual.total ? `${rate.toFixed(1)}%` : '—';
+    if($('closeoutProfit')) $('closeoutProfit').textContent = money(fin.profit);
+    const delta = actual.total - expected;
+    const warning = $('closeoutWarning');
+    if(warning){
+      const notes=[];
+      if(j.inventory_deducted) notes.push('Inventory is already marked deducted. This save will not subtract a second time.');
+      if(expected && Math.abs(delta) > Math.max(15, expected*.20)) notes.push(`Actual usage is ${delta>0?'+':''}${Math.round(delta)}g versus estimate. Review before saving.`);
+      if(rate >= 15) notes.push(`Scrap rate is ${rate.toFixed(1)}%, which is high enough to review quality/settings.`);
+      warning.textContent = notes.join(' ');
+      warning.classList.toggle('hidden', !notes.length);
+    }
+  }
+  function addCloseoutAudit(before, after, meta={}){
+    const fin = jobFinancials(after || {});
+    const row = {
+      id:uid(),
+      date:new Date().toISOString(),
+      job_id:after?.id || before?.id || '',
+      job_title:after?.job_title || before?.job_title || 'Production job',
+      customer_name:after?.customer_name || before?.customer_name || '',
+      ref:jobRef(after || before || {}),
+      machine:after?.actual_machine || after?.machine_preference || '',
+      status:after?.production_status || '',
+      quantity:num(after?.actual_quantity || after?.quantity),
+      expected_grams:num(meta.expected_grams),
+      actual_good_grams:num(after?.actual_grams_used),
+      scrap_grams:num(after?.scrap_grams),
+      total_grams:num(after?.actual_grams_used)+num(after?.scrap_grams),
+      inventory_deducted:!!after?.inventory_deducted,
+      inventory_previously_deducted:!!meta.wasInventoryDeducted,
+      excluded_inventory:!!after?.exclude_inventory_reduction,
+      roll_allocations:Array.isArray(after?.roll_usages)?after.roll_usages.length:0,
+      finished_roll:!!after?.finished_roll,
+      spool_freed:!!after?.spool_freed,
+      revenue:fin.revenue,
+      estimated_profit:fin.profit,
+      close_note:after?.close_note || '',
+      failure_reason:after?.failure_reason || ''
+    };
+    const rows = closeoutAuditRead();
+    rows.unshift(row);
+    closeoutAuditWrite(rows);
+  }
+  function exportCloseoutAudit(){
+    const rows = closeoutAuditRead();
+    if(!rows.length) return toast('No closeout audit rows to export.');
+    const cols=['date','job_title','customer_name','ref','machine','status','quantity','expected_grams','actual_good_grams','scrap_grams','total_grams','inventory_deducted','inventory_previously_deducted','excluded_inventory','roll_allocations','finished_roll','spool_freed','revenue','estimated_profit','failure_reason','close_note'];
+    const csv=[cols.join(',')].concat(rows.map(r=>cols.map(c=>`"${String(r[c]??'').replace(/"/g,'""')}"`).join(','))).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=`olipoly-production-closeout-audit-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+  }
+  function renderCloseoutAudit(){
+    const el=$('closeoutAuditList'); if(!el) return;
+    const q=String($('closeoutAuditSearch')?.value || '').toLowerCase().trim();
+    let rows=closeoutAuditRead();
+    if(q) rows=rows.filter(r=>[r.job_title,r.customer_name,r.ref,r.machine,r.status,r.close_note,r.failure_reason].join(' ').toLowerCase().includes(q));
+    el.innerHTML = rows.length ? rows.slice(0,80).map(r=>{
+      const scrapRate = num(r.total_grams) ? (num(r.scrap_grams)/num(r.total_grams))*100 : 0;
+      const inv = r.excluded_inventory ? 'Inventory excluded' : (r.inventory_previously_deducted ? 'Already deducted / protected' : (r.inventory_deducted ? 'Inventory deducted' : 'No inventory deduction'));
+      return `<article class="audit-card"><h4>${esc(r.job_title)}</h4><p>${esc(r.customer_name || 'No customer')} · ${esc(r.ref || '')} · ${esc((r.date||'').slice(0,10))}</p><div class="audit-metrics"><span>${esc(r.machine || 'Machine?')}</span><span>${fmtG(r.actual_good_grams)} good</span><span>${fmtG(r.scrap_grams)} scrap (${scrapRate.toFixed(1)}%)</span><span>${fmtG(r.expected_grams)} expected</span><span>${esc(inv)}</span><span>${money(r.estimated_profit)} est. profit</span></div>${r.failure_reason ? `<p><strong>Failure:</strong> ${esc(r.failure_reason)}</p>` : ''}${r.close_note ? `<p><strong>Note:</strong> ${esc(r.close_note)}</p>` : ''}</article>`;
+    }).join('') : '<div class="empty">No closeout audit records yet.</div>';
+  }
+
   function openClose(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
@@ -2340,6 +2453,8 @@
     populateCloseRollAllocations(j);
     $('closeBreakdown').value = j.actual_filament_breakdown || j.filament_breakdown || '';
     $('closeNote').value = j.close_note || '';
+    if($('closeConfirmDeduct')) $('closeConfirmDeduct').checked = false;
+    updateCloseoutSummary();
     $('closeModal').classList.remove('hidden');
     $('closeModal').setAttribute('aria-hidden','false');
   }
@@ -2492,6 +2607,10 @@
     if(!j) return closeClose();
     const now = new Date().toISOString();
     const wasInventoryDeducted = !!j.inventory_deducted;
+    const expectedCloseoutGrams = closeoutExpectedGrams(j);
+    if(!wasInventoryDeducted && !j.exclude_inventory_reduction && !$('closeConfirmDeduct')?.checked){
+      return toast('Review and check the closeout inventory confirmation before saving.');
+    }
     const closeAllocations = closeRollAllocations();
     const closeScrapTotal = perMaterialScrapTotal(closeAllocations) || num($('closeScrapGrams').value);
     const closeGoodTotal = closeAllocations.some(x=>x.raw_material_roll_id || x.good_grams || x.scrap_grams) ? closeAllocations.reduce((s,x)=>s+num(x.good_grams),0) : num($('closeGrams').value);
@@ -2559,6 +2678,7 @@
       } else if(addFinished) {
         applyInventoryLocal(updated, [], addFinished);
       }
+      addCloseoutAudit(j, updated, {expected_grams:expectedCloseoutGrams, wasInventoryDeducted});
       state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       closeClose();
@@ -4349,6 +4469,7 @@
     renderLanes();
     renderDetails();
     renderHistory();
+    renderCloseoutAudit();
     renderHubDraftBanner();
     setTimeout(tryOpenDeepLinkedJob, 0);
   }
@@ -4506,10 +4627,12 @@
     if(e.target.id && e.target.id.startsWith('closeRollScrapGrams_')){
       const sum = closeRollAllocations().reduce((s,x)=>s+num(x.scrap_grams),0);
       if($('closeScrapGrams')) $('closeScrapGrams').value = sum ? String(Math.round(sum*10)/10) : '';
+      updateCloseoutSummary();
     }
     if(e.target.id && e.target.id.startsWith('closeRollGoodGrams_')){
       const sum = closeRollAllocations().reduce((s,x)=>s+num(x.good_grams),0);
       if($('closeGrams')) $('closeGrams').value = sum ? String(Math.round(sum*10)/10) : '';
+      updateCloseoutSummary();
     }
   });
   $('quickAddUsageBtn').addEventListener('click', quickAddUsage);
@@ -4519,6 +4642,11 @@
   $('filterMachine').addEventListener('change', e=>{state.filterMachine=e.target.value; render();});
   $('sortBy').addEventListener('change', e=>{state.sortBy=e.target.value; render();});
   if($('historySearch')) $('historySearch').addEventListener('input', e=>{state.historySearch=e.target.value; renderHistory();});
+  $('closeoutAuditSearch')?.addEventListener('input', renderCloseoutAudit);
+  $('exportCloseoutAuditBtn')?.addEventListener('click', exportCloseoutAudit);
+  ['closeQty','closeHours','closeGrams','closeScrapGrams','closeBreakdown'].forEach(id=>$(id)?.addEventListener('input', updateCloseoutSummary));
+  $('closeRollAllocations')?.addEventListener('input', updateCloseoutSummary);
+  $('closeRollAllocations')?.addEventListener('change', updateCloseoutSummary);
 
   renderRecipeRows([]);
   loadAll();

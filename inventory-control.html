@@ -738,6 +738,12 @@
         <label>Sort<select id="ledgerSort"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
         <button class="ghost" id="exportLedgerBtn" type="button">Export CSV</button><button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
       </div>
+
+      <div class="closeout-audit-strip" id="closeoutAuditStrip">
+        <h3>Production closeout audit</h3>
+        <p>Recent Production Control closeouts that affected, skipped, or protected inventory deductions.</p>
+        <div class="closeout-audit-cards" id="inventoryCloseoutAuditCards"></div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Change</th><th>Source / Note</th></tr></thead>
@@ -1965,11 +1971,22 @@
   }
 
 
+  function productionCloseoutAudit(){return read('olipoly_production_closeout_audit_v1',[])}
+  function renderProductionCloseoutAudit(){
+    const el=$('inventoryCloseoutAuditCards'); if(!el) return;
+    const rows=productionCloseoutAudit().slice(0,8);
+    el.innerHTML = rows.length ? rows.map(r=>{
+      const inventoryState = r.excluded_inventory ? 'inventory excluded' : (r.inventory_previously_deducted ? 'protected from double deduction' : (r.inventory_deducted ? 'inventory deducted' : 'no inventory deduction'));
+      return `<div class="closeout-audit-card"><strong>${esc(r.job_title || 'Production closeout')}</strong><span>${esc((r.date||'').slice(0,10))} · ${esc(r.machine || 'machine?')} · ${esc(r.total_grams || 0)}g total / ${esc(r.scrap_grams || 0)}g scrap · ${esc(inventoryState)}</span></div>`;
+    }).join('') : '<div class="empty">No Production Control closeout audit records yet.</div>';
+  }
+
   function renderLedger(){
     let rows=ledger(); const q=norm(state.ledgerSearch);
     rows=rows.filter(x=>(state.ledgerType==='all'||x.type===state.ledgerType)&&(!q||[x.type,x.item,x.amount,x.note].some(v=>norm(v).includes(q))));
     rows.sort((a,b)=>state.ledgerSort==='oldest'?String(a.date).localeCompare(String(b.date)):String(b.date).localeCompare(String(a.date)));
     $('ledgerBody').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(new Date(x.date).toLocaleString())}</td><td>${esc(x.type)}</td><td><strong>${esc(x.item)}</strong></td><td>${esc(x.amount)}</td><td>${esc(x.note)}</td></tr>`).join(''):'<tr><td colspan="5">No movement history yet.</td></tr>';
+    renderProductionCloseoutAudit();
   }
 
 
