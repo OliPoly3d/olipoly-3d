@@ -1,9 +1,9 @@
 /* OliPoly ERP Core Hardening Layer - shared internal UI helpers
    Safe to include on any internal page. It only adds opt-in classes and a lightweight toast area. */
 :root{
-  --erp-core-dock-bg: rgba(255,255,255,.88);
-  --erp-core-dock-line: rgba(101,60,120,.16);
-  --erp-core-dock-shadow: 0 -18px 44px rgba(54,24,68,.14);
+  --erp-core-dock-bg: rgba(8,14,30,.92);
+  --erp-core-dock-line: rgba(126,144,255,.18);
+  --erp-core-dock-shadow: 0 -18px 44px rgba(0,0,0,.28);
   --erp-core-focus: 0 0 0 4px rgba(236,72,153,.18);
 }
 .erp-toast-stack{
@@ -19,8 +19,8 @@
 .erp-toast{
   pointer-events: auto;
   border: 1px solid rgba(101,60,120,.18);
-  background: rgba(255,255,255,.94);
-  color: #25182d;
+  background: rgba(12,19,40,.96);
+  color: #eef4ff;
   box-shadow: 0 18px 48px rgba(45,20,54,.16);
   border-radius: 18px;
   padding: 12px 14px;
@@ -33,7 +33,7 @@
   font-family: Inter, system-ui, sans-serif;
 }
 .erp-toast strong{display:block;font-size:13px;margin-bottom:3px;letter-spacing:.01em;}
-.erp-toast span{display:block;font-size:12px;line-height:1.35;color:#6f5a78;}
+.erp-toast span{display:block;font-size:12px;line-height:1.35;color:#a8b5db;}
 .erp-toast button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;opacity:.7;}
 .erp-toast button:hover{opacity:1;}
 .erp-toast[data-type="success"]{border-color:rgba(22,163,74,.25)}
@@ -48,12 +48,12 @@
   z-index: 99990;
   max-width: min(360px, calc(100vw - 28px));
   border: 1px solid rgba(101,60,120,.16);
-  background: rgba(255,255,255,.90);
-  box-shadow: 0 14px 34px rgba(45,20,54,.12);
+  background: rgba(12,19,40,.94);
+  box-shadow: 0 14px 34px rgba(0,0,0,.24);
   border-radius: 16px;
   padding: 10px 12px;
   font: 700 12px/1.35 Inter, system-ui, sans-serif;
-  color: #25182d;
+  color: #eef4ff;
   display:none;
   backdrop-filter: blur(14px);
 }
@@ -86,7 +86,7 @@
   align-items:center;
   justify-content:center;
   gap:3px;
-  color:#3b2944;
+  color:#eef4ff;
   text-decoration:none;
   font:800 10px/1 Inter, system-ui, sans-serif;
   cursor:pointer;
@@ -99,13 +99,13 @@
 .erp-tap-target{min-height:44px;min-width:44px;}
 .erp-error-card{
   border:1px solid rgba(244,63,94,.22);
-  background:rgba(255,241,244,.92);
-  color:#5b1728;
+  background:rgba(55,16,32,.92);
+  color:#ffe2ea;
   border-radius:18px;
   padding:14px;
   font:700 13px/1.4 Inter,system-ui,sans-serif;
 }
-.erp-muted-note{font-size:12px;line-height:1.45;color:#78657f;}
+.erp-muted-note{font-size:12px;line-height:1.45;color:#a8b5db;}
 @media (max-width: 760px){
   body.erp-has-mobile-dock{padding-bottom:86px;}
   .erp-mobile-dock{display:grid;}
