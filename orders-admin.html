@@ -799,6 +799,162 @@ body{font-family:Inter,Arial,sans-serif}
       .oa-view-tabs,.oa-waiver-grid{grid-template-columns:1fr}
     }
 
+
+/* === Orders Admin Daily Command View: scoped, dark-only, no global leaks === */
+.oa-daily-command{
+  margin:0 0 22px;
+  padding:18px;
+  border-radius:26px;
+  border:1px solid rgba(126,144,255,.16);
+  background:linear-gradient(180deg,rgba(8,14,30,.88),rgba(12,18,38,.72));
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.oa-daily-command::before{
+  content:"";
+  position:absolute;
+  inset:-80px auto auto -80px;
+  width:220px;
+  height:220px;
+  border-radius:999px;
+  background:radial-gradient(circle,rgba(46,230,196,.13),transparent 62%);
+  pointer-events:none;
+}
+.oa-daily-head{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:14px;
+}
+.oa-daily-head h3{margin:0;font-size:1.25rem;color:var(--text)}
+.oa-daily-head p{margin:6px 0 0;color:var(--muted);line-height:1.45}
+.oa-daily-refresh{
+  border:1px solid rgba(126,144,255,.22);
+  background:rgba(255,255,255,.055);
+  color:var(--text);
+  border-radius:999px;
+  padding:10px 13px;
+  min-height:40px;
+  font-weight:900;
+  cursor:pointer;
+}
+.oa-daily-refresh:hover{border-color:rgba(46,230,196,.34);background:rgba(46,230,196,.08)}
+.oa-daily-kpis{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.oa-daily-kpi{
+  padding:13px;
+  border-radius:20px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(126,144,255,.14);
+  min-height:92px;
+}
+.oa-daily-kpi span{
+  display:block;
+  color:var(--muted);
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  font-weight:900;
+}
+.oa-daily-kpi strong{
+  display:block;
+  margin-top:8px;
+  font-size:clamp(1.35rem,3vw,2rem);
+  color:var(--text);
+  line-height:1;
+}
+.oa-daily-kpi small{
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  line-height:1.35;
+}
+.oa-daily-kpi.urgent{border-color:rgba(255,110,145,.25);background:rgba(255,110,145,.07)}
+.oa-daily-kpi.warn{border-color:rgba(255,201,100,.24);background:rgba(255,201,100,.06)}
+.oa-daily-kpi.good{border-color:rgba(46,230,196,.23);background:rgba(46,230,196,.055)}
+.oa-daily-buckets{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+.oa-daily-bucket{
+  border-radius:22px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(126,144,255,.14);
+  overflow:hidden;
+  min-height:178px;
+}
+.oa-daily-bucket-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  padding:13px 14px;
+  border-bottom:1px solid rgba(126,144,255,.12);
+}
+.oa-daily-bucket-head strong{color:var(--text);font-size:.92rem}
+.oa-daily-bucket-head span{
+  display:inline-grid;
+  place-items:center;
+  min-width:28px;
+  height:28px;
+  border-radius:999px;
+  background:rgba(46,230,196,.11);
+  border:1px solid rgba(46,230,196,.19);
+  color:#cffff0;
+  font-weight:950;
+  font-size:.78rem;
+}
+.oa-daily-items{display:grid;gap:8px;padding:10px;max-height:280px;overflow:auto}
+.oa-daily-item{
+  text-align:left;
+  border:1px solid rgba(126,144,255,.12);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  border-radius:16px;
+  padding:10px;
+  cursor:pointer;
+  width:100%;
+}
+.oa-daily-item:hover{border-color:rgba(46,230,196,.3);background:rgba(46,230,196,.065)}
+.oa-daily-item strong{display:block;font-size:.86rem;margin-bottom:4px;color:var(--text)}
+.oa-daily-item span{display:block;font-size:.78rem;color:var(--muted);line-height:1.35}
+.oa-daily-empty{padding:14px;color:var(--muted);line-height:1.45;font-size:.9rem}
+.oa-daily-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;position:relative}
+.oa-daily-action{
+  border:1px solid rgba(126,144,255,.2);
+  background:rgba(255,255,255,.055);
+  color:var(--text);
+  border-radius:999px;
+  padding:10px 12px;
+  min-height:40px;
+  font-weight:900;
+  cursor:pointer;
+}
+.oa-daily-action:hover{border-color:rgba(46,230,196,.34);background:rgba(46,230,196,.08)}
+@media(max-width:1120px){
+  .oa-daily-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .oa-daily-buckets{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .oa-daily-command{padding:14px;border-radius:22px}
+  .oa-daily-head{display:grid}
+  .oa-daily-refresh{width:100%}
+  .oa-daily-kpis,.oa-daily-buckets{grid-template-columns:1fr}
+  .oa-daily-kpi{min-height:0}
+  .oa-daily-actions{display:grid;grid-template-columns:1fr}
+  .oa-daily-action{width:100%}
+}
+
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script defer src="js/erp-core.js"></script>
@@ -878,6 +1034,38 @@ body{font-family:Inter,Arial,sans-serif}
         <div class="finance-ready-note">Paid orders not yet pushed to Finance Pro.</div>
       </div>
     </div>
+
+
+
+    <section class="oa-daily-command" id="oaDailyCommand" aria-label="Orders Admin daily command view">
+      <div class="oa-daily-head">
+        <div>
+          <h3>Daily Command View</h3>
+          <p>Fast view of orders that need money, invoice, fulfillment, PO/Net terms, or overdue attention today.</p>
+        </div>
+        <button class="oa-daily-refresh" id="oaDailyRefreshBtn" type="button">Refresh Daily View</button>
+      </div>
+      <div class="oa-daily-kpis">
+        <div class="oa-daily-kpi urgent"><span>Overdue / Risk</span><strong id="oaDailyOverdueCount">0</strong><small id="oaDailyOverdueValue">$0.00 at risk</small></div>
+        <div class="oa-daily-kpi warn"><span>Unpaid / Deposit</span><strong id="oaDailyUnpaidCount">0</strong><small id="oaDailyUnpaidValue">$0.00 open</small></div>
+        <div class="oa-daily-kpi warn"><span>Needs Invoice</span><strong id="oaDailyInvoiceCount">0</strong><small>Invoice or send next</small></div>
+        <div class="oa-daily-kpi good"><span>Ready / Delivery</span><strong id="oaDailyReadyCount">0</strong><small>Pickup, ship, or close</small></div>
+        <div class="oa-daily-kpi"><span>PO / Net Terms</span><strong id="oaDailyPoCount">0</strong><small id="oaDailyPoValue">$0.00 watched</small></div>
+      </div>
+      <div class="oa-daily-buckets">
+        <div class="oa-daily-bucket"><div class="oa-daily-bucket-head"><strong>Overdue / At Risk</strong><span id="oaBucketOverdueCount">0</span></div><div class="oa-daily-items" id="oaBucketOverdue"></div></div>
+        <div class="oa-daily-bucket"><div class="oa-daily-bucket-head"><strong>Money Follow-up</strong><span id="oaBucketMoneyCount">0</span></div><div class="oa-daily-items" id="oaBucketMoney"></div></div>
+        <div class="oa-daily-bucket"><div class="oa-daily-bucket-head"><strong>Invoice / PO Work</strong><span id="oaBucketInvoiceCount">0</span></div><div class="oa-daily-items" id="oaBucketInvoice"></div></div>
+        <div class="oa-daily-bucket"><div class="oa-daily-bucket-head"><strong>Fulfillment Ready</strong><span id="oaBucketReadyCount">0</span></div><div class="oa-daily-items" id="oaBucketReady"></div></div>
+      </div>
+      <div class="oa-daily-actions">
+        <button class="oa-daily-action" type="button" data-oa-daily-filter="overdue">Show Overdue/Risk</button>
+        <button class="oa-daily-action" type="button" data-oa-daily-filter="money">Show Money Follow-up</button>
+        <button class="oa-daily-action" type="button" data-oa-daily-filter="invoice">Show Invoice/PO Work</button>
+        <button class="oa-daily-action" type="button" data-oa-daily-filter="ready">Show Ready Orders</button>
+        <button class="oa-daily-action" type="button" data-oa-daily-filter="reset">Reset Order List</button>
+      </div>
+    </section>
 
     <div class="card" style="margin-bottom:22px;">
       <h3>Find Orders</h3>
@@ -2494,9 +2682,138 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('pushAllFinanceBtn')) $('pushAllFinanceBtn').disabled = !readyFinance.length;
     }
 
+
+
+    function oaDailyEsc(value){
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    function oaDailyDateValue(order){
+      return String(order?.invoice_due_date || order?.due_date || order?.target_date || order?.order_date || order?.created_at || '').slice(0,10);
+    }
+
+    function oaDailyBalance(order){
+      const total = num(order?.order_total);
+      const deposit = num(order?.deposit_amount);
+      if(order?.payment_status === 'paid' || order?.payment_status === 'refunded') return 0;
+      if(order?.payment_status === 'deposit_paid') return Math.max(0, total - deposit);
+      return total;
+    }
+
+    function oaDailyIsPoOrder(order){
+      return !!(order?.po_number || order?.po_file_on_file || order?.invoice_terms === 'net_30' || order?.invoice_terms === 'net_15' || order?.invoice_terms === 'net_45' || order?.invoice_terms === 'customer_terms');
+    }
+
+    function oaDailyBuckets(){
+      const active = activeOrders();
+      const todayIso = today();
+      const overdue = active.filter(o => isInvoiceOverdue(o) || (oaDailyDateValue(o) && oaDailyDateValue(o) < todayIso && !['completed','shipped'].includes(o.status)));
+      const moneyFollowup = active.filter(o => !orderClosureFlags(o).payment_not_required && ['unpaid','deposit_due','deposit_paid'].includes(o.payment_status) && oaDailyBalance(o) > 0);
+      const invoiceWork = active.filter(o => {
+        const hasTotal = num(o.order_total) > 0;
+        const needsInvoice = hasTotal && (!o.invoice_number || (!!o.invoice_number && !o.invoice_sent && o.payment_status !== 'paid'));
+        return needsInvoice || oaDailyIsPoOrder(o) || isInvoiceOverdue(o);
+      });
+      const ready = active.filter(o => ['ready_for_pickup','shipped'].includes(o.status) || (o.status === 'completed' && !orderIsClosed(o)));
+      const poWatch = active.filter(oaDailyIsPoOrder);
+      return {overdue, moneyFollowup, invoiceWork, ready, poWatch};
+    }
+
+    function oaDailyItem(order, reason){
+      const label = [order.order_number || 'No #', order.customer_name || 'No customer'].filter(Boolean).join(' · ');
+      const meta = [reason, order.order_title || '', money(order.order_total || 0)].filter(Boolean).join(' • ');
+      return `<button class="oa-daily-item" type="button" data-oa-order-id="${oaDailyEsc(order.id || '')}"><strong>${oaDailyEsc(label)}</strong><span>${oaDailyEsc(meta)}</span></button>`;
+    }
+
+    function oaDailyRenderBucket(id, countId, rows, reason){
+      const el = $(id);
+      const count = $(countId);
+      if(count) count.textContent = rows.length;
+      if(!el) return;
+      if(!rows.length){
+        el.innerHTML = '<div class="oa-daily-empty">Nothing urgent in this bucket.</div>';
+        return;
+      }
+      el.innerHTML = rows.slice(0,7).map(o => oaDailyItem(o, typeof reason === 'function' ? reason(o) : reason)).join('') + (rows.length > 7 ? `<div class="oa-daily-empty">+ ${rows.length - 7} more in this bucket.</div>` : '');
+    }
+
+    function renderDailyCommandView(){
+      if(!$('oaDailyCommand')) return;
+      const b = oaDailyBuckets();
+      const overdueValue = b.overdue.reduce((s,o)=>s+oaDailyBalance(o),0);
+      const unpaidValue = b.moneyFollowup.reduce((s,o)=>s+oaDailyBalance(o),0);
+      const poValue = b.poWatch.reduce((s,o)=>s+num(o.order_total),0);
+      if($('oaDailyOverdueCount')) $('oaDailyOverdueCount').textContent = b.overdue.length;
+      if($('oaDailyOverdueValue')) $('oaDailyOverdueValue').textContent = `${money(overdueValue)} at risk`;
+      if($('oaDailyUnpaidCount')) $('oaDailyUnpaidCount').textContent = b.moneyFollowup.length;
+      if($('oaDailyUnpaidValue')) $('oaDailyUnpaidValue').textContent = `${money(unpaidValue)} open`;
+      if($('oaDailyInvoiceCount')) $('oaDailyInvoiceCount').textContent = b.invoiceWork.length;
+      if($('oaDailyReadyCount')) $('oaDailyReadyCount').textContent = b.ready.length;
+      if($('oaDailyPoCount')) $('oaDailyPoCount').textContent = b.poWatch.length;
+      if($('oaDailyPoValue')) $('oaDailyPoValue').textContent = `${money(poValue)} watched`;
+      oaDailyRenderBucket('oaBucketOverdue','oaBucketOverdueCount',b.overdue, o => isInvoiceOverdue(o) ? 'Invoice overdue' : 'Past target/order date');
+      oaDailyRenderBucket('oaBucketMoney','oaBucketMoneyCount',b.moneyFollowup, o => `${paymentLabel(o.payment_status)} · ${money(oaDailyBalance(o))} balance`);
+      oaDailyRenderBucket('oaBucketInvoice','oaBucketInvoiceCount',b.invoiceWork, o => oaDailyIsPoOrder(o) ? 'PO / terms watch' : (!o.invoice_number ? 'Needs invoice number' : 'Invoice not sent'));
+      oaDailyRenderBucket('oaBucketReady','oaBucketReadyCount',b.ready, o => o.status === 'completed' ? 'Closeout checklist' : statusLabel(o.status));
+    }
+
+    function oaDailyApplyFilter(mode){
+      if(mode === 'reset'){
+        orderViewMode = 'active';
+        $('searchInput').value = '';
+        $('statusFilter').value = 'all';
+        $('paymentFilter').value = 'all';
+        if($('invoiceFilter')) $('invoiceFilter').value = 'all';
+        if($('financeFilter')) $('financeFilter').value = 'all';
+      } else if(mode === 'overdue'){
+        orderViewMode = 'needs';
+        $('searchInput').value = '';
+        if($('invoiceFilter')) $('invoiceFilter').value = 'overdue';
+      } else if(mode === 'money'){
+        orderViewMode = 'needs';
+        $('paymentFilter').value = 'deposit_due';
+        if($('invoiceFilter')) $('invoiceFilter').value = 'all';
+      } else if(mode === 'invoice'){
+        orderViewMode = 'needs';
+        if($('invoiceFilter')) $('invoiceFilter').value = 'ready';
+        $('paymentFilter').value = 'all';
+      } else if(mode === 'ready'){
+        orderViewMode = 'active';
+        $('statusFilter').value = 'ready_for_pickup';
+        $('paymentFilter').value = 'all';
+        if($('invoiceFilter')) $('invoiceFilter').value = 'all';
+      }
+      document.querySelectorAll('.oa-view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.orderView === orderViewMode));
+      renderList();
+      $('orderList')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    function bindDailyCommandView(){
+      if($('oaDailyRefreshBtn') && !$('oaDailyRefreshBtn').dataset.oaDailyBound){
+        $('oaDailyRefreshBtn').dataset.oaDailyBound = '1';
+        $('oaDailyRefreshBtn').addEventListener('click', () => { renderDailyCommandView(); setMsg($('authMessage'),'Daily Command View refreshed.'); });
+      }
+      document.querySelectorAll('[data-oa-daily-filter]').forEach(btn => {
+        if(btn.dataset.oaDailyBound) return;
+        btn.dataset.oaDailyBound = '1';
+        btn.addEventListener('click', () => oaDailyApplyFilter(btn.dataset.oaDailyFilter));
+      });
+      if(!$('oaDailyCommand')?.dataset.oaItemBound){
+        $('oaDailyCommand').dataset.oaItemBound = '1';
+        $('oaDailyCommand').addEventListener('click', event => {
+          const item = event.target.closest('[data-oa-order-id]');
+          if(!item) return;
+          const found = orders.find(o => String(o.id || '') === String(item.dataset.oaOrderId || ''));
+          if(found){ loadIntoForm(found); renderList(); $('detailTitle')?.scrollIntoView({behavior:'smooth', block:'start'}); }
+        });
+      }
+    }
+
     function renderList(){
       const list = filteredOrders();
       renderSummary();
+      renderDailyCommandView();
+      bindDailyCommandView();
       if($('orderListCount')) $('orderListCount').textContent = `${list.length} shown · ${activeOrders().length} active · ${needsActionOrders().length} need action · ${closedOrders().length} closed`;
       if(!list.length){ $('orderList').innerHTML = '<div class="empty">No orders in this view.</div>'; return; }
       if($('orderListCount')) $('orderListCount').textContent = `${list.length} shown · ${activeOrders().length} active · ${needsActionOrders().length} need action · ${closedOrders().length} closed`;
@@ -3497,6 +3814,7 @@ if ($('openVenmoBtn')) {
   .forEach(id => $(id)?.addEventListener('input', updatePreview));
     resetForm();
     renderList();
+    bindDailyCommandView();
     $('logoutBtn').classList.add('hidden');
     if (accessToken) {
   getCurrentUser().then(u => {
