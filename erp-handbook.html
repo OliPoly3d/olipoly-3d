@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>OliPoly 3D | ERP Handbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/erp-core.css" />
+  <style>
+    :root{--ink:#25182d;--muted:#75627e;--pink:#e84fb7;--purple:#9d6df3;--mint:#65d6c4;--blue:#5fcfff;--amber:#f7b731;--danger:#ef476f;--ok:#34c759;--line:rgba(101,60,120,.15);--panel:rgba(255,255,255,.86);--panel2:rgba(255,255,255,.96);--shadow:0 24px 70px rgba(84,38,94,.14);--r:26px;--max:1240px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0,rgba(232,79,183,.22),transparent 30rem),radial-gradient(circle at 95% 4%,rgba(157,109,243,.18),transparent 28rem),linear-gradient(180deg,#fff5fc,#fff 45%,#fff8fd)}
+    a{color:inherit}.wrap{width:min(var(--max),calc(100% - 28px));margin:0 auto;padding:16px 0 72px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:24px;background:rgba(255,255,255,.72);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(16px);position:sticky;top:10px;z-index:10}.brand{display:flex;align-items:center;gap:10px;text-decoration:none}.brand img{width:44px;height:44px;object-fit:contain}.brand h1{font-family:Playfair Display,serif;font-size:22px;margin:0;line-height:1}.brand small{display:block;color:var(--muted);font-weight:800;font-size:11px;margin-top:3px}.pink{color:var(--pink)}.top-actions{display:flex;gap:10px;flex-wrap:wrap}.btn,.ghost,.chip{border:0;border-radius:999px;padding:11px 14px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit}.btn{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 14px 28px rgba(232,79,183,.22)}.ghost{background:rgba(255,255,255,.74);border:1px solid var(--line);color:var(--ink)}.chip{background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:12px;padding:8px 11px}.hero{display:grid;grid-template-columns:1.35fr .65fr;gap:18px;align-items:stretch;margin:18px 0}.hero-card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(14px)}.hero-card{padding:28px}.kicker{display:inline-flex;border-radius:999px;background:rgba(232,79,183,.11);border:1px solid rgba(232,79,183,.18);color:#b82983;font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:7px 10px}.hero h2{font-family:Playfair Display,serif;font-size:clamp(34px,5vw,66px);line-height:.96;margin:14px 0 12px}.hero p{color:var(--muted);font-size:16px;line-height:1.55;max-width:760px}.poly-card{display:flex;align-items:center;justify-content:center;min-height:260px;position:relative;overflow:hidden}.poly-card:before{content:"";position:absolute;inset:20px;border-radius:40px;background:radial-gradient(circle at 35% 20%,rgba(255,255,255,.9),transparent 35%),linear-gradient(135deg,rgba(232,79,183,.16),rgba(157,109,243,.12),rgba(101,214,196,.13))}.poly-card img{position:relative;width:min(220px,70%);filter:drop-shadow(0 22px 32px rgba(72,34,90,.22))}.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 22px}.quick{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:22px;padding:14px;text-decoration:none;box-shadow:0 14px 34px rgba(84,38,94,.08)}.quick strong{display:block;font-size:14px}.quick small{display:block;color:var(--muted);line-height:1.35;margin-top:4px}.layout{display:grid;grid-template-columns:280px 1fr;gap:18px}.side{position:sticky;top:92px;align-self:start;background:rgba(255,255,255,.78);border:1px solid var(--line);border-radius:24px;padding:14px;box-shadow:var(--shadow);max-height:calc(100vh - 112px);overflow:auto}.side input{width:100%;border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px;font-weight:800;margin-bottom:10px}.toc{display:grid;gap:6px}.toc a{text-decoration:none;padding:10px 11px;border-radius:14px;color:var(--muted);font-weight:850;font-size:13px}.toc a:hover,.toc a.active{background:linear-gradient(135deg,rgba(232,79,183,.12),rgba(157,109,243,.1));color:var(--ink)}.content{display:grid;gap:18px}.panel{padding:22px}.panel h2{font-family:Playfair Display,serif;font-size:32px;margin:0 0 6px}.panel>p,.lead{color:var(--muted);line-height:1.55;margin:0 0 14px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:var(--panel2);border:1px solid var(--line);border-radius:22px;padding:16px}.card h3{margin:0 0 6px;font-size:16px}.card p,.card li{color:var(--muted);line-height:1.45;font-size:14px}.card ul,.card ol{padding-left:19px;margin:9px 0 0}.flow{display:grid;gap:10px;counter-reset:step}.step{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:start;background:rgba(255,255,255,.83);border:1px solid var(--line);border-radius:20px;padding:14px}.step:before{counter-increment:step;content:counter(step);width:34px;height:34px;border-radius:13px;display:grid;place-items:center;font-weight:950;color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple))}.step h3{margin:0 0 4px;font-size:16px}.step p{margin:0;color:var(--muted);line-height:1.42;font-size:14px}.step .where{white-space:nowrap}.tag{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;border:1px solid var(--line);background:#fff;color:var(--muted)}.tag.red{color:#b31944;background:rgba(239,71,111,.1);border-color:rgba(239,71,111,.24)}.tag.amber{color:#946000;background:rgba(247,183,49,.14);border-color:rgba(247,183,49,.28)}.tag.green{color:#15754d;background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.26)}details{background:rgba(255,255,255,.84);border:1px solid var(--line);border-radius:18px;padding:0;overflow:hidden}summary{cursor:pointer;padding:14px 16px;font-weight:950;display:flex;justify-content:space-between;gap:12px;list-style:none}summary::-webkit-details-marker{display:none}details[open] summary{border-bottom:1px solid var(--line)}.detail-body{padding:14px 16px;color:var(--muted);line-height:1.5}.detail-body ul,.detail-body ol{margin-top:8px;padding-left:22px}.matrix{overflow:auto;border:1px solid var(--line);border-radius:20px;background:#fff}.matrix table{width:100%;border-collapse:collapse;min-width:760px}.matrix th,.matrix td{text-align:left;padding:12px;border-bottom:1px solid rgba(101,60,120,.1);vertical-align:top;font-size:13px}.matrix th{background:rgba(232,79,183,.07);font-size:12px;text-transform:uppercase;letter-spacing:.05em}.matrix td{color:var(--muted);line-height:1.42}.matrix tr:last-child td{border-bottom:0}.callout{border-radius:20px;padding:15px;border:1px solid rgba(247,183,49,.3);background:rgba(255,248,226,.82);color:#65470b;line-height:1.48}.callout.red{border-color:rgba(239,71,111,.28);background:rgba(255,239,244,.8);color:#7d1433}.callout.green{border-color:rgba(52,199,89,.28);background:rgba(239,255,245,.8);color:#17653d}.checklist{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.check{display:flex;gap:9px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;color:var(--muted);line-height:1.35;font-size:14px}.check input{margin-top:3px}.tool-map{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.tool{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;text-decoration:none}.tool strong{display:block}.tool small{display:block;color:var(--muted);margin-top:4px;line-height:1.35}.print-note{font-size:12px;color:var(--muted)}mark{background:rgba(255,235,59,.45);padding:0 2px;border-radius:3px}@media print{.topbar,.side,.quick-grid,.top-actions{display:none}.wrap{width:100%;padding:0}.layout,.hero{display:block}.panel,.hero-card{box-shadow:none;break-inside:avoid}.poly-card{display:none}body{background:#fff}.panel{margin-bottom:14px}}@media(max-width:980px){.hero,.layout{grid-template-columns:1fr}.side{position:relative;top:auto;max-height:none}.quick-grid{grid-template-columns:repeat(2,1fr)}.cards,.checklist,.tool-map{grid-template-columns:1fr}.step{grid-template-columns:38px 1fr}.step .where{grid-column:2}}@media(max-width:620px){.topbar{align-items:flex-start;position:relative;top:auto}.top-actions{width:100%}.top-actions a,.top-actions button{flex:1}.hero-card,.panel{padding:18px}.quick-grid{grid-template-columns:1fr}.brand h1{font-size:18px}.step{padding:12px}.hero h2{font-size:38px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="hub.html"><img src="images/poly-mascot.png" alt="Poly mascot"><div><h1>Oli<span class="pink">Poly</span> 3D</h1><small>ERP Handbook • Internal Guide</small></div></a>
+    <div class="top-actions"><a class="ghost" href="hub.html">Back to Hub</a><button class="btn" id="printGuideBtn" type="button">Print / Save PDF</button></div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-card">
+      <span class="kicker">Internal operating guide</span>
+      <h2>What to do, where to start, and what happens next.</h2>
+      <p>This handbook is the simple operating manual for OliPoly’s ERP: customer requests, quotes, orders, production, inventory, invoices, payments, closeout, troubleshooting, and recovery. Start here when you are unsure which page owns the next step.</p>
+      <div class="quick-grid">
+        <a class="quick" href="#start-here"><strong>Start Here</strong><small>Pick the right path by customer/request type.</small></a>
+        <a class="quick" href="#flows"><strong>End-to-End Flows</strong><small>Retail, PO, personal, craft stock, and repeat work.</small></a>
+        <a class="quick" href="#troubleshooting"><strong>Troubleshooting</strong><small>Login, sync, inventory, quote, order, and payment issues.</small></a>
+        <a class="quick" href="#daily-weekly"><strong>Daily / Weekly Routine</strong><small>What to check so nothing slips.</small></a>
+      </div>
+      <p class="print-note">Tip: use the search box on the left. Search words like “PO”, “invoice”, “inventory”, “stuck”, “paid”, “close”, “quote”, or “missing”.</p>
+    </div>
+    <div class="poly-card"><img src="images/poly-mascot.png" alt="Poly mascot"></div>
+  </section>
+
+  <div class="layout">
+    <aside class="side">
+      <input id="guideSearch" placeholder="Search the handbook..." autocomplete="off">
+      <nav class="toc" id="toc">
+        <a href="#start-here">Start Here</a>
+        <a href="#page-map">Page Map</a>
+        <a href="#flows">End-to-End Workflows</a>
+        <a href="#customer-types">Customer Types</a>
+        <a href="#production">Production Control</a>
+        <a href="#inventory">Inventory Control</a>
+        <a href="#quotes">Quote Tool</a>
+        <a href="#orders">Orders Admin</a>
+        <a href="#finance">Finance Pro</a>
+        <a href="#hub-modules">Hub Modules</a>
+        <a href="#daily-weekly">Daily / Weekly Routine</a>
+        <a href="#troubleshooting">Troubleshooting</a>
+        <a href="#watch-for">Watch For This</a>
+        <a href="#glossary">Glossary</a>
+      </nav>
+    </aside>
+
+    <main class="content" id="guideContent">
+      <section class="panel guide-section" id="start-here">
+        <span class="kicker">Start here</span>
+        <h2>What page do I start on?</h2>
+        <p class="lead">Use this decision table when a new thing happens. The ERP works best when every request starts in the page that owns the first real operational decision.</p>
+        <div class="matrix"><table><thead><tr><th>Situation</th><th>Start Page</th><th>Why</th><th>Next Step</th></tr></thead><tbody>
+          <tr><td>New customer asks for custom print / gift / replacement part</td><td><a href="production-control.html">Production Control</a></td><td>Production determines material, hours, quantity, feasibility, and rough cost.</td><td>Send to Quote Tool once scope/cost is clear.</td></tr>
+          <tr><td>Business customer asks for branded magnets, coasters, batch, PO job</td><td><a href="production-control.html">Production Control</a></td><td>Capacity and material risk must be checked before promising lead time.</td><td>Quote as Business / PO, then manage accepted work in Orders Admin.</td></tr>
+          <tr><td>Customer already accepted a quote</td><td><a href="orders-admin.html">Orders Admin</a></td><td>Orders Admin owns OP number, invoice, labels, tracker, and completion.</td><td>Create/verify order, update status, and schedule production if needed.</td></tr>
+          <tr><td>You need to know what to work on today</td><td><a href="hub.html">Hub</a></td><td>Hub combines Action Queue, Scheduler, Material Planner, Data Health, and Executive Dashboard.</td><td>Follow the highest-priority action first.</td></tr>
+          <tr><td>You are low on a material or planning a buy</td><td><a href="hub.html#erpPurchasePlanner">Hub Purchase Planner</a></td><td>Planner compares active jobs, inventory, and reorder thresholds.</td><td>Open Inventory Control after deciding what to buy.</td></tr>
+          <tr><td>You received payment, spent money, or need tax/revenue tracking</td><td><a href="finance-pro.html">Finance Pro</a></td><td>Finance Pro owns sales, expenses, fees, supplies, materials, and reporting.</td><td>Link sale/payment back to order/customer when possible.</td></tr>
+          <tr><td>Something looks wrong or missing</td><td><a href="hub.html#erpDataQuality">Hub Data Health</a></td><td>Data Health flags duplicates, missing fields, orphan records, and likely mismatches.</td><td>Open the source page and correct the record.</td></tr>
+        </tbody></table></div>
+        <div class="callout green"><strong>Rule of thumb:</strong> Production owns “Can we make it and what will it take?” Quote owns “What do we offer the customer?” Orders owns “What did they accept and what documents/statuses are needed?” Finance owns “What money moved?” Hub owns “What needs attention now?”</div>
+      </section>
+
+      <section class="panel guide-section" id="page-map">
+        <span class="kicker">Page map</span><h2>What each page owns</h2>
+        <div class="tool-map">
+          <a class="tool" href="hub.html"><span><strong>Hub / ERP Console</strong><small>Daily command center, Action Queue, Executive Dashboard, CRM, Scheduler, Material Planner, Data Health, System Health.</small></span><span class="tag green">Start daily</span></a>
+          <a class="tool" href="production-control.html"><span><strong>Production Control</strong><small>All jobs, job type, printer, due date, material/hours estimates, closeout, scrap, expected vs actual.</small></span><span class="tag">Shop</span></a>
+          <a class="tool" href="inventory-control.html"><span><strong>Inventory Control</strong><small>Raw filament, supplies, free spools, reorder thresholds, material movement ledger, adjustments.</small></span><span class="tag">Materials</span></a>
+          <a class="tool" href="quote.html"><span><strong>Quote Tool</strong><small>Price, terms, customer-facing quote, quote email, retail vs PO quote path.</small></span><span class="tag">Sales</span></a>
+          <a class="tool" href="orders-admin.html"><span><strong>Orders Admin</strong><small>Accepted work, OP numbers, invoices, packing slips, labels, tracking status, completion emails.</small></span><span class="tag">Orders</span></a>
+          <a class="tool" href="finance-pro.html"><span><strong>Finance Pro</strong><small>Revenue, expenses, payment records, material purchases, fees, tax/reporting support.</small></span><span class="tag">Money</span></a>
+          <a class="tool" href="track.html"><span><strong>Track Page</strong><small>Customer-facing status lookup for Q or OP numbers.</small></span><span class="tag">Public</span></a>
+          <a class="tool" href="pay.html"><span><strong>Pay Page</strong><small>Public payment guidance and payment links for retail customers.</small></span><span class="tag">Public</span></a>
+        </div>
+      </section>
+
+      <section class="panel guide-section" id="flows">
+        <span class="kicker">End-to-end workflows</span><h2>The complete operating paths</h2>
+        <details open><summary>Retail custom order: request → quote → payment → production → delivery</summary><div class="detail-body"><div class="flow">
+          <div class="step"><div><h3>Capture the request</h3><p>Customer uses Start Project or contacts you directly. If direct, enter the job in Production Control so it exists before quoting.</p></div><a class="where tag" href="production-control.html">Production</a></div>
+          <div class="step"><div><h3>Estimate production</h3><p>Choose job type, quantity, printer, colors/materials, estimated grams, machine hours, due date, design/post-processing fees, and notes.</p></div><span class="where tag">Cost preview</span></div>
+          <div class="step"><div><h3>Check inventory and schedule</h3><p>Use Hub Material Planner/Scheduler or Inventory Control. Do not quote a short lead time if material or printer capacity is risky.</p></div><a class="where tag" href="hub.html#erpPurchasePlanner">Hub</a></div>
+          <div class="step"><div><h3>Create and send quote</h3><p>Use Quote Tool once cost and scope are clear. Retail quotes should show payment expectations and customer-friendly wording.</p></div><a class="where tag" href="quote.html">Quote</a></div>
+          <div class="step"><div><h3>After acceptance, create/manage order</h3><p>Accepted quote should become OP order. Orders Admin owns invoice, labels, tracker, status, and completion communication.</p></div><a class="where tag" href="orders-admin.html">Orders</a></div>
+          <div class="step"><div><h3>Print and close out</h3><p>Complete production. Close job with actual grams/hours/scrap. Confirm inventory deduction and final margin.</p></div><a class="where tag" href="production-control.html">Closeout</a></div>
+          <div class="step"><div><h3>Record payment and close</h3><p>Push/enter payment in Finance Pro. Mark order paid/closed. Send completion email if applicable.</p></div><a class="where tag" href="finance-pro.html">Finance</a></div>
+        </div></div></details>
+
+        <details><summary>Business / PO customer: request → quote → PO → invoice → Net terms</summary><div class="detail-body"><div class="flow">
+          <div class="step"><div><h3>Start as business/PO job</h3><p>Enter customer/company, requested item, batch quantity, due date, material, expected grams/hours, and any branded/client notes.</p></div><a class="where tag" href="production-control.html">Production</a></div>
+          <div class="step"><div><h3>Use business quote terms</h3><p>Quote as Business / PO. Keep payment links hidden if customer pays through PO/Net terms. Include PO instructions clearly.</p></div><a class="where tag" href="quote.html">Quote</a></div>
+          <div class="step"><div><h3>Wait for PO or written approval</h3><p>Do not treat it as fully accepted until the PO or approval is received. Watch customer email/terms/tax-exempt details.</p></div><span class="where tag amber">Customer action</span></div>
+          <div class="step"><div><h3>Create/confirm OP order</h3><p>Orders Admin becomes the owner. Add PO number, tax-exempt status, terms, invoice notes, and order status.</p></div><a class="where tag" href="orders-admin.html">Orders</a></div>
+          <div class="step"><div><h3>Generate PO invoice</h3><p>Use invoice/PO invoice PDF. Confirm product and freight/shipping are separated when needed by customer accounting.</p></div><a class="where tag" href="orders-admin.html">Invoice</a></div>
+          <div class="step"><div><h3>Produce and close out</h3><p>Close production with actual material/hours. Confirm inventory movement. Do not skip closeout on repeat/batch orders.</p></div><a class="where tag" href="production-control.html">Closeout</a></div>
+          <div class="step"><div><h3>Track AR</h3><p>Record invoice/payment status in Finance Pro. Watch Net 30 aging from Hub Action Queue/Executive Dashboard.</p></div><a class="where tag" href="finance-pro.html">Finance</a></div>
+        </div></div></details>
+
+        <details><summary>Personal/free/gift project</summary><div class="detail-body"><p>Start in Production Control so it still counts against machine capacity and material. Set job type to Personal/Free and exclude from customer quote/payment unless it becomes a paid job. Decide whether to deduct inventory. If it uses meaningful material, deduct or log it so inventory stays honest.</p></div></details>
+        <details><summary>Craft show / stock build</summary><div class="detail-body"><p>Start in Production Control as Craft Stock or Finished Goods Restock. Use Inventory Control for supplies and material. Finance Pro records booth fees, material purchases, card fees, and sales. Close jobs even when there is no customer so material and machine load stay accurate.</p></div></details>
+        <details><summary>Repeat customer / reorder</summary><div class="detail-body"><p>Start in Hub Customer 360. Search the customer, review previous orders/materials/prices, then either duplicate the production assumptions manually or create a new Production Control job. Quote only if price/scope changed or the customer requires paperwork.</p></div></details>
+      </section>
+
+      <section class="panel guide-section" id="customer-types">
+        <span class="kicker">Customer paths</span><h2>Retail vs PO vs internal work</h2>
+        <div class="cards">
+          <div class="card"><h3>Retail customer</h3><p>Usually pays by card/PayPal/Venmo. Needs clear price, timeline, and tracker. Keep language simple and customer-facing.</p><ul><li>Quote Tool: retail quote</li><li>Orders Admin: invoice/tracker</li><li>Finance Pro: sale/payment</li></ul></div>
+          <div class="card"><h3>Business / PO customer</h3><p>May require tax exemption, PO number, freight split, Net terms, or invoice formatting. Do not show retail payment buttons if they use PO process.</p><ul><li>Quote Tool: business/PO quote</li><li>Orders Admin: PO invoice</li><li>Finance Pro: AR/payment tracking</li></ul></div>
+          <div class="card"><h3>Internal / personal / test</h3><p>Still belongs in Production Control if it uses time/material. Exclude from revenue but decide whether to deduct inventory.</p><ul><li>Production: job record</li><li>Inventory: optional deduction</li><li>Finance: only if expenses/supplies matter</li></ul></div>
+        </div>
+      </section>
+
+      <section class="panel guide-section" id="production">
+        <span class="kicker">Production Control</span><h2>How to run the shop queue</h2><p class="lead">Production Control is the operational source for what must be printed, when, on which printer, with what material, and at what expected cost.</p>
+        <div class="checklist"><label class="check"><input type="checkbox"> Every job has customer/name or internal reason.</label><label class="check"><input type="checkbox"> Job type is correct: business, retail, prototype, personal, craft stock, warranty.</label><label class="check"><input type="checkbox"> Due date is entered when customer timing matters.</label><label class="check"><input type="checkbox"> Printer is assigned or intentionally left flexible.</label><label class="check"><input type="checkbox"> Materials/colors/grams are entered before quoting.</label><label class="check"><input type="checkbox"> Machine hours and quantity are realistic.</label><label class="check"><input type="checkbox"> Closeout captures actual grams, scrap, hours, and inventory deduction.</label><label class="check"><input type="checkbox"> Status is updated so Hub and tracker make sense.</label></div>
+        <div class="callout"><strong>Watch for this:</strong> A job can look profitable before closeout but be wrong after actual material, reprints, or design time. Closeout is where the ERP becomes trustworthy.</div>
+      </section>
+
+      <section class="panel guide-section" id="inventory">
+        <span class="kicker">Inventory Control</span><h2>How to keep material honest</h2><p class="lead">Inventory Control owns raw filament, non-filament supplies, free spools, reorder points, and movement history.</p>
+        <div class="cards"><div class="card"><h3>When material arrives</h3><ol><li>Add raw filament or supply.</li><li>Enter material/color/brand clearly.</li><li>Enter cost and starting grams/quantity.</li><li>Set reorder threshold if it matters.</li></ol></div><div class="card"><h3>When a job uses material</h3><ol><li>Prefer production closeout deduction.</li><li>Confirm actual grams and scrap.</li><li>Check ledger if numbers look wrong.</li><li>Avoid double-deducting.</li></ol></div><div class="card"><h3>When inventory looks wrong</h3><ol><li>Check Data Health in Hub.</li><li>Check movement ledger.</li><li>Correct with adjustment notes.</li><li>Do not guess without logging why.</li></ol></div></div>
+      </section>
+
+      <section class="panel guide-section" id="quotes">
+        <span class="kicker">Quote Tool</span><h2>How to quote cleanly</h2><div class="flow"><div class="step"><div><h3>Confirm production assumptions first</h3><p>Do not quote until material, hours, quantity, and feasibility are understood.</p></div><a class="where tag" href="production-control.html">Before Quote</a></div><div class="step"><div><h3>Select customer/payment path</h3><p>Retail quote should be easy to accept/pay. PO quote should support customer approval, tax exemption, PO number, and terms.</p></div><span class="where tag">Terms</span></div><div class="step"><div><h3>Check price logic</h3><p>Confirm piece price, shipping/freight, deposit/balance, tax, discounts, and notes. Separate freight if customer accounting requires it.</p></div><span class="where tag amber">Review</span></div><div class="step"><div><h3>Send and follow up</h3><p>Open quotes appear in Hub/Action Queue. Follow up if they age or block production planning.</p></div><a class="where tag" href="hub.html#erpUnifiedActionQueue">Action Queue</a></div></div></section>
+
+      <section class="panel guide-section" id="orders">
+        <span class="kicker">Orders Admin</span><h2>How to manage accepted work</h2><p class="lead">Orders Admin is the owner once a quote is accepted or a PO/customer approval exists. It should answer: what did they buy, what do we owe them, what documents exist, what is the status, and did they pay?</p>
+        <div class="cards"><div class="card"><h3>Order setup</h3><ul><li>OP number present</li><li>Customer/contact correct</li><li>Quote/PO reference captured</li><li>Status and payment status set</li><li>Tax-exempt/terms set if needed</li></ul></div><div class="card"><h3>Documents</h3><ul><li>Invoice / PO invoice</li><li>Packing slip</li><li>Shipping label</li><li>Inner label</li><li>Manufacturing traveler</li></ul></div><div class="card"><h3>Close order</h3><ul><li>Production finished</li><li>Inventory deducted</li><li>Invoice/payment reconciled</li><li>Completion email sent</li><li>Status closed</li></ul></div></div>
+        <div class="callout red"><strong>Do not ignore:</strong> If Orders Admin ever loads with a white background or dead buttons, stop. That usually means a CSS/JS injection or script error broke the page. Check console and restore the last known good orders-admin file before applying more patches.</div>
+      </section>
+
+      <section class="panel guide-section" id="finance">
+        <span class="kicker">Finance Pro</span><h2>How to keep money clean</h2><div class="cards"><div class="card"><h3>Record revenue</h3><p>Record sales/payments with customer/order reference whenever possible. Do not rely only on order status.</p></div><div class="card"><h3>Record expenses</h3><p>Materials, supplies, shipping, packaging, marketplace fees, maintenance, software, booth fees, and admin setup should be categorized.</p></div><div class="card"><h3>Reconcile</h3><p>Use Hub Data Health for paid order/no finance entry, invoice overdue, or payment without order warnings.</p></div></div></section>
+
+      <section class="panel guide-section" id="hub-modules">
+        <span class="kicker">Hub modules</span><h2>How to read the command center</h2><div class="cards"><div class="card"><h3>Action Queue</h3><p>Do the highest score first. It combines overdue work, low stock, unpaid invoices, quote follow-ups, customer action, and data issues.</p></div><div class="card"><h3>Customer 360</h3><p>Use before repeat orders. Search customer/company/email and review revenue, orders, quotes, jobs, and follow-up signals.</p></div><div class="card"><h3>Material Planner</h3><p>Use before promising dates or placing orders. It compares active demand against available material and thresholds.</p></div><div class="card"><h3>Scheduler</h3><p>Use to check printer capacity, conflicts, unassigned jobs, and next 7-day load.</p></div><div class="card"><h3>Executive Dashboard</h3><p>Owner view for revenue, open work, inventory risk, quote/order value, and machine health.</p></div><div class="card"><h3>Reliability + Data Health</h3><p>Use when something feels off. It helps distinguish empty data from failed sync and flags likely record problems.</p></div></div></section>
+
+      <section class="panel guide-section" id="daily-weekly">
+        <span class="kicker">Operating routine</span><h2>Daily and weekly checklist</h2><details open><summary>Daily opening routine</summary><div class="detail-body"><ol><li>Open Hub.</li><li>Check System Health and confirm cloud loaded.</li><li>Review Action Queue top items.</li><li>Check Scheduler for today/next 7 days.</li><li>Check Material Planner before starting prints.</li><li>Open Production Control and update statuses.</li><li>Open Orders Admin for unpaid/needs invoice/ready delivery.</li></ol></div></details><details><summary>Daily close routine</summary><div class="detail-body"><ol><li>Close out completed jobs with actual grams/hours/scrap.</li><li>Confirm inventory deductions.</li><li>Update order/tracker statuses.</li><li>Record payments or expenses in Finance Pro.</li><li>Check Data Health for new warnings.</li><li>Export backups when meaningful data changed.</li></ol></div></details><details><summary>Weekly routine</summary><div class="detail-body"><ol><li>Review Executive Dashboard.</li><li>Review open quotes and overdue invoices.</li><li>Review low-stock and upcoming material needs.</li><li>Check duplicate customers/material records.</li><li>Review printer PM/machine hours.</li><li>Save a repo backup and Supabase/export backup.</li></ol></div></details></section>
+
+      <section class="panel guide-section" id="troubleshooting">
+        <span class="kicker">Troubleshooting</span><h2>When something goes wrong</h2>
+        <details open><summary>Page loads but data is empty</summary><div class="detail-body"><ol><li>Check Hub System Health.</li><li>Confirm you are logged in.</li><li>Hard refresh with Ctrl + Shift + R.</li><li>Check if page says cloud failed vs truly empty.</li><li>Look for recovery snapshot/backup export.</li><li>Do not re-enter lots of data until you know whether it is a load issue.</li></ol></div></details>
+        <details><summary>Buttons do not work</summary><div class="detail-body"><ol><li>Open browser console with F12.</li><li>Look for red JavaScript errors.</li><li>If Orders Admin is affected, suspect a script/CSS regression first.</li><li>Restore the last known good version of that page if needed.</li><li>Do not keep applying patches over a broken page.</li></ol></div></details>
+        <details><summary>Inventory does not match reality</summary><div class="detail-body"><ol><li>Check movement ledger.</li><li>Check whether job closeout deducted material twice or not at all.</li><li>Check duplicate material/color/brand records in Data Health.</li><li>Make a manual adjustment with a note rather than silently editing numbers.</li></ol></div></details>
+        <details><summary>Quote/order/customer linkage looks wrong</summary><div class="detail-body"><ol><li>Search Customer 360.</li><li>Check quote number and OP order number.</li><li>Check customer spelling/email/company consistency.</li><li>Use Data Health to find orphan accepted quotes or orders without customer.</li></ol></div></details>
+        <details><summary>Payment status does not match Finance</summary><div class="detail-body"><ol><li>Check Orders Admin payment status.</li><li>Check Finance Pro transaction entry.</li><li>Confirm customer/order reference is present.</li><li>Fix the source record and re-check Hub Data Health.</li></ol></div></details>
+        <details><summary>Mobile layout feels cramped</summary><div class="detail-body"><p>Use the page-specific mobile views and collapse sections when possible. Internal ERP pages are data-dense; do daily work from Hub first, then open the specific page only when you need to edit records.</p></div></details>
+      </section>
+
+      <section class="panel guide-section" id="watch-for">
+        <span class="kicker">Watch for this</span><h2>Common mistakes to avoid</h2><div class="cards"><div class="card"><h3>Quoting before checking material</h3><p>Always check inventory and scheduler before promising dates or price on bigger jobs.</p></div><div class="card"><h3>Skipping closeout</h3><p>Closeout protects inventory, margin, and future estimates. Do not leave completed work open forever.</p></div><div class="card"><h3>Mixing PO and retail terms</h3><p>Business customers may need PO, Net 30, tax exemption, freight split, and no retail payment buttons.</p></div><div class="card"><h3>Duplicate customer names</h3><p>Use consistent customer/company/email naming so Customer 360 and Data Health work.</p></div><div class="card"><h3>Manual edits without notes</h3><p>If adjusting inventory or finance, add a note explaining why. Future you needs the audit trail.</p></div><div class="card"><h3>Ignoring sync warnings</h3><p>If cloud sync fails, stop and resolve before adding lots of new data.</p></div></div></section>
+
+      <section class="panel guide-section" id="glossary">
+        <span class="kicker">Glossary</span><h2>ERP words used in OliPoly</h2><div class="matrix"><table><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody><tr><td>Q number</td><td>Quote number. Used before the customer accepts.</td></tr><tr><td>OP number</td><td>Order number. Used after accepted quote/PO/customer approval.</td></tr><tr><td>Closeout</td><td>Final production confirmation: actual grams, scrap, hours, inventory deduction, status.</td></tr><tr><td>Movement ledger</td><td>Inventory history showing additions, deductions, scrap, corrections, and job-linked usage.</td></tr><tr><td>Action Queue</td><td>Hub list of what needs attention now, ranked by urgency/impact.</td></tr><tr><td>Customer 360</td><td>Single customer view across quotes, orders, jobs, finance, and timeline.</td></tr><tr><td>Data Health</td><td>Automated warnings for duplicates, missing fields, orphan records, and mismatches.</td></tr><tr><td>PO customer</td><td>Business customer that may issue a purchase order and pay on terms rather than immediately.</td></tr><tr><td>Tax exempt</td><td>Customer/order not charged sales tax because valid exemption documentation applies.</td></tr></tbody></table></div></section>
+    </main>
+  </div>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  $('printGuideBtn')?.addEventListener('click',()=>window.print());
+  const input=$('guideSearch');
+  const sections=[...document.querySelectorAll('.guide-section')];
+  function markText(el,q){
+    if(!q){return}
+  }
+  input?.addEventListener('input',()=>{
+    const q=input.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const hit=!q || sec.innerText.toLowerCase().includes(q);
+      sec.style.display=hit?'':'none';
+    });
+  });
+  const tocLinks=[...document.querySelectorAll('.toc a')];
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){tocLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));}})
+  },{rootMargin:'-35% 0px -60% 0px',threshold:0});
+  sections.forEach(s=>obs.observe(s));
+})();
+</script>
+</body>
+</html>
