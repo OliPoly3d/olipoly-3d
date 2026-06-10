@@ -1,27 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <url><loc>https://olipoly3d.com/</loc></url>
-  <url><loc>https://olipoly3d.com/start-project.html</loc></url>
-  <url><loc>https://olipoly3d.com/showcase.html</loc></url>
-  <url><loc>https://olipoly3d.com/events.html</loc></url>
-  <url><loc>https://olipoly3d.com/faq.html</loc></url>
-  <url><loc>https://olipoly3d.com/track.html</loc></url>
-  <url><loc>https://olipoly3d.com/pay.html</loc></url>
-  <url><loc>https://olipoly3d.com/legal.html</loc></url>
+  <url>
+    <loc>https://olipoly3d.com/</loc>
+    <priority>1.0</priority>
+  </url>
 
-  <url><loc>https://olipoly3d.com/branded-details.html</loc></url>
-  <url><loc>https://olipoly3d.com/eye-catching-work.html</loc></url>
-  <url><loc>https://olipoly3d.com/finished-pieces.html</loc></url>
-  <url><loc>https://olipoly3d.com/designed-before-printing.html</loc></url>
-  <url><loc>https://olipoly3d.com/from-imagination.html</loc></url>
+  <url>
+    <loc>https://olipoly3d.com/showcase.html</loc>
+    <priority>0.9</priority>
+  </url>
 
-  <url><loc>https://olipoly3d.com/northeast-ohio-3d-printing.html</loc></url>
-  <url><loc>https://olipoly3d.com/custom-3d-printing-aurora-ohio.html</loc></url>
-  <url><loc>https://olipoly3d.com/custom-3d-printing-hudson-ohio.html</loc></url>
-  <url><loc>https://olipoly3d.com/custom-3d-printing-twinsburg-ohio.html</loc></url>
-  <url><loc>https://olipoly3d.com/custom-3d-printing-streetsboro-ohio.html</loc></url>
-  <url><loc>https://olipoly3d.com/custom-3d-printing-solon-ohio.html</loc></url>
-  <url><loc>https://olipoly3d.com/custom-3d-printing-chagrin-falls-ohio.html</loc></url>
+  <url>
+    <loc>https://olipoly3d.com/start-project.html</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/branded-details.html</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/eye-catching-work.html</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/finished-pieces.html</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/designed-before-printing.html</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/from-imagination.html</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/events.html</loc>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/faq.html</loc>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/track.html</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/pay.html</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/legal.html</loc>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/northeast-ohio-3d-printing.html</loc>
+    <priority>0.7</priority>
+  </url>
 
 </urlset>
