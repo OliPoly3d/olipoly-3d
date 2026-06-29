@@ -78,7 +78,7 @@
     .nav{
       width:min(var(--max),calc(100% - 32px));
       margin:0 auto;
-      min-height:74px;
+      min-height:66px;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -86,7 +86,7 @@
       position:relative;
     }
 
-    .brand{display:flex;align-items:center;gap:12px;min-width:0}
+    .brand{display:flex;align-items:center;gap:12px;min-width:0;flex:0 0 auto}
     .brand-text{min-width:0;display:block}
     .brand-mark{
       width:48px;height:48px;border-radius:16px;
@@ -110,9 +110,18 @@
     }
     .mobile-short-sub{display:none}
 
+    .nav-actions{
+      margin-left:auto;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:22px;
+      min-width:0;
+    }
+
     .nav-links{
-      display:flex;align-items:center;gap:16px;color:#604966;
-      font-family:"Playfair Display",serif;font-weight:700;font-size:.98rem;
+      display:flex;align-items:center;gap:14px;color:#604966;
+      font-family:"Playfair Display",serif;font-weight:700;font-size:.96rem;
     }
     .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease;text-align:center;line-height:1.08}
     .nav-links a.nav-stack{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
@@ -124,7 +133,7 @@
       transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
     }
     .nav-cta,.button-primary{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 16px 40px rgba(214,73,186,.28)}
-    .nav-cta{padding:13px 18px;white-space:nowrap}
+    .nav-cta{padding:14px 21px;white-space:nowrap}
     .button-primary,.button-secondary{padding:15px 22px}
     .button-secondary{background:rgba(255,255,255,.78);color:#5f456a;border:1px solid rgba(104,59,123,.15);box-shadow:0 14px 34px rgba(54,24,66,.08)}
     .nav-cta:hover,.button-primary:hover,.button-secondary:hover{transform:translateY(-2px)}
@@ -171,6 +180,21 @@
     .section-kicker{color:#a03c87;font-weight:900;letter-spacing:.1em;text-transform:uppercase;font-size:.77rem;margin-bottom:12px}
     .section-title{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.4rem);line-height:.95;letter-spacing:-.055em}
     .section-intro{margin:16px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.65;max-width:720px}
+
+
+    .trust-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:28px}
+    .trust-card{min-height:170px;padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,244,253,.82));border:1px solid rgba(232,79,183,.13);box-shadow:0 22px 58px rgba(84,38,94,.11)}
+    .trust-card strong{display:block;margin-bottom:10px;font-family:"Playfair Display",serif;font-size:1.55rem;line-height:1;letter-spacing:-.04em;color:#2b1934}
+    .trust-card p{margin:0;color:#6f5c78;line-height:1.55;font-size:.96rem}
+    .quiet-showcase-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:30px}
+    .quiet-project-card{display:block;overflow:hidden;border-radius:30px;background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.8);box-shadow:0 24px 70px rgba(84,38,94,.13);transition:transform .2s ease,box-shadow .2s ease}
+    .quiet-project-card:hover{transform:translateY(-3px);box-shadow:0 30px 80px rgba(84,38,94,.17)}
+    .quiet-project-card img,.quiet-project-card video{width:100%;aspect-ratio:4/3.15;object-fit:cover;background:#fff}
+    .quiet-project-card div{padding:16px}
+    .quiet-project-card strong{display:block;font-family:"Playfair Display",serif;font-size:1.28rem;line-height:1;letter-spacing:-.035em;color:#2b1934}
+    .quiet-project-card span{display:block;margin-top:7px;color:#765f80;font-size:.86rem;line-height:1.38;font-weight:750}
+    @media(max-width:980px){.trust-grid{grid-template-columns:1fr}.quiet-showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.quiet-showcase-grid{grid-template-columns:1fr}.trust-card{min-height:0;padding:20px;border-radius:24px}}
 
     .showcase-section-action{margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
     .showcase-pill-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 16px;border-radius:999px;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,244,253,.84));border:1px solid rgba(104,59,123,.16);box-shadow:0 14px 34px rgba(54,24,66,.08);color:#64436d;font-size:.86rem;font-weight:900;letter-spacing:.01em;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
@@ -296,9 +320,10 @@
     .cap-panel img[src*="ohio-led-outline-wall-art"]{object-position:center center}
 
     @media(max-width:980px){
+      .nav-actions{display:contents}
       .nav-links{display:none}
       .mobile-menu-button{display:inline-flex}
-      .nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:82px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}
+      .nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:74px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}
       .nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}
       .hero{grid-template-columns:1fr;min-height:0}
       .poly-stage{min-height:520px;max-width:540px;margin:0 auto;width:100%}
@@ -535,6 +560,11 @@ img{max-width:100%}
 .solution-mini-card.featured-solution .solution-image-frame{height:260px;border-bottom:0;border-right:1px solid rgba(104,59,123,.10)}
 .solution-mini-card.featured-solution div:not(.solution-image-frame){display:flex;flex-direction:column;justify-content:center}
 .solution-mini-card[href*="dugout"] img{object-position:center center}
+.home-feature .solution-mini-card.featured-solution{grid-column:auto}
+.home-feature .solution-mini-card.featured-solution .solution-image-frame{height:100%;min-height:360px}
+.home-feature .solution-mini-card.featured-solution img{object-fit:contain;padding:10px;background:#fff}
+.home-feature .solution-copy-card{min-height:360px}
+@media (max-width:840px){.home-feature .solution-mini-card.featured-solution .solution-image-frame{height:auto;min-height:0}.home-feature .solution-copy-card{min-height:0}}
 @media (max-width:560px){.solution-mini-card.featured-solution{grid-template-columns:1fr}.solution-mini-card.featured-solution .solution-image-frame{height:230px;border-right:0;border-bottom:1px solid rgba(104,59,123,.10)}}
 @media (max-width:560px){.solution-card-grid{grid-template-columns:1fr}.solution-copy-card{padding:22px}.solution-mini-card .solution-image-frame{height:230px}}
 
@@ -552,18 +582,15 @@ img{max-width:100%}
 <span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
 </span>
 </a>
+<div class="nav-actions">
 <div class="nav-links" id="navLinks">
-<a href="real-solutions.html">Work</a>
+<a href="index.html">Home</a>
+<a href="real-solutions.html">Real Solutions</a>
 <a href="showcase.html">Showcase</a>
-<a href="#pricing">Pricing</a>
-<a class="nav-stack" href="northeast-ohio-3d-printing.html"><span>Service</span><span>Area</span></a>
-<a href="#capabilities">Capabilities</a>
-<a href="#process">Process</a>
-<a href="#studio">Studio</a>
 <a href="faq.html">FAQ</a>
-<a class="nav-stack" href="track.html"><span>Track</span><span>Order</span></a>
 </div>
 <a class="nav-cta" href="start-project.html">Start Your Project</a>
+</div>
 <button aria-label="Open menu" class="mobile-menu-button" onclick="toggleMenu()" type="button">Menu</button>
 </nav>
 </header>
@@ -571,12 +598,12 @@ img{max-width:100%}
 <section aria-labelledby="hero-title" class="hero">
 <div>
 <div class="eyebrow">OliPoly 3D • Ohio</div>
-<h1 id="hero-title">Custom 3D printing with a creative <span class="gradient-word">buzz.</span></h1>
-<p class="hero-copy">Custom gifts, branded pieces, prototypes, and practical parts — made with care in Northeast Ohio.</p>
-<p class="hero-materials">Ideas • Gifts • Parts • Branding</p>
+<h1 id="hero-title">Have an idea? Let's make it <span class="gradient-word">real.</span></h1>
+<p class="hero-copy">OliPoly 3D designs and prints custom parts, gifts, organizers, branded pieces, and small-batch projects for people and businesses in Northeast Ohio.</p>
+<p class="hero-materials">Custom design • Practical parts • Personalized work</p>
 <div class="hero-actions">
 <a class="button-primary" href="start-project.html">Start My Project</a>
-<a class="button-secondary" href="real-solutions.html">See Real Solutions</a>
+<a class="button-secondary" href="real-solutions.html">Explore Real Projects</a>
 </div>
 </div>
 <div class="poly-stage">
@@ -588,72 +615,55 @@ img{max-width:100%}
 </div>
 </section>
 
+<section class="section" id="trust">
+<div class="section-kicker">Why OliPoly</div>
+<h2 class="section-title">Custom work should feel clear, practical, and personal.</h2>
+<p class="section-intro">Whether your project starts as a broken part, a quick sketch, a favorite photo, or a business need, the goal is the same: turn the idea into something useful, polished, and real.</p>
+<div class="trust-grid" aria-label="Why customers choose OliPoly">
+<article class="trust-card"><strong>Designed around your need</strong><p>We start with the problem, dimensions, style, and real-world use — not just the printer.</p></article>
+<article class="trust-card"><strong>Finished with care</strong><p>Color, fit, texture, cleanup, and presentation all matter when a custom piece is going to a customer, gift recipient, or business.</p></article>
+<article class="trust-card"><strong>Ready for one or many</strong><p>From a single personalized piece to repeatable small-batch parts, projects are planned around quality and consistency.</p></article>
+</div>
+</section>
+
 <section class="section" id="real-solutions-preview">
-<div class="section-kicker">Real solutions</div>
-<h2 class="section-title">From problem to finished part.</h2>
-<p class="section-intro">Have a missing part, broken piece, odd-size fit, or idea that does not exist on a shelf? See how practical custom 3D printing can turn a real need into a finished solution.</p>
-<div class="solution-preview">
+<div class="section-kicker">Featured real solution</div>
+<h2 class="section-title">Dugout gear, organized.</h2>
+<p class="section-intro">A custom wall-mounted organizer designed for a young baseball player — personalized, modular, and made to keep drinks, phones, sunglasses, and small gear off the bench.</p>
+<div class="solution-preview home-feature">
+  <a class="solution-mini-card featured-solution" href="real-solutions.html#dugout-organizer">
+    <div class="solution-image-frame"><img alt="Personalized modular baseball dugout organizer with cup holder, tray, and phone holder" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div>
+    <div><strong>A custom organizer that fits the player</strong><span>Add, remove, or rearrange accessories to fit the way the dugout is actually used — then personalize the design with colors, theme, and name.</span></div>
+  </a>
   <article class="solution-copy-card">
     <div>
       <h3>Real problems. Practical printed solutions.</h3>
       <div class="solution-steps" aria-label="OliPoly problem to solution process">
-        <div class="solution-step"><span>1</span><div>Send the photo, sketch, file, rough measurement, or broken part.</div></div>
-        <div class="solution-step"><span>2</span><div>Confirm fit, function, material, finish, and real-world use.</div></div>
-        <div class="solution-step"><span>3</span><div>Design, print, test, and refine into a practical finished part.</div></div>
+        <div class="solution-step"><span>1</span><div>Start with the real problem: cluttered benches, knocked-over drinks, and small items with nowhere to go.</div></div>
+        <div class="solution-step"><span>2</span><div>Design a custom layout with modular accessories for the way the player actually uses it.</div></div>
+        <div class="solution-step"><span>3</span><div>Print, finish, and personalize it into something useful enough to use and fun enough to display.</div></div>
       </div>
     </div>
     <div class="solution-actions">
-      <a class="button-primary" href="real-solutions.html">View Real Solutions</a>
+      <a class="button-primary" href="real-solutions.html">Explore Real Projects</a>
       <a class="button-secondary" href="start-project.html">Start a Project</a>
     </div>
   </article>
-  <div class="solution-card-grid" aria-label="Featured real solution examples">
-    <a class="solution-mini-card featured-solution" href="real-solutions.html#dugout-organizer"><div class="solution-image-frame"><img alt="Personalized modular baseball dugout organizer with cup holder, tray, and phone holder" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div><div><strong>Dugout clutter solved</strong><span>A personalized wall organizer keeps drinks, phones, and small gear off the bench with modular add-ons.</span></div></a>
-    <a class="solution-mini-card" href="real-solutions.html#thermoflask-cap"><div class="solution-image-frame"><img alt="Custom replacement cap restored on a ThermoFlask bottle" decoding="async" loading="lazy" src="images/funished-cap-bottle.png"/></div><div><strong>Lost cap solved</strong><span>A missing bottle cap became a measured, modeled, and printed replacement.</span></div></a>
-    <a class="solution-mini-card" href="real-solutions.html#red-cupholder"><div class="solution-image-frame"><img alt="Broken red cupholder compared with a re-created solution" decoding="async" loading="lazy" src="images/red-cupholder-broken.png"/></div><div><strong>Broken part re-created</strong><span>A cupholder with a failed arm was modeled from scratch and printed as a new part.</span></div></a>
-  </div>
 </div>
 </section>
 
 <section class="section" id="work">
-<div class="section-kicker">Featured showcase</div>
-<h2 class="section-title">Completed work, made custom.</h2>
-<p class="section-intro">Browse completed projects, useful parts, branded pieces, keepsakes, and finished work.</p>
+<div class="section-kicker">Completed work</div>
+<h2 class="section-title">Click to explore more real projects.</h2>
+<p class="section-intro">A small preview of the custom parts, gifts, branded pieces, organizers, and production work made by OliPoly.</p>
+<div class="quiet-showcase-grid" aria-label="Featured project preview cards">
+<a class="quiet-project-card" href="real-solutions.html#thermoflask-cap"><img alt="Custom replacement cap restored on a ThermoFlask bottle" decoding="async" loading="lazy" src="images/funished-cap-bottle.png"/><div><strong>Replacement parts</strong><span>Missing, broken, or hard-to-find pieces recreated around fit and function.</span></div></a>
+<a class="quiet-project-card" href="showcase.html"><img alt="Custom company logo coasters" decoding="async" loading="lazy" src="images/custom-company-logo-coasters.png"/><div><strong>Branded pieces</strong><span>Logo work, coasters, displays, and business-friendly custom items.</span></div></a>
+<a class="quiet-project-card" href="showcase.html"><img alt="Backlit lithophane family portrait" decoding="async" loading="lazy" src="images/lit_up_litho.png"/><div><strong>Personal gifts</strong><span>Meaningful keepsakes, photo pieces, decor, and one-of-a-kind ideas.</span></div></a>
+<a class="quiet-project-card" href="showcase.html"><img alt="Production spacer parts on a print bed" decoding="async" loading="lazy" src="images/top_down_spacerplateview.png"/><div><strong>Small batches</strong><span>Repeatable parts planned around quantity, timing, and consistency.</span></div></a>
+</div>
 <div class="showcase-section-action">
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-pill-link featured-gallery-link" href="showcase.html">See Completed Examples →</a>
-</div>
-<div class="showcase-rail-wrap">
-<div aria-hidden="false" class="rail-topper">
-<span class="rail-hint">Drag or scroll to browse</span>
-<button aria-label="Scroll featured work left" class="rail-button" onclick="scrollShowcase(-1)" type="button">‹</button>
-<button aria-label="Scroll featured work right" class="rail-button" onclick="scrollShowcase(1)" type="button">›</button>
-</div>
-<div aria-label="Featured OliPoly work" class="showcase-rail" id="showcaseRail">
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-card" href="showcase.html">
-<img alt="Poly mascot creative build" decoding="async" loading="lazy" src="images/poly_livingroom.png"/>
-<div class="showcase-label"><div><strong>Creative builds</strong><span>Polished characters, decor, and conversation pieces.</span></div><span class="pill">Decor</span></div>
-</a>
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-card" href="showcase.html">
-<img alt="Production spacer parts on print bed" decoding="async" loading="lazy" src="images/top_down_spacerplateview.png"/>
-<div class="showcase-label"><div><strong>Production parts</strong><span>Repeatable components, brackets, spacers, and fit-checks.</span></div><span class="pill">Batch</span></div>
-</a>
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-card" href="showcase.html">
-<img alt="Backlit lithophane family portrait" decoding="async" loading="lazy" src="images/lit_up_litho.png"/>
-<div class="showcase-label"><div><strong>Gifts &amp; keepsakes</strong><span>Lithophanes and meaningful custom pieces.</span></div><span class="pill">Personal</span></div>
-</a>
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-card" href="showcase.html">
-<img alt="Custom company logo coasters" decoding="async" loading="lazy" src="images/custom-company-logo-coasters.png"/>
-<div class="showcase-label"><div><strong>Branded work</strong><span>Logo pieces, coasters, and business-friendly quoting.</span></div><span class="pill">Business</span></div>
-</a>
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-card" href="showcase.html">
-<img alt="Painted dinosaur skull display pieces after finishing" decoding="async" loading="lazy" src="images/rex-paint.jpg"/>
-<div class="showcase-label"><div><strong>Finished display pieces</strong><span>Painted, detailed, and post-processed work with character.</span></div><span class="pill">Finish</span></div>
-</a>
-<a aria-label="Open the full OliPoly showcase gallery" class="showcase-card" href="showcase.html">
-<video autoplay="" loop="" muted="" playsinline="" poster="images/liverpool-bottle_thumb.jpg" src="images/liverpool-bottle_web.mp4"></video>
-<div class="showcase-label"><div><strong>Motion &amp; detail</strong><span>Short clips help show shape, texture, and personality.</span></div><span class="pill">Video</span></div>
-</a>
-</div>
+<a aria-label="Open the full OliPoly showcase gallery" class="showcase-pill-link featured-gallery-link" href="showcase.html">View Full Showcase →</a>
 </div>
 </section>
 <section class="section" id="pricing">
@@ -720,39 +730,10 @@ img{max-width:100%}
 </article>
 </div>
 </section>
-<section class="section" id="process">
-<div class="section-kicker">Project stories</div>
-<h2 class="section-title">Start with what you have.</h2>
-<p class="section-intro">Send a sketch, photo, file, broken part, or quick “can you make this?” and OliPoly will help shape the next step.</p>
-<article class="split-feature">
-<div class="split-image"><img alt="Technical drawing for pocket door bracket" decoding="async" loading="lazy" src="images/pocket-door-bracket-drawing.png"/></div>
-<div class="split-copy">
-<h3>Details first, better prints later.</h3>
-<p>For functional work, drawings and notes help confirm size, fit, material, and expectations before printing.</p>
-<div class="mini-tags"><span>CAD workflow</span><span>Quote reference</span><span>Material planning</span></div>
-</div>
-</article>
-<article class="split-feature">
-<div class="split-image"><img alt="Lit lithophane keepsake" decoding="async" loading="lazy" src="images/lit_up_litho.png"/></div>
-<div class="split-copy">
-<h3>Photos turned into keepsakes.</h3>
-<p>Lithophanes and personalized pieces turn photos and memories into something physical and display-worthy.</p>
-<div class="mini-tags"><span>Keepsakes</span><span>Photo gifts</span><span>Custom lighting</span></div>
-</div>
-</article>
-<article class="split-feature">
-<div class="split-image"><video autoplay="" loop="" muted="" playsinline="" poster="images/spacer-cap-video_thumb.jpg" src="images/spacer-cap-video_web.mp4"></video></div>
-<div class="split-copy">
-<h3>Small batches with consistency in mind.</h3>
-<p>For repeat pieces, OliPoly plans around quantity, timing, material use, and consistency.</p>
-<div class="mini-tags"><span>Repeatable</span><span>Production</span><span>Quality checks</span></div>
-</div>
-</article>
-</section>
 <section class="section" id="studio">
 <div class="section-kicker">Inside the studio</div>
 <h2 class="section-title">Printed and checked in-house.</h2>
-<p class="section-intro">Modern printers, calibration, and hands-on finishing help move projects from idea to finished piece.</p>
+<p class="section-intro">Modern printers, calibration, batch checks, and hands-on finishing help move projects from idea to finished piece.</p>
 <div class="studio-grid">
 <div class="studio-tile studio-printer">
 <img alt="OliPoly Bambu P2S printer and AMS setup in the studio" decoding="async" loading="lazy" src="images/p2s-ams2.png"/>
@@ -761,7 +742,7 @@ img{max-width:100%}
 <img alt="Small batch 3D printed parts arranged for production checking" decoding="async" loading="lazy" src="images/multipart-spacers.png"/>
 </div>
 <div class="studio-tile studio-stones">
-<img alt="Rolling Stones inspired printed coasters showing polished color and detail" decoding="async" loading="lazy" src="images/stones_coasters.png"/>
+<video autoplay="" loop="" muted="" playsinline="" poster="images/spacer-cap-video_thumb.jpg" src="images/spacer-cap-video_web.mp4"></video>
 </div>
 <div class="studio-tile studio-macro">
 <img alt="Close-up macro texture of a 3D printed surface finish" decoding="async" loading="lazy" src="images/calibration_firstlayer.png"/>
@@ -769,7 +750,7 @@ img{max-width:100%}
 </div>
 <div class="studio-note">
 <h3>Built for reliable results.</h3>
-<p>Calibrated workflows, batch checks, and hands-on finishing help each project feel polished and practical.</p>
+<p>Calibrated workflows, small-batch planning, and hands-on finishing help each project feel polished, practical, and consistent.</p>
 </div>
 </section>
 <section class="cta-band" id="contact">
@@ -801,7 +782,6 @@ img{max-width:100%}
 <a href="real-solutions.html">See real solutions <span>→</span></a>
 <a href="showcase.html">View the showcase <span>→</span></a>
 <a href="track.html">Track an order <span>→</span></a>
-<a href="events.html">Events &amp; pop-ups <span>→</span></a>
 <a href="faq.html">Read the FAQ <span>→</span></a>
 <a href="mailto:OliPoly3D@gmail.com">Email OliPoly <span>→</span></a>
 <a href="https://g.page/r/CYqB5Fl_UelQEBM/review" target="_blank" rel="noopener">Leave a Review <span>→</span></a>
