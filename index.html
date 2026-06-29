@@ -531,6 +531,11 @@ img{max-width:100%}
 .solution-mini-card span{display:block;margin-top:7px;color:#765f80;font-size:.85rem;line-height:1.35;font-weight:800}
 .solution-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
 @media (max-width:840px){.solution-preview{grid-template-columns:1fr}.solution-card-grid{grid-template-columns:1fr 1fr}.solution-mini-card .solution-image-frame{height:210px}}
+.solution-mini-card.featured-solution{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(220px,.95fr);align-items:stretch}
+.solution-mini-card.featured-solution .solution-image-frame{height:260px;border-bottom:0;border-right:1px solid rgba(104,59,123,.10)}
+.solution-mini-card.featured-solution div:not(.solution-image-frame){display:flex;flex-direction:column;justify-content:center}
+.solution-mini-card[href*="dugout"] img{object-position:center center}
+@media (max-width:560px){.solution-mini-card.featured-solution{grid-template-columns:1fr}.solution-mini-card.featured-solution .solution-image-frame{height:230px;border-right:0;border-bottom:1px solid rgba(104,59,123,.10)}}
 @media (max-width:560px){.solution-card-grid{grid-template-columns:1fr}.solution-copy-card{padding:22px}.solution-mini-card .solution-image-frame{height:230px}}
 
 </style>
@@ -603,6 +608,7 @@ img{max-width:100%}
     </div>
   </article>
   <div class="solution-card-grid" aria-label="Featured real solution examples">
+    <a class="solution-mini-card featured-solution" href="real-solutions.html#dugout-organizer"><div class="solution-image-frame"><img alt="Personalized modular baseball dugout organizer with cup holder, tray, and phone holder" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div><div><strong>Dugout clutter solved</strong><span>A personalized wall organizer keeps drinks, phones, and small gear off the bench with modular add-ons.</span></div></a>
     <a class="solution-mini-card" href="real-solutions.html#thermoflask-cap"><div class="solution-image-frame"><img alt="Custom replacement cap restored on a ThermoFlask bottle" decoding="async" loading="lazy" src="images/funished-cap-bottle.png"/></div><div><strong>Lost cap solved</strong><span>A missing bottle cap became a measured, modeled, and printed replacement.</span></div></a>
     <a class="solution-mini-card" href="real-solutions.html#red-cupholder"><div class="solution-image-frame"><img alt="Broken red cupholder compared with a re-created solution" decoding="async" loading="lazy" src="images/red-cupholder-broken.png"/></div><div><strong>Broken part re-created</strong><span>A cupholder with a failed arm was modeled from scratch and printed as a new part.</span></div></a>
   </div>
