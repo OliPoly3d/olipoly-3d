@@ -4,19 +4,19 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Designed Before It’s Printed | OliPoly 3D</title>
-<meta content="See how OliPoly 3D plans custom prints before printing through CAD modeling, slicer setup, material planning, calibration checks, and organized production prep." name="description"/>
+<title>From Idea to Finished Product | OliPoly 3D</title>
+<meta content="See how OliPoly 3D turns sketches, photos, broken parts, and rough ideas into finished custom 3D printed products through design, prototyping, and refinement." name="description"/>
 <link href="https://olipoly3d.com/designed-before-printing.html" rel="canonical"/>
 <meta content="index, follow" name="robots"/>
 <meta content="#fff7fb" name="theme-color"/>
-<meta content="Designed Before It’s Printed | OliPoly 3D" property="og:title"/>
-<meta content="CAD modeling, material planning, slicing, calibration, and production organization behind thoughtful custom 3D prints." property="og:description"/>
+<meta content="From Idea to Finished Product | OliPoly 3D" property="og:title"/>
+<meta content="You do not need a finished CAD model. OliPoly helps turn rough ideas, photos, measurements, sketches, and broken parts into thoughtful finished products." property="og:description"/>
 <meta content="website" property="og:type"/>
 <meta content="https://olipoly3d.com/designed-before-printing.html" property="og:url"/>
 <meta content="https://olipoly3d.com/images/AI-CAD.png" property="og:image"/>
 <meta content="summary_large_image" name="twitter:card"/>
-<meta content="Designed Before It’s Printed | OliPoly 3D" name="twitter:title"/>
-<meta content="The thoughtful planning behind custom 3D printing: CAD, slicer setup, materials, calibration, and organization." name="twitter:description"/>
+<meta content="From Idea to Finished Product | OliPoly 3D" name="twitter:title"/>
+<meta content="How OliPoly turns rough ideas, sketches, photos, and practical problems into finished custom products." name="twitter:description"/>
 <meta content="https://olipoly3d.com/images/AI-CAD.png" name="twitter:image"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -98,6 +98,18 @@
       .spotlight-media img{border-width:4px;border-radius:18px}
       .project-spotlight{padding:16px}
     }
+
+    .idea-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:30px}
+    .idea-card{border-radius:26px;padding:20px;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.86);box-shadow:0 18px 50px rgba(84,38,94,.09);min-height:150px}
+    .idea-card strong{display:block;font-family:"Playfair Display",serif;font-size:1.42rem;line-height:1;margin-bottom:10px;letter-spacing:-.04em}.idea-card span{display:block;color:#6f5c78;line-height:1.5;font-size:.94rem}
+    .journey{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:30px}.journey-step{position:relative;border-radius:28px;padding:20px;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,247,253,.84));border:1px solid rgba(255,255,255,.88);box-shadow:0 18px 50px rgba(84,38,94,.08)}.journey-step::after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);font-weight:900;color:#b85aa1}.journey-step:last-child::after{display:none}.journey-step b{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 10px 24px rgba(214,73,186,.22);margin-bottom:12px}.journey-step h3{font-family:"Playfair Display",serif;font-size:1.45rem;line-height:.98;letter-spacing:-.04em;margin:0 0 8px}.journey-step p{margin:0;color:#6f5c78;line-height:1.5;font-size:.94rem}
+    .example-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:30px}.example-card{border-radius:28px;padding:14px;background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.86);box-shadow:0 20px 58px rgba(84,38,94,.1)}.example-card img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:20px;border:5px solid rgba(255,255,255,.86);box-shadow:0 12px 30px rgba(54,24,66,.08)}.example-card h3{font-family:"Playfair Display",serif;font-size:1.55rem;line-height:1;margin:14px 6px 8px;letter-spacing:-.04em}.example-card p{margin:0 6px 8px;color:#6f5c78;line-height:1.5;font-size:.95rem}
+    .photo-stack{position:relative;min-height:460px}.photo-stack .stack-card{position:absolute;border-radius:28px;overflow:hidden;border:7px solid rgba(255,255,255,.9);box-shadow:0 26px 70px rgba(84,38,94,.16);background:#fff}.photo-stack .stack-card img,.photo-stack .stack-card video{width:100%;height:100%;object-fit:cover}.photo-stack .main{width:74%;height:58%;right:3%;top:16%;transform:rotate(1deg)}.photo-stack .small-a{width:43%;height:34%;left:0;top:4%;transform:rotate(-4deg)}.photo-stack .small-b{width:42%;height:33%;left:10%;bottom:0;transform:rotate(3deg)}.photo-stack .small-c{width:38%;height:30%;right:0;bottom:4%;transform:rotate(-3deg)}
+    .trust-note{margin-top:22px;border-radius:28px;padding:22px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.86);box-shadow:0 18px 50px rgba(84,38,94,.08);color:#6f5c78;line-height:1.65}.trust-note strong{color:#2d1b3d}
+    .micro-cta{display:inline-flex;align-items:center;gap:8px;margin-top:12px;color:#9a3e83;font-weight:900}.micro-cta span{transition:transform .2s ease}.micro-cta:hover span{transform:translateX(4px)}
+    @media(max-width:980px){.idea-strip,.journey,.example-grid{grid-template-columns:1fr 1fr}.journey-step::after{display:none}.photo-stack{min-height:390px}.photo-stack .main{width:80%;right:0}.photo-stack .small-a{width:48%}.photo-stack .small-b{width:48%}.photo-stack .small-c{width:42%}}
+    @media(max-width:640px){.idea-strip,.journey,.example-grid{grid-template-columns:1fr}.photo-stack{min-height:auto;display:grid;gap:12px}.photo-stack .stack-card{position:relative!important;inset:auto!important;width:100%!important;height:auto!important;transform:none!important}.photo-stack .stack-card img,.photo-stack .stack-card video{aspect-ratio:4/3}.hero-actions{align-items:stretch}.hero-actions a{width:100%}}
+
 </style>
 <link href="assets/erp-upgrade.css" rel="stylesheet"/>
 </head>
@@ -105,107 +117,112 @@
 <header class="site-header">
 <nav class="nav" id="nav">
 <a aria-label="OliPoly 3D home" class="brand" href="index.html"><span class="brand-mark"><img alt="Poly mascot" decoding="async" loading="lazy" src="images/poly-head.png"/></span><span class="brand-text"><span class="brand-name">Oli<span>Poly</span> 3D</span><span class="brand-sub brand-sub-full">Custom printing • Creative builds • Prototypes</span><span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span></span></a>
-<div class="nav-links" id="navLinks"><a href="index.html">Home</a><a href="index.html#work">Work</a><a href="showcase.html">Showcase</a><a href="events.html">Events</a><a href="faq.html">FAQ</a><a href="track.html">Track Order</a></div>
+<div class="nav-links" id="navLinks"><a href="index.html">Home</a><a href="real-solutions.html">Real Solutions</a><a href="showcase.html">Showcase</a><a href="faq.html">FAQ</a></div>
 <a class="nav-cta" href="start-project.html">Start Your Project</a><button aria-label="Open menu" class="mobile-menu-button" onclick="toggleMenu()" type="button">Menu</button>
 </nav>
 </header>
 <main>
 <section aria-labelledby="hero-title" class="hero">
 <div>
-<div class="eyebrow">CAD • Materials • Slicing • Calibration</div>
-<h1 id="hero-title">Designed before it’s <span class="gradient-word">printed.</span></h1>
-<p class="hero-copy">Many custom projects begin long before the printer starts. Design work, planning, material choices, orientation, and preparation help the finished piece look right, fit properly, and perform as expected.</p>
-<div class="hero-actions"><a class="button-primary" href="start-project.html">Start a Thoughtful Build</a><a class="button-secondary" href="showcase.html">Back to Showcase</a></div>
+<div class="eyebrow">Idea • Design • Prototype • Finished Product</div>
+<h1 id="hero-title">Every great solution starts with an <span class="gradient-word">idea.</span></h1>
+<p class="hero-copy">You do not need a finished CAD file to start. Bring a rough sketch, a broken part, a photo, a measurement, or simply “I wish this existed.” OliPoly helps turn the problem into a practical, finished product.</p>
+<div class="hero-actions"><a class="button-primary" href="start-project.html">Start Your Project</a><a class="button-secondary" href="#process">See the Process</a></div>
 </div>
-<div class="hero-media"><img alt="Digital CAD design workspace with a 3D model, notebook sketches, calipers, and print planning tools" decoding="async" loading="lazy" src="images/AI-CAD.png"/></div>
-</section>
-<section aria-labelledby="replacement-spotlight-title" class="project-spotlight">
-<div>
-<span class="spotlight-kicker">Project spotlight</span>
-<h2 id="replacement-spotlight-title">Replacement-style part planning</h2>
-<p class="spotlight-copy">Some projects are less about decoration and more about getting something useful back in service. For practical parts, the design work before printing is what helps the final piece fit the need.</p>
-<div class="spotlight-steps">
-<div class="spotlight-step"><strong>The idea</strong><span>Create a practical part when an existing piece is difficult to replace, unavailable, or better handled as a custom solution.</span></div>
-<div class="spotlight-step"><strong>The process</strong><span>The part requirements are evaluated, recreated or adjusted digitally, then prepared for printing with fit, strength, material, and orientation in mind.</span></div>
-<div class="spotlight-step"><strong>The result</strong><span>A custom part or spacer-style solution that can help extend the usefulness of an existing item without starting from scratch.</span></div>
-</div>
-</div>
-<div class="spotlight-media single">
-<img alt="Custom printed spacer-style parts prepared for practical use" decoding="async" loading="lazy" src="images/multipart-spacers.png"/>
+<div class="photo-stack" aria-label="A collage showing CAD, prototypes, finished prints, and real custom project work">
+<div class="stack-card small-a"><img alt="CAD workspace showing a custom 3D model before printing" decoding="async" loading="lazy" src="images/AI-CAD.png"/></div>
+<div class="stack-card main"><img alt="Personalized dugout organizer showing a finished custom product" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div>
+<div class="stack-card small-b"><img alt="Replacement cap design image showing a planned custom part" decoding="async" loading="lazy" src="images/cap-design.png"/></div>
+<div class="stack-card small-c"><img alt="Organized batch of finished 3D printed pieces ready for delivery" decoding="async" loading="lazy" src="images/organization.png"/></div>
 </div>
 </section>
-<section class="section">
-<div class="section-kicker">The planning layer</div>
-<h2 class="section-title">Some projects need planning before printing.</h2>
-<p class="section-intro">Many custom projects begin long before the printer starts. Design work, planning, material choices, and preparation help ensure the finished piece looks right, fits properly, and performs as expected.</p>
-<div class="cards">
-<article class="card"><img alt="CAD workspace showing a 3D model and planning tools" decoding="async" loading="lazy" src="images/AI-CAD.png"/><h3>Digital design first</h3><p>Shape, proportion, fit, and purpose can be worked through digitally so the finished piece starts with a clear direction.</p></article>
-<article class="card"><img alt="Bambu Studio slicer screen showing color and material planning for a multi-material print" decoding="async" loading="lazy" src="images/material-planning.png"/><h3>Materials with purpose</h3><p>Color, strength, finish, and spool availability matter. Material choices are matched to the look and job of the project.</p></article>
-<article class="card"><img alt="First layer calibration print used to check bed adhesion and print quality" decoding="async" loading="lazy" src="images/calibration_firstlayer.png"/><h3>First layer confidence</h3><p>A clean first layer helps prevent failures, surface issues, and wasted time before the final print begins.</p></article>
+
+<section class="section" aria-labelledby="no-cad-title">
+<div class="section-kicker">Start simple</div>
+<h2 id="no-cad-title" class="section-title">You do not need a finished design.</h2>
+<p class="section-intro">Most custom projects start with something imperfect: a broken item, a quick photo, a rough note, or an idea that has never existed before. That is enough to begin the conversation.</p>
+<div class="idea-strip">
+<div class="idea-card"><strong>Photos</strong><span>Show the object, space, problem, or inspiration from a few angles.</span></div>
+<div class="idea-card"><strong>Sketches</strong><span>A quick drawing can explain the idea better than a polished description.</span></div>
+<div class="idea-card"><strong>Measurements</strong><span>Basic dimensions help us understand fit, clearance, and scale.</span></div>
+<div class="idea-card"><strong>Broken parts</strong><span>Replacement-style projects often begin with the piece that failed.</span></div>
+<div class="idea-card"><strong>Rough ideas</strong><span>Even “I wish this existed” can become a practical design direction.</span></div>
 </div>
 </section>
-<section class="section">
+
+<section id="process" class="section" aria-labelledby="process-title">
+<div class="section-kicker">From idea to finished product</div>
+<h2 id="process-title" class="section-title">A clear path from concept to handoff.</h2>
+<p class="section-intro">The goal is not to make the process complicated. The goal is to understand what you need, design around that need, test what matters, and deliver something that feels intentional.</p>
+<div class="journey">
+<article class="journey-step"><b>1</b><h3>Tell us</h3><p>Share the problem, goal, photo, sketch, measurements, or inspiration.</p></article>
+<article class="journey-step"><b>2</b><h3>Plan it</h3><p>We look at fit, use, material, color, strength, and finish.</p></article>
+<article class="journey-step"><b>3</b><h3>Design it</h3><p>The idea becomes printable geometry, not just a rough concept.</p></article>
+<article class="journey-step"><b>4</b><h3>Test it</h3><p>Fit, print quality, orientation, and details are checked before final work.</p></article>
+<article class="journey-step"><b>5</b><h3>Refine it</h3><p>Small changes can make the final piece cleaner, stronger, or easier to use.</p></article>
+<article class="journey-step"><b>6</b><h3>Finish it</h3><p>The final print is prepared, organized, and handed off cleanly.</p></article>
+</div>
+</section>
+
+<section class="section" aria-labelledby="difference-title">
 <div class="split-panel">
 <div class="split-copy">
-<div class="section-kicker">Slicer strategy</div>
-<h3>Orientation, color, and settings change the result.</h3>
-<p>How a model sits on the plate can affect strength, visible layer lines, support marks, print time, and finish quality. For multi-color or branded work, setup decisions also help determine which details stand out.</p>
-<div class="tag-row"><span>Plate orientation</span><span>Color assignment</span><span>Layer height</span><span>Support planning</span><span>Seam control</span></div>
+<div class="section-kicker">Why design matters</div>
+<h3 id="difference-title">The best solution is usually designed around your actual need.</h3>
+<p>Downloading a file can work when the problem is generic. But many useful projects need a better fit, a specific size, a brand color, a name, a mounting point, a stronger shape, or a layout that matches how someone will actually use it.</p>
+<p>That is where design-before-printing matters. The print is only the final step—the value is in solving the right problem first.</p>
+<div class="tag-row"><span>Better fit</span><span>Cleaner function</span><span>Personalized details</span><span>Purpose-built design</span><span>Less guesswork</span></div>
 </div>
-<div class="wide-photo"><img alt="Material and print settings planned inside Bambu Studio" decoding="async" loading="lazy" src="images/material-planning.png"/></div>
+<div class="wide-photo"><img alt="Custom 3D printed organizer with accessories showing a purpose-built solution" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div>
 </div>
+</section>
+
+<section class="section" aria-labelledby="examples-title">
+<div class="section-kicker">Different needs, same thoughtful process</div>
+<h2 id="examples-title" class="section-title">A custom project can start in many ways.</h2>
+<p class="section-intro">The process works whether the goal is replacement, organization, branding, personalization, or repeatable production.</p>
+<div class="example-grid">
+<article class="example-card"><img alt="Custom replacement bottle cap solution" decoding="async" loading="lazy" src="images/cap-solution.png"/><h3>Broken part</h3><p>A hard-to-replace piece becomes a practical custom replacement.</p></article>
+<article class="example-card"><img alt="Personalized dugout organizer with cup holder and accessories" decoding="async" loading="lazy" src="images/drip-organizer.png"/><h3>Cluttered space</h3><p>A specific organization problem becomes a custom product.</p></article>
+<article class="example-card"><img alt="Custom company logo coasters for branded work" decoding="async" loading="lazy" src="images/custom-company-logo-coasters.png"/><h3>Branding need</h3><p>A logo or business idea becomes a physical branded detail.</p></article>
+<article class="example-card"><img alt="Multiple matching printed spacer parts prepared as a small batch" decoding="async" loading="lazy" src="images/multipart-spacers.png"/><h3>Repeat parts</h3><p>A small batch is planned for consistency, not just printed one at a time.</p></article>
+</div>
+</section>
+
+<section class="section" aria-labelledby="iteration-title">
 <div class="split-panel reverse">
-<div class="wide-photo"><img alt="Multiple 3D printed spacers arranged as repeatable production parts" decoding="async" loading="lazy" src="images/multipart-spacers.png"/></div>
+<div class="wide-photo"><video aria-label="Short loop showing the designed-before-printing process" autoplay="" loop="" muted="" playsinline="" poster="images/designed-before-printing-poster.jpg" preload="metadata" src="images/designed-before-printing-loop.mp4"></video></div>
 <div class="split-copy">
-<div class="section-kicker">Repeatability</div>
-<h3>Small batches need consistency, not luck.</h3>
-<p>When a job includes multiple parts, every repeat matters. Layout, part spacing, print time, and post-print handling are planned so the last part feels as intentional as the first.</p>
-<div class="tag-row"><span>Batch layout</span><span>Repeat parts</span><span>Production prep</span><span>Clean handoff</span></div>
+<div class="section-kicker">Prototype and refine</div>
+<h3 id="iteration-title">Version one does not have to be perfect.</h3>
+<p>For custom work, a first version is often a learning step. A test print can reveal a fit issue, a better angle, a cleaner mounting method, or a detail that should be adjusted before the final piece is made.</p>
+<p>That is not a setback. That is part of how a rough idea becomes a better finished product.</p>
+<div class="tag-row"><span>Test fit</span><span>Adjust scale</span><span>Improve details</span><span>Confirm finish</span></div>
 </div>
 </div>
 </section>
-<section class="section">
-<div class="section-kicker">From setup to handoff</div>
-<h2 class="section-title">Designed, printed, checked, and organized.</h2>
-<p class="section-intro">The workflow does not stop at the printer. Finished pieces are staged, checked, grouped, and organized so customer-ready work is easier to deliver cleanly.</p>
-<div class="split-panel">
-<div class="split-copy">
-<h3>Organization helps the handoff feel professional.</h3>
-<p>Bins, stacks, and grouped parts help keep batches clear, reduce mix-ups, and make the finished work feel more professional from production through delivery.</p>
-<div class="tag-row"><span>Sorted parts</span><span>Project staging</span><span>Batch clarity</span><span>Ready to deliver</span></div>
+
+<section class="section" aria-labelledby="behind-title">
+<div class="section-kicker">Behind the scenes</div>
+<h2 id="behind-title" class="section-title">Planning helps the final print feel intentional.</h2>
+<p class="section-intro">Before printing, we consider details that customers may never see directly—but they often notice in the finished result.</p>
+<div class="cards">
+<article class="card"><img alt="Bambu Studio slicer screen showing material and print planning" decoding="async" loading="lazy" src="images/material-planning.png"/><h3>Print setup</h3><p>Orientation, support planning, color strategy, and settings can affect strength, finish, and detail.</p></article>
+<article class="card"><img alt="First layer calibration print used to check print quality before final work" decoding="async" loading="lazy" src="images/calibration_firstlayer.png"/><h3>Quality checks</h3><p>Good custom work starts with reliable setup, clean first layers, and fewer surprises during the final print.</p></article>
+<article class="card"><img alt="Organized bins of finished printed projects and customer-ready work" decoding="async" loading="lazy" src="images/organization.png"/><h3>Clean handoff</h3><p>Finished pieces are organized, checked, grouped, and prepared so the final delivery feels professional.</p></article>
 </div>
-<div class="wide-photo tall"><img alt="Organized bins of finished 3D printed coasters, keychains, branded pieces, and functional parts" decoding="async" loading="lazy" src="images/organization.png"/></div>
-</div>
+<div class="trust-note"><strong>Simple promise:</strong> you do not need to know the technical side. Bring the problem, the idea, or the goal. OliPoly helps translate it into a physical product that makes sense.</div>
 </section>
-<section class="section">
-<div class="section-kicker">Process at a glance</div>
-<h2 class="section-title">A clear path before printing.</h2>
-<div class="wide-photo" style="margin-top:28px;"><video aria-label="Short loop showing the designed-before-printing process" autoplay="" loop="" muted="" playsinline="" poster="images/designed-before-printing-poster.jpg" preload="metadata" src="images/designed-before-printing-loop.mp4"></video></div>
-<div class="process-list">
-<div class="process-step"><b>1. Understand</b><p>What should it do, fit, hold, display, or communicate?</p></div>
-<div class="process-step"><b>2. Model</b><p>Build or refine the design into printable geometry.</p></div>
-<div class="process-step"><b>3. Plan</b><p>Choose material, orientation, layer settings, and color strategy.</p></div>
-<div class="process-step"><b>4. Test</b><p>Check calibration, first layer, fit, finish, and repeatability.</p></div>
-<div class="process-step"><b>5. Produce</b><p>Print, organize, inspect, and prepare the final handoff.</p></div>
-</div>
-</section>
+
 <section class="cta-band">
-<div><h2>Have an idea that needs a print plan?</h2><p>Send a sketch, reference, dimensions, logo, broken part, or rough concept. We can help decide how it should be modeled, printed, tested, and delivered.</p></div>
+<div><h2>Ready to bring your idea to life?</h2><p>You do not need a CAD model. You do not even need a perfect sketch. Tell us what you are trying to accomplish, and we will help figure out the best way to design, print, and finish it.</p></div>
 <div><a class="button-secondary" href="start-project.html">Start Your Project</a></div>
-</section>
-<section class="cta-convert" style="margin:48px 0 24px;padding:28px;border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(248,240,255,.92));border:1px solid rgba(157,109,243,.18);text-align:center">
-<span style="display:block;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8b5cf6">Start Your Project</span>
-<h2 style="margin:10px 0 12px;font-size:2rem;color:#2d1b3d">Have something similar in mind?</h2>
-<p style="max-width:720px;margin:0 auto 18px;color:#5b5566;line-height:1.6">
-    Whether you already have a file, a sketch, a photo, dimensions, or just an idea, OliPoly can help turn it into a finished project. Every example on this page started with a conversation and a goal.
-  </p>
-<a href="start-project.html" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#8b5cf6;color:#fff;text-decoration:none;font-weight:700">Start Your Project →</a>
 </section>
 </main>
 <footer>
 <div class="footer-inner">
 <div class="footer-brand"><h3>OliPoly 3D</h3><p>Creative custom 3D printing in Ohio — from playful ideas and personal keepsakes to branded details, prototypes, and functional parts.</p></div>
-<div class="footer-links"><div><h4>Explore</h4><a href="index.html">Home</a><a href="showcase.html">Showcase</a><a href="events.html">Events</a><a href="faq.html">FAQ</a></div><div><h4>Start</h4><a href="start-project.html">Start a Project</a><a href="track.html">Track Order</a><a href="legal.html">Terms</a></div></div>
+<div class="footer-links"><div><h4>Explore</h4><a href="index.html">Home</a><a href="real-solutions.html">Real Solutions</a><a href="showcase.html">Showcase</a><a href="faq.html">FAQ</a></div><div><h4>Start</h4><a href="start-project.html">Start a Project</a><a href="track.html">Track Order</a><a href="legal.html">Terms</a></div></div>
 <div class="copyright"><span>© <span id="year"></span> OliPoly 3D LLC. All rights reserved.</span><span>Made with care, color, and a little Poly magic.</span></div>
 </div>
 </footer>
