@@ -1,22 +1,21 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Completed Projects | OliPoly 3D</title>
-<meta content="Browse completed OliPoly 3D projects by project type, including gifts, branded pieces, functional parts, finished work, creative displays, and custom ideas brought to life." name="description"/>
+<title>Showcase | OliPoly 3D</title>
+<meta content="Explore completed OliPoly 3D projects, including custom gifts, branded pieces, practical parts, small-batch production, keepsakes, and ideas designed before they were printed." name="description"/>
 <link href="https://olipoly3d.com/showcase.html" rel="canonical"/>
 <meta content="index, follow" name="robots"/>
 <meta content="#fff7fb" name="theme-color"/>
-<meta content="Completed Projects | OliPoly 3D" property="og:title"/>
-<meta content="Browse completed OliPoly 3D projects by project type, including gifts, branded pieces, functional parts, finished work, creative displays, and custom ideas brought to life." property="og:description"/>
+<meta content="Showcase | OliPoly 3D" property="og:title"/>
+<meta content="A curated portfolio of completed OliPoly 3D projects: custom gifts, branded pieces, practical parts, keepsakes, and small-batch work." property="og:description"/>
 <meta content="website" property="og:type"/>
 <meta content="https://olipoly3d.com/showcase.html" property="og:url"/>
 <meta content="https://olipoly3d.com/images/logo-preview.png" property="og:image"/>
 <meta content="summary_large_image" name="twitter:card"/>
-<meta content="Completed Projects | OliPoly 3D" name="twitter:title"/>
-<meta content="Browse completed OliPoly 3D projects by project type, including gifts, branded pieces, functional parts, finished work, creative displays, and custom ideas brought to life." name="twitter:description"/>
+<meta content="Showcase | OliPoly 3D" name="twitter:title"/>
+<meta content="A curated portfolio of completed OliPoly 3D projects: custom gifts, branded pieces, practical parts, keepsakes, and small-batch work." name="twitter:description"/>
 <meta content="https://olipoly3d.com/images/logo-preview.png" name="twitter:image"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -36,12 +35,10 @@
       --shadow:0 28px 80px rgba(95,36,112,.18);
       --max:1180px;
     }
-
     *{box-sizing:border-box}
     html{scroll-behavior:smooth;scroll-padding-top:90px}
     body{
-      margin:0;
-      color:var(--ink);
+      margin:0;color:var(--ink);
       font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background:
         radial-gradient(circle at 14% -4%,rgba(255,142,213,.34),transparent 32rem),
@@ -49,409 +46,56 @@
         linear-gradient(180deg,#fff5fc 0%,#fff 42%,#fff8fd 100%);
       overflow-x:hidden;
     }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      z-index:-2;
-      pointer-events:none;
-      background-image:
-        linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);
-      background-size:56px 56px;
-      mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%);
-    }
-
-    img,video{max-width:100%;display:block}
-    a{color:inherit;text-decoration:none}
-    button{font-family:inherit}
+    body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background-image:linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);background-size:56px 56px;mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%)}
+    img,video{max-width:100%;display:block} a{color:inherit;text-decoration:none} button{font-family:inherit}
 
     .site-header{position:sticky;top:0;z-index:50;background:rgba(255,250,254,.84);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
-    .nav{width:min(var(--max),calc(100% - 32px));margin:0 auto;min-height:74px;display:flex;align-items:center;justify-content:space-between;gap:22px;position:relative}
-    .brand{display:flex;align-items:center;gap:12px;min-width:0}
+    .nav{width:min(var(--max),calc(100% - 32px));margin:0 auto;min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:22px;position:relative}
+    .brand{display:flex;align-items:center;gap:12px;min-width:0;flex:0 0 auto}
+    .brand-text{min-width:0;display:block}
     .brand-mark{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,#fff,#ffe1f6);box-shadow:0 10px 30px rgba(219,74,176,.22);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
     .brand-mark img{width:46px;height:46px;object-fit:contain;transform:translateY(3px)}
     .brand-name{display:block;font-family:"Playfair Display",serif;font-size:clamp(1.5rem,3.6vw,2.15rem);line-height:.9;letter-spacing:-.04em;white-space:nowrap}
     .brand-name span{color:var(--pink)}
     .brand-sub{display:block;margin-top:5px;color:var(--muted);font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
     .mobile-short-sub{display:none}
-    .nav-links{display:flex;align-items:center;gap:18px;color:#604966;font-family:"Playfair Display",serif;font-weight:700;font-size:1rem}
-    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease}
-    .nav-links a:hover{opacity:1;transform:translateY(-1px)}
+    .nav-actions{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:22px;min-width:0}
+    .nav-links{display:flex;align-items:center;gap:14px;color:#604966;font-family:"Playfair Display",serif;font-weight:700;font-size:.96rem}
+    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease;text-align:center;line-height:1.08}
+    .nav-links a:hover,.nav-links a[aria-current="page"]{opacity:1;transform:translateY(-1px);color:#392246}
     .nav-cta,.button-primary,.button-secondary{border:0;border-radius:999px;cursor:pointer;font-weight:900;letter-spacing:-.01em;display:inline-flex;align-items:center;justify-content:center;gap:9px;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
     .nav-cta,.button-primary{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 16px 40px rgba(214,73,186,.28)}
-    .nav-cta{padding:13px 18px;white-space:nowrap}
-    .button-primary,.button-secondary{padding:15px 22px}
+    .nav-cta{padding:14px 21px;white-space:nowrap}.button-primary,.button-secondary{padding:15px 22px}
     .button-secondary{background:rgba(255,255,255,.78);color:#5f456a;border:1px solid rgba(104,59,123,.15);box-shadow:0 14px 34px rgba(54,24,66,.08)}
     .nav-cta:hover,.button-primary:hover,.button-secondary:hover{transform:translateY(-2px)}
     .mobile-menu-button{display:none;border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:14px;padding:10px 12px;color:var(--ink);font-weight:900;cursor:pointer}
 
-    main{overflow:hidden}
-    .section{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:72px 0}
-
-    .hero{
-      width:min(1220px,calc(100% - 32px));
-      margin:28px auto 0;
-      display:grid;
-      grid-template-columns:minmax(0,1.02fr) minmax(330px,.82fr);
-      gap:clamp(28px,5vw,70px);
-      align-items:center;
-      padding:clamp(28px,4vw,52px);
-      border:1px solid rgba(255,255,255,.75);
-      border-radius:clamp(30px,4vw,54px);
-      background:
-        radial-gradient(circle at 88% 10%,rgba(255,118,206,.22),transparent 22rem),
-        radial-gradient(circle at 50% 85%,rgba(161,111,255,.16),transparent 30rem),
-        linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.72));
-      box-shadow:var(--shadow);
-      position:relative;
-      overflow:hidden;
-    }
+    main{overflow:hidden}.section{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:74px 0}
+    .hero{width:min(1220px,calc(100% - 32px));margin:28px auto 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,.88fr);gap:clamp(30px,5vw,70px);align-items:center;padding:clamp(28px,4vw,52px);border:1px solid rgba(255,255,255,.75);border-radius:clamp(30px,4vw,54px);background:radial-gradient(circle at 88% 10%,rgba(255,118,206,.22),transparent 22rem),radial-gradient(circle at 50% 85%,rgba(161,111,255,.16),transparent 30rem),linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.72));box-shadow:var(--shadow);position:relative;overflow:hidden}
     .hero::before{content:"";position:absolute;inset:18px;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.65),transparent 42%,rgba(255,255,255,.4));mask:linear-gradient(#000,transparent 75%)}
-    .hero>*{position:relative;z-index:1}
-    .eyebrow{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);color:#a93f8a;font-weight:900;font-size:.77rem;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(142,69,150,.1)}
-    .hero h1{margin:22px 0 18px;font-family:"Playfair Display",serif;font-size:clamp(3rem,7vw,6rem);line-height:.9;letter-spacing:-.075em;max-width:780px}
-    .gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .hero-copy{max-width:640px;color:#6f5c78;font-size:clamp(1.02rem,1.7vw,1.16rem);line-height:1.64;margin:0 0 26px}
-    .hero-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-    .hero-card-stack{display:grid;gap:16px;transform:rotate(1.2deg)}
-    .hero-image-card{border-radius:34px;overflow:hidden;background:white;border:8px solid rgba(255,255,255,.84);box-shadow:0 26px 70px rgba(84,38,94,.18)}
-    .hero-image-card img{width:100%;aspect-ratio:4/3.25;object-fit:cover}
-    .hero-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;transform:rotate(-2deg)}
-    .hero-mini-row img{width:100%;aspect-ratio:1;border-radius:24px;object-fit:cover;border:6px solid rgba(255,255,255,.86);box-shadow:0 18px 44px rgba(84,38,94,.13)}
+    .hero>*{position:relative;z-index:1}.eyebrow{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);color:#a93f8a;font-weight:900;font-size:.77rem;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(142,69,150,.1)}
+    .hero h1{margin:22px 0 18px;font-family:"Playfair Display",serif;font-size:clamp(3rem,6.2vw,5.8rem);line-height:.9;letter-spacing:-.075em;max-width:780px}.gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}.hero-copy{max-width:640px;color:#6f5c78;font-size:clamp(1.02rem,1.7vw,1.16rem);line-height:1.64;margin:0 0 26px}.hero-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+    .hero-proof{position:relative;min-height:430px}.floating-card{position:absolute;overflow:hidden;border:8px solid rgba(255,255,255,.86);background:white;border-radius:30px;box-shadow:0 28px 70px rgba(84,38,94,.18)}.floating-card img{width:100%;height:100%;object-fit:cover}.floating-card.one{width:74%;height:58%;right:0;top:6%;transform:rotate(2deg)}.floating-card.two{width:52%;height:38%;left:0;top:0;transform:rotate(-5deg);z-index:2}.floating-card.three{width:48%;height:34%;left:8%;bottom:5%;transform:rotate(4deg);z-index:3}.floating-card.four{width:50%;height:35%;right:7%;bottom:0;transform:rotate(-4deg);z-index:4}.hero-proof-note{position:absolute;left:6%;bottom:38%;z-index:5;max-width:240px;padding:14px 16px;border-radius:20px;background:rgba(255,255,255,.92);border:1px solid rgba(232,79,183,.16);box-shadow:0 18px 44px rgba(84,38,94,.13);color:#5f456a;font-weight:900;line-height:1.25}
 
-    .section-kicker{color:#a03c87;font-weight:900;letter-spacing:.1em;text-transform:uppercase;font-size:.77rem;margin-bottom:12px}
-    .section-title{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.4rem);line-height:.95;letter-spacing:-.055em}
-    .section-intro{margin:16px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.65;max-width:760px}
+    .section-kicker{color:#a03c87;font-weight:900;letter-spacing:.1em;text-transform:uppercase;font-size:.77rem;margin-bottom:12px}.section-title{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.4rem);line-height:.95;letter-spacing:-.055em}.section-intro{margin:16px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.65;max-width:760px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:24px}.section-head .button-secondary{flex:0 0 auto}
 
-    .showcase-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;margin-top:34px}
-    .showcase-card{grid-column:span 4;position:relative;min-height:380px;border-radius:34px;overflow:hidden;background:#fff;box-shadow:0 28px 70px rgba(75,32,85,.16);border:8px solid rgba(255,255,255,.84);isolation:isolate}
-    .showcase-card.large{grid-column:span 8;min-height:430px}
-    .showcase-card.tall{grid-column:span 4;grid-row:span 2;min-height:560px}
-    .showcase-card img,.showcase-card video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;transition:transform .5s ease}
-    .showcase-card:hover img,.showcase-card:hover video{transform:scale(1.045)}
-    .showcase-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(21,9,25,.08) 0%,rgba(21,9,25,.10) 42%,rgba(21,9,25,.82) 100%),linear-gradient(90deg,rgba(21,9,25,.46),transparent 58%);z-index:1}
-    .showcase-label{position:absolute;left:18px;right:18px;bottom:18px;z-index:2;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.36)}
-    .showcase-label strong{display:block;font-family:"Playfair Display",serif;font-size:clamp(1.45rem,2.4vw,2.15rem);letter-spacing:-.035em;line-height:.96}
-    .showcase-label span{display:block;margin-top:7px;font-size:.9rem;color:rgba(255,255,255,.92);line-height:1.42;max-width:36ch}
-    .pill{display:inline-flex;margin-top:13px;color:#fff;background:linear-gradient(135deg,rgba(232,79,183,.92),rgba(157,109,243,.92));border:1px solid rgba(255,255,255,.36);border-radius:999px;padding:8px 11px;font-size:.68rem!important;font-weight:900;text-transform:uppercase;letter-spacing:.07em;box-shadow:0 10px 24px rgba(0,0,0,.22);backdrop-filter:blur(10px)}
+    .portfolio-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:22px;margin-top:36px}.project-card{grid-column:span 6;border-radius:36px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,245,253,.78));border:1px solid rgba(255,255,255,.82);box-shadow:0 24px 70px rgba(84,38,94,.13);transition:transform .2s ease,box-shadow .2s ease}.project-card:hover{transform:translateY(-5px);box-shadow:0 30px 84px rgba(84,38,94,.18)}.project-card.featured{grid-column:span 12;display:grid;grid-template-columns:minmax(0,1.06fr) minmax(330px,.94fr);align-items:stretch}.project-media{position:relative;min-height:310px;background:#fff;overflow:hidden}.project-card.featured .project-media{min-height:430px}.project-media img,.project-media video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.project-media.contain{background:linear-gradient(135deg,#fff,#fff6fc)}.project-media.contain img{object-fit:contain;padding:18px}.project-body{padding:clamp(22px,3vw,34px);display:flex;flex-direction:column;justify-content:center}.project-type{display:inline-flex;width:fit-content;margin-bottom:13px;padding:8px 12px;border-radius:999px;background:rgba(232,79,183,.10);border:1px solid rgba(232,79,183,.14);color:#a03c87;font-size:.72rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.project-body h3{margin:0 0 12px;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.4vw,3.2rem);line-height:.94;letter-spacing:-.055em}.project-body p{margin:0;color:#6f5c78;line-height:1.62;font-size:1.02rem}.story-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}.story-pair div{border-radius:22px;padding:15px;background:rgba(255,255,255,.7);border:1px solid rgba(101,60,120,.11)}.story-pair strong{display:block;margin-bottom:6px;color:#3d2749}.story-pair span{display:block;color:#74617d;font-size:.92rem;line-height:1.45}.project-link{display:inline-flex;width:fit-content;margin-top:20px;color:#8a4b99;font-weight:900}.project-card:not(.featured) .project-media{border-bottom:1px solid rgba(101,60,120,.10)}
 
-    .placeholder-card{grid-column:span 4;min-height:340px;border-radius:34px;padding:24px;background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,244,253,.72));border:2px dashed rgba(157,109,243,.28);box-shadow:0 20px 55px rgba(84,38,94,.10);display:flex;flex-direction:column;justify-content:flex-end}
-    .placeholder-card .placeholder-icon{width:48px;height:48px;border-radius:18px;background:linear-gradient(135deg,rgba(232,79,183,.16),rgba(157,109,243,.16));border:1px solid rgba(232,79,183,.14);display:grid;place-items:center;font-size:1.35rem;margin-bottom:auto;color:#9a4f84}
-    .placeholder-card strong{display:block;font-family:"Playfair Display",serif;font-size:1.85rem;line-height:1;margin-bottom:10px;color:#25182d;letter-spacing:-.035em}
-    .placeholder-card span{display:block;color:#74617d;line-height:1.58}
+    .category-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:34px}.category-card{display:flex;flex-direction:column;min-height:230px;border-radius:34px;padding:24px;background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,244,253,.78));border:1px solid rgba(255,255,255,.8);box-shadow:0 24px 70px rgba(84,38,94,.12);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.category-card:hover{transform:translateY(-3px);box-shadow:0 28px 78px rgba(84,38,94,.16);border-color:rgba(232,79,183,.24)}.category-icon{width:48px;height:48px;margin-bottom:14px;border-radius:18px;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 13px 28px rgba(214,73,186,.20);font-size:1.25rem}.category-card h3{font-family:"Playfair Display",serif;font-size:1.8rem;line-height:1;letter-spacing:-.045em;margin:0 0 10px}.category-card p{margin:0;color:#6f5c78;line-height:1.55;font-size:.96rem}.category-cta{display:inline-flex;margin-top:auto;padding-top:18px;color:#8a4b99;font-weight:900;font-size:.86rem}
 
-    .category-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:34px}
-    .category-card{border-radius:34px;padding:24px;background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,244,253,.78));border:1px solid rgba(255,255,255,.8);box-shadow:0 24px 70px rgba(84,38,94,.12)}
-    .category-card h3{font-family:"Playfair Display",serif;font-size:2rem;line-height:1;letter-spacing:-.045em;margin:0 0 10px}
-    .category-card p{margin:0;color:#6f5c78;line-height:1.6}
-    .category-icon{width:48px;height:48px;margin-bottom:14px;border-radius:18px;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 13px 28px rgba(214,73,186,.20)}
+    .studio-split{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:28px;align-items:center;margin-top:36px;padding:clamp(18px,3vw,30px);border-radius:42px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.78);box-shadow:0 26px 78px rgba(84,38,94,.12)}.studio-copy{padding:clamp(10px,3vw,30px)}.studio-copy h3{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2rem,4vw,3.4rem);line-height:.95;letter-spacing:-.055em}.studio-copy p{margin:0 0 18px;color:var(--muted);line-height:1.7;font-size:1.05rem}.mini-tags{display:flex;flex-wrap:wrap;gap:9px}.mini-tags span{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-height:38px;line-height:1.1;padding:8px 12px;border-radius:999px;background:rgba(244,220,255,.64);color:#6f4b7e;font-size:.78rem;font-weight:900}.studio-media{border-radius:30px;overflow:hidden;border:8px solid rgba(255,255,255,.82);box-shadow:0 18px 50px rgba(54,24,66,.10);background:#fff}.studio-media video,.studio-media img{width:100%;aspect-ratio:16/10;object-fit:cover}
 
-    .studio-split{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:28px;align-items:center;margin-top:36px;padding:clamp(18px,3vw,30px);border-radius:42px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.78);box-shadow:0 26px 78px rgba(84,38,94,.12)}
-    .studio-copy{padding:clamp(10px,3vw,30px)}
-    .studio-copy h3{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2rem,4vw,3.4rem);line-height:.95;letter-spacing:-.055em}
-    .studio-copy p{margin:0 0 18px;color:var(--muted);line-height:1.7;font-size:1.05rem}
-    .mini-tags{display:flex;flex-wrap:wrap;gap:9px}
-    .mini-tags span{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-height:38px;line-height:1.1;padding:8px 12px;border-radius:999px;background:rgba(244,220,255,.64);color:#6f4b7e;font-size:.78rem;font-weight:900}
-    .studio-collage{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .studio-collage img{width:100%;aspect-ratio:4/3;border-radius:26px;object-fit:cover;border:6px solid rgba(255,255,255,.82);box-shadow:0 18px 50px rgba(54,24,66,.10)}
-    .studio-collage img:first-child{grid-column:1/-1;aspect-ratio:16/9}
+    .cta-band{width:min(var(--max),calc(100% - 32px));margin:30px auto 80px;padding:clamp(34px,6vw,70px);border-radius:44px;background:radial-gradient(circle at 90% 15%,rgba(99,215,255,.32),transparent 24rem),linear-gradient(135deg,#2d1837,#6c2b82 52%,#e84fb7);color:white;box-shadow:0 32px 90px rgba(90,36,112,.28);display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,260px);gap:clamp(28px,5vw,58px);align-items:center}.cta-band h2{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2.35rem,5.2vw,4.7rem);line-height:.92;letter-spacing:-.06em;max-width:760px}.cta-band p{margin:0;color:rgba(255,255,255,.84);font-size:1.06rem;line-height:1.62;max-width:680px}.cta-band .button-secondary{background:white;color:#5d2670;min-height:54px;width:100%;text-align:center}
 
-    .cta-band{width:min(var(--max),calc(100% - 32px));margin:30px auto 80px;padding:clamp(34px,6vw,70px);border-radius:44px;background:radial-gradient(circle at 90% 15%,rgba(99,215,255,.32),transparent 24rem),linear-gradient(135deg,#2d1837,#6c2b82 52%,#e84fb7);color:white;box-shadow:0 32px 90px rgba(90,36,112,.28);display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,260px);gap:clamp(28px,5vw,58px);align-items:center}
-    .cta-band h2{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2.35rem,5.2vw,4.7rem);line-height:.92;letter-spacing:-.06em;max-width:760px}
-    .cta-band p{margin:0;color:rgba(255,255,255,.84);font-size:1.06rem;line-height:1.62;max-width:680px}
-    .cta-band .button-secondary{background:white;color:#5d2670;min-height:54px;width:100%;text-align:center}
+    footer{border-top:1px solid var(--line);background:rgba(255,255,255,.58)}.footer-inner{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:36px 0;display:grid;grid-template-columns:1.15fr .85fr;gap:26px;color:#765f80;font-size:.92rem}.footer-brand h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:#25182d}.footer-brand p{margin:0;color:#765f80;line-height:1.6;max-width:520px}.footer-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.footer-links h4{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:#9b7ca6}.footer-links a{display:block;margin-bottom:8px;font-weight:900;color:#6e4a80}.copyright{grid-column:1/-1;border-top:1px solid rgba(101,60,120,.11);padding-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
-    footer{border-top:1px solid var(--line);background:rgba(255,255,255,.58)}
-    .footer-inner{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:36px 0;display:grid;grid-template-columns:1.15fr .85fr;gap:26px;color:#765f80;font-size:.92rem}
-    .footer-brand h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:#25182d}
-    .footer-brand p{margin:0;color:#765f80;line-height:1.6;max-width:520px}
-    .footer-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .footer-links h4{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:#9b7ca6}
-    .footer-links a{display:block;margin-bottom:8px;font-weight:900;color:#6e4a80}
-    .copyright{grid-column:1/-1;border-top:1px solid rgba(101,60,120,.11);padding-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .poly-helper{position:fixed;right:18px;bottom:18px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:10px}.poly-helper-panel{width:min(330px,calc(100vw - 36px));display:none;padding:16px;border-radius:22px;background:rgba(255,255,255,.94);border:1px solid rgba(232,79,183,.16);box-shadow:0 20px 44px rgba(31,26,36,.16);backdrop-filter:blur(12px);position:relative}.poly-helper.active .poly-helper-panel{display:block}.poly-helper-panel h3{margin:0 0 6px;font-family:"Playfair Display",serif;font-size:1.45rem;line-height:1.05}.poly-helper-panel p{margin:0 0 12px;color:#6e5d78;font-size:.92rem;line-height:1.45}.poly-helper-links{display:grid;gap:8px}.poly-helper-links a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.10);font-weight:800;font-size:.9rem;color:#2a2132}.poly-helper-links a span{color:var(--pink)}.poly-helper-toggle{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 14px 30px rgba(232,79,183,.25);cursor:pointer;font-weight:900;transition:transform .2s ease,box-shadow .2s ease}.poly-helper-toggle:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(232,79,183,.32)}.poly-helper-toggle img{width:42px;height:42px;object-fit:contain;animation:helperBeeBuzz 3.8s ease-in-out infinite;transform-origin:center}.poly-helper-close{position:absolute;top:10px;right:12px;border:0;background:rgba(232,79,183,.09);color:var(--pink);width:28px;height:28px;border-radius:999px;cursor:pointer;font-weight:900}@keyframes helperBeeBuzz{0%,100%{transform:translateY(0) rotate(0deg)}12%{transform:translateY(-2px) rotate(-5deg)}24%{transform:translateY(1px) rotate(4deg)}36%{transform:translateY(-1px) rotate(-2deg)}48%{transform:translateY(0) rotate(0deg)}}
 
-    .poly-helper{position:fixed;right:18px;bottom:18px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
-    .poly-helper-panel{width:min(330px,calc(100vw - 36px));display:none;padding:16px;border-radius:22px;background:rgba(255,255,255,.94);border:1px solid rgba(232,79,183,.16);box-shadow:0 20px 44px rgba(31,26,36,.16);backdrop-filter:blur(12px);position:relative}
-    .poly-helper.active .poly-helper-panel{display:block}
-    .poly-helper-panel h3{margin:0 0 6px;font-family:"Playfair Display",serif;font-size:1.45rem;line-height:1.05}
-    .poly-helper-panel p{margin:0 0 12px;color:#6e5d78;font-size:.92rem;line-height:1.45}
-    .poly-helper-links{display:grid;gap:8px}
-    .poly-helper-links a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.10);font-weight:800;font-size:.9rem;color:#2a2132}
-    .poly-helper-links a span{color:var(--pink)}
-    .poly-helper-toggle{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 14px 30px rgba(232,79,183,.25);cursor:pointer;font-weight:900;transition:transform .2s ease,box-shadow .2s ease}
-    .poly-helper-toggle:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(232,79,183,.32)}
-    .poly-helper-toggle img{width:42px;height:42px;object-fit:contain;animation:helperBeeBuzz 3.8s ease-in-out infinite;transform-origin:center}
-    .poly-helper-close{position:absolute;top:10px;right:12px;border:0;background:rgba(232,79,183,.09);color:var(--pink);width:28px;height:28px;border-radius:999px;cursor:pointer;font-weight:900}
-    @keyframes helperBeeBuzz{0%,100%{transform:translateY(0) rotate(0deg)}12%{transform:translateY(-2px) rotate(-5deg)}24%{transform:translateY(1px) rotate(4deg)}36%{transform:translateY(-1px) rotate(-2deg)}48%{transform:translateY(0) rotate(0deg)}}
-
-    .showcase-card img[src*="top_down_spacerplateview"], .showcase-card img[src*="multipart-spacers"]{object-position:center center}
-    .showcase-card img[src*="lit_up_litho"]{object-position:center 48%}
-    .showcase-card img[src*="custom-company-logo-coasters"]{object-position:center 54%}
-    .showcase-card img[src*="pocket_door_bracket_actual"]{object-position:center center}
-    .showcase-card img[src*="rex-paint"]{object-position:center center}
-    .showcase-card img[src*="event-booth-3"]{object-position:center center}
-    .studio-collage img[src*="p2s-ams2"]{object-position:center 48%}
-
-    @media(max-width:980px){
-      .nav-links{display:none}
-      .mobile-menu-button{display:inline-flex}
-      .nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:82px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}
-      .nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}
-      .hero{grid-template-columns:1fr}
-      .hero-card-stack{max-width:580px;margin:0 auto;width:100%}
-      .showcase-card,.showcase-card.large,.showcase-card.tall,.placeholder-card{grid-column:span 6;min-height:360px}
-      .category-row{grid-template-columns:1fr}
-      .studio-split{grid-template-columns:1fr}
-      .footer-inner{grid-template-columns:1fr}
-    }
-
-    @media(max-width:720px){
-      html{scroll-padding-top:76px}
-      .nav{width:min(100% - 20px,var(--max));min-height:64px;gap:8px}
-      .brand{gap:8px;min-width:0;flex:1}
-      .brand-mark{width:42px;height:42px;border-radius:14px}
-      .brand-mark img{width:40px;height:40px}
-      .brand-name{font-size:1.68rem}
-      .brand-sub-full{display:none}
-      .mobile-short-sub{display:block;max-width:calc(100vw - 150px);overflow:hidden;text-overflow:ellipsis;font-size:.58rem;letter-spacing:.065em;margin-top:4px}
-      .nav-cta{display:none}
-      .mobile-menu-button{padding:9px 13px;font-size:.86rem}
-      .section{width:min(100% - 24px,var(--max));padding:50px 0}
-      .hero{width:min(100% - 20px,1220px);margin:16px auto 0;padding:25px 18px 24px;border-radius:32px;gap:20px}
-      .eyebrow{font-size:.68rem;padding:8px 11px}
-      .hero h1{font-size:clamp(3rem,16vw,4.55rem);line-height:.88;margin:18px 0 14px;letter-spacing:-.07em}
-      .hero-copy{font-size:.98rem;line-height:1.56;margin-bottom:18px}
-      .hero-actions{display:grid;grid-template-columns:1fr;gap:10px}
-      .hero-actions .button-primary,.hero-actions .button-secondary{width:100%;min-height:50px;padding:13px 16px}
-      .hero-card-stack{transform:none}
-      .hero-image-card{border-radius:28px;border-width:6px}
-      .hero-image-card img{aspect-ratio:4/3.1}
-      .hero-mini-row{transform:none;gap:10px}
-      .hero-mini-row img{border-width:5px;border-radius:22px}
-      .section-title{font-size:clamp(2.1rem,13vw,3.25rem)}
-      .section-intro{font-size:.96rem;line-height:1.55}
-      .showcase-grid{grid-template-columns:1fr;gap:16px;margin-top:24px}
-      .showcase-card,.showcase-card.large,.showcase-card.tall,.placeholder-card{grid-column:1;min-height:330px;border-radius:28px;border-width:6px}
-      .showcase-card.tall{min-height:420px}
-      .showcase-label{left:14px;right:14px;bottom:14px}
-      .showcase-label strong{font-size:1.45rem}
-      .showcase-label span{font-size:.82rem;max-width:28ch}
-      .placeholder-card{padding:20px}
-      .placeholder-card strong{font-size:1.55rem}
-      .placeholder-card span{font-size:.92rem}
-      .category-card{border-radius:28px;padding:20px}
-      .category-card h3{font-size:1.72rem}
-      .category-card p{font-size:.94rem;line-height:1.5}
-      .studio-split{margin-top:24px;padding:12px;border-radius:30px;gap:12px}
-      .studio-copy{padding:10px 4px 4px}
-      .studio-copy h3{font-size:clamp(1.85rem,10vw,2.65rem);margin-bottom:10px}
-      .studio-copy p{font-size:.94rem;line-height:1.55;margin-bottom:14px}
-      .studio-collage{gap:10px}
-      .studio-collage img{border-width:5px;border-radius:22px}
-      .mini-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%}
-      .mini-tags span{font-size:.68rem;padding:7px 7px;min-height:34px}
-      .cta-band{width:min(100% - 24px,var(--max));margin:14px auto 52px;padding:28px 20px;border-radius:32px;grid-template-columns:1fr;gap:20px}
-      .cta-band h2{font-size:clamp(2.1rem,12vw,3rem)}
-      .cta-band p{font-size:.96rem;line-height:1.5}
-      .footer-inner{width:min(100% - 24px,var(--max));padding:28px 0;gap:20px}
-      .footer-links{grid-template-columns:1fr 1fr;gap:12px}
-      .copyright{font-size:.78rem}
-      .poly-helper{right:12px;bottom:12px}
-      .poly-helper-toggle{padding:8px 12px;font-size:.84rem}
-      .poly-helper-toggle img{width:34px;height:34px}
-    }
-
-    @media(max-width:390px){
-      .brand-name{font-size:1.55rem}
-      .mobile-short-sub{max-width:calc(100vw - 152px);font-size:.53rem}
-      .mobile-menu-button{padding:9px 12px;font-size:.84rem}
-    }
-
+    @media(max-width:980px){.nav-links{display:none}.mobile-menu-button{display:inline-flex}.nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:76px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}.nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}.hero{grid-template-columns:1fr}.hero-proof{min-height:360px;max-width:640px;margin:0 auto;width:100%}.project-card,.project-card.featured{grid-column:span 12;grid-template-columns:1fr}.category-row{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-split{grid-template-columns:1fr}.footer-inner{grid-template-columns:1fr}}
+    @media(max-width:720px){html{scroll-padding-top:76px}.nav{width:min(100% - 20px,var(--max));min-height:64px;gap:8px}.brand{gap:8px;min-width:0;flex:1}.brand-mark{width:42px;height:42px;border-radius:14px}.brand-mark img{width:40px;height:40px}.brand-name{font-size:1.68rem}.brand-sub-full{display:none}.mobile-short-sub{display:block;max-width:calc(100vw - 150px);overflow:hidden;text-overflow:ellipsis;font-size:.58rem;letter-spacing:.065em;margin-top:4px}.nav-cta{display:none}.mobile-menu-button{padding:9px 13px;font-size:.86rem}.section{width:min(100% - 24px,var(--max));padding:50px 0}.hero{width:min(100% - 20px,1220px);margin:16px auto 0;padding:25px 18px 24px;border-radius:32px;gap:20px}.eyebrow{font-size:.68rem;padding:8px 11px}.hero h1{font-size:clamp(3rem,16vw,4.55rem);line-height:.88;margin:18px 0 14px;letter-spacing:-.07em}.hero-copy{font-size:.98rem;line-height:1.56;margin-bottom:18px}.hero-actions{display:grid;grid-template-columns:1fr;gap:10px}.hero-actions .button-primary,.hero-actions .button-secondary{width:100%;min-height:50px;padding:13px 16px}.hero-proof{min-height:300px}.hero-proof-note{display:none}.floating-card{border-width:5px;border-radius:22px}.section-head{display:block}.section-head .button-secondary{margin-top:18px;width:100%}.section-title{font-size:clamp(2.1rem,13vw,3.25rem)}.section-intro{font-size:.96rem;line-height:1.55}.portfolio-grid{gap:16px;margin-top:24px}.project-card{border-radius:28px}.project-media,.project-card.featured .project-media{min-height:290px}.project-body{padding:20px}.story-pair{grid-template-columns:1fr;gap:10px}.category-row{grid-template-columns:1fr;gap:14px}.category-card{border-radius:28px;min-height:auto;padding:20px}.category-card h3{font-size:1.62rem}.studio-split{margin-top:24px;padding:12px;border-radius:30px;gap:12px}.studio-copy{padding:10px 4px 4px}.studio-copy h3{font-size:clamp(1.85rem,10vw,2.65rem);margin-bottom:10px}.studio-copy p{font-size:.94rem;line-height:1.55;margin-bottom:14px}.mini-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%}.mini-tags span{font-size:.68rem;padding:7px 7px;min-height:34px}.studio-media{border-width:5px;border-radius:22px}.cta-band{width:min(100% - 24px,var(--max));margin:14px auto 52px;padding:28px 20px;border-radius:32px;grid-template-columns:1fr;gap:20px}.cta-band h2{font-size:clamp(2.1rem,12vw,3rem)}.cta-band p{font-size:.96rem;line-height:1.5}.footer-inner{width:min(100% - 24px,var(--max));padding:28px 0;gap:20px}.footer-links{grid-template-columns:1fr 1fr;gap:12px}.copyright{font-size:.78rem}.poly-helper{right:12px;bottom:12px}.poly-helper-toggle{padding:8px 12px;font-size:.84rem}.poly-helper-toggle img{width:34px;height:34px}}
+    @media(max-width:390px){.brand-name{font-size:1.55rem}.mobile-short-sub{max-width:calc(100vw - 152px);font-size:.53rem}.mobile-menu-button{padding:9px 12px;font-size:.84rem}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-
-
-/* === Click-first showcase funnel pass === */
-.showcase-click-callout{
-  margin:28px 0 30px;
-  border-radius:34px;
-  padding:clamp(18px,3vw,28px);
-  background:
-    radial-gradient(circle at 9% 18%,rgba(232,79,183,.18),transparent 18rem),
-    radial-gradient(circle at 88% 12%,rgba(157,109,243,.16),transparent 18rem),
-    linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.88));
-  border:1px solid rgba(232,79,183,.22);
-  box-shadow:0 24px 70px rgba(84,38,94,.13);
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:18px;
-  align-items:center;
-  position:relative;
-  overflow:hidden;
-}
-.showcase-click-callout::before{
-  content:"";
-  position:absolute;
-  inset:0 0 auto 0;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);
-}
-.click-callout-kicker{
-  display:inline-flex;
-  width:max-content;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  border-radius:999px;
-  background:rgba(232,79,183,.10);
-  border:1px solid rgba(232,79,183,.15);
-  color:#a03c87;
-  font-size:.74rem;
-  font-weight:900;
-  letter-spacing:.09em;
-  text-transform:uppercase;
-  margin-bottom:10px;
-}
-.showcase-click-callout h3{
-  margin:0;
-  font-family:"Playfair Display",serif;
-  font-size:clamp(1.75rem,3.2vw,3rem);
-  line-height:.95;
-  letter-spacing:-.055em;
-  color:var(--ink);
-}
-.showcase-click-callout p{
-  margin:12px 0 0;
-  color:#6f5c78;
-  line-height:1.6;
-  max-width:780px;
-}
-.click-big-arrow{
-  min-width:190px;
-  min-height:82px;
-  padding:16px 20px;
-  border-radius:999px;
-  display:grid;
-  place-items:center;
-  text-align:center;
-  color:#fff;
-  font-weight:1000;
-  letter-spacing:.02em;
-  background:linear-gradient(135deg,var(--pink),var(--purple));
-  box-shadow:0 18px 42px rgba(214,73,186,.28);
-  transform:rotate(-2deg);
-}
-.click-big-arrow span{display:block;font-size:1.35rem;line-height:1}
-.click-big-arrow small{display:block;margin-top:4px;font-size:.74rem;text-transform:uppercase;letter-spacing:.11em;opacity:.92}
-.showcase-grid{position:relative}
-.showcase-grid::before{
-  content:"Choose a card below ↓";
-  position:absolute;
-  top:-20px;
-  right:4px;
-  z-index:4;
-  display:inline-flex;
-  padding:10px 14px;
-  border-radius:999px;
-  background:rgba(255,255,255,.94);
-  border:1px solid rgba(232,79,183,.18);
-  box-shadow:0 12px 28px rgba(84,38,94,.12);
-  color:#7b4566;
-  font-size:.8rem;
-  font-weight:1000;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-}
-.showcase-card[href]{display:block;color:inherit;text-decoration:none;cursor:pointer}
-.showcase-card[href]::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:2;
-  pointer-events:none;
-  background:radial-gradient(circle at 78% 17%,rgba(255,255,255,.22),transparent 12rem);
-  opacity:0;
-  transition:opacity .22s ease;
-}
-.showcase-card[href]:hover::before{opacity:1}
-.showcase-card[href]:hover{transform:translateY(-7px);box-shadow:0 34px 82px rgba(75,32,85,.22)}
-.showcase-card .pill.action-pill{
-  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.90));
-  color:#5d2670;
-  text-shadow:none;
-  border-color:rgba(255,255,255,.7);
-}
-.click-badge{
-  position:absolute;
-  top:14px;
-  right:14px;
-  z-index:3;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  min-height:38px;
-  padding:9px 12px;
-  border-radius:999px;
-  color:#fff;
-  background:linear-gradient(135deg,rgba(232,79,183,.96),rgba(157,109,243,.96));
-  border:1px solid rgba(255,255,255,.38);
-  box-shadow:0 12px 28px rgba(0,0,0,.20);
-  backdrop-filter:blur(10px);
-  font-size:.7rem;
-  font-weight:1000;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
-.showcase-card[href]:hover .click-badge{transform:translateY(-2px)}
-@media(max-width:720px){
-  .showcase-click-callout{grid-template-columns:1fr;text-align:left;margin:22px 0 24px;border-radius:28px}
-  .click-big-arrow{width:100%;min-height:58px;transform:none}
-  .click-big-arrow span{font-size:1.1rem}
-  .showcase-grid::before{position:relative;top:auto;right:auto;margin:0 0 10px;width:100%;justify-content:center}
-  .click-badge{top:10px;right:10px;font-size:.62rem;min-height:34px;padding:8px 10px}
-}
-
-/* === Category funnel upgrades === */
-.showcase-card[href]{display:block;color:inherit;text-decoration:none;cursor:pointer}
-.showcase-card .pill.action-pill{background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,255,255,.68));color:#5d2670;text-shadow:none;border-color:rgba(255,255,255,.62)}
-.category-card.link-card{display:flex;flex-direction:column;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
-.category-card.link-card:hover{transform:translateY(-3px);box-shadow:0 28px 78px rgba(84,38,94,.16);border-color:rgba(232,79,183,.24)}
-.category-card .category-cta{display:inline-flex;margin-top:16px;color:#8a4b99;font-weight:900;font-size:.86rem}
-
-  
-
-/* === Mobile cleanup pass: showcase only (desktop unchanged) === */
-@media (max-width:720px){
-  .site-header{padding-top:8px}
-  .nav{padding:9px 10px;min-height:60px}
-  .brand-name{font-size:1.55rem!important}
-  .mobile-short-sub{max-width:145px!important;white-space:nowrap}
-  .hero{padding:20px 18px 18px!important;gap:14px!important}
-  .hero h1{font-size:clamp(2.55rem,14vw,3.75rem)!important;margin:12px 0 10px!important}
-  .hero-copy{font-size:.92rem!important;line-height:1.45!important;margin-bottom:12px!important}
-  .hero-image-card img{aspect-ratio:4/2.75!important}
-  .hero-mini-row{display:none!important}
-  .section{padding:38px 0!important}
-  .section-title{font-size:clamp(1.95rem,11vw,2.8rem)!important}
-  .section-intro{font-size:.92rem!important;line-height:1.45!important}
-  .showcase-click-callout{display:none!important}
-  .showcase-grid{gap:13px!important;margin-top:18px!important}
-  .showcase-card,.showcase-card.large,.showcase-card.tall{min-height:285px!important}
-  .showcase-card.tall{min-height:340px!important}
-  .showcase-label{padding:13px 14px!important}
-  .showcase-label strong{font-size:1.22rem!important;line-height:1.05!important}
-  .showcase-label span:not(.pill):not(.action-pill){display:none!important}
-  .click-badge{font-size:.65rem!important;padding:7px 9px!important}
-  .action-pill{font-size:.66rem!important;padding:7px 9px!important}
-  .studio-split{margin-top:18px!important}
-  .studio-copy p{font-size:.9rem!important;line-height:1.45!important}
-  .studio-collage img{aspect-ratio:4/3!important}
-  .cta-band{padding:24px 18px!important;margin-bottom:38px!important}
-}
-
-</style>
+  </style>
 <link href="assets/erp-upgrade.css" rel="stylesheet"/>
 </head>
 <body>
@@ -465,118 +109,143 @@
 <span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
 </span>
 </a>
+<div class="nav-actions">
 <div class="nav-links" id="navLinks">
 <a href="index.html">Home</a>
-<a href="index.html#work">Work</a>
-<a href="showcase.html">Showcase</a>
-<a href="events.html">Events</a>
+<a href="real-solutions.html">Real Solutions</a>
+<a aria-current="page" href="showcase.html">Showcase</a>
 <a href="faq.html">FAQ</a>
-<a href="track.html">Track Order</a>
 </div>
 <a class="nav-cta" href="start-project.html">Start Your Project</a>
+</div>
 <button aria-label="Open menu" class="mobile-menu-button" onclick="toggleMenu()" type="button">Menu</button>
 </nav>
 </header>
 <main>
 <section aria-labelledby="hero-title" class="hero">
 <div>
-<div class="eyebrow">Completed Projects</div>
-<h1 id="hero-title">Find the project closest to <span class="gradient-word">your idea.</span></h1>
-<p class="hero-copy">Every example here started with a real idea, logo, sketch, photo, model, or problem. Browse completed projects for gifts, organizations, business pieces, events, practical parts, keepsakes, and one-of-a-kind requests.</p>
+<div class="eyebrow">Project Showcase</div>
+<h1 id="hero-title">A portfolio of ideas made <span class="gradient-word">real.</span></h1>
+<p class="hero-copy">The showcase is a curated look at completed OliPoly work: personalized gifts, functional parts, branded details, small-batch runs, keepsakes, and creative ideas that needed more than an off-the-shelf answer.</p>
 <div class="hero-actions">
 <a class="button-primary" href="start-project.html">Start a Project</a>
-<a class="button-secondary" href="index.html#work">Back to Homepage</a>
+<a class="button-secondary" href="#portfolio">Explore Projects</a>
 </div>
 </div>
-<div aria-label="Featured OliPoly work preview" class="hero-card-stack">
-<div class="hero-image-card"><img alt="Custom branded stone coasters by OliPoly 3D" decoding="async" loading="lazy" src="images/stones_coasters.png"/></div>
-<div class="hero-mini-row">
-<img alt="OliPoly printer and AMS setup" decoding="async" loading="lazy" src="images/p2s-ams2.png"/>
-<img alt="Small batch spacer parts arranged for production checking" decoding="async" loading="lazy" src="images/multipart-spacers.png"/>
-</div>
+<div aria-label="Featured OliPoly project photo spread" class="hero-proof">
+<div class="floating-card one"><img alt="Personalized modular dugout organizer by OliPoly 3D" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div>
+<div class="floating-card two"><img alt="Custom company logo coaster project" decoding="async" loading="lazy" src="images/custom-company-logo-coasters.png"/></div>
+<div class="floating-card three"><img alt="Small batch spacer parts arranged for production" decoding="async" loading="lazy" src="images/top_down_spacerplateview.png"/></div>
+<div class="floating-card four"><img alt="Backlit lithophane keepsake" decoding="async" loading="lazy" src="images/lit_up_litho.png"/></div>
+<div class="hero-proof-note">Different projects. Same goal: make the idea useful, finished, and worth keeping.</div>
 </div>
 </section>
-<section class="section" id="featured">
-<div class="section-kicker">Completed projects</div>
-<h2 class="section-title">See what custom 3D printing can become.</h2>
-<p class="section-intro">Every project starts differently. Some begin with a logo, some with a sketch, some with a broken part, and some with a simple idea. These examples show the kinds of finished work people come to OliPoly for.</p>
-<div aria-label="Project category guidance" class="showcase-click-callout">
+<section class="section" id="portfolio">
+<div class="section-head">
 <div>
-<span class="click-callout-kicker">Explore by project type</span>
-<h3>Find the example closest to your idea.</h3>
-<p>Looking for a gift, business item, keepsake, replacement part, promotional piece, or display project? Start with the category that feels most similar to what you have in mind.</p>
+<div class="section-kicker">Curated portfolio</div>
+<h2 class="section-title">Not just prints. Finished project stories.</h2>
+<p class="section-intro">These examples were chosen because each one shows a different reason someone might come to OliPoly: solve a practical problem, personalize something meaningful, create branded work, or make a small batch with consistency.</p>
 </div>
-<div class="click-big-arrow"><span>Explore examples</span><small>choose a category →</small></div>
+<a class="button-secondary" href="real-solutions.html">See Real Solutions</a>
 </div>
-<div class="showcase-grid">
-<a aria-label="Start a personal keepsake or lithophane project" class="showcase-card large" href="start-project.html">
-<span class="click-badge">Click to explore</span>
-<img alt="Backlit lithophane keepsake" decoding="async" loading="lazy" src="images/lit_up_litho.png"/>
-<div class="showcase-label"><strong>Personal pieces with meaning.</strong><span>Lithophanes, keepsakes, and display pieces that turn photos and memories into something physical.</span><span class="pill action-pill">Start this style →</span></div>
-</a>
-<a aria-label="Explore playful eye-catching work examples" class="showcase-card tall" href="eye-catching-work.html">
-<span class="click-badge">Open gallery</span>
-<img alt="Articulated dragon prints photographed for an event table" decoding="async" loading="lazy" src="images/event-booth-3.png"/>
-<div class="showcase-label"><strong>Playful, eye-catching work.</strong><span>Conversation pieces, gifts, displays, and creative projects people want to pick up and talk about.</span><span class="pill action-pill">Explore eye-catching work →</span></div>
-</a>
-<a aria-label="Explore branded detail examples and custom branded project options" class="showcase-card" href="branded-details.html">
-<span class="click-badge">Open gallery</span>
-<img alt="Custom company logo coasters" decoding="async" loading="lazy" src="images/custom-company-logo-coasters.png"/>
-<div class="showcase-label"><strong>Branded details.</strong><span>Event items, business branding, giveaways, merch-table pieces, and keepsakes people can actually use.</span><span class="pill action-pill">Explore branded projects →</span></div>
-</a>
-<a aria-label="Start a functional custom part or prototype project" class="showcase-card" href="start-project.html">
-<span class="click-badge">Click to explore</span>
-<img alt="Functional pocket door bracket 3D printed part" decoding="async" loading="lazy" src="images/pocket_door_bracket_actual.png"/>
-<div class="showcase-label"><strong>Functional parts.</strong><span>Useful components, brackets, spacers, adapters, and replacement-style parts.</span><span class="pill action-pill">Start this style →</span></div>
-</a>
-<a aria-label="Start a small batch or repeat part project" class="showcase-card" href="start-project.html">
-<span class="click-badge">Click to explore</span>
-<img alt="Production spacer parts on a print bed" decoding="async" loading="lazy" src="images/top_down_spacerplateview.png"/>
-<div class="showcase-label"><strong>Small-batch repeatability.</strong><span>Repeated parts, batch planning, and organized production for projects that need more than one finished piece.</span><span class="pill action-pill">Start this style →</span></div>
-</a>
-<a aria-label="Explore drawings, doodles, and creative ideas brought to life as custom 3D pieces" class="showcase-card large" href="from-imagination.html">
-<span class="click-badge">Open gallery</span>
-<img alt="Child's bee drawing transformed into a finished 3D printed character" decoding="async" loading="lazy" src="images/poly-showcase.png"/>
-<div class="showcase-label"><strong>From imagination to real life.</strong><span>Kids’ drawings, doodles, creative ideas, and meaningful sketches turned into custom pieces you can actually hold, gift, and keep.</span><span class="pill action-pill">Explore this gallery →</span></div>
-</a>
-<a aria-label="Explore finished piece examples" class="showcase-card" href="finished-pieces.html">
-<span class="click-badge">Open gallery</span>
-<img alt="Finished custom 3D printed piece by OliPoly 3D" decoding="async" loading="lazy" src="images/print2.png"/>
-<div class="showcase-label"><strong>Finished work with presence.</strong><span>Projects with finishing, painting, cleanup, or presentation work for gifts, displays, events, and handoffs.</span><span class="pill action-pill">Explore finished pieces →</span></div>
-</a>
-<a aria-label="Explore the OliPoly design and print planning process" class="showcase-card" href="designed-before-printing.html">
-<span class="click-badge">Open gallery</span>
-<img alt="CAD modeling and print planning for a custom OliPoly 3D project" decoding="async" loading="lazy" src="images/AI-CAD.png"/>
-<div class="showcase-label"><strong>Designed before it’s printed.</strong><span>Ideas that start with planning, design, material choices, and print preparation before production begins.</span><span class="pill action-pill">Explore design process →</span></div>
-</a>
-<a aria-label="Explore raw prints transformed into refined finished display pieces" class="showcase-card" href="raw-to-refined.html">
-<span class="click-badge">Open gallery</span>
-<img alt="Raw print and finished bronze-look articulated creature transformation preview" decoding="async" loading="lazy" src="images/unfin-fin-rocky.png"/>
-<div class="showcase-label"><strong>From raw print to refined finish.</strong><span>A raw print can become a display-ready piece with cleanup, assembly, color, texture, and finishing choices.</span><span class="pill action-pill">Explore finishing work →</span></div>
-</a>
+<div class="portfolio-grid">
+<article class="project-card featured">
+<div class="project-media contain"><img alt="Custom ice cream drip home plate dugout organizer with accessories" decoding="async" loading="lazy" src="images/drip-with-accys.png"/></div>
+<div class="project-body">
+<span class="project-type">Personalized organization</span>
+<h3>Dugout gear, designed around the player.</h3>
+<p>A custom home-plate organizer turned loose cups, sunglasses, phones, and small gear into a personalized wall display with accessories that can be rearranged as needs change.</p>
+<div class="story-pair"><div><strong>The need</strong><span>Keep dugout essentials organized instead of scattered on the bench or floor.</span></div><div><strong>The result</strong><span>A colorful, functional organizer that feels personal—not generic.</span></div></div>
+<a class="project-link" href="real-solutions.html#dugout-organizer">View the project story →</a>
+</div>
+</article>
+<article class="project-card">
+<div class="project-media contain"><img alt="Finished replacement bottle cap installed on a metal water bottle" decoding="async" loading="lazy" src="images/funished-cap-bottle.png"/></div>
+<div class="project-body">
+<span class="project-type">Replacement part</span>
+<h3>A broken cap became a usable bottle again.</h3>
+<p>When the original part was no longer doing its job, the solution was designed, tested, adjusted, and printed to bring the bottle back into use.</p>
+<a class="project-link" href="real-solutions.html#replacement-cap">See the process →</a>
+</div>
+</article>
+<article class="project-card">
+<div class="project-media"><img alt="Custom branded company logo coasters" decoding="async" loading="lazy" src="images/custom-company-logo-coasters.png"/></div>
+<div class="project-body">
+<span class="project-type">Branded work</span>
+<h3>Company details people can actually use.</h3>
+<p>Logo pieces, coasters, desk items, event pieces, and branded touches that feel more personal than generic promotional products.</p>
+<a class="project-link" href="branded-details.html">Explore branded projects →</a>
+</div>
+</article>
+<article class="project-card">
+<div class="project-media"><img alt="Small batch spacer parts produced consistently" decoding="async" loading="lazy" src="images/top_down_spacerplateview.png"/></div>
+<div class="project-body">
+<span class="project-type">Small batch</span>
+<h3>Repeat parts with consistency in mind.</h3>
+<p>For projects that need more than one finished piece, planning matters: orientation, material use, print time, checking, and repeatability all become part of the solution.</p>
+<a class="project-link" href="real-solutions.html#production">See production-minded work →</a>
+</div>
+</article>
+<article class="project-card">
+<div class="project-media"><img alt="Backlit photo lithophane keepsake" decoding="async" loading="lazy" src="images/lit_up_litho.png"/></div>
+<div class="project-body">
+<span class="project-type">Keepsake</span>
+<h3>A photo becomes something you can display.</h3>
+<p>Lithophanes and keepsakes turn meaningful images into physical pieces that feel different from another framed print or digital photo.</p>
+<a class="project-link" href="start-project.html">Start a keepsake project →</a>
+</div>
+</article>
+<article class="project-card">
+<div class="project-media"><img alt="Child's drawing transformed into a 3D printed Poly character" decoding="async" loading="lazy" src="images/poly-showcase.png"/></div>
+<div class="project-body">
+<span class="project-type">Imagination to object</span>
+<h3>A drawing turned into a finished character.</h3>
+<p>Kids’ drawings, sketches, and creative ideas can become physical pieces with shape, color, personality, and a story behind them.</p>
+<a class="project-link" href="from-imagination.html">Explore imagination projects →</a>
+</div>
+</article>
+<article class="project-card">
+<div class="project-media"><img alt="Finished and painted custom 3D printed display piece" decoding="async" loading="lazy" src="images/unfin-fin-rocky.png"/></div>
+<div class="project-body">
+<span class="project-type">Finishing work</span>
+<h3>Raw prints can become display-ready pieces.</h3>
+<p>Finishing, cleanup, assembly, color, and presentation can make the difference between a printed object and a finished gift or display piece.</p>
+<a class="project-link" href="raw-to-refined.html">Explore finishing work →</a>
+</div>
+</article>
+</div>
+</section>
+<section class="section" id="categories">
+<div class="section-kicker">Explore by need</div>
+<h2 class="section-title">Start with the type of project you have in mind.</h2>
+<p class="section-intro">Not every project needs a full case study. These pages give you a faster way to browse similar work and see what direction your own idea might take.</p>
+<div class="category-row">
+<a class="category-card" href="branded-details.html"><span class="category-icon">◆</span><h3>Branded details</h3><p>Business logos, event pieces, coasters, gifts, and small branded items.</p><span class="category-cta">Browse branded work →</span></a>
+<a class="category-card" href="eye-catching-work.html"><span class="category-icon">✦</span><h3>Eye-catching work</h3><p>Playful prints, table displays, conversation pieces, and gifts people notice.</p><span class="category-cta">Browse creative work →</span></a>
+<a class="category-card" href="designed-before-printing.html"><span class="category-icon">⌁</span><h3>Designed before printed</h3><p>Projects that start with planning, CAD, references, and print preparation.</p><span class="category-cta">See the process →</span></a>
+<a class="category-card" href="finished-pieces.html"><span class="category-icon">✓</span><h3>Finished pieces</h3><p>Printed work with cleanup, finishing, paint, presentation, or assembly.</p><span class="category-cta">Browse finished work →</span></a>
 </div>
 </section>
 <section class="section" id="studio">
 <div class="section-kicker">Inside the studio</div>
-<h2 class="section-title">How projects move from idea to finished piece.</h2>
-<p class="section-intro">Behind each finished piece is a mix of design work, material choices, print preparation, production, finishing, and quality checks. The goal is simple: create something that looks good, works well, and feels worth keeping.</p>
+<h2 class="section-title">Good results come from preparation, not luck.</h2>
+<p class="section-intro">Behind each finished project is a mix of design work, material choices, print setup, production checks, and finishing decisions. The goal is simple: make the final piece feel intentional.</p>
 <div class="studio-split">
 <div class="studio-copy">
 <h3>Designed, printed, checked, and refined in-house.</h3>
-<p>OliPoly projects are prepared with care before, during, and after printing. Settings are tuned, first layers are checked, production details are reviewed, and parts are refined so the final result feels intentional.</p>
-<div class="mini-tags"><span>Printer setup</span><span>Batch checks</span><span>CAD references</span><span>Finish work</span></div>
+<p>OliPoly projects are prepared with care before, during, and after printing. Settings are tuned, first layers are checked, production details are reviewed, and parts are refined so the final result looks good and works the way it should.</p>
+<div class="mini-tags"><span>CAD planning</span><span>Print setup</span><span>Batch checks</span><span>Finish work</span></div>
 </div>
-<div class="studio-collage">
-<img alt="Bambu Studio cooling settings used to tune a print profile" decoding="async" loading="lazy" src="images/bambu_cooling.png"/>
-<img alt="Bambu Studio speed settings used for print quality control" decoding="async" loading="lazy" src="images/bambu_speed_settings.png"/>
-<img alt="First layer calibration reference for checking print quality" decoding="async" loading="lazy" src="images/calibration_firstlayer.png"/>
+<div class="studio-media">
+<video autoplay="" loop="" muted="" playsinline="" poster="images/designed-before-printing-poster.jpg"><source src="images/designed-before-printing-loop.mp4" type="video/mp4"/></video>
 </div>
 </div>
 </section>
 <section class="cta-band">
 <div>
-<h2>Have an idea worth bringing to life?</h2>
-<p>Send a photo, sketch, file, rough description, or project goal. OliPoly can help shape the next step into a thoughtful, quote-ready request.</p>
+<h2>See something close to your idea?</h2>
+<p>Send a photo, sketch, file, rough description, or project goal. OliPoly can help turn it into a thoughtful, quote-ready request.</p>
 </div>
 <a class="button-secondary" href="start-project.html">Start Your Project</a>
 </section>
@@ -588,7 +257,7 @@
 <p>Poly can point you toward the most useful next step.</p>
 <div class="poly-helper-links">
 <a href="start-project.html">Start a project <span>→</span></a>
-<a href="events.html">See events <span>→</span></a>
+<a href="real-solutions.html">See real solutions <span>→</span></a>
 <a href="track.html">Track an order <span>→</span></a>
 <a href="mailto:OliPoly3D@gmail.com">Email OliPoly <span>→</span></a>
 </div>
@@ -600,48 +269,20 @@
 </div>
 <footer>
 <div class="footer-inner">
-<div class="footer-brand">
-<h3>OliPoly 3D</h3>
-<p>Custom 3D printing, creative builds, prototypes, branded pieces, personalized gifts, and small-batch parts made in Ohio.</p>
-</div>
+<div class="footer-brand"><h3>OliPoly 3D</h3><p>Custom 3D printing, creative builds, prototypes, branded pieces, personalized gifts, and small-batch parts made in Ohio.</p></div>
 <div class="footer-links">
-<div>
-<h4>Explore</h4>
-<a href="index.html">Home</a>
-<a href="showcase.html">Showcase</a>
-<a href="events.html">Events</a>
-<a href="faq.html">FAQ</a>
+<div><h4>Explore</h4><a href="index.html">Home</a><a href="real-solutions.html">Real Solutions</a><a href="showcase.html">Showcase</a><a href="faq.html">FAQ</a></div>
+<div><h4>Support</h4><a href="start-project.html">Start Project</a><a href="track.html">Track Order</a><a href="pay.html">Quick Pay</a><a href="legal.html">Legal &amp; Policies</a><a href="mailto:OliPoly3D@gmail.com">Email OliPoly</a></div>
 </div>
-<div>
-<h4>Support</h4>
-<a href="start-project.html">Start Project</a>
-<a href="track.html">Track Order</a>
-<a href="pay.html">Quick Pay</a>
-<a href="legal.html">Legal &amp; Policies</a>
-<a href="mailto:OliPoly3D@gmail.com">Email OliPoly</a>
-</div>
-</div>
-<div class="copyright">
-<span>© <span id="year"></span> OliPoly 3D LLC • Ohio</span>
-<span>Custom printing • Creative builds • Prototypes</span>
-</div>
+<div class="copyright"><span>© <span id="year"></span> OliPoly 3D LLC • Ohio</span><span>Custom printing • Creative builds • Prototypes</span></div>
 </div>
 </footer>
 <script>
-    function toggleMenu(){
-      document.getElementById('nav').classList.toggle('open');
-    }
-
-    function togglePolyHelper(){
-      document.getElementById('polyHelper').classList.toggle('active');
-    }
-
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    document.querySelectorAll('.nav-links a').forEach((link)=>{
-      link.addEventListener('click',()=>document.getElementById('nav').classList.remove('open'));
-    });
-  </script>
+function toggleMenu(){document.getElementById('nav').classList.toggle('open');}
+function togglePolyHelper(){document.getElementById('polyHelper').classList.toggle('active');}
+document.getElementById('year').textContent = new Date().getFullYear();
+document.querySelectorAll('.nav-links a').forEach((link)=>{link.addEventListener('click',()=>document.getElementById('nav').classList.remove('open'));});
+</script>
 <script defer="" src="assets/erp-upgrade.js"></script>
 </body>
 </html>
