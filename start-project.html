@@ -369,6 +369,316 @@ img{max-width:100%}
   .step span{font-size:.88rem!important;line-height:1.4!important}
 }
 
+
+
+/* Pass 2 visual polish: consistent motion, card feel, and media treatment */
+@media (prefers-reduced-motion: no-preference){
+  .nav-links a,
+  .nav-cta,
+  .button-primary,
+  .button-secondary,
+  .project-card,
+  .category-card,
+  .solution-card,
+  .feature-grid,
+  .feature-media,
+  .story-panel,
+  .process-card,
+  .proof-card,
+  .home-feature,
+  .quiet-project-card,
+  .trust-card,
+  .studio-tile,
+  .price-card,
+  .card,
+  .example-card,
+  .idea-card,
+  .split-panel,
+  .visual-card,
+  .tally-panel,
+  .note-card,
+  .cta-band,
+  .cta-panel{
+    transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease, filter .28s ease;
+  }
+  .project-card:hover,
+  .category-card:hover,
+  .solution-card:hover,
+  .home-feature:hover,
+  .quiet-project-card:hover,
+  .trust-card:hover,
+  .studio-tile:hover,
+  .price-card:hover,
+  .card:hover,
+  .example-card:hover,
+  .idea-card:hover,
+  .process-card:hover,
+  .proof-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 26px 76px rgba(84,38,94,.14);
+  }
+  .project-card img,
+  .category-card img,
+  .solution-card img,
+  .feature-media img,
+  .story-panel img,
+  .home-feature img,
+  .quiet-project-card img,
+  .studio-tile img,
+  .card img,
+  .example-card img,
+  .wide-photo img,
+  .mini-grid img,
+  .visual-card img,
+  .hero-media img,
+  .hero-visual img,
+  .project-media img{
+    transition:transform .34s ease, filter .34s ease;
+  }
+  .project-card:hover img,
+  .category-card:hover img,
+  .solution-card:hover img,
+  .feature-media:hover img,
+  .story-panel:hover img,
+  .home-feature:hover img,
+  .quiet-project-card:hover img,
+  .studio-tile:hover img,
+  .card:hover img,
+  .example-card:hover img,
+  .wide-photo:hover img,
+  .visual-card:hover img,
+  .project-media:hover img{
+    transform:scale(1.018);
+  }
+}
+.section-title,
+.hero h1{
+  text-wrap:balance;
+}
+.section-intro,
+.hero-copy,
+.hero-subcopy{
+  text-wrap:pretty;
+}
+img,video{
+  backface-visibility:hidden;
+}
+
+
+/* === Pass 3: mobile polish === */
+@media (max-width: 860px){
+  .hero,
+  .feature-grid,
+  .solution-preview,
+  .studio-split,
+  .guidance-band,
+  .comparison-grid,
+  .story-panel,
+  .cta-band,
+  .footer-inner{
+    grid-template-columns:1fr!important;
+  }
+  .reverse .feature-media,
+  .split-panel.reverse .wide-photo,
+  .comparison-media{
+    order:-1;
+  }
+  .hero-collage,
+  .photo-stack,
+  .hero-proof,
+  .hero-visual{
+    min-height:auto!important;
+    margin-top:8px;
+  }
+  .hero-collage .proof-card,
+  .photo-stack .stack-card,
+  .hero-proof .floating-card{
+    position:relative!important;
+    inset:auto!important;
+    left:auto!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    width:100%!important;
+    transform:none!important;
+  }
+  .hero-collage,
+  .photo-stack,
+  .hero-proof{
+    display:grid!important;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .hero-collage .dugout,
+  .hero-collage .main,
+  .photo-stack .main,
+  .hero-proof .featured{
+    grid-column:1 / -1;
+  }
+}
+
+@media (max-width: 720px){
+  html{scroll-padding-top:72px}
+  body{overflow-x:hidden}
+  .nav{
+    width:min(100% - 18px,var(--max))!important;
+    min-height:60px!important;
+  }
+  .brand-mark{width:42px!important;height:42px!important;border-radius:14px!important}
+  .brand-mark img{width:40px!important;height:40px!important}
+  .brand-name{font-size:1.5rem!important;letter-spacing:-.05em!important}
+  .brand-sub-full{display:none!important}
+  .mobile-short-sub{display:block!important;max-width:132px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .section,
+  .hero,
+  .cta-band{
+    width:min(100% - 20px,var(--max))!important;
+  }
+  .section{padding:46px 0!important}
+  .hero{
+    margin-top:14px!important;
+    padding:24px 18px!important;
+    border-radius:28px!important;
+    gap:22px!important;
+  }
+  .hero h1,
+  h1{
+    font-size:clamp(2.35rem,13vw,3.35rem)!important;
+    line-height:.93!important;
+    letter-spacing:-.065em!important;
+  }
+  .section-title{
+    font-size:clamp(2.05rem,10.5vw,3rem)!important;
+    line-height:.98!important;
+  }
+  .hero-copy,
+  .hero-subcopy,
+  .section-intro,
+  .intro,
+  .content p{
+    font-size:1rem!important;
+    line-height:1.58!important;
+  }
+  .hero-actions,
+  .cta-actions,
+  .tally-actions{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+    width:100%!important;
+  }
+  .hero-actions a,
+  .cta-actions a,
+  .tally-actions a,
+  .button-primary,
+  .button-secondary,
+  .btn,
+  .btn-ghost,
+  .nav-cta{
+    width:100%;
+    min-height:48px;
+    justify-content:center;
+    text-align:center;
+  }
+  .trust-grid,
+  .quiet-showcase-grid,
+  .portfolio-grid,
+  .category-grid,
+  .category-row,
+  .cards,
+  .example-grid,
+  .idea-strip,
+  .process-list,
+  .proof-grid,
+  .solution-card-grid,
+  .pricing-grid,
+  .studio-grid,
+  .mini-visuals,
+  .trust-row,
+  .quicknav,
+  .footer-links{
+    grid-template-columns:1fr!important;
+    gap:14px!important;
+  }
+  .card,
+  .project-card,
+  .category-card,
+  .trust-card,
+  .solution-mini-card,
+  .solution-copy-card,
+  .proof-card,
+  .process-card,
+  .price-card,
+  .note-card,
+  .faq-group,
+  .tally-panel,
+  .guidance-band,
+  .story-panel{
+    border-radius:24px!important;
+    padding:18px!important;
+  }
+  .cta-band{
+    margin:22px auto 58px!important;
+    padding:30px 20px!important;
+    border-radius:30px!important;
+  }
+  .cta-band h2{
+    font-size:clamp(2rem,11vw,3.1rem)!important;
+    line-height:.95!important;
+  }
+  .footer-inner{
+    padding:30px 0!important;
+    gap:20px!important;
+  }
+  .copyright{
+    display:block!important;
+    text-align:left!important;
+  }
+  .copyright span{display:block;margin-top:8px}
+  .poly-helper{right:12px!important;bottom:12px!important}
+  .poly-helper-panel{width:min(320px,calc(100vw - 24px))!important}
+}
+
+@media (max-width: 520px){
+  .hero-collage,
+  .photo-stack,
+  .hero-proof,
+  .mini-grid,
+  .spotlight-media{
+    grid-template-columns:1fr!important;
+  }
+  .project-media img,
+  .category-card img,
+  .card img,
+  .example-card img,
+  .wide-photo img,
+  .wide-photo video,
+  .solution-image-frame img,
+  .studio-tile img,
+  .visual-card img,
+  .hero-media img,
+  .hero-media video,
+  .hero-visual img{
+    aspect-ratio:4 / 3!important;
+    object-fit:cover!important;
+  }
+  .contain img,
+  img.contain,
+  .solution-image-frame.contain img{
+    object-fit:contain!important;
+  }
+  .nav.open .nav-links{
+    max-height:calc(100vh - 78px);
+    overflow-y:auto;
+  }
+}
+
+@media (pointer: coarse){
+  a,button{touch-action:manipulation}
+  .nav-links a,
+  .footer-links a{padding-block:6px}
+}
+
 </style>
 <link href="assets/erp-upgrade.css" rel="stylesheet"/>
 </head>
