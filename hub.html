@@ -3124,7 +3124,7 @@ body.erp-mode .kicker{
     <nav class="engine-nav">
       <span class="engine-nav-label">Daily Work</span>
       <a class="active" href="#erpToday">⌘ Today</a>
-      <a href="#erpActionCenterV2">⚡ Required Actions</a>
+      <a href="#">⚡ Required Actions</a>
       <a href="#newRequestWizard">＋ New Request</a>
       <span class="engine-nav-label">Operations</span>
       <a href="production-control.html">▣ Production</a>
@@ -4252,7 +4252,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
     nav.innerHTML=[
       '<span class="engine-nav-label">Daily Work</span>',
       '<a class="active" href="#erpToday">⌘ Today</a>',
-      '<a href="#erpActionCenterV2">⚡ Required Actions</a>',
+      '<a href="#">⚡ Required Actions</a>',
       '<a href="#newRequestWizard">＋ New Request</a>',
       '<a href="#erpSchedulerEngineV1">▦ Scheduler</a>',
       '<span class="engine-nav-label">Operations</span>',
@@ -4783,8 +4783,8 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-recent-la
       $('erpAuditType')?.addEventListener('input',renderAudit);
     }
     var nav=document.querySelector('.engine-nav');
-    if(nav && !nav.querySelector('a[href="#erpActionCenterV2"]')){
-      nav.insertAdjacentHTML('afterbegin','<a href="#erpActionCenterV2">⚡ Required Actions</a><a href="#erpPurchasePlannerV2">🛒 Purchase Plan</a><a href="#erpAuditCenterV2">↻ Audit Trail</a>');
+    if(nav && !nav.querySelector('a[href="#"]')){
+      nav.insertAdjacentHTML('afterbegin','<a href="#">⚡ Required Actions</a><a href="#erpPurchasePlannerV2">🛒 Purchase Plan</a><a href="#erpAuditCenterV2">↻ Audit Trail</a>');
     }
   }
   function actionRow(a){return '<a class="erp-action-row" href="'+esc(a.href||'#')+'"><span class="erp-action-icon '+esc(a.kind||'')+'">'+esc(a.icon||'!')+'</span><span><strong>'+esc(a.title||'Action')+'</strong><small>'+esc(a.sub||'')+'</small></span><b class="erp-chip '+esc(a.kind||'')+'">'+esc(a.tag||'Open')+'</b></a>';}
