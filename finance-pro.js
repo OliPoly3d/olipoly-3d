@@ -117,6 +117,41 @@ const defaultTax = (type, cat) => type === 'income'
     })[cat] || 'other';
 
 const resolvedTaxCategory = e => {
+  const category = String(e?.category || '').trim();
+
+  // Finance Pro tax reporting rule:
+  // Category is authoritative for known/common categories.
+  // Tax Category is only an override for unusual/manual cases.
+  // This protects older records that were accidentally saved with tax_category = "other"
+  // even though their visible category was Event Booth, Material, Shipping, etc.
+  const categoryMap = {
+    'Sale': 'income_sales',
+    'Shipping': e?.type === 'income' ? 'income_shipping' : 'shipping_out',
+    'Sales Tax Collected': 'income_sales',
+    'Material': 'materials',
+    'Packaging': 'packaging',
+    'Marketplace Fee': 'marketplace_fees',
+    'Fees': 'marketplace_fees',
+    'Event Booth': 'event_fees',
+    'Supplies': 'supplies',
+    'Office Supplies': 'supplies',
+    'Machine Maintenance': 'equipment_maintenance',
+    'Printer Parts / Repairs': 'equipment_maintenance',
+    'Equipment': 'equipment_maintenance',
+    'Equipment (CapEx)': 'equipment_maintenance',
+    'Admin / Setup': 'other',
+    'Software / Subscriptions': 'other',
+    'Advertising / Marketing': 'other',
+    'Domain / Website': 'other',
+    'Home Office': 'other',
+    'Utilities': 'other',
+    'Internet / Phone': 'other',
+    'Vehicle / Delivery Mileage': 'other',
+    'R&D / Prototyping': 'other'
+  };
+
+  if (category && categoryMap[category]) return categoryMap[category];
+
   const selected = String(e?.tax_category || '').trim();
   if (!selected || selected === 'auto') return defaultTax(e?.type, e?.category);
   return selected;
