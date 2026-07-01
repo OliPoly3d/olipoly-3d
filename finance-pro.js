@@ -707,6 +707,70 @@ function exportTaxReport() {
   ]);
 }
 
+
+function getSharedAuthSession() {
+  try {
+    return window.OliPolyAuth?.readSession?.() || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function getSharedAuthToken() {
+  try {
+    return window.OliPolyAuth?.getToken?.() || getSharedAuthSession()?.access_token || localStorage.getItem('sb_token') || null;
+  } catch (_) {
+    return localStorage.getItem('sb_token') || null;
+  }
+}
+
+function createFinanceClient() {
+  const token = getSharedAuthToken();
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    global: {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    }
+  });
+}
+
+async function adoptSharedAuthSession() {
+  if (!supabase?.auth || !window.OliPolyAuth) return null;
+
+  const shared = await window.OliPolyAuth.ensure?.();
+  if (!shared?.access_token) return null;
+
+  if (shared.refresh_token) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: shared.access_token,
+      refresh_token: shared.refresh_token
+    });
+    if (!error && data?.session) return data.session;
+    console.warn('Finance Pro could not adopt shared Supabase session:', error);
+  }
+
+  const user = await window.OliPolyAuth.getUser?.();
+  return user ? { access_token: shared.access_token, user } : null;
+}
+
+async function resolveCurrentUser() {
+  const adopted = await adoptSharedAuthSession();
+  if (adopted?.user) return adopted.user;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    window.OliPolyAuth?.writeSession?.(session);
+    return session.user;
+  }
+
+  const bridgeUser = await window.OliPolyAuth?.getUser?.();
+  return bridgeUser || null;
+}
+
 async function fetchEntries() {
   if (!supabase || !currentUser) return;
 
@@ -1086,7 +1150,7 @@ async function signup() {
 async function logout() {
   try {
     if (window.OliPolyAuth) window.OliPolyAuth.clearSession();
-  await supabase.auth.signOut();
+    await supabase.auth.signOut();
   } catch (err) {
     console.warn('Logout cleanup issue:', err);
   }
@@ -1115,13 +1179,13 @@ async function init() {
 
   updateEntryTypeHint();
 
-  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabase = createFinanceClient();
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    currentUser = session?.user || null;
+    currentUser = await resolveCurrentUser();
     setUI(!!currentUser);
   } catch (err) {
+    console.warn('Finance Pro auth startup failed:', err);
     currentUser = null;
     setUI(false);
   }
@@ -1132,6 +1196,7 @@ async function init() {
   if (currentUser) await fetchEntries();
 
   supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (session) window.OliPolyAuth?.writeSession?.(session);
     currentUser = session?.user || null;
     setUI(!!currentUser);
 
@@ -1141,6 +1206,23 @@ async function init() {
     } else {
       entries = [];
       renderAll();
+    }
+  });
+
+  window.addEventListener('olipoly-auth-changed', async () => {
+    supabase = createFinanceClient();
+    try {
+      currentUser = await resolveCurrentUser();
+      setUI(!!currentUser);
+      if (currentUser) {
+        hide(els.authMessage);
+        await fetchEntries();
+      } else {
+        entries = [];
+        renderAll();
+      }
+    } catch (err) {
+      console.warn('Finance Pro shared auth refresh failed:', err);
     }
   });
 }
