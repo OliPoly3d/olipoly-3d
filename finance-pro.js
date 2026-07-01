@@ -12,6 +12,7 @@ const money = v => new Intl.NumberFormat('en-US', { style: 'currency', currency:
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const currentYear = () => new Date().getFullYear();
 const currentMonth = () => new Date().toISOString().slice(0, 7);
+const dateOnly = d => new Date(d + 'T00:00:00');
 const csvCell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
 const escapeHtml = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#039;' }[m]));
 const monthLabel = ym => {
@@ -28,11 +29,11 @@ const standardOhioDueDate = ym => {
 const ids = [
   'startupTotal','loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn',
   'emailInput','passwordInput','showPasswordToggle','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryTypeHint',
-  'entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','taxExemptSale','saleCounty','saleCountyWrap','salesTaxRate','salesTaxCollected',
+  'entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','taxExemptSale','destinationCounty','salesTaxRate','salesTaxCollected',
   'netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes',
   'productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid',
   'tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap',
-  'capexWrap','capexToggle','monthlyTaxMonth','monthlyTaxReportBtn','monthlyTaxOutput',
+  'capexWrap','capexToggle','salesTaxFilingPeriod','monthlyTaxReportBtn','monthlyTaxOutput','salesTaxFilingExportBtn',
   'businessUsePercent','vendorName','paymentMethod','receiptLink','mileageWrap','milesDriven','mileageRate',
   'tripPurpose','tripFrom','tripTo','roundTripToggle',
   'defaultMileageRate','officeSqft','homeSqft','homeOfficePercent','saveSettingsBtn','settingsMessage'
@@ -125,6 +126,42 @@ function computeTaxExclusive(total, rate) {
   return { tax: +(total - net).toFixed(2), net };
 }
 
+function normalizeCounty(value) {
+  return String(value || '').trim();
+}
+
+function filingPeriodOptions(baseYear = currentYear()) {
+  return [baseYear - 1, baseYear, baseYear + 1].flatMap(year => ([
+    { value: `${year}-H1`, label: `January–June ${year}`, start: `${year}-01-01`, end: `${year}-06-30`, due: `${year}-07-23` },
+    { value: `${year}-H2`, label: `July–December ${year}`, start: `${year}-07-01`, end: `${year}-12-31`, due: `${year + 1}-01-23` }
+  ]));
+}
+
+function currentFilingPeriodValue() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  return m <= 6 ? `${y}-H1` : `${y}-H2`;
+}
+
+function getSelectedFilingPeriod() {
+  const opts = filingPeriodOptions();
+  return opts.find(o => o.value === els.salesTaxFilingPeriod?.value) || opts.find(o => o.value === currentFilingPeriodValue()) || opts[0];
+}
+
+function populateFilingPeriodSelect() {
+  if (!els.salesTaxFilingPeriod) return;
+  const selected = els.salesTaxFilingPeriod.value || currentFilingPeriodValue();
+  els.salesTaxFilingPeriod.innerHTML = filingPeriodOptions()
+    .map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`)
+    .join('');
+  els.salesTaxFilingPeriod.value = selected;
+}
+
+function formatRate(rate) {
+  return num(rate) ? `${num(rate).toFixed(2)}%` : '—';
+}
+
 function calculateHomeOfficePercent() {
   const office = num(els.officeSqft?.value);
   const home = num(els.homeSqft?.value);
@@ -194,20 +231,6 @@ function updateTaxPreview() {
   }
 }
 
-function updateIncomeTaxFields() {
-  const isIncome = els.entryType?.value === 'income';
-  const taxableIncome = isIncome && els.taxExemptSale?.value !== 'yes';
-
-  els.saleCountyWrap?.classList.toggle('hidden', !isIncome);
-  if (els.saleCounty) els.saleCounty.required = isIncome;
-  if (els.salesTaxRate) els.salesTaxRate.required = taxableIncome;
-
-  if (!isIncome) {
-    if (els.saleCounty) els.saleCounty.value = '';
-    if (els.salesTaxRate) els.salesTaxRate.value = '';
-  }
-}
-
 function updateExpenseHelpers() {
   const isIncome = els.entryType.value === 'income';
   const isMileage = !isIncome && isMileageCategory(els.entryCategory.value);
@@ -239,14 +262,13 @@ function updateExpenseHelpers() {
 }
 
 function updateEntryTypeHint() {
-  updateIncomeTaxFields();
   els.capexWrap.classList.toggle('hidden', els.entryCategory.value !== 'Equipment');
   updateExpenseHelpers();
 
   if (els.entryType.value === 'income') {
     setPanel(
       els.entryTypeHint,
-      'Income entry: pick the Ohio county and enter the sales tax rate you used. If Tax Exempt Sale = Yes, sales tax collected stays $0 and the full amount is treated as net revenue. Otherwise, tax-inclusive mode backs tax out automatically.',
+      'Income entry: if Tax Exempt Sale = Yes, sales tax collected stays $0 and the full amount is treated as net revenue. Otherwise, tax-inclusive mode backs tax out automatically.',
       false,
       'amber'
     );
@@ -293,12 +315,14 @@ function resetForm() {
   els.entryCategory.value = 'Sale';
   els.taxCategory.value = 'auto';
   els.taxIncluded.value = 'no';
+  if (els.taxExemptSale) els.taxExemptSale.value = 'no';
+  if (els.destinationCounty) els.destinationCounty.value = '';
   els.capexToggle.checked = false;
   els.businessUsePercent.value = '100';
   els.mileageRate.value = settings.defaultMileageRate ? settings.defaultMileageRate.toFixed(4) : '';
 
   [
-    'shippingCharged','saleCounty','salesTaxRate','salesTaxCollected','netRevenuePreview',
+    'shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview',
     'shippingCost','materialCost','packagingCost','laborCost','otherDirectCost',
     'milesDriven','vendorName','paymentMethod','receiptLink','tripPurpose','tripFrom','tripTo'
   ].forEach(k => { if (els[k]) els[k].value = ''; });
@@ -398,9 +422,9 @@ function renderTable(list) {
         <th>Type</th>
         <th>Title</th>
         <th>Category</th>
+        <th>Revenue / Expense</th>
         <th>County</th>
         <th>Tax Rate</th>
-        <th>Revenue / Expense</th>
         <th>Tax</th>
         <th>Ship In</th>
         <th>Ship Out</th>
@@ -424,9 +448,9 @@ function renderTable(list) {
             ${e.receipt_link ? `<div style="margin-top:6px;font-size:.86rem;"><a href="${escapeHtml(e.receipt_link)}" target="_blank" rel="noopener noreferrer">Receipt</a></div>` : ''}
           </td>
           <td>${escapeHtml(e.category)}</td>
-          <td>${e.type === 'income' ? escapeHtml(e.sales_county || '') : ''}</td>
-          <td>${e.type === 'income' && num(e.sales_tax_rate) ? `${num(e.sales_tax_rate).toFixed(2)}%` : ''}</td>
           <td>${money(e.amount)}</td>
+          <td>${e.type === 'income' ? escapeHtml(e.destination_county || '—') : '—'}</td>
+          <td>${e.type === 'income' ? formatRate(e.sales_tax_rate) : '—'}</td>
           <td>${money(e.sales_tax_collected)}</td>
           <td>${money(e.shipping_charged)}</td>
           <td>${money(e.shipping_cost)}</td>
@@ -508,70 +532,151 @@ function scheduleCMap(year) {
   };
 }
 
-function monthlyOhioUST(month) {
-  const base = {
+function salesTaxFilingSummary(period) {
+  const start = dateOnly(period.start);
+  const end = dateOnly(period.end);
+  const included = entries.filter(e => {
+    if (e.type !== 'income') return false;
+    const d = dateOnly(e.entry_date || '1900-01-01');
+    return d >= start && d <= end;
+  });
+
+  const summary = {
+    period,
+    entries: included,
     grossSales: 0,
+    taxableSales: 0,
     exemptSales: 0,
-    clerksOfCourt: 0,
-    taxLiability: 0
+    taxCollected: 0,
+    countyRows: [],
+    monthlyRows: [],
+    warnings: []
   };
 
-  entries
-    .filter(e => e.type === 'income' && e.entry_date.startsWith(month))
-    .forEach(e => {
-      base.grossSales += num(e.amount) + num(e.shipping_charged);
-      base.taxLiability += num(e.sales_tax_collected);
-    });
+  const byCounty = {};
+  const byMonth = {};
 
-  const netTaxableSales = Math.max(0, +(base.grossSales - base.exemptSales).toFixed(2));
-  const reportableTaxableSales = Math.max(0, +(netTaxableSales - base.clerksOfCourt).toFixed(2));
-  const timelyDiscount = +(base.taxLiability * 0.0075).toFixed(2);
-  const additionalCharge = 0;
-  const interestOwed = 0;
-  const netTaxDue = +(base.taxLiability - timelyDiscount + additionalCharge + interestOwed).toFixed(2);
+  included.forEach(e => {
+    const county = normalizeCounty(e.destination_county);
+    const gross = num(e.amount) + num(e.shipping_charged);
+    const tax = num(e.sales_tax_collected);
+    const rate = num(e.sales_tax_rate);
+    const exempt = !!e.tax_exempt_sale;
+    const taxable = exempt ? 0 : gross;
 
-  return {
-    month,
-    grossSales: +base.grossSales.toFixed(2),
-    exemptSales: +base.exemptSales.toFixed(2),
-    netTaxableSales,
-    clerksOfCourt: +base.clerksOfCourt.toFixed(2),
-    reportableTaxableSales,
-    taxLiability: +base.taxLiability.toFixed(2),
-    timelyDiscount,
-    additionalCharge,
-    interestOwed,
-    netTaxDue
-  };
+    summary.grossSales += gross;
+    summary.exemptSales += exempt ? gross : 0;
+    summary.taxableSales += taxable;
+    summary.taxCollected += tax;
+
+    if (!county) summary.warnings.push(`${e.entry_date || 'Undated'} ${e.title || 'income entry'} is missing destination county.`);
+    if (!exempt && rate <= 0) summary.warnings.push(`${e.entry_date || 'Undated'} ${e.title || 'income entry'} is missing sales tax rate.`);
+
+    const countyKey = county || 'Missing County';
+    byCounty[countyKey] ||= { county: countyKey, taxableSales: 0, grossSales: 0, taxCollected: 0, rates: new Set(), count: 0 };
+    byCounty[countyKey].grossSales += gross;
+    byCounty[countyKey].taxableSales += taxable;
+    byCounty[countyKey].taxCollected += tax;
+    byCounty[countyKey].count += 1;
+    if (rate > 0) byCounty[countyKey].rates.add(rate.toFixed(2));
+
+    const month = (e.entry_date || '').slice(0, 7) || 'Unknown';
+    byMonth[month] ||= { month, grossSales: 0, taxableSales: 0, taxCollected: 0, count: 0 };
+    byMonth[month].grossSales += gross;
+    byMonth[month].taxableSales += taxable;
+    byMonth[month].taxCollected += tax;
+    byMonth[month].count += 1;
+  });
+
+  summary.countyRows = Object.values(byCounty)
+    .map(row => ({
+      ...row,
+      grossSales: +row.grossSales.toFixed(2),
+      taxableSales: +row.taxableSales.toFixed(2),
+      taxCollected: +row.taxCollected.toFixed(2),
+      rates: [...row.rates].sort((a, b) => num(a) - num(b))
+    }))
+    .sort((a, b) => a.county.localeCompare(b.county));
+
+  summary.monthlyRows = Object.values(byMonth)
+    .map(row => ({
+      ...row,
+      grossSales: +row.grossSales.toFixed(2),
+      taxableSales: +row.taxableSales.toFixed(2),
+      taxCollected: +row.taxCollected.toFixed(2)
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  summary.countyRows.forEach(row => {
+    if (row.rates.length > 1) summary.warnings.push(`${row.county} County has multiple tax rates: ${row.rates.map(r => `${r}%`).join(', ')}.`);
+  });
+
+  summary.grossSales = +summary.grossSales.toFixed(2);
+  summary.exemptSales = +summary.exemptSales.toFixed(2);
+  summary.taxableSales = +summary.taxableSales.toFixed(2);
+  summary.taxCollected = +summary.taxCollected.toFixed(2);
+
+  return summary;
 }
 
 function renderMonthlyTaxReport() {
-  const month = els.monthlyTaxMonth.value;
-  if (!month) {
-    els.monthlyTaxOutput.textContent = 'Select a month first.';
+  const period = getSelectedFilingPeriod();
+  if (!period) {
+    els.monthlyTaxOutput.textContent = 'Select a filing period first.';
     return;
   }
 
-  const r = monthlyOhioUST(month);
+  const r = salesTaxFilingSummary(period);
+  const countyRows = r.countyRows.length
+    ? r.countyRows.map(row => `
+        <tr>
+          <td>${escapeHtml(row.county)}</td>
+          <td>${row.count}</td>
+          <td>${money(row.taxableSales)}</td>
+          <td class="rate-stack">${row.rates.length ? row.rates.map(rate => `${escapeHtml(rate)}%`).join('<br>') : '—'}${row.rates.length > 1 ? '<small>review</small>' : ''}</td>
+          <td>${money(row.taxCollected)}</td>
+        </tr>
+      `).join('')
+    : '<tr><td colspan="5">No income entries in this filing period.</td></tr>';
+
+  const monthRows = r.monthlyRows.length
+    ? r.monthlyRows.map(row => `
+        <tr>
+          <td>${escapeHtml(monthLabel(row.month))}</td>
+          <td>${row.count}</td>
+          <td>${money(row.grossSales)}</td>
+          <td>${money(row.taxableSales)}</td>
+          <td>${money(row.taxCollected)}</td>
+        </tr>
+      `).join('')
+    : '<tr><td colspan="5">No monthly data in this filing period.</td></tr>';
+
+  const warnings = r.warnings.length
+    ? `<div class="filing-warning"><strong>Review before filing:</strong><ul style="margin:8px 0 0 18px;padding:0;">${r.warnings.slice(0, 8).map(w => `<li>${escapeHtml(w)}</li>`).join('')}${r.warnings.length > 8 ? `<li>${r.warnings.length - 8} more warning(s).</li>` : ''}</ul></div>`
+    : '<div class="filing-ok"><strong>Filing readiness check passed:</strong> all income entries in this period have county and non-exempt sales have a tax rate.</div>';
 
   els.monthlyTaxOutput.innerHTML = `
-    <div><strong>Filing month:</strong> ${escapeHtml(monthLabel(month))}</div>
-    <div><strong>Standard Ohio due date:</strong> ${escapeHtml(standardOhioDueDate(month))}</div>
+    <div class="filing-kicker">Ohio semiannual sales tax filing helper</div>
+    <div><strong>Filing period:</strong> ${escapeHtml(period.label)} (${escapeHtml(period.start)} through ${escapeHtml(period.end)})</div>
+    <div><strong>Standard Ohio due date:</strong> ${escapeHtml(new Date(period.due + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }))}</div>
     <div class="filing-grid">
-      <div class="filing-line"><strong>Line 1 – Gross sales</strong>${money(r.grossSales)}<span>Sales + shipping charged, excluding sales tax collected.</span></div>
-      <div class="filing-line"><strong>Line 2 – Exempt sales</strong>${money(r.exemptSales)}<span>Defaulted to zero. Adjust manually if you had exempt or marketplace-facilitated sales.</span></div>
-      <div class="filing-line"><strong>Line 3 – Net taxable sales</strong>${money(r.netTaxableSales)}<span>Line 1 minus Line 2.</span></div>
-      <div class="filing-line"><strong>Line 4 – Clerks of courts</strong>${money(r.clerksOfCourt)}<span>Defaulted to zero for your business.</span></div>
-      <div class="filing-line"><strong>Line 5 – Reportable taxable sales</strong>${money(r.reportableTaxableSales)}<span>Line 3 minus Line 4.</span></div>
-      <div class="filing-line"><strong>Line 6 – Tax liability</strong>${money(r.taxLiability)}<span>Based on sales tax collected in the tracker.</span></div>
-      <div class="filing-line"><strong>Line 7 – Discount</strong>${money(r.timelyDiscount)}<span>0.75% of Line 6 for an on-time filed and paid return.</span></div>
-      <div class="filing-line"><strong>Line 8a – Additional charge</strong>${money(r.additionalCharge)}<span>Leave at zero for an on-time return.</span></div>
-      <div class="filing-line"><strong>Line 8b – Interest owed</strong>${money(r.interestOwed)}<span>Leave at zero here; Ohio bills interest separately if needed.</span></div>
-      <div class="filing-line"><strong>Line 9 – Net tax due</strong>${money(r.netTaxDue)}<span>Line 6 minus Line 7 plus Lines 8a and 8b.</span></div>
+      <div class="filing-line"><strong>Gross sales</strong>${money(r.grossSales)}<span>Income sales + shipping charged, excluding sales tax collected.</span></div>
+      <div class="filing-line"><strong>Taxable sales</strong>${money(r.taxableSales)}<span>Gross sales minus entries marked tax exempt.</span></div>
+      <div class="filing-line"><strong>Exempt sales</strong>${money(r.exemptSales)}<span>Entries marked Tax Exempt Sale.</span></div>
+      <div class="filing-line"><strong>Sales tax collected</strong>${money(r.taxCollected)}<span>Tracked separately from revenue.</span></div>
     </div>
-    <div class="note">
-      Copy these values into OH|TAX eServices for the selected month. This assumes standard taxable retail sales with no exempt sales, marketplace-facilitated deductions, or clerks-of-court transactions.
-    </div>
+    ${warnings}
+    <h4 style="margin:18px 0 6px;">County Summary</h4>
+    <div class="filing-table-wrap"><table class="filing-table">
+      <thead><tr><th>County</th><th>Sales</th><th>Taxable Sales</th><th>Tax Rate(s)</th><th>Tax Collected</th></tr></thead>
+      <tbody>${countyRows}</tbody>
+    </table></div>
+    <h4 style="margin:18px 0 6px;">Monthly Breakdown</h4>
+    <div class="filing-table-wrap"><table class="filing-table">
+      <thead><tr><th>Month</th><th>Sales</th><th>Gross Sales</th><th>Taxable Sales</th><th>Tax Collected</th></tr></thead>
+      <tbody>${monthRows}</tbody>
+    </table></div>
+    <div class="note">Use the county summary for the county-by-county section in OH|TAX. The monthly breakdown is for your bookkeeping/reconciliation.</div>
   `;
 }
 
@@ -660,7 +765,7 @@ function renderAll() {
   renderMonthly(list);
   renderTable(list);
   renderTaxReport();
-  if (els.monthlyTaxMonth.value) renderMonthlyTaxReport();
+  if (els.salesTaxFilingPeriod?.value) renderMonthlyTaxReport();
   syncHubFinanceSummary();
 }
 
@@ -679,7 +784,7 @@ function exportCSV() {
   downloadCSV(`olipoly-financial-export-${todayISO()}.csv`, [
     [
       'Date','Type','Category','Tax Category','Deductible / Revenue Amount','Original Amount',
-      'Sales Tax Collected','Shipping Charged','Tax Included','County','Sales Tax Rate','Shipping Cost',
+      'Destination County','Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost',
       'Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Vendor','Payment Method',
       'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Trip Purpose','Trip From','Trip To','Round Trip','Title','Notes'
     ],
@@ -690,10 +795,10 @@ function exportCSV() {
       e.tax_category || defaultTax(e.type, e.category),
       num(e.amount).toFixed(2),
       num(e.original_amount || e.amount).toFixed(2),
+      e.destination_county || '',
       num(e.sales_tax_collected).toFixed(2),
       num(e.shipping_charged).toFixed(2),
       e.tax_included || 'no',
-      e.sales_county || '',
       num(e.sales_tax_rate).toFixed(2),
       num(e.shipping_cost).toFixed(2),
       num(e.material_cost).toFixed(2),
@@ -714,6 +819,20 @@ function exportCSV() {
       e.notes || ''
     ])
   ]);
+}
+
+
+function exportSalesTaxFilingCSV() {
+  const period = getSelectedFilingPeriod();
+  if (!period) return alert('Select a filing period first.');
+  const r = salesTaxFilingSummary(period);
+  const rows = [
+    ['Section','Filing Period','Start Date','End Date','Due Date','County','Sales Count','Gross Sales','Taxable Sales','Exempt Sales','Tax Rate(s)','Tax Collected'],
+    ['Totals',period.label,period.start,period.end,period.due,'',r.entries.length,r.grossSales.toFixed(2),r.taxableSales.toFixed(2),r.exemptSales.toFixed(2),'',r.taxCollected.toFixed(2)],
+    ...r.countyRows.map(row => ['County Summary',period.label,period.start,period.end,period.due,row.county,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'',row.rates.map(rate => `${rate}%`).join(' | '),row.taxCollected.toFixed(2)]),
+    ...r.monthlyRows.map(row => ['Monthly Breakdown',period.label,period.start,period.end,period.due,row.month,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'','',row.taxCollected.toFixed(2)])
+  ];
+  downloadCSV(`olipoly-ohio-sales-tax-${period.value}.csv`, rows);
 }
 
 function exportTaxReport() {
@@ -869,7 +988,6 @@ function startEdit(id) {
     ['entryDate','entry_date'],
     ['shippingCharged','shipping_charged'],
     ['taxIncluded','tax_included'],
-    ['saleCounty','sales_county'],
     ['salesTaxRate','sales_tax_rate'],
     ['salesTaxCollected','sales_tax_collected'],
     ['shippingCost','shipping_cost'],
@@ -963,15 +1081,6 @@ async function saveEntry(e) {
     }
 
     const isIncome = els.entryType.value === 'income';
-
-    if (isIncome && !els.saleCounty.value) {
-      return setMsg('Ohio county is required for income entries.', true);
-    }
-
-    if (isIncome && els.taxExemptSale?.value !== 'yes' && num(els.salesTaxRate.value) <= 0) {
-      return setMsg('Sales tax rate is required for taxable income entries.', true);
-    }
-
     const isMileage = !isIncome && isMileageCategory(category);
     const saleCosts =
       num(els.shippingCost.value) +
@@ -1004,7 +1113,17 @@ async function saveEntry(e) {
       ? defaultTax(els.entryType.value, category)
       : els.taxCategory.value;
 
+    const destinationCounty = isIncome ? normalizeCounty(els.destinationCounty?.value) : '';
+
+    if (isIncome && !destinationCounty) {
+      return setMsg('Select a destination county for income/sale entries.', true);
+    }
+
     const taxExemptSale = isIncome && els.taxExemptSale?.value === 'yes';
+
+    if (isIncome && !taxExemptSale && num(els.salesTaxRate.value) <= 0) {
+      return setMsg('Enter the sales tax rate for this income/sale entry so the filing report can audit rates by county.', true);
+    }
 
     if (taxExemptSale) {
       salesTaxCollected = 0;
@@ -1078,11 +1197,11 @@ async function saveEntry(e) {
       trip_from: isMileage ? els.tripFrom.value.trim() : '',
       trip_to: isMileage ? els.tripTo.value.trim() : '',
       round_trip: isMileage ? !!els.roundTripToggle.checked : false,
+      destination_county: destinationCounty,
       sales_tax_collected: salesTaxCollected,
       tax_exempt_sale: !!taxExemptSale,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
       tax_included: isIncome ? els.taxIncluded.value : 'no',
-      sales_county: isIncome ? els.saleCounty.value : '',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
       shipping_cost: num(els.shippingCost.value),
       material_cost: isIncome ? num(els.materialCost.value) : 0,
@@ -1254,7 +1373,7 @@ async function init() {
 
   els.entryDate.value = todayISO();
   els.taxYearFilter.value = currentYear();
-  els.monthlyTaxMonth.value = currentMonth();
+  populateFilingPeriodSelect();
   els.businessUsePercent.value = '100';
 
   if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
@@ -1312,7 +1431,7 @@ async function init() {
   els.entryAmount,
   els.taxIncluded,
   els.taxExemptSale,
-  els.saleCounty,
+  els.destinationCounty,
   els.salesTaxRate,
   els.businessUsePercent,
   els.milesDriven,
@@ -1359,7 +1478,8 @@ if (els.exportBtn) els.exportBtn.addEventListener('click', exportCSV);
 if (els.taxExportBtn) els.taxExportBtn.addEventListener('click', exportTaxReport);
 if (els.runTaxReportBtn) els.runTaxReportBtn.addEventListener('click', renderTaxReport);
 if (els.monthlyTaxReportBtn) els.monthlyTaxReportBtn.addEventListener('click', renderMonthlyTaxReport);
-if (els.monthlyTaxMonth) els.monthlyTaxMonth.addEventListener('input', renderMonthlyTaxReport);
+if (els.salesTaxFilingPeriod) els.salesTaxFilingPeriod.addEventListener('change', renderMonthlyTaxReport);
+if (els.salesTaxFilingExportBtn) els.salesTaxFilingExportBtn.addEventListener('click', exportSalesTaxFilingCSV);
 
 /* Important: do NOT wire saveBtn.onclick to requestSubmit().
    The button is already type="submit" in the HTML. */

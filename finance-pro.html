@@ -19,7 +19,7 @@
     .summary-card span{margin-bottom:8px;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}.summary-card strong{font-size:clamp(1.1rem,2.6vw,1.7rem);line-height:1.08}.summary-card small{margin-top:8px;color:var(--muted);font-size:.84rem;line-height:1.45}
     label{display:block;margin-bottom:6px;color:var(--muted);font-size:.88rem;font-weight:700;letter-spacing:.01em}.mask-password{-webkit-text-security:disc}input,select,textarea{width:100%;padding:12px 14px;border-radius:16px;outline:none;font:inherit;color:var(--text);background:rgba(255,255,255,.05);border:1px solid rgba(151,179,255,.18)}select option,select optgroup{color:#eef4ff;background:#0d1730}input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62);box-shadow:0 0 0 4px rgba(126,123,255,.12)}textarea{min-height:96px;resize:vertical}.filters input,.filters select{min-width:160px}
     .stat-note,.empty-state,.settings-card{color:var(--muted);background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.08)}.message{margin-top:14px;color:#cffff0;background:rgba(79,224,163,.1);border:1px solid rgba(79,224,163,.18)}.month-card{padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.month-card strong{margin-bottom:8px}.month-card div{color:var(--muted);font-size:.9rem;line-height:1.55}
-    .filing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.filing-line{padding:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.filing-line strong{display:block;margin-bottom:6px}.filing-line span{display:block;color:var(--muted);font-size:.84rem;line-height:1.45;margin-top:4px}.note{margin-top:12px;color:var(--muted);font-size:.9rem;line-height:1.6}
+    .filing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.filing-line{padding:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.filing-line strong{display:block;margin-bottom:6px}.filing-line span{display:block;color:var(--muted);font-size:.84rem;line-height:1.45;margin-top:4px}.note{margin-top:12px;color:var(--muted);font-size:.9rem;line-height:1.6}.filing-toolbar{align-items:flex-end}.filing-kicker{display:inline-flex;align-items:center;gap:8px;margin:8px 0 14px;padding:8px 12px;border-radius:999px;color:#cffff0;background:rgba(79,224,163,.1);border:1px solid rgba(79,224,163,.18);font-size:.84rem;font-weight:800}.filing-warning{margin-top:10px;padding:12px 14px;border-radius:16px;color:#ffe2af;background:rgba(255,195,100,.09);border:1px solid rgba(255,195,100,.22)}.filing-ok{margin-top:10px;padding:12px 14px;border-radius:16px;color:#cffff0;background:rgba(79,224,163,.1);border:1px solid rgba(79,224,163,.18)}.filing-table-wrap{width:100%;overflow-x:auto;margin-top:12px}.filing-table td,.filing-table th{white-space:nowrap}.rate-stack{line-height:1.45}.rate-stack small{display:block;color:var(--muted);font-size:.78rem}
     table{width:100%;margin-top:8px;border-collapse:collapse}th,td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top;font-size:.93rem}th{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}.type-pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.76rem;font-weight:800;letter-spacing:.04em}.type-income{color:#c9fff0;background:rgba(79,224,163,.13);border:1px solid rgba(79,224,163,.2)}.type-expense{color:#ffd7e1;background:rgba(255,110,145,.12);border:1px solid rgba(255,110,145,.2)}.footer-note{margin-top:18px;color:var(--muted);text-align:center;font-size:.84rem}
     @media (max-width:1020px){.hero,.grid,.summary-grid,.settings-grid{grid-template-columns:1fr}.monthly-grid,.filing-grid{grid-template-columns:1fr 1fr}.topbar{flex-direction:column;align-items:flex-start;border-radius:24px}.actions{width:100%;justify-content:stretch}.actions button{flex:1 1 auto}}
     @media (max-width:720px){.wrap{width:min(100% - 16px,1180px);padding-top:14px}.hero,.panel,.table-card,.summary-card,.login-card{border-radius:22px}.hero,.panel,.table-card,.login-card{padding:18px}.form-grid,.monthly-grid,.filing-grid,.settings-grid{grid-template-columns:1fr}}
@@ -276,9 +276,9 @@
               <option value="yes">Yes — Tax Exempt</option>
             </select>
           </div>
-          <div id="saleCountyWrap">
-            <label for="saleCounty">Ohio County</label>
-            <select id="saleCounty">
+          <div>
+            <label for="destinationCounty">Destination County</label>
+            <select id="destinationCounty">
               <option value="">Select county</option>
               <option value="Adams">Adams</option>
               <option value="Allen">Allen</option>
@@ -429,13 +429,17 @@
       <div id="monthlySummary" class="stat-note">No monthly data yet. Add entries to start building your summary.</div>
       <div class="monthly-grid" id="monthlyGrid"></div>
 
-      <h3 style="margin-top:18px;">Ohio Monthly Filing Report</h3>
-      <p class="sub">Pick a month to generate the exact numbers to type into OH|TAX eServices for a standard on-time Ohio UST-1 filing.</p>
-      <div class="filters" style="margin-top:0;">
-        <input id="monthlyTaxMonth" type="month">
-        <button class="btn" id="monthlyTaxReportBtn" type="button">Generate Monthly Filing Report</button>
+      <h3 style="margin-top:18px;">Ohio Sales Tax Filing</h3>
+      <p class="sub">Semiannual filing helper for OH|TAX. County totals are the main filing view; monthly totals stay available for reconciliation.</p>
+      <div class="filters filing-toolbar" style="margin-top:0;">
+        <div style="min-width:220px;">
+          <label for="salesTaxFilingPeriod">Filing Period</label>
+          <select id="salesTaxFilingPeriod"></select>
+        </div>
+        <button class="btn" id="monthlyTaxReportBtn" type="button">Refresh Filing Report</button>
+        <button class="btn-ghost" id="salesTaxFilingExportBtn" type="button">Export Filing CSV</button>
       </div>
-      <div id="monthlyTaxOutput" class="stat-note">No monthly filing report generated yet.</div>
+      <div id="monthlyTaxOutput" class="stat-note">No sales tax filing report generated yet.</div>
 
       <h3 style="margin-top:18px;">Tax Report</h3>
       <p class="sub">Use this to review year totals by tax bucket before export.</p>
@@ -469,7 +473,7 @@
   </div>
 
   <script src="olipoly-auth.js"></script>
-  <script type="module" src="finance-pro.js?v=15"></script>
+  <script type="module" src="finance-pro.js?v=14"></script>
 
   <script src="assets/erp-upgrade.js" defer></script>
 </body>
