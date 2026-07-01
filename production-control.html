@@ -1091,6 +1091,7 @@
           <option value="delivered">Delivered</option>
           <option value="completed">Completed</option>
           <option value="failed_scrap">Failed / Scrap</option>
+          <option value="canceled">Canceled</option>
           <option value="on_hold">On Hold</option>
           <option value="archived">Archived</option>
         </select></label>
@@ -1266,7 +1267,7 @@
     <div class="sort-manual-hint">Manual Priority mode is active. Drag cards up or down inside a lane. Switching to another sort changes the view only; your manual order is kept for when you return.</div>
     <div class="bulk-bar">
       <span class="mini-label">Bulk actions</span>
-      <select id="bulkStatus"><option value="">Move selected to...</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option></select>
+      <select id="bulkStatus"><option value="">Move selected to...</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option><option value="canceled">Canceled</option></select>
       <select id="bulkMachine"><option value="">Assign machine...</option><option value="P1S">P1S</option><option value="P2S">P2S</option><option value="A1">A1</option><option value="either">Either</option></select>
       <button class="ghost" id="applyBulkBtn" type="button">Apply to selected</button>
       <button class="ghost" id="clearSelectionBtn" type="button">Clear selection</button>
@@ -1466,11 +1467,12 @@
     delivered:'Delivered',
     completed:'Completed',
     failed_scrap:'Failed / Scrap',
+    canceled:'Canceled',
     on_hold:'On Hold',
     archived:'Archived'
   };
 
-  const CLOSED = ['completed','failed_scrap','archived'];
+  const CLOSED = ['completed','failed_scrap','canceled','archived'];
   const DELIVERY = ['packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
   const PRINT_WORK_STATUSES = ['idea','awaiting_approval','ready_to_print','queued','printing','on_hold'];
   const RECOMMENDABLE_STATUSES = ['ready_to_print','queued'];
@@ -2318,6 +2320,40 @@
       render();
       toast(`Moved to ${STATUS[status] || status}.`);
     }catch(err){ alert(`Could not update status:\n\n${err.message || err}`); }
+  }
+
+  async function cancelJob(id){
+    const j = state.jobs.find(x=>x.id===id);
+    if(!j) return;
+    if(CLOSED.includes(j.production_status)) return toast('This job is already closed/canceled.');
+    const reason = prompt(`Cancel "${j.job_title}"?\n\nReason (optional):`, j.cancellation_reason || '');
+    if(reason === null) return;
+    const now = new Date();
+    const reasonText = String(reason || '').trim();
+    const updated = {
+      ...j,
+      production_status:'canceled',
+      cancellation_reason:reasonText || null,
+      canceled_at:now.toISOString(),
+      updated_at:now.toISOString(),
+      print_started_at:j.print_started_at || null,
+      estimated_finish_at:null,
+      material_reservations:[]
+    };
+    if(reasonText && !String(updated.close_note || '').toLowerCase().includes('canceled')){
+      updated.close_note = `[Canceled] ${reasonText}`;
+    }
+    try{
+      await applyReservationDelta(j, updated);
+      await cloudSaveJob(updated);
+      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
+      state.selectedIds.delete(id);
+      localWrite(LS_JOBS,state.jobs);
+      render();
+      toast('Job canceled. Record kept and reserved material released.');
+    }catch(err){
+      alert(`Could not cancel job:\n\n${err.message || err}`);
+    }
   }
 
   async function deleteJob(id){
@@ -4094,6 +4130,7 @@
     }
     if(!isClosed){
       actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
+      actions += `<button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`;
     }
     actions += `<button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>`;
     actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
@@ -4149,7 +4186,7 @@
       return `<article class="detail-card" style="border-left:6px solid ${t.color}">
         <div class="detail-head">
           <div><h3>${t.icon} ${esc(j.job_title)}</h3><div class="chips"><span class="chip type" style="--type-bg:${t.bg};--type-text:${t.text}">${esc(t.label)}</span><span class="chip">${esc(STATUS[j.production_status]||j.production_status)}</span>${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}</div></div>
-          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button>${!CLOSED.includes(j.production_status) && j.production_status!=='printing'?`<button class="mini-btn" data-start-print="${j.id}" type="button">Start Print</button>`:''}${!CLOSED.includes(j.production_status)?`<button class="mini-btn danger-btn" data-fail-scrap="${j.id}" type="button">Failed / Scrap</button>`:''}<button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
+          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button>${!CLOSED.includes(j.production_status) && j.production_status!=='printing'?`<button class="mini-btn" data-start-print="${j.id}" type="button">Start Print</button>`:''}${!CLOSED.includes(j.production_status)?`<button class="mini-btn danger-btn" data-fail-scrap="${j.id}" type="button">Failed / Scrap</button><button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`:''}<button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
         </div>
         <div class="detail-grid">
           <div class="detail-item"><span>Customer/Purpose</span><strong>${esc(j.customer_name || '—')}</strong></div>
@@ -4179,7 +4216,7 @@
         ${readyToCloseHtml(j)}
         ${recipeMiniHtml(j) || (j.filament_breakdown ? `<div class="notes"><strong>Filament:</strong><br>${esc(j.filament_breakdown)}</div>` : '')}
         ${supplyUsageMiniHtml(j)}
-        ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}
+        ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}${j.cancellation_reason ? `<div class="notes" style="margin-top:8px"><strong>Cancellation reason:</strong><br>${esc(j.cancellation_reason)}</div>` : ''}
         <div class="job-actions">
           <button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>
           <button class="mini-btn" data-status="${j.id}|printing" type="button">Print</button>
@@ -4188,6 +4225,7 @@
           <button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Delivery</button>
           <button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>
           <button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>
+          <button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>
         </div>
       </article>`;
     }).join('') : `<div class="empty">No active jobs match the filters.</div>`;
@@ -4199,7 +4237,7 @@
       .filter(j=>CLOSED.includes(j.production_status) || j.closed_at)
       .filter(j=>{
         if(!q) return true;
-        const hay = [j.job_title,j.customer_name,j.actual_machine,j.machine_preference,j.primary_material,j.primary_color,j.other_colors,j.actual_filament_breakdown,j.filament_breakdown,j.close_note,j.order_number,j.quote_number].join(' ').toLowerCase();
+        const hay = [j.job_title,j.customer_name,j.actual_machine,j.machine_preference,j.primary_material,j.primary_color,j.other_colors,j.actual_filament_breakdown,j.filament_breakdown,j.close_note,j.cancellation_reason,j.order_number,j.quote_number].join(' ').toLowerCase();
         return hay.includes(q);
       })
       .sort((a,b)=>String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at)));
@@ -4652,8 +4690,10 @@
     if(close) openClose(close);
     const startPrint = e.target.closest('[data-start-print]')?.dataset.startPrint;
     const failScrap = e.target.closest('[data-fail-scrap]')?.dataset.failScrap;
+    const cancel = e.target.closest('[data-cancel-job]')?.dataset.cancelJob;
     if(startPrint) setStatus(startPrint,'printing');
     if(failScrap){ state.closingId = failScrap; openClose(failScrap); $('closeStatus').value='failed_scrap'; }
+    if(cancel) cancelJob(cancel);
     if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
     if(markPm) markPmDone(markPm);
     if(savePm) savePmFromCard(savePm);
