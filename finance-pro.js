@@ -28,7 +28,7 @@ const standardOhioDueDate = ym => {
 const ids = [
   'startupTotal','loginSection','appSection','authMessage','loginBtn','signupBtn','logoutBtn','refreshBtn','exportBtn','taxExportBtn',
   'emailInput','passwordInput','showPasswordToggle','entryForm','formHeading','saveBtn','cancelEditBtn','formMessage','entryTypeHint',
-  'entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','taxExemptSale','salesTaxRate','salesTaxCollected',
+  'entryType','entryDate','entryCategory','taxCategory','entryAmount','shippingCharged','taxIncluded','taxExemptSale','saleCounty','saleCountyWrap','salesTaxRate','salesTaxCollected',
   'netRevenuePreview','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost','entryTitle','entryNotes',
   'productRevenue','shippingRevenue','salesTaxCollectedTotal','totalCosts','netProfit','entryCount','monthlySummary','monthlyGrid',
   'tableWrap','typeFilter','monthFilter','searchFilter','clearFiltersBtn','taxYearFilter','runTaxReportBtn','taxReportWrap',
@@ -194,6 +194,20 @@ function updateTaxPreview() {
   }
 }
 
+function updateIncomeTaxFields() {
+  const isIncome = els.entryType?.value === 'income';
+  const taxableIncome = isIncome && els.taxExemptSale?.value !== 'yes';
+
+  els.saleCountyWrap?.classList.toggle('hidden', !isIncome);
+  if (els.saleCounty) els.saleCounty.required = isIncome;
+  if (els.salesTaxRate) els.salesTaxRate.required = taxableIncome;
+
+  if (!isIncome) {
+    if (els.saleCounty) els.saleCounty.value = '';
+    if (els.salesTaxRate) els.salesTaxRate.value = '';
+  }
+}
+
 function updateExpenseHelpers() {
   const isIncome = els.entryType.value === 'income';
   const isMileage = !isIncome && isMileageCategory(els.entryCategory.value);
@@ -225,13 +239,14 @@ function updateExpenseHelpers() {
 }
 
 function updateEntryTypeHint() {
+  updateIncomeTaxFields();
   els.capexWrap.classList.toggle('hidden', els.entryCategory.value !== 'Equipment');
   updateExpenseHelpers();
 
   if (els.entryType.value === 'income') {
     setPanel(
       els.entryTypeHint,
-      'Income entry: if Tax Exempt Sale = Yes, sales tax collected stays $0 and the full amount is treated as net revenue. Otherwise, tax-inclusive mode backs tax out automatically.',
+      'Income entry: pick the Ohio county and enter the sales tax rate you used. If Tax Exempt Sale = Yes, sales tax collected stays $0 and the full amount is treated as net revenue. Otherwise, tax-inclusive mode backs tax out automatically.',
       false,
       'amber'
     );
@@ -283,7 +298,7 @@ function resetForm() {
   els.mileageRate.value = settings.defaultMileageRate ? settings.defaultMileageRate.toFixed(4) : '';
 
   [
-    'shippingCharged','salesTaxRate','salesTaxCollected','netRevenuePreview',
+    'shippingCharged','saleCounty','salesTaxRate','salesTaxCollected','netRevenuePreview',
     'shippingCost','materialCost','packagingCost','laborCost','otherDirectCost',
     'milesDriven','vendorName','paymentMethod','receiptLink','tripPurpose','tripFrom','tripTo'
   ].forEach(k => { if (els[k]) els[k].value = ''; });
@@ -383,6 +398,8 @@ function renderTable(list) {
         <th>Type</th>
         <th>Title</th>
         <th>Category</th>
+        <th>County</th>
+        <th>Tax Rate</th>
         <th>Revenue / Expense</th>
         <th>Tax</th>
         <th>Ship In</th>
@@ -407,6 +424,8 @@ function renderTable(list) {
             ${e.receipt_link ? `<div style="margin-top:6px;font-size:.86rem;"><a href="${escapeHtml(e.receipt_link)}" target="_blank" rel="noopener noreferrer">Receipt</a></div>` : ''}
           </td>
           <td>${escapeHtml(e.category)}</td>
+          <td>${e.type === 'income' ? escapeHtml(e.sales_county || '') : ''}</td>
+          <td>${e.type === 'income' && num(e.sales_tax_rate) ? `${num(e.sales_tax_rate).toFixed(2)}%` : ''}</td>
           <td>${money(e.amount)}</td>
           <td>${money(e.sales_tax_collected)}</td>
           <td>${money(e.shipping_charged)}</td>
@@ -660,7 +679,7 @@ function exportCSV() {
   downloadCSV(`olipoly-financial-export-${todayISO()}.csv`, [
     [
       'Date','Type','Category','Tax Category','Deductible / Revenue Amount','Original Amount',
-      'Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost',
+      'Sales Tax Collected','Shipping Charged','Tax Included','County','Sales Tax Rate','Shipping Cost',
       'Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Vendor','Payment Method',
       'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Trip Purpose','Trip From','Trip To','Round Trip','Title','Notes'
     ],
@@ -674,6 +693,7 @@ function exportCSV() {
       num(e.sales_tax_collected).toFixed(2),
       num(e.shipping_charged).toFixed(2),
       e.tax_included || 'no',
+      e.sales_county || '',
       num(e.sales_tax_rate).toFixed(2),
       num(e.shipping_cost).toFixed(2),
       num(e.material_cost).toFixed(2),
@@ -849,6 +869,7 @@ function startEdit(id) {
     ['entryDate','entry_date'],
     ['shippingCharged','shipping_charged'],
     ['taxIncluded','tax_included'],
+    ['saleCounty','sales_county'],
     ['salesTaxRate','sales_tax_rate'],
     ['salesTaxCollected','sales_tax_collected'],
     ['shippingCost','shipping_cost'],
@@ -942,6 +963,15 @@ async function saveEntry(e) {
     }
 
     const isIncome = els.entryType.value === 'income';
+
+    if (isIncome && !els.saleCounty.value) {
+      return setMsg('Ohio county is required for income entries.', true);
+    }
+
+    if (isIncome && els.taxExemptSale?.value !== 'yes' && num(els.salesTaxRate.value) <= 0) {
+      return setMsg('Sales tax rate is required for taxable income entries.', true);
+    }
+
     const isMileage = !isIncome && isMileageCategory(category);
     const saleCosts =
       num(els.shippingCost.value) +
@@ -1052,6 +1082,7 @@ async function saveEntry(e) {
       tax_exempt_sale: !!taxExemptSale,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
       tax_included: isIncome ? els.taxIncluded.value : 'no',
+      sales_county: isIncome ? els.saleCounty.value : '',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
       shipping_cost: num(els.shippingCost.value),
       material_cost: isIncome ? num(els.materialCost.value) : 0,
@@ -1280,6 +1311,8 @@ async function init() {
   els.capexToggle,
   els.entryAmount,
   els.taxIncluded,
+  els.taxExemptSale,
+  els.saleCounty,
   els.salesTaxRate,
   els.businessUsePercent,
   els.milesDriven,
