@@ -119,6 +119,20 @@ const defaultTax = (type, cat) => type === 'income'
 const directCost = e => num(e.material_cost) + num(e.packaging_cost) + num(e.labor_cost) + num(e.other_direct_cost);
 const visibleCost = e => (e.type === 'expense' ? num(e.amount) : 0) + num(e.shipping_cost) + directCost(e);
 const isMileageCategory = category => category === 'Vehicle / Delivery Mileage';
+const incomeSaleAmount = e => {
+  if (!e || e.type !== 'income') return 0;
+  const amount = num(e.amount);
+  // Legacy tax-inclusive entries saved the sale as net revenue and the collected tax separately.
+  // For your current OliPoly workflow, the Ohio filing/tables need the customer-facing taxable sale amount.
+  return e.tax_included === 'yes' ? +(amount + num(e.sales_tax_collected)).toFixed(2) : amount;
+};
+const computedSalesTax = e => {
+  if (!e || e.type !== 'income' || e.tax_exempt_sale) return 0;
+  const taxable = incomeSaleAmount(e);
+  const rate = num(e.sales_tax_rate);
+  if (taxable > 0 && rate > 0) return +((taxable * rate) / 100).toFixed(2);
+  return num(e.sales_tax_collected);
+};
 
 function computeTaxExclusive(total, rate) {
   if (!rate) return { tax: 0, net: total };
@@ -209,27 +223,25 @@ function saveSettings() {
 }
 
 function updateTaxPreview() {
-  const total = num(els.entryAmount.value);
+  const saleAmount = num(els.entryAmount.value);
   const rate = num(els.salesTaxRate.value);
   if (els.entryType.value !== 'income') {
     els.salesTaxCollected.value = '';
     els.netRevenuePreview.value = '';
+    if (els.taxIncluded) els.taxIncluded.value = 'no';
     return;
   }
+  if (els.taxIncluded) els.taxIncluded.value = 'no';
   if (els.taxExemptSale?.value === 'yes') {
     els.salesTaxCollected.value = '';
-    els.netRevenuePreview.value = total ? total.toFixed(2) : '';
+    els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
     return;
   }
-  if (els.taxIncluded.value === 'yes') {
-    const { tax, net } = computeTaxExclusive(total, rate);
-    els.salesTaxCollected.value = tax ? tax.toFixed(2) : '';
-    els.netRevenuePreview.value = net ? net.toFixed(2) : '';
-  } else {
-    els.salesTaxCollected.value = '';
-    els.netRevenuePreview.value = total ? total.toFixed(2) : '';
-  }
+  const tax = saleAmount && rate ? +((saleAmount * rate) / 100).toFixed(2) : 0;
+  els.salesTaxCollected.value = tax ? tax.toFixed(2) : '';
+  els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
 }
+
 
 function updateExpenseHelpers() {
   const isIncome = els.entryType.value === 'income';
@@ -268,7 +280,7 @@ function updateEntryTypeHint() {
   if (els.entryType.value === 'income') {
     setPanel(
       els.entryTypeHint,
-      'Income entry: if Tax Exempt Sale = Yes, sales tax collected stays $0 and the full amount is treated as net revenue. Otherwise, tax-inclusive mode backs tax out automatically.',
+      'Income entry: enter the taxable sale amount before tax. Sales tax collected is calculated as sale amount × tax rate. Tax-exempt sales keep tax at $0.',
       false,
       'amber'
     );
@@ -364,9 +376,9 @@ function updateSummary(list) {
 
   list.forEach(e => {
     if (e.type === 'income') {
-      pr += num(e.amount);
+      pr += incomeSaleAmount(e);
       sr += num(e.shipping_charged);
-      st += num(e.sales_tax_collected);
+      st += computedSalesTax(e);
     }
     tc += visibleCost(e);
   });
@@ -392,8 +404,8 @@ function renderMonthly(list) {
     const k = e.entry_date.slice(0, 7);
     months[k] ??= { r: 0, t: 0, c: 0, o: 0 };
     if (e.type === 'income') {
-      months[k].r += num(e.amount) + num(e.shipping_charged);
-      months[k].t += num(e.sales_tax_collected);
+      months[k].r += incomeSaleAmount(e) + num(e.shipping_charged);
+      months[k].t += computedSalesTax(e);
       months[k].c += directCost(e);
       months[k].o += num(e.shipping_cost);
     } else {
@@ -448,10 +460,10 @@ function renderTable(list) {
             ${e.receipt_link ? `<div style="margin-top:6px;font-size:.86rem;"><a href="${escapeHtml(e.receipt_link)}" target="_blank" rel="noopener noreferrer">Receipt</a></div>` : ''}
           </td>
           <td>${escapeHtml(e.category)}</td>
-          <td>${money(e.amount)}</td>
+          <td>${money(e.type === 'income' ? incomeSaleAmount(e) : e.amount)}</td>
           <td>${e.type === 'income' ? escapeHtml(e.destination_county || '—') : '—'}</td>
           <td>${e.type === 'income' ? formatRate(e.sales_tax_rate) : '—'}</td>
-          <td>${money(e.sales_tax_collected)}</td>
+          <td>${money(e.type === 'income' ? computedSalesTax(e) : e.sales_tax_collected)}</td>
           <td>${money(e.shipping_charged)}</td>
           <td>${money(e.shipping_cost)}</td>
           <td>${money(directCost(e))}</td>
@@ -489,9 +501,9 @@ function taxBuckets(year) {
     .filter(e => !year || e.entry_date.startsWith(String(year)))
     .forEach(e => {
       if (e.type === 'income') {
-        out.income_sales += num(e.amount);
+        out.income_sales += incomeSaleAmount(e);
         out.income_shipping += num(e.shipping_charged);
-        out.sales_tax_collected += num(e.sales_tax_collected);
+        out.sales_tax_collected += computedSalesTax(e);
       } else {
         const k = e.tax_category || defaultTax(e.type, e.category);
         out[k] = (out[k] || 0) + num(e.amount) + num(e.shipping_cost);
@@ -558,8 +570,8 @@ function salesTaxFilingSummary(period) {
 
   included.forEach(e => {
     const county = normalizeCounty(e.destination_county);
-    const gross = num(e.amount) + num(e.shipping_charged);
-    const tax = num(e.sales_tax_collected);
+    const gross = incomeSaleAmount(e) + num(e.shipping_charged);
+    const tax = computedSalesTax(e);
     const rate = num(e.sales_tax_rate);
     const exempt = !!e.tax_exempt_sale;
     const taxable = exempt ? 0 : gross;
@@ -721,14 +733,14 @@ function getHubFinanceSummary() {
 
   const revenueOf = list => list.reduce((sum, e) => {
     if (e.type !== 'income') return sum;
-    return sum + num(e.amount) + num(e.shipping_charged);
+    return sum + incomeSaleAmount(e) + num(e.shipping_charged);
   }, 0);
 
   const expenseOf = list => list.reduce((sum, e) => sum + visibleCost(e), 0);
 
   const taxCollected = monthEntries.reduce((sum, e) => {
     if (e.type !== 'income') return sum;
-    return sum + num(e.sales_tax_collected);
+    return sum + computedSalesTax(e);
   }, 0);
 
   const latestRateEntry = [...monthEntries]
@@ -793,10 +805,10 @@ function exportCSV() {
       e.type,
       e.category,
       e.tax_category || defaultTax(e.type, e.category),
-      num(e.amount).toFixed(2),
+      num(e.type === 'income' ? incomeSaleAmount(e) : e.amount).toFixed(2),
       num(e.original_amount || e.amount).toFixed(2),
       e.destination_county || '',
-      num(e.sales_tax_collected).toFixed(2),
+      num(e.type === 'income' ? computedSalesTax(e) : e.sales_tax_collected).toFixed(2),
       num(e.shipping_charged).toFixed(2),
       e.tax_included || 'no',
       num(e.sales_tax_rate).toFixed(2),
@@ -1011,10 +1023,10 @@ function startEdit(id) {
   if (els.roundTripToggle) els.roundTripToggle.checked = !!e.round_trip;
 
   els.entryAmount.value = e.type === 'income'
-    ? ((num(e.amount) + num(e.sales_tax_collected)) || '')
+    ? (incomeSaleAmount(e) || '')
     : (num(e.original_amount) || num(e.amount) || '');
 
-  els.netRevenuePreview.value = e.amount ?? '';
+  els.netRevenuePreview.value = e.type === 'income' ? (incomeSaleAmount(e) || '') : (e.amount ?? '');
   els.entryCategory.value = isCapex ? 'Equipment' : (BASE_CATEGORIES.includes(e.category) ? e.category : 'Custom');
   els.capexToggle.checked = isCapex;
   els.taxCategory.value = e.tax_category || 'auto';
@@ -1129,13 +1141,8 @@ async function saveEntry(e) {
       salesTaxCollected = 0;
       amount = originalAmount;
       if (!notes.toLowerCase().includes('tax exempt')) notes = `[Tax Exempt Sale] ${notes}`.trim();
-    } else if (isIncome && els.taxIncluded.value === 'yes') {
-      if (num(els.salesTaxRate.value) <= 0) {
-        return setMsg('Enter a sales tax rate when tax-inclusive mode is on.', true);
-      }
-      const x = computeTaxExclusive(amount, num(els.salesTaxRate.value));
-      salesTaxCollected = x.tax;
-      amount = x.net;
+    } else if (isIncome) {
+      salesTaxCollected = +((amount * num(els.salesTaxRate.value)) / 100).toFixed(2);
     }
 
     if (!isIncome) {
@@ -1201,7 +1208,7 @@ async function saveEntry(e) {
       sales_tax_collected: salesTaxCollected,
       tax_exempt_sale: !!taxExemptSale,
       shipping_charged: isIncome ? num(els.shippingCharged.value) : 0,
-      tax_included: isIncome ? els.taxIncluded.value : 'no',
+      tax_included: 'no',
       sales_tax_rate: isIncome ? num(els.salesTaxRate.value) : 0,
       shipping_cost: num(els.shippingCost.value),
       material_cost: isIncome ? num(els.materialCost.value) : 0,
@@ -1524,7 +1531,6 @@ init();
   function sync(){
     const taxExempt = $("taxExemptSale")?.value === "yes";
     if (taxExempt) {
-      if ($("taxIncluded")) $("taxIncluded").value = "no";
       if ($("salesTaxRate")) $("salesTaxRate").value = "0";
       if ($("salesTaxCollected")) $("salesTaxCollected").value = "";
       if ($("netRevenuePreview") && $("entryAmount")) $("netRevenuePreview").value = $("entryAmount").value || "";
@@ -1532,7 +1538,7 @@ init();
   }
   function bind(){
     ensureField();
-    ["taxExemptSale","entryAmount","taxIncluded","salesTaxRate"].forEach(id => {
+    ["taxExemptSale","entryAmount","salesTaxRate"].forEach(id => {
       const el = $(id);
       if (!el || el.dataset.taxExemptSaleBound === "true") return;
       el.dataset.taxExemptSaleBound = "true";

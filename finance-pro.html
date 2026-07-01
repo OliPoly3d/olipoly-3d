@@ -36,7 +36,7 @@
         <div class="brand-icon">📊</div>
         <div class="brand-copy">
           <h1>OliPoly 3D Financial Tracker Pro</h1>
-          <p>Tax-inclusive sale support + online storage with Supabase</p>
+          <p>County sales tax filing support + online storage with Supabase</p>
         </div>
       </div>
       <div class="actions">
@@ -78,12 +78,12 @@
 <section id="appSection" class="hidden">
   <div class="hero">
     <div>
-      <h2>Track sales, tax collected, real costs, shipping, mileage, and monthly profit.</h2>
-      <p>Income entries can treat your amount as tax-inclusive. Expense entries can now capture vendor details, business-use percentages, receipt links, mileage-based deductions for delivery and supply runs, plus home office helper defaults.</p>
+      <h2>Track pre-tax sales, tax collected, real costs, shipping, mileage, and monthly profit.</h2>
+      <p>Income entries use the sale amount before tax, then calculate sales tax from the rate you enter. Expense entries can capture vendor details, business-use percentages, receipt links, mileage-based deductions for delivery and supply runs, plus home office helper defaults.</p>
     </div>
     <div class="hero-note">
       <strong>Best use for your workflow</strong>
-      <span>For a tax-inclusive customer total, enter the full paid amount, turn on tax-inclusive mode, and enter the tax rate. For mileage, switch to an expense entry and choose Vehicle / Delivery Mileage to auto-calculate the deductible amount from miles and rate.</span>
+      <span>For income, enter the taxable sale amount before tax, choose the destination county, and enter the tax rate. For mileage, switch to an expense entry and choose Vehicle / Delivery Mileage to auto-calculate the deductible amount from miles and rate.</span>
     </div>
   </div>
 
@@ -195,7 +195,7 @@
           </div>
 
           <div>
-            <label for="entryAmount">Amount Entered</label>
+            <label for="entryAmount">Sale Amount Before Tax / Expense Amount</label>
             <input id="entryAmount" type="number" min="0" step="0.01" placeholder="0.00" required>
           </div>
           <div>
@@ -262,11 +262,10 @@
             <label for="shippingCharged">Shipping Charged to Customer</label>
             <input id="shippingCharged" type="number" min="0" step="0.01" placeholder="0.00">
           </div>
-          <div>
-            <label for="taxIncluded">Amount Includes Sales Tax?</label>
+          <div class="hidden">
+            <label for="taxIncluded">Legacy Tax-Inclusive Mode</label>
             <select id="taxIncluded">
               <option value="no">No</option>
-              <option value="yes">Yes</option>
             </select>
           </div>
           <div>
@@ -375,11 +374,11 @@
             <input id="salesTaxRate" type="number" min="0" step="0.01" placeholder="0.00">
           </div>
           <div>
-            <label for="salesTaxCollected">Sales Tax Collected</label>
+            <label for="salesTaxCollected">Sales Tax Collected (Auto)</label>
             <input id="salesTaxCollected" type="number" step="0.01" readonly>
           </div>
           <div>
-            <label for="netRevenuePreview">Net Revenue Preview</label>
+            <label for="netRevenuePreview">Taxable Sale Preview</label>
             <input id="netRevenuePreview" type="number" step="0.01" readonly>
           </div>
           <div>
