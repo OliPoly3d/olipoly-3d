@@ -2179,15 +2179,23 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       const orderTotal = num(payload.order_total);
       const productOverride = num($('proProductSubtotal')?.value);
       const shippingAmount = num($('proShippingAmount')?.value);
-      const hasProfessionalSplit = productOverride > 0 || shippingAmount > 0;
-      const grossTotal = hasProfessionalSplit ? (productOverride + shippingAmount) : orderTotal;
+      const hasProductOverride = productOverride > 0;
+      const hasProfessionalSplit = hasProductOverride || shippingAmount > 0;
+
+      // Professional invoice fields are optional. If a product subtotal is entered,
+      // trust it. If only freight/shipping is entered, keep the saved order total
+      // and split freight out of that total instead of replacing product revenue
+      // with $0. Example: $900 total + $75 freight => $825 sale + $75 freight.
+      const grossTotal = hasProductOverride
+        ? +(productOverride + shippingAmount).toFixed(2)
+        : orderTotal;
 
       if (payload.tax_exempt) {
         return {
           mode: 'separate_entries',
           defaultTaxRate: 0,
           grossTotal,
-          productRevenue: Math.max(0, grossTotal - shippingAmount),
+          productRevenue: +Math.max(0, grossTotal - shippingAmount).toFixed(2),
           shippingRevenue: shippingAmount,
           tax: 0,
           taxExempt: true,
@@ -2200,11 +2208,12 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       //   1) Product sale entry
       //   2) Shipping / freight entry
       //   3) Sales-tax-collected entry
-      // If a professional invoice shipping amount is filled in, it is separated first;
-      // the remaining customer-facing total is treated as tax-inclusive revenue.
-      const netBeforeTax = +(grossTotal / (1 + defaultTaxRate / 100)).toFixed(2);
-      const tax = +(grossTotal - netBeforeTax).toFixed(2);
-      const productRevenue = +Math.max(0, netBeforeTax - shippingAmount).toFixed(2);
+      // Shipping / freight is separated first. The remaining customer-facing product
+      // total is treated as tax-inclusive revenue.
+      const taxableProductTotal = +Math.max(0, grossTotal - shippingAmount).toFixed(2);
+      const netBeforeTax = +(taxableProductTotal / (1 + defaultTaxRate / 100)).toFixed(2);
+      const tax = +(taxableProductTotal - netBeforeTax).toFixed(2);
+      const productRevenue = +Math.max(0, netBeforeTax).toFixed(2);
 
       return {
         mode: 'separate_entries',
