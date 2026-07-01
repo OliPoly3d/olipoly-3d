@@ -50,6 +50,7 @@ const BASE_CATEGORIES = [
 let supabase;
 let currentUser = null;
 let entries = [];
+let entriesFetchInFlight = null;
 let editingId = null;
 let customCategoryValue = '';
 let authBusy = false;
