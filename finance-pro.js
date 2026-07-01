@@ -50,10 +50,19 @@ const BASE_CATEGORIES = [
 let supabase;
 let currentUser = null;
 let entries = [];
-let entriesFetchInFlight = null;
 let editingId = null;
 let customCategoryValue = '';
 let authBusy = false;
+
+// Finance Pro must only create one Supabase GoTrue client per page load.
+// Recreating the client from auth-change events causes duplicate GoTrue clients,
+// repeated /auth/v1/user calls, repeated financial_entries reads, and UI churn.
+let financeClientCreated = false;
+let entriesFetchPromise = null;
+let authStateListenerInstalled = false;
+let sharedAuthListenerInstalled = false;
+let sharedAuthRefreshPromise = null;
+let ignoreNextSharedAuthEventUntil = 0;
 let settings = {
   defaultMileageRate: 0,
   officeSqft: 0,
@@ -726,61 +735,69 @@ function getSharedAuthToken() {
 }
 
 function createFinanceClient() {
-  const token = getSharedAuthToken();
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  if (supabase) return supabase;
+
+  financeClientCreated = true;
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true
-    },
-    global: {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
     }
   });
+
+  return supabase;
+}
+
+function writeSharedSessionFromFinance(session) {
+  if (!session || !window.OliPolyAuth?.writeSession) return;
+  ignoreNextSharedAuthEventUntil = Date.now() + 750;
+  window.OliPolyAuth.writeSession(session);
 }
 
 async function adoptSharedAuthSession() {
-  // Important: do NOT call supabase.auth.setSession() here.
-  // Finance Pro already sends the shared token through the client headers.
-  // Calling setSession from startup/auth-change handlers can trigger a loop:
-  // setSession -> onAuthStateChange -> OliPolyAuth.writeSession -> olipoly-auth-changed -> setSession...
-  if (!window.OliPolyAuth) return null;
+  if (!supabase?.auth || !window.OliPolyAuth) return null;
 
   const shared = await window.OliPolyAuth.ensure?.();
   if (!shared?.access_token) return null;
 
-  if (shared.user) return { access_token: shared.access_token, user: shared.user };
+  const { data: existingData } = await supabase.auth.getSession();
+  const existing = existingData?.session || null;
+  if (existing?.access_token === shared.access_token && existing?.user) return existing;
 
-  const user = await window.OliPolyAuth.getUser?.();
+  if (shared.refresh_token) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: shared.access_token,
+      refresh_token: shared.refresh_token
+    });
+    if (!error && data?.session) return data.session;
+    console.warn('Finance Pro could not adopt shared Supabase session:', error);
+  }
+
+  const user = shared.user || await window.OliPolyAuth.getUser?.();
   return user ? { access_token: shared.access_token, user } : null;
 }
 
 async function resolveCurrentUser() {
-  // Prefer Supabase's own session when this page created it through login/signup.
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const existingToken = window.OliPolyAuth?.getToken?.();
-      if (window.OliPolyAuth?.writeSession && session.access_token && session.access_token !== existingToken) {
-        window.OliPolyAuth.writeSession(session);
-      }
-      return session.user;
-    }
-  } catch (err) {
-    console.warn('Finance Pro session lookup failed:', err);
+  const adopted = await adoptSharedAuthSession();
+  if (adopted?.user) return adopted.user;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    window.OliPolyAuth?.writeSession?.(session);
+    return session.user;
   }
 
-  // Fall back to the shared Orders/Admin bridge token without installing it into
-  // Supabase auth again. The finance client was created with this token header.
-  const adopted = await adoptSharedAuthSession();
-  return adopted?.user || null;
+  const bridgeUser = await window.OliPolyAuth?.getUser?.();
+  return bridgeUser || null;
 }
 
 async function fetchEntries() {
   if (!supabase || !currentUser) return;
-  if (entriesFetchInFlight) return entriesFetchInFlight;
 
-  entriesFetchInFlight = (async () => {
+  if (entriesFetchPromise) return entriesFetchPromise;
+
+  entriesFetchPromise = (async () => {
     try {
       const { data, error } = await withTimeout(
         supabase
@@ -804,11 +821,11 @@ async function fetchEntries() {
     } catch (err) {
       setAuthMsg(`Could not load entries: ${err?.message || err}`, true);
     } finally {
-      entriesFetchInFlight = null;
+      entriesFetchPromise = null;
     }
   })();
 
-  return entriesFetchInFlight;
+  return entriesFetchPromise;
 }
 
 function startEdit(id) {
@@ -1127,7 +1144,7 @@ async function login() {
     hide(els.authMessage);
 
     const { data } = await supabase.auth.getSession();
-    if (window.OliPolyAuth && data?.session) window.OliPolyAuth.writeSession(data.session);
+    if (data?.session) writeSharedSessionFromFinance(data.session);
     currentUser = data?.session?.user || null;
     setUI(!!currentUser);
 
@@ -1149,7 +1166,7 @@ async function signup() {
       email: els.emailInput.value.trim(),
       password: els.passwordInput.value
     });
-    if (window.OliPolyAuth && data?.session) window.OliPolyAuth.writeSession(data.session);
+    if (data?.session) writeSharedSessionFromFinance(data.session);
 
     if (error) return setAuthMsg(`Signup failed: ${error.message}`, true);
 
@@ -1175,6 +1192,30 @@ async function logout() {
   setAuthMsg('Logged out.');
 }
 
+async function refreshFinanceAuthFromSharedSession() {
+  if (sharedAuthRefreshPromise) return sharedAuthRefreshPromise;
+
+  sharedAuthRefreshPromise = (async () => {
+    try {
+      currentUser = await resolveCurrentUser();
+      setUI(!!currentUser);
+      if (currentUser) {
+        hide(els.authMessage);
+        await fetchEntries();
+      } else {
+        entries = [];
+        renderAll();
+      }
+    } catch (err) {
+      console.warn('Finance Pro shared auth refresh failed:', err);
+    } finally {
+      sharedAuthRefreshPromise = null;
+    }
+  })();
+
+  return sharedAuthRefreshPromise;
+}
+
 async function init() {
   hide(els.authMessage);
   loadSettings();
@@ -1191,7 +1232,7 @@ async function init() {
 
   updateEntryTypeHint();
 
-  supabase = createFinanceClient();
+  createFinanceClient();
 
   try {
     currentUser = await resolveCurrentUser();
@@ -1207,49 +1248,28 @@ async function init() {
 
   if (currentUser) await fetchEntries();
 
-  if (!authListenerInstalled && supabase?.auth) {
-    authListenerInstalled = true;
-
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'INITIAL_SESSION') return;
-
-      const nextUser = session?.user || null;
-      const tokenChanged = !!(session?.access_token && session.access_token !== window.OliPolyAuth?.getToken?.());
-      if (session && tokenChanged) window.OliPolyAuth?.writeSession?.(session);
-
-      const userChanged = (nextUser?.id || null) !== (currentUser?.id || null);
-      currentUser = nextUser;
+  if (!authStateListenerInstalled) {
+    authStateListenerInstalled = true;
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) writeSharedSessionFromFinance(session);
+      currentUser = session?.user || null;
       setUI(!!currentUser);
 
-      if (currentUser && userChanged) {
+      if (currentUser) {
         hide(els.authMessage);
         await fetchEntries();
-      } else if (!currentUser) {
+      } else {
         entries = [];
         renderAll();
       }
     });
+  }
 
-    window.addEventListener('olipoly-auth-changed', () => {
-      clearTimeout(authRefreshTimer);
-      authRefreshTimer = setTimeout(async () => {
-        try {
-          const nextUser = await resolveCurrentUser();
-          const userChanged = (nextUser?.id || null) !== (currentUser?.id || null);
-          currentUser = nextUser || null;
-          setUI(!!currentUser);
-
-          if (currentUser) {
-            hide(els.authMessage);
-            if (userChanged || !entries.length) await fetchEntries();
-          } else {
-            entries = [];
-            renderAll();
-          }
-        } catch (err) {
-          console.warn('Finance Pro shared auth refresh failed:', err);
-        }
-      }, 250);
+  if (!sharedAuthListenerInstalled) {
+    sharedAuthListenerInstalled = true;
+    window.addEventListener('olipoly-auth-changed', async () => {
+      if (Date.now() < ignoreNextSharedAuthEventUntil) return;
+      await refreshFinanceAuthFromSharedSession();
     });
   }
 }
