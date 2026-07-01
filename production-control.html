@@ -913,6 +913,74 @@
       .pc-mobile-dock a{min-height:46px;font-size:.58rem;}
     }
 
+
+
+/* === Backend Phase 2: dark private ERP visual consistency pass ===
+   CSS-only override. No production logic, Supabase code, status handling, or inventory code changed. */
+:root{
+  --ink:#eef4ff!important;
+  --text:#eef4ff!important;
+  --muted:#a8b5db!important;
+  --panel:rgba(12,19,40,.88)!important;
+  --panel2:rgba(17,26,52,.92)!important;
+  --line:rgba(126,144,255,.18)!important;
+  --line2:rgba(126,144,255,.22)!important;
+  --pink:#7e7bff!important;
+  --rose:#ff6e91!important;
+  --purple:#7e7bff!important;
+  --blue:#2ee6c4!important;
+  --mint:#2ee6c4!important;
+  --shadow:0 18px 50px rgba(0,0,0,.32)!important;
+}
+body{
+  color:var(--text)!important;
+  background:
+    radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 28%),
+    radial-gradient(circle at top right,rgba(46,230,196,.16),transparent 24%),
+    radial-gradient(circle at bottom right,rgba(255,119,200,.12),transparent 22%),
+    linear-gradient(180deg,#060b16 0%,#0a1225 50%,#08101f 100%)!important;
+}
+body::before{opacity:.18!important;filter:invert(1) hue-rotate(190deg)!important}
+.topbar,.card,.job-card,.lane,.modal-dialog,.section-card,.ops-collapse,.ops-panel,.workflow-card,.analytics-card,.capacity-card,.finance-health,.hub-draft-banner,.metric,.auth-status,.empty,.toast,.pill,.stat,.form-intro-strip,.quick-preset,.inventory-card,.material-row,.pm-card,.history-row,.log-row,.close-roll-row,.filter-panel,.details-card,.setup-box{
+  background:rgba(12,19,40,.88)!important;
+  border-color:rgba(126,144,255,.18)!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.28)!important;
+  color:var(--text)!important;
+}
+.topbar{background:rgba(8,14,30,.78)!important;backdrop-filter:blur(16px)!important;position:sticky!important;top:12px!important;z-index:80!important}
+.logo,.job-icon,.metric-icon{background:linear-gradient(135deg,#7e7bff,#2ee6c4)!important;color:#fff!important;box-shadow:0 0 26px rgba(126,123,255,.25)!important}
+.brand h1,.hero h2,.section-title h2,.card h3,.ops-panel h3,.lane h3,.job-card h4,.capacity-card strong,.analytics-card strong,.workflow-card strong,.metric strong,.summary-title strong,.quick-preset strong,.next-box strong,.job-title,.job-main strong,.stat strong{color:var(--text)!important}
+.brand p,.muted,.sub,.kicker,.metric span,.workflow-card span,.analytics-card span,.capacity-card span,.stat span,.job-meta,.summary-title .kicker,.next-box span{color:var(--muted)!important}
+.btn,.ghost,.mini-btn,button,a.ghost,a.btn{
+  min-height:40px;
+  text-decoration:none;
+}
+.btn{background:linear-gradient(135deg,#7e7bff,#2ee6c4)!important;color:#fff!important;box-shadow:0 10px 26px rgba(102,112,255,.22)!important;border-color:transparent!important}
+.ghost,.mini-btn{background:rgba(255,255,255,.055)!important;color:var(--text)!important;border-color:rgba(126,144,255,.18)!important}
+.ghost:hover,.mini-btn:hover,.btn:hover{transform:translateY(-1px)}
+input,select,textarea{
+  color:var(--text)!important;
+  background:rgba(255,255,255,.055)!important;
+  border-color:rgba(151,179,255,.18)!important;
+}
+select option,select optgroup{background:#0d1730!important;color:#eef4ff!important}
+input:focus,select:focus,textarea:focus{border-color:rgba(126,123,255,.62)!important;box-shadow:0 0 0 4px rgba(126,123,255,.12)!important}
+summary{color:var(--text)!important;background:rgba(255,255,255,.035)!important;border-color:rgba(126,144,255,.13)!important}
+table,thead,tbody,tr,td,th{color:var(--text)!important;border-color:rgba(255,255,255,.08)!important}
+th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-chip,.start-chip,.integration-chip,.quote-link-chip{background:rgba(126,123,255,.12)!important;border-color:rgba(126,123,255,.2)!important;color:#dfe6ff!important}
+.lane-header,.queue-toolbar,.finance-board-head,.filters,.filter-row{background:rgba(255,255,255,.035)!important;border-color:rgba(126,144,255,.13)!important;color:var(--text)!important}
+.modal-backdrop{background:rgba(0,0,0,.62)!important}
+@media(max-width:760px){
+  .wrap{width:min(100% - 16px,var(--max))!important;padding-top:12px!important;padding-bottom:80px!important}
+  .topbar{position:static!important;border-radius:22px!important;padding:12px!important;margin-bottom:12px!important}
+  .brand{align-items:flex-start!important}.brand h1{font-family:Inter,Arial,sans-serif!important;font-size:1.16rem!important;letter-spacing:-.02em!important}.brand p{font-size:.75rem!important;line-height:1.25!important}
+  .top-actions{display:grid!important;grid-template-columns:1fr 1fr!important;width:100%!important;gap:8px!important;max-width:none!important}
+  .top-actions .ghost,.top-actions .btn{width:100%!important;min-height:42px!important;border-radius:16px!important;font-size:.76rem!important;padding:9px!important}
+  .top-actions a[href="hub.html"]{grid-column:1/-1!important}
+  #jumpAddBtn{grid-column:1/-1!important;min-height:46px!important;font-size:.86rem!important}
+  .hero,.ops-grid,.queue-grid,.form-grid,.capacity-summary-grid,.analytics-grid,.metrics.compact-metrics{grid-template-columns:1fr!important}
+  .card,.section-card,.ops-collapse,.job-card,.lane,.ops-panel{border-radius:20px!important;padding:14px!important}
+}
 </style>
 
 <script>

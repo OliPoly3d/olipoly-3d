@@ -966,6 +966,7 @@ body{font-family:Inter,Arial,sans-serif}
     <div class="topbar">
       <div class="brand"><div class="icon">📦</div><div><h1>OliPoly 3D Orders Admin</h1><p><span class="mini-badge">OliPoly OS</span> Quotes • OP orders • tracking • payment • fulfillment.</p></div></div>
       <div class="btn-row">
+        <a class="btn-ghost private-home-link" href="hub.html">← Hub</a>
         <button class="btn-ghost" id="refreshBtn" type="button">Refresh</button>
         <button class="btn-ghost" id="loginBtn" type="button">Log In</button>
         <button class="btn-ghost" id="signupBtn" type="button">Create Account</button>
@@ -6704,6 +6705,15 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 .invoice-print-area,.packing-print-area,.print-template-hidden,.email-preview-modal.hidden{display:none!important}
 @media(max-width:900px){.production-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.production-status-head{display:grid}.production-status-actions{justify-content:flex-start}.production-status-grid{grid-template-columns:1fr}}
+
+
+/* === Backend Phase 2: safer private-page consistency polish === */
+.private-home-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:40px}
+.topbar{z-index:60!important}
+@media(max-width:720px){
+  .topbar .btn-row{grid-template-columns:1fr 1fr!important}
+  .topbar .btn-row .private-home-link{grid-column:1/-1}
+}
 </style>
 
 <script id="chmDomInjectModule">
