@@ -116,6 +116,13 @@ const defaultTax = (type, cat) => type === 'income'
       'R&D / Prototyping':'other'
     })[cat] || 'other';
 
+const resolvedTaxCategory = e => {
+  const selected = String(e?.tax_category || '').trim();
+  if (!selected || selected === 'auto') return defaultTax(e?.type, e?.category);
+  return selected;
+};
+const expenseBucketAmount = e => num(e.amount) + num(e.shipping_cost);
+
 const directCost = e => num(e.material_cost) + num(e.packaging_cost) + num(e.labor_cost) + num(e.other_direct_cost);
 const visibleCost = e => (e.type === 'expense' ? num(e.amount) : 0) + num(e.shipping_cost) + directCost(e);
 const isMileageCategory = category => category === 'Vehicle / Delivery Mileage';
@@ -505,12 +512,27 @@ function taxBuckets(year) {
         out.income_shipping += num(e.shipping_charged);
         out.sales_tax_collected += computedSalesTax(e);
       } else {
-        const k = e.tax_category || defaultTax(e.type, e.category);
-        out[k] = (out[k] || 0) + num(e.amount) + num(e.shipping_cost);
+        const k = resolvedTaxCategory(e);
+        out[k] = (out[k] || 0) + expenseBucketAmount(e);
       }
     });
 
   return out;
+}
+
+function scheduleCBucketDetails(year) {
+  const buckets = {};
+  entries
+    .filter(e => e.type === 'expense' && (!year || e.entry_date.startsWith(String(year))))
+    .forEach(e => {
+      const key = resolvedTaxCategory(e);
+      buckets[key] ||= { total: 0, count: 0, categories: new Map() };
+      buckets[key].total += expenseBucketAmount(e);
+      buckets[key].count += 1;
+      const cat = e.category || 'Uncategorized';
+      buckets[key].categories.set(cat, (buckets[key].categories.get(cat) || 0) + expenseBucketAmount(e));
+    });
+  return buckets;
 }
 
 function scheduleCMap(year) {
@@ -692,6 +714,33 @@ function renderMonthlyTaxReport() {
   `;
 }
 
+function renderScheduleCBucketCheck(year) {
+  const labels = {
+    marketplace_fees: 'Line 10 – Commissions & fees',
+    equipment_maintenance: 'Line 13 – Equipment / maintenance bucket',
+    event_fees: 'Line 20b – Rent / booth fees',
+    supplies: 'Line 22 – Supplies',
+    materials: 'Line 22 detail – Materials',
+    packaging: 'Line 22 detail – Packaging',
+    shipping_out: 'Line 27a detail – Shipping / postage',
+    other: 'Line 27a detail – Other'
+  };
+  const buckets = scheduleCBucketDetails(year);
+  const rows = Object.entries(buckets)
+    .sort((a, b) => (labels[a[0]] || a[0]).localeCompare(labels[b[0]] || b[0]))
+    .map(([key, row]) => {
+      const cats = [...row.categories.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([cat, total]) => `${escapeHtml(cat)}: ${money(total)}`)
+        .join('<br>');
+      return `<tr><td>${escapeHtml(labels[key] || key)}</td><td>${row.count}</td><td>${money(row.total)}</td><td>${cats || '—'}</td></tr>`;
+    })
+    .join('');
+
+  if (!rows) return '<div class="empty-state" style="margin-top:8px;">No expense entries found for this tax year.</div>';
+  return `<div class="filing-table-wrap"><table class="filing-table"><thead><tr><th>Mapped Bucket</th><th>Entries</th><th>Total</th><th>Categories Included</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
 function renderTaxReport() {
   const year = els.taxYearFilter.value || currentYear();
   els.taxYearFilter.value = year;
@@ -717,6 +766,9 @@ function renderTaxReport() {
 
       <div style="margin-top:8px;"><strong>Total Schedule C expenses:</strong> ${money(s.totalExpenses)}</div>
       <div><strong>Estimated net profit:</strong> ${money(s.netProfit)}</div>
+
+      <div style="margin-top:14px;"><strong>Category mapping check</strong></div>
+      ${renderScheduleCBucketCheck(year)}
 
       <div style="margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.55;">
         Per-sale material, packaging, labor, and other direct cost fields stay available for pricing and profit visibility only and are not deducted again here. This tracker groups equipment-related purchases into an equipment bucket for visibility, but your actual tax treatment can still follow your year-one expensing approach.
@@ -804,7 +856,7 @@ function exportCSV() {
       e.entry_date,
       e.type,
       e.category,
-      e.tax_category || defaultTax(e.type, e.category),
+      resolvedTaxCategory(e),
       num(e.type === 'income' ? incomeSaleAmount(e) : e.amount).toFixed(2),
       num(e.original_amount || e.amount).toFixed(2),
       e.destination_county || '',
@@ -1180,7 +1232,6 @@ async function saveEntry(e) {
       const entryDate = els.entryDate.value;
       if (!firstIncomeDate || entryDate < firstIncomeDate) {
         if (!notes.toLowerCase().includes('startup')) notes = `[Startup Expense] ${notes}`.trim();
-        taxCat = 'other';
       }
     }
 
