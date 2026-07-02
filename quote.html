@@ -1426,6 +1426,22 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 @media(max-width:900px){.send-package-actions{grid-template-columns:1fr 1fr}.send-package-actions button:last-child{grid-column:1/-1}}
 @media(max-width:560px){.summary-grid{grid-template-columns:1fr 1fr!important}.send-package-actions{grid-template-columns:1fr}.send-package-card{padding:15px!important}.send-package-pill{font-size:.68rem}}
 
+
+
+    /* === OliPoly ERP readability cleanup 2026-07-02 === */
+    :root{--muted:#c6d4f7;--line2:rgba(255,255,255,.13)}
+    .attention-item,.metric,.result,.mini-links a,.tool-card,.quick-card,.search-card,.mini-panel,.panel,.hero-card{
+      color:var(--text,#eef4ff);
+    }
+    .attention-item small,.metric small,.metric span,.result small,.tool-card small,.quick-card small,.mini-links a span,.section p,.footer,.brand span,.tag{
+      color:#c7d4f2!important;
+    }
+    .attention-item,.metric,.result,.mini-links a{
+      background:rgba(17,26,52,.84)!important;
+      border-color:rgba(151,179,255,.18)!important;
+    }
+    input,select,textarea{color:var(--text,#eef4ff)!important;background:rgba(255,255,255,.075)!important;border-color:rgba(151,179,255,.24)!important}
+    input::placeholder,textarea::placeholder{color:rgba(218,226,255,.62)!important}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script defer src="js/erp-core.js"></script>

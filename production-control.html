@@ -981,6 +981,25 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   .hero,.ops-grid,.queue-grid,.form-grid,.capacity-summary-grid,.analytics-grid,.metrics.compact-metrics{grid-template-columns:1fr!important}
   .card,.section-card,.ops-collapse,.job-card,.lane,.ops-panel{border-radius:20px!important;padding:14px!important}
 }
+
+
+    /* === OliPoly ERP readability cleanup 2026-07-02 === */
+    :root{--muted:#5f5069;--text:#34283b;--ink:#24182c}
+    .card,.job-card,.lane,.metric,.detail-card,.pm-card,.printer-load-card,.finance-summary-card,.machine-card,.day-card,.suggestion,.stat,.signal,.notes,.empty,.entry-hint,.auth-status,.next-box,.supply-help-card,.summary-card,.inventory-card,.supply-card,.forecast-card,.attention-item,.snapshot-pill-card,.snapshot-mini,.tool,.check,details,.matrix,.panel{
+      color:var(--text,#34283b)!important;
+    }
+    .muted,.sub,.card-sub,.today-meta,.pm-small,.mini-label,.tiny-note,.notes,.empty,.entry-hint,.auth-status,.metric span,.stat span,.detail-item span,.printer-load-title span,.printer-load-sub,.finance-summary-card span,.finance-project-row small,.signal,.lane-count,.section-title p,.hero p,small{
+      color:#5a4a63!important;
+    }
+    .job-card,.metric,.detail-card,.pm-card,.printer-load-card,.finance-summary-card,.machine-card,.day-card,.stat,.signal,.notes,.empty,.entry-hint,.auth-status,.supply-help-card,.summary-card,.inventory-card,.supply-card,.forecast-card,.attention-item{
+      background:rgba(255,255,255,.94)!important;
+      border-color:rgba(101,60,120,.20)!important;
+    }
+    .job-card h4,.metric strong,.stat strong,.detail-card h3,.finance-summary-card strong,.machine-card h3,.day-card strong,.summary-card h3,.inventory-card h3,.supply-card h3{
+      color:#24182c!important;
+    }
+    input,select,textarea{color:#34283b!important;background:rgba(255,255,255,.94)!important;border-color:rgba(101,60,120,.24)!important}
+    input::placeholder,textarea::placeholder{color:rgba(68,50,78,.55)!important}
 </style>
 
 <script>

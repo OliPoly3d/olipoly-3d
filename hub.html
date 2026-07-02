@@ -25,7 +25,23 @@
     .search-card{padding:14px;margin-top:12px}.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}input{width:100%;min-height:44px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);padding:10px 13px;font:inherit;outline:none}input:focus{border-color:rgba(126,123,255,.58);box-shadow:0 0 0 4px rgba(126,123,255,.12)}.results{display:grid;gap:8px;margin-top:10px}.result{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line2);text-decoration:none}.result span:first-child{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:rgba(126,123,255,.15)}.result strong{display:block}.result small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.group-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.mini-panel{padding:16px;border-radius:24px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}.mini-panel h4{margin:0 0 10px;font-size:.95rem}.mini-links{display:grid;gap:8px}.mini-links a{display:flex;justify-content:space-between;gap:10px;padding:10px 11px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line2);text-decoration:none;color:var(--text);font-weight:800}.mini-links a span{color:var(--muted);font-weight:900}.footer{margin-top:18px;color:var(--muted);font-size:.8rem;text-align:center}.mobile-nav{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:30;padding:8px;border-radius:24px;background:rgba(8,14,30,.92);border:1px solid var(--line);backdrop-filter:blur(16px);box-shadow:var(--shadow);grid-template-columns:repeat(5,1fr);gap:6px}.mobile-nav a{display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;font-size:.67rem;font-weight:900;color:var(--muted);padding:7px 4px;border-radius:16px}.mobile-nav a b{font-size:1rem;color:var(--text)}.mobile-nav a.active{background:rgba(126,123,255,.16);color:var(--text)}
     @media(max-width:980px){.hero,.attention-grid{grid-template-columns:1fr}.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.group-grid{grid-template-columns:1fr}.topbar{position:relative;top:auto}.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
     @media(max-width:640px){.wrap{width:min(100% - 16px,1180px);padding-top:10px;padding-bottom:92px}.topbar{align-items:flex-start;flex-direction:column;border-radius:22px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .ghost,.top-actions .btn{width:100%;font-size:.82rem}.hero-card,.panel,.attention-card,.search-card,.mini-panel{border-radius:22px;padding:15px}.tool-grid,.metric-grid{grid-template-columns:1fr}.tool-card{min-height:112px}.quick-card{padding:14px}.hero h2{font-size:2.15rem}.search-row{grid-template-columns:1fr}.search-row .ghost{width:100%}.mobile-nav{display:grid}.section-head{align-items:flex-start;flex-direction:column}.brand h1{font-size:1rem}.brand span{font-size:.68rem}}
-  </style>
+  
+
+    /* === OliPoly ERP readability cleanup 2026-07-02 === */
+    :root{--muted:#c6d4f7;--line2:rgba(255,255,255,.13)}
+    .attention-item,.metric,.result,.mini-links a,.tool-card,.quick-card,.search-card,.mini-panel,.panel,.hero-card{
+      color:var(--text,#eef4ff);
+    }
+    .attention-item small,.metric small,.metric span,.result small,.tool-card small,.quick-card small,.mini-links a span,.section p,.footer,.brand span,.tag{
+      color:#c7d4f2!important;
+    }
+    .attention-item,.metric,.result,.mini-links a{
+      background:rgba(17,26,52,.84)!important;
+      border-color:rgba(151,179,255,.18)!important;
+    }
+    input,select,textarea{color:var(--text,#eef4ff)!important;background:rgba(255,255,255,.075)!important;border-color:rgba(151,179,255,.24)!important}
+    input::placeholder,textarea::placeholder{color:rgba(218,226,255,.62)!important}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -110,7 +126,8 @@
 
   <script>
     const tools = [
-      { group:'Core Work', icon:'📦', title:'Orders Admin', href:'orders-admin.html', sub:'Orders, customers, invoices, labels, completion email.', tag:'Orders' },
+            { group:'Core Work', icon:'👤', title:'Customer 360', href:'customer-360.html', sub:'Customer-focused launcher for orders, production, finance, quotes, and inventory.', tag:'Customer' },
+{ group:'Core Work', icon:'📦', title:'Orders Admin', href:'orders-admin.html', sub:'Orders, customers, invoices, labels, completion email.', tag:'Orders' },
       { group:'Core Work', icon:'🖨️', title:'Production Control', href:'production-control.html', sub:'Print queue, status, machine time, close-out.', tag:'Production' },
       { group:'Core Work', icon:'⬢', title:'Inventory Control', href:'inventory-control.html', sub:'Material stock, rolls, reorder risk, inventory log.', tag:'Inventory' },
       { group:'Money', icon:'💰', title:'Finance Pro', href:'finance-pro.html', sub:'Income, expenses, Ohio sales tax, Schedule C helper.', tag:'Finance' },
@@ -200,7 +217,7 @@
       return `<a class="tool-card" href="${esc(t.href)}" data-search="${esc([t.title,t.sub,t.group,t.tag].join(' ').toLowerCase())}"><span class="tool-top"><span class="tool-icon">${esc(t.icon)}</span><span class="tag">${esc(t.tag)}</span></span><span><strong>${esc(t.title)}</strong><small>${esc(t.sub)}</small></span></a>`;
     }
     function renderTools(){
-      document.getElementById('coreTools').innerHTML = tools.filter(t => ['Orders Admin','Production Control','Inventory Control','Finance Pro','Quote Tool'].includes(t.title)).map(card).join('');
+      document.getElementById('coreTools').innerHTML = tools.filter(t => ['Orders Admin','Production Control','Inventory Control','Finance Pro','Quote Tool','Customer 360'].includes(t.title)).map(card).join('');
       const groups = [...new Set(tools.map(t=>t.group))];
       document.getElementById('linkGroups').innerHTML = groups.map(g => `<div class="mini-panel"><h4>${esc(g)}</h4><div class="mini-links">${tools.filter(t=>t.group===g).map(t=>`<a href="${esc(t.href)}"><span>${esc(t.icon)}</span>${esc(t.title)}<span>→</span></a>`).join('')}</div></div>`).join('');
     }

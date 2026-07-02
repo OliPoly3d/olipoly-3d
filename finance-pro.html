@@ -42,7 +42,23 @@
       .filters{display:grid;grid-template-columns:1fr;gap:8px}.filters input,.filters select,.filters button{width:100%;min-height:46px}
       table{min-width:940px}.table-card{overflow:hidden}.table-card #tableWrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
     }
-  </style>
+  
+
+    /* === OliPoly ERP readability cleanup 2026-07-02 === */
+    :root{--muted:#c6d4f7;--line2:rgba(255,255,255,.13)}
+    .attention-item,.metric,.result,.mini-links a,.tool-card,.quick-card,.search-card,.mini-panel,.panel,.hero-card{
+      color:var(--text,#eef4ff);
+    }
+    .attention-item small,.metric small,.metric span,.result small,.tool-card small,.quick-card small,.mini-links a span,.section p,.footer,.brand span,.tag{
+      color:#c7d4f2!important;
+    }
+    .attention-item,.metric,.result,.mini-links a{
+      background:rgba(17,26,52,.84)!important;
+      border-color:rgba(151,179,255,.18)!important;
+    }
+    input,select,textarea{color:var(--text,#eef4ff)!important;background:rgba(255,255,255,.075)!important;border-color:rgba(151,179,255,.24)!important}
+    input::placeholder,textarea::placeholder{color:rgba(218,226,255,.62)!important}
+</style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
