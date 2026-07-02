@@ -759,6 +759,7 @@
         <label>Status<select id="rawStatus"><option value="all">All</option><option value="ok">Good</option><option value="low">Low</option><option value="out">Out</option></select></label>
         <label>Material<select id="rawFilterMaterial"><option value="all">All Materials</option><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label>
         <label>Sort<select id="rawSort"><option value="status">Need first</option><option value="remaining">Lowest grams</option><option value="color">Color</option><option value="material">Material</option><option value="brand">Brand</option></select></label>
+        <button class="ghost" id="rawRunSearch" type="button">Search</button>
         <button class="ghost" id="rawClearFilters" type="button">Clear</button>
       </div>
       <div class="summary-grid" id="rawSummary"></div>
@@ -780,6 +781,7 @@
         <label>Search<input id="supplySearch" placeholder="LED, magnet, keyring, category..."></label>
         <label>Category<select id="supplyFilterCategory"><option value="all">All Categories</option></select></label>
         <label>Sort<select id="supplySort"><option value="need">Need first</option><option value="name">Name</option><option value="qty">Lowest qty</option><option value="value">Highest value</option></select></label>
+        <button class="ghost" id="supplyRunSearch" type="button">Search</button>
         <button class="ghost" id="supplyClearFilters" type="button">Clear</button>
       </div>
       <div class="supply-hero-grid">
@@ -797,6 +799,7 @@
         <label>Search<input id="fgSearch" placeholder="product, category, recipe..."></label>
         <label>Status<select id="fgFilterStatus"><option value="all">All</option><option value="active">Active</option><option value="low">Low</option><option value="sold_out">Sold Out</option><option value="seasonal">Seasonal</option><option value="retired">Retired</option></select></label>
         <label>Sort<select id="fgSort"><option value="need">Need first</option><option value="qty">Lowest qty</option><option value="value">Highest value</option><option value="name">Name</option></select></label>
+        <button class="ghost" id="fgRunSearch" type="button">Search</button>
         <button class="ghost" id="fgClearFilters" type="button">Clear</button>
       </div>
       <div class="cards-grid" id="finishedCards"></div>
@@ -2262,7 +2265,7 @@
 
   function deepLinkInventoryParam(){
     const p = new URLSearchParams(window.location.search);
-    return (p.get('inventory') || p.get('material') || p.get('item') || '').trim();
+    return (p.get('inventory') || p.get('material') || p.get('item') || p.get('search') || p.get('q') || '').trim();
   }
 
   function tryOpenDeepLinkedInventory(){
@@ -2270,10 +2273,14 @@
     const target = deepLinkInventoryParam();
     if(!target) return;
     window.__olipolyInventoryDeepLinkOpened = true;
-    state.tab = 'raw';
+    if (typeof setTab === 'function') setTab('raw');
+    else state.tab = 'raw';
     state.rawSearch = target;
+    state.rawMaterial = 'all';
     if($('rawSearch')) $('rawSearch').value = target;
-    render();
+    if($('rawFilterMaterial')) $('rawFilterMaterial').value = 'all';
+    renderRawSummary();
+    renderRawCards();
     setTimeout(() => $('rawPanel')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
     toast(`Filtered inventory for: ${target}`);
   }
@@ -2482,6 +2489,33 @@
     reader.readAsText(file);
   }
 
+
+  function runInventorySearch(scope='raw'){
+    if(scope==='raw'){
+      state.tab='raw';
+      state.rawSearch = $('rawSearch')?.value || '';
+      state.rawMaterial = $('rawFilterMaterial')?.value || 'all';
+      setTab('raw');
+      renderRawSummary();
+      renderRawCards();
+      $('rawPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
+      return;
+    }
+    if(scope==='supplies'){
+      state.supplySearch = $('supplySearch')?.value || '';
+      setTab('supplies');
+      renderSupplyCards();
+      $('suppliesPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
+      return;
+    }
+    if(scope==='finished'){
+      state.fgSearch = $('fgSearch')?.value || '';
+      setTab('finished');
+      renderFinishedCards();
+      $('finishedPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }
+
   function bind(){
     document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
     $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); cloudSaveRaw(r).catch(console.warn); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
@@ -2502,9 +2536,9 @@
     $('importFile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]); e.target.value='';});
     $('addEmptySpoolBtn')?.addEventListener('click', addEmptySpool);
     $('retireSpoolBtn')?.addEventListener('click', retireSpool);
-    $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawCards()});$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawCards()});
-    $('supplySearch')?.addEventListener('input',e=>{state.supplySearch=e.target.value;renderSupplyCards()});$('supplyFilterCategory')?.addEventListener('change',e=>{state.supplyCategory=e.target.value;renderSupplyCards()});$('supplySort')?.addEventListener('change',e=>{state.supplySort=e.target.value;renderSupplyCards()});$('supplyClearFilters')?.addEventListener('click',()=>{state.supplySearch='';state.supplyCategory='all';state.supplySort='need';$('supplySearch').value='';$('supplyFilterCategory').value='all';$('supplySort').value='need';renderSupplyCards()});
-    $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
+    $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawSummary();renderRawCards()});$('rawSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runInventorySearch('raw')}});$('rawRunSearch')?.addEventListener('click',()=>runInventorySearch('raw'));$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawSummary();renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawSummary();renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawSummary();renderRawCards()});
+    $('supplySearch')?.addEventListener('input',e=>{state.supplySearch=e.target.value;renderSupplyCards()});$('supplySearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runInventorySearch('supplies')}});$('supplyRunSearch')?.addEventListener('click',()=>runInventorySearch('supplies'));$('supplyFilterCategory')?.addEventListener('change',e=>{state.supplyCategory=e.target.value;renderSupplyCards()});$('supplySort')?.addEventListener('change',e=>{state.supplySort=e.target.value;renderSupplyCards()});$('supplyClearFilters')?.addEventListener('click',()=>{state.supplySearch='';state.supplyCategory='all';state.supplySort='need';$('supplySearch').value='';$('supplyFilterCategory').value='all';$('supplySort').value='need';renderSupplyCards()});
+    $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runInventorySearch('finished')}});$('fgRunSearch')?.addEventListener('click',()=>runInventorySearch('finished'));$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
     $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
     $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
     document.addEventListener('click',e=>{
@@ -2571,52 +2605,6 @@
     if(action==='supplies') return go('supplies','suppliesPanel');
     if(action==='ledger') return go('ledger','ledgerPanel');
   });
-})();
-</script>
-
-
-
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
 })();
 </script>
 
