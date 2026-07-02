@@ -1596,35 +1596,14 @@
   }
 
   async function cloudSaveLedger(l){
-    if(!state.cloud || !state.user?.id) return;
-    const row=normalizeLedger(l||{});
-    const originalType=row.type || 'adjust';
-    const safeType=cloudLedgerType(originalType);
-    const stableId = row.id || ('ledger_' + btoa(unescape(encodeURIComponent(ledgerFingerprint(row)))).replace(/[^a-zA-Z0-9]/g,'').slice(0,42));
-    const payload={
-      id:stableId,
-      user_id:state.user.id,
-      date:row.date || new Date().toISOString(),
-      created_at:row.date || new Date().toISOString(),
-      type:safeType,
-      transaction_type:safeType,
-      item:row.item || 'Inventory movement',
-      item_label:row.item || 'Inventory movement',
-      amount:String(row.amount ?? ''),
-      quantity_change:parseLedgerAmount(row.amount),
-      note:`${row.note || ''}${originalType && originalType !== safeType ? ` [local type: ${originalType}]` : ''}`.trim(),
-      notes:`${row.note || ''}${originalType && originalType !== safeType ? ` [local type: ${originalType}]` : ''}`.trim(),
-      source:row.note || ''
-    };
-    try{
-      await sbApi('/rest/v1/inventory_transactions?on_conflict=id',{
-        method:'POST',
-        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-        body:JSON.stringify(payload)
-      });
-    }catch(err){
-      console.warn('ledger cloud sync skipped; local movement log remains saved', err);
-    }
+    // Local movement ledger remains the source of truth for Inventory v2.
+    // Supabase inventory_transactions currently has a database CHECK constraint
+    // whose allowed type values do not match the local ledger categories used by
+    // this page. To avoid repeated 400 errors/noisy console failures, we skip
+    // cloud writes for ledger rows until the Supabase constraint is updated.
+    // This does NOT delete or change local inventory data, and raw/supply/finished
+    // inventory records still sync normally.
+    return;
   }
 
   async function cloudSaveSupply(s){
