@@ -229,9 +229,15 @@
       const unassigned = Number(p.unassignedPrinterRisk || p.unassignedJobs || 0);
       const openQuotes = Number(o.openQuotes || p.openQuotes || 0);
       if (overdue>0) attention.push(item('💸','Cash collection check',`${overdue} unpaid or overdue item(s) may need review.`,'danger','orders-admin.html'));
-      if (invLive.counts.reorder>0) attention.push(item('⬢','Inventory reorder needed',`${invLive.counts.reorder} automatic reorder item(s) are low/out. Specialty/watch items are separated now.`,'warn','inventory-control.html#forecastPanel'));
+      if (invLive.counts.reorder>0) {
+        const firstReorder = invLive.lowItems.find(x => !x.snoozed && (!x.policy || x.policy === 'auto'));
+        attention.push(item('⬢', invLive.counts.reorder === 1 && firstReorder ? `Reorder ${firstReorder.label}` : 'Inventory reorder needed', invLive.counts.reorder === 1 ? '1 material or supply is below its reorder point.' : `${invLive.counts.reorder} materials or supplies are below reorder points.`, 'warn', 'inventory-control.html?status=low#forecastPanel'));
+      }
       const quietLow = invLive.counts.specialty + invLive.counts.watch + invLive.counts.seasonal + invLive.counts.discontinued + invLive.counts.snoozed;
-      if (quietLow>0) attention.push(item('◌','Inventory low, no reorder prompt',`${quietLow} specialty/watch/seasonal/discontinued/snoozed item(s) are low but not nagging you.`,'info','inventory-control.html#forecastPanel'));
+      if (quietLow>0) {
+        const quietLabel = quietLow === 1 ? '1 item below preferred stock.' : `${quietLow} items below preferred stock.`;
+        attention.push(item('◌','Specialty inventory',`${quietLabel} No reorder action required.`, 'info', 'inventory-control.html?status=low#forecastPanel'));
+      }
       if (unassigned>0) attention.push(item('🖨️','Printer assignment needed',`${unassigned} production job(s) may need printer assignment.`,'warn','production-control.html'));
       if (openQuotes>0) attention.push(item('◈','Open quote follow-up',`${openQuotes} quote(s) may need customer follow-up.`,'warn','quote.html'));
       if (!attention.length) attention.push(item('✓','No urgent actions detected','Open Orders, Production, Inventory, or Finance for a deeper check.','good','#tools'));
