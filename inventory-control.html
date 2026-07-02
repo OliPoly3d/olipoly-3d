@@ -913,8 +913,19 @@
   }
   function cloudLedgerType(v){
     const t=String(v||'').trim().toLowerCase();
-    if(t === 'import') return 'import';
-    return 'adjust';
+    const allowed = new Set(['raw_adjust','raw_usage','supply_usage','fg_adjust','import']);
+    if (allowed.has(t)) return t;
+    const mapped = {
+      adjust: 'raw_adjust',
+      raw: 'raw_adjust',
+      material: 'raw_adjust',
+      usage: 'raw_usage',
+      use: 'raw_usage',
+      supply: 'supply_usage',
+      finished: 'fg_adjust',
+      fg: 'fg_adjust'
+    };
+    return mapped[t] || 'raw_adjust';
   }
   function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
