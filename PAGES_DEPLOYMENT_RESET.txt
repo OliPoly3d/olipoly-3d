@@ -1,0 +1,9 @@
+OliPoly GitHub Pages deployment reset marker
+
+This file is safe to upload to the repository root.
+It does not affect the website, ERP pages, Supabase, JavaScript, CSS, or customer-facing pages.
+
+Purpose:
+Trigger a tiny new commit so GitHub Pages can attempt a fresh branch-based deployment.
+
+Created for troubleshooting a stuck GitHub Pages deployment queue.
