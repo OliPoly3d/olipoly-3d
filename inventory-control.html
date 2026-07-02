@@ -500,6 +500,21 @@
       #advancedInventoryTools:not([open]){display:none}
     }
 
+
+    /* === Inventory Control v2.1/v2.2 workflow + reorder policy === */
+    .inventory-quick-actions{order:1;padding:14px 16px;background:rgba(255,255,255,.88)}
+    .quick-actions-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .quick-actions-head h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(1.45rem,3vw,2.15rem);line-height:.98;color:var(--ink);letter-spacing:-.04em}
+    .quick-actions-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+    .quick-action{min-height:72px;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.78);box-shadow:0 8px 22px rgba(84,38,94,.06);padding:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;font-weight:900;color:var(--ink);text-align:left}
+    .quick-action span{display:block;font-size:.72rem;color:var(--muted);font-weight:800;line-height:1.15}.quick-action.primary{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-color:transparent}.quick-action.primary span{color:rgba(255,255,255,.82)}
+    #cloudSection{order:9}.hero{order:2}.hero + .card{order:3}#forecastPanel{order:4}.hero + .card + .card{order:5}#rawEditor,#supplyEditor,#finishedEditor{order:6}#rawPanel,#suppliesPanel,#finishedPanel,#ledgerPanel{order:7}#rawRollDetails{order:8}
+    #cloudSection .kicker{margin-bottom:4px}#cloudSection .muted{font-size:.82rem;margin:.3rem 0 0}#cloudSection .decision-pills{margin-top:4px}.compact-cloud-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .policy-chip{background:rgba(95,207,255,.12);border-color:rgba(95,207,255,.22);color:#1d5d7d}.policy-chip.specialty{background:rgba(157,109,243,.13);color:#614099}.policy-chip.watch{background:rgba(247,183,49,.14);color:#7a5400}.policy-chip.discontinued{background:rgba(154,138,163,.14);color:#665970}.policy-chip.seasonal{background:rgba(95,207,255,.13);color:#1d5d7d}
+    .policy-note{font-size:.76rem;color:var(--muted);font-weight:800;margin-top:6px}.attention-muted{opacity:.76}.attention-item.info .decision-pill{background:rgba(154,138,163,.12);color:#665970;border-color:rgba(154,138,163,.18)}
+    @media(max-width:980px){.quick-actions-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:760px){.inventory-quick-actions{padding:12px;border-radius:22px;margin-bottom:10px}.quick-actions-head{display:block}.quick-actions-head .muted{margin-top:4px;font-size:.78rem}.quick-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.quick-action{min-height:62px;border-radius:17px;font-size:.86rem}.quick-action span{font-size:.66rem}#cloudSection{margin-top:10px}.hero .card:first-child{display:none}.snapshot-card{order:0}}
+
 </style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
   <script defer src="js/erp-core.js"></script>
@@ -525,6 +540,24 @@
         <input id="importFile" class="hidden" type="file" accept="application/json">
       </div>
     </header>
+
+    <section class="card inventory-quick-actions" id="inventoryQuickActions">
+      <div class="quick-actions-head">
+        <div>
+          <span class="kicker">Inventory workspace</span>
+          <h2>What do you need to do?</h2>
+        </div>
+        <p class="muted">Fast paths for the tasks you actually open Inventory Control to complete.</p>
+      </div>
+      <div class="quick-actions-grid">
+        <button class="quick-action primary" type="button" data-inventory-jump="rawEditor">+ Add Roll<span>new spool/refill</span></button>
+        <button class="quick-action" type="button" data-inventory-jump="rawEditor">Receive Shipment<span>add material</span></button>
+        <button class="quick-action" type="button" data-inventory-jump="rawRollDetails">Adjust Inventory<span>use/add grams</span></button>
+        <button class="quick-action" type="button" data-inventory-jump="forecastPanel">Reorder Forecast<span>what to buy next</span></button>
+        <button class="quick-action" type="button" data-inventory-jump="rawPanel" data-focus="rawSearch">Search Material<span>find color/brand</span></button>
+        <button class="quick-action" type="button" data-inventory-jump="suppliesPanel" data-tab-jump="supplies">Supplies<span>non-filament</span></button>
+      </div>
+    </section>
 
     <section class="card cloud-card" id="cloudSection">
       <div class="cloud-main-row">
@@ -651,10 +684,12 @@
             <label>Starting grams<input id="rawStarting" type="number" min="0" step="1" value="1000"></label>
             <label>Remaining grams<input id="rawRemaining" type="number" min="0" step="1" value="1000"></label>
             <label>Reorder threshold<input id="rawThreshold" type="number" min="0" step="1" value="250"></label>
+            <label>Reorder policy<select id="rawReorderPolicy"><option value="auto">Automatic reorder prompt</option><option value="specialty">Specialty / do not prompt</option><option value="watch">Watch only</option><option value="seasonal">Seasonal</option><option value="discontinued">Discontinued</option></select></label>
             <label>Spool cost<input id="rawCost" type="number" min="0" step="0.01" placeholder="24.99"></label>
             <label>Supplier<input id="rawSupplier" placeholder="Bambu, Amazon, Micro Center..."></label>
             <label>Reorder link<input id="rawReorderLink" placeholder="https://..."></label>
             <label>Reorder qty<input id="rawReorderQty" type="number" min="0" step="1" value="1"></label>
+            <label>Snooze until<input id="rawSnoozeUntil" type="date"></label>
             <label class="full">Notes<textarea id="rawNotes" placeholder="Supplier, link, special print settings, etc."></textarea></label>
           </div>
           <div class="actions">
@@ -678,8 +713,10 @@
             <label>Qty on hand<input id="supplyQty" type="number" min="0" step="0.01" value="0"></label>
             <label>Cost per unit<input id="supplyCost" type="number" min="0" step="0.0001" placeholder="0.00"></label>
             <label>Reorder threshold<input id="supplyThreshold" type="number" min="0" step="0.01" value="0"></label>
+            <label>Reorder policy<select id="supplyReorderPolicy"><option value="auto">Automatic reorder prompt</option><option value="specialty">Specialty / do not prompt</option><option value="watch">Watch only</option><option value="seasonal">Seasonal</option><option value="discontinued">Discontinued</option></select></label>
             <label>Supplier<input id="supplySupplier" placeholder="Amazon, ULINE, Micro Center..."></label>
             <label>Reorder link<input id="supplyReorderLink" placeholder="https://..."></label>
+            <label>Snooze until<input id="supplySnoozeUntil" type="date"></label>
             <label class="full">Notes<textarea id="supplyNotes" placeholder="Pack size, exact size, color, usage notes, etc."></textarea></label>
           </div>
           <div class="actions">
@@ -1201,6 +1238,8 @@
       reorder_threshold:num(s.reorder_threshold ?? s.threshold ?? 0),
       supplier:s.supplier||'',
       reorder_link:s.reorder_link||s.product_link||'',
+      reorder_policy:s.reorder_policy||s.inventory_policy||'auto',
+      snooze_until:s.snooze_until||s.reorder_snooze_until||'',
       notes:s.notes||'',
       created_at:s.created_at||new Date().toISOString(),
       updated_at:s.updated_at||new Date().toISOString()
@@ -1230,6 +1269,8 @@
       supplier:r.supplier||'',
       reorder_link:r.reorder_link||r.product_link||'',
       reorder_quantity:num(r.reorder_quantity||r.reorder_qty||1),
+      reorder_policy:r.reorder_policy||r.inventory_policy||'auto',
+      snooze_until:r.snooze_until||r.reorder_snooze_until||'',
       reserved_grams:num(r.reserved_grams||0),
       notes:r.notes||'',
       created_at:r.created_at||new Date().toISOString(),
@@ -1272,6 +1313,29 @@
     if(rows.some(r=>ledgerFingerprint(r)===nextFp)) return;
     rows.unshift(next);
     saveLedger(rows);
+  }
+
+
+  function todayDateOnly(){return new Date().toISOString().slice(0,10);}
+  function policyLabel(policy){
+    return ({auto:'Automatic',specialty:'Specialty',watch:'Watch only',seasonal:'Seasonal',discontinued:'Discontinued'})[policy||'auto'] || 'Automatic';
+  }
+  function policySuppressesPrompt(policy){return ['specialty','watch','seasonal','discontinued'].includes(policy||'auto');}
+  function isSnoozed(x){return !!x?.snooze_until && String(x.snooze_until) >= todayDateOnly();}
+  function rawPolicy(r){return r?.reorder_policy || 'auto';}
+  function supplyPolicy(s){return s?.reorder_policy || 'auto';}
+  function groupPolicy(g){
+    const policies = (g?.items||[]).map(rawPolicy);
+    if(policies.includes('auto')) return 'auto';
+    return policies[0] || 'auto';
+  }
+  function groupSnoozed(g){return (g?.items||[]).some(isSnoozed);}
+  function shouldPromptRawGroup(g){return groupStatus(g)!=='ok' && !policySuppressesPrompt(groupPolicy(g)) && !groupSnoozed(g);}
+  function shouldPromptSupply(s){return supplyStatus(s)!=='ok' && !policySuppressesPrompt(supplyPolicy(s)) && !isSnoozed(s);}
+  function policyChip(policy, snoozeUntil=''){
+    const p=policy||'auto';
+    const snooze=snoozeUntil && String(snoozeUntil)>=todayDateOnly() ? ` · snoozed to ${esc(snoozeUntil)}` : '';
+    return `<span class="chip policy-chip ${esc(p)}">${esc(policyLabel(p))}${snooze}</span>`;
   }
 
   function rawStatus(r){ if(num(r.remaining_grams)<=0) return 'out'; if(num(r.remaining_grams)<=num(r.reorder_threshold_grams)) return 'low'; return 'ok'; }
@@ -1481,16 +1545,34 @@
       supplier:r.supplier,
       reorder_link:r.reorder_link,
       reorder_quantity:num(r.reorder_quantity),
+      reorder_policy:r.reorder_policy || 'auto',
+      snooze_until:r.snooze_until || '',
       reserved_grams:typeof reservedGramsForRaw === 'function' ? reservedGramsForRaw(r) : 0,
       notes:r.notes,
       updated_at:new Date().toISOString()
     };
 
-    return sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{
-      method:'POST',
-      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify(fullPayload)
-    });
+    try{
+      return await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify(fullPayload)
+      });
+    }catch(err){
+      const msg=String(err?.message || err || '');
+      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('400')){
+        const fallback={...fullPayload};
+        delete fallback.reorder_policy;
+        delete fallback.snooze_until;
+        console.warn('raw policy columns not available; saving raw item without cloud policy fields', err);
+        return sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{
+          method:'POST',
+          headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+          body:JSON.stringify(fallback)
+        });
+      }
+      throw err;
+    }
   }
 
   async function cloudSaveLedger(l){
@@ -1522,11 +1604,16 @@
 
   async function cloudSaveSupply(s){
     if(!state.cloud) return;
-    const payload={id:s.id,user_id:state.user.id,item_name:s.item_name,category:s.category,unit_type:s.unit_type,quantity_on_hand:s.quantity_on_hand,cost_per_unit:s.cost_per_unit,reorder_threshold:s.reorder_threshold,supplier:s.supplier,reorder_link:s.reorder_link,notes:s.notes,updated_at:new Date().toISOString()};
+    const payload={id:s.id,user_id:state.user.id,item_name:s.item_name,category:s.category,unit_type:s.unit_type,quantity_on_hand:s.quantity_on_hand,cost_per_unit:s.cost_per_unit,reorder_threshold:s.reorder_threshold,supplier:s.supplier,reorder_link:s.reorder_link,reorder_policy:s.reorder_policy||'auto',snooze_until:s.snooze_until||'',notes:s.notes,updated_at:new Date().toISOString()};
     try{
       await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
     }catch(err){
       const msg=String(err?.message || err || '');
+      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('400')){
+        const fallback={...payload}; delete fallback.reorder_policy; delete fallback.snooze_until;
+        await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(fallback)});
+        return;
+      }
       console.warn('supply cloud sync failed', err);
       if(msg.includes('schema cache') || msg.includes('column') || msg.includes('relation') || msg.includes('400')){toast('Supply saved locally. Run the non-filament supplies SQL for cloud sync.');return;}
       throw err;
@@ -1619,7 +1706,7 @@
     if($('mSupplyCategories')) $('mSupplyCategories').textContent=cats.size;
     const el=$('supplyCards'); if(!el) return;
     el.innerHTML=rows.length ? rows.map(s=>`<article class="supply-card">
-      <div class="card-head"><div class="snapshot-pill-icon">🧰</div><div><h3>${esc(s.item_name)}</h3><div class="supply-unit">${esc(s.category||'Uncategorized')} · ${esc(s.unit_type)}</div></div>${supplyChip(s)}</div>
+      <div class="card-head"><div class="snapshot-pill-icon">🧰</div><div><h3>${esc(s.item_name)}</h3><div class="supply-unit">${esc(s.category||'Uncategorized')} · ${esc(s.unit_type)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${supplyChip(s)}${policyChip(supplyPolicy(s), s.snooze_until)}</div></div>
       <div class="chips"><span class="chip">${esc(s.quantity_on_hand)} ${esc(s.unit_type)} on hand</span><span class="chip">${money(s.cost_per_unit)} / ${esc(s.unit_type)}</span>${s.reorder_threshold?`<span class="chip">Threshold ${esc(s.reorder_threshold)}</span>`:''}</div>
       <div class="stat-grid"><div class="stat"><span>Qty</span><strong>${esc(s.quantity_on_hand)}</strong></div><div class="stat"><span>Unit</span><strong>${esc(s.unit_type)}</strong></div><div class="stat"><span>Value</span><strong>${money(supplyValue(s))}</strong></div></div>
       ${s.supplier||s.reorder_link?`<div class="chips">${s.supplier?`<span class="chip">${esc(s.supplier)}</span>`:''}${s.reorder_link?`<a class="reorder-link" href="${esc(s.reorder_link)}" target="_blank" rel="noopener">Reorder</a>`:''}</div>`:''}
@@ -1648,7 +1735,7 @@
             <h3>${esc(g.material_type)} / ${esc(g.color || 'No color')}</h3>
             <small>${esc(g.brand || 'No brand/type')}</small>
           </div>
-          <div style="margin-left:auto">${groupStatusChip(g)}</div>
+          <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${groupStatusChip(g)}${policyChip(groupPolicy(g), (g.items||[]).find(isSnoozed)?.snooze_until || '')}</div>
         </div>
         <div class="big-material-number">${grams(g.available)}</div>
         <div class="card-sub">available now · ${grams(g.grams)} total on hand · ${grams(g.reserved)} reserved</div>
@@ -1660,6 +1747,7 @@
           <div class="stat"><span>Refills</span><strong>${g.refills}</strong></div>
           <div class="stat"><span>Reserved</span><strong>${grams(g.reserved)}</strong></div>
           <div class="stat"><span>Threshold</span><strong>${grams(groupThreshold(g))}</strong></div>
+          <div class="stat"><span>Policy</span><strong>${esc(policyLabel(groupPolicy(g)))}</strong></div>
           <div class="stat"><span>Value</span><strong>${money(g.value)}</strong></div>
         </div>
         <div class="roll-badges">
@@ -1880,7 +1968,8 @@
 
   function renderMetrics(){
     const r=raw(), f=finished(), l=ledger();
-    const low=rawGroups().filter(g=>groupStatus(g)!=='ok');
+    const low=rawGroups().filter(g=>shouldPromptRawGroup(g));
+    const watchedLow=rawGroups().filter(g=>groupStatus(g)!=='ok' && !shouldPromptRawGroup(g));
     const value=f.reduce((s,x)=>s+num(x.quantity_on_hand)*num(x.sale_price),0);
     const rawVal=r.reduce((s,x)=>s+rawValue(x),0);
     const mounted=r.filter(x=>x.is_mounted && x.roll_status!=='empty').length;
@@ -1897,7 +1986,8 @@
     if($('mRawValue')) $('mRawValue').textContent=money(rawVal);
     $('mMoves').textContent=l.length;
     const pills=[
-      `<span class="decision-pill ${low.length?'danger':'ok'}">⚠️ ${low.length} reorder/out</span>`,
+      `<span class="decision-pill ${low.length?'danger':'ok'}">⚠️ ${low.length} reorder needed</span>`,
+      `<span class="decision-pill ${watchedLow.length?'warn':'ok'}">👀 ${watchedLow.length} watched/specialty low</span>`,
       `<span class="decision-pill">🧵 ${grams(r.reduce((s,x)=>s+num(x.remaining_grams),0))} filament</span>`,
       `<span class="decision-pill">🧷 ${mounted} mounted</span>`,
       `<span class="decision-pill">♻️ ${freeSpools} free spools</span>`,
@@ -1912,16 +2002,19 @@
     const items=[];
     const statusScore = r => ({out:0,low:1,ok:2}[rawStatus(r)] ?? 3);
     rawGroups()
-      .filter(g=>groupStatus(g)!=='ok')
+      .filter(g=>shouldPromptRawGroup(g))
       .sort((a,b)=>{ const score={out:0,low:1,ok:2}; return (score[groupStatus(a)] ?? 3) - (score[groupStatus(b)] ?? 3); })
       .slice(0,8)
       .forEach(g=>{
         items.push({
           icon:groupStatus(g)==='out'?'🚫':'⚠️',
           title:`${g.material_type} ${g.color}`,
-          meta:`${groupStatus(g)==='out'?'Out':'Low'} · ${grams(g.grams)} total · ${grams(g.available)} available · threshold ${grams(groupThreshold(g))}`,
+          meta:`${groupStatus(g)==='out'?'Out':'Low'} · ${grams(g.grams)} total · ${grams(g.available)} available · threshold ${grams(groupThreshold(g))} · ${policyLabel(groupPolicy(g))}`,
           cls:groupStatus(g)==='out'?'danger':'warn'
         });
+      });
+    supplies().filter(shouldPromptSupply).slice(0,6).forEach(s=>{
+        items.push({icon:supplyStatus(s)==='out'?'🚫':'⚠️',title:s.item_name,meta:`${supplyStatus(s)==='out'?'Out':'Low'} · ${s.quantity_on_hand} ${s.unit_type} on hand · threshold ${s.reorder_threshold} · ${policyLabel(supplyPolicy(s))}`,cls:supplyStatus(s)==='out'?'danger':'warn'});
       });
     finished()
       .filter(f=>['low','sold_out'].includes(fgNeed(f)))
@@ -1958,7 +2051,8 @@
         </div>
         <div class="bar ${status==='low'?'warn':status==='out'?'danger':''}"><span style="width:${width}%"></span></div>
         <div class="balance-meta">
-          <span class="chip ${cls}">${status==='ok'?'Good':status==='low'?'Reorder':'Out'}</span>
+          <span class="chip ${cls}">${status==='ok'?'Good':status==='low'?(shouldPromptRawGroup(g)?'Reorder':'Low'):'Out'}</span>
+          ${policyChip(groupPolicy(g), (g.items||[]).find(isSnoozed)?.snooze_until || '')}
           <span class="chip">${grams(g.grams)} total</span>
           <span class="chip">${g.rolls} roll(s)</span>
           <span class="chip">${g.mounted} mounted</span>
@@ -1981,7 +2075,7 @@
         <div class="card-head">
           <div class="color-dot" style="--dot:${colorStyle(r.color)}"></div>
           <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div></div>
-          ${rawStatusChip(r)}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${rawStatusChip(r)}${policyChip(rawPolicy(r), r.snooze_until)}</div>
         </div>
         <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}<span class="chip">${esc(r.roll_type||'spool')}</span><span class="chip ${r.is_mounted?'ok':'muted'}">${r.is_mounted?'Mounted':'Not mounted'}</span><span class="chip ${r.reusable_spool?'ok':'muted'}">${r.reusable_spool?'Reusable spool':'No spool'}</span><span class="chip">${esc(r.roll_status||'active')}</span></div>
         <div class="stat-grid">
@@ -1989,6 +2083,7 @@
           <div class="stat"><span>Reserved</span><strong>${grams(reservedGramsForRaw(r))}</strong></div>
           <div class="stat"><span>Available</span><strong>${grams(availableGrams(r))}</strong></div>
           <div class="stat"><span>Roll Threshold</span><strong>${grams(r.reorder_threshold_grams)}</strong></div>
+          <div class="stat"><span>Policy</span><strong>${esc(policyLabel(rawPolicy(r)))}</strong></div>
           <div class="stat"><span>Value</span><strong>${money(rawValue(r))}</strong></div>
           <div class="stat"><span>Cost/g</span><strong>${costPerGram?money(costPerGram):'—'}</strong></div>
         </div>
@@ -2084,7 +2179,10 @@
       const daysLeft = daily > 0 ? Math.floor(onHand / daily) : null;
       const threshold = num(g.items?.[0]?.reorder_threshold_grams);
       const low = onHand <= threshold || onHand <= 0;
-      rows.push({label,onHand,unit:'g',usage90,daysLeft,low,sort:(low?0:1)+(daysLeft===null?999:daysLeft/1000)});
+      const policy = groupPolicy(g);
+      const prompt = low && shouldPromptRawGroup(g);
+      const snoozed = groupSnoozed(g);
+      rows.push({label,onHand,unit:'g',usage90,daysLeft,low,prompt,policy,snoozed,sort:(prompt?0:low?1:2)+(daysLeft===null?999:daysLeft/1000)});
     });
     supplies().forEach(s=>{
       const label = s.item_name || 'Supply item';
@@ -2093,24 +2191,28 @@
       const daily = usage90 / 90;
       const daysLeft = daily > 0 ? Math.floor(onHand / daily) : null;
       const low = onHand <= num(s.reorder_threshold || s.reorder_point);
-      rows.push({label,onHand,unit:s.unit_type||'',usage90,daysLeft,low,sort:(low?0:1)+(daysLeft===null?999:daysLeft/1000)});
+      const policy = supplyPolicy(s);
+      const prompt = low && shouldPromptSupply(s);
+      rows.push({label,onHand,unit:s.unit_type||'',usage90,daysLeft,low,prompt,policy,snoozed:isSnoozed(s),sort:(prompt?0:low?1:2)+(daysLeft===null?999:daysLeft/1000)});
     });
     rows.sort((a,b)=>a.sort-b.sort);
     const active = rows.filter(r=>r.usage90>0).length;
-    const low = rows.filter(r=>r.low || (r.daysLeft!==null && r.daysLeft<=30)).length;
+    const low = rows.filter(r=>r.prompt || (r.daysLeft!==null && r.daysLeft<=30 && !policySuppressesPrompt(r.policy))).length;
     if($('forecastWatched')) $('forecastWatched').textContent = rows.length;
     if($('forecastLow')) $('forecastLow').textContent = low;
     if($('forecastActive')) $('forecastActive').textContent = active;
-    if($('forecastRisk')) $('forecastRisk').textContent = rows.find(r=>r.low || (r.daysLeft!==null && r.daysLeft<=30))?.label || 'None';
+    if($('forecastRisk')) $('forecastRisk').textContent = rows.find(r=>r.prompt || (r.daysLeft!==null && r.daysLeft<=30 && !policySuppressesPrompt(r.policy)))?.label || 'None';
     body.innerHTML = rows.slice(0,18).map(r=>{
       const onHandText = r.unit==='g' ? grams(r.onHand) : `${r.onHand} ${esc(r.unit)}`.trim();
       const usageText = r.usage90 ? (r.unit==='g' ? grams(r.usage90) : `${Math.round(r.usage90)} ${esc(r.unit)}`.trim()) + ' / 90d' : 'No recent use';
       const days = r.daysLeft===null ? 'No usage trend' : `${r.daysLeft} days`;
       let rec = 'Monitor';
-      if(r.low) rec = 'Reorder now';
+      if(r.low && policySuppressesPrompt(r.policy)) rec = `${policyLabel(r.policy)} — no prompt`;
+      else if(r.snoozed) rec = 'Snoozed';
+      else if(r.prompt) rec = 'Reorder now';
       else if(r.daysLeft!==null && r.daysLeft <= 30) rec = 'Plan reorder';
       else if(r.daysLeft!==null && r.daysLeft <= 60) rec = 'Watch closely';
-      return `<tr><td><strong>${esc(r.label)}</strong></td><td>${onHandText}</td><td>${usageText}</td><td>${days}</td><td>${rec}</td></tr>`;
+      return `<tr><td><strong>${esc(r.label)}</strong><div class="policy-note">${esc(policyLabel(r.policy||'auto'))}</div></td><td>${onHandText}</td><td>${usageText}</td><td>${days}</td><td>${rec}</td></tr>`;
     }).join('') || '<tr><td colspan="5">No inventory records found.</td></tr>';
   }
 
@@ -2173,7 +2275,26 @@
   }
 
 
+
+  function bindInventoryQuickActions(){
+    document.querySelectorAll('[data-inventory-jump]').forEach(btn=>{
+      if(btn.dataset.boundInventoryJump==='1') return;
+      btn.dataset.boundInventoryJump='1';
+      btn.addEventListener('click',()=>{
+        const tab=btn.dataset.tabJump;
+        if(tab) setTab(tab);
+        const id=btn.dataset.inventoryJump;
+        const target=$(id);
+        if(target?.tagName==='DETAILS') target.open=true;
+        target?.scrollIntoView({behavior:'smooth',block:'start'});
+        const focusId=btn.dataset.focus;
+        if(focusId && $(focusId)) setTimeout(()=>$(focusId).focus(),250);
+      });
+    });
+  }
+
   function render(){
+    bindInventoryQuickActions();
     renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderForecast();renderLedger();
   }
 
@@ -2197,29 +2318,31 @@
       supplier:$('rawSupplier').value.trim(),
       reorder_link:$('rawReorderLink').value.trim(),
       reorder_quantity:num($('rawReorderQty').value)||1,
+      reorder_policy:$('rawReorderPolicy')?.value || 'auto',
+      snooze_until:$('rawSnoozeUntil')?.value || '',
       notes:$('rawNotes').value.trim(),
       created_at:existing?.created_at||new Date().toISOString(),
       updated_at:new Date().toISOString()
     });
   }
   function fillRaw(r){
-    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawRollLabel').value=r.roll_label||'';$('rawRollType').value=r.roll_type||'spool';$('rawMounted').value=r.is_mounted?'yes':'no';$('rawReusableSpool').value=r.reusable_spool?'yes':'no';$('rawRollStatus').value=r.roll_status||'active';$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawSupplier').value=r.supplier||'';$('rawReorderLink').value=r.reorder_link||'';$('rawReorderQty').value=r.reorder_quantity||1;$('rawNotes').value=r.notes;
+    $('rawId').value=r.id;$('rawMaterial').value=r.material_type;$('rawColor').value=r.color;$('rawBrand').value=r.brand;$('rawRollLabel').value=r.roll_label||'';$('rawRollType').value=r.roll_type||'spool';$('rawMounted').value=r.is_mounted?'yes':'no';$('rawReusableSpool').value=r.reusable_spool?'yes':'no';$('rawRollStatus').value=r.roll_status||'active';$('rawLocation').value=r.location;$('rawStarting').value=r.starting_grams;$('rawRemaining').value=r.remaining_grams;$('rawThreshold').value=r.reorder_threshold_grams;$('rawCost').value=r.spool_cost||'';$('rawSupplier').value=r.supplier||'';$('rawReorderLink').value=r.reorder_link||'';$('rawReorderQty').value=r.reorder_quantity||1;if($('rawReorderPolicy')) $('rawReorderPolicy').value=r.reorder_policy||'auto';if($('rawSnoozeUntil')) $('rawSnoozeUntil').value=r.snooze_until||'';$('rawNotes').value=r.notes;
     $('rawSaveBtn').textContent='Update Raw Material';
     $('rawEditor').open=true;$('rawEditor').scrollIntoView({behavior:'smooth'});
   }
   function resetRaw(){
-    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawReorderQty').value=1;$('rawRollType').value='spool';$('rawMounted').value='yes';$('rawReusableSpool').value='yes';$('rawRollStatus').value='active';$('rawSaveBtn').textContent='Save Raw Material';
+    $('rawForm').reset();$('rawId').value='';$('rawStarting').value=1000;$('rawRemaining').value=1000;$('rawThreshold').value=250;$('rawReorderQty').value=1;if($('rawReorderPolicy')) $('rawReorderPolicy').value='auto';if($('rawSnoozeUntil')) $('rawSnoozeUntil').value='';$('rawRollType').value='spool';$('rawMounted').value='yes';$('rawReusableSpool').value='yes';$('rawRollStatus').value='active';$('rawSaveBtn').textContent='Save Raw Material';
   }
 
   function supplyFromForm(){
     const existing=supplies().find(s=>s.id===$('supplyId').value);
-    return normalizeSupply({id:$('supplyId').value||uid(),item_name:$('supplyName').value.trim(),category:$('supplyCategory').value.trim(),unit_type:$('supplyUnit').value,quantity_on_hand:num($('supplyQty').value),cost_per_unit:num($('supplyCost').value),reorder_threshold:num($('supplyThreshold').value),supplier:$('supplySupplier').value.trim(),reorder_link:$('supplyReorderLink').value.trim(),notes:$('supplyNotes').value.trim(),created_at:existing?.created_at||new Date().toISOString(),updated_at:new Date().toISOString()});
+    return normalizeSupply({id:$('supplyId').value||uid(),item_name:$('supplyName').value.trim(),category:$('supplyCategory').value.trim(),unit_type:$('supplyUnit').value,quantity_on_hand:num($('supplyQty').value),cost_per_unit:num($('supplyCost').value),reorder_threshold:num($('supplyThreshold').value),supplier:$('supplySupplier').value.trim(),reorder_link:$('supplyReorderLink').value.trim(),reorder_policy:$('supplyReorderPolicy')?.value || 'auto',snooze_until:$('supplySnoozeUntil')?.value || '',notes:$('supplyNotes').value.trim(),created_at:existing?.created_at||new Date().toISOString(),updated_at:new Date().toISOString()});
   }
   function fillSupply(s){
-    $('supplyId').value=s.id;$('supplyName').value=s.item_name;$('supplyCategory').value=s.category;$('supplyUnit').value=s.unit_type||'each';$('supplyQty').value=s.quantity_on_hand;$('supplyCost').value=s.cost_per_unit||'';$('supplyThreshold').value=s.reorder_threshold||0;$('supplySupplier').value=s.supplier||'';$('supplyReorderLink').value=s.reorder_link||'';$('supplyNotes').value=s.notes||'';
+    $('supplyId').value=s.id;$('supplyName').value=s.item_name;$('supplyCategory').value=s.category;$('supplyUnit').value=s.unit_type||'each';$('supplyQty').value=s.quantity_on_hand;$('supplyCost').value=s.cost_per_unit||'';$('supplyThreshold').value=s.reorder_threshold||0;$('supplySupplier').value=s.supplier||'';$('supplyReorderLink').value=s.reorder_link||'';if($('supplyReorderPolicy')) $('supplyReorderPolicy').value=s.reorder_policy||'auto';if($('supplySnoozeUntil')) $('supplySnoozeUntil').value=s.snooze_until||'';$('supplyNotes').value=s.notes||'';
     $('supplySaveBtn').textContent='Update Supply';setTab('supplies');$('supplyEditor').open=true;$('supplyEditor').scrollIntoView({behavior:'smooth'});
   }
-  function resetSupply(){ $('supplyForm').reset();$('supplyId').value='';$('supplyQty').value=0;$('supplyThreshold').value=0;$('supplyUnit').value='each';$('supplySaveBtn').textContent='Save Supply'; }
+  function resetSupply(){ $('supplyForm').reset();$('supplyId').value='';$('supplyQty').value=0;$('supplyThreshold').value=0;if($('supplyReorderPolicy')) $('supplyReorderPolicy').value='auto';if($('supplySnoozeUntil')) $('supplySnoozeUntil').value='';$('supplyUnit').value='each';$('supplySaveBtn').textContent='Save Supply'; }
 
   function fgFromForm(){
     const existing=finished().find(f=>f.id===$('fgId').value);
