@@ -2087,67 +2087,13 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
   <script src="js/erp-polish.js?v=20260608"></script>
 
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
+<!-- === OliPoly Search Link Support: Quote === -->
 <script>
 (function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
-
-
-
-<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
-  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
-  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
-  function apply(){
-    const value=query(); if(!value) return;
-    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
-    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
-  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
+  function query(){ const p=new URLSearchParams(window.location.search||''); return (p.get('search')||p.get('q')||p.get('customer')||p.get('quote')||p.get('order')||p.get('op')||'').trim(); }
+  function fire(el){ if(!el) return; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }
+  function apply(){ const value=query(); if(!value) return; ['searchInput','customerName','quoteCustomerName','customerEmail','projectTitle'].some(id=>{ const el=document.getElementById(id); if(el){ el.value=value; fire(el); return true; } return false; }); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(apply,250)); else setTimeout(apply,250);
 })();
 </script>
 

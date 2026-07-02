@@ -760,7 +760,6 @@
         <label>Status<select id="rawStatus"><option value="all">All</option><option value="ok">Good</option><option value="low">Low</option><option value="out">Out</option></select></label>
         <label>Material<select id="rawFilterMaterial"><option value="all">All Materials</option><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label>
         <label>Sort<select id="rawSort"><option value="status">Need first</option><option value="remaining">Lowest grams</option><option value="color">Color</option><option value="material">Material</option><option value="brand">Brand</option></select></label>
-        <button class="ghost" id="rawRunSearch" type="button">Search</button>
         <button class="ghost" id="rawClearFilters" type="button">Clear</button>
       </div>
       <div class="summary-grid" id="rawSummary"></div>
@@ -783,7 +782,6 @@
         <button class="ghost" id="supplyRunSearch" type="button">Search</button>
         <label>Category<select id="supplyFilterCategory"><option value="all">All Categories</option></select></label>
         <label>Sort<select id="supplySort"><option value="need">Need first</option><option value="name">Name</option><option value="qty">Lowest qty</option><option value="value">Highest value</option></select></label>
-        <button class="ghost" id="supplyRunSearch" type="button">Search</button>
         <button class="ghost" id="supplyClearFilters" type="button">Clear</button>
       </div>
       <div class="supply-hero-grid">
@@ -802,7 +800,6 @@
         <button class="ghost" id="fgRunSearch" type="button">Search</button>
         <label>Status<select id="fgFilterStatus"><option value="all">All</option><option value="active">Active</option><option value="low">Low</option><option value="sold_out">Sold Out</option><option value="seasonal">Seasonal</option><option value="retired">Retired</option></select></label>
         <label>Sort<select id="fgSort"><option value="need">Need first</option><option value="qty">Lowest qty</option><option value="value">Highest value</option><option value="name">Name</option></select></label>
-        <button class="ghost" id="fgRunSearch" type="button">Search</button>
         <button class="ghost" id="fgClearFilters" type="button">Clear</button>
       </div>
       <div class="cards-grid" id="finishedCards"></div>
@@ -832,6 +829,7 @@
       <span class="kicker">Usage / movement log</span>
       <div class="toolbar compact">
         <label>Search<input id="ledgerSearch" placeholder="material, product, source..."></label>
+        <button class="ghost" id="ledgerRunSearch" type="button">Search</button>
         <label>Type<select id="ledgerType"><option value="all">All</option><option value="raw_adjust">Raw Adjust</option><option value="raw_usage">Raw Usage</option><option value="supply_usage">Supply Usage</option><option value="fg_adjust">Finished Adjust</option><option value="import">Import</option></select></label>
         <label>Sort<select id="ledgerSort"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label>
         <button class="ghost" id="exportLedgerBtn" type="button">Export CSV</button><button class="ghost" id="cleanDuplicateLedgerBtn2" type="button">Clean Duplicates</button><button class="ghost" id="clearLedgerBtn" type="button">Clear Log</button>
@@ -2283,15 +2281,29 @@
     const target = deepLinkInventoryParam();
     if(!target) return;
     window.__olipolyInventoryDeepLinkOpened = true;
-    if (typeof setTab === 'function') setTab('raw');
-    else state.tab = 'raw';
-    state.rawSearch = target;
-    state.rawMaterial = 'all';
-    if($('rawSearch')) $('rawSearch').value = target;
-    if($('rawFilterMaterial')) $('rawFilterMaterial').value = 'all';
-    renderRawSummary();
-    renderRawCards();
-    setTimeout(() => $('rawPanel')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    const p = new URLSearchParams(window.location.search);
+    const scope = (p.get('scope') || '').toLowerCase();
+    const tab = scope === 'supplies' ? 'supplies' : scope === 'finished' ? 'finished' : 'raw';
+    setTab(tab);
+    if(tab === 'supplies'){
+      state.supplySearch = target;
+      if($('supplySearch')) $('supplySearch').value = target;
+      renderSupplyCards();
+      setTimeout(() => $('suppliesPanel')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    } else if(tab === 'finished'){
+      state.fgSearch = target;
+      if($('fgSearch')) $('fgSearch').value = target;
+      renderFinishedCards();
+      setTimeout(() => $('finishedPanel')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    } else {
+      state.rawSearch = target;
+      state.rawMaterial = 'all';
+      if($('rawSearch')) $('rawSearch').value = target;
+      if($('rawFilterMaterial')) $('rawFilterMaterial').value = 'all';
+      renderRawSummary();
+      renderRawCards();
+      setTimeout(() => $('rawPanel')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    }
     toast(`Filtered inventory for: ${target}`);
   }
 
@@ -2549,7 +2561,7 @@
     $('rawSearch').addEventListener('input',e=>{state.rawSearch=e.target.value;renderRawSummary();renderRawCards()});$('rawSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runInventorySearch('raw')}});$('rawRunSearch')?.addEventListener('click',()=>runInventorySearch('raw'));$('rawStatus').addEventListener('change',e=>{state.rawStatus=e.target.value;renderRawSummary();renderRawCards()});$('rawFilterMaterial').addEventListener('change',e=>{state.rawMaterial=e.target.value;renderRawSummary();renderRawCards()});$('rawSort').addEventListener('change',e=>{state.rawSort=e.target.value;renderRawCards()});$('rawClearFilters').addEventListener('click',()=>{state.rawSearch='';state.rawStatus='all';state.rawMaterial='all';state.rawSort='status';$('rawSearch').value='';$('rawStatus').value='all';$('rawFilterMaterial').value='all';$('rawSort').value='status';renderRawSummary();renderRawCards()});
     $('supplySearch')?.addEventListener('input',e=>{state.supplySearch=e.target.value;renderSupplyCards()});$('supplySearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runInventorySearch('supplies')}});$('supplyRunSearch')?.addEventListener('click',()=>runInventorySearch('supplies'));$('supplyFilterCategory')?.addEventListener('change',e=>{state.supplyCategory=e.target.value;renderSupplyCards()});$('supplySort')?.addEventListener('change',e=>{state.supplySort=e.target.value;renderSupplyCards()});$('supplyClearFilters')?.addEventListener('click',()=>{state.supplySearch='';state.supplyCategory='all';state.supplySort='need';$('supplySearch').value='';$('supplyFilterCategory').value='all';$('supplySort').value='need';renderSupplyCards()});
     $('fgSearch').addEventListener('input',e=>{state.fgSearch=e.target.value;renderFinishedCards()});$('fgSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runInventorySearch('finished')}});$('fgRunSearch')?.addEventListener('click',()=>runInventorySearch('finished'));$('fgFilterStatus').addEventListener('change',e=>{state.fgStatus=e.target.value;renderFinishedCards()});$('fgSort').addEventListener('change',e=>{state.fgSort=e.target.value;renderFinishedCards()});$('fgClearFilters').addEventListener('click',()=>{state.fgSearch='';state.fgStatus='all';state.fgSort='need';$('fgSearch').value='';$('fgFilterStatus').value='all';$('fgSort').value='need';renderFinishedCards()});
-    $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
+    $('ledgerSearch').addEventListener('input',e=>{state.ledgerSearch=e.target.value;renderLedger()});$('ledgerSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();state.ledgerSearch=$('ledgerSearch')?.value||'';renderLedger()}});$('ledgerRunSearch')?.addEventListener('click',()=>{state.ledgerSearch=$('ledgerSearch')?.value||'';renderLedger();$('ledgerPanel')?.scrollIntoView({behavior:'smooth',block:'start'})});$('ledgerType').addEventListener('change',e=>{state.ledgerType=e.target.value;renderLedger()});$('ledgerSort').addEventListener('change',e=>{state.ledgerSort=e.target.value;renderLedger()});$('clearLedgerBtn').addEventListener('click',()=>{if(confirm('Clear the movement log?')){saveLedger([]);render();toast('Movement log cleared.')}})
     $('cancelAdjustBtn').addEventListener('click',closeAdjust);$('confirmAdjustBtn').addEventListener('click',confirmAdjust);
     document.addEventListener('click',e=>{
       const tabBtn=e.target.closest('.tab[data-tab]');
@@ -2617,30 +2629,5 @@
   });
 })();
 </script>
-
-
-
-<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function q(){ return (params().get('search') || params().get('q') || params().get('material') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || '').trim(); }
-  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
-  function click(id){ const el=document.getElementById(id); if(el) { try{ el.click(); }catch{} return true; } return false; }
-  function apply(){
-    const value=q(); if(!value) return;
-    let applied=false;
-    ['rawSearch','supplySearch','fgSearch','ledgerSearch','searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => { if(setVal(id,value)) applied=true; });
-    if(setVal('rawSearch', value)) { click('rawRunSearch'); }
-    if(setVal('searchInput', value)) { click('searchBtn'); click('runSearchBtn'); }
-    if(setVal('searchFilter', value)) { click('clearFiltersBtn'); setVal('searchFilter', value); }
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,150); setTimeout(apply,900); setTimeout(apply,2200); });
-  else { setTimeout(apply,150); setTimeout(apply,900); setTimeout(apply,2200); }
-})();
-</script>
-
 </body>
 </html>
-<script>window.inventoryMovementHistory={read(){try{return JSON.parse(localStorage.getItem("olipoly_inventory_movements")||"[]")}catch(e){return[]}},add(entry){const r=this.read();r.unshift({...entry,timestamp:new Date().toISOString()});localStorage.setItem("olipoly_inventory_movements",JSON.stringify(r.slice(0,5000)));}};</script>

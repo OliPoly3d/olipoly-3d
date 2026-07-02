@@ -955,7 +955,10 @@ body{font-family:Inter,Arial,sans-serif}
   .oa-daily-action{width:100%}
 }
 
-</style>
+
+    .order-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+    @media(max-width:700px){.order-search-row{grid-template-columns:1fr}.order-search-row .btn-ghost{width:100%}}
+  </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script defer src="js/erp-core.js"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
@@ -1073,7 +1076,7 @@ body{font-family:Inter,Arial,sans-serif}
     <div class="card" style="margin-bottom:22px;">
       <h3>Find Orders</h3>
       <div class="filters">
-        <div><label for="searchInput">Search</label><input id="searchInput" placeholder="Order #, customer, title, email" /></div>
+        <div><label for="searchInput">Search</label><div class="order-search-row"><input id="searchInput" placeholder="Order #, customer, title, email" /><button class="btn-ghost" id="ordersRunSearchBtn" type="button">Search</button></div></div>
         <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option></select></div>
         <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
         <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
@@ -2644,36 +2647,43 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
     function filteredOrders(){
       const q = $('searchInput').value.trim().toLowerCase();
-      let list = [...orders];
+      let list = q ? [...orders] : [...orders];
 
-      if (orderViewMode === 'active') list = activeOrders();
-      else if (orderViewMode === 'needs') list = needsActionOrders();
-      else if (orderViewMode === 'closed') list = closedOrders();
-
-      if (q) list = list.filter(o => `${o.order_number || ''} ${o.customer_name || ''} ${o.customer_email || ''} ${o.order_title || ''} ${o.po_number || ''}`.toLowerCase().includes(q));
-      if ($('statusFilter').value !== 'all') list = list.filter(o => o.status === $('statusFilter').value);
-      if ($('paymentFilter').value !== 'all') list = list.filter(o => o.payment_status === $('paymentFilter').value);
-      if ($('invoiceFilter') && $('invoiceFilter').value !== 'all') {
-        const invoiceState = $('invoiceFilter').value;
-        list = list.filter(o => {
-          if (invoiceState === 'none') return !o.invoice_number;
-          if (invoiceState === 'ready') return !!o.invoice_number && !o.invoice_sent && o.payment_status !== 'paid' && !isInvoiceOverdue(o);
-          if (invoiceState === 'sent') return !!o.invoice_number && !!o.invoice_sent && o.payment_status !== 'paid' && !isInvoiceOverdue(o);
-          if (invoiceState === 'overdue') return isInvoiceOverdue(o);
-          if (invoiceState === 'paid') return !!o.invoice_number && o.payment_status === 'paid';
-          return true;
-        });
+      // If a search term is present, search across all orders, including closed/archived history.
+      // Without a search term, respect the selected daily view tab.
+      if (!q) {
+        if (orderViewMode === 'active') list = activeOrders();
+        else if (orderViewMode === 'needs') list = needsActionOrders();
+        else if (orderViewMode === 'closed') list = closedOrders();
       }
-      if ($('financeFilter') && $('financeFilter').value !== 'all') {
-        const financeState = $('financeFilter').value;
-        list = list.filter(o => {
-          const flags = orderClosureFlags(o);
-          const ready = !flags.finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0;
-          if (financeState === 'pushed') return !!o.finance_pushed;
-          if (financeState === 'not_pushed') return !o.finance_pushed && !flags.finance_not_required;
-          if (financeState === 'ready') return ready && !o.finance_pushed;
-          return true;
-        });
+
+      if (q) {
+        list = list.filter(o => `${o.order_number || ''} ${o.customer_name || ''} ${o.customer_email || ''} ${o.order_title || ''} ${o.po_number || ''} ${o.quote_number || ''} ${o.id || ''}`.toLowerCase().includes(q));
+      } else {
+        if ($('statusFilter').value !== 'all') list = list.filter(o => o.status === $('statusFilter').value);
+        if ($('paymentFilter').value !== 'all') list = list.filter(o => o.payment_status === $('paymentFilter').value);
+        if ($('invoiceFilter') && $('invoiceFilter').value !== 'all') {
+          const invoiceState = $('invoiceFilter').value;
+          list = list.filter(o => {
+            if (invoiceState === 'none') return !o.invoice_number;
+            if (invoiceState === 'ready') return !!o.invoice_number && !o.invoice_sent && o.payment_status !== 'paid' && !isInvoiceOverdue(o);
+            if (invoiceState === 'sent') return !!o.invoice_number && !!o.invoice_sent && o.payment_status !== 'paid' && !isInvoiceOverdue(o);
+            if (invoiceState === 'overdue') return isInvoiceOverdue(o);
+            if (invoiceState === 'paid') return !!o.invoice_number && o.payment_status === 'paid';
+            return true;
+          });
+        }
+        if ($('financeFilter') && $('financeFilter').value !== 'all') {
+          const financeState = $('financeFilter').value;
+          list = list.filter(o => {
+            const flags = orderClosureFlags(o);
+            const ready = !flags.finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0;
+            if (financeState === 'pushed') return !!o.finance_pushed;
+            if (financeState === 'not_pushed') return !o.finance_pushed && !flags.finance_not_required;
+            if (financeState === 'ready') return ready && !o.finance_pushed;
+            return true;
+          });
+        }
       }
       if ($('sortBy').value === 'customer') list.sort((a,b) => String(a.customer_name || '').localeCompare(String(b.customer_name || '')));
       else if ($('sortBy').value === 'total_desc') list.sort((a,b) => num(b.order_total) - num(a.order_total));
@@ -2907,6 +2917,11 @@ resetForm();
       return (p.get('order') || p.get('op') || p.get('id') || '').trim();
     }
 
+    function deepLinkOrderSearchParam(){
+      const p = new URLSearchParams(window.location.search);
+      return (p.get('search') || p.get('q') || p.get('customer') || p.get('quote') || p.get('material') || '').trim();
+    }
+
     function clearOrderSearchForDeepLink(){
       const search = $('searchInput');
       if(search) {
@@ -2951,6 +2966,20 @@ resetForm();
       }
     }
 
+
+    function applyDeepLinkedOrderSearch(){
+      if (deepLinkOrderParam()) return;
+      const target = deepLinkOrderSearchParam();
+      if(!target || !orders.length) return;
+      const search = $('searchInput');
+      if(search){
+        search.value = target;
+        search.dispatchEvent(new Event('input', { bubbles:true }));
+      }
+      renderList();
+      setMsg($('authMessage'), `Showing Orders search results for "${target}".`);
+    }
+
     async function fetchOrders(){
       await getCurrentUser();
       if(!currentUser){ updateAuthVisibility(); return setMsg($('authMessage'),'Login first',true); }
@@ -2960,6 +2989,7 @@ resetForm();
       renderList();
       setMsg($('authMessage'),`Loaded ${orders.length} orders.`);
       tryOpenDeepLinkedOrder();
+      applyDeepLinkedOrderSearch();
     }
 
     async function saveOrder(){
@@ -3827,6 +3857,8 @@ if ($('openVenmoBtn')) {
       renderList();
     };
     $('searchInput').addEventListener('input', renderList);
+    $('searchInput').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); renderList(); } });
+    $('ordersRunSearchBtn')?.addEventListener('click', renderList);
     $('statusFilter').addEventListener('input', renderList);
     $('paymentFilter').addEventListener('input', renderList);
     $('financeFilter')?.addEventListener('input', renderList);

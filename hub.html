@@ -49,7 +49,7 @@
           <p>Fast access to the private tools you actually use: orders, production, inventory, finance, quotes, and operating references. Dark mode stays the visual cue for internal OliPoly work.</p>
           <div class="search-card">
             <div class="search-row">
-              <input id="hubSearch" type="search" placeholder="Search tools: orders, quote, finance, inventory, production..." autocomplete="off" />
+              <input id="hubSearch" type="search" placeholder="Search OP#, customer, material, vendor, quote, tool..." autocomplete="off" />
               <a class="ghost" href="#tools">Browse tools</a>
             </div>
             <div class="results" id="searchResults"></div>
@@ -186,12 +186,12 @@
       arr(raw).forEach(r => {
         const title = [r.material_type || r.material, r.color, r.brand || r.brand_type].filter(Boolean).join(' / ');
         const text = [title, r.roll_label, r.supplier, r.reorder_policy, r.notes].join(' ').toLowerCase();
-        if (title && text.includes(q)) hits.push({icon:'⬢', title, sub:`Inventory material · ${Number(r.remaining_grams || 0)}g remaining`, href:`inventory-control.html?search=${encodeURIComponent(q)}`});
+        if (title && text.includes(q)) hits.push({icon:'⬢', title:`Found material: ${title}`, sub:`Inventory material · ${Number(r.remaining_grams || 0)}g remaining`, href:`inventory-control.html?search=${encodeURIComponent(q)}`});
       });
       arr(supplies).forEach(s => {
         const title = s.item_name || s.name || '';
         const text = [title, s.category, s.supplier, s.reorder_policy, s.notes].join(' ').toLowerCase();
-        if (title && text.includes(q)) hits.push({icon:'🧰', title, sub:`Non-filament supply · ${s.quantity_on_hand ?? 0} ${s.unit_type || ''} on hand`, href:`inventory-control.html?search=${encodeURIComponent(q)}`});
+        if (title && text.includes(q)) hits.push({icon:'🧰', title:`Found supply: ${title}`, sub:`Non-filament supply · ${s.quantity_on_hand ?? 0} ${s.unit_type || ''} on hand`, href:`inventory-control.html?search=${encodeURIComponent(q)}`});
       });
       return hits.slice(0,4);
     }
@@ -250,13 +250,28 @@
     function cleanQuery(value){ return String(value || '').trim(); }
     function searchFallbacks(qRaw){
       const q = encodeURIComponent(qRaw);
-      return [
-        {icon:'📦', title:`Search Orders for "${qRaw}"`, sub:'Open Orders Admin with this search applied.', href:`orders-admin.html?search=${q}`},
-        {icon:'🖨️', title:`Search Production for "${qRaw}"`, sub:'Open Production Control with this search applied.', href:`production-control.html?search=${q}`},
-        {icon:'⬢', title:`Search Inventory for "${qRaw}"`, sub:'Open Inventory Control with this search applied.', href:`inventory-control.html?search=${q}`},
-        {icon:'💰', title:`Search Finance for "${qRaw}"`, sub:'Open Finance Pro with this search applied.', href:`finance-pro.html?search=${q}`},
-        {icon:'◈', title:`Search Quote Tool for "${qRaw}"`, sub:'Open Quote Tool with this search applied when supported.', href:`quote.html?search=${q}`}
-      ];
+      const upper = String(qRaw || '').trim().toUpperCase();
+      const looksOrder = /^(OP-|Q-|OP\d|Q\d|\d{3,})/.test(upper);
+      const looksMaterial = /(PETG|PLA|TPU|ABS|ASA|NYLON|PC|FILAMENT|SPOOL|ROLL|BAMBU|BLUE|BLACK|WHITE|RED|COPPER|SILVER|GOLD|GREEN|YELLOW|PINK|PURPLE)/i.test(qRaw);
+      const base = [];
+      if(looksOrder){
+        base.push({icon:'📦', title:`Order lookup: ${qRaw}`, sub:'Open Orders Admin and search all active/closed orders.', href:`orders-admin.html?search=${q}`});
+        base.push({icon:'🖨️', title:`Production lookup: ${qRaw}`, sub:'Open Production Control with this OP/quote/order search.', href:`production-control.html?search=${q}`});
+        base.push({icon:'💰', title:`Finance lookup: ${qRaw}`, sub:'Open Finance Pro with this order/customer search.', href:`finance-pro.html?search=${q}`});
+        return base;
+      }
+      if(looksMaterial){
+        base.push({icon:'⬢', title:`Material lookup: ${qRaw}`, sub:'Open Inventory Control filtered to this material/color/brand.', href:`inventory-control.html?search=${q}`});
+        base.push({icon:'🖨️', title:`Production material search: ${qRaw}`, sub:'Open Production Control filtered to this material.', href:`production-control.html?search=${q}`});
+      }
+      base.push(
+        {icon:'📦', title:`Search Orders for "${qRaw}"`, sub:'Customer, OP#, title, email, PO, or quote reference.', href:`orders-admin.html?search=${q}`},
+        {icon:'🖨️', title:`Search Production for "${qRaw}"`, sub:'Job, customer, OP#, material, color, or quote reference.', href:`production-control.html?search=${q}`},
+        {icon:'⬢', title:`Search Inventory for "${qRaw}"`, sub:'Material, color, brand, supplier, notes, or supply.', href:`inventory-control.html?search=${q}`},
+        {icon:'💰', title:`Search Finance for "${qRaw}"`, sub:'Revenue, expense, vendor, customer, notes, or category.', href:`finance-pro.html?search=${q}`},
+        {icon:'◈', title:`Open Quote Tool for "${qRaw}"`, sub:'Start a quote with this customer/project search where supported.', href:`quote.html?search=${q}`}
+      );
+      return base;
     }
     function dedupeHits(hits){
       const seen = new Set();
