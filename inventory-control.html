@@ -907,6 +907,15 @@
   function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v))}
   function grams(v){const n=num(v);return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`}
+  function validDateOrNull(v){
+    const s=String(v||'').trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+  }
+  function cloudLedgerType(v){
+    const t=String(v||'').trim().toLowerCase();
+    if(t === 'import') return 'import';
+    return 'adjust';
+  }
   function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
   async function sbApi(path, options={}){
@@ -1546,7 +1555,7 @@
       reorder_link:r.reorder_link,
       reorder_quantity:num(r.reorder_quantity),
       reorder_policy:r.reorder_policy || 'auto',
-      snooze_until:r.snooze_until || '',
+      snooze_until:validDateOrNull(r.snooze_until),
       reserved_grams:typeof reservedGramsForRaw === 'function' ? reservedGramsForRaw(r) : 0,
       notes:r.notes,
       updated_at:new Date().toISOString()
@@ -1578,7 +1587,8 @@
   async function cloudSaveLedger(l){
     if(!state.cloud || !state.user?.id) return;
     const row=normalizeLedger(l||{});
-    const safeType=row.type || 'adjust';
+    const originalType=row.type || 'adjust';
+    const safeType=cloudLedgerType(originalType);
     const stableId = row.id || ('ledger_' + btoa(unescape(encodeURIComponent(ledgerFingerprint(row)))).replace(/[^a-zA-Z0-9]/g,'').slice(0,42));
     const payload={
       id:stableId,
@@ -1591,20 +1601,24 @@
       item_label:row.item || 'Inventory movement',
       amount:String(row.amount ?? ''),
       quantity_change:parseLedgerAmount(row.amount),
-      note:row.note || '',
-      notes:row.note || '',
+      note:`${row.note || ''}${originalType && originalType !== safeType ? ` [local type: ${originalType}]` : ''}`.trim(),
+      notes:`${row.note || ''}${originalType && originalType !== safeType ? ` [local type: ${originalType}]` : ''}`.trim(),
       source:row.note || ''
     };
-    await sbApi('/rest/v1/inventory_transactions?on_conflict=id',{
-      method:'POST',
-      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify(payload)
-    });
+    try{
+      await sbApi('/rest/v1/inventory_transactions?on_conflict=id',{
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify(payload)
+      });
+    }catch(err){
+      console.warn('ledger cloud sync skipped; local movement log remains saved', err);
+    }
   }
 
   async function cloudSaveSupply(s){
     if(!state.cloud) return;
-    const payload={id:s.id,user_id:state.user.id,item_name:s.item_name,category:s.category,unit_type:s.unit_type,quantity_on_hand:s.quantity_on_hand,cost_per_unit:s.cost_per_unit,reorder_threshold:s.reorder_threshold,supplier:s.supplier,reorder_link:s.reorder_link,reorder_policy:s.reorder_policy||'auto',snooze_until:s.snooze_until||'',notes:s.notes,updated_at:new Date().toISOString()};
+    const payload={id:s.id,user_id:state.user.id,item_name:s.item_name,category:s.category,unit_type:s.unit_type,quantity_on_hand:s.quantity_on_hand,cost_per_unit:s.cost_per_unit,reorder_threshold:s.reorder_threshold,supplier:s.supplier,reorder_link:s.reorder_link,reorder_policy:s.reorder_policy||'auto',snooze_until:validDateOrNull(s.snooze_until),notes:s.notes,updated_at:new Date().toISOString()};
     try{
       await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
     }catch(err){
