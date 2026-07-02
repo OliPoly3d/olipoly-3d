@@ -958,7 +958,10 @@ body{font-family:Inter,Arial,sans-serif}
 
     .order-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
     @media(max-width:700px){.order-search-row{grid-template-columns:1fr}.order-search-row .btn-ghost{width:100%}}
-  </style>
+  
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script defer src="js/erp-core.js"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
@@ -2851,6 +2854,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
             ${orderIsClosed(o) ? `<span class="payment-pill p-closed-ready">Closed</span>` : ''}
           </div>
           <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
+          ${o.customer_name ? `<a class="customer-360-chip" href="customer-360.html?search=${encodeURIComponent(o.customer_name)}" onclick="event.stopPropagation()">👤 Customer 360</a>` : ''}
         </div>
       `).join('');
       [...document.querySelectorAll('.order-row')].forEach(row => {
@@ -3141,7 +3145,10 @@ const payload = snapshotForm();
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>${bodyHtml}
 
 
 </body></html>`);
@@ -4143,7 +4150,10 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}</style></head><body>${invoiceHtml}
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>${invoiceHtml}
 
 
 </body></html>`);
@@ -4342,7 +4352,10 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>${html}
 
 
 </body></html>`);
@@ -4544,7 +4557,10 @@ if ($('openVenmoBtn')) {
         return;
       }
       win.document.open();
-      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script>
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script>
 
 
 </body></html>`);
@@ -5838,7 +5854,10 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     const toolbarCss = `.op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}`;
     const toolbar = `<div class="op-print-toolbar"><div><strong>${opEsc(title)}</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>`;
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${opEsc(title)}</title><style>${toolbarCss}${css}</style></head><body>${toolbar}${bodyHtml}
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${opEsc(title)}</title><style>${toolbarCss}${css}
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>${toolbar}${bodyHtml}
 
 
 </body></html>`);
@@ -6087,7 +6106,10 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
     var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
     win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>' + toolbar + bodyHtml + '</body></html>');
     win.document.close();
     try { win.focus(); } catch(e) {}
   }
@@ -6550,7 +6572,10 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       return;
     }
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Professional Invoice ${escapeHtml(d.invoiceNumber)}</title><style>${professionalInvoiceCss()}</style></head><body>${professionalInvoiceHtml(d)}
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Professional Invoice ${escapeHtml(d.invoiceNumber)}</title><style>${professionalInvoiceCss()}
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
+</style></head><body>${professionalInvoiceHtml(d)}
 
 
 </body></html>`);
@@ -6786,6 +6811,9 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     }
     input,select,textarea{color:var(--text,#eef4ff)!important;background:rgba(255,255,255,.075)!important;border-color:rgba(151,179,255,.24)!important}
     input::placeholder,textarea::placeholder{color:rgba(218,226,255,.62)!important}
+
+    .customer-360-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(126,123,255,.14);border:1px solid rgba(126,123,255,.26);color:#dfe6ff;text-decoration:none;font-size:.72rem;font-weight:900}
+    .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
 </style>
 
 <script id="chmDomInjectModule">

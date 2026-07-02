@@ -1442,6 +1442,8 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
     }
     input,select,textarea{color:var(--text,#eef4ff)!important;background:rgba(255,255,255,.075)!important;border-color:rgba(151,179,255,.24)!important}
     input::placeholder,textarea::placeholder{color:rgba(218,226,255,.62)!important}
+
+  .customer-360-inline{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;min-height:34px;padding:7px 10px;border-radius:999px;background:rgba(126,123,255,.12);border:1px solid rgba(126,123,255,.24);color:var(--text,#eef4ff);font-size:.76rem;font-weight:900;text-decoration:none}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script defer src="js/erp-core.js"></script>
@@ -1538,7 +1540,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
         </div>
 
         <div class="form-grid">
-          <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /></div>
+          <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /><a class="customer-360-inline" id="quoteCustomer360Btn" href="customer-360.html">👤 Customer 360</a></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="email@example.com" /></div>
           <div class="full"><label for="quoteTitle">Project / Quote Title</label><input id="quoteTitle" placeholder="Example: Custom name sign, replacement clip, beach toy set" /></div>
           <div class="full"><label for="projectImageUrl">Project Image URL <span style="font-weight:600;color:#9b8b9a;">(optional)</span></label><input id="projectImageUrl" placeholder="Optional: paste a JPG/PNG/WebP URL, CAD screenshot URL, or leave blank for OliPoly placeholder" /><p class="hint" style="margin:6px 0 0;font-size:.82rem;line-height:1.4;">Leave blank to use the built-in OliPoly project preview placeholder in quote PDFs.</p></div>
@@ -2113,5 +2115,14 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 })();
 </script>
 
+<script>
+(function(){
+  const btn=document.getElementById('quoteCustomer360Btn');
+  const input=document.getElementById('customerName');
+  if(!btn||!input) return;
+  function sync(){ const q=(input.value||'').trim(); btn.href='customer-360.html'+(q?'?search='+encodeURIComponent(q):''); }
+  input.addEventListener('input',sync); input.addEventListener('change',sync); sync();
+})();
+</script>
 </body>
 </html>

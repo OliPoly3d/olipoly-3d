@@ -1000,6 +1000,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
     input,select,textarea{color:#34283b!important;background:rgba(255,255,255,.94)!important;border-color:rgba(101,60,120,.24)!important}
     input::placeholder,textarea::placeholder{color:rgba(68,50,78,.55)!important}
+
+    .c360-chip{background:rgba(126,123,255,.16)!important;border-color:rgba(126,123,255,.28)!important;color:#e9edff!important;text-decoration:none!important}
+    .c360-chip:hover{background:rgba(126,123,255,.25)!important}
 </style>
 
 <script>
@@ -1037,6 +1040,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     </div>
     <div class="top-actions">
       <a class="ghost" href="hub.html">← Hub</a>
+      <a class="ghost" href="customer-360.html">Customer 360</a>
       <a class="ghost" href="inventory-control.html">Inventory Control</a>
       <button class="ghost" id="syncRepairBtn" type="button">Sync / Repair</button>
       <button class="ghost" id="exportBackupBtn" type="button">Export Backup</button>
@@ -4230,7 +4234,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}">👤 ${esc(j.customer_name)}</a>` : ''}${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
         </div>
