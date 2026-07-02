@@ -3157,6 +3157,26 @@ const payload = snapshotForm();
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
+})();
+</script>
+
 </body></html>`);
       win.document.close();
       setTimeout(() => {
@@ -3444,6 +3464,26 @@ https://olipoly3d.com`;
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
+})();
+</script>
+
 </body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`${d.payment_status === 'paid' ? 'Payment Received' : 'Invoice Ready'}: ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
     function closeInvoiceEmailModal(){$('invoiceEmailModal')?.classList.add('hidden');$('invoiceEmailModal')?.setAttribute('aria-hidden','true');document.body.style.overflow='';}
@@ -3659,6 +3699,26 @@ https://olipoly3d.com`;
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
   else setTimeout(apply, 250);
   setTimeout(apply, 1200);
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
 })();
 </script>
 
@@ -4286,6 +4346,26 @@ if ($('openVenmoBtn')) {
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
+})();
+</script>
+
 </body></html>`);
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 350);
@@ -4525,6 +4605,26 @@ if ($('openVenmoBtn')) {
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
   else setTimeout(apply, 250);
   setTimeout(apply, 1200);
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
 })();
 </script>
 
@@ -4770,6 +4870,26 @@ if ($('openVenmoBtn')) {
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
   else setTimeout(apply, 250);
   setTimeout(apply, 1200);
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
 })();
 </script>
 
@@ -6110,6 +6230,26 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
+})();
+</script>
+
 </body></html>`);
     win.document.close();
     try { win.focus(); } catch(e) {}
@@ -6399,6 +6539,26 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
   else setTimeout(apply, 250);
   setTimeout(apply, 1200);
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
 })();
 </script>
 
@@ -6908,6 +7068,26 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
   else setTimeout(apply, 250);
   setTimeout(apply, 1200);
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
 })();
 </script>
 
@@ -7520,6 +7700,26 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
   else setTimeout(apply, 250);
   setTimeout(apply, 1200);
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
 })();
 </script>
 

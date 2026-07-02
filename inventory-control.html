@@ -756,6 +756,7 @@
       <span class="kicker">Raw materials</span>
       <div class="toolbar">
         <label>Search<input id="rawSearch" placeholder="color, brand, material..."></label>
+        <button class="ghost" id="rawRunSearch" type="button">Search</button>
         <label>Status<select id="rawStatus"><option value="all">All</option><option value="ok">Good</option><option value="low">Low</option><option value="out">Out</option></select></label>
         <label>Material<select id="rawFilterMaterial"><option value="all">All Materials</option><option>PLA</option><option>PETG</option><option>TPU</option><option>ABS</option><option>ASA</option><option>Nylon</option><option>PC</option><option>Other</option></select></label>
         <label>Sort<select id="rawSort"><option value="status">Need first</option><option value="remaining">Lowest grams</option><option value="color">Color</option><option value="material">Material</option><option value="brand">Brand</option></select></label>
@@ -779,6 +780,7 @@
       <p class="muted">Track project materials that are not filament: LEDs, rope lights, keyrings, magnets, magnetic sheets, packaging, hardware, adhesive, and similar shop supplies.</p>
       <div class="toolbar compact">
         <label>Search<input id="supplySearch" placeholder="LED, magnet, keyring, category..."></label>
+        <button class="ghost" id="supplyRunSearch" type="button">Search</button>
         <label>Category<select id="supplyFilterCategory"><option value="all">All Categories</option></select></label>
         <label>Sort<select id="supplySort"><option value="need">Need first</option><option value="name">Name</option><option value="qty">Lowest qty</option><option value="value">Highest value</option></select></label>
         <button class="ghost" id="supplyRunSearch" type="button">Search</button>
@@ -797,6 +799,7 @@
       <span class="kicker">Finished goods</span>
       <div class="toolbar compact">
         <label>Search<input id="fgSearch" placeholder="product, category, recipe..."></label>
+        <button class="ghost" id="fgRunSearch" type="button">Search</button>
         <label>Status<select id="fgFilterStatus"><option value="all">All</option><option value="active">Active</option><option value="low">Low</option><option value="sold_out">Sold Out</option><option value="seasonal">Seasonal</option><option value="retired">Retired</option></select></label>
         <label>Sort<select id="fgSort"><option value="need">Need first</option><option value="qty">Lowest qty</option><option value="value">Highest value</option><option value="name">Name</option></select></label>
         <button class="ghost" id="fgRunSearch" type="button">Search</button>
@@ -907,6 +910,13 @@
   function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
   function num(v){return Number(v)||0}
   function norm(v){return String(v||'').trim().toLowerCase()}
+  function searchMatch(parts, query){
+    const q = norm(query);
+    if(!q) return true;
+    const hay = parts.map(x=>norm(x)).filter(Boolean).join(' ');
+    if(hay.includes(q)) return true;
+    return q.split(/\s+|\/|,|\|/).filter(Boolean).every(token => hay.includes(token));
+  }
   function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   function money(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v))}
   function grams(v){const n=num(v);return n>=1000?`${(n/1000).toFixed(2).replace(/\.00$/,'')}kg`:`${Math.round(n)}g`}
@@ -1393,7 +1403,7 @@
 
   function rawList(){
     let rows=raw(); const q=norm(state.rawSearch);
-    rows=rows.filter(r=>{ const g=groupForRaw(r); return (state.rawStatus==='all'||(g&&groupStatus(g)===state.rawStatus))&&(state.rawMaterial==='all'||r.material_type===state.rawMaterial)&&(!q||[r.material_type,r.color,r.brand,r.location,r.notes].some(x=>norm(x).includes(q))); });
+    rows=rows.filter(r=>{ const g=groupForRaw(r); return (state.rawStatus==='all'||(g&&groupStatus(g)===state.rawStatus))&&(state.rawMaterial==='all'||r.material_type===state.rawMaterial)&&searchMatch([r.material_type,r.color,r.brand,r.location,r.supplier,r.roll_label,r.notes,r.reorder_policy], q); });
     rows.sort((a,b)=>{
       if(state.rawSort==='color') return String(a.color||'').localeCompare(String(b.color||''));
       if(state.rawSort==='material') return String(a.material_type||'').localeCompare(String(b.material_type||''));
@@ -1405,7 +1415,7 @@
   }
   function fgList(){
     let rows=finished(); const q=norm(state.fgSearch);
-    rows=rows.filter(f=>(state.fgStatus==='all'||fgNeed(f)===state.fgStatus||f.status===state.fgStatus)&&(!q||[f.product_name,f.category,f.notes,f.material_recipe].some(x=>norm(x).includes(q))));
+    rows=rows.filter(f=>(state.fgStatus==='all'||fgNeed(f)===state.fgStatus||f.status===state.fgStatus)&&searchMatch([f.product_name,f.category,f.notes,f.material_recipe], q));
     rows.sort((a,b)=>{
       if(state.fgSort==='name') return String(a.product_name||'').localeCompare(String(b.product_name||''));
       if(state.fgSort==='qty') return num(a.quantity_on_hand)-num(b.quantity_on_hand);
@@ -1727,7 +1737,7 @@
       const q=norm(state.rawSearch);
       const statusOk = state.rawStatus==='all' || groupStatus(g)===state.rawStatus;
       const materialOk = state.rawMaterial==='all' || g.material_type===state.rawMaterial;
-      const searchOk = !q || [g.material_type,g.color,g.brand].some(x=>norm(x).includes(q)) || g.items.some(r=>[r.roll_label,r.location,r.notes].some(x=>norm(x).includes(q)));
+      const searchOk = searchMatch([g.material_type,g.color,g.brand, ...(g.items||[]).flatMap(r=>[r.roll_label,r.location,r.supplier,r.notes,r.reorder_policy])], q);
       return statusOk && materialOk && searchOk;
     });
     const el=$('rawSummary');
@@ -2605,6 +2615,29 @@
     if(action==='supplies') return go('supplies','suppliesPanel');
     if(action==='ledger') return go('ledger','ledgerPanel');
   });
+})();
+</script>
+
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function q(){ return (params().get('search') || params().get('q') || params().get('material') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function click(id){ const el=document.getElementById(id); if(el) { try{ el.click(); }catch{} return true; } return false; }
+  function apply(){
+    const value=q(); if(!value) return;
+    let applied=false;
+    ['rawSearch','supplySearch','fgSearch','ledgerSearch','searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => { if(setVal(id,value)) applied=true; });
+    if(setVal('rawSearch', value)) { click('rawRunSearch'); }
+    if(setVal('searchInput', value)) { click('searchBtn'); click('runSearchBtn'); }
+    if(setVal('searchFilter', value)) { click('clearFiltersBtn'); setVal('searchFilter', value); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,150); setTimeout(apply,900); setTimeout(apply,2200); });
+  else { setTimeout(apply,150); setTimeout(apply,900); setTimeout(apply,2200); }
 })();
 </script>
 

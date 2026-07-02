@@ -186,12 +186,12 @@
       arr(raw).forEach(r => {
         const title = [r.material_type || r.material, r.color, r.brand || r.brand_type].filter(Boolean).join(' / ');
         const text = [title, r.roll_label, r.supplier, r.reorder_policy, r.notes].join(' ').toLowerCase();
-        if (title && text.includes(q)) hits.push({icon:'⬢', title, sub:`Inventory material · ${Number(r.remaining_grams || 0)}g remaining`, href:`inventory-control.html?search=${encodeURIComponent(title)}`});
+        if (title && text.includes(q)) hits.push({icon:'⬢', title, sub:`Inventory material · ${Number(r.remaining_grams || 0)}g remaining`, href:`inventory-control.html?search=${encodeURIComponent(q)}`});
       });
       arr(supplies).forEach(s => {
         const title = s.item_name || s.name || '';
         const text = [title, s.category, s.supplier, s.reorder_policy, s.notes].join(' ').toLowerCase();
-        if (title && text.includes(q)) hits.push({icon:'🧰', title, sub:`Non-filament supply · ${s.quantity_on_hand ?? 0} ${s.unit_type || ''} on hand`, href:`inventory-control.html?search=${encodeURIComponent(title)}`});
+        if (title && text.includes(q)) hits.push({icon:'🧰', title, sub:`Non-filament supply · ${s.quantity_on_hand ?? 0} ${s.unit_type || ''} on hand`, href:`inventory-control.html?search=${encodeURIComponent(q)}`});
       });
       return hits.slice(0,4);
     }
@@ -247,14 +247,36 @@
       document.getElementById('dataModeChip').textContent = online ? 'Online + local summaries' : 'Offline local summaries';
       document.getElementById('dataModeChip').className = online ? 'chip' : 'chip warn';
     }
+    function cleanQuery(value){ return String(value || '').trim(); }
+    function searchFallbacks(qRaw){
+      const q = encodeURIComponent(qRaw);
+      return [
+        {icon:'📦', title:`Search Orders for "${qRaw}"`, sub:'Open Orders Admin with this search applied.', href:`orders-admin.html?search=${q}`},
+        {icon:'🖨️', title:`Search Production for "${qRaw}"`, sub:'Open Production Control with this search applied.', href:`production-control.html?search=${q}`},
+        {icon:'⬢', title:`Search Inventory for "${qRaw}"`, sub:'Open Inventory Control with this search applied.', href:`inventory-control.html?search=${q}`},
+        {icon:'💰', title:`Search Finance for "${qRaw}"`, sub:'Open Finance Pro with this search applied.', href:`finance-pro.html?search=${q}`},
+        {icon:'◈', title:`Search Quote Tool for "${qRaw}"`, sub:'Open Quote Tool with this search applied when supported.', href:`quote.html?search=${q}`}
+      ];
+    }
+    function dedupeHits(hits){
+      const seen = new Set();
+      return hits.filter(h => {
+        const key = `${h.href}|${h.title}`;
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
     function renderSearch(){
-      const q = document.getElementById('hubSearch').value.trim().toLowerCase();
+      const qRaw = cleanQuery(document.getElementById('hubSearch').value);
+      const q = qRaw.toLowerCase();
       const results = document.getElementById('searchResults');
       if (!q) { results.innerHTML = ''; return; }
       const toolHits = tools.filter(t => [t.title,t.sub,t.group,t.tag].join(' ').toLowerCase().includes(q)).slice(0,5);
       const inventoryHits = liveInventorySearch(q);
-      const found = [...inventoryHits, ...toolHits].slice(0,7);
-      results.innerHTML = found.length ? found.map(t => `<a class="result" href="${esc(t.href)}"><span>${esc(t.icon)}</span><span><strong>${esc(t.title)}</strong><small>${esc(t.sub)}</small></span><span class="tag">Open</span></a>`).join('') : '<div class="attention-item"><b>?</b><span><strong>No matching tools or inventory</strong><small>Try orders, quote, finance, inventory, production, handbook, knowledge, PETG, PLA, or a material color.</small></span></div>';
+      const fallbackHits = searchFallbacks(qRaw);
+      const found = dedupeHits([...inventoryHits, ...toolHits, ...fallbackHits]).slice(0,10);
+      results.innerHTML = found.map(t => `<a class="result" href="${esc(t.href)}"><span>${esc(t.icon)}</span><span><strong>${esc(t.title)}</strong><small>${esc(t.sub)}</small></span><span class="tag">Open</span></a>`).join('');
     }
     function greet(){
       const h = new Date().getHours();

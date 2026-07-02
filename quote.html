@@ -2131,5 +2131,25 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 })();
 </script>
 
+
+
+<!-- === OliPoly ERP Search Stabilization Sprint 1B === -->
+<script>
+(function(){
+  function params(){ return new URLSearchParams(window.location.search || ''); }
+  function query(){ return (params().get('search') || params().get('q') || params().get('order') || params().get('op') || params().get('customer') || params().get('quote') || params().get('material') || '').trim(); }
+  function fire(el){ if(!el) return; ['input','change','keyup'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
+  function setVal(id, value){ const el=document.getElementById(id); if(!el || !value) return false; el.value=value; fire(el); return true; }
+  function clickFirst(ids){ for(const id of ids){ const el=document.getElementById(id); if(el){ try{el.click();}catch{} return true; } } return false; }
+  function apply(){
+    const value=query(); if(!value) return;
+    ['searchInput','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch','hubSearch'].forEach(id => setVal(id,value));
+    clickFirst(['searchBtn','runSearchBtn','applyFiltersBtn','filterBtn']);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', () => { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); });
+  else { setTimeout(apply,200); setTimeout(apply,1000); setTimeout(apply,2500); }
+})();
+</script>
+
 </body>
 </html>
