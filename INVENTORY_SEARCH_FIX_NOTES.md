@@ -7,4 +7,4 @@ Fixes:
 - Adds visible Search buttons to Raw Materials, Supplies, and Finished Goods.
 - Keeps Inventory v2 reorder policy/snooze and cloud sync fixes.
 
-No SQL changes. No Supabase changes. No inventory data changes.
+No SQL changes. No Supabase changes. No inventory data changess.
