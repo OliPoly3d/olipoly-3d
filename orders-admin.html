@@ -3113,49 +3113,6 @@ const payload = snapshotForm();
       win.document.open();
       win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${cssText}</style></head><body>${bodyHtml}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
       win.document.close();
@@ -3400,49 +3357,6 @@ https://olipoly3d.com`;
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
     function writeInvoiceEmailPreview(html){const f=$('invoiceEmailPreviewFrame');if(!f)return;const d=f.contentDocument||f.contentWindow?.document;d.open();d.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);d.close();}
     function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`${d.payment_status === 'paid' ? 'Payment Received' : 'Invoice Ready'}: ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
@@ -3618,49 +3532,6 @@ https://olipoly3d.com`;
       doc.open();
       doc.write(`<!doctype html><html><body style="margin:0;background:#fff7fb;">${html}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
       doc.close();
@@ -4242,49 +4113,6 @@ if ($('openVenmoBtn')) {
       win.document.open();
       win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escLocal(d.invoice_number || d.order_number || '')}</title><style>${css}</style></head><body>${invoiceHtml}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
       win.document.close();
@@ -4484,49 +4312,6 @@ if ($('openVenmoBtn')) {
       win.document.open();
       win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
       win.document.close();
@@ -4729,49 +4514,6 @@ if ($('openVenmoBtn')) {
       win.document.open();
       win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escLabel(title)}</title><style>${css}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},450));<\/script>
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
       win.document.close();
@@ -6066,49 +5808,6 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     win.document.open();
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${opEsc(title)}</title><style>${toolbarCss}${css}</style></head><body>${toolbar}${bodyHtml}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
     win.document.close();
@@ -6356,53 +6055,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     var toolbarCss = ".op-print-toolbar{position:sticky;top:0;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#0b142b;color:#eef4ff;border-bottom:1px solid #2b365e;font-family:Inter,Arial,sans-serif}.op-print-toolbar strong{font-size:14px}.op-print-toolbar span{font-size:12px;color:#a8b5db}.op-print-toolbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:950;cursor:pointer;color:#fff;background:linear-gradient(135deg,#7e7bff,#2ee6c4)}@media print{.op-print-toolbar{display:none!important}}";
     var toolbar = '<div class="op-print-toolbar"><div><strong>' + esc(title) + '</strong><br><span>Use Letter • Portrait • 100% / Actual Size • Margins None • headers/footers off.</span></div><button type="button" onclick="window.focus();window.print();">Print Labels</button></div>';
     win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '
-
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
-
-</body></html>');
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + toolbarCss + css + '</style></head><body>' + toolbar + bodyHtml + '</body></html>');
     win.document.close();
     try { win.focus(); } catch(e) {}
   }
@@ -6867,49 +6520,6 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     win.document.open();
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Professional Invoice ${escapeHtml(d.invoiceNumber)}</title><style>${professionalInvoiceCss()}</style></head><body>${professionalInvoiceHtml(d)}
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body></html>`);
     win.document.close();
@@ -7479,49 +7089,6 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
 
 
-<!-- === OliPoly ERP Integration Sprint 1: safe deep-link/filter helper === -->
-<script>
-(function(){
-  function params(){ return new URLSearchParams(window.location.search || ''); }
-  function fire(el){ if(!el) return; ['input','change'].forEach(type => el.dispatchEvent(new Event(type,{bubbles:true}))); }
-  function setValue(id, value){ const el=document.getElementById(id); if(!el || value==null || value==='') return false; el.value=value; fire(el); return true; }
-  function setSelect(id, value){
-    const el=document.getElementById(id); if(!el || value==null || value==='') return false;
-    const wanted=String(value).toLowerCase();
-    const opt=[...el.options].find(o => String(o.value).toLowerCase()===wanted || String(o.textContent).toLowerCase()===wanted);
-    if(opt){ el.value=opt.value; fire(el); return true; }
-    return false;
-  }
-  function apply(){
-    const q=params();
-    const search=q.get('search') || q.get('q') || q.get('customer') || q.get('order') || q.get('op') || q.get('quote') || q.get('material');
-    if(search){
-      ['searchInput','hubSearch','rawSearch','supplySearch','fgSearch','ledgerSearch','searchFilter','catalogSearchInput','historySearch','closeoutAuditSearch'].forEach(id => setValue(id, search));
-    }
-    const status=q.get('status');
-    if(status){
-      setSelect('statusFilter', status);
-      setSelect('filterStatus', status);
-      setSelect('rawStatus', status);
-      setSelect('fgFilterStatus', status);
-      setSelect('quoteStatus', status);
-    }
-    const type=q.get('type');
-    if(type){ setSelect('typeFilter', type); setSelect('filterType', type); setSelect('catalogSourceFilter', type); }
-    const material=q.get('material');
-    if(material){ setSelect('rawFilterMaterial', material); setValue('rawSearch', material); }
-    const month=q.get('month');
-    if(month){ setValue('monthFilter', month); }
-    const payment=q.get('payment');
-    if(payment){ setSelect('paymentFilter', payment); }
-    const finance=q.get('finance');
-    if(finance){ setSelect('financeFilter', finance); }
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(apply, 250));
-  else setTimeout(apply, 250);
-  setTimeout(apply, 1200);
-})();
-</script>
 
 </body>
 </html>
