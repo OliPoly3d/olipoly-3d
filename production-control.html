@@ -1028,6 +1028,108 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   <script defer src="js/erp-core.js"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
+
+  <style>
+    /* === Production Control card readability fix 2026-07-07 ===
+       Keeps the private ERP dark shell, but forces light job cards to use dark text.
+       This fixes pale/white inherited text on queue cards, chips, stats, material rows, and card action buttons. */
+    .lanes .job-card,
+    .detail-list .detail-card{
+      background:rgba(255,255,255,.96)!important;
+      color:#24182c!important;
+      border-color:rgba(101,60,120,.20)!important;
+    }
+
+    .lanes .job-card *,
+    .detail-list .detail-card *{
+      color:#24182c;
+    }
+
+    .lanes .job-card h4,
+    .lanes .job-card strong,
+    .lanes .job-card .stat strong,
+    .detail-list .detail-card h3,
+    .detail-list .detail-card strong{
+      color:#24182c!important;
+    }
+
+    .lanes .job-card .muted,
+    .lanes .job-card small,
+    .lanes .job-card .job-meta,
+    .lanes .job-card .stat span,
+    .lanes .job-card .detail-item span,
+    .detail-list .detail-card .muted,
+    .detail-list .detail-card small,
+    .detail-list .detail-card .detail-item span{
+      color:#5a4a63!important;
+    }
+
+    .lanes .job-card .chip,
+    .lanes .job-card .decision-pill,
+    .lanes .job-card .reservation-chip,
+    .lanes .job-card .scrap-chip,
+    .lanes .job-card .start-chip,
+    .lanes .job-card .integration-chip,
+    .lanes .job-card .quote-link-chip,
+    .lanes .job-card .machine-suggestion,
+    .lanes .job-card .inv-warn,
+    .lanes .job-card .need-badge,
+    .lanes .job-card .ready-close{
+      color:#5f456a!important;
+      background:rgba(244,220,255,.62)!important;
+      border-color:rgba(101,60,120,.16)!important;
+    }
+
+    .lanes .job-card .inv-warn,
+    .lanes .job-card .ready-close{
+      color:#7a5400!important;
+      background:rgba(247,183,49,.16)!important;
+      border-color:rgba(247,183,49,.24)!important;
+    }
+
+    .lanes .job-card .need-badge{
+      color:#9a2140!important;
+      background:rgba(239,71,111,.10)!important;
+      border-color:rgba(239,71,111,.18)!important;
+    }
+
+    .lanes .job-card .machine-suggestion{
+      color:#1d5d7d!important;
+      background:rgba(95,207,255,.13)!important;
+      border-color:rgba(95,207,255,.22)!important;
+    }
+
+    .lanes .job-card .stat,
+    .lanes .job-card .material-row,
+    .lanes .job-card .finance-mini span,
+    .lanes .job-card .supply-usage-mini span,
+    .detail-list .detail-card .detail-item{
+      background:rgba(255,255,255,.76)!important;
+      color:#24182c!important;
+      border-color:rgba(101,60,120,.12)!important;
+    }
+
+    .lanes .job-card .job-actions .mini-btn,
+    .lanes .job-card .job-actions .ghost,
+    .lanes .job-card .job-actions button{
+      background:rgba(255,255,255,.78)!important;
+      color:#5f456a!important;
+      border-color:rgba(101,60,120,.18)!important;
+      box-shadow:none!important;
+    }
+
+    .lanes .job-card .job-actions .btn{
+      color:#fff!important;
+      background:linear-gradient(135deg,#e84fb7,#9d6df3)!important;
+      border-color:transparent!important;
+    }
+
+    .lanes .job-card svg,
+    .lanes .job-card svg *{
+      color:inherit!important;
+      stroke:currentColor!important;
+    }
+  </style>
 </head>
 <body>
 <div class="wrap">
