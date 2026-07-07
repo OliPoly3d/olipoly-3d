@@ -1129,6 +1129,136 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       color:inherit!important;
       stroke:currentColor!important;
     }
+
+    /* === Production Control 3-lane compact card layout 2026-07-07 ===
+       Removes the extra Packaging/Delivery column from this board and uses the gained width to make cards shorter, wider, and more readable. */
+    .lanes{
+      grid-template-columns:repeat(3,minmax(310px,1fr))!important;
+      gap:16px!important;
+    }
+
+    .lanes .job-card{
+      padding:12px 12px 12px 14px!important;
+      margin-bottom:10px!important;
+      border-radius:20px!important;
+    }
+
+    .lanes .job-top{
+      grid-template-columns:auto 1fr auto!important;
+      gap:8px!important;
+    }
+
+    .lanes .job-icon{
+      width:28px!important;
+      height:28px!important;
+      border-radius:11px!important;
+      font-size:.95rem!important;
+    }
+
+    .lanes .job-card h4{
+      font-size:.94rem!important;
+      line-height:1.18!important;
+    }
+
+    .lanes .chips{
+      gap:5px!important;
+      margin:6px 0!important;
+    }
+
+    .lanes .job-card .chip,
+    .lanes .job-card .decision-pill,
+    .lanes .job-card .reservation-chip,
+    .lanes .job-card .scrap-chip,
+    .lanes .job-card .start-chip,
+    .lanes .job-card .integration-chip,
+    .lanes .job-card .quote-link-chip,
+    .lanes .job-card .machine-suggestion,
+    .lanes .job-card .inv-warn,
+    .lanes .job-card .need-badge,
+    .lanes .job-card .ready-close{
+      display:inline-flex!important;
+      align-items:center!important;
+      min-height:20px!important;
+      width:auto!important;
+      max-width:100%!important;
+      padding:3px 8px!important;
+      border-radius:999px!important;
+      font-size:.64rem!important;
+      line-height:1.15!important;
+      white-space:normal!important;
+      overflow:visible!important;
+      text-overflow:clip!important;
+    }
+
+    .lanes .job-card .focus-row,
+    .lanes .job-card .finance-mini,
+    .lanes .job-card .supply-usage-mini{
+      gap:5px!important;
+      margin-top:6px!important;
+    }
+
+    .lanes .job-stats{
+      grid-template-columns:repeat(3,minmax(0,1fr))!important;
+      gap:5px!important;
+      margin:7px 0!important;
+    }
+
+    .lanes .job-card .stat{
+      padding:7px 8px!important;
+      border-radius:12px!important;
+      min-width:0!important;
+    }
+
+    .lanes .job-card .stat span{
+      font-size:.56rem!important;
+      letter-spacing:.045em!important;
+    }
+
+    .lanes .job-card .stat strong{
+      font-size:.76rem!important;
+      line-height:1.18!important;
+    }
+
+    .lanes .job-card .material-row{
+      padding:8px 9px!important;
+      border-radius:13px!important;
+      gap:8px!important;
+      font-size:.78rem!important;
+    }
+
+    .lanes .job-card .tiny-note{
+      margin-top:6px!important;
+      font-size:.75rem!important;
+      line-height:1.3!important;
+    }
+
+    .lanes .job-card .job-actions{
+      display:flex!important;
+      flex-wrap:wrap!important;
+      align-items:center!important;
+      gap:6px!important;
+      margin-top:8px!important;
+    }
+
+    .lanes .job-card .job-actions .mini-btn,
+    .lanes .job-card .job-actions .ghost,
+    .lanes .job-card .job-actions button,
+    .lanes .job-card .job-actions .btn{
+      width:auto!important;
+      min-width:0!important;
+      min-height:28px!important;
+      padding:5px 9px!important;
+      border-radius:999px!important;
+      font-size:.70rem!important;
+      line-height:1.1!important;
+      white-space:normal!important;
+      flex:0 1 auto!important;
+    }
+
+    @media(max-width:1100px){
+      .lanes{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+    }
+
   </style>
 </head>
 <body>
@@ -1686,8 +1816,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   const LANES = [
     {id:'ready', title:'Ready / Queued', icon:'🧾', cls:'ready', statuses:['idea','awaiting_approval','ready_to_print','queued','on_hold']},
     {id:'printing', title:'Currently Printing', icon:'🖨️', cls:'printing', statuses:['printing']},
-    {id:'post', title:'Post-Processing / QC', icon:'🔍', cls:'post', statuses:['post_processing']},
-    {id:'delivery', title:'Packaging / Delivery', icon:'📦', cls:'delivery', statuses:DELIVERY}
+    // Production Control uses three wider lanes for readability.
+    // Packaging / delivery statuses stay in the system, but render in the final lane instead of a separate narrow swimlane.
+    {id:'post', title:'Post-Processing / QC', icon:'🔍', cls:'post', statuses:['post_processing', ...DELIVERY]}
   ];
 
   const state = {
