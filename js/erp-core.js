@@ -6,7 +6,7 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.07.08-foundation-pass2',
+    version: '2026.07.08-foundation-pass3',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -239,6 +239,78 @@
     window.dispatchEvent(new CustomEvent('olipoly:erp-event', {detail:event}));
     return event;
   };
+
+
+
+  /* === ERP Foundation Sprint Pass 3: schema-safe payloads and reusable summaries === */
+  ERP.schema = ERP.schema || {};
+  ERP.schema.generatedFields = {
+    raw_material_inventory: [
+      'cost_per_gram','cost_per_g','unit_cost_per_gram','unit_cost_g','price_per_gram','price_per_g',
+      'remaining_value','reserved_value','used_grams','used_value','available_grams','available_value'
+    ],
+    production_jobs: ['reserved_value','material_cost_auto','labor_cost_auto','total_cost_auto'],
+    finance_transactions: ['net_total_auto','tax_total_auto','profit_auto']
+  };
+  ERP.schema.stripGeneratedFields = function(table, row){
+    const out = {...(row || {})};
+    (ERP.schema.generatedFields[table] || []).forEach(k => delete out[k]);
+    return out;
+  };
+  ERP.schema.rawMaterialPayload = function(row, userId, options){
+    row = row || {}; options = options || {};
+    const payload = {
+      id: row.id,
+      user_id: userId || row.user_id,
+      material_type: row.material_type || row.material || '',
+      color: row.color || row.color_name || '',
+      color_name: row.color_name || row.color || '',
+      brand: row.brand || row.filament || '',
+      location: row.location || '',
+      roll_label: row.roll_label || row.label || '',
+      roll_type: row.roll_type || 'spool',
+      is_mounted: !!row.is_mounted,
+      reusable_spool: !!row.reusable_spool,
+      roll_status: row.roll_status || row.status || 'active',
+      starting_grams: ERP.num(row.starting_grams),
+      remaining_grams: ERP.num(row.remaining_grams || row.remaining),
+      reserved_grams: ERP.num(row.reserved_grams),
+      reorder_threshold_grams: ERP.num(row.reorder_threshold_grams),
+      spool_cost: ERP.num(row.spool_cost),
+      supplier: row.supplier || '',
+      reorder_link: row.reorder_link || '',
+      reorder_quantity: ERP.num(row.reorder_quantity),
+      reorder_policy: row.reorder_policy || 'auto',
+      snooze_until: row.snooze_until || null,
+      notes: row.notes || '',
+      updated_at: row.updated_at || new Date().toISOString()
+    };
+    if(options.minimal){
+      return ERP.schema.stripGeneratedFields('raw_material_inventory', {
+        id: payload.id,
+        user_id: payload.user_id,
+        reserved_grams: payload.reserved_grams,
+        remaining_grams: payload.remaining_grams,
+        updated_at: payload.updated_at
+      });
+    }
+    return ERP.schema.stripGeneratedFields('raw_material_inventory', payload);
+  };
+  ERP.summarizeReservationRows = function(rows){
+    const list = Array.isArray(rows) ? rows : [];
+    return {
+      reserved_grams: Math.round(list.filter(r=>!r.shortage).reduce((s,r)=>s+ERP.num(r.grams_reserved),0)*10)/10,
+      shortage_grams: Math.round(list.filter(r=>r.shortage).reduce((s,r)=>s+ERP.num(r.grams_reserved),0)*10)/10,
+      roll_count: new Set(list.filter(r=>r.raw_material_roll_id).map(r=>r.raw_material_roll_id)).size
+    };
+  };
+  ERP.capacitySummary = function(jobs){
+    const open = (jobs || []).filter(j => !ERP.status.productionClosed.includes(ERP.norm(j.production_status)));
+    const totalHours = open.reduce((s,j)=>s+ERP.num(j.estimated_total_hours || j.total_hours || j.print_hours),0);
+    const unassignedHours = open.filter(j=>!j.machine || ERP.norm(j.machine)==='either').reduce((s,j)=>s+ERP.num(j.estimated_total_hours || j.total_hours || j.print_hours),0);
+    return {open_jobs:open.length,total_hours:Math.round(totalHours*10)/10,assigned_hours:Math.round((totalHours-unassignedHours)*10)/10,unassigned_hours:Math.round(unassignedHours*10)/10};
+  };
+
 
   ERP.authReady = async function(){
     if(window.OliPolyAuth?.ensure) return await window.OliPolyAuth.ensure();
