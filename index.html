@@ -878,6 +878,11 @@ img,video{
   .footer-links a{padding-block:6px}
 }
 
+
+    .community-strip{margin-top:36px;padding:clamp(24px,4vw,36px);border-radius:34px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.78));border:1px solid rgba(232,79,183,.14);box-shadow:0 22px 58px rgba(84,38,94,.08);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center}
+    .community-strip h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:clamp(1.75rem,3.3vw,2.65rem);line-height:.98;letter-spacing:-.045em}
+    .community-strip p{margin:0;color:var(--muted);line-height:1.62;max-width:760px}
+    @media(max-width:720px){.community-strip{grid-template-columns:1fr}.community-strip .showcase-pill-link{width:100%}}
 </style>
 <link href="assets/erp-upgrade.css" rel="stylesheet"/>
 </head>
@@ -1066,6 +1071,17 @@ img,video{
 <p>Careful setup, small-batch planning, and hands-on finishing help each project feel polished, practical, and consistent.</p>
 </div>
 </section>
+
+<section class="section" id="community-preview">
+<div class="section-kicker">Community made</div>
+<div class="community-strip">
+<div>
+<h3>Made local. Made personal.</h3>
+<p>From school fundraisers and team ideas to small business details and personalized gifts, OliPoly helps Northeast Ohio communities turn custom ideas into finished pieces.</p>
+</div>
+<a class="showcase-pill-link" href="northeast-ohio-3d-printing.html">Explore Community Projects →</a>
+</div>
+</section>
 <section class="cta-band" id="contact">
 <div>
 <h2>Ready to start something custom?</h2>
@@ -1117,7 +1133,7 @@ img,video{
 <a href="real-solutions.html">Real Solutions</a>
 <a href="showcase.html">Full Showcase</a>
 <a href="#pricing">Typical Pricing</a>
-<a href="northeast-ohio-3d-printing.html">Service Area</a>
+<a href="northeast-ohio-3d-printing.html">Communities</a>
 <a href="#capabilities">Capabilities</a>
 <a href="designed-before-printing.html">Design Process</a>
 <a href="#studio">Inside the Studio</a>
