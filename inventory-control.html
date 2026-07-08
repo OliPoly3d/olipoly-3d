@@ -537,7 +537,7 @@
     input::placeholder,textarea::placeholder{color:rgba(68,50,78,.55)!important}
 </style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js"></script>
+  <script defer src="js/erp-core.js?v=20260708-foundation1"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 </head>
@@ -1458,6 +1458,21 @@
   }
 
   function rawReservationAllocation(){
+    const jobs = productionJobs().filter(j=>{
+      if(j.exclude_inventory_reduction) return false;
+      if(window.OliPolyERP?.jobShouldReserveInventory) return window.OliPolyERP.jobShouldReserveInventory(j);
+      return !['completed','failed_scrap','canceled','archived'].includes(j.production_status);
+    });
+
+    // First trust the explicit reservations written by Production Control. This makes
+    // Awaiting Approval / early-stage jobs visible as reserved inventory instead of
+    // waiting until they are queued or printing.
+    if(window.OliPolyERP?.reservationDemandByRoll){
+      const explicit = window.OliPolyERP.reservationDemandByRoll(jobs);
+      if(Object.keys(explicit).length) return explicit;
+    }
+
+    // Fallback for older jobs that have recipes but no material_reservations saved yet.
     const rows = raw().filter(r=>r.roll_status!=='retired' && num(r.remaining_grams)>0);
     const groupMap = new Map();
     rows.forEach(r=>{
@@ -1467,7 +1482,6 @@
     });
 
     const demandByGroup = new Map();
-    const jobs=productionJobs().filter(j=>['ready_to_print','queued','printing'].includes(j.production_status) && !j.exclude_inventory_reduction);
     jobs.forEach(j=>{
       const qty=num(j.quantity)||1;
       recipeRowsForJob(j).forEach(row=>{
@@ -1477,6 +1491,7 @@
         const candidates = [...groupMap.keys()].filter(key=>{
           const sample = groupMap.get(key)?.[0];
           if(!sample) return false;
+          if(window.OliPolyERP?.materialMatches) return window.OliPolyERP.materialMatches(sample, row);
           const materialMatch=norm(row.material)===norm(sample.material_type);
           const colorMatch=norm(row.color)===norm(sample.color);
           const brandMatch=!row.filament || !sample.brand || norm(row.filament).includes(norm(sample.brand)) || norm(sample.brand).includes(norm(row.filament));
@@ -1484,7 +1499,6 @@
         });
         if(!candidates.length) return;
 
-        // Prefer the closest brand/type match when Production Control provided one.
         const chosen = candidates.sort((a,b)=>{
           const ar = groupMap.get(a)?.[0] || {};
           const br = groupMap.get(b)?.[0] || {};
@@ -1500,7 +1514,6 @@
     groupMap.forEach((items,key)=>{
       let remainingDemand = demandByGroup.get(key) || 0;
       const ordered = [...items].sort((a,b)=>{
-        // Simulate real use: open/mounted roll first, then refill/unmounted stock.
         const mountedScore = (b.is_mounted?1:0) - (a.is_mounted?1:0);
         if(mountedScore) return mountedScore;
         const statusRank = x => ({active:0,low:1,sealed:2,empty:3,retired:4}[x.roll_status] ?? 2);

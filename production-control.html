@@ -1025,7 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </script>
 
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js"></script>
+  <script defer src="js/erp-core.js?v=20260708-foundation1"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 
@@ -1796,7 +1796,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     archived:'Archived'
   };
 
-  const CLOSED = ['completed','failed_scrap','canceled','archived'];
+  const CLOSED = window.OliPolyERP?.status?.productionClosed || ['completed','failed_scrap','canceled','archived'];
   const DELIVERY = ['packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
   const PRINT_WORK_STATUSES = ['idea','awaiting_approval','ready_to_print','queued','printing','on_hold'];
   const RECOMMENDABLE_STATUSES = ['ready_to_print','queued'];
@@ -2478,14 +2478,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   /* === Cloud-safe reservations / started prints / per-material scrap helpers === */
   function rawRowsForProduction(){ return localRead(LS_RAW, []); }
   function writeRawRowsForProduction(rows){ localWrite(LS_RAW, rows); }
-  function productionMaterialKeyParts(value){ return parseInventoryMaterialValue(value || ''); }
+  function productionMaterialKeyParts(value){ return window.OliPolyERP?.parseInventoryPick ? window.OliPolyERP.parseInventoryPick(value || '') : parseInventoryMaterialValue(value || ''); }
   function rawMatchesRecipe(r, rec){
+    if(window.OliPolyERP?.materialMatches) return window.OliPolyERP.materialMatches(r, rec);
     const m = String(r.material_type || r.material || '').trim().toLowerCase();
     const c = String(r.color || '').trim().toLowerCase();
     const b = String(r.brand || r.filament || '').trim().toLowerCase();
     return (!rec.material || m === String(rec.material).trim().toLowerCase())
       && (!rec.color || c === String(rec.color).trim().toLowerCase())
-      && (!rec.filament || b === String(rec.filament).trim().toLowerCase());
+      && (!rec.filament || !b || b === String(rec.filament).trim().toLowerCase() || b.includes(String(rec.filament).trim().toLowerCase()) || String(rec.filament).trim().toLowerCase().includes(b));
   }
   function buildMaterialReservations(job){
     const qty = Math.max(1, num(job.quantity) || 1);
@@ -2498,7 +2499,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       if(!remainingNeed) return;
       const candidates = rawRows
         .filter(r=>rawMatchesRecipe(r, parts))
-        .sort((a,b)=>(num(a.remaining_grams)-num(a.reserved_grams)) - (num(b.remaining_grams)-num(b.reserved_grams)));
+        .sort((a,b)=>{
+          const mountedScore = (b.is_mounted?1:0) - (a.is_mounted?1:0);
+          if(mountedScore) return mountedScore;
+          const statusRank = x => ({active:0,low:1,sealed:2,empty:3,retired:4}[x.roll_status] ?? 2);
+          const statusScore = statusRank(a)-statusRank(b);
+          if(statusScore) return statusScore;
+          const typeRank = x => ({spool:0,refill:1,sample:2}[x.roll_type] ?? 1);
+          const typeScore = typeRank(a)-typeRank(b);
+          if(typeScore) return typeScore;
+          return (num(a.remaining_grams)-num(a.reserved_grams)) - (num(b.remaining_grams)-num(b.reserved_grams));
+        });
       candidates.forEach(r=>{
         if(remainingNeed <= 0) return;
         const available = Math.max(0, num(r.remaining_grams) - num(r.reserved_grams));
@@ -2604,13 +2615,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const j = formJob();
       if(!j.job_title) throw new Error('Job title is required.');
       const previousJob = state.jobs.find(x=>x.id===j.id);
-      j.material_reservations = CLOSED.includes(j.production_status) ? [] : buildMaterialReservations(j);
+      j.material_reservations = (CLOSED.includes(j.production_status) || j.exclude_inventory_reduction) ? [] : buildMaterialReservations(j);
       await applyReservationDelta(previousJob, j);
 
       state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
       localWrite(LS_JOBS,state.jobs);
 
       const cloudOk = await cloudSaveJob(j);
+      window.OliPolyERP?.logEvent?.('production_job_saved', {job_id:j.id, title:j.job_title, status:j.production_status, reserved_grams:(j.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
 
       resetForm();
       render();
@@ -2636,10 +2648,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       updated.print_started_at = null;
       updated.estimated_finish_at = null;
     }
-    updated.material_reservations = CLOSED.includes(status) ? [] : buildMaterialReservations(updated);
+    updated.material_reservations = (CLOSED.includes(status) || updated.exclude_inventory_reduction) ? [] : buildMaterialReservations(updated);
     await applyReservationDelta(j, updated);
     try{
       await cloudSaveJob(updated);
+      window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       render();
@@ -2671,6 +2684,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     try{
       await applyReservationDelta(j, updated);
       await cloudSaveJob(updated);
+      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:'canceled', reason:reasonText});
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       state.selectedIds.delete(id);
       localWrite(LS_JOBS,state.jobs);
