@@ -5757,7 +5757,7 @@ https://olipoly3d.com`;
 
   function bindFinalSingleRenderer() {
     replaceButtonHandler("customerPdfBtn", "quote");
-    replaceButtonHandler("generateQuoteBtn", "quote");
+    // RC1 v2: generateQuoteBtn was renamed to checkMissingInputsBtn; do not bind it to PDF.
     replaceButtonHandler("invoicePdfBtn", "invoice");
   }
 
@@ -6063,4 +6063,301 @@ https://olipoly3d.com`;
   else run();
   setTimeout(run, 350);
   setTimeout(run, 1200);
+})();
+
+
+/* === ERP RC1 Quote Buttons + Reset Hotfix V2 ===
+   Structural fix: quote.html now uses checkMissingInputsBtn instead of generateQuoteBtn,
+   so legacy PDF code cannot steal the Check Missing Inputs button anymore.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const DEFAULTS = {
+    liteQuoteType: 'retail', qty: '1', quantity: '1', shippingMode: 'pickup', depositPercent: '50',
+    filamentCount: '1', spoolWeight: '1000', filament1Cost: '0', filament1Used: '0',
+    machineHours: '0', machineRate: '0', designHours: '0', designRate: '0', postHours: '0', postRate: '0',
+    simplePackaging: '0', simpleShipping: '0', simpleHardware: '0', quoteStatus: 'draft', orderType: 'custom',
+    presetSelect: 'custom', professionalMode: 'off', invoiceType: 'deposit', paymentTerms: 'deposit_to_start',
+    unitsPerItem: '1', profitMode: 'percent', suggestedMode: 'standard', profitValue: '35', discount: '0',
+    taxPreset: 'custom', salesTax: '0', roundingMode: '0', marketplacePercent: '0', taxExempt: 'no',
+    certificateOnFile: 'no', poFileOnFile: 'no'
+  };
+  const CLEAR_KEYS = [
+    'olipoly_reorder_quote_draft_v1',
+    'olipoly_production_to_quote_draft_v1',
+    'olipoly_quote_draft_v1',
+    'olipoly_active_quote_v1',
+    'currentQuote',
+    'quoteDraft',
+    'activeQuote'
+  ];
+  function toast(message){
+    if (typeof window.quotePatchToast === 'function') return window.quotePatchToast(message);
+    const el = $('liteStatusToast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(el._rc1QuoteFixV2Timer);
+    el._rc1QuoteFixV2Timer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+  function fire(el){
+    if (!el) return;
+    el.dispatchEvent(new Event('input', { bubbles:true }));
+    el.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+  function setVal(id, value){
+    const el = $(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = !!value;
+    else el.value = value ?? '';
+    fire(el);
+  }
+  function clearNotice(){
+    const notice = $('missingInputsNotice');
+    if (!notice) return;
+    notice.classList.add('hidden');
+    notice.textContent = '';
+    notice.innerHTML = '';
+  }
+  function clearContainer(id){ const el = $(id); if (el) el.innerHTML = ''; }
+  function resetQuoteTool(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+
+    window.__activeProjectQuoteLoaded = false;
+    window.__reorderDraftDomApplied = false;
+    try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
+    CLEAR_KEYS.forEach((key) => { try { localStorage.removeItem(key); } catch {} });
+
+    document.querySelectorAll('input[id], textarea[id], select[id]').forEach((el) => {
+      if (el.type === 'button' || el.type === 'submit' || el.type === 'reset') return;
+      if (el.type === 'checkbox') el.checked = false;
+      else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else el.value = '';
+      fire(el);
+    });
+
+    Object.entries(DEFAULTS).forEach(([id, value]) => setVal(id, value));
+    clearContainer('directItems');
+    clearContainer('overheadItems');
+    clearNotice();
+    const saved = $('savedQuotesSelect');
+    if (saved) saved.value = '';
+    document.body.classList.remove('production-prefilled');
+    $('productionSourceCard')?.remove();
+    const note = $('productionQuoteSourceNote');
+    if (note) { note.classList.add('hidden'); note.innerHTML = ''; }
+    if (typeof window.render === 'function') window.render();
+    if (typeof window.olipolySyncQuoteTotals === 'function') window.olipolySyncQuoteTotals();
+    toast('Quote tool reset. Start a new quote.');
+    return false;
+  }
+  function checkMissingInputs(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+    const required = [
+      ['customerName', 'Customer name'], ['customerEmail', 'Customer email'],
+      ['quoteTitle', 'Project / quote title'], ['qty', 'Quantity'], ['turnaround', 'Turnaround']
+    ];
+    const missing = [];
+    required.forEach(([id, label]) => {
+      const el = $(id);
+      const value = (el?.value || '').trim();
+      if (!value || (id === 'qty' && Number(value) <= 0)) missing.push(label);
+    });
+    const notice = $('missingInputsNotice');
+    if (notice) {
+      notice.classList.remove('hidden');
+      notice.innerHTML = missing.length
+        ? `<strong>Missing inputs:</strong> ${missing.join(', ')}`
+        : '<strong>Quote check complete:</strong> required customer-facing fields are filled.';
+    }
+    toast(missing.length ? 'Missing inputs highlighted.' : 'Quote check complete.');
+    return false;
+  }
+  function replaceHandler(id, handler){
+    const old = $(id);
+    if (!old) return;
+    const clone = old.cloneNode(true);
+    clone.dataset.erpRc1QuoteButtonFixV2 = 'true';
+    clone.onclick = null;
+    clone.addEventListener('click', handler, true);
+    old.parentNode.replaceChild(clone, old);
+  }
+  function bind(){
+    replaceHandler('checkMissingInputsBtn', checkMissingInputs);
+    replaceHandler('resetBtn', resetQuoteTool);
+  }
+  window.olipolyResetQuoteTool = resetQuoteTool;
+  window.olipolyCheckMissingQuoteInputs = checkMissingInputs;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+  setTimeout(bind, 100);
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+  setTimeout(bind, 3500);
+})();
+
+/* === ERP RC1 Quote Buttons + Reset Hotfix V3 ===
+   Document-level capture binding. This catches Reset / Check Missing Inputs even if
+   older quote layers clone or replace the buttons after load. Also resets customer
+   fields when Quote Format / Customer Type changes.
+*/
+(() => {
+  if (window.__olipolyQuoteRc1V3Applied) return;
+  window.__olipolyQuoteRc1V3Applied = true;
+
+  const $ = (id) => document.getElementById(id);
+  const customerFacingIds = [
+    'customerName','customerEmail','quoteTitle','projectImageUrl','turnaround','customerNotes',
+    'companyName','contactName','poNumber','customerPartNumber','olipolyPartNumber','partRevision',
+    'shippingContactName','shippingCompany','shippingAddress','billingAddress','quoteNotes','invoiceNotes',
+    'quoteNumber','invoiceNumber','manualPiecePriceOverride','manualPiecePriceReason','discount'
+  ];
+  const defaultValues = {
+    qty:'1', quantity:'1', shippingMode:'pickup', depositPercent:'50', quoteStatus:'draft',
+    orderType:'custom', professionalMode:'off', invoiceType:'deposit', paymentTerms:'deposit_to_start',
+    taxPreset:'custom', salesTax:'0', roundingMode:'0', marketplacePercent:'0', taxExempt:'no',
+    certificateOnFile:'no', poFileOnFile:'no', filamentCount:'1', spoolWeight:'1000',
+    filament1Cost:'0', filament1Used:'0', machineHours:'0', machineRate:'0', designHours:'0',
+    designRate:'0', postHours:'0', postRate:'0', simplePackaging:'0', simpleShipping:'0', simpleHardware:'0'
+  };
+  const cacheKeys = [
+    'olipoly_reorder_quote_draft_v1','olipoly_production_to_quote_draft_v1','olipoly_quote_draft_v1',
+    'olipoly_active_quote_v1','currentQuote','quoteDraft','activeQuote'
+  ];
+
+  function fire(el){
+    if (!el) return;
+    el.dispatchEvent(new Event('input', { bubbles:true }));
+    el.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+  function setField(id, value){
+    const el = $(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = !!value;
+    else el.value = value == null ? '' : String(value);
+    fire(el);
+  }
+  function showNotice(html){
+    let notice = $('missingInputsNotice');
+    const anchor = $('checkMissingInputsBtn')?.closest('.action-strip') || $('resetBtn')?.closest('.action-strip');
+    if (!notice && anchor) {
+      notice = document.createElement('div');
+      notice.id = 'missingInputsNotice';
+      notice.className = 'note';
+      anchor.insertAdjacentElement('afterend', notice);
+    }
+    if (notice) {
+      notice.classList.remove('hidden');
+      notice.style.display = 'block';
+      notice.innerHTML = html;
+    }
+  }
+  function toast(message){
+    let el = $('liteStatusToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'liteStatusToast';
+      el.className = 'lite-status-toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(el._rc1V3Timer);
+    el._rc1V3Timer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+  function clearTransientState(){
+    cacheKeys.forEach((key) => { try { localStorage.removeItem(key); } catch {} });
+    try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
+    window.__activeProjectQuoteLoaded = false;
+    window.__reorderDraftDomApplied = true;
+    window.__olipolySkipQuoteAutoload = true;
+  }
+  function resetQuoteTool(event, keepType){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+
+    const typeToKeep = keepType || $('liteQuoteType')?.value || 'retail';
+    clearTransientState();
+
+    // Clear the customer-facing and quote identity fields first.
+    customerFacingIds.forEach((id) => setField(id, ''));
+
+    // Reset defaults that should remain populated on a fresh quote.
+    Object.entries(defaultValues).forEach(([id, value]) => setField(id, value));
+    setField('liteQuoteType', typeToKeep);
+
+    // Clear dynamic sections and selections.
+    ['directItems','overheadItems','productionSourceCard','productionQuoteSourceNote'].forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      if (id === 'productionSourceCard') el.remove();
+      else el.innerHTML = '';
+    });
+    const saved = $('savedQuotesSelect');
+    if (saved) saved.value = '';
+    document.body.classList.remove('production-prefilled');
+
+    showNotice('<strong>Reset complete:</strong> start a new quote or enter customer/project details.');
+
+    // Re-run quote type logic after fields are clear, but do not let it reload customer data.
+    try {
+      if (typeof window.applyQuoteType === 'function') window.applyQuoteType(typeToKeep, { allowAutofill:true });
+    } catch {}
+    try { if (typeof window.render === 'function') window.render(); } catch {}
+    try { if (typeof window.olipolySyncQuoteTotals === 'function') window.olipolySyncQuoteTotals(); } catch {}
+
+    toast('Quote tool reset.');
+    return false;
+  }
+  function checkMissingInputs(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+    const checks = [
+      ['customerName','Customer name'], ['customerEmail','Customer email'],
+      ['quoteTitle','Project / quote title'], ['qty','Quantity'], ['turnaround','Turnaround']
+    ];
+    const missing = [];
+    checks.forEach(([id,label]) => {
+      const el = $(id);
+      const val = (el?.value || '').trim();
+      if (!val || (id === 'qty' && Number(val) <= 0)) missing.push(label);
+    });
+    showNotice(missing.length
+      ? `<strong>Missing inputs:</strong> ${missing.join(', ')}`
+      : '<strong>Quote check complete:</strong> required customer-facing fields are filled.');
+    toast(missing.length ? 'Missing inputs found.' : 'Quote check complete.');
+    return false;
+  }
+  function isButton(el, id, textNeedle){
+    if (!el) return false;
+    const btn = el.closest?.('button, a, [role="button"]');
+    if (!btn) return false;
+    const txt = (btn.textContent || '').trim().toLowerCase();
+    return btn.id === id || (!!textNeedle && txt.includes(textNeedle));
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (isButton(target, 'checkMissingInputsBtn', 'check missing')) return checkMissingInputs(event);
+    if (isButton(target, 'resetBtn', 'reset')) return resetQuoteTool(event);
+  }, true);
+
+  document.addEventListener('change', (event) => {
+    const target = event.target;
+    if (target && target.id === 'liteQuoteType') {
+      const selected = target.value || 'retail';
+      resetQuoteTool(event, selected);
+      showNotice('<strong>Quote type changed:</strong> customer/project fields were cleared for a fresh quote.');
+    }
+  }, true);
+
+  // Make manual console testing easy during RC1.
+  window.olipolyResetQuoteTool = resetQuoteTool;
+  window.olipolyCheckMissingQuoteInputs = checkMissingInputs;
 })();
