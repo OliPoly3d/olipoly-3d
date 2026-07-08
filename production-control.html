@@ -137,6 +137,11 @@
     .pm-danger{background:rgba(239,71,111,.13);color:#9a2140}.pm-danger .pm-dot{background:var(--danger)}
     .pm-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
     .pm-small{font-size:.8rem;color:var(--muted);line-height:1.4}
+    .pm-log{margin-top:14px;display:grid;gap:10px}
+    .pm-log-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.62)}
+    .pm-log-row strong{display:block;color:var(--ink);font-size:.9rem}
+    .pm-log-row span{display:block;color:var(--muted);font-size:.78rem;line-height:1.35;margin-top:3px}
+    .pm-log-empty{padding:12px;border-radius:16px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.5)}
 
     .lanes{display:grid;grid-template-columns:repeat(4,minmax(250px,1fr));gap:14px;align-items:start}
     .lane{border-radius:26px;padding:13px;min-height:310px;background:rgba(255,255,255,.58)}
@@ -1521,6 +1526,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     <summary><span class="summary-title"><span class="kicker">PM</span><strong>Printer maintenance shortcuts</strong></span></summary>
     <div class="collapse-body">
       <div class="pm-board" id="pmBoard"></div>
+      <div class="section-title" style="margin-top:18px">
+        <div>
+          <h3>Recent maintenance log</h3>
+          <p class="muted">Quick record of lubrication, nozzle changes, cleaning, and completed PM actions.</p>
+        </div>
+      </div>
+      <div class="pm-log" id="pmLogBoard"></div>
     </div>
   </details>
 
@@ -1742,13 +1754,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   const LS_JOBS = 'olipoly_production_jobs_v3';
   const LS_PM = 'olipoly_printer_pm_v3';
+  const LS_PM_LOG = 'olipoly_printer_pm_log_v1';
   const LS_RAW = 'olipoly_raw_material_inventory_v3';
   const LS_FINISHED = 'olipoly_finished_goods_inventory_v3';
   const LS_SUPPLIES = 'olipoly_non_filament_supplies_v1';
   const LS_SPOOL_POOL = 'olipoly_spool_pool_v1';
 
   const LS_CLOSEOUT_AUDIT = 'olipoly_production_closeout_audit_v1';
-  const PROD_BACKUP_KEYS = [LS_JOBS, LS_PM, LS_RAW, LS_FINISHED, LS_SUPPLIES, LS_SPOOL_POOL, 'olipoly_hub_workflow_v3'];
+  const PROD_BACKUP_KEYS = [LS_JOBS, LS_PM, LS_PM_LOG, LS_RAW, LS_FINISHED, LS_SUPPLIES, LS_SPOOL_POOL, 'olipoly_hub_workflow_v3'];
 
   // Legacy/local fallback keys from earlier Projects + Production Control builds.
   // This keeps older jobs from appearing "lost" after the production-control conversion.
@@ -1826,6 +1839,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     user:null,
     jobs:[],
     pm:[],
+    pmLog:[],
     editingId:null,
     closingId:null,
     search:'',
@@ -3174,6 +3188,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     pm.updated_at = new Date().toISOString();
     localWrite(LS_PM,state.pm);
     try{ await cloudSavePm(pm); }catch{}
+    recordPmLog(machine, 'PM Complete', `Reset maintenance counters; next PM ${pm.next_pm_date || 'not set'}`);
     render();
     toast(`${machine} PM marked complete.`);
   }
@@ -3186,6 +3201,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     pm.last_pm_date = $(`pm_last_${machine}`).value || null;
     pm.pm_day_interval = num($(`pm_d_interval_${machine}`).value) || 30;
     pm.next_pm_date = $(`pm_next_${machine}`).value || (pm.last_pm_date ? addDays(pm.last_pm_date, pm.pm_day_interval) : addDays(todayISO(), pm.pm_day_interval));
+    pm.notes = $(`pm_notes_${machine}`)?.value || '';
     pm.updated_at = new Date().toISOString();
     localWrite(LS_PM,state.pm);
     try{ await cloudSavePm(pm); }catch{}
@@ -3398,12 +3414,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       }catch(err){
         console.warn(err);
         state.pm = localRead(LS_PM, defaultPm());
+    state.pmLog = localRead(LS_PM_LOG, []);
       }
     }else{
       state.jobs = migrateLocalJobs();
       if(!state.jobs.length) state.jobs = seedJobs();
       state.pm = localRead(LS_PM, defaultPm());
+    state.pmLog = localRead(LS_PM_LOG, []);
     }
+    state.pmLog = localRead(LS_PM_LOG, state.pmLog || []);
     if(!state.pm.length) state.pm = defaultPm();
     localWrite(LS_JOBS,state.jobs);
     localWrite(LS_PM,state.pm);
@@ -3597,7 +3616,50 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       : `<strong>No print-ready jobs competing for printer time</strong><span>Post-print, delivery, and closed work is excluded from Recommended Next.</span>`;
   }
 
+
+  function recordPmLog(machine, action, notes=''){
+    const entry = {
+      id: uid(),
+      machine: machine || 'Printer',
+      action: action || 'Maintenance',
+      notes: notes || '',
+      created_at: new Date().toISOString()
+    };
+    state.pmLog = [entry, ...(state.pmLog || [])].slice(0, 100);
+    localWrite(LS_PM_LOG, state.pmLog);
+    try{ window.ERP?.events?.write?.('printer_maintenance', {machine: entry.machine, action: entry.action, notes: entry.notes}); }catch{}
+    return entry;
+  }
+
+  function logQuickPmAction(machine, action){
+    const pm = state.pm.find(p=>p.machine===machine);
+    const note = pm?.notes || '';
+    recordPmLog(machine, action, note);
+    if(pm){
+      pm.updated_at = new Date().toISOString();
+      localWrite(LS_PM,state.pm);
+      cloudSavePm(pm).catch(()=>{});
+    }
+    render();
+    toast(`${action} logged for ${machine}.`);
+  }
+
+  function renderPmLog(){
+    const rows = (state.pmLog || []).slice(0, 8);
+    const board = $('pmLogBoard');
+    if(!board) return;
+    if(!rows.length){
+      board.innerHTML = '<div class="pm-log-empty">No maintenance logged yet. Use the quick buttons above after lubrication, nozzle changes, cleaning, or completed PM.</div>';
+      return;
+    }
+    board.innerHTML = rows.map(r=>`<div class="pm-log-row">
+      <div><strong>${esc(r.machine)} · ${esc(r.action)}</strong><span>${esc(r.notes || 'Maintenance recorded.')} </span></div>
+      <span>${esc(new Date(r.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}))}</span>
+    </div>`).join('');
+  }
+
   function renderPm(){
+    renderPmLog();
     $('pmBoard').innerHTML = state.pm.map(p=>{
       const st = pmStatus(p);
       const d = daysUntil(p.next_pm_date);
@@ -4996,6 +5058,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const st = e.target.closest('[data-status]')?.dataset.status;
     const markPm = e.target.closest('[data-mark-pm]')?.dataset.markPm;
     const savePm = e.target.closest('[data-save-pm]')?.dataset.savePm;
+    const pmAction = e.target.closest('[data-pm-action]')?.dataset.pmAction;
     const toggleInv = e.target.closest('[data-toggle-inventory]')?.dataset.toggleInventory;
     if(edit){ const j=state.jobs.find(x=>x.id===edit); if(j) fillForm(j); }
     if(del) deleteJob(del);
@@ -5009,6 +5072,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
     if(markPm) markPmDone(markPm);
     if(savePm) savePmFromCard(savePm);
+    if(pmAction){ const [machine, action] = pmAction.split('|'); logQuickPmAction(machine, action); }
     if(toggleInv) toggleInventoryExclusion(toggleInv);
     const sel = e.target.closest('[data-select]');
     if(sel){
