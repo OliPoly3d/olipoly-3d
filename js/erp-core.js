@@ -6,7 +6,7 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.07.08-foundation-pass3',
+    version: '2026.07.08-foundation-pass4',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -309,6 +309,90 @@
     const totalHours = open.reduce((s,j)=>s+ERP.num(j.estimated_total_hours || j.total_hours || j.print_hours),0);
     const unassignedHours = open.filter(j=>!j.machine || ERP.norm(j.machine)==='either').reduce((s,j)=>s+ERP.num(j.estimated_total_hours || j.total_hours || j.print_hours),0);
     return {open_jobs:open.length,total_hours:Math.round(totalHours*10)/10,assigned_hours:Math.round((totalHours-unassignedHours)*10)/10,unassigned_hours:Math.round(unassignedHours*10)/10};
+  };
+
+
+  /* === ERP Foundation Sprint Pass 4: shared UI formatters, status pills, and compact render helpers === */
+  ERP.ui = ERP.ui || {};
+  ERP.ui.escapeHtml = function(value){
+    return String(value == null ? '' : value)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  };
+  ERP.ui.titleCase = function(value){
+    return String(value || '')
+      .replace(/[_-]+/g,' ')
+      .replace(/\s+/g,' ')
+      .trim()
+      .replace(/\b\w/g, m => m.toUpperCase());
+  };
+  ERP.ui.statusLabel = function(status, group){
+    const raw = ERP.norm(status || '');
+    const map = group && ERP.status && ERP.status[group] ? ERP.status[group] : null;
+    if(map && map[raw]) return map[raw];
+    if(raw === 'deposit_due') return 'Deposit Due';
+    if(raw === 'deposit_paid') return 'Deposit Paid';
+    if(raw === 'not_needed') return 'Not Needed';
+    return ERP.ui.titleCase(status || 'Open');
+  };
+  ERP.ui.statusTone = function(status){
+    const s = ERP.norm(status || '');
+    if(['completed','closed','paid','delivered','done','ready','ready_for_pickup'].includes(s)) return 'success';
+    if(['printing','in_production','scheduled','queued','post_processing','packaging'].includes(s)) return 'active';
+    if(['awaiting_approval','awaiting_deposit','deposit_due','balance_due','quote_sent','on_hold'].includes(s)) return 'warning';
+    if(['failed_scrap','canceled','cancelled','refunded','overdue','shortage'].includes(s)) return 'danger';
+    return 'neutral';
+  };
+  ERP.ui.statusPill = function(status, group, options){
+    options = options || {};
+    const label = options.label || ERP.ui.statusLabel(status, group);
+    const tone = options.tone || ERP.ui.statusTone(status);
+    return '<span class="erp-status-pill" data-tone="'+ERP.ui.escapeHtml(tone)+'">'+ERP.ui.escapeHtml(label)+'</span>';
+  };
+  ERP.ui.money = ERP.money;
+  ERP.ui.grams = function(value){
+    const n = ERP.num(value);
+    if(Math.abs(n) >= 1000) return (Math.round((n/1000)*10)/10).toLocaleString() + ' kg';
+    return Math.round(n * 10) / 10 + 'g';
+  };
+  ERP.ui.hours = function(value){
+    const n = ERP.num(value);
+    return (Math.round(n * 10) / 10).toLocaleString() + 'h';
+  };
+  ERP.ui.percent = function(value){
+    const n = ERP.num(value);
+    return Math.round(n * 10) / 10 + '%';
+  };
+  ERP.ui.date = function(value){
+    if(!value) return '—';
+    const d = new Date(value);
+    if(Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'});
+  };
+  ERP.ui.dateTime = function(value){
+    if(!value) return '—';
+    const d = new Date(value);
+    if(Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString(undefined,{month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+  };
+  ERP.ui.metricCard = function(label, value, note){
+    return '<div class="erp-metric-card"><span>'+ERP.ui.escapeHtml(label)+'</span><strong>'+ERP.ui.escapeHtml(value)+'</strong>'+(note?'<small>'+ERP.ui.escapeHtml(note)+'</small>':'')+'</div>';
+  };
+  ERP.ui.emptyState = function(title, body){
+    return '<div class="erp-empty-state"><strong>'+ERP.ui.escapeHtml(title || 'Nothing here yet')+'</strong><span>'+ERP.ui.escapeHtml(body || '')+'</span></div>';
+  };
+  ERP.ui.applyStatusPill = function(element, status, group){
+    if(!element) return;
+    element.classList.add('erp-status-pill');
+    element.dataset.tone = ERP.ui.statusTone(status);
+    element.textContent = ERP.ui.statusLabel(status, group);
+  };
+  ERP.ui.installPageBadge = function(label){
+    if(!label || document.querySelector('.erp-foundation-badge')) return;
+    const badge = document.createElement('div');
+    badge.className = 'erp-foundation-badge';
+    badge.textContent = label;
+    document.body.appendChild(badge);
   };
 
 
