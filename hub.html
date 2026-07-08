@@ -7,7 +7,9 @@
   <title>OliPoly Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
+  <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow3">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
+  <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <style>
     :root{
       --bg:#060b16;--bg2:#0a1225;--panel:rgba(12,19,40,.88);--panel2:rgba(17,26,52,.94);
@@ -23,6 +25,7 @@
     .section{margin-top:16px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:10px}.section h3{margin:0;font-size:1.05rem;letter-spacing:-.02em}.section p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.45}.tool-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.tool-card{padding:16px;text-decoration:none;min-height:134px;display:flex;flex-direction:column;justify-content:space-between;transition:.16s}.tool-card:hover,.quick-card:hover{transform:translateY(-2px);border-color:rgba(126,123,255,.42)}.tool-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.tool-icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 22px rgba(126,123,255,.16)}.tool-card strong{display:block;margin-top:12px;font-size:1rem}.tool-card small{display:block;margin-top:5px;color:var(--muted);font-size:.82rem;line-height:1.35}.tag{align-self:flex-start;margin-top:12px;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--muted);font-size:.68rem;font-weight:950;letter-spacing:.06em;text-transform:uppercase}
     .attention-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}.attention-card{padding:18px}.attention-list{display:grid;gap:9px;margin-top:12px}.attention-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line2)}.attention-item b{width:30px;height:30px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;background:rgba(255,196,94,.12);color:#ffe2af}.attention-item strong{display:block}.attention-item small{display:block;color:var(--muted);font-size:.82rem;line-height:1.35;margin-top:3px}.attention-item.info b{background:rgba(126,123,255,.14);color:#dcdcff}.attention-item.good b{background:rgba(79,224,163,.12);color:#cffff0}.attention-item.danger b{background:rgba(255,110,145,.12);color:#ffd7e1}.attention-item.warn b{background:rgba(255,196,94,.12);color:#ffe2af}.metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.metric{padding:14px;box-shadow:none;background:rgba(255,255,255,.04)}.metric span{display:block;color:var(--muted);font-size:.68rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.metric strong{display:block;margin-top:6px;font-size:1.35rem;line-height:1}.metric small{display:block;margin-top:5px;color:var(--muted);font-size:.78rem;line-height:1.3}
     .search-card{padding:14px;margin-top:12px}.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}input{width:100%;min-height:44px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);padding:10px 13px;font:inherit;outline:none}input:focus{border-color:rgba(126,123,255,.58);box-shadow:0 0 0 4px rgba(126,123,255,.12)}.results{display:grid;gap:8px;margin-top:10px}.result{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line2);text-decoration:none}.result span:first-child{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:rgba(126,123,255,.15)}.result strong{display:block}.result small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.group-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.mini-panel{padding:16px;border-radius:24px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}.mini-panel h4{margin:0 0 10px;font-size:.95rem}.mini-links{display:grid;gap:8px}.mini-links a{display:flex;justify-content:space-between;gap:10px;padding:10px 11px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line2);text-decoration:none;color:var(--text);font-weight:800}.mini-links a span{color:var(--muted);font-weight:900}.footer{margin-top:18px;color:var(--muted);font-size:.8rem;text-align:center}.mobile-nav{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:30;padding:8px;border-radius:24px;background:rgba(8,14,30,.92);border:1px solid var(--line);backdrop-filter:blur(16px);box-shadow:var(--shadow);grid-template-columns:repeat(5,1fr);gap:6px}.mobile-nav a{display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;font-size:.67rem;font-weight:900;color:var(--muted);padding:7px 4px;border-radius:16px}.mobile-nav a b{font-size:1rem;color:var(--text)}.mobile-nav a.active{background:rgba(126,123,255,.16);color:var(--text)}
+    .activity-card{padding:18px}.activity-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px}.activity-filters{display:flex;gap:7px;flex-wrap:wrap}.activity-filter{min-height:32px;padding:7px 10px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.045);color:var(--muted);font-weight:900;font-size:.72rem;cursor:pointer}.activity-filter.active{color:#cffff0;background:rgba(79,224,163,.10);border-color:rgba(79,224,163,.24)}.activity-list{display:grid;gap:9px;margin-top:12px}.activity-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:flex-start;padding:12px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line2)}.activity-icon{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:rgba(126,123,255,.14)}.activity-item strong{display:block}.activity-item small{display:block;color:var(--muted);font-size:.8rem;line-height:1.35;margin-top:3px}.activity-time{font-size:.72rem;color:var(--muted);font-weight:900;white-space:nowrap}.activity-empty{padding:16px;border-radius:18px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.035);line-height:1.45}.activity-actions{display:flex;gap:8px;flex-wrap:wrap}.activity-actions button{min-height:32px;padding:7px 10px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.045);color:var(--text);font-weight:900;cursor:pointer}
     @media(max-width:980px){.hero,.attention-grid{grid-template-columns:1fr}.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.group-grid{grid-template-columns:1fr}.topbar{position:relative;top:auto}.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
     @media(max-width:640px){.wrap{width:min(100% - 16px,1180px);padding-top:10px;padding-bottom:92px}.topbar{align-items:flex-start;flex-direction:column;border-radius:22px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .ghost,.top-actions .btn{width:100%;font-size:.82rem}.hero-card,.panel,.attention-card,.search-card,.mini-panel{border-radius:22px;padding:15px}.tool-grid,.metric-grid{grid-template-columns:1fr}.tool-card{min-height:112px}.quick-card{padding:14px}.hero h2{font-size:2.15rem}.search-row{grid-template-columns:1fr}.search-row .ghost{width:100%}.mobile-nav{display:grid}.section-head{align-items:flex-start;flex-direction:column}.brand h1{font-size:1rem}.brand span{font-size:.68rem}}
   
@@ -101,6 +104,23 @@
             <h3>Business Snapshot</h3>
             <div class="metric-grid" id="metricGrid"></div>
           </div>
+        </div>
+      </section>
+
+      <section class="section" id="activity">
+        <div class="section-head">
+          <div><h3>Recent Activity</h3><p>A simple timeline of recent ERP actions from production, inventory, printer maintenance, quotes, orders, and finance.</p></div>
+          <span class="chip">Activity center</span>
+        </div>
+        <div class="attention-card activity-card">
+          <div class="activity-toolbar">
+            <div class="activity-filters" id="activityFilters" aria-label="Activity filters"></div>
+            <div class="activity-actions">
+              <button type="button" id="activityRefresh">Refresh</button>
+              <button type="button" id="activityClear">Clear local log</button>
+            </div>
+          </div>
+          <div class="activity-list" id="activityList"></div>
         </div>
       </section>
 
@@ -213,6 +233,62 @@
       return hits.slice(0,4);
     }
 
+    const activityState = {filter:'all'};
+    function readEvents(){
+      const events = (window.OliPolyERP?.events?.read?.(120)) || firstArray(['olipoly_erp_event_log_v1']);
+      return arr(events).map(e => ({...e, category:e.category || eventCategory(e.type)}));
+    }
+    function eventCategory(type){
+      const t = String(type || '').toLowerCase();
+      if(t.includes('inventory') || t.includes('material') || t.includes('reservation') || t.includes('roll')) return 'inventory';
+      if(t.includes('printer') || t.includes('pm') || t.includes('maintenance') || t.includes('nozzle') || t.includes('extruder')) return 'maintenance';
+      if(t.includes('production') || t.includes('job')) return 'production';
+      if(t.includes('quote')) return 'quotes';
+      if(t.includes('order')) return 'orders';
+      if(t.includes('finance') || t.includes('invoice') || t.includes('paid') || t.includes('payment')) return 'finance';
+      return 'system';
+    }
+    function eventIcon(category){ return ({orders:'📦',quotes:'◈',production:'🖨️',inventory:'⬢',finance:'💰',maintenance:'🛠️',system:'•'})[category] || '•'; }
+    function titleCase(value){ return String(value || '').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase()); }
+    function eventTitle(e){ return window.OliPolyERP?.events?.title?.(e) || titleCase(e.type || 'ERP activity'); }
+    function eventSubtitle(e){
+      if(window.OliPolyERP?.events?.subtitle) return window.OliPolyERP.events.subtitle(e);
+      const d = e.detail || {}; const bits = [];
+      if(d.title || d.job_title || d.order_title) bits.push(d.title || d.job_title || d.order_title);
+      if(d.job_id || d.order_id || d.quote_id) bits.push(d.job_id || d.order_id || d.quote_id);
+      if(d.from || d.to) bits.push([d.from,d.to].filter(Boolean).join(' → '));
+      if(d.reserved_grams) bits.push(`${Math.round(Number(d.reserved_grams)*10)/10}g reserved`);
+      if(d.printer || d.machine) bits.push(d.printer || d.machine);
+      if(d.note || d.reason) bits.push(d.note || d.reason);
+      return bits.filter(Boolean).join(' · ') || (e.page ? `From ${e.page}` : 'ERP event logged');
+    }
+    function eventTime(value){
+      const d = new Date(value || Date.now());
+      if(Number.isNaN(d.getTime())) return '—';
+      const now = Date.now(); const diff = now - d.getTime();
+      if(diff < 60000) return 'Just now';
+      if(diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+      if(diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+      return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    }
+    function renderActivity(){
+      const filters = [
+        ['all','All'],['production','Production'],['inventory','Inventory'],['maintenance','Printers'],['orders','Orders'],['quotes','Quotes'],['finance','Finance']
+      ];
+      const filterBox = document.getElementById('activityFilters');
+      if(filterBox) filterBox.innerHTML = filters.map(([key,label]) => `<button type="button" class="activity-filter ${activityState.filter===key?'active':''}" data-filter="${esc(key)}">${esc(label)}</button>`).join('');
+      const list = document.getElementById('activityList');
+      if(!list) return;
+      let events = readEvents();
+      if(activityState.filter !== 'all') events = events.filter(e => e.category === activityState.filter);
+      events = events.slice(0,18);
+      if(!events.length){
+        list.innerHTML = `<div class="activity-empty"><strong>No activity logged yet.</strong><br>As you save production jobs, reserve material, update printer maintenance, or work orders, recent actions will appear here.</div>`;
+        return;
+      }
+      list.innerHTML = events.map(e => `<div class="activity-item" data-category="${esc(e.category)}"><span class="activity-icon">${esc(eventIcon(e.category))}</span><span><strong>${esc(eventTitle(e))}</strong><small>${esc(eventSubtitle(e))}</small></span><span class="activity-time">${esc(eventTime(e.at))}</span></div>`).join('');
+    }
+
     function card(t){
       return `<a class="tool-card" href="${esc(t.href)}" data-search="${esc([t.title,t.sub,t.group,t.tag].join(' ').toLowerCase())}"><span class="tool-top"><span class="tool-icon">${esc(t.icon)}</span><span class="tag">${esc(t.tag)}</span></span><span><strong>${esc(t.title)}</strong><small>${esc(t.sub)}</small></span></a>`;
     }
@@ -315,12 +391,17 @@
       const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
       document.getElementById('greetingPill').textContent = `${part}, Rob`;
     }
-    renderTools(); renderSnapshot(); greet();
+    renderTools(); renderSnapshot(); renderActivity(); greet();
     setInterval(renderSnapshot, 30000);
     document.getElementById('hubSearch').addEventListener('input', renderSearch);
-    window.addEventListener('storage', renderSnapshot);
-    window.addEventListener('online', renderSnapshot);
-    window.addEventListener('offline', renderSnapshot);
+    document.getElementById('activityFilters')?.addEventListener('click', e => { const btn = e.target.closest('[data-filter]'); if(!btn) return; activityState.filter = btn.dataset.filter || 'all'; renderActivity(); });
+    document.getElementById('activityRefresh')?.addEventListener('click', renderActivity);
+    document.getElementById('activityClear')?.addEventListener('click', () => { if(confirm('Clear the local ERP activity log on this browser?')) { if(window.OliPolyERP?.events?.clear) window.OliPolyERP.events.clear(); else localStorage.setItem('olipoly_erp_event_log_v1','[]'); renderActivity(); } });
+    window.addEventListener('storage', () => { renderSnapshot(); renderActivity(); });
+    window.addEventListener('online', () => { renderSnapshot(); renderActivity(); });
+    window.addEventListener('offline', () => { renderSnapshot(); renderActivity(); });
+    window.addEventListener('olipoly:erp-event', renderActivity);
+    window.addEventListener('olipoly:erp-events-cleared', renderActivity);
   </script>
 </body>
 </html>

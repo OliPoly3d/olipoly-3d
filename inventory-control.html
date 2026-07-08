@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow1" />
+  <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow3" />
   <style>
     :root{
       --ink:#25182d;--text:#3f3146;--muted:#74617d;--soft:#fff7fd;
@@ -537,7 +537,7 @@
     input::placeholder,textarea::placeholder{color:rgba(68,50,78,.55)!important}
 </style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js?v=20260708-workflow1"></script>
+  <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 </head>
@@ -2561,6 +2561,7 @@
     list[idx].remaining_grams=dir==='add'?before+amount:Math.max(0,before-amount);
     list[idx].updated_at=new Date().toISOString(); saveRaw(list);
     addLedger({type:dir==='add'?'raw_adjust':'raw_usage',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:dir==='add'?'Quick add raw material':'Quick use raw material'});
+    try{window.OliPolyERP?.logEvent?.('inventory_raw_adjusted',{category:'inventory', title:`${list[idx].material_type} ${list[idx].color}`, note:`${before}g → ${list[idx].remaining_grams}g`});}catch{}
     render(); toast(dir==='add'?'Raw material added.':'Raw material used.');
   }
   function quickFg(id,dir){
@@ -2623,11 +2624,11 @@
 
   function bind(){
     document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
-    $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); cloudSaveRaw(r).catch(console.warn); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); resetRaw();render();toast('Raw material saved.');});
+    $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); cloudSaveRaw(r).catch(console.warn); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); try{window.OliPolyERP?.logEvent?.('inventory_raw_saved',{category:'inventory', title:`${r.material_type} ${r.color}`, reserved_grams:r.reserved_grams||0, note:`${grams(r.remaining_grams)} on hand`});}catch{} resetRaw();render();toast('Raw material saved.');});
     $('rawResetBtn').addEventListener('click',resetRaw);
-    $('supplyForm')?.addEventListener('submit',e=>{e.preventDefault(); const s=supplyFromForm(); if(!s.item_name)return toast('Supply item name is required.'); const list=supplies().filter(x=>x.id!==s.id); list.unshift(s); saveSupplies(list); cloudSaveSupply(s).catch(console.warn); addLedger({type:'supply_adjust',item:s.item_name,amount:`Saved ${s.quantity_on_hand} ${s.unit_type}`,note:'Non-filament supply saved'}); resetSupply();render();toast('Supply saved.');});
+    $('supplyForm')?.addEventListener('submit',e=>{e.preventDefault(); const s=supplyFromForm(); if(!s.item_name)return toast('Supply item name is required.'); const list=supplies().filter(x=>x.id!==s.id); list.unshift(s); saveSupplies(list); cloudSaveSupply(s).catch(console.warn); addLedger({type:'supply_adjust',item:s.item_name,amount:`Saved ${s.quantity_on_hand} ${s.unit_type}`,note:'Non-filament supply saved'}); try{window.OliPolyERP?.logEvent?.('inventory_supply_saved',{category:'inventory', title:s.item_name, note:`${s.quantity_on_hand} ${s.unit_type} on hand`});}catch{} resetSupply();render();toast('Supply saved.');});
     $('supplyResetBtn')?.addEventListener('click',resetSupply);
-    $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); cloudSaveFg(f).catch(console.warn); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); resetFg();render();toast('Finished good saved.');});
+    $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); cloudSaveFg(f).catch(console.warn); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); try{window.OliPolyERP?.logEvent?.('inventory_finished_good_saved',{category:'inventory', title:f.product_name, note:`Qty ${f.quantity_on_hand}`});}catch{} resetFg();render();toast('Finished good saved.');});
     $('fgResetBtn').addEventListener('click',resetFg);
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow1" />
+  <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow3" />
   <style>
     :root{
       --ink:#25182d;
@@ -1031,7 +1031,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </script>
 
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js?v=20260708-workflow1"></script>
+  <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 
@@ -3627,7 +3627,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     };
     state.pmLog = [entry, ...(state.pmLog || [])].slice(0, 100);
     localWrite(LS_PM_LOG, state.pmLog);
-    try{ window.ERP?.events?.write?.('printer_maintenance', {machine: entry.machine, action: entry.action, notes: entry.notes}); }catch{}
+    try{ window.OliPolyERP?.logEvent?.('printer_maintenance', {category:'maintenance', machine: entry.machine, action: entry.action, note: entry.notes}); }catch{}
     return entry;
   }
 
