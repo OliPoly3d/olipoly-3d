@@ -132,6 +132,114 @@
     ]);
   };
 
+
+
+  /* === ERP Foundation Sprint Pass 1: shared statuses, material matching, and local event log === */
+  ERP.status = {
+    production: {
+      idea:'Idea / Intake',
+      awaiting_approval:'Awaiting Approval',
+      ready_to_print:'Ready to Print',
+      queued:'Queued',
+      printing:'Printing',
+      post_processing:'Post-Processing',
+      packaging:'Packaging',
+      ready:'Ready',
+      awaiting_pickup:'Awaiting Pickup',
+      delivery_scheduled:'Delivery Scheduled',
+      shipped:'Shipped',
+      delivered:'Delivered',
+      completed:'Completed',
+      failed_scrap:'Failed / Scrap',
+      canceled:'Canceled',
+      archived:'Archived',
+      on_hold:'On Hold'
+    },
+    productionClosed: ['completed','failed_scrap','canceled','archived'],
+    productionReservesInventory: [
+      'idea','awaiting_approval','ready_to_print','queued','printing','post_processing',
+      'packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered','on_hold'
+    ],
+    order: {
+      quote_sent:'Quote Sent', awaiting_approval:'Awaiting Approval', awaiting_deposit:'Awaiting Deposit',
+      in_design:'In Design', in_production:'In Production', post_processing:'Post-Processing',
+      ready_for_pickup:'Ready for Pickup', shipped:'Shipped', completed:'Completed'
+    },
+    payment: {
+      not_needed:'Not Needed', deposit_due:'Deposit Due', deposit_paid:'Deposit Paid',
+      balance_due:'Balance Due', paid:'Paid', refunded:'Refunded'
+    }
+  };
+
+  ERP.norm = function(value){ return String(value == null ? '' : value).trim().toLowerCase(); };
+  ERP.num = function(value){ const n = Number(value); return Number.isFinite(n) ? n : 0; };
+  ERP.materialKey = function(parts){
+    parts = parts || {};
+    return [parts.material_type || parts.material, parts.color, parts.brand || parts.filament]
+      .map(ERP.norm).join('|');
+  };
+  ERP.parseInventoryPick = function(value){
+    const raw = String(value || '').trim();
+    if(!raw) return {material:'', color:'', filament:''};
+    const pieces = raw.split('|').map(x=>x.trim());
+    return {material:pieces[0] || '', color:pieces[1] || '', filament:pieces[2] || ''};
+  };
+  ERP.materialMatches = function(raw, need){
+    raw = raw || {}; need = need || {};
+    const rawMaterial = ERP.norm(raw.material_type || raw.material);
+    const rawColor = ERP.norm(raw.color);
+    const rawBrand = ERP.norm(raw.brand || raw.filament);
+    const needMaterial = ERP.norm(need.material_type || need.material);
+    const needColor = ERP.norm(need.color);
+    const needBrand = ERP.norm(need.brand || need.filament);
+    const materialOk = !needMaterial || rawMaterial === needMaterial;
+    const colorOk = !needColor || rawColor === needColor;
+    const brandOk = !needBrand || !rawBrand || rawBrand === needBrand || rawBrand.includes(needBrand) || needBrand.includes(rawBrand);
+    return materialOk && colorOk && brandOk;
+  };
+  ERP.productionStatusReservesInventory = function(status){
+    const s = ERP.norm(status || 'idea');
+    return ERP.status.productionReservesInventory.includes(s) && !ERP.status.productionClosed.includes(s);
+  };
+  ERP.readProductionJobs = function(){ return ERP.storage.get('olipoly_production_jobs_v3', []); };
+  ERP.readRawInventory = function(){ return ERP.storage.get('olipoly_raw_material_inventory_v3', []); };
+  ERP.writeRawInventory = function(rows){ return ERP.storage.set('olipoly_raw_material_inventory_v3', rows || []); };
+  ERP.recipeRowsForJob = function(job){
+    const rows = ERP.safeJson(job && job.filament_recipe, []);
+    if(Array.isArray(rows) && rows.length) return rows;
+    return [{
+      material: job && (job.primary_material || job.material) || '',
+      color: job && (job.primary_color || job.color) || '',
+      filament: job && (job.primary_filament || job.filament || '') || '',
+      grams_each: ERP.num(job && (job.estimated_grams_each || job.actual_grams_used || job.grams_each))
+    }];
+  };
+  ERP.jobShouldReserveInventory = function(job){
+    if(!job || job.exclude_inventory_reduction) return false;
+    return ERP.productionStatusReservesInventory(job.production_status || 'idea');
+  };
+  ERP.reservationDemandByRoll = function(jobs){
+    const demand = {};
+    (jobs || []).filter(ERP.jobShouldReserveInventory).forEach(job => {
+      if(Array.isArray(job.material_reservations) && job.material_reservations.length){
+        job.material_reservations.forEach(r => {
+          if(r && r.raw_material_roll_id && !r.shortage){
+            demand[r.raw_material_roll_id] = ERP.num(demand[r.raw_material_roll_id]) + ERP.num(r.grams_reserved);
+          }
+        });
+      }
+    });
+    return demand;
+  };
+  ERP.logEvent = function(type, detail){
+    const event = {id:'evt-'+Date.now()+'-'+Math.random().toString(16).slice(2), type:type || 'event', detail:detail || {}, at:new Date().toISOString(), page:ERP.page};
+    const events = ERP.storage.get('olipoly_erp_event_log_v1', []);
+    events.unshift(event);
+    ERP.storage.set('olipoly_erp_event_log_v1', events.slice(0,500));
+    window.dispatchEvent(new CustomEvent('olipoly:erp-event', {detail:event}));
+    return event;
+  };
+
   ERP.markReady = function(){
     document.documentElement.dataset.erpCoreReady = 'true';
     window.dispatchEvent(new CustomEvent('olipoly:erp-ready', {detail:{version:ERP.version, page:ERP.page}}));
