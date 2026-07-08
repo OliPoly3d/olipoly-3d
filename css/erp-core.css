@@ -175,3 +175,20 @@
 }
 body:hover .erp-foundation-badge{opacity:.0;}
 @media (max-width:760px){.erp-foundation-badge{display:none;}}
+
+
+/* === ERP Workflow Pass 1: inventory intelligence cards === */
+.erp-planner-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0;}
+.erp-planner-list{display:grid;gap:10px;margin-top:12px;}
+.erp-planner-row{border:1px solid rgba(126,144,255,.16);background:rgba(255,255,255,.06);border-radius:20px;padding:13px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;}
+.erp-planner-row strong{color:#eef4ff;font:900 14px/1.2 Inter,system-ui,sans-serif;}
+.erp-planner-row .meta{margin-top:5px;color:#a8b5db;font:700 12px/1.4 Inter,system-ui,sans-serif;}
+.erp-planner-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+.erp-planner-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;border:1px solid rgba(148,163,184,.18);background:rgba(148,163,184,.1);color:#dbe4f0;font:800 11px/1 Inter,system-ui,sans-serif;}
+.erp-planner-chip.danger{background:rgba(244,63,94,.14);border-color:rgba(244,63,94,.28);color:#fecdd3;}
+.erp-planner-chip.warn{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.3);color:#fde68a;}
+.erp-planner-chip.ok{background:rgba(22,163,74,.13);border-color:rgba(22,163,74,.26);color:#bbf7d0;}
+.erp-planner-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+.erp-planner-actions a{color:#bfdbfe;text-decoration:none;}
+@media(max-width:900px){.erp-planner-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.erp-planner-row{grid-template-columns:1fr;}.erp-planner-actions{justify-content:flex-start;}}
+@media(max-width:560px){.erp-planner-grid{grid-template-columns:1fr;}}
