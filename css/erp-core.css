@@ -116,3 +116,62 @@
 @media (prefers-reduced-motion: reduce){
   .erp-toast{animation:none;}
 }
+
+
+/* === ERP Foundation Sprint Pass 4: shared UI primitives === */
+.erp-status-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:24px;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.24);
+  background:rgba(148,163,184,.12);
+  color:#e5e7eb;
+  font:800 11px/1 Inter,system-ui,sans-serif;
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+.erp-status-pill[data-tone="success"]{background:rgba(22,163,74,.14);border-color:rgba(22,163,74,.28);color:#bbf7d0;}
+.erp-status-pill[data-tone="active"]{background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.28);color:#bfdbfe;}
+.erp-status-pill[data-tone="warning"]{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.34);color:#fde68a;}
+.erp-status-pill[data-tone="danger"]{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.32);color:#fecdd3;}
+.erp-status-pill[data-tone="neutral"]{background:rgba(148,163,184,.13);border-color:rgba(148,163,184,.26);color:#dbe4f0;}
+.erp-metric-card{
+  border:1px solid rgba(126,144,255,.18);
+  background:rgba(255,255,255,.06);
+  border-radius:18px;
+  padding:14px;
+  display:grid;
+  gap:5px;
+  min-width:0;
+}
+.erp-metric-card span{font:800 11px/1.2 Inter,system-ui,sans-serif;color:#a8b5db;text-transform:uppercase;letter-spacing:.08em;}
+.erp-metric-card strong{font:900 22px/1.1 Inter,system-ui,sans-serif;color:#eef4ff;}
+.erp-metric-card small{font:700 12px/1.35 Inter,system-ui,sans-serif;color:#a8b5db;}
+.erp-empty-state{
+  border:1px dashed rgba(126,144,255,.26);
+  background:rgba(255,255,255,.05);
+  border-radius:20px;
+  padding:18px;
+  display:grid;
+  gap:6px;
+  color:#eef4ff;
+  font-family:Inter,system-ui,sans-serif;
+}
+.erp-empty-state strong{font-size:14px;}
+.erp-empty-state span{font-size:13px;line-height:1.45;color:#a8b5db;}
+.erp-foundation-badge{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  z-index:8999;
+  pointer-events:none;
+  opacity:.0;
+  transform:translateY(6px);
+  transition:opacity .18s ease, transform .18s ease;
+}
+body:hover .erp-foundation-badge{opacity:.0;}
+@media (max-width:760px){.erp-foundation-badge{display:none;}}
