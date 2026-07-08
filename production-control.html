@@ -2525,55 +2525,23 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     });
     return reservations;
   }
-  function rawCostPerGramSafe(r){
-    // Closeout/reservation saves run before the recipe-pricing helper scope, so keep this
-    // fully self-contained for legacy inventory rows. Supabase requires cost_per_gram.
-    const explicit = num(
-      r?.cost_per_gram ??
-      r?.cost_per_g ??
-      r?.unit_cost_per_gram ??
-      r?.unit_cost_g ??
-      r?.price_per_gram ??
-      r?.price_per_g ??
-      0
-    );
-    if(explicit) return explicit;
-    const cost = num(
-      r?.spool_cost ??
-      r?.total_cost ??
-      r?.purchase_cost ??
-      r?.purchase_price ??
-      r?.cost ??
-      r?.price ??
-      r?.raw_cost ??
-      r?.material_cost ??
-      0
-    );
-    const grams = Math.max(1, num(
-      r?.starting_grams ??
-      r?.starting ??
-      r?.total_grams ??
-      r?.original_grams ??
-      r?.initial_grams ??
-      r?.purchased_grams ??
-      r?.spool_size_grams ??
-      r?.size_grams ??
-      r?.nominal_grams ??
-      1000
-    ));
-    return cost && grams ? cost / grams : 0;
-  }
-
   async function cloudSaveRawFromProduction(r){
     if(!state.user?.id || !r?.id) return false;
     const payload = {
       ...r,
       user_id:state.user.id,
-      cost_per_gram: rawCostPerGramSafe(r),
       reserved_grams: num(r.reserved_grams),
       remaining_grams: num(r.remaining_grams || r.remaining),
       updated_at:new Date().toISOString()
     };
+    // Supabase has generated/default-only pricing columns on some schemas.
+    // Reservation saves should update roll quantities only, so strip derived pricing fields.
+    delete payload.cost_per_gram;
+    delete payload.cost_per_g;
+    delete payload.unit_cost_per_gram;
+    delete payload.unit_cost_g;
+    delete payload.price_per_gram;
+    delete payload.price_per_g;
     try{
       await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
       return true;
