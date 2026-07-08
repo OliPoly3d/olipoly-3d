@@ -6,7 +6,7 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.07.08-workflow-pass1',
+    version: '2026.07.08-workflow-pass3-activity',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -232,12 +232,67 @@
     return demand;
   };
   ERP.logEvent = function(type, detail){
-    const event = {id:'evt-'+Date.now()+'-'+Math.random().toString(16).slice(2), type:type || 'event', detail:detail || {}, at:new Date().toISOString(), page:ERP.page};
+    detail = detail || {};
+    const event = {
+      id:'evt-'+Date.now()+'-'+Math.random().toString(16).slice(2),
+      type:type || 'event',
+      category: detail.category || ERP.eventCategory(type),
+      detail:detail,
+      at:new Date().toISOString(),
+      page:ERP.page
+    };
     const events = ERP.storage.get('olipoly_erp_event_log_v1', []);
     events.unshift(event);
-    ERP.storage.set('olipoly_erp_event_log_v1', events.slice(0,500));
+    ERP.storage.set('olipoly_erp_event_log_v1', events.slice(0,750));
     window.dispatchEvent(new CustomEvent('olipoly:erp-event', {detail:event}));
     return event;
+  };
+
+  ERP.eventCategory = function(type){
+    const t = ERP.norm(type || 'event');
+    if(t.includes('inventory') || t.includes('material') || t.includes('reservation') || t.includes('roll')) return 'inventory';
+    if(t.includes('printer') || t.includes('pm') || t.includes('maintenance') || t.includes('nozzle') || t.includes('extruder')) return 'maintenance';
+    if(t.includes('production') || t.includes('job')) return 'production';
+    if(t.includes('quote')) return 'quotes';
+    if(t.includes('order')) return 'orders';
+    if(t.includes('finance') || t.includes('invoice') || t.includes('paid') || t.includes('payment')) return 'finance';
+    return 'system';
+  };
+
+  ERP.events = ERP.events || {};
+  ERP.events.read = function(limit){
+    const events = ERP.storage.get('olipoly_erp_event_log_v1', []);
+    return (Array.isArray(events) ? events : []).slice(0, limit || 100);
+  };
+  ERP.events.clear = function(){
+    ERP.storage.set('olipoly_erp_event_log_v1', []);
+    window.dispatchEvent(new CustomEvent('olipoly:erp-events-cleared'));
+  };
+  ERP.events.icon = function(category){
+    return {orders:'📦',quotes:'◈',production:'🖨️',inventory:'⬢',finance:'💰',maintenance:'🛠️',system:'•'}[category || 'system'] || '•';
+  };
+  ERP.events.title = function(event){
+    event = event || {}; const d = event.detail || {}; const type = ERP.norm(event.type || 'event');
+    if(type === 'production_job_saved') return 'Production job saved';
+    if(type === 'production_status_changed') return 'Production status changed';
+    if(type === 'production_job_canceled') return 'Production job canceled';
+    if(type.includes('maintenance') || type.includes('printer_pm')) return 'Printer maintenance recorded';
+    if(type.includes('inventory') && type.includes('saved')) return 'Inventory updated';
+    if(type.includes('reservation')) return 'Material reservation updated';
+    if(type.includes('quote')) return 'Quote activity';
+    if(type.includes('order')) return 'Order activity';
+    return ERP.ui?.titleCase ? ERP.ui.titleCase(event.type || 'ERP activity') : String(event.type || 'ERP activity');
+  };
+  ERP.events.subtitle = function(event){
+    event = event || {}; const d = event.detail || {};
+    const bits = [];
+    if(d.title || d.job_title || d.order_title) bits.push(d.title || d.job_title || d.order_title);
+    if(d.job_id || d.order_id || d.quote_id) bits.push(d.job_id || d.order_id || d.quote_id);
+    if(d.from || d.to) bits.push([d.from,d.to].filter(Boolean).join(' → '));
+    if(d.reserved_grams) bits.push((ERP.ui?.grams ? ERP.ui.grams(d.reserved_grams) : d.reserved_grams+'g') + ' reserved');
+    if(d.printer || d.machine) bits.push(d.printer || d.machine);
+    if(d.note || d.reason) bits.push(d.note || d.reason);
+    return bits.filter(Boolean).join(' · ') || (event.page ? 'From ' + event.page : 'ERP event logged');
   };
 
 
