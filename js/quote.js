@@ -5757,8 +5757,7 @@ https://olipoly3d.com`;
 
   function bindFinalSingleRenderer() {
     replaceButtonHandler("customerPdfBtn", "quote");
-    // Do not bind generateQuoteBtn here. It is the Check Missing Inputs button,
-    // not a PDF button. RC1 hotfix keeps PDF rendering limited to the real PDF buttons.
+    // RC1 v2: generateQuoteBtn was renamed to checkMissingInputsBtn; do not bind it to PDF.
     replaceButtonHandler("invoicePdfBtn", "invoice");
   }
 
@@ -6067,74 +6066,45 @@ https://olipoly3d.com`;
 })();
 
 
-/* === ERP RC1 Quote Button + Reset Hotfix ===
-   Fixes two audit findings:
-   1) Check Missing Inputs was being cloned into the PDF renderer path by a legacy binding.
-   2) Reset did not clear loaded quote/customer/project fields or active local draft state.
+/* === ERP RC1 Quote Buttons + Reset Hotfix V2 ===
+   Structural fix: quote.html now uses checkMissingInputsBtn instead of generateQuoteBtn,
+   so legacy PDF code cannot steal the Check Missing Inputs button anymore.
 */
 (() => {
   const $ = (id) => document.getElementById(id);
-
   const DEFAULTS = {
-    liteQuoteType: 'retail',
-    qty: '1',
-    quantity: '1',
-    shippingMode: 'pickup',
-    depositPercent: '50',
-    filamentCount: '1',
-    spoolWeight: '1000',
-    filament1Cost: '0',
-    filament1Used: '0',
-    machineHours: '0',
-    machineRate: '0',
-    designHours: '0',
-    designRate: '0',
-    postHours: '0',
-    postRate: '0',
-    simplePackaging: '0',
-    simpleShipping: '0',
-    simpleHardware: '0',
-    quoteStatus: 'draft',
-    orderType: 'custom',
-    presetSelect: 'custom',
-    professionalMode: 'off',
-    invoiceType: 'deposit',
-    paymentTerms: 'deposit_to_start',
-    unitsPerItem: '1',
-    profitMode: 'percent',
-    suggestedMode: 'standard',
-    profitValue: '35',
-    discount: '0',
-    taxPreset: 'custom',
-    salesTax: '0',
-    roundingMode: '0',
-    marketplacePercent: '0',
-    taxExempt: 'no',
-    certificateOnFile: 'no',
-    poFileOnFile: 'no'
+    liteQuoteType: 'retail', qty: '1', quantity: '1', shippingMode: 'pickup', depositPercent: '50',
+    filamentCount: '1', spoolWeight: '1000', filament1Cost: '0', filament1Used: '0',
+    machineHours: '0', machineRate: '0', designHours: '0', designRate: '0', postHours: '0', postRate: '0',
+    simplePackaging: '0', simpleShipping: '0', simpleHardware: '0', quoteStatus: 'draft', orderType: 'custom',
+    presetSelect: 'custom', professionalMode: 'off', invoiceType: 'deposit', paymentTerms: 'deposit_to_start',
+    unitsPerItem: '1', profitMode: 'percent', suggestedMode: 'standard', profitValue: '35', discount: '0',
+    taxPreset: 'custom', salesTax: '0', roundingMode: '0', marketplacePercent: '0', taxExempt: 'no',
+    certificateOnFile: 'no', poFileOnFile: 'no'
   };
-
-  const DRAFT_KEYS_TO_CLEAR = [
+  const CLEAR_KEYS = [
     'olipoly_reorder_quote_draft_v1',
-    'olipoly_production_to_quote_draft_v1'
+    'olipoly_production_to_quote_draft_v1',
+    'olipoly_quote_draft_v1',
+    'olipoly_active_quote_v1',
+    'currentQuote',
+    'quoteDraft',
+    'activeQuote'
   ];
-
   function toast(message){
     if (typeof window.quotePatchToast === 'function') return window.quotePatchToast(message);
     const el = $('liteStatusToast');
     if (!el) return;
     el.textContent = message;
     el.classList.add('show');
-    clearTimeout(el._rc1QuoteFixTimer);
-    el._rc1QuoteFixTimer = setTimeout(() => el.classList.remove('show'), 2600);
+    clearTimeout(el._rc1QuoteFixV2Timer);
+    el._rc1QuoteFixV2Timer = setTimeout(() => el.classList.remove('show'), 2600);
   }
-
   function fire(el){
     if (!el) return;
     el.dispatchEvent(new Event('input', { bubbles:true }));
     el.dispatchEvent(new Event('change', { bubbles:true }));
   }
-
   function setVal(id, value){
     const el = $(id);
     if (!el) return;
@@ -6142,28 +6112,23 @@ https://olipoly3d.com`;
     else el.value = value ?? '';
     fire(el);
   }
-
-  function clearMissingNotice(){
+  function clearNotice(){
     const notice = $('missingInputsNotice');
     if (!notice) return;
     notice.classList.add('hidden');
     notice.textContent = '';
     notice.innerHTML = '';
   }
+  function clearContainer(id){ const el = $(id); if (el) el.innerHTML = ''; }
+  function resetQuoteTool(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
 
-  function clearLineItems(containerId){
-    const container = $(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-  }
-
-  function resetQuoteTool(){
     window.__activeProjectQuoteLoaded = false;
     window.__reorderDraftDomApplied = false;
-
-    DRAFT_KEYS_TO_CLEAR.forEach((key) => {
-      try { localStorage.removeItem(key); } catch {}
-    });
+    try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
+    CLEAR_KEYS.forEach((key) => { try { localStorage.removeItem(key); } catch {} });
 
     document.querySelectorAll('input[id], textarea[id], select[id]').forEach((el) => {
       if (el.type === 'button' || el.type === 'submit' || el.type === 'reset') return;
@@ -6174,83 +6139,63 @@ https://olipoly3d.com`;
     });
 
     Object.entries(DEFAULTS).forEach(([id, value]) => setVal(id, value));
-
-    clearLineItems('directItems');
-    clearLineItems('overheadItems');
-    clearMissingNotice();
-
+    clearContainer('directItems');
+    clearContainer('overheadItems');
+    clearNotice();
     const saved = $('savedQuotesSelect');
     if (saved) saved.value = '';
-
     document.body.classList.remove('production-prefilled');
-    ['productionSourceCard','productionQuoteSourceNote'].forEach((id) => {
-      const el = $(id);
-      if (id === 'productionSourceCard') el?.remove();
-      else if (el) { el.classList.add('hidden'); el.innerHTML = ''; }
-    });
-
+    $('productionSourceCard')?.remove();
+    const note = $('productionQuoteSourceNote');
+    if (note) { note.classList.add('hidden'); note.innerHTML = ''; }
     if (typeof window.render === 'function') window.render();
     if (typeof window.olipolySyncQuoteTotals === 'function') window.olipolySyncQuoteTotals();
     toast('Quote tool reset. Start a new quote.');
+    return false;
   }
-
-  function checkMissingInputs(){
+  function checkMissingInputs(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
     const required = [
-      ['customerName', 'Customer name'],
-      ['customerEmail', 'Customer email'],
-      ['quoteTitle', 'Project / quote title'],
-      ['qty', 'Quantity'],
-      ['turnaround', 'Turnaround']
+      ['customerName', 'Customer name'], ['customerEmail', 'Customer email'],
+      ['quoteTitle', 'Project / quote title'], ['qty', 'Quantity'], ['turnaround', 'Turnaround']
     ];
-
     const missing = [];
     required.forEach(([id, label]) => {
       const el = $(id);
       const value = (el?.value || '').trim();
       if (!value || (id === 'qty' && Number(value) <= 0)) missing.push(label);
     });
-
     const notice = $('missingInputsNotice');
     if (notice) {
-      if (missing.length) {
-        notice.classList.remove('hidden');
-        notice.innerHTML = `<strong>Missing inputs:</strong> ${missing.join(', ')}`;
-      } else {
-        notice.classList.remove('hidden');
-        notice.innerHTML = '<strong>Quote check complete:</strong> required customer-facing fields are filled.';
-      }
+      notice.classList.remove('hidden');
+      notice.innerHTML = missing.length
+        ? `<strong>Missing inputs:</strong> ${missing.join(', ')}`
+        : '<strong>Quote check complete:</strong> required customer-facing fields are filled.';
     }
-
     toast(missing.length ? 'Missing inputs highlighted.' : 'Quote check complete.');
-    return missing;
+    return false;
   }
-
-  function replaceWithCleanHandler(id, handler){
+  function replaceHandler(id, handler){
     const old = $(id);
     if (!old) return;
     const clone = old.cloneNode(true);
-    clone.dataset.erpRc1QuoteButtonFix = 'true';
-    clone.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      handler(event);
-      return false;
-    }, true);
+    clone.dataset.erpRc1QuoteButtonFixV2 = 'true';
+    clone.onclick = null;
+    clone.addEventListener('click', handler, true);
     old.parentNode.replaceChild(clone, old);
   }
-
   function bind(){
-    replaceWithCleanHandler('generateQuoteBtn', checkMissingInputs);
-    replaceWithCleanHandler('resetBtn', resetQuoteTool);
+    replaceHandler('checkMissingInputsBtn', checkMissingInputs);
+    replaceHandler('resetBtn', resetQuoteTool);
   }
-
   window.olipolyResetQuoteTool = resetQuoteTool;
   window.olipolyCheckMissingQuoteInputs = checkMissingInputs;
-
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
   else bind();
-  setTimeout(bind, 250);
-  setTimeout(bind, 1000);
-  setTimeout(bind, 2500);
+  setTimeout(bind, 100);
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+  setTimeout(bind, 3500);
 })();
