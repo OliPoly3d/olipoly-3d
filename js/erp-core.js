@@ -6,7 +6,7 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.07.08-workflow-pass3-activity',
+    version: '2026.07.08-workflow-pass4-business-pulse-lite',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -572,6 +572,40 @@
     ERP.installDefaultInternalDock();
     ERP.markReady();
   });
+
+
+  ERP.businessPulse = ERP.businessPulse || {};
+  ERP.businessPulse.build = function(input){
+    input = input || {};
+    const finance = input.finance || {};
+    const production = input.production || {};
+    const orders = input.orders || {};
+    const inventory = input.inventory || {counts:{}};
+    const counts = inventory.counts || {};
+    const items = [];
+    const overdue = ERP.num(orders.overdueCount || orders.unpaidOrders || finance.unpaidCount || finance.overdueCount);
+    const openQuotes = ERP.num(orders.openQuotes || production.openQuotes || finance.openQuotes);
+    const unassigned = ERP.num(production.unassignedPrinterRisk || production.unassignedJobs);
+    const waiting = ERP.num(production.waitingJobs || production.awaitingApproval || production.jobsWaiting);
+    const activeJobs = ERP.num(production.activeJobs || production.openJobs || production.jobsActive);
+    const openOrders = ERP.num(orders.openOrders ?? orders.activeOrders);
+    const reorder = ERP.num(counts.reorder);
+    const quietLow = ERP.num(counts.specialty) + ERP.num(counts.watch) + ERP.num(counts.seasonal) + ERP.num(counts.discontinued) + ERP.num(counts.snoozed);
+
+    function add(icon,title,sub,kind,href,score){ items.push({icon,title,sub,kind:kind||'warn',href:href||'#tools',score:score||50}); }
+    if(overdue>0) add('💸','Payment follow-up', `${overdue} unpaid or overdue item(s) may need review.`, 'danger', 'orders-admin.html', 100);
+    if(reorder>0) add('⬢','Material to order', `${reorder} material/supply item(s) are below reorder point.`, 'danger', 'inventory-control.html?status=low#forecastPanel', 95);
+    if(unassigned>0) add('🖨️','Printer assignment', `${unassigned} production job(s) may need printer assignment.`, 'warn', 'production-control.html', 80);
+    if(waiting>0) add('⏳','Jobs waiting', `${waiting} job(s) are waiting for approval or printer time.`, 'warn', 'production-control.html', 75);
+    if(openQuotes>0) add('◈','Quote follow-up', `${openQuotes} quote(s) may need a customer response check.`, 'warn', 'quote.html', 70);
+    if(quietLow>0) add('◌','Specialty inventory watch', `${quietLow} non-reorder low item(s) are below preferred stock.`, 'info', 'inventory-control.html?status=low#forecastPanel', 45);
+    if(activeJobs>0 && !unassigned && !waiting) add('🖨️','Production active', `${activeJobs} active job(s) are in the workflow.`, 'info', 'production-control.html', 40);
+    if(openOrders>0 && !overdue) add('📦','Orders in motion', `${openOrders} open order(s) are active.`, 'info', 'orders-admin.html', 35);
+    if(!items.length) add('✓','No urgent actions', 'Saved ERP summaries show no urgent order, production, inventory, finance, or printer actions.', 'good', '#tools', 10);
+
+    items.sort((a,b) => (b.score||0) - (a.score||0));
+    return {items, counts:{critical:items.filter(x=>x.kind==='danger').length, watch:items.filter(x=>x.kind==='warn').length, total:items.length}, at:new Date().toISOString()};
+  };
 
   window.OliPolyERP = ERP;
 })();
