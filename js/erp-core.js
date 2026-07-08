@@ -6,7 +6,7 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.06.08-core-hardening',
+    version: '2026.07.08-foundation-pass2',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -238,6 +238,16 @@
     ERP.storage.set('olipoly_erp_event_log_v1', events.slice(0,500));
     window.dispatchEvent(new CustomEvent('olipoly:erp-event', {detail:event}));
     return event;
+  };
+
+  ERP.authReady = async function(){
+    if(window.OliPolyAuth?.ensure) return await window.OliPolyAuth.ensure();
+    return null;
+  };
+
+  ERP.currentUser = async function(){
+    if(window.OliPolyAuth?.getUser) return await window.OliPolyAuth.getUser();
+    return null;
   };
 
   ERP.markReady = function(){
