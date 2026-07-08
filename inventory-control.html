@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/erp-core.css" />
+  <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow1" />
   <style>
     :root{
       --ink:#25182d;--text:#3f3146;--muted:#74617d;--soft:#fff7fd;
@@ -537,7 +537,7 @@
     input::placeholder,textarea::placeholder{color:rgba(68,50,78,.55)!important}
 </style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js?v=20260708-foundation4"></script>
+  <script defer src="js/erp-core.js?v=20260708-workflow1"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 </head>
@@ -824,6 +824,15 @@
         <button class="ghost" id="fgClearFilters" type="button">Clear</button>
       </div>
       <div class="cards-grid" id="finishedCards"></div>
+    </section>
+
+
+    <section class="card" id="purchasePlannerPanel">
+      <span class="kicker">Material purchase planner</span>
+      <h2 style="margin:0;font-family:'Playfair Display',serif;color:var(--ink);font-size:clamp(1.8rem,3.6vw,3rem);line-height:.95">What to buy before jobs get tight.</h2>
+      <p class="muted">Compares on-hand grams, reserved grams from open production jobs, available inventory, reorder thresholds, and do-not-reorder policies.</p>
+      <div class="erp-planner-grid" id="purchasePlannerMetrics"></div>
+      <div class="erp-planner-list" id="purchasePlannerList"></div>
     </section>
 
 
@@ -2210,6 +2219,52 @@
     return num(g.remaining_grams ?? g.remaining ?? 0);
   }
 
+
+  function renderPurchasePlanner(){
+    const metricsEl = $('purchasePlannerMetrics');
+    const listEl = $('purchasePlannerList');
+    if(!metricsEl || !listEl) return;
+    const plan = window.OliPolyERP?.inventory?.purchasePlan
+      ? window.OliPolyERP.inventory.purchasePlan(raw(), productionJobs(), {reservedByRoll:rawReservationAllocation()})
+      : {rows:[],summary:{critical:0,buySoon:0,specialty:0,reserved_grams:0,shortage_grams:0}};
+    const summary = plan.summary || {};
+    const ui = window.OliPolyERP?.ui;
+    metricsEl.innerHTML = [
+      ui?.metricCard ? ui.metricCard('Critical', String(summary.critical||0), 'shortage / out') : `<div class="forecast-card"><span>Critical</span><strong>${esc(summary.critical||0)}</strong></div>`,
+      ui?.metricCard ? ui.metricCard('Buy Soon', String(summary.buySoon||0), 'reorder prompts') : `<div class="forecast-card"><span>Buy Soon</span><strong>${esc(summary.buySoon||0)}</strong></div>`,
+      ui?.metricCard ? ui.metricCard('Reserved', grams(summary.reserved_grams||0), 'open production demand') : `<div class="forecast-card"><span>Reserved</span><strong>${grams(summary.reserved_grams||0)}</strong></div>`,
+      ui?.metricCard ? ui.metricCard('Shortage', grams(summary.shortage_grams||0), 'demand over stock') : `<div class="forecast-card"><span>Shortage</span><strong>${grams(summary.shortage_grams||0)}</strong></div>`
+    ].join('');
+    const rows = (plan.rows || []).filter(r => r.status !== 'ok' || r.reserved > 0).slice(0,10);
+    if(!rows.length){
+      listEl.innerHTML = ui?.emptyState ? ui.emptyState('Inventory looks covered', 'No active shortages or reorder prompts from open production jobs right now.') : '<div class="empty">Inventory looks covered.</div>';
+      return;
+    }
+    listEl.innerHTML = rows.map(r=>{
+      const tone = r.tone || (r.status==='shortage'?'danger':r.status==='low'?'warning':'neutral');
+      const chipCls = tone==='danger'?'danger':tone==='warning'?'warn':'ok';
+      const statusPill = ui?.statusPill ? ui.statusPill(r.recommendation, null, {label:r.recommendation, tone:tone}) : `<span class="chip ${chipCls}">${esc(r.recommendation)}</span>`;
+      const buy = r.suppressed ? 'No auto reorder' : (r.recommended_buy_grams ? `Suggested buy: ${grams(r.recommended_buy_grams)}` : 'No purchase needed');
+      return `<div class="erp-planner-row">
+        <div>
+          <strong>${esc(r.material_type || 'Material')} / ${esc(r.color || 'No color')}${r.brand?` / ${esc(r.brand)}`:''}</strong>
+          <div class="meta">${esc(buy)} · ${esc(window.OliPolyERP?.inventory?.policyLabel ? window.OliPolyERP.inventory.policyLabel(r.policy) : policyLabel(r.policy))}</div>
+          <div class="erp-planner-chips">
+            <span class="erp-planner-chip ${r.status==='shortage'||r.status==='out'?'danger':r.status==='low'?'warn':'ok'}">${grams(r.available)} available</span>
+            <span class="erp-planner-chip">${grams(r.on_hand)} on hand</span>
+            <span class="erp-planner-chip ${r.reserved?'warn':''}">${grams(r.reserved)} reserved</span>
+            <span class="erp-planner-chip">${grams(r.threshold)} threshold</span>
+            ${r.rolls?`<span class="erp-planner-chip">${esc(r.rolls)} roll${r.rolls===1?'':'s'}</span>`:''}
+          </div>
+        </div>
+        <div class="erp-planner-actions">
+          ${statusPill}
+          ${r.link?`<a class="reorder-link" href="${esc(r.link)}" target="_blank" rel="noopener">Reorder ↗</a>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   function renderForecast(){
     const body = $('forecastBody');
     if(!body) return;
@@ -2356,7 +2411,7 @@
 
   function render(){
     bindInventoryQuickActions();
-    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderForecast();renderLedger();
+    renderSpoolPool();renderMetrics();renderAttention();renderMaterialBalance();renderRawSummary();renderRawCards();renderSupplyCards();renderFinishedCards();renderPurchasePlanner();renderForecast();renderLedger();
   }
 
   function rawFromForm(){
