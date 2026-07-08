@@ -1921,23 +1921,32 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 
   window.sbApi = window.sbApi || async function sbApi(path, options){
     options = options || {};
-    var token = accessToken();
-    var headers = Object.assign({
-      apikey: SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    }, token ? { Authorization: 'Bearer ' + token } : {}, options.headers || {});
+    if (window.OliPolyAuth && window.OliPolyAuth.ensure) await window.OliPolyAuth.ensure();
+    function makeHeaders(){
+      var token = window.OliPolyAuth && window.OliPolyAuth.getToken ? window.OliPolyAuth.getToken() : accessToken();
+      return Object.assign({
+        apikey: SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      }, token ? { Authorization: 'Bearer ' + token } : {}, options.headers || {});
+    }
 
-    var response = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers: headers }));
-    var data = null;
-    try { data = await response.json(); } catch(e) {}
-    return {
-      ok: response.ok,
-      data: data,
-      error: response.ok ? null : data
-    };
+    async function run(){
+      var response = await fetch(SUPABASE_URL + path, Object.assign({}, options, { headers: makeHeaders() }));
+      var data = null;
+      try { data = await response.json(); } catch(e) {}
+      return { ok: response.ok, status: response.status, data: data, error: response.ok ? null : data };
+    }
+
+    var result = await run();
+    if (!result.ok && (result.status === 401 || result.status === 403) && window.OliPolyAuth && window.OliPolyAuth.refresh) {
+      await window.OliPolyAuth.refresh();
+      result = await run();
+    }
+    return result;
   };
 
   window.getCurrentSbUser = window.getCurrentSbUser || async function getCurrentSbUser(){
+    if (window.OliPolyAuth && window.OliPolyAuth.getUser) return await window.OliPolyAuth.getUser();
     var token = accessToken();
     if (!token) return null;
     var result = await window.sbApi('/auth/v1/user', { method: 'GET' });

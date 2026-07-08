@@ -962,13 +962,22 @@
   function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
   async function sbApi(path, options={}){
-    const headers={apikey:SUPABASE_KEY,'Content-Type':'application/json',...(token()?{Authorization:`Bearer ${token()}`}:{}) ,...(options.headers||{})};
-    const res=await fetch(`${SUPABASE_URL}${path}`,{...options,headers});
-    const txt=await res.text(); let data=null; try{data=txt?JSON.parse(txt):null}catch{data=txt}
-    if(!res.ok) throw new Error(data?.message || data?.hint || txt || `Supabase error ${res.status}`);
-    return data;
+    if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
+    const makeHeaders=()=>({apikey:SUPABASE_KEY,'Content-Type':'application/json',...(token()?{Authorization:`Bearer ${token()}`}:{}) ,...(options.headers||{})});
+    async function run(){
+      const res=await fetch(`${SUPABASE_URL}${path}`,{...options,headers:makeHeaders()});
+      const txt=await res.text(); let data=null; try{data=txt?JSON.parse(txt):null}catch{data=txt}
+      return {res,txt,data};
+    }
+    let result=await run();
+    if(!result.res.ok && (result.res.status===401 || result.res.status===403) && window.OliPolyAuth?.refresh){
+      await window.OliPolyAuth.refresh();
+      result=await run();
+    }
+    if(!result.res.ok) throw new Error(result.data?.message || result.data?.hint || result.txt || `Supabase error ${result.res.status}`);
+    return result.data;
   }
-  async function getUser(){ if(!token()) return null; try{return await sbApi('/auth/v1/user',{method:'GET'})}catch{return null} }
+  async function getUser(){ if(window.OliPolyAuth?.getUser) return await window.OliPolyAuth.getUser(); if(!token()) return null; try{return await sbApi('/auth/v1/user',{method:'GET'})}catch{return null} }
   function updateCloudStatus(){
     const el=$('cloudStatus'); if(!el) return;
     el.innerHTML = state.cloud

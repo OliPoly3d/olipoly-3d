@@ -1831,18 +1831,36 @@ Aurora, OH 44202</textarea></div>
 
 
     async function api(path, options={}){
-      const headers = {
+      if (window.OliPolyAuth?.ensure) {
+        await window.OliPolyAuth.ensure();
+        accessToken = window.OliPolyAuth.getToken() || accessToken;
+      }
+      const makeHeaders = () => ({
         apikey: SUPABASE_KEY,
         'Content-Type':'application/json',
         ...(accessToken ? {Authorization:`Bearer ${accessToken}`} : {}),
         ...(options.headers || {})
-      };
-      const res = await fetch(`${SUPABASE_URL}${path}`,{...options,headers});
-      const data = await res.json().catch(()=>null);
-      return { ok: res.ok, data, error: !res.ok ? data : null };
+      });
+      async function run(){
+        const res = await fetch(`${SUPABASE_URL}${path}`,{...options,headers:makeHeaders()});
+        const data = await res.json().catch(()=>null);
+        return { ok: res.ok, status:res.status, data, error: !res.ok ? data : null };
+      }
+      let result = await run();
+      if (!result.ok && (result.status === 401 || result.status === 403) && window.OliPolyAuth?.refresh) {
+        await window.OliPolyAuth.refresh();
+        accessToken = window.OliPolyAuth.getToken() || accessToken;
+        result = await run();
+      }
+      return result;
     }
 
     async function getCurrentUser(){
+  if (window.OliPolyAuth?.getUser) {
+    currentUser = await window.OliPolyAuth.getUser();
+    accessToken = window.OliPolyAuth.getToken();
+    if (currentUser) return currentUser;
+  }
   if (!accessToken && window.OliPolyAuth) { await window.OliPolyAuth.ensure(); accessToken = window.OliPolyAuth.getToken(); }
   if (!accessToken) return null;
   const { data, error } = await api('/auth/v1/user');

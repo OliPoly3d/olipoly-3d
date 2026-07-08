@@ -1006,6 +1006,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     .c360-chip:hover{background:rgba(126,123,255,.25)!important}
 </style>
 
+<script src="olipoly-auth.js?v=20260708-foundation2"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -1840,21 +1841,30 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
 
   async function sbApi(path, options = {}){
-    const headers = {
-      apikey: SUPABASE_KEY,
+    if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
+    const makeHeaders = () => ({
+      apikey:SUPABASE_KEY,
       'Content-Type':'application/json',
       ...(token() ? {Authorization:`Bearer ${token()}`} : {}),
       ...(options.headers || {})
-    };
-    const res = await fetch(`${SUPABASE_URL}${path}`, {...options, headers});
-    const txt = await res.text();
-    let data = null;
-    try{ data = txt ? JSON.parse(txt) : null; }catch{ data = txt; }
-    if(!res.ok){
-      const msg = data?.message || data?.error_description || data?.hint || txt || `Supabase error ${res.status}`;
+    });
+    async function run(){
+      const res = await fetch(`${SUPABASE_URL}${path}`, {...options, headers:makeHeaders()});
+      const txt = await res.text();
+      let data = null;
+      try{ data = txt ? JSON.parse(txt) : null; }catch{ data = txt; }
+      return {res, txt, data};
+    }
+    let result = await run();
+    if(!result.res.ok && (result.res.status === 401 || result.res.status === 403) && window.OliPolyAuth?.refresh){
+      await window.OliPolyAuth.refresh();
+      result = await run();
+    }
+    if(!result.res.ok){
+      const msg = result.data?.message || result.data?.error_description || result.data?.hint || result.txt || `Supabase error ${result.res.status}`;
       throw new Error(msg);
     }
-    return data;
+    return result.data;
   }
 
   function toast(msg){
@@ -1996,6 +2006,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   async function getUser(){
+    if(window.OliPolyAuth?.getUser) return await window.OliPolyAuth.getUser();
     if(!token()) return null;
     try{return await sbApi('/auth/v1/user',{method:'GET'});}catch{return null;}
   }
@@ -3228,7 +3239,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     // If no existing PM row is found, keep PM in localStorage only instead of POSTing.
     // The live table has returned 400 on insert in some schemas; this should never
     // block or clutter the console during production closeout.
-    console.warn('No existing printer_pm row found; PM retained locally only for', machine);
+    console.info('PM settings are retained locally until printer_pm cloud rows are initialized for', machine);
     return;
   }
 
