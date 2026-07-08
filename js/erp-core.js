@@ -6,7 +6,7 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.07.08-foundation-pass4',
+    version: '2026.07.08-workflow-pass1',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -393,6 +393,93 @@
     badge.className = 'erp-foundation-badge';
     badge.textContent = label;
     document.body.appendChild(badge);
+  };
+
+
+
+  /* === ERP Workflow Pass 1: inventory intelligence helpers === */
+  ERP.inventory = ERP.inventory || {};
+  ERP.inventory.policySuppressesPrompt = function(policy){
+    const p = ERP.norm(policy || 'auto');
+    return ['specialty','discontinued'].includes(p);
+  };
+  ERP.inventory.policyLabel = function(policy){
+    const p = ERP.norm(policy || 'auto');
+    return {auto:'Auto reorder', watch:'Watch only', specialty:'Do not reorder', seasonal:'Seasonal', discontinued:'Discontinued'}[p] || ERP.ui.titleCase(policy || 'Auto reorder');
+  };
+  ERP.inventory.groupRaw = function(rawRows, options){
+    options = options || {};
+    const reservedByRoll = options.reservedByRoll || {};
+    const map = new Map();
+    (rawRows || []).filter(r => ERP.norm(r.roll_status) !== 'retired').forEach(r => {
+      const key = [r.material_type || r.material, r.color, r.brand || r.filament].map(x=>String(x||'').trim()).join('|');
+      if(!map.has(key)){
+        map.set(key,{key,material_type:r.material_type||r.material||'',color:r.color||'',brand:r.brand||r.filament||'',on_hand:0,available:0,reserved:0,threshold:0,reorder_quantity:0,policies:new Set(),links:[],suppliers:new Set(),rolls:0,mounted:0,items:[]});
+      }
+      const g = map.get(key);
+      const onHand = ERP.num(r.remaining_grams || r.remaining);
+      const reserved = ERP.num(reservedByRoll[r.id] ?? r.reserved_grams);
+      g.on_hand += onHand;
+      g.reserved += reserved;
+      g.available += Math.max(0, onHand - reserved);
+      g.threshold = Math.max(g.threshold, ERP.num(r.reorder_threshold_grams || r.reorder_threshold || r.threshold));
+      g.reorder_quantity = Math.max(g.reorder_quantity, ERP.num(r.reorder_quantity || r.reorder_qty));
+      g.policies.add(r.reorder_policy || 'auto');
+      if(r.reorder_link) g.links.push(r.reorder_link);
+      if(r.supplier) g.suppliers.add(r.supplier);
+      if(ERP.norm(r.roll_status)!=='empty') g.rolls += 1;
+      if(r.is_mounted && ERP.norm(r.roll_status)!=='empty') g.mounted += 1;
+      g.items.push(r);
+    });
+    return [...map.values()].map(g => {
+      const policies = [...g.policies];
+      const policy = policies.includes('auto') ? 'auto' : (policies[0] || 'auto');
+      const shortage = Math.max(0, ERP.num(g.reserved) - ERP.num(g.on_hand));
+      const belowThreshold = g.threshold && ERP.num(g.available) <= g.threshold;
+      const status = shortage > 0 ? 'shortage' : ERP.num(g.on_hand) <= 0 ? 'out' : belowThreshold ? 'low' : 'ok';
+      const recommended = shortage > 0 ? Math.max(shortage, 1000) : belowThreshold ? Math.max(g.threshold - g.available + Math.max(g.reserved,0), 1000) : 0;
+      return {...g, policies, policy, status, shortage_grams:Math.round(shortage*10)/10, recommended_buy_grams:Math.round(recommended*10)/10, link:g.links[0] || '', supplier:[...g.suppliers][0] || ''};
+    }).sort((a,b)=>{
+      const score = {shortage:0,out:1,low:2,ok:3};
+      return (score[a.status]??3)-(score[b.status]??3) || b.reserved-a.reserved || a.available-b.available;
+    });
+  };
+  ERP.inventory.demandByMaterial = function(jobs){
+    const demand = new Map();
+    (jobs || []).filter(ERP.jobShouldReserveInventory).forEach(job => {
+      const qty = Math.max(1, ERP.num(job.quantity) || 1);
+      ERP.recipeRowsForJob(job).forEach(row => {
+        const grams = ERP.num(row.grams_each || row.grams || row.estimated_grams) * qty;
+        if(!grams) return;
+        const key = ERP.materialKey(row);
+        if(!demand.has(key)) demand.set(key,{key,material:row.material||row.material_type||'',color:row.color||'',brand:row.filament||row.brand||'',grams:0,jobs:0});
+        const d = demand.get(key);
+        d.grams += grams;
+        d.jobs += 1;
+      });
+    });
+    return [...demand.values()].sort((a,b)=>b.grams-a.grams);
+  };
+  ERP.inventory.purchasePlan = function(rawRows, jobs, options){
+    options = options || {};
+    const groups = ERP.inventory.groupRaw(rawRows, options);
+    const rows = groups.map(g => {
+      const suppressed = ERP.inventory.policySuppressesPrompt(g.policy);
+      let recommendation = 'Enough stock';
+      let tone = 'success';
+      if(g.status === 'shortage') { recommendation = 'Shortage — order before starting'; tone = 'danger'; }
+      else if(g.status === 'out') { recommendation = suppressed ? 'Out — do not auto reorder' : 'Out — reorder'; tone = suppressed ? 'neutral' : 'danger'; }
+      else if(g.status === 'low') { recommendation = suppressed ? 'Low — watch only' : 'Buy soon'; tone = suppressed ? 'warning' : 'warning'; }
+      else if(g.reserved > 0 && g.available < Math.max(250, g.threshold || 0)) { recommendation = 'Watch after queued work'; tone = 'warning'; }
+      return {...g, suppressed, recommendation, tone};
+    });
+    const demand = ERP.inventory.demandByMaterial(jobs || []);
+    const critical = rows.filter(r=>['shortage','out'].includes(r.status) && !r.suppressed).length;
+    const buySoon = rows.filter(r=>r.recommendation === 'Buy soon' || r.recommendation.includes('order')).length;
+    const specialty = rows.filter(r=>r.suppressed).length;
+    const reserved = rows.reduce((s,r)=>s+ERP.num(r.reserved),0);
+    const shortage = rows.reduce((s,r)=>s+ERP.num(r.shortage_grams),0);
+    return {rows,demand,summary:{critical,buySoon,specialty,reserved_grams:Math.round(reserved*10)/10,shortage_grams:Math.round(shortage*10)/10}};
   };
 
 
