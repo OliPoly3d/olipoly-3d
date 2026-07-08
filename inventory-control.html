@@ -537,7 +537,7 @@
     input::placeholder,textarea::placeholder{color:rgba(68,50,78,.55)!important}
 </style>
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js?v=20260708-foundation1"></script>
+  <script defer src="js/erp-core.js?v=20260708-foundation3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 </head>
@@ -1599,32 +1599,17 @@
   async function cloudSaveRaw(r){
     if(!state.cloud || !state.user?.id) throw new Error('Not logged in to cloud.');
 
-    const fullPayload={
-      id:r.id,
-      user_id:state.user.id,
-      material_type:r.material_type,
-      color:r.color,
-      color_name:r.color,
-      brand:r.brand,
-      location:r.location,
-      roll_label:r.roll_label,
-      roll_type:r.roll_type,
-      is_mounted:r.is_mounted,
-      reusable_spool:r.reusable_spool,
-      roll_status:r.roll_status,
-      starting_grams:num(r.starting_grams),
-      remaining_grams:num(r.remaining_grams),
-      reorder_threshold_grams:num(r.reorder_threshold_grams),
-      spool_cost:num(r.spool_cost),
-      supplier:r.supplier,
-      reorder_link:r.reorder_link,
-      reorder_quantity:num(r.reorder_quantity),
-      reorder_policy:r.reorder_policy || 'auto',
-      snooze_until:validDateOrNull(r.snooze_until),
-      reserved_grams:typeof reservedGramsForRaw === 'function' ? reservedGramsForRaw(r) : 0,
-      notes:r.notes,
-      updated_at:new Date().toISOString()
-    };
+    const fullPayload = window.OliPolyERP?.schema?.rawMaterialPayload
+      ? window.OliPolyERP.schema.rawMaterialPayload({
+          ...r,
+          color_name:r.color,
+          reserved_grams:typeof reservedGramsForRaw === 'function' ? reservedGramsForRaw(r) : 0,
+          snooze_until:validDateOrNull(r.snooze_until),
+          updated_at:new Date().toISOString()
+        }, state.user.id)
+      : {
+          id:r.id,user_id:state.user.id,material_type:r.material_type,color:r.color,color_name:r.color,brand:r.brand,location:r.location,roll_label:r.roll_label,roll_type:r.roll_type,is_mounted:r.is_mounted,reusable_spool:r.reusable_spool,roll_status:r.roll_status,starting_grams:num(r.starting_grams),remaining_grams:num(r.remaining_grams),reorder_threshold_grams:num(r.reorder_threshold_grams),spool_cost:num(r.spool_cost),supplier:r.supplier,reorder_link:r.reorder_link,reorder_quantity:num(r.reorder_quantity),reorder_policy:r.reorder_policy || 'auto',snooze_until:validDateOrNull(r.snooze_until),reserved_grams:typeof reservedGramsForRaw === 'function' ? reservedGramsForRaw(r) : 0,notes:r.notes,updated_at:new Date().toISOString()
+        };
 
     try{
       return await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{

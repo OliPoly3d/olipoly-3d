@@ -1026,7 +1026,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </script>
 
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/erp-core.js?v=20260708-foundation1"></script>
+  <script defer src="js/erp-core.js?v=20260708-foundation3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
 
@@ -2538,21 +2538,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
   async function cloudSaveRawFromProduction(r){
     if(!state.user?.id || !r?.id) return false;
-    const payload = {
-      ...r,
-      user_id:state.user.id,
-      reserved_grams: num(r.reserved_grams),
-      remaining_grams: num(r.remaining_grams || r.remaining),
-      updated_at:new Date().toISOString()
-    };
-    // Supabase has generated/default-only pricing columns on some schemas.
-    // Reservation saves should update roll quantities only, so strip derived pricing fields.
-    delete payload.cost_per_gram;
-    delete payload.cost_per_g;
-    delete payload.unit_cost_per_gram;
-    delete payload.unit_cost_g;
-    delete payload.price_per_gram;
-    delete payload.price_per_g;
+    const payload = window.OliPolyERP?.schema?.rawMaterialPayload
+      ? window.OliPolyERP.schema.rawMaterialPayload(r, state.user.id, {minimal:true})
+      : {
+          id:r.id,
+          user_id:state.user.id,
+          reserved_grams: num(r.reserved_grams),
+          remaining_grams: num(r.remaining_grams || r.remaining),
+          updated_at:new Date().toISOString()
+        };
     try{
       await sbApi('/rest/v1/raw_material_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
       return true;
