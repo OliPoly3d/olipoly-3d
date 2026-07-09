@@ -1985,6 +1985,20 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return merged;
   }
 
+  function productionDigits(value){
+    return String(value || '').match(/(\d+)/)?.[1] || '';
+  }
+  function quoteVariantsFromAny(value){
+    const d = productionDigits(value);
+    if(!d) return [];
+    return [...new Set([`Q-${d}`, `Q-${d.padStart(5,'0')}`, `Q-${d.padStart(6,'0')}`])];
+  }
+  function orderVariantsFromAny(value){
+    const d = productionDigits(value);
+    if(!d) return [];
+    return [...new Set([`OP-${d}`, `OP-${d.padStart(5,'0')}`, `OP-${d.padStart(6,'0')}`])];
+  }
+
   const ORDER_TO_PRODUCTION_STATUS = {
     quote_sent:'quote_sent',
     awaiting_approval:'awaiting_design',
@@ -2033,13 +2047,33 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     try{
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
       const normalized = Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
-      const orderNums = [...new Set(normalized.map(j=>j.order_number).filter(Boolean))];
-      if(!orderNums.length) return normalized;
+      const directOrderNums = [...new Set(normalized.flatMap(j=>orderVariantsFromAny(j.order_number)).filter(Boolean))];
+      const quoteNums = [...new Set(normalized.flatMap(j=>quoteVariantsFromAny(j.quote_number || j.order_number)).filter(Boolean))];
+      if(!directOrderNums.length && !quoteNums.length) return normalized;
       try{
-        const inList = orderNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
-        const rows = await sbApi(`/rest/v1/orders?select=order_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
-        const orderMap = new Map((Array.isArray(rows) ? rows : []).map(r=>[r.order_number, r]));
-        return normalized.map(j=>applyLinkedOrderAuthority(j, orderMap.get(j.order_number)));
+        const orderMap = new Map();
+        const quoteMap = new Map();
+        if(directOrderNums.length){
+          const inList = directOrderNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
+          const rows = await sbApi(`/rest/v1/orders?select=order_number,source_quote_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
+          (Array.isArray(rows) ? rows : []).forEach(r=>orderMap.set(r.order_number, r));
+        }
+        if(quoteNums.length){
+          const inQ = quoteNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
+          const rowsByQuote = await sbApi(`/rest/v1/orders?select=order_number,source_quote_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&source_quote_number=in.(${encodeURIComponent(inQ)})`,{method:'GET'});
+          (Array.isArray(rowsByQuote) ? rowsByQuote : []).forEach(r=>{ if(r.source_quote_number) quoteMap.set(r.source_quote_number, r); });
+        }
+        return normalized.map(j=>{
+          let row = null;
+          for(const op of orderVariantsFromAny(j.order_number)) { if(orderMap.has(op)){ row = orderMap.get(op); break; } }
+          if(!row){ for(const q of quoteVariantsFromAny(j.quote_number || j.order_number)) { if(quoteMap.has(q)){ row = quoteMap.get(q); break; } } }
+          if(!row && j.quote_number){
+            const d = productionDigits(j.quote_number);
+            const expectedOps = orderVariantsFromAny(d);
+            for(const op of expectedOps){ if(orderMap.has(op)){ row = orderMap.get(op); break; } }
+          }
+          return applyLinkedOrderAuthority(j, row);
+        });
       }catch(orderErr){
         console.warn('Could not load linked order statuses for production lane routing.', orderErr);
         return normalized;

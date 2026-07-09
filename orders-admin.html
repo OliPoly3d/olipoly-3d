@@ -1363,6 +1363,52 @@ Aurora, OH 44202</textarea></div>
     const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Production',awaiting_deposit:'Awaiting Payment / Deposit',awaiting_production:'Awaiting Production',in_design:'Awaiting Production',in_production:'In Production',post_processing:'In Production',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
     const paymentLabel = v => ({unpaid:'Unpaid / Due on Completion',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
 
+    // ERP Bridge Pass 19: keep friendly UI wording separate from Supabase check-constrained values.
+    const DB_ORDER_STATUSES = new Set(['quote_sent','awaiting_approval','awaiting_deposit','in_design','in_production','post_processing','production_complete','ready_for_pickup','shipped','completed','on_hold','issue_review','canceled']);
+    const ORDER_STATUS_DB_MAP = {
+      awaiting_production:'awaiting_approval',
+      due_on_completion:'awaiting_approval',
+      production_pending:'awaiting_approval',
+      awaiting_design:'awaiting_approval',
+      ready_to_print:'awaiting_approval',
+      printing:'in_production',
+      qc_complete:'production_complete',
+      production_closed:'production_complete',
+      ready:'ready_for_pickup',
+      delivered:'completed',
+      cancelled:'canceled'
+    };
+    function normalizeOrderStatusForDb(value){
+      const raw = String(value || 'quote_sent').trim();
+      const mapped = ORDER_STATUS_DB_MAP[raw] || raw;
+      return DB_ORDER_STATUSES.has(mapped) ? mapped : 'quote_sent';
+    }
+    const DB_PAYMENT_STATUSES = new Set(['unpaid','deposit_due','deposit_paid','paid','refunded']);
+    const PAYMENT_STATUS_DB_MAP = {due_on_completion:'unpaid',payment_due_on_completion:'unpaid',not_required:'unpaid',balance_due:'unpaid'};
+    function normalizePaymentStatusForDb(value){
+      const raw = String(value || 'unpaid').trim();
+      const mapped = PAYMENT_STATUS_DB_MAP[raw] || raw;
+      return DB_PAYMENT_STATUSES.has(mapped) ? mapped : 'unpaid';
+    }
+    function orderNumberVariants(orderNumber){
+      const digits = String(orderNumber || '').match(/(\d+)/)?.[1] || '';
+      if(!digits) return [];
+      return [...new Set([
+        `OP-${digits}`,
+        `OP-${digits.padStart(5,'0')}`,
+        `OP-${digits.padStart(6,'0')}`
+      ])];
+    }
+    function quoteNumberVariantsFromOrder(orderNumber){
+      const digits = String(orderNumber || '').match(/(\d+)/)?.[1] || '';
+      if(!digits) return [];
+      return [...new Set([
+        `Q-${digits}`,
+        `Q-${digits.padStart(5,'0')}`,
+        `Q-${digits.padStart(6,'0')}`
+      ])];
+    }
+
     const CLOSURE_KEY = 'olipoly_order_closure_overrides_v1';
 
     function closureStore(){
@@ -3066,9 +3112,11 @@ resetForm();
       if(!productionStatus) return;
 
       try{
-        const filters = [`order_number=eq.${encodeURIComponent(orderNumber)}`];
-        const quoteNumber = payload.source_quote_number || previousOrder?.source_quote_number || sourceQuoteFromOrderNumber(orderNumber);
-        if(quoteNumber) filters.push(`quote_number=eq.${encodeURIComponent(quoteNumber)}`);
+        const filters = [];
+        for(const op of orderNumberVariants(orderNumber)) filters.push(`order_number=eq.${encodeURIComponent(op)}`);
+        const explicitQuote = payload.source_quote_number || previousOrder?.source_quote_number || null;
+        const qList = [...new Set([explicitQuote, ...quoteNumberVariantsFromOrder(orderNumber)].filter(Boolean))];
+        for(const q of qList) filters.push(`quote_number=eq.${encodeURIComponent(q)}`);
 
         let row = null;
         for(const filter of filters){
@@ -3109,7 +3157,7 @@ resetForm();
           ...jobPayload,
           production_status: productionStatus,
           order_number: orderNumber,
-          quote_number: payload.source_quote_number || previousOrder?.source_quote_number || jobPayload.quote_number || row.quote_number || null,
+          quote_number: qList[0] || jobPayload.quote_number || row.quote_number || null,
           material_reservations: shouldReleaseReservation ? [] : reservations,
           cancellation_reason: nextStatus === 'canceled' ? (payload.internal_notes || existingNote || 'Canceled from Orders Admin') : jobPayload.cancellation_reason || null,
           canceled_at: nextStatus === 'canceled' ? now : jobPayload.canceled_at || null,
@@ -3120,6 +3168,7 @@ resetForm();
         const patch = {
           production_status: productionStatus,
           order_number: orderNumber,
+          quote_number: nextJobPayload.quote_number || row.quote_number || null,
           close_note: nextJobPayload.close_note || null,
           updated_at: now,
           job_payload: nextJobPayload
@@ -3142,8 +3191,7 @@ resetForm();
     const syncOrderInterruptionToProduction = syncOrderStatusToProduction;
 
     function sourceQuoteFromOrderNumber(orderNumber){
-      const m = String(orderNumber || '').match(/(\d+)/);
-      return m ? `Q-${m[1].padStart(6,'0')}` : null;
+      return quoteNumberVariantsFromOrder(orderNumber)[0] || null;
     }
 
     async function saveOrder(){
