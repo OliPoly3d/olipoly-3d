@@ -3868,7 +3868,7 @@ https://olipoly3d.com`;
       order_total: total,
       deposit_amount: deposit,
       balance_amount: balance,
-      status: deposit > 0 ? "awaiting_deposit" : "awaiting_production",
+      status: "awaiting_approval",
       payment_status: safeOrderPaymentStatus(deposit > 0 ? "deposit_due" : "unpaid", deposit),
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
