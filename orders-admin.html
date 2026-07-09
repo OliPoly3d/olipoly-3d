@@ -3016,6 +3016,89 @@ resetForm();
       applyDeepLinkedOrderSearch();
     }
 
+
+
+    // ERP Bridge Pass 4: Orders Admin may cancel/hold a customer order, but Production Control
+    // remains manufacturing owner. This helper only handles customer/business level interruptions
+    // and avoids using Orders Admin to advance active manufacturing statuses.
+    async function syncOrderInterruptionToProduction(payload, previousOrder = null){
+      const orderNumber = payload?.order_number;
+      if(!currentUser?.id || !orderNumber) return;
+
+      const nextStatus = String(payload.status || '').trim();
+      const prevStatus = String(previousOrder?.status || '').trim();
+      if(nextStatus === prevStatus) return;
+
+      const allowed = {
+        canceled:'canceled',
+        on_hold:'on_hold',
+        issue_review:'failed_scrap'
+      };
+      const productionStatus = allowed[nextStatus];
+      if(!productionStatus) return;
+
+      try{
+        const found = await api(`/rest/v1/production_jobs?select=*&user_id=eq.${currentUser.id}&order_number=eq.${encodeURIComponent(orderNumber)}&limit=1`);
+        if(found.error) throw found.error;
+        const row = Array.isArray(found.data) ? found.data[0] : null;
+        if(!row) return;
+
+        const jobPayload = (row.job_payload && typeof row.job_payload === 'object') ? row.job_payload : {};
+        const now = new Date().toISOString();
+        const reservations = Array.isArray(jobPayload.material_reservations) ? jobPayload.material_reservations : [];
+        const shouldReleaseReservation = nextStatus === 'canceled' && reservations.length && !jobPayload.inventory_deducted;
+
+        if(shouldReleaseReservation){
+          for(const reservation of reservations){
+            const rollId = reservation?.raw_material_roll_id;
+            const grams = Number(reservation?.grams_reserved || 0) || 0;
+            if(!rollId || !grams || reservation.shortage) continue;
+            const raw = await api(`/rest/v1/raw_material_inventory?select=id,reserved_grams&id=eq.${encodeURIComponent(rollId)}&limit=1`);
+            if(raw.error) throw raw.error;
+            const rawRow = Array.isArray(raw.data) ? raw.data[0] : null;
+            if(!rawRow) continue;
+            const nextReserved = Math.max(0, (Number(rawRow.reserved_grams || 0) || 0) - grams);
+            const upd = await api(`/rest/v1/raw_material_inventory?id=eq.${encodeURIComponent(rollId)}`, {
+              method:'PATCH',
+              headers:{Prefer:'return=minimal'},
+              body:JSON.stringify({reserved_grams:nextReserved, updated_at:now})
+            });
+            if(upd.error) throw upd.error;
+          }
+        }
+
+        const notePrefix = nextStatus === 'canceled' ? '[Order canceled in Orders Admin]' : nextStatus === 'on_hold' ? '[Order placed on hold in Orders Admin]' : '[Order flagged for review in Orders Admin]';
+        const existingNote = String(jobPayload.close_note || row.close_note || '').trim();
+        const nextJobPayload = {
+          ...jobPayload,
+          production_status: productionStatus,
+          material_reservations: shouldReleaseReservation ? [] : reservations,
+          cancellation_reason: nextStatus === 'canceled' ? (payload.internal_notes || existingNote || 'Canceled from Orders Admin') : jobPayload.cancellation_reason || null,
+          canceled_at: nextStatus === 'canceled' ? now : jobPayload.canceled_at || null,
+          close_note: existingNote.includes(notePrefix) ? existingNote : [notePrefix, existingNote].filter(Boolean).join(' '),
+          updated_at: now
+        };
+
+        const patch = {
+          production_status: productionStatus,
+          close_note: nextJobPayload.close_note,
+          updated_at: now,
+          job_payload: nextJobPayload
+        };
+        if(nextStatus === 'canceled') patch.closed_at = now;
+
+        const prod = await api(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(row.id)}`, {
+          method:'PATCH',
+          headers:{Prefer:'return=minimal'},
+          body:JSON.stringify(patch)
+        });
+        if(prod.error) throw prod.error;
+      }catch(err){
+        console.warn('Orders Admin → Production interruption sync failed.', err);
+        setMsg($('formMessage'), `Saved order, but Production Control interruption sync needs review: ${err.message || err}`, true);
+      }
+    }
+
     async function saveOrder(){
       await getCurrentUser();
       if(!currentUser) return setMsg($('formMessage'),'Login first',true);
@@ -3064,6 +3147,8 @@ const payload = snapshotForm();
       });
 
       if(publicRes.error) return setMsg($('formMessage'), publicRes.error.message || JSON.stringify(publicRes.error) || 'Saved order, but public tracking update failed.', true);
+
+      await syncOrderInterruptionToProduction(payload, currentRow);
 
       setMsg($('formMessage'),'Saved');
       await fetchOrders();
