@@ -5497,6 +5497,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const qty = Math.max(1, num(job.quantity) || 1);
     const priceEach = num(job.estimated_price_each);
     const total = priceEach ? priceEach * qty : 0;
+
+    // Pass the internal estimate math forward so Quote Tool can display the
+    // same Detailed Output that Production Control used to sanity-check price.
+    // These are still internal costing values; Quote Tool remains the customer
+    // presentation layer.
+    const materialCost = num(job.actual_material_cost || job.estimated_material_cost);
+    const hours = num(job.actual_print_hours || job.estimated_total_hours || (num(job.estimated_hours_each) * qty));
+    const machineRate = num(job.machine_hourly_rate || job.machine_rate || 0.5);
+    const machineCost = num(job.actual_machine_cost || (hours * machineRate));
+    const designHours = num(job.actual_design_hours || job.design_hours);
+    const designCost = num(job.actual_design_cost || job.design_fee || job.design_cost || (designHours * num(job.design_rate || 0)));
+    const postCost = num(job.actual_post_processing_cost || job.post_processing_cost || job.post_processing_fee) * (job.post_processing_fee_mode === 'per_piece' ? qty : 1);
+    const supplyCost = num(job.supply_cost || job.non_filament_cost || job.other_direct_cost);
+    const packagingCost = num(job.packaging_cost);
+    const shippingCost = num(job.shipping_cost || job.delivery_cost);
+    const overheadCost = num(job.overhead_cost || job.marketplace_fee || job.processing_fee);
+    const directCost = materialCost + machineCost + designCost + postCost + supplyCost + packagingCost + shippingCost;
+
     const materialSummary = recipeSummary(job);
     const customerNotes = [
       job.job_title ? `Quote for ${job.job_title}.` : '',
@@ -5518,12 +5536,29 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       quantity: qty,
       suggested_total: money(total),
       suggested_piece_price: priceEach ? money(priceEach) : 0,
+      // Detailed Output / internal cost bridge
+      estimated_material_cost: money(materialCost),
+      estimated_machine_hours: money(hours),
+      estimated_machine_rate: money(machineRate),
+      estimated_machine_cost: money(machineCost),
+      estimated_design_hours: money(designHours || (designCost ? 1 : 0)),
+      estimated_design_rate: money(designHours ? (designCost / Math.max(1, designHours)) : designCost),
+      estimated_design_cost: money(designCost),
+      estimated_post_cost: money(postCost),
+      estimated_supply_cost: money(supplyCost),
+      estimated_packaging_cost: money(packagingCost),
+      estimated_shipping_cost: money(shippingCost),
+      estimated_overhead_cost: money(overheadCost),
+      estimated_direct_cost: money(directCost),
+      estimated_break_even: money(directCost + overheadCost),
       turnaround: suggestedTurnaround(job),
       customer_notes: customerNotes,
       internal_notes: [
         `Linked Production Job: ${job.id}`,
         job.estimated_total_hours ? `Estimated production hours: ${job.estimated_total_hours}` : '',
         job.estimated_total_grams ? `Estimated material: ${job.estimated_total_grams}g` : '',
+        directCost ? `Estimated direct cost: $${money(directCost).toFixed(2)}` : '',
+        overheadCost ? `Estimated overhead: $${money(overheadCost).toFixed(2)}` : '',
         job.estimated_material_cost ? `Estimated material cost: $${money(job.estimated_material_cost).toFixed(2)}` : ''
       ].filter(Boolean).join('\n'),
       quote_type: job.job_type === 'business_po' ? 'po' : (job.job_type === 'craft_stock' ? 'craft' : 'custom')
