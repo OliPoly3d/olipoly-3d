@@ -66,7 +66,7 @@
         <div class="hero-card">
           <span class="eyebrow" id="greetingPill">Today</span>
           <h2>What needs your attention?</h2>
-          <p>Fast access to the private tools you actually use: orders, production, inventory, finance, quotes, and operating references. Dark mode stays the visual cue for internal OliPoly work.</p>
+          <p>ERP 1.0 starts in Production Control: estimate, publish quote, accept, manufacture, fulfill, and post to finance. Hub is the navigation and reporting surface for that lifecycle.</p>
           <div class="search-card">
             <div class="search-row">
               <input id="hubSearch" type="search" placeholder="Search OP#, customer, material, vendor, quote, tool..." autocomplete="off" />
@@ -76,10 +76,11 @@
           </div>
         </div>
         <div class="quick-stack" aria-label="Most used tools">
-          <a class="quick-card" href="orders-admin.html"><span class="quick-icon">📦</span><span><strong>Orders Admin</strong><small>Track customers, invoices, labels, status, and completion.</small></span><span class="arrow">→</span></a>
-          <a class="quick-card" href="production-control.html"><span class="quick-icon">🖨️</span><span><strong>Production Control</strong><small>Printer queue, job status, materials, and close-out.</small></span><span class="arrow">→</span></a>
+          <a class="quick-card" href="production-control.html"><span class="quick-icon">🖨️</span><span><strong>Production Control</strong><small>Start estimates, own Q numbers, plan actuals, reserve material, print, and QC close-out.</small></span><span class="arrow">→</span></a>
+          <a class="quick-card" href="orders-admin.html"><span class="quick-icon">📦</span><span><strong>Orders Admin</strong><small>Fulfillment, tracker visibility, invoices, labels, payment, and Finance push after production.</small></span><span class="arrow">→</span></a>
           <a class="quick-card" href="inventory-control.html"><span class="quick-icon">⬢</span><span><strong>Inventory Control</strong><small>Material stock, reorder policy, rolls, and movement log.</small></span><span class="arrow">→</span></a>
-          <a class="quick-card" href="finance-pro.html"><span class="quick-icon">💰</span><span><strong>Finance Pro</strong><small>Revenue, expenses, sales tax, and year-end summaries.</small></span><span class="arrow">→</span></a>
+          <a class="quick-card" href="finance-pro.html"><span class="quick-icon">💰</span><span><strong>Finance Pro</strong><small>Revenue, expenses, tax, and year-end summaries. Finance receives sales, not filament grams.</small></span><span class="arrow">→</span></a>
+          <a class="quick-card" href="erp-handbook.html#workflow"><span class="quick-icon">🧭</span><span><strong>ERP Flow Map</strong><small>Click-through handbook for the new Production → Quote → Orders → Finance lifecycle.</small></span><span class="arrow">→</span></a>
         </div>
       </section>
 
@@ -160,15 +161,15 @@
   <script>
     const tools = [
             { group:'Core Work', icon:'👤', title:'Customer 360', href:'customer-360.html', sub:'Customer-focused launcher for orders, production, finance, quotes, and inventory.', tag:'Customer' },
-{ group:'Core Work', icon:'📦', title:'Orders Admin', href:'orders-admin.html', sub:'Orders, customers, invoices, labels, completion email.', tag:'Orders' },
-      { group:'Core Work', icon:'🖨️', title:'Production Control', href:'production-control.html', sub:'Print queue, status, machine time, close-out.', tag:'Production' },
+{ group:'Core Work', icon:'📦', title:'Orders Admin', href:'orders-admin.html', sub:'Fulfillment, customer tracking, invoices, labels, payment, and Finance Pro push after production.', tag:'Orders' },
+      { group:'Core Work', icon:'🖨️', title:'Production Control', href:'production-control.html', sub:'ERP starting point for estimates, Q numbers, production actuals, material reserve, print, and QC closeout.', tag:'Production' },
       { group:'Core Work', icon:'⬢', title:'Inventory Control', href:'inventory-control.html', sub:'Material stock, rolls, reorder risk, inventory log.', tag:'Inventory' },
       { group:'Money', icon:'💰', title:'Finance Pro', href:'finance-pro.html', sub:'Income, expenses, Ohio sales tax, Schedule C helper.', tag:'Finance' },
-      { group:'Sales', icon:'◈', title:'Quote Tool', href:'quote.html', sub:'Create quotes and route accepted work into orders.', tag:'Quotes' },
+      { group:'Sales', icon:'◈', title:'Quote Tool', href:'quote.html', sub:'Customer-facing quote publisher. Production Control owns costs, Q numbers, and estimate logic.', tag:'Quotes' },
       { group:'Sales', icon:'📝', title:'Start Project Intake', href:'start-project.html', sub:'Customer-facing intake form page.', tag:'Public' },
       { group:'Customer Tools', icon:'🔎', title:'Track Order', href:'track.html', sub:'Public tracking page for Q/OP numbers.', tag:'Tracking' },
       { group:'Customer Tools', icon:'💳', title:'Pay Page', href:'pay.html', sub:'Customer payment options and instructions.', tag:'Payments' },
-      { group:'Reference', icon:'☰', title:'ERP Handbook', href:'erp-handbook.html', sub:'Operating process and backend workflow guide.', tag:'Docs' },
+      { group:'Reference', icon:'☰', title:'ERP Handbook', href:'erp-handbook.html#workflow', sub:'Interactive lifecycle map, decision points, rollback rules, and ERP 1.0 test checklist.', tag:'Docs' },
       { group:'Reference', icon:'◆', title:'Knowledge Library', href:'erp-knowledge-library.html', sub:'Recipes, lessons learned, settings, process notes.', tag:'Knowledge' },
       { group:'Reference', icon:'🧭', title:'Main Website', href:'index.html', sub:'Customer-facing OliPoly site.', tag:'Public' },
       { group:'Reference', icon:'✦', title:'Showcase', href:'showcase.html', sub:'Completed projects and customer proof.', tag:'Public' },
@@ -296,7 +297,7 @@
       if(activityState.filter !== 'all') events = events.filter(e => e.category === activityState.filter);
       events = events.slice(0,18);
       if(!events.length){
-        list.innerHTML = `<div class="activity-empty"><strong>No activity logged yet.</strong><br>As you save production jobs, reserve material, update printer maintenance, or work orders, recent actions will appear here.</div>`;
+        list.innerHTML = `<div class="activity-empty"><strong>No activity logged yet.</strong><br>As quotes, estimates, production steps, inventory movements, orders, and finance posts are logged, lifecycle activity will appear here.</div>`;
         return;
       }
       list.innerHTML = events.map(e => `<div class="activity-item" data-category="${esc(e.category)}"><span class="activity-icon">${esc(eventIcon(e.category))}</span><span><strong>${esc(eventTitle(e))}</strong><small>${esc(eventSubtitle(e))}</small></span><span class="activity-time">${esc(eventTime(e.at))}</span></div>`).join('');
@@ -330,12 +331,14 @@
         const activeJobs = Number(p.activeJobs ?? p.openJobs ?? p.jobsActive ?? 0);
         const unassigned = Number(p.unassignedPrinterRisk || p.unassignedJobs || 0);
         const waiting = Number(p.waitingJobs || p.awaitingApproval || p.jobsWaiting || 0);
-        const openQuotes = Number(o.openQuotes || p.openQuotes || 0);
+        const openQuotes = Number(o.openQuotes || p.openQuotes || p.quoteSent || p.quotesSent || 0);
+        const needsActuals = Number(p.awaitingDesign || p.awaiting_design || p.needsActuals || 0);
         if(overdue>0) items.push({icon:'💸',title:'Payment follow-up',sub:`${overdue} unpaid or overdue item(s) may need review.`,kind:'danger',href:'orders-admin.html'});
         if(invLive.counts.reorder>0) items.push({icon:'⬢',title:'Material to order',sub:`${invLive.counts.reorder} material/supply item(s) are below reorder point.`,kind:'danger',href:'inventory-control.html?status=low#forecastPanel'});
         if(unassigned>0) items.push({icon:'🖨️',title:'Printer assignment',sub:`${unassigned} job(s) may need printer assignment.`,kind:'warn',href:'production-control.html'});
         if(waiting>0) items.push({icon:'⏳',title:'Jobs waiting',sub:`${waiting} job(s) are waiting for approval or printer time.`,kind:'warn',href:'production-control.html'});
-        if(openQuotes>0) items.push({icon:'◈',title:'Quote follow-up',sub:`${openQuotes} quote(s) may need a customer response check.`,kind:'warn',href:'quote.html'});
+        if(openQuotes>0) items.push({icon:'◈',title:'Quote follow-up',sub:`${openQuotes} quote(s) are sent/active and may need customer response check.`,kind:'warn',href:'production-control.html?status=quote_sent'});
+        if(needsActuals>0) items.push({icon:'🧮',title:'Production actuals needed',sub:`${needsActuals} accepted job(s) need design/slicer actuals before reservation.`,kind:'warn',href:'production-control.html?status=awaiting_design'});
         if(activeJobs>0 && !unassigned && !waiting) items.push({icon:'🖨️',title:'Production active',sub:`${activeJobs} active job(s) are currently in the workflow.`,kind:'info',href:'production-control.html'});
         if(openOrders>0 && !overdue) items.push({icon:'📦',title:'Orders in motion',sub:`${openOrders} open order(s) are active.`,kind:'info',href:'orders-admin.html'});
         if(!items.length) items.push({icon:'✓',title:'No urgent actions',sub:'Orders, production, inventory, finance, and printers look clear from saved summaries.',kind:'good',href:'#tools'});
@@ -377,7 +380,8 @@
       const attention = [];
       const overdue = Number(o.overdueCount || o.unpaidOrders || f.unpaidCount || 0);
       const unassigned = Number(p.unassignedPrinterRisk || p.unassignedJobs || 0);
-      const openQuotes = Number(o.openQuotes || p.openQuotes || 0);
+      const openQuotes = Number(o.openQuotes || p.openQuotes || p.quoteSent || p.quotesSent || 0);
+        const needsActuals = Number(p.awaitingDesign || p.awaiting_design || p.needsActuals || 0);
       if (overdue>0) attention.push(item('💸','Cash collection check',`${overdue} unpaid or overdue item(s) may need review.`,'danger','orders-admin.html'));
       if (invLive.counts.reorder>0) {
         const firstReorder = invLive.lowItems.find(x => !x.snoozed && (!x.policy || x.policy === 'auto'));
@@ -389,7 +393,9 @@
         attention.push(item('◌','Specialty inventory',`${quietLabel} No reorder action required.`, 'info', 'inventory-control.html?status=low#forecastPanel'));
       }
       if (unassigned>0) attention.push(item('🖨️','Printer assignment needed',`${unassigned} production job(s) may need printer assignment.`,'warn','production-control.html'));
-      if (openQuotes>0) attention.push(item('◈','Open quote follow-up',`${openQuotes} quote(s) may need customer follow-up.`,'warn','quote.html'));
+      if (openQuotes>0) attention.push(item('◈','Open quote follow-up',`${openQuotes} quote(s) are sent/active and may need customer follow-up.`,'warn','production-control.html?status=quote_sent'));
+      const awaitingDesign = Number(p.awaitingDesign || p.awaiting_design || p.needsActuals || 0);
+      if (awaitingDesign>0) attention.push(item('🧮','Production actuals needed',`${awaitingDesign} accepted job(s) need actual design/slicer/material plan before inventory reservation.`,'warn','production-control.html?status=awaiting_design')); 
       if (!attention.length) attention.push(item('✓','No urgent actions detected','Open Orders, Production, Inventory, or Finance for a deeper check.','good','#tools'));
       document.getElementById('attentionList').innerHTML = attention.join('');
 
