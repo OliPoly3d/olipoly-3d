@@ -1985,10 +1985,65 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return merged;
   }
 
+  const ORDER_TO_PRODUCTION_STATUS = {
+    quote_sent:'quote_sent',
+    awaiting_approval:'awaiting_design',
+    awaiting_deposit:'awaiting_design',
+    awaiting_production:'awaiting_design',
+    in_design:'awaiting_design',
+    in_production:'printing',
+    post_processing:'post_processing',
+    production_complete:'qc_complete',
+    ready_for_pickup:'production_closed',
+    shipped:'production_closed',
+    completed:'production_closed',
+    canceled:'canceled',
+    on_hold:'on_hold',
+    issue_review:'failed_scrap'
+  };
+
+  function applyLinkedOrderAuthority(job, orderRow){
+    if(!job || !orderRow?.status) return job;
+    const orderStatus = String(orderRow.status || '').trim();
+    const bridgeStatus = ORDER_TO_PRODUCTION_STATUS[orderStatus];
+    if(!bridgeStatus) return {...job, linked_order_status:orderStatus};
+
+    let productionStatus = job.production_status;
+
+    // Orders Admin owns the customer/order milestone once an OP exists.
+    // Use it to route the Production Control card, but do not let early order
+    // statuses knock back a card that has already been production-planned.
+    if(['in_production','post_processing','production_complete','ready_for_pickup','shipped','completed','canceled','on_hold','issue_review'].includes(orderStatus)){
+      productionStatus = bridgeStatus;
+    }else if(['quote_sent','estimate','quote_accepted','awaiting_approval','idea'].includes(productionStatus) && job.order_number){
+      productionStatus = bridgeStatus;
+    }
+
+    return {
+      ...job,
+      production_status: productionStatus,
+      linked_order_status: orderStatus,
+      order_number: job.order_number || orderRow.order_number || null,
+      customer_name: job.customer_name || orderRow.customer_name || null,
+      customer_email: job.customer_email || orderRow.customer_email || null
+    };
+  }
+
   async function loadCloudJobs(){
     try{
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
-      return Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
+      const normalized = Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
+      const orderNums = [...new Set(normalized.map(j=>j.order_number).filter(Boolean))];
+      if(!orderNums.length) return normalized;
+      try{
+        const inList = orderNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
+        const rows = await sbApi(`/rest/v1/orders?select=order_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
+        const orderMap = new Map((Array.isArray(rows) ? rows : []).map(r=>[r.order_number, r]));
+        return normalized.map(j=>applyLinkedOrderAuthority(j, orderMap.get(j.order_number)));
+      }catch(orderErr){
+        console.warn('Could not load linked order statuses for production lane routing.', orderErr);
+        return normalized;
+      }
     }catch(err){
       console.warn('Could not load production_jobs table', err);
       toast('Cloud load failed. Using local browser data.');
