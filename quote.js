@@ -5991,9 +5991,38 @@ https://olipoly3d.com`;
     customerCard.insertBefore(card, customerCard.querySelector('.quote-type-panel') || customerCard.firstChild);
   }
 
+  function productionInvoiceNumberFromQuote(quoteNumber){
+    const core = String(quoteNumber || '').trim().replace(/^Q-/i, '');
+    return core ? `INV-${core}` : '';
+  }
+
+  function applyProductionIdentity(draft){
+    if(!draft) return;
+    if(draft.quote_number) {
+      setVal('quoteNumber', draft.quote_number);
+      const inv = productionInvoiceNumberFromQuote(draft.quote_number);
+      if(inv) setVal('invoiceNumber', inv);
+    }
+    if(draft.order_number) setVal('orderNumber', draft.order_number);
+  }
+
   function applyProductionDraft(){
     const draft = readDraft();
-    if(!draft || (params.get('fromProduction') !== '1' && params.get('production_job_id') !== draft.production_job_id)) return;
+    if(!draft) return;
+
+    const urlJobId = String(params.get('production_job_id') || '');
+    const draftJobId = String(draft.production_job_id ?? '');
+    const cameFromProduction = params.get('fromProduction') === '1';
+
+    // The production_job_id URL parameter is a string, while the saved draft may
+    // contain a numeric Supabase/local id. Compare as strings so the Production
+    // Control draft actually loads instead of letting Quote Tool generate its own
+    // standalone Q/INV numbers.
+    if(!cameFromProduction && (!urlJobId || urlJobId !== draftJobId)) return;
+    if(urlJobId && draftJobId && urlJobId !== draftJobId) {
+      console.warn('Production quote draft ignored because the URL job id did not match the saved draft.', { urlJobId, draftJobId });
+      return;
+    }
 
     addPresentationStyles();
     movePricingFields();
@@ -6005,8 +6034,7 @@ https://olipoly3d.com`;
     ensureHidden('productionSuggestedTotal').value = draft.suggested_total || '';
     ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price || '';
 
-    if(draft.quote_number) setVal('quoteNumber', draft.quote_number);
-    if(draft.order_number) setVal('orderNumber', draft.order_number);
+    applyProductionIdentity(draft);
     setVal('liteQuoteType', draft.quote_type || 'custom');
     setVal('customerName', draft.customer_name || '');
     setVal('customerEmail', draft.customer_email || '');
@@ -6030,6 +6058,12 @@ https://olipoly3d.com`;
       note.classList.remove('hidden');
       note.innerHTML = `<strong>Linked Production Job:</strong> ${draft.production_job_title || draft.production_job_id}<br><span>Suggested total: ${Number(draft.suggested_total) ? '$' + Number(draft.suggested_total).toFixed(2) : 'not set'} · Adjust/round as needed before sending.</span>`;
     }
+
+    // Some legacy quote initializers run after DOMContentLoaded and may generate
+    // standalone document numbers. Re-apply the linked identity a couple of times
+    // so Q/INV stay tied to the Production Control estimate.
+    setTimeout(() => { applyProductionIdentity(draft); if(typeof window.render === 'function') window.render(); }, 250);
+    setTimeout(() => { applyProductionIdentity(draft); if(typeof window.render === 'function') window.render(); }, 1000);
 
     if(typeof window.render === 'function') window.render();
     if(typeof window.quotePatchToast === 'function') window.quotePatchToast('Production quote draft loaded.');
