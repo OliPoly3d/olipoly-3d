@@ -6440,3 +6440,165 @@ https://olipoly3d.com`;
   window.olipolyResetQuoteTool = resetQuoteTool;
   window.olipolyCheckMissingQuoteInputs = checkMissingInputs;
 })();
+
+
+/* === ERP Bridge Pass 21: Quote Tool Tax Jurisdiction Authority ===
+   - Quote Tool no longer relies on stale hard-coded county presets.
+   - It loads county/rate choices from Supabase financial_entries created by Finance Pro.
+   - If no Finance entries exist yet, Custom / Out of State / Tax Exempt still work.
+   - Stored values remain constraint-safe; customer documents show county/rate only, never internal costs.
+*/
+(() => {
+  if (window.__olipolyQuoteTaxJurisdictionPass21) return;
+  window.__olipolyQuoteTaxJurisdictionPass21 = true;
+
+  const $ = (id) => document.getElementById(id);
+  const norm = (v) => String(v || '').trim();
+  const num = (v) => Number(String(v ?? '').replace(/[^0-9.-]/g, '')) || 0;
+
+  function fire(el){
+    if (!el) return;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function countyName(raw){
+    let v = norm(raw);
+    if (!v) return '';
+    v = v.replace(/\s+county$/i, '').trim();
+    return v.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+  }
+
+  function optionValue(county, rate){
+    return `county:${county}|${Number(rate || 0).toFixed(2)}`;
+  }
+
+  function parseTaxPreset(value){
+    const v = norm(value);
+    if (v === 'tax_exempt') return { kind: 'exempt', county: 'Tax Exempt', rate: 0 };
+    if (v === 'out_of_state') return { kind: 'out_of_state', county: 'Out of State', rate: 0 };
+    if (v === 'custom' || !v) return { kind: 'custom', county: 'Custom', rate: num($('salesTax')?.value) };
+    const m = v.match(/^county:(.*)\|([0-9.]+)$/);
+    if (m) return { kind: 'county', county: m[1], rate: num(m[2]) };
+    // Legacy values like "portage" or "Portage 6.75" remain safe/manual.
+    return { kind: 'custom', county: v, rate: num(v) || num($('salesTax')?.value) };
+  }
+
+  function setHint(text){
+    const hint = $('taxJurisdictionHint');
+    if (hint) hint.textContent = text;
+  }
+
+  function selectExistingOrCustom(county, rate){
+    const preset = $('taxPreset');
+    const salesTax = $('salesTax');
+    if (!preset) return;
+    const c = countyName(county);
+    const r = num(rate || salesTax?.value);
+    if (c && r > 0) {
+      const target = optionValue(c, r);
+      let opt = Array.from(preset.options).find(o => o.value === target);
+      if (!opt) {
+        opt = new Option(`${c} County`, target);
+        preset.insertBefore(opt, preset.querySelector('option[value="out_of_state"]') || null);
+      }
+      preset.value = target;
+      if (salesTax) salesTax.value = r.toFixed(2).replace(/\.00$/, '');
+    }
+  }
+
+  async function loadFinanceTaxRates(){
+    if (typeof window.sbApi !== 'function') return [];
+    const path = '/rest/v1/financial_entries?select=destination_county,sales_tax_rate,entry_date,created_at&type=eq.income&sales_tax_rate=gt.0&order=created_at.desc&limit=500';
+    const res = await window.sbApi(path, { method: 'GET' });
+    if (!res?.ok || !Array.isArray(res.data)) return [];
+    const map = new Map();
+    for (const row of res.data) {
+      const c = countyName(row.destination_county);
+      const r = num(row.sales_tax_rate);
+      if (!c || r <= 0) continue;
+      if (!map.has(c)) map.set(c, { county: c, rate: r });
+    }
+    return Array.from(map.values()).sort((a,b) => a.county.localeCompare(b.county));
+  }
+
+  function populateTaxSelect(rows){
+    const preset = $('taxPreset');
+    if (!preset) return;
+    const previous = preset.value;
+    preset.innerHTML = '';
+    preset.appendChild(new Option('Custom / Manual Rate', 'custom'));
+    rows.forEach(row => preset.appendChild(new Option(`${row.county} County`, optionValue(row.county, row.rate))));
+    preset.appendChild(new Option('Out of State / No Tax', 'out_of_state'));
+    preset.appendChild(new Option('Tax Exempt', 'tax_exempt'));
+    if (previous && Array.from(preset.options).some(o => o.value === previous)) preset.value = previous;
+    else if (previous && previous !== 'custom') {
+      const parsed = parseTaxPreset(previous);
+      if (parsed.kind === 'county' || parsed.rate > 0) selectExistingOrCustom(parsed.county, parsed.rate);
+      else preset.value = previous === 'tax_exempt' || previous === 'out_of_state' ? previous : 'custom';
+    }
+    setHint(rows.length ? `Loaded ${rows.length} county rate option${rows.length === 1 ? '' : 's'} from Finance Pro entries.` : 'No Finance Pro county rates found yet. Use Custom / Manual Rate for now.');
+  }
+
+  function applyTaxSelection(){
+    const preset = $('taxPreset');
+    const salesTax = $('salesTax');
+    const taxExempt = $('taxExempt');
+    if (!preset || !salesTax) return;
+    const parsed = parseTaxPreset(preset.value);
+    salesTax.readOnly = false;
+    salesTax.dataset.taxCounty = parsed.county || '';
+    if (parsed.kind === 'exempt') {
+      salesTax.value = '0';
+      if (taxExempt) taxExempt.value = 'yes';
+    } else if (parsed.kind === 'out_of_state') {
+      salesTax.value = '0';
+      if (taxExempt) taxExempt.value = 'no';
+    } else if (parsed.kind === 'county') {
+      salesTax.value = parsed.rate.toFixed(2).replace(/\.00$/, '');
+      if (taxExempt) taxExempt.value = 'no';
+    }
+    fire(salesTax);
+  }
+
+  function patchTaxLabelOutputs(){
+    const parsed = parseTaxPreset($('taxPreset')?.value);
+    const rateHint = $('salesTaxRateHint');
+    if (rateHint) {
+      if (parsed.kind === 'county') rateHint.textContent = `${parsed.county} County selected. Rate auto-filled from Finance Pro source data.`;
+      else if (parsed.kind === 'exempt') rateHint.textContent = 'Tax exempt selected. Sales tax is $0.00.';
+      else if (parsed.kind === 'out_of_state') rateHint.textContent = 'Out of State / No Tax selected. Sales tax is $0.00.';
+      else rateHint.textContent = 'Custom/manual tax rate. Use this only if the county is not yet in Finance Pro source data.';
+    }
+  }
+
+  async function initTaxJurisdictions(){
+    const preset = $('taxPreset');
+    if (!preset || preset.dataset.taxAuthorityPass21 === 'true') return;
+    preset.dataset.taxAuthorityPass21 = 'true';
+    try {
+      const rows = await loadFinanceTaxRates();
+      populateTaxSelect(rows);
+    } catch (e) {
+      console.warn('Pass 21 tax jurisdiction load skipped:', e);
+      setHint('Could not load Finance Pro county rates. Use Custom / Manual Rate for now.');
+    }
+    preset.addEventListener('change', () => { applyTaxSelection(); patchTaxLabelOutputs(); });
+    $('taxExempt')?.addEventListener('change', () => {
+      if (($('taxExempt')?.value || 'no') === 'yes') {
+        preset.value = 'tax_exempt';
+        applyTaxSelection();
+      }
+    });
+    applyTaxSelection();
+    patchTaxLabelOutputs();
+  }
+
+  // Preserve saved/production-loaded county rate after quote library loads populate fields.
+  window.OliPolyQuoteTax = { initTaxJurisdictions, parseTaxPreset, selectExistingOrCustom };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initTaxJurisdictions);
+  else initTaxJurisdictions();
+  setTimeout(initTaxJurisdictions, 600);
+  setTimeout(initTaxJurisdictions, 1600);
+})();
