@@ -497,6 +497,53 @@
     return fields;
   }
 
+
+  function deriveInvoiceFromQuoteNumber(quoteNumber) {
+    const core = String(quoteNumber || '').trim().replace(/^Q-/i, '');
+    return core ? `INV-${core}` : '';
+  }
+
+  function mergeSavedQuoteRowIntoFields(fields = {}, row = {}) {
+    const merged = { ...(fields || {}) };
+    const setIfMissing = (id, value) => {
+      if (value == null || value === '') return;
+      if (merged[id] == null || merged[id] === '') merged[id] = value;
+    };
+
+    setIfMissing('quoteNumber', row.quote_number || row.quoteNumber);
+    setIfMissing('invoiceNumber', row.invoice_number || row.invoiceNumber || deriveInvoiceFromQuoteNumber(row.quote_number || row.quoteNumber));
+    setIfMissing('quoteStatus', row.quote_status || row.quoteStatus);
+    setIfMissing('customerName', row.customer_name || row.customerName);
+    setIfMissing('customerEmail', row.customer_email || row.customerEmail);
+    setIfMissing('quoteTitle', row.quote_title || row.quoteTitle);
+    setIfMissing('poNumber', row.po_number || row.poNumber);
+    setIfMissing('taxExempt', row.tax_exempt === true ? 'yes' : row.tax_exempt === false ? 'no' : row.taxExempt);
+    setIfMissing('taxExemptReason', row.tax_exempt_reason || row.taxExemptReason);
+    setIfMissing('certificateOnFile', row.exemption_certificate_on_file === true ? 'yes' : row.exemption_certificate_on_file === false ? 'no' : row.certificateOnFile);
+    setIfMissing('poFileOnFile', row.po_file_on_file === true ? 'yes' : row.po_file_on_file === false ? 'no' : row.poFileOnFile);
+    setIfMissing('customerPartNumber', row.customer_part_number || row.po_part_number || row.customerPartNumber);
+    setIfMissing('olipolyPartNumber', row.olipoly_part_number || row.olipolyPartNumber);
+    setIfMissing('partRevision', row.part_revision || row.partRevision);
+    setIfMissing('shippingContactName', row.shipping_contact_name || row.shippingContactName);
+    setIfMissing('shippingCompany', row.shipping_company || row.shippingCompany);
+    setIfMissing('shippingAddress', row.shipping_address || row.shippingAddress);
+    setIfMissing('billingAddress', row.billing_address || row.billingAddress);
+
+    const qd = row.quote_data || row.quoteData || {};
+    const source = qd.production_draft || qd.draft || qd.source_data || qd;
+    setIfMissing('quoteTitle', source.quote_title || source.production_job_title || source.project_title || source.title);
+    setIfMissing('projectTitle', source.production_job_title || source.project_title || source.quote_title || source.title);
+    setIfMissing('customerName', source.customer_name || source.contact_name);
+    setIfMissing('customerEmail', source.customer_email || source.email);
+    setIfMissing('customerPhone', source.customer_phone || source.phone);
+    setIfMissing('qty', source.quantity);
+    setIfMissing('quantity', source.quantity);
+    setIfMissing('customerNotes', source.customer_notes || source.description || source.notes);
+    setIfMissing('quoteNotes', source.internal_notes || source.notes);
+
+    return merged;
+  }
+
   function populateFields(fields = {}) {
     Object.entries(fields).forEach(([id, value]) => {
       const el = $(id);
@@ -735,21 +782,26 @@
 
     const [source, quoteNumber] = select.value.split(":");
     try {
-      let data;
+      let data = {};
+      let row = null;
       if (source === "cloud") {
-        const row = await fetchCloudQuoteByNumber(quoteNumber);
-        data = row.quote_data;
+        row = await fetchCloudQuoteByNumber(quoteNumber);
+        data = row.quote_data || {};
       } else {
-        const local = readLocalHistory().find((q) => q.quoteNumber === quoteNumber);
-        data = local?.quoteData || local?.quote_data;
+        row = readLocalHistory().find((q) => q.quoteNumber === quoteNumber) || null;
+        data = row?.quoteData || row?.quote_data || {};
       }
 
-      if (!data?.fields) throw new Error("Saved quote data is missing fields.");
+      const fields = mergeSavedQuoteRowIntoFields(data.fields || {}, row || {});
+      if (!fields || !Object.keys(fields).length) throw new Error("Saved quote data is missing fields.");
 
-      populateFields(data.fields);
-      toast(`Loaded ${quoteNumber}`);
+      populateFields(fields);
+      if (typeof window.render === "function") window.render();
+      toast(`Loaded ${fields.quoteNumber || quoteNumber}`);
     } catch (err) {
-      alert(`Could not load quote:\n\n${err.message || err}`);
+      alert(`Could not load quote:
+
+${err.message || err}`);
     }
   }
 
@@ -5880,8 +5932,10 @@ https://olipoly3d.com`;
       const encoded = encodeURIComponent(quoteNumber);
       const rows = await api(`/rest/v1/quotes?select=*&quote_number=eq.${encoded}&limit=1`, { method:'GET' });
       const row = Array.isArray(rows) ? rows[0] : null;
-      if (!row?.quote_data?.fields) throw new Error('Quote found, but quote_data.fields was missing.');
-      applyFields(row.quote_data.fields);
+      if (!row?.quote_data) throw new Error('Quote found, but quote_data was missing.');
+      const fields = mergeSavedQuoteRowIntoFields(row.quote_data.fields || {}, row);
+      if (!fields || !Object.keys(fields).length) throw new Error('Quote found, but saved fields were missing.');
+      applyFields(fields);
       const select = $('savedQuotesSelect');
       if (select) select.value = `cloud:${quoteNumber}`;
       toast(`${quoteNumber} loaded from Active Projects.`);
