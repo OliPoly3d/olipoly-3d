@@ -2677,6 +2677,36 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(orderEl && !orderEl.value.trim()) orderEl.value = '';
     return q;
   }
+
+  async function maybeAssignQuoteNumberForNewEstimate(opts={}){
+    const silent = !!opts.silent;
+    if(state.editingId) return null;
+    const statusEl = $('productionStatus');
+    const quoteEl = $('quoteNumber');
+    if(!statusEl || !quoteEl) return null;
+    if(statusEl.value !== 'estimate') return quoteEl.value.trim() || null;
+    if(quoteEl.value.trim()) return quoteEl.value.trim();
+    if(quoteEl.dataset.assigning === 'true') return null;
+    if(!state.user?.id){
+      if(!silent) toast('Sign in first so Production Control can assign the next cloud Q-number.');
+      return null;
+    }
+    quoteEl.dataset.assigning = 'true';
+    const previousPlaceholder = quoteEl.placeholder;
+    quoteEl.placeholder = 'Assigning Q-number...';
+    try{
+      const q = await ensureQuoteNumberForEstimateForm();
+      if(q && !silent) toast(`Assigned ${q}`);
+      return q;
+    }catch(err){
+      console.warn(err);
+      if(!silent) toast(err.message || 'Could not assign Q-number.');
+      return null;
+    }finally{
+      quoteEl.dataset.assigning = 'false';
+      quoteEl.placeholder = previousPlaceholder || 'Q-000000';
+    }
+  }
   async function logProjectEvent(eventType, job, details={}){
     try{
       const payload = {
@@ -5346,11 +5376,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(section && section.tagName === 'DETAILS') section.open = true;
     section?.scrollIntoView({behavior:'smooth', block:'start'});
   }
-  $('jumpAddBtn').addEventListener('click', () => openSectionAndScroll('addJobSection'));
+  async function openNewEstimateForm(){
+    openSectionAndScroll('addJobSection');
+    if(!state.editingId && $('productionStatus')) $('productionStatus').value = 'estimate';
+    await maybeAssignQuoteNumberForNewEstimate();
+  }
+  $('jumpAddBtn').addEventListener('click', openNewEstimateForm);
   $('applyHubDraftBtn')?.addEventListener('click', applyHubWorkflowDraft);
   $('dismissHubDraftBtn')?.addEventListener('click', () => { const d=hubDraftRead(); if(d){ localStorage.setItem('olipoly_workflow_draft_v1', JSON.stringify({...d,dismissed:true})); } renderHubDraftBanner(); });
-  const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', () => openSectionAndScroll('addJobSection'));
+  const heroAdd = $('jumpAddBtnHero'); if(heroAdd) heroAdd.addEventListener('click', openNewEstimateForm);
   const clearForm = $('clearFormBtn'); if(clearForm) clearForm.addEventListener('click', resetForm);
+  $('productionStatus')?.addEventListener('change', () => maybeAssignQuoteNumberForNewEstimate({silent:true}));
   $('exportBackupBtn')?.addEventListener('click', exportProductionBackup);
   $('importBackupBtn')?.addEventListener('click', ()=>$('importBackupFile')?.click());
   $('importBackupFile')?.addEventListener('change', e=>importProductionBackup(e.target.files?.[0]));
