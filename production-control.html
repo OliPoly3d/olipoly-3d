@@ -2596,9 +2596,124 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
   function perMaterialScrapTotal(allocations){ return (allocations||[]).reduce((s,a)=>s+num(a.scrap_grams),0); }
 
+
+
+  function coreNumberFromQuote(q){
+    const m = String(q || '').match(/(\d{1,6})/);
+    return m ? m[1].padStart(6,'0') : '';
+  }
+  function orderNumberFromQuoteNumber(q){
+    const core = coreNumberFromQuote(q);
+    return core ? `OP-${core}` : null;
+  }
+  async function nextDocumentCounterValue(counterKey='quote'){
+    if(!state.user?.id) return null;
+    const key = encodeURIComponent(counterKey);
+    let current = 0;
+    try{
+      const rows = await sbApi(`/rest/v1/document_counters?select=key,value&key=eq.${key}&limit=1`, {method:'GET'});
+      current = Array.isArray(rows) && rows[0] ? num(rows[0].value) : 0;
+    }catch(err){
+      console.warn('Could not read document counter; using local fallback.', err);
+    }
+    const next = current + 1;
+    try{
+      await sbApi('/rest/v1/document_counters?on_conflict=key', {
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify({key:counterKey, value:next, updated_at:new Date().toISOString()})
+      });
+      return next;
+    }catch(err){
+      console.warn('Could not update document counter.', err);
+      return null;
+    }
+  }
+  function nextLocalQuoteNumber(){
+    const maxSeen = state.jobs.reduce((max,j)=>{
+      const n = num(coreNumberFromQuote(j.quote_number || j.order_number));
+      return Math.max(max,n);
+    },0);
+    const next = Math.max(maxSeen + 1, num(localStorage.getItem('olipoly_next_local_quote_counter') || 0) || 1);
+    localStorage.setItem('olipoly_next_local_quote_counter', String(next + 1));
+    return `Q-${String(next).padStart(6,'0')}`;
+  }
+  async function ensureQuoteNumberForEstimateForm(){
+    const el = $('quoteNumber');
+    if(!el || el.value.trim()) return el?.value.trim() || null;
+    const cloudNext = await nextDocumentCounterValue('quote');
+    const q = cloudNext ? `Q-${String(cloudNext).padStart(6,'0')}` : nextLocalQuoteNumber();
+    el.value = q;
+    const orderEl = $('orderNumber');
+    if(orderEl && !orderEl.value.trim()) orderEl.value = '';
+    return q;
+  }
+  async function syncProductionStatusToOrder(job, targetStatus){
+    if(!state.user?.id || !job?.order_number) return;
+    const orderStatusMap = {
+      printing:'in_production',
+      post_processing:'post_processing',
+      ready:'ready_for_pickup',
+      completed:'completed',
+      failed_scrap:'issue_review',
+      canceled:'canceled',
+      on_hold:'on_hold'
+    };
+    const publicTextMap = {
+      printing:'Your order is in production.',
+      post_processing:'Your order is in post-processing / quality control.',
+      ready:'Your order is ready for pickup or delivery scheduling.',
+      completed:'Production is complete.',
+      failed_scrap:'This order is under production review.',
+      canceled:'This order has been canceled.',
+      on_hold:'This order is temporarily on hold.'
+    };
+    const nextStepMap = {
+      printing:'OliPoly 3D is printing your order.',
+      post_processing:'OliPoly 3D is finishing and checking the order.',
+      ready:'OliPoly 3D will coordinate pickup, delivery, or shipping.',
+      completed:'Final fulfillment/payment closeout is next.',
+      failed_scrap:'OliPoly 3D will review the issue and follow up if needed.',
+      canceled:'No further production action is currently planned.',
+      on_hold:'OliPoly 3D will resume once the hold is cleared.'
+    };
+    const orderStatus = orderStatusMap[targetStatus];
+    if(!orderStatus) return;
+    const now = new Date().toISOString();
+    const patch = {
+      status: orderStatus,
+      public_status_text: publicTextMap[targetStatus] || null,
+      public_next_step: nextStepMap[targetStatus] || null,
+      updated_at: now
+    };
+    try{
+      await sbApi(`/rest/v1/orders?order_number=eq.${encodeURIComponent(job.order_number)}`, {
+        method:'PATCH',
+        headers:{Prefer:'return=minimal'},
+        body:JSON.stringify(patch)
+      });
+      await sbApi('/rest/v1/order_tracking_public?on_conflict=order_number', {
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify({
+          order_number: job.order_number,
+          user_id: state.user.id,
+          order_title: job.job_title || null,
+          status: orderStatus,
+          public_status_text: patch.public_status_text,
+          public_next_step: patch.public_next_step,
+          updated_at: now
+        })
+      });
+    }catch(err){
+      console.warn('Production → Orders Admin status sync failed.', err);
+    }
+  }
+
   async function saveJob(e){
     e?.preventDefault();
     try{
+      await ensureQuoteNumberForEstimateForm();
       const j = formJob();
       if(!j.job_title) throw new Error('Job title is required.');
       const previousJob = state.jobs.find(x=>x.id===j.id);
@@ -2640,6 +2755,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     try{
       await cloudSaveJob(updated);
       window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
+      await syncProductionStatusToOrder(updated, status);
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       render();
@@ -2672,6 +2788,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       await applyReservationDelta(j, updated);
       await cloudSaveJob(updated);
       window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:'canceled', reason:reasonText});
+      await syncProductionStatusToOrder(updated, 'canceled');
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       state.selectedIds.delete(id);
       localWrite(LS_JOBS,state.jobs);
@@ -3128,6 +3245,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         applyInventoryLocal(updated, [], addFinished);
       }
       addCloseoutAudit(j, updated, {expected_grams:expectedCloseoutGrams, wasInventoryDeducted});
+      await syncProductionStatusToOrder(updated, updated.production_status);
       state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       closeClose();
@@ -5176,6 +5294,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   const num = (v) => Number(String(v ?? '').replace(/[^0-9.-]/g, '')) || 0;
   const money = (v) => Math.round(num(v) * 100) / 100;
 
+  function coreNumberFromQuoteLocal(q){
+    const m = String(q || '').match(/(\d{1,6})/);
+    return m ? m[1].padStart(6,'0') : '';
+  }
+  function orderNumberFromQuoteNumberLocal(q){
+    const core = coreNumberFromQuoteLocal(q);
+    return core ? `OP-${core}` : '';
+  }
+
   function toast(message){
     const existing = document.getElementById('toast');
     if(existing){
@@ -5227,6 +5354,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       created_at: new Date().toISOString(),
       production_job_id: job.id,
       production_job_title: job.job_title || '',
+      quote_number: job.quote_number || '',
+      order_number: job.order_number || orderNumberFromQuoteNumberLocal(job.quote_number) || '',
       customer_name: job.customer_name || '',
       customer_email: job.customer_email || '',
       quote_title: job.job_title || 'Custom 3D printed project',
@@ -5249,6 +5378,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const jobs = readJson(LS_JOBS, []);
     const updated = {
       ...job,
+      production_status: job.production_status === 'idea' || job.production_status === 'awaiting_approval' ? 'awaiting_approval' : job.production_status,
       quote_handoff_status: 'draft_sent_to_quote',
       quote_handoff_at: new Date().toISOString(),
       linked_quote_draft: draft,
@@ -5279,6 +5409,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const job = jobs.find((j) => j.id === id);
     if(!job) return toast('Could not find that production job.');
 
+    if(!job.quote_number) return toast('Save this estimate first so Production Control can assign a Q-number.');
     const draft = buildQuoteDraft(job);
     writeJson(QUOTE_DRAFT_KEY, draft);
     await patchProductionJobHandoff(job, draft);

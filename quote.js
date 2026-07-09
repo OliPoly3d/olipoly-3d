@@ -3808,7 +3808,7 @@ https://olipoly3d.com`;
       order_total: total,
       deposit_amount: deposit,
       balance_amount: balance,
-      status: deposit > 0 ? "awaiting_deposit" : "in_design",
+      status: deposit > 0 ? "awaiting_deposit" : "awaiting_production",
       payment_status: deposit > 0 ? "deposit_due" : "unpaid",
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
@@ -3841,7 +3841,7 @@ https://olipoly3d.com`;
       public_status_text: "Order created from accepted quote.",
       public_next_step: deposit > 0
         ? "Deposit/payment is the next step before production begins."
-        : "OliPoly 3D will review and schedule the order.",
+        : "OliPoly 3D will move the accepted quote into production prep.",
       shipping_or_pickup_note: val("turnaround") ? `Estimated timing: ${val("turnaround")}` : null
     };
   }
@@ -3885,6 +3885,37 @@ https://olipoly3d.com`;
     });
   }
 
+
+
+  async function updateLinkedProductionJobAfterAcceptance(orderNumber){
+    const productionJobId = document.getElementById('productionJobId')?.value?.trim();
+    const q = quoteNumber();
+    if(!productionJobId && !q) return;
+    const now = new Date().toISOString();
+    const patch = {
+      production_status: 'ready_to_print',
+      order_number: orderNumber,
+      quote_accepted_at: now,
+      quote_handoff_status: 'accepted_created_order',
+      updated_at: now
+    };
+    const filters = [];
+    if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
+    if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
+    for(const path of filters){
+      try{
+        await api(path, {
+          method:'PATCH',
+          headers:{Prefer:'return=minimal'},
+          body:JSON.stringify(patch)
+        });
+        return;
+      }catch(err){
+        console.warn('Linked production job acceptance update failed for', path, err);
+      }
+    }
+  }
+
   async function acceptAndCreateOrder() {
     const btn = $("acceptCreateBtn");
     if (btn) {
@@ -3908,6 +3939,7 @@ https://olipoly3d.com`;
 
       await upsertOrder(payload);
       await updateQuoteAccepted(payload.order_number);
+      await updateLinkedProductionJobAfterAcceptance(payload.order_number);
 
       const statusEl = $("quoteStatus");
       if (statusEl) statusEl.value = "accepted";
@@ -5955,6 +5987,8 @@ https://olipoly3d.com`;
     ensureHidden('productionSuggestedTotal').value = draft.suggested_total || '';
     ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price || '';
 
+    if(draft.quote_number) setVal('quoteNumber', draft.quote_number);
+    if(draft.order_number) setVal('orderNumber', draft.order_number);
     setVal('liteQuoteType', draft.quote_type || 'custom');
     setVal('customerName', draft.customer_name || '');
     setVal('customerEmail', draft.customer_email || '');
