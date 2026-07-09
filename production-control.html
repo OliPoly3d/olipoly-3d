@@ -1407,9 +1407,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           <option value="failed_reprint">Failed / Scrap / Reprint</option>
         </select></label>
         <label>Production Status<select id="productionStatus">
+          <option value="estimate">Estimate Mode</option>
+          <option value="quote_sent">Quote Sent</option>
+          <option value="quote_accepted">Quote Accepted</option>
+          <option value="awaiting_design">Awaiting Design / Actuals</option>
           <option value="idea">Idea / Requested</option>
           <option value="awaiting_approval">Awaiting Approval</option>
-          <option value="ready_to_print">Ready to Print</option>
+          <option value="ready_to_print">Ready to Print / Plan Confirmed</option>
           <option value="queued">Queued</option>
           <option value="printing">Printing</option>
           <option value="post_processing">Post-Processing / QC</option>
@@ -1604,7 +1608,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     <div class="sort-manual-hint">Manual Priority mode is active. Drag cards up or down inside a lane. Switching to another sort changes the view only; your manual order is kept for when you return.</div>
     <div class="bulk-bar">
       <span class="mini-label">Bulk actions</span>
-      <select id="bulkStatus"><option value="">Move selected to...</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option><option value="canceled">Canceled</option></select>
+      <select id="bulkStatus"><option value="">Move selected to...</option><option value="awaiting_design">Awaiting Design / Actuals</option><option value="ready_to_print">Confirm Production Plan</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option><option value="canceled">Canceled</option></select>
       <select id="bulkMachine"><option value="">Assign machine...</option><option value="P1S">P1S</option><option value="P2S">P2S</option><option value="A1">A1</option><option value="either">Either</option></select>
       <button class="ghost" id="applyBulkBtn" type="button">Apply to selected</button>
       <button class="ghost" id="clearSelectionBtn" type="button">Clear selection</button>
@@ -1791,9 +1795,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   };
 
   const STATUS = {
+    estimate:'Estimate Mode',
+    quote_sent:'Quote Sent',
+    quote_accepted:'Quote Accepted',
+    awaiting_design:'Awaiting Design / Actuals',
     idea:'Idea / Requested',
     awaiting_approval:'Awaiting Approval',
-    ready_to_print:'Ready to Print',
+    ready_to_print:'Ready to Print / Plan Confirmed',
     queued:'Queued',
     printing:'Printing',
     post_processing:'Post-Processing / QC',
@@ -1812,8 +1820,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   const CLOSED = window.OliPolyERP?.status?.productionClosed || ['completed','failed_scrap','canceled','archived'];
   const DELIVERY = ['packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
-  const PRINT_WORK_STATUSES = ['idea','awaiting_approval','ready_to_print','queued','printing','on_hold'];
+  const PRINT_WORK_STATUSES = ['estimate','quote_sent','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','printing','on_hold'];
   const RECOMMENDABLE_STATUSES = ['ready_to_print','queued'];
+  const ESTIMATE_PHASE_STATUSES = ['estimate','quote_sent','quote_accepted','awaiting_design','idea','awaiting_approval'];
+  const RESERVABLE_STATUSES = ['ready_to_print','queued','printing','post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
   const POST_PRINT_STATUSES = ['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
 
   function needsPrinterTime(j){
@@ -1827,8 +1837,25 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   function isPostPrint(j){
     return POST_PRINT_STATUSES.includes(j.production_status);
   }
+
+  function isEstimatePhase(j){
+    return ESTIMATE_PHASE_STATUSES.includes(j?.production_status || 'estimate');
+  }
+
+  function hasProductionActualPlan(j){
+    if(j?.exclude_inventory_reduction) return true;
+    const recipe = safeJsonParse(j?.filament_recipe, []);
+    const grams = recipe.reduce((sum,r)=>sum+num(r.grams_each),0) || num(j?.estimated_grams_each) || num(j?.actual_grams_used);
+    const hours = num(j?.estimated_hours_each) || num(j?.actual_print_hours) || num(j?.estimated_total_hours);
+    return grams > 0 && hours > 0;
+  }
+
+  function shouldReserveInventory(j, statusOverride){
+    const status = statusOverride || j?.production_status;
+    return !!j && !j.exclude_inventory_reduction && !CLOSED.includes(status) && RESERVABLE_STATUSES.includes(status) && hasProductionActualPlan({...j, production_status:status});
+  }
   const LANES = [
-    {id:'ready', title:'Ready / Queued', icon:'🧾', cls:'ready', statuses:['idea','awaiting_approval','ready_to_print','queued','on_hold']},
+    {id:'ready', title:'Estimate / Ready', icon:'🧾', cls:'ready', statuses:['estimate','quote_sent','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','on_hold']},
     {id:'printing', title:'Currently Printing', icon:'🖨️', cls:'printing', statuses:['printing']},
     // Production Control uses three wider lanes for readability.
     // Packaging / delivery statuses stay in the system, but render in the final lane instead of a separate narrow swimlane.
@@ -2366,7 +2393,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     $('quantity').value = 1;
     $('colorCount').value = 1;
     $('priority').value = 'normal';
-    $('productionStatus').value = 'idea';
+    $('productionStatus').value = 'estimate';
     $('machine').value = 'either';
     renderRecipeRows([]);
     if($('designFee')) $('designFee').value = '';
@@ -2649,6 +2676,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number) return;
     const orderStatusMap = {
+      quote_accepted:'awaiting_production',
+      awaiting_design:'in_design',
+      ready_to_print:'awaiting_production',
+      queued:'awaiting_production',
       printing:'in_production',
       post_processing:'post_processing',
       ready:'ready_for_pickup',
@@ -2658,6 +2689,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       on_hold:'on_hold'
     };
     const publicTextMap = {
+      quote_accepted:'Your quote has been accepted and is awaiting production planning.',
+      awaiting_design:'Your order is in design / production planning.',
+      ready_to_print:'Your production plan is ready and waiting for printer time.',
+      queued:'Your order is queued for production.',
       printing:'Your order is in production.',
       post_processing:'Your order is in post-processing / quality control.',
       ready:'Your order is ready for pickup or delivery scheduling.',
@@ -2667,6 +2702,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       on_hold:'This order is temporarily on hold.'
     };
     const nextStepMap = {
+      quote_accepted:'OliPoly 3D will prepare the final production plan.',
+      awaiting_design:'OliPoly 3D is finalizing design, slicer time, and material usage.',
+      ready_to_print:'OliPoly 3D will start printing when the selected machine is available.',
+      queued:'OliPoly 3D will start printing when the selected machine is available.',
       printing:'OliPoly 3D is printing your order.',
       post_processing:'OliPoly 3D is finishing and checking the order.',
       ready:'OliPoly 3D will coordinate pickup, delivery, or shipping.',
@@ -2715,7 +2754,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const j = formJob();
       if(!j.job_title) throw new Error('Job title is required.');
       const previousJob = state.jobs.find(x=>x.id===j.id);
-      j.material_reservations = (CLOSED.includes(j.production_status) || j.exclude_inventory_reduction) ? [] : buildMaterialReservations(j);
+      j.material_reservations = shouldReserveInventory(j) ? buildMaterialReservations(j) : [];
       await applyReservationDelta(previousJob, j);
 
       state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
@@ -2748,7 +2787,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       updated.print_started_at = null;
       updated.estimated_finish_at = null;
     }
-    updated.material_reservations = (CLOSED.includes(status) || updated.exclude_inventory_reduction) ? [] : buildMaterialReservations(updated);
+    if(['ready_to_print','queued','printing'].includes(status) && !hasProductionActualPlan(updated)){
+      return toast('Add/confirm slicer grams and print hours before reserving material or starting production.');
+    }
+    updated.material_reservations = shouldReserveInventory(updated, status) ? buildMaterialReservations(updated) : [];
     await applyReservationDelta(j, updated);
     try{
       await cloudSaveJob(updated);
@@ -3595,7 +3637,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       user_id:j.user_id || state.user?.id || null,
       job_title:j.job_title || j.project_title || 'Untitled Job',
       job_type:mapLegacyType(j.job_type || j.project_type || 'customer_custom'),
-      production_status:mapLegacyStatus(j.production_status || j.project_status || 'idea'),
+      production_status:mapLegacyStatus(j.production_status || j.project_status || 'estimate'),
       priority:j.priority || 'normal',
       quantity:q,
       machine_preference:j.machine_preference || j.machine || 'either',
@@ -3687,7 +3729,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(state.sortBy === 'primary_color') return String(a.primary_color||'').localeCompare(String(b.primary_color||''));
     if(state.sortBy === 'machine') return String(a.machine_preference||'').localeCompare(String(b.machine_preference||''));
     const p = {urgent:0, high:1, normal:2, low:3};
-    const s = {printing:0, ready_to_print:1, queued:2, post_processing:3, packaging:4, ready:5, awaiting_pickup:6, delivery_scheduled:7, shipped:8, delivered:9, idea:10, awaiting_approval:11, on_hold:12};
+    const s = {printing:0, ready_to_print:1, queued:2, post_processing:3, packaging:4, ready:5, awaiting_pickup:6, delivery_scheduled:7, shipped:8, delivered:9, awaiting_design:10, quote_accepted:11, quote_sent:12, estimate:13, idea:14, awaiting_approval:15, on_hold:16};
     return (p[a.priority]??2)-(p[b.priority]??2) || (a.due_date||'9999').localeCompare(b.due_date||'9999') || (s[a.production_status]??20)-(s[b.production_status]??20);
   }
 
@@ -4572,6 +4614,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   function needsActionList(j){
     const needs = [];
+    if(isEstimatePhase(j) && j.order_number) needs.push('Accepted order: update actuals/production plan');
+    if(['ready_to_print','queued','printing'].includes(j.production_status) && !hasProductionActualPlan(j)) needs.push('No confirmed production plan');
     if(!j.due_date && needsPrinterTime(j)) needs.push('No due date');
     if((!j.machine_preference || j.machine_preference === 'either') && needsPrinterTime(j)) needs.push('No printer picked');
     if(!j.primary_material && needsPrinterTime(j)) needs.push('No material');
@@ -4589,7 +4633,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   function readyToClose(j){
-    return ['ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status);
+    return ['post_processing','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status);
   }
 
   function readyToCloseHtml(j){
@@ -4606,15 +4650,18 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Send to QC</button>`;
     } else if(j.production_status === 'post_processing'){
-      actions += `<button class="mini-btn" data-status="${j.id}|ready" type="button">Mark Ready</button>`;
+      actions += `<button class="mini-btn" data-close="${j.id}" type="button">QC Complete / Close</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|ready" type="button">Mark Ready Only</button>`;
     } else if(j.production_status === 'ready'){
       actions += `<button class="mini-btn" data-status="${j.id}|awaiting_pickup" type="button">Awaiting Pickup</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|delivery_scheduled" type="button">Schedule Delivery</button>`;
       actions += `<button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>`;
     } else if(['awaiting_pickup','delivery_scheduled','shipped','delivered'].includes(j.production_status)){
       actions += `<button class="mini-btn" data-close="${j.id}" type="button">Close Out</button>`;
+    } else if(!isClosed && ['quote_accepted','awaiting_design','idea','awaiting_approval'].includes(j.production_status)){
+      actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Confirm Plan / Reserve</button>`;
     } else if(!isClosed && isRecommendedCandidate(j)) {
-      actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Mark Printing</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
     } else if(!isClosed && needsPrinterTime(j)) {
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>`;
     }
@@ -4624,6 +4671,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
     actions += `<button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>`;
     actions += `<button class="mini-btn" data-edit="${j.id}" type="button">Details/Edit</button>`;
+    const lifecycleChip = isEstimatePhase(j)
+      ? `<span class="integration-chip">Estimate / quote mode</span>`
+      : `<span class="integration-chip">Production mode</span>`;
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
         <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
@@ -4633,7 +4683,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}">👤 ${esc(j.customer_name)}</a>` : ''}${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}">👤 ${esc(j.customer_name)}</a>` : ''}${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
         </div>
@@ -4676,7 +4726,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return `<article class="detail-card" style="border-left:6px solid ${t.color}">
         <div class="detail-head">
           <div><h3>${t.icon} ${esc(j.job_title)}</h3><div class="chips"><span class="chip type" style="--type-bg:${t.bg};--type-text:${t.text}">${esc(t.label)}</span><span class="chip">${esc(STATUS[j.production_status]||j.production_status)}</span>${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}</div></div>
-          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button>${!CLOSED.includes(j.production_status) && j.production_status!=='printing'?`<button class="mini-btn" data-start-print="${j.id}" type="button">Start Print</button>`:''}${!CLOSED.includes(j.production_status)?`<button class="mini-btn danger-btn" data-fail-scrap="${j.id}" type="button">Failed / Scrap</button><button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`:''}<button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
+          <div class="job-actions"><button class="mini-btn" data-edit="${j.id}" type="button">Edit</button>${!CLOSED.includes(j.production_status) && j.production_status!=='printing'?`<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Confirm Plan</button>`:''}${!CLOSED.includes(j.production_status)?`<button class="mini-btn danger-btn" data-fail-scrap="${j.id}" type="button">Failed / Scrap</button><button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`:''}<button class="mini-btn danger-btn" data-delete="${j.id}" type="button">Delete</button></div>
         </div>
         <div class="detail-grid">
           <div class="detail-item"><span>Customer/Purpose</span><strong>${esc(j.customer_name || '—')}</strong></div>
@@ -4708,6 +4758,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         ${supplyUsageMiniHtml(j)}
         ${j.notes ? `<div class="notes" style="margin-top:8px"><strong>Notes:</strong><br>${esc(j.notes)}</div>` : ''}${j.cancellation_reason ? `<div class="notes" style="margin-top:8px"><strong>Cancellation reason:</strong><br>${esc(j.cancellation_reason)}</div>` : ''}
         <div class="job-actions">
+          <button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Confirm Plan</button>
           <button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>
           <button class="mini-btn" data-status="${j.id}|printing" type="button">Print</button>
           <button class="mini-btn" data-status="${j.id}|post_processing" type="button">QC</button>
