@@ -3749,6 +3749,14 @@ https://olipoly3d.com`;
     return q.replace(/^Q-/i, "OP-");
   }
 
+
+  function safeOrderPaymentStatus(value, deposit) {
+    const allowed = new Set(["unpaid", "deposit_due", "paid", "refunded"]);
+    const normalized = String(value || "").trim();
+    if (allowed.has(normalized)) return normalized;
+    return Number(deposit || 0) > 0 ? "deposit_due" : "unpaid";
+  }
+
   function selectedInvoiceTerms() {
     const terms = val("paymentTerms");
     if (["net_15", "net_30", "net_45", "due_on_receipt", "customer_terms"].includes(terms)) return terms;
@@ -3809,7 +3817,7 @@ https://olipoly3d.com`;
       deposit_amount: deposit,
       balance_amount: balance,
       status: deposit > 0 ? "awaiting_deposit" : "awaiting_production",
-      payment_status: deposit > 0 ? "deposit_due" : "unpaid",
+      payment_status: safeOrderPaymentStatus(deposit > 0 ? "deposit_due" : "unpaid", deposit),
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
       created_from_quote: true,
