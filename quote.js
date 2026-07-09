@@ -3891,27 +3891,45 @@ https://olipoly3d.com`;
     const productionJobId = document.getElementById('productionJobId')?.value?.trim();
     const q = quoteNumber();
     if(!productionJobId && !q) return;
+
     const now = new Date().toISOString();
-    const patch = {
+    const fullPatch = {
       production_status: 'ready_to_print',
       order_number: orderNumber,
       quote_accepted_at: now,
       quote_handoff_status: 'accepted_created_order',
       updated_at: now
     };
+    const minimalPatch = {
+      production_status: 'ready_to_print',
+      order_number: orderNumber,
+      updated_at: now
+    };
+
     const filters = [];
     if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
     if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
+
     for(const path of filters){
       try{
         await api(path, {
           method:'PATCH',
           headers:{Prefer:'return=minimal'},
-          body:JSON.stringify(patch)
+          body:JSON.stringify(fullPatch)
         });
         return;
       }catch(err){
-        console.warn('Linked production job acceptance update failed for', path, err);
+        console.warn('Linked production job full acceptance update failed; trying minimal patch.', path, err);
+        try{
+          await api(path, {
+            method:'PATCH',
+            headers:{Prefer:'return=minimal'},
+            body:JSON.stringify(minimalPatch)
+          });
+          return;
+        }catch(minErr){
+          console.warn('Linked production job minimal acceptance update failed for', path, minErr);
+        }
       }
     }
   }
