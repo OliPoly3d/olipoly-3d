@@ -1360,7 +1360,7 @@ Aurora, OH 44202</textarea></div>
     const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
     const today = () => new Date().toISOString().slice(0,10);
 
-    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',awaiting_production:'Awaiting Production',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review',on_hold:'On Hold',canceled:'Canceled'})[v] || v;
+    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',awaiting_production:'Awaiting Production',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
     const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
 
     const CLOSURE_KEY = 'olipoly_order_closure_overrides_v1';
@@ -3021,6 +3021,25 @@ resetForm();
     // ERP Bridge Pass 4: Orders Admin may cancel/hold a customer order, but Production Control
     // remains manufacturing owner. This helper only handles customer/business level interruptions
     // and avoids using Orders Admin to advance active manufacturing statuses.
+    async function logProjectEvent(eventType, order, details={}){
+      try{
+        if(!state.user?.id) return;
+        await sbApi('/rest/v1/project_events', {
+          method:'POST',
+          headers:{Prefer:'return=minimal'},
+          body:JSON.stringify({
+            project_id: order?.project_id || order?.production_job_id || null,
+            quote_number: order?.quote_number || null,
+            order_number: order?.order_number || null,
+            event_type: eventType,
+            details,
+            created_at: new Date().toISOString(),
+            user_id: state.user.id
+          })
+        });
+      }catch(err){ console.warn('Project event log skipped.', eventType, err); }
+    }
+
     async function syncOrderInterruptionToProduction(payload, previousOrder = null){
       const orderNumber = payload?.order_number;
       if(!currentUser?.id || !orderNumber) return;

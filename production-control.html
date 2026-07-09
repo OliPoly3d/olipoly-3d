@@ -1425,7 +1425,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           <option value="delivered">Delivered</option>
           <option value="completed">Completed</option>
           <option value="failed_scrap">Failed / Scrap</option>
-          <option value="canceled">Canceled</option>
+          <option value="quote_declined">Quote Declined</option><option value="void">Void / Archived Estimate</option><option value="canceled">Canceled</option>
           <option value="on_hold">On Hold</option>
           <option value="archived">Archived</option>
         </select></label>
@@ -1608,7 +1608,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     <div class="sort-manual-hint">Manual Priority mode is active. Drag cards up or down inside a lane. Switching to another sort changes the view only; your manual order is kept for when you return.</div>
     <div class="bulk-bar">
       <span class="mini-label">Bulk actions</span>
-      <select id="bulkStatus"><option value="">Move selected to...</option><option value="awaiting_design">Awaiting Design / Actuals</option><option value="ready_to_print">Confirm Production Plan</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option><option value="canceled">Canceled</option></select>
+      <select id="bulkStatus"><option value="">Move selected to...</option><option value="awaiting_design">Awaiting Design / Actuals</option><option value="ready_to_print">Confirm Production Plan</option><option value="queued">Queue</option><option value="printing">Printing</option><option value="post_processing">QC</option><option value="ready">Ready</option><option value="delivery_scheduled">Delivery Scheduled</option><option value="quote_declined">Quote Declined</option><option value="void">Void / Archived Estimate</option><option value="canceled">Canceled</option></select>
       <select id="bulkMachine"><option value="">Assign machine...</option><option value="P1S">P1S</option><option value="P2S">P2S</option><option value="A1">A1</option><option value="either">Either</option></select>
       <button class="ghost" id="applyBulkBtn" type="button">Apply to selected</button>
       <button class="ghost" id="clearSelectionBtn" type="button">Clear selection</button>
@@ -1798,6 +1798,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     estimate:'Estimate Mode',
     quote_sent:'Quote Sent',
     quote_accepted:'Quote Accepted',
+    quote_declined:'Quote Declined',
     awaiting_design:'Awaiting Design / Actuals',
     idea:'Idea / Requested',
     awaiting_approval:'Awaiting Approval',
@@ -1812,17 +1813,20 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     shipped:'Shipped',
     delivered:'Delivered',
     completed:'Completed',
+    qc_complete:'QC Complete',
+    production_closed:'Production Closed',
     failed_scrap:'Failed / Scrap',
     canceled:'Canceled',
+    void:'Void / Archived Estimate',
     on_hold:'On Hold',
     archived:'Archived'
   };
 
-  const CLOSED = window.OliPolyERP?.status?.productionClosed || ['completed','failed_scrap','canceled','archived'];
+  const CLOSED = window.OliPolyERP?.status?.productionClosed || ['completed','qc_complete','production_closed','failed_scrap','canceled','quote_declined','void','archived'];
   const DELIVERY = ['packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
   const PRINT_WORK_STATUSES = ['estimate','quote_sent','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','printing','on_hold'];
   const RECOMMENDABLE_STATUSES = ['ready_to_print','queued'];
-  const ESTIMATE_PHASE_STATUSES = ['estimate','quote_sent','quote_accepted','awaiting_design','idea','awaiting_approval'];
+  const ESTIMATE_PHASE_STATUSES = ['estimate','quote_sent','quote_declined','void','quote_accepted','awaiting_design','idea','awaiting_approval'];
   const RESERVABLE_STATUSES = ['ready_to_print','queued','printing','post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
   const POST_PRINT_STATUSES = ['post_processing','packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered'];
 
@@ -1855,11 +1859,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return !!j && !j.exclude_inventory_reduction && !CLOSED.includes(status) && RESERVABLE_STATUSES.includes(status) && hasProductionActualPlan({...j, production_status:status});
   }
   const LANES = [
-    {id:'ready', title:'Estimate / Ready', icon:'🧾', cls:'ready', statuses:['estimate','quote_sent','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','on_hold']},
+    {id:'ready', title:'Estimate / Ready', icon:'🧾', cls:'ready', statuses:['estimate','quote_sent','quote_declined','void','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','on_hold']},
     {id:'printing', title:'Currently Printing', icon:'🖨️', cls:'printing', statuses:['printing']},
     // Production Control uses three wider lanes for readability.
     // Packaging / delivery statuses stay in the system, but render in the final lane instead of a separate narrow swimlane.
-    {id:'post', title:'Post-Processing / QC', icon:'🔍', cls:'post', statuses:['post_processing', ...DELIVERY]}
+    {id:'post', title:'Post-Processing / QC', icon:'🔍', cls:'post', statuses:['post_processing','qc_complete','production_closed', ...DELIVERY]}
   ];
 
   const state = {
@@ -2673,6 +2677,54 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(orderEl && !orderEl.value.trim()) orderEl.value = '';
     return q;
   }
+  async function logProjectEvent(eventType, job, details={}){
+    try{
+      const payload = {
+        project_id: job?.id || null,
+        quote_number: job?.quote_number || null,
+        order_number: job?.order_number || null,
+        event_type: eventType,
+        details,
+        created_at: new Date().toISOString()
+      };
+      if(state.user?.id){
+        payload.user_id = state.user.id;
+        await sbApi('/rest/v1/project_events', {
+          method:'POST',
+          headers:{Prefer:'return=minimal'},
+          body:JSON.stringify(payload)
+        });
+      }
+      window.OliPolyERP?.logEvent?.(eventType, payload);
+    }catch(err){
+      console.warn('Project event log skipped.', eventType, err);
+    }
+  }
+
+  function productionCloseoutSnapshot(job){
+    if(!job) return null;
+    const qty = Math.max(1, num(job.quantity) || 1);
+    const revenue = num(job.actual_revenue || job.revenue || job.estimated_revenue || job.quote_total || job.order_total || (num(job.estimated_price_each) * qty));
+    const materialCost = num(job.actual_material_cost || job.estimated_material_cost);
+    const designCost = num(job.actual_design_cost || (num(job.actual_design_hours || job.design_hours) * num(job.design_hourly_rate || 20)));
+    const machineCost = num(job.actual_machine_cost || (num(job.actual_print_hours || job.estimated_total_hours) * num(job.machine_hourly_rate || 0.5)));
+    const directCost = materialCost + designCost + machineCost + num(job.packaging_cost) + num(job.other_direct_cost);
+    return {
+      frozen_at:new Date().toISOString(),
+      revenue, material_cost:materialCost, design_cost:designCost, machine_cost:machineCost,
+      direct_cost:directCost,
+      estimated_cost:num(job.estimated_material_cost) + num(job.estimated_machine_cost) + num(job.estimated_design_cost),
+      profit:revenue ? Math.round((revenue-directCost)*100)/100 : null,
+      margin_pct:revenue ? Math.round(((revenue-directCost)/revenue)*10000)/100 : null,
+      actual_print_hours:num(job.actual_print_hours),
+      actual_design_hours:num(job.actual_design_hours || job.design_hours),
+      actual_grams_used:num(job.actual_grams_used),
+      scrap_grams:num(job.scrap_grams),
+      inventory_deducted:!!job.inventory_deducted,
+      total_inventory_grams_deducted:num(job.total_inventory_grams_deducted)
+    };
+  }
+
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number) return;
     const orderStatusMap = {
@@ -2683,7 +2735,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       printing:'in_production',
       post_processing:'post_processing',
       ready:'ready_for_pickup',
-      completed:'completed',
+      completed:'production_complete',
+      qc_complete:'production_complete',
+      production_closed:'production_complete',
+      quote_declined:'quote_declined',
+      void:'canceled',
       failed_scrap:'issue_review',
       canceled:'canceled',
       on_hold:'on_hold'
@@ -2696,7 +2752,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       printing:'Your order is in production.',
       post_processing:'Your order is in post-processing / quality control.',
       ready:'Your order is ready for pickup or delivery scheduling.',
-      completed:'Production is complete.',
+      completed:'Production is complete and moving to fulfillment.',
+      qc_complete:'Production is complete and in final fulfillment.',
+      production_closed:'Production is complete and ready for pickup, delivery, shipping, or invoice closeout.',
+      quote_declined:'This quote was declined and will not move to production.',
+      void:'This quote was archived or voided.',
       failed_scrap:'This order is under production review.',
       canceled:'This order has been canceled.',
       on_hold:'This order is temporarily on hold.'
@@ -2710,6 +2770,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       post_processing:'OliPoly 3D is finishing and checking the order.',
       ready:'OliPoly 3D will coordinate pickup, delivery, or shipping.',
       completed:'Final fulfillment/payment closeout is next.',
+      qc_complete:'OliPoly 3D will coordinate pickup, delivery, shipping, or invoicing.',
+      production_closed:'OliPoly 3D will coordinate pickup, delivery, shipping, or invoicing.',
+      quote_declined:'No further action is planned unless the quote is revised.',
+      void:'No further production action is planned.',
       failed_scrap:'OliPoly 3D will review the issue and follow up if needed.',
       canceled:'No further production action is currently planned.',
       on_hold:'OliPoly 3D will resume once the hold is cleared.'
@@ -2795,6 +2859,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     try{
       await cloudSaveJob(updated);
       window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
+      await logProjectEvent('production_status_changed', updated, {from:j.production_status, to:status});
       await syncProductionStatusToOrder(updated, status);
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
@@ -2813,7 +2878,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const reasonText = String(reason || '').trim();
     const updated = {
       ...j,
-      production_status:'canceled',
+      production_status: (['estimate','quote_sent','quote_declined','void'].includes(j.production_status) && !j.order_number) ? 'void' : 'canceled',
       cancellation_reason:reasonText || null,
       canceled_at:now.toISOString(),
       updated_at:now.toISOString(),
@@ -2827,8 +2892,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     try{
       await applyReservationDelta(j, updated);
       await cloudSaveJob(updated);
-      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:'canceled', reason:reasonText});
-      await syncProductionStatusToOrder(updated, 'canceled');
+      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:updated.production_status, reason:reasonText});
+      await logProjectEvent(updated.production_status === 'void' ? 'quote_voided' : 'production_job_canceled', updated, {from:j.production_status, reason:reasonText});
+      await syncProductionStatusToOrder(updated, updated.production_status);
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       state.selectedIds.delete(id);
       localWrite(LS_JOBS,state.jobs);
@@ -3222,7 +3288,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const closeGoodTotal = closeAllocations.some(x=>x.raw_material_roll_id || x.good_grams || x.scrap_grams) ? closeAllocations.reduce((s,x)=>s+num(x.good_grams),0) : num($('closeGrams').value);
     const updated = {
       ...j,
-      production_status:$('closeStatus').value,
+      production_status: $('closeStatus').value === 'completed' ? 'production_closed' : $('closeStatus').value,
       actual_machine:$('closeMachine').value,
       actual_quantity:num($('closeQty').value),
       actual_print_hours:num($('closeHours').value),
@@ -3247,6 +3313,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       closed_at:now,
       updated_at:now
     };
+    updated.production_closeout_snapshot = productionCloseoutSnapshot(updated);
     const breakdown = parseBreakdown(updated.actual_filament_breakdown, updated.primary_material, updated.primary_color, updated.actual_grams_used);
     const deductionBreakdown = addScrapToBreakdownRows(breakdown, updated.scrap_grams, updated.primary_material, updated.primary_color);
     const addFinished = $('closeAddFinished').value === 'yes';
@@ -3285,6 +3352,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         applyInventoryLocal(updated, [], addFinished);
       }
       addCloseoutAudit(j, updated, {expected_grams:expectedCloseoutGrams, wasInventoryDeducted});
+      await logProjectEvent('production_closed', updated, {snapshot: updated.production_closeout_snapshot});
       await syncProductionStatusToOrder(updated, updated.production_status);
       state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
       localWrite(LS_JOBS,state.jobs);
@@ -4646,7 +4714,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const img = j.image_url ? `<img class="job-thumb" src="${esc(j.image_url)}" alt="">` : '';
     const isClosed = CLOSED.includes(j.production_status);
     let actions = '';
-    if(j.production_status === 'printing'){
+    if(j.production_status === 'quote_sent') {
+      actions += `<button class="mini-btn" data-status="${j.id}|quote_declined" type="button">Mark Declined</button>`;
+      actions += `<button class="mini-btn" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
+    } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Send to QC</button>`;
     } else if(j.production_status === 'post_processing'){
@@ -4666,7 +4737,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>`;
     }
     if(!isClosed){
-      actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
+      if(j.production_status !== 'quote_sent') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
       actions += `<button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`;
     }
     actions += `<button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>`;
@@ -5427,7 +5498,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const jobs = readJson(LS_JOBS, []);
     const updated = {
       ...job,
-      production_status: job.production_status === 'idea' || job.production_status === 'awaiting_approval' ? 'awaiting_approval' : job.production_status,
+      production_status: ['estimate','idea','awaiting_approval','quote_declined','void'].includes(job.production_status) ? 'quote_sent' : job.production_status,
       quote_handoff_status: 'draft_sent_to_quote',
       quote_handoff_at: new Date().toISOString(),
       linked_quote_draft: draft,
