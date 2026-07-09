@@ -3749,6 +3749,14 @@ https://olipoly3d.com`;
     return q.replace(/^Q-/i, "OP-");
   }
 
+
+  function safeOrderPaymentStatus(value, deposit) {
+    const allowed = new Set(["unpaid", "deposit_due", "paid", "refunded"]);
+    const normalized = String(value || "").trim();
+    if (allowed.has(normalized)) return normalized;
+    return Number(deposit || 0) > 0 ? "deposit_due" : "unpaid";
+  }
+
   function selectedInvoiceTerms() {
     const terms = val("paymentTerms");
     if (["net_15", "net_30", "net_45", "due_on_receipt", "customer_terms"].includes(terms)) return terms;
@@ -3808,8 +3816,8 @@ https://olipoly3d.com`;
       order_total: total,
       deposit_amount: deposit,
       balance_amount: balance,
-      status: deposit > 0 ? "awaiting_deposit" : "in_design",
-      payment_status: deposit > 0 ? "deposit_due" : "unpaid",
+      status: deposit > 0 ? "awaiting_deposit" : "awaiting_production",
+      payment_status: safeOrderPaymentStatus(deposit > 0 ? "deposit_due" : "unpaid", deposit),
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
       created_from_quote: true,
@@ -3841,7 +3849,7 @@ https://olipoly3d.com`;
       public_status_text: "Order created from accepted quote.",
       public_next_step: deposit > 0
         ? "Deposit/payment is the next step before production begins."
-        : "OliPoly 3D will review and schedule the order.",
+        : "No deposit is due now. OliPoly 3D will move the accepted quote into design and production prep, with payment due at completion.",
       shipping_or_pickup_note: val("turnaround") ? `Estimated timing: ${val("turnaround")}` : null
     };
   }
@@ -3885,6 +3893,55 @@ https://olipoly3d.com`;
     });
   }
 
+
+
+  async function updateLinkedProductionJobAfterAcceptance(orderNumber){
+    const productionJobId = document.getElementById('productionJobId')?.value?.trim();
+    const q = quoteNumber();
+    if(!productionJobId && !q) return;
+
+    const now = new Date().toISOString();
+    const fullPatch = {
+      production_status: 'awaiting_design',
+      order_number: orderNumber,
+      quote_accepted_at: now,
+      quote_handoff_status: 'accepted_created_order',
+      updated_at: now
+    };
+    const minimalPatch = {
+      production_status: 'awaiting_design',
+      order_number: orderNumber,
+      updated_at: now
+    };
+
+    const filters = [];
+    if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
+    if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
+
+    for(const path of filters){
+      try{
+        await api(path, {
+          method:'PATCH',
+          headers:{Prefer:'return=minimal'},
+          body:JSON.stringify(fullPatch)
+        });
+        return;
+      }catch(err){
+        console.warn('Linked production job full acceptance update failed; trying minimal patch.', path, err);
+        try{
+          await api(path, {
+            method:'PATCH',
+            headers:{Prefer:'return=minimal'},
+            body:JSON.stringify(minimalPatch)
+          });
+          return;
+        }catch(minErr){
+          console.warn('Linked production job minimal acceptance update failed for', path, minErr);
+        }
+      }
+    }
+  }
+
   async function acceptAndCreateOrder() {
     const btn = $("acceptCreateBtn");
     if (btn) {
@@ -3908,6 +3965,7 @@ https://olipoly3d.com`;
 
       await upsertOrder(payload);
       await updateQuoteAccepted(payload.order_number);
+      await updateLinkedProductionJobAfterAcceptance(payload.order_number);
 
       const statusEl = $("quoteStatus");
       if (statusEl) statusEl.value = "accepted";
@@ -5941,9 +5999,102 @@ https://olipoly3d.com`;
     customerCard.insertBefore(card, customerCard.querySelector('.quote-type-panel') || customerCard.firstChild);
   }
 
+  function productionInvoiceNumberFromQuote(quoteNumber){
+    const core = String(quoteNumber || '').trim().replace(/^Q-/i, '');
+    return core ? `INV-${core}` : '';
+  }
+
+  function applyProductionIdentity(draft){
+    if(!draft) return;
+    if(draft.quote_number) {
+      setVal('quoteNumber', draft.quote_number);
+      const inv = productionInvoiceNumberFromQuote(draft.quote_number);
+      if(inv) setVal('invoiceNumber', inv);
+    }
+    if(draft.order_number) setVal('orderNumber', draft.order_number);
+  }
+
+  function draftNumber(draft, key){
+    return Number(String(draft?.[key] ?? '').replace(/[^0-9.-]/g, '')) || 0;
+  }
+
+  function applyProductionCostInputs(draft){
+    if(!draft) return;
+
+    const material = draftNumber(draft, 'estimated_material_cost');
+    const machineHours = draftNumber(draft, 'estimated_machine_hours');
+    const machineCost = draftNumber(draft, 'estimated_machine_cost');
+    const machineRate = draftNumber(draft, 'estimated_machine_rate') || (machineHours ? machineCost / machineHours : 0);
+    const designHours = draftNumber(draft, 'estimated_design_hours');
+    const designCost = draftNumber(draft, 'estimated_design_cost');
+    const designRate = draftNumber(draft, 'estimated_design_rate') || (designHours ? designCost / designHours : 0);
+    const postCost = draftNumber(draft, 'estimated_post_cost');
+    const supply = draftNumber(draft, 'estimated_supply_cost');
+    const packaging = draftNumber(draft, 'estimated_packaging_cost');
+    const shipping = draftNumber(draft, 'estimated_shipping_cost');
+    const overhead = draftNumber(draft, 'estimated_overhead_cost');
+
+    // Feed existing Quote Tool calculator inputs using the internal production estimate.
+    // Material is represented as a 1000g virtual roll so filamentCost() equals the
+    // Production Control material cost without needing to expose roll-level details.
+    if(material > 0){
+      setVal('spoolWeight', 1000);
+      setVal('filament1Cost', material);
+      setVal('filament1Used', 1000);
+    }
+    if(machineHours > 0){ setVal('machineHours', machineHours); setVal('machineRate', machineRate || 0); }
+    else if(machineCost > 0){ setVal('machineHours', 1); setVal('machineRate', machineCost); }
+    if(designHours > 0){ setVal('designHours', designHours); setVal('designRate', designRate || 0); }
+    else if(designCost > 0){ setVal('designHours', 1); setVal('designRate', designCost); }
+    if(postCost > 0){ setVal('postHours', 1); setVal('postRate', postCost); }
+    setVal('simpleHardware', supply);
+    setVal('simplePackaging', packaging);
+    setVal('simpleShipping', shipping);
+    if(overhead > 0 && draftNumber(draft, 'suggested_total') > 0){
+      setVal('marketplacePercent', (overhead / Math.max(1, draftNumber(draft, 'suggested_total'))) * 100);
+    }
+  }
+
+  function applyProductionDetailedOutput(draft){
+    if(!draft) return;
+    const direct = draftNumber(draft, 'estimated_direct_cost');
+    const overhead = draftNumber(draft, 'estimated_overhead_cost');
+    const breakEven = draftNumber(draft, 'estimated_break_even') || (direct + overhead);
+    const total = draftNumber(draft, 'suggested_total');
+    if(direct > 0){
+      document.querySelectorAll('#sumDirect,#outDirect').forEach((el) => { el.textContent = '$' + direct.toFixed(2); });
+    }
+    if(overhead > 0 || direct > 0){
+      document.querySelectorAll('#sumOverhead,#outOverhead').forEach((el) => { el.textContent = '$' + overhead.toFixed(2); });
+    }
+    if(breakEven > 0){
+      document.querySelectorAll('#sumBreakEven').forEach((el) => { el.textContent = '$' + breakEven.toFixed(2); });
+    }
+    if(total > 0 && breakEven > 0){
+      const margin = ((total - breakEven) / total) * 100;
+      document.querySelectorAll('#sumMargin,#outProfit').forEach((el) => {
+        if(el.id === 'sumMargin') el.textContent = margin.toFixed(1) + '%';
+      });
+    }
+  }
+
   function applyProductionDraft(){
     const draft = readDraft();
-    if(!draft || (params.get('fromProduction') !== '1' && params.get('production_job_id') !== draft.production_job_id)) return;
+    if(!draft) return;
+
+    const urlJobId = String(params.get('production_job_id') || '');
+    const draftJobId = String(draft.production_job_id ?? '');
+    const cameFromProduction = params.get('fromProduction') === '1';
+
+    // The production_job_id URL parameter is a string, while the saved draft may
+    // contain a numeric Supabase/local id. Compare as strings so the Production
+    // Control draft actually loads instead of letting Quote Tool generate its own
+    // standalone Q/INV numbers.
+    if(!cameFromProduction && (!urlJobId || urlJobId !== draftJobId)) return;
+    if(urlJobId && draftJobId && urlJobId !== draftJobId) {
+      console.warn('Production quote draft ignored because the URL job id did not match the saved draft.', { urlJobId, draftJobId });
+      return;
+    }
 
     addPresentationStyles();
     movePricingFields();
@@ -5955,6 +6106,8 @@ https://olipoly3d.com`;
     ensureHidden('productionSuggestedTotal').value = draft.suggested_total || '';
     ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price || '';
 
+    applyProductionIdentity(draft);
+    applyProductionCostInputs(draft);
     setVal('liteQuoteType', draft.quote_type || 'custom');
     setVal('customerName', draft.customer_name || '');
     setVal('customerEmail', draft.customer_email || '');
@@ -5979,7 +6132,15 @@ https://olipoly3d.com`;
       note.innerHTML = `<strong>Linked Production Job:</strong> ${draft.production_job_title || draft.production_job_id}<br><span>Suggested total: ${Number(draft.suggested_total) ? '$' + Number(draft.suggested_total).toFixed(2) : 'not set'} · Adjust/round as needed before sending.</span>`;
     }
 
+    // Some legacy quote initializers run after DOMContentLoaded and may generate
+    // standalone document numbers. Re-apply the linked identity a couple of times
+    // so Q/INV stay tied to the Production Control estimate.
+    setTimeout(() => { applyProductionIdentity(draft); applyProductionCostInputs(draft); if(typeof window.render === 'function') window.render(); applyProductionDetailedOutput(draft); }, 250);
+    setTimeout(() => { applyProductionIdentity(draft); applyProductionCostInputs(draft); if(typeof window.render === 'function') window.render(); applyProductionDetailedOutput(draft); }, 1000);
+    setTimeout(() => { applyProductionIdentity(draft); applyProductionDetailedOutput(draft); }, 1800);
+
     if(typeof window.render === 'function') window.render();
+    applyProductionDetailedOutput(draft);
     if(typeof window.quotePatchToast === 'function') window.quotePatchToast('Production quote draft loaded.');
   }
 
