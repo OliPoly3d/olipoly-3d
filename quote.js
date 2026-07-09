@@ -3809,7 +3809,7 @@ https://olipoly3d.com`;
       deposit_amount: deposit,
       balance_amount: balance,
       status: deposit > 0 ? "awaiting_deposit" : "awaiting_production",
-      payment_status: deposit > 0 ? "deposit_due" : "unpaid",
+      payment_status: deposit > 0 ? "deposit_due" : "due_on_completion",
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
       created_from_quote: true,
@@ -3841,7 +3841,7 @@ https://olipoly3d.com`;
       public_status_text: "Order created from accepted quote.",
       public_next_step: deposit > 0
         ? "Deposit/payment is the next step before production begins."
-        : "OliPoly 3D will move the accepted quote into production prep.",
+        : "No deposit is due now. OliPoly 3D will move the accepted quote into design and production prep, with payment due at completion.",
       shipping_or_pickup_note: val("turnaround") ? `Estimated timing: ${val("turnaround")}` : null
     };
   }

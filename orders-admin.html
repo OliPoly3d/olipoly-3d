@@ -1082,8 +1082,8 @@ body{font-family:Inter,Arial,sans-serif}
       <h3>Find Orders</h3>
       <div class="filters">
         <div><label for="searchInput">Search</label><div class="order-search-row"><input id="searchInput" placeholder="Order #, customer, title, email" /><button class="btn-ghost" id="ordersRunSearchBtn" type="button">Search</button></div></div>
-        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="awaiting_production">Awaiting Production</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
-        <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
+        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="awaiting_production">Awaiting Production</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
+        <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid</option><option value="due_on_completion">Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
         <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
         <div><label for="financeFilter">Finance</label><select id="financeFilter"><option value="all">All Finance States</option><option value="not_pushed">Not Pushed</option><option value="pushed">Finance Pushed</option><option value="ready">Ready to Push</option></select></div>
         <div><label for="sortBy">Sort</label><select id="sortBy"><option value="newest">Newest</option><option value="customer">Customer A–Z</option><option value="total_desc">Highest Total</option></select></div>
@@ -1131,8 +1131,8 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Deposit</option><option value="awaiting_production">Awaiting Production</option><option value="in_design">In Design</option><option value="in_production">In Production</option><option value="post_processing">Post-Processing</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
-          <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
+          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="awaiting_production">Awaiting Production</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
+          <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid</option><option value="due_on_completion">Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
           <div class="full">
@@ -1360,8 +1360,8 @@ Aurora, OH 44202</textarea></div>
     const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
     const today = () => new Date().toISOString().slice(0,10);
 
-    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Deposit',awaiting_production:'Awaiting Production',in_design:'In Design',in_production:'In Production',post_processing:'Post-Processing',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
-    const paymentLabel = v => ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
+    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Payment / Deposit',awaiting_production:'Awaiting Production',in_design:'Awaiting Production',in_production:'In Production',post_processing:'In Production',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
+    const paymentLabel = v => ({unpaid:'Unpaid',due_on_completion:'Due on Completion',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
 
     const CLOSURE_KEY = 'olipoly_order_closure_overrides_v1';
 
@@ -1899,8 +1899,8 @@ Aurora, OH 44202</textarea></div>
   const total = num($('orderTotal').value);
   const balance = Math.max(0, total - deposit);
 
-  if(!hasLink && $('paymentStatus').value === 'deposit_due') $('paymentStatus').value = 'unpaid';
-  if(hasLink && $('paymentStatus').value === 'unpaid' && deposit > 0) $('paymentStatus').value = 'deposit_due';
+  if(!hasLink && $('paymentStatus').value === 'deposit_due' && num($('depositAmount').value) <= 0) $('paymentStatus').value = 'due_on_completion';
+  if(hasLink && ['unpaid','due_on_completion'].includes($('paymentStatus').value) && deposit > 0) $('paymentStatus').value = 'deposit_due';
   if($('paymentStatus').value === 'deposit_paid' && balance <= 0) $('paymentStatus').value = 'paid';
   if($('paymentStatus').value === 'paid') $('balanceAmount').value = '0.00';
   syncPaidDate();
@@ -2065,7 +2065,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('depositAmount').value = 0;
       $('balanceAmount').value = 0;
       $('status').value = 'quote_sent';
-      $('paymentStatus').value = 'unpaid';
+      $('paymentStatus').value = 'due_on_completion';
       $('fulfillment').value = 'pickup';
       $('paidDate').value = '';
       if ($('invoiceTerms')) $('invoiceTerms').value = 'customer_terms';
@@ -2753,7 +2753,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       const active = activeOrders();
       const todayIso = today();
       const overdue = active.filter(o => isInvoiceOverdue(o) || (oaDailyDateValue(o) && oaDailyDateValue(o) < todayIso && !['completed','shipped'].includes(o.status)));
-      const moneyFollowup = active.filter(o => !orderClosureFlags(o).payment_not_required && ['unpaid','deposit_due','deposit_paid'].includes(o.payment_status) && oaDailyBalance(o) > 0);
+      const moneyFollowup = active.filter(o => !orderClosureFlags(o).payment_not_required && ['unpaid','due_on_completion','deposit_due','deposit_paid'].includes(o.payment_status) && oaDailyBalance(o) > 0);
       const invoiceWork = active.filter(o => {
         const hasTotal = num(o.order_total) > 0;
         const needsInvoice = hasTotal && (!o.invoice_number || (!!o.invoice_number && !o.invoice_sent && o.payment_status !== 'paid'));
@@ -5374,7 +5374,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
 
     function ordersAdminV2PaymentText(value){
       return ({
-        unpaid:'Unpaid', deposit_due:'Deposit Due', deposit_paid:'Deposit Paid', paid:'Paid in Full', refunded:'Refunded'
+        unpaid:'Unpaid', due_on_completion:'Due on Completion', deposit_due:'Deposit Due', deposit_paid:'Deposit Paid', paid:'Paid in Full', refunded:'Refunded'
       })[value] || value || '—';
     }
 

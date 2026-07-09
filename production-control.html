@@ -1859,11 +1859,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return !!j && !j.exclude_inventory_reduction && !CLOSED.includes(status) && RESERVABLE_STATUSES.includes(status) && hasProductionActualPlan({...j, production_status:status});
   }
   const LANES = [
-    {id:'ready', title:'Estimate / Ready', icon:'🧾', cls:'ready', statuses:['estimate','quote_sent','quote_declined','void','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','on_hold']},
-    {id:'printing', title:'Currently Printing', icon:'🖨️', cls:'printing', statuses:['printing']},
-    // Production Control uses three wider lanes for readability.
-    // Packaging / delivery statuses stay in the system, but render in the final lane instead of a separate narrow swimlane.
-    {id:'post', title:'Post-Processing / QC', icon:'🔍', cls:'post', statuses:['post_processing','qc_complete','production_closed', ...DELIVERY]}
+    {id:'ready', title:'Pre-Production', icon:'🧾', cls:'ready', statuses:['estimate','quote_sent','quote_declined','void','quote_accepted','awaiting_design','idea','awaiting_approval','ready_to_print','queued','on_hold']},
+    {id:'printing', title:'WIP / Printing', icon:'🖨️', cls:'printing', statuses:['printing','post_processing','failed_scrap']},
+    // Production Control uses three generic lanes: prep, active work, and completed handoff.
+    // Detailed status still stays on each card; lanes are intentionally broader than Orders Admin statuses.
+    {id:'post', title:'Complete / Handoff', icon:'✅', cls:'post', statuses:['qc_complete','production_closed','completed', ...DELIVERY]}
   ];
 
   const state = {
@@ -2759,11 +2759,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!state.user?.id || !job?.order_number) return;
     const orderStatusMap = {
       quote_accepted:'awaiting_production',
-      awaiting_design:'in_design',
+      awaiting_design:'awaiting_production',
       ready_to_print:'awaiting_production',
       queued:'awaiting_production',
       printing:'in_production',
-      post_processing:'post_processing',
+      post_processing:'in_production',
       ready:'ready_for_pickup',
       completed:'production_complete',
       qc_complete:'production_complete',
@@ -3710,7 +3710,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       ready_to_quote:'awaiting_approval',
       pushed_to_quote:'awaiting_approval',
       quoted:'awaiting_approval',
-      approved:'ready_to_print',
+      approved:'awaiting_design',
       printing:'printing',
       post_processing:'post_processing',
       ready:'ready',
