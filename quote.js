@@ -3953,43 +3953,53 @@ https://olipoly3d.com`;
     if(!productionJobId && !q) return;
 
     const now = new Date().toISOString();
-    const fullPatch = {
-      production_status: 'awaiting_design',
-      order_number: orderNumber,
-      quote_accepted_at: now,
-      quote_handoff_status: 'accepted_created_order',
-      updated_at: now
-    };
-    const minimalPatch = {
-      production_status: 'awaiting_design',
-      order_number: orderNumber,
-      updated_at: now
-    };
+    const paths = [];
+    if(productionJobId) paths.push(`/rest/v1/production_jobs?select=*&id=eq.${encodeURIComponent(productionJobId)}`);
+    if(q) paths.push(`/rest/v1/production_jobs?select=*&quote_number=eq.${encodeURIComponent(q)}`);
 
-    const filters = [];
-    if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
-    if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
-
-    for(const path of filters){
+    const seen = new Set();
+    for(const path of paths){
       try{
-        await api(path, {
-          method:'PATCH',
-          headers:{Prefer:'return=minimal'},
-          body:JSON.stringify(fullPatch)
-        });
-        return;
-      }catch(err){
-        console.warn('Linked production job full acceptance update failed; trying minimal patch.', path, err);
-        try{
-          await api(path, {
-            method:'PATCH',
-            headers:{Prefer:'return=minimal'},
-            body:JSON.stringify(minimalPatch)
-          });
-          return;
-        }catch(minErr){
-          console.warn('Linked production job minimal acceptance update failed for', path, minErr);
+        const rows = await api(path, {method:'GET'});
+        const list = Array.isArray(rows) ? rows : [];
+        for(const row of list){
+          if(!row?.id || seen.has(row.id)) continue;
+          seen.add(row.id);
+          const existingPayload = row.job_payload && typeof row.job_payload === 'object' ? row.job_payload : {};
+          const nextPayload = {
+            ...existingPayload,
+            production_status:'awaiting_design',
+            order_number:orderNumber,
+            quote_number:q || existingPayload.quote_number || row.quote_number || null,
+            quote_accepted_at:now,
+            quote_handoff_status:'accepted_created_order',
+            updated_at:now
+          };
+          const patch = {
+            production_status:'awaiting_design',
+            order_number:orderNumber,
+            quote_accepted_at:now,
+            quote_handoff_status:'accepted_created_order',
+            updated_at:now,
+            job_payload:nextPayload
+          };
+          try{
+            await api(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(row.id)}`, {
+              method:'PATCH',
+              headers:{Prefer:'return=minimal'},
+              body:JSON.stringify(patch)
+            });
+          }catch(fullErr){
+            console.warn('Linked production job full acceptance update failed; trying minimal patch.', row.id, fullErr);
+            await api(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(row.id)}`, {
+              method:'PATCH',
+              headers:{Prefer:'return=minimal'},
+              body:JSON.stringify({production_status:'awaiting_design', order_number:orderNumber, updated_at:now})
+            });
+          }
         }
+      }catch(err){
+        console.warn('Linked production job lookup/update failed.', path, err);
       }
     }
   }

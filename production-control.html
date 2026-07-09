@@ -2758,10 +2758,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number) return;
     const orderStatusMap = {
-      quote_accepted:'awaiting_production',
-      awaiting_design:'awaiting_production',
-      ready_to_print:'awaiting_production',
-      queued:'awaiting_production',
+      quote_accepted:'awaiting_approval',
+      awaiting_design:'awaiting_approval',
+      ready_to_print:'awaiting_approval',
+      queued:'awaiting_approval',
       printing:'in_production',
       post_processing:'in_production',
       ready:'ready_for_pickup',
