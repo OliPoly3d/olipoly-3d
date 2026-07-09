@@ -3040,13 +3040,13 @@ resetForm();
       }catch(err){ console.warn('Project event log skipped.', eventType, err); }
     }
 
-    async function syncOrderStatusToProduction(payload, previousOrder = null){
+    async function syncOrderStatusToProduction(payload, previousOrder = null, forceRepair = false){
       const orderNumber = payload?.order_number;
       if(!currentUser?.id || !orderNumber) return;
 
       const nextStatus = String(payload.status || '').trim();
       const prevStatus = String(previousOrder?.status || '').trim();
-      if(nextStatus === prevStatus && previousOrder?.order_number === orderNumber) return;
+      if(!forceRepair && nextStatus === prevStatus && previousOrder?.order_number === orderNumber) return;
 
       const productionMap = {
         quote_sent:'quote_sent',
@@ -3195,7 +3195,10 @@ const payload = snapshotForm();
 
       if(publicRes.error) return setMsg($('formMessage'), publicRes.error.message || JSON.stringify(publicRes.error) || 'Saved order, but public tracking update failed.', true);
 
-      await syncOrderStatusToProduction({...payload, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, currentRow);
+      // Pass 17: Save also acts as a bridge repair. Even if the visible order status
+      // did not change, push the current status/OP/Q back to Production Control so
+      // older accepted orders do not remain stuck in quote mode.
+      await syncOrderStatusToProduction({...payload, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, currentRow, true);
 
       setMsg($('formMessage'),'Saved');
       await fetchOrders();

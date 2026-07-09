@@ -1843,6 +1843,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   function isEstimatePhase(j){
+    // Once an OP exists, this is production-mode work even if it still sits
+    // in the Pre-Production lane awaiting design/actuals.
+    if(j?.order_number) return false;
     return ESTIMATE_PHASE_STATUSES.includes(j?.production_status || 'estimate');
   }
 
@@ -4115,10 +4118,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   function normalizeCloudJob(row){
     const payload = safeObject(row?.job_payload);
     if(payload && typeof payload === 'object'){
+      // Pass 17: Supabase top-level bridge fields are authoritative.
+      // job_payload can be a stale snapshot from before Quote/Orders sync.
       return normalizeJob({
-        ...row,
         ...payload,
+        ...row,
         id: row.id || payload.id,
+        production_status: row.production_status || payload.production_status,
+        quote_number: row.quote_number || payload.quote_number || null,
+        order_number: row.order_number || payload.order_number || null,
         updated_at: row.updated_at || payload.updated_at || payload.saved_at
       });
     }
@@ -4775,6 +4783,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const lifecycleChip = isEstimatePhase(j)
       ? `<span class="integration-chip">Estimate / quote mode</span>`
       : `<span class="integration-chip">Production mode</span>`;
+    const idRibbon = `<div class="id-ribbon">${j.quote_number ? `<span>Quote: <strong>${esc(j.quote_number)}</strong></span>` : `<span>Quote: <strong>—</strong></span>`}${j.order_number ? `<span>Order: <strong>${esc(j.order_number)}</strong></span>` : `<span>Order: <strong>not accepted yet</strong></span>`}</div>`;
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
         <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
@@ -4787,6 +4796,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
             <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}">👤 ${esc(j.customer_name)}</a>` : ''}${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
+          ${idRibbon}
         </div>
         ${img}
       </div>
