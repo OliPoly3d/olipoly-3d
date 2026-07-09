@@ -3809,7 +3809,7 @@ https://olipoly3d.com`;
       deposit_amount: deposit,
       balance_amount: balance,
       status: deposit > 0 ? "awaiting_deposit" : "awaiting_production",
-      payment_status: deposit > 0 ? "deposit_due" : "due_on_completion",
+      payment_status: deposit > 0 ? "deposit_due" : "unpaid",
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
       created_from_quote: true,
