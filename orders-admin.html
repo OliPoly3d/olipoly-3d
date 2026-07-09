@@ -1082,7 +1082,7 @@ body{font-family:Inter,Arial,sans-serif}
       <h3>Find Orders</h3>
       <div class="filters">
         <div><label for="searchInput">Search</label><div class="order-search-row"><input id="searchInput" placeholder="Order #, customer, title, email" /><button class="btn-ghost" id="ordersRunSearchBtn" type="button">Search</button></div></div>
-        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="awaiting_production">Awaiting Production</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
+        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Production</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
         <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
         <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
         <div><label for="financeFilter">Finance</label><select id="financeFilter"><option value="all">All Finance States</option><option value="not_pushed">Not Pushed</option><option value="pushed">Finance Pushed</option><option value="ready">Ready to Push</option></select></div>
@@ -1131,7 +1131,7 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Approval</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="awaiting_production">Awaiting Production</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
+          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Production</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
           <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
@@ -1360,7 +1360,7 @@ Aurora, OH 44202</textarea></div>
     const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
     const today = () => new Date().toISOString().slice(0,10);
 
-    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Awaiting Payment / Deposit',awaiting_production:'Awaiting Production',in_design:'Awaiting Production',in_production:'In Production',post_processing:'In Production',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
+    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Production',awaiting_deposit:'Awaiting Payment / Deposit',awaiting_production:'Awaiting Production',in_design:'Awaiting Production',in_production:'In Production',post_processing:'In Production',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
     const paymentLabel = v => ({unpaid:'Unpaid / Due on Completion',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
 
     const CLOSURE_KEY = 'olipoly_order_closure_overrides_v1';
@@ -1918,8 +1918,8 @@ Aurora, OH 44202</textarea></div>
         order_total: num($('orderTotal').value),
         deposit_amount: num($('depositAmount').value),
         balance_amount: num($('balanceAmount').value),
-        status: $('status').value,
-        payment_status: $('paymentStatus').value,
+        status: normalizeOrderStatusForDb($('status').value),
+        payment_status: normalizePaymentStatusForDb($('paymentStatus').value),
         fulfillment: $('fulfillment').value,
        tracking_number: $('trackingNumber').value.trim() || null,
 
@@ -2093,8 +2093,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('orderTotal').value = o.order_total ?? 0;
       $('depositAmount').value = o.deposit_amount ?? 0;
       $('balanceAmount').value = o.balance_amount ?? 0;
-      $('status').value = o.status || 'quote_sent';
-      $('paymentStatus').value = o.payment_status || 'unpaid';
+      $('status').value = normalizeOrderStatusForDb(o.status || 'quote_sent');
+      $('paymentStatus').value = normalizePaymentStatusForDb(o.payment_status || 'unpaid');
       $('fulfillment').value = o.fulfillment || 'pickup';
       $('trackingNumber').value = o.tracking_number || '';
       if ($('paymentLinkStripe')) $('paymentLinkStripe').value = o.payment_link_stripe || o.payment_link || '';
