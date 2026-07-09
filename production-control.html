@@ -2990,6 +2990,63 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }catch(err){ alert(`Could not update status:\n\n${err.message || err}`); }
   }
 
+
+
+  async function moveBackJob(id){
+    const j = state.jobs.find(x=>x.id===id);
+    if(!j) return;
+    const choice = prompt(
+      `Move "${j.job_title}" back to which step?\n\n` +
+      `1 = Awaiting Design / Actuals\n` +
+      `2 = Ready to Print / Plan Confirmed\n` +
+      `3 = Keep In Production / Rework Needed\n\n` +
+      `Enter 1, 2, or 3:`,
+      '1'
+    );
+    if(choice === null) return;
+    const cleaned = String(choice).trim().toLowerCase();
+    let nextStatus = null;
+    let extraNote = '';
+    if(cleaned === '1' || cleaned.includes('design')) nextStatus = 'awaiting_design';
+    else if(cleaned === '2' || cleaned.includes('ready')) nextStatus = 'ready_to_print';
+    else if(cleaned === '3' || cleaned.includes('rework') || cleaned.includes('production')) {
+      nextStatus = 'printing';
+      extraNote = 'Rework needed / moved back within production.';
+    }
+    if(!nextStatus) return toast('Move back canceled. Choose 1, 2, or 3.');
+
+    const currentReserved = (j.material_reservations || []).reduce((sum,r)=>sum+num(r.grams_reserved),0);
+    const releasesReservation = currentReserved > 0 && !RESERVABLE_STATUSES.includes(nextStatus);
+    if(releasesReservation){
+      const ok = confirm(`Moving this back to ${STATUS[nextStatus] || nextStatus} will release ${fmtG(currentReserved)} of reserved material. Continue?`);
+      if(!ok) return;
+    }
+
+    const now = new Date();
+    const updated = {...j, production_status:nextStatus, updated_at:now.toISOString()};
+    if(nextStatus !== 'printing'){
+      updated.print_started_at = null;
+      updated.estimated_finish_at = null;
+    }
+    if(extraNote){
+      updated.notes = [j.notes, extraNote].filter(Boolean).join('\n');
+    }
+    updated.material_reservations = shouldReserveInventory(updated, nextStatus) ? buildMaterialReservations(updated) : [];
+    try{
+      await applyReservationDelta(j, updated);
+      await cloudSaveJob(updated);
+      window.OliPolyERP?.logEvent?.('production_moved_back', {job_id:id, from:j.production_status, to:nextStatus});
+      await logProjectEvent('production_moved_back', updated, {from:j.production_status, to:nextStatus, note:extraNote || null});
+      await syncProductionStatusToOrder(updated, nextStatus);
+      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
+      localWrite(LS_JOBS,state.jobs);
+      render();
+      toast(`Moved back to ${STATUS[nextStatus] || nextStatus}.`);
+    }catch(err){
+      alert(`Could not move job back:\n\n${err.message || err}`);
+    }
+  }
+
   async function cancelJob(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
@@ -4841,13 +4898,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const img = j.image_url ? `<img class="job-thumb" src="${esc(j.image_url)}" alt="">` : '';
     const isClosed = CLOSED.includes(j.production_status);
     let actions = '';
-    if(j.production_status === 'quote_sent') {
+    const hasOrder = !!j.order_number;
+    const quoteHasBeenSent = !!j.quote_number && ['quote_sent','quote_declined','quote_accepted','awaiting_design','awaiting_approval','ready_to_print','queued','printing','post_processing','ready','production_closed','qc_complete','completed'].includes(j.production_status);
+    if(j.production_status === 'quote_sent' && !hasOrder) {
       actions += `<button class="mini-btn" data-status="${j.id}|quote_declined" type="button">Mark Declined</button>`;
-      actions += `<button class="mini-btn" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
+      actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
     } else if(j.production_status === 'printing'){
-      actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Move Back</button>`;
+      actions += `<button class="mini-btn" data-move-back="${j.id}" type="button">Move Back</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|post_processing" type="button">Send to QC</button>`;
     } else if(j.production_status === 'post_processing'){
+      actions += `<button class="mini-btn" data-move-back="${j.id}" type="button">Move Back</button>`;
       actions += `<button class="mini-btn" data-close="${j.id}" type="button">QC Complete / Close</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|ready" type="button">Mark Ready Only</button>`;
     } else if(j.production_status === 'ready'){
@@ -4860,11 +4920,12 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Confirm Plan / Reserve</button>`;
     } else if(!isClosed && isRecommendedCandidate(j)) {
       actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
-    } else if(!isClosed && needsPrinterTime(j)) {
+      actions += `<button class="mini-btn" data-move-back="${j.id}" type="button">Move Back</button>`;
+    } else if(!isClosed && needsPrinterTime(j) && !hasOrder && !quoteHasBeenSent) {
       actions += `<button class="mini-btn" data-status="${j.id}|queued" type="button">Queue</button>`;
     }
     if(!isClosed){
-      if(j.production_status !== 'quote_sent') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
+      if(!hasOrder && !quoteHasBeenSent && j.production_status !== 'quote_sent') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
       actions += `<button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`;
     }
     actions += `<button class="mini-btn" data-toggle-inventory="${j.id}" type="button">${j.exclude_inventory_reduction ? 'Use Inventory' : 'Exclude Inventory'}</button>`;
@@ -4872,7 +4933,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const lifecycleChip = isEstimatePhase(j)
       ? `<span class="integration-chip">Estimate / quote mode</span>`
       : `<span class="integration-chip">Production mode</span>`;
-    const idRibbon = `<div class="id-ribbon">${j.quote_number ? `<span>Quote: <strong>${esc(j.quote_number)}</strong></span>` : `<span>Quote: <strong>—</strong></span>`}${j.order_number ? `<span>Order: <strong>${esc(j.order_number)}</strong></span>` : `<span>Order: <strong>not accepted yet</strong></span>`}</div>`;
+    const linkedIdChip = (j.quote_number || j.order_number)
+      ? `<span class="quote-link-chip">${esc([j.quote_number, j.order_number].filter(Boolean).join(' • '))}</span>`
+      : '<span class="integration-chip">Internal estimate</span>';
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
         <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
@@ -4882,10 +4945,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}">👤 ${esc(j.customer_name)}</a>` : ''}${j.quote_number ? `<span class="quote-link-chip">${esc(j.quote_number)}</span>` : '<span class="integration-chip">Internal estimate</span>'}${j.order_number ? `<span class="quote-link-chip">${esc(j.order_number)}</span>` : ''}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}">👤 ${esc(j.customer_name)}</a>` : ''}${linkedIdChip}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
-          ${idRibbon}
         </div>
         ${img}
       </div>
@@ -5432,9 +5494,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(close) openClose(close);
     const startPrint = e.target.closest('[data-start-print]')?.dataset.startPrint;
     const failScrap = e.target.closest('[data-fail-scrap]')?.dataset.failScrap;
+    const moveBack = e.target.closest('[data-move-back]')?.dataset.moveBack;
     const cancel = e.target.closest('[data-cancel-job]')?.dataset.cancelJob;
     if(startPrint) setStatus(startPrint,'printing');
     if(failScrap){ state.closingId = failScrap; openClose(failScrap); $('closeStatus').value='failed_scrap'; }
+    if(moveBack) moveBackJob(moveBack);
     if(cancel) cancelJob(cancel);
     if(st){ const [id,status] = st.split('|'); setStatus(id,status); }
     if(markPm) markPmDone(markPm);
