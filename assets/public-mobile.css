@@ -1,1 +1,62 @@
-/* Public mobile pass CSS updates */
+/* OliPoly public mobile polish pass
+   Keeps complete product photos visible on small screens and adds shared lightbox styling. */
+html{max-width:100%;overflow-x:hidden}
+body{max-width:100%;overflow-x:clip}
+img,video{max-width:100%}
+
+/* Shared tap-to-expand viewer (added only to eligible content images). */
+.op-mobile-expandable{cursor:zoom-in}
+.op-mobile-lightbox{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));background:rgba(20,12,26,.88);backdrop-filter:blur(7px)}
+.op-mobile-lightbox.is-open{display:flex}
+.op-mobile-lightbox__image{display:block;width:auto;height:auto;max-width:100%;max-height:calc(100dvh - 44px);object-fit:contain;border-radius:18px;background:#fff;box-shadow:0 28px 90px rgba(0,0,0,.42)}
+.op-mobile-lightbox__close{position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:44px;height:44px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:rgba(45,24,55,.9);color:#fff;font:900 24px/1 system-ui,sans-serif;cursor:pointer}
+body.op-mobile-lightbox-open{overflow:hidden}
+
+@media(max-width:720px){
+  /* Product/project imagery: show the whole physical item instead of zooming and cropping. */
+  .quiet-project-card img,
+  .showcase-card img,
+  .split-image img,
+  .studio-tile img,
+  .project-media img,
+  .studio-media img,
+  .photo-card img,
+  .story-card img,
+  .feature-image img,
+  .spotlight-media img,
+  .hero-card img,
+  .feature-media img{
+    position:static!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    aspect-ratio:auto!important;
+    object-fit:contain!important;
+    object-position:center!important;
+    background:#fff;
+  }
+
+  /* Older overlapping showcase collages become a readable, uncropped mobile stack. */
+  .hero-proof{display:grid!important;grid-template-columns:1fr!important;gap:14px!important;min-height:0!important}
+  .hero-proof .floating-card{position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%!important;height:auto!important;transform:none!important;border-width:6px!important}
+  .hero-proof .floating-card img{position:static!important;width:100%!important;height:auto!important;aspect-ratio:auto!important;object-fit:contain!important}
+  .hero-proof-note{position:static!important;max-width:none!important;margin:0!important}
+
+  /* Allow media wrappers that were sized for desktop crops to grow naturally. */
+  .project-media,
+  .project-card.featured .project-media,
+  .studio-media,
+  .photo-card,
+  .story-card,
+  .feature-image,
+  .spotlight-media,
+  .split-image,
+  .studio-tile{height:auto!important;min-height:0!important;aspect-ratio:auto!important}
+
+  /* Avoid narrow-screen overflow from CTA rows and long labels. */
+  .hero-actions,.cta-actions,.button-row,.actions{flex-wrap:wrap!important}
+  a,button{overflow-wrap:anywhere}
+}
+
+@media(prefers-reduced-motion:reduce){.op-mobile-lightbox{backdrop-filter:none}}
