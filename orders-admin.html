@@ -965,6 +965,7 @@ body{font-family:Inter,Arial,sans-serif}
     .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
+  <script defer src="js/workflow-status.js?v=20260716-m2a"></script>
   <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
@@ -1082,7 +1083,7 @@ body{font-family:Inter,Arial,sans-serif}
       <h3>Find Orders</h3>
       <div class="filters">
         <div><label for="searchInput">Search</label><div class="order-search-row"><input id="searchInput" placeholder="Order #, customer, title, email" /><button class="btn-ghost" id="ordersRunSearchBtn" type="button">Search</button></div></div>
-        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Production</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
+        <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Statuses</option><option value="ready_to_print">Ready to Print</option><option value="printing">Printing</option><option value="qc">QC / Finishing</option><option value="ready_for_fulfillment">Ready for Pickup / Shipment</option><option value="closed">Closed</option></select></div>
         <div><label for="paymentFilter">Payment</label><select id="paymentFilter"><option value="all">All Payment States</option><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
         <div><label for="invoiceFilter">Invoice</label><select id="invoiceFilter"><option value="all">All Invoice States</option><option value="none">No Invoice</option><option value="ready">Invoice Ready</option><option value="sent">Invoice Sent</option><option value="overdue">Overdue</option><option value="paid">Invoice Paid</option></select></div>
         <div><label for="financeFilter">Finance</label><select id="financeFilter"><option value="all">All Finance States</option><option value="not_pushed">Not Pushed</option><option value="pushed">Finance Pushed</option><option value="ready">Ready to Push</option></select></div>
@@ -1112,13 +1113,11 @@ body{font-family:Inter,Arial,sans-serif}
         <h3 id="detailTitle">Order Details</h3>
 
         <div class="order-timeline" id="orderTimeline" aria-label="Order production timeline">
-          <div class="timeline-step" data-step="quote_sent"><span>1</span><strong>Quote</strong><small>Sent / pending</small></div>
-          <div class="timeline-step" data-step="awaiting_deposit"><span>2</span><strong>Deposit</strong><small>Payment setup</small></div>
-          <div class="timeline-step" data-step="in_design"><span>3</span><strong>Design</strong><small>Prep / CAD</small></div>
-          <div class="timeline-step" data-step="in_production"><span>4</span><strong>Printing</strong><small>On machine</small></div>
-          <div class="timeline-step" data-step="post_processing"><span>5</span><strong>Finishing</strong><small>QC / cleanup</small></div>
-          <div class="timeline-step" data-step="ready_for_pickup"><span>6</span><strong>Ready</strong><small>Pickup / ship</small></div>
-          <div class="timeline-step" data-step="completed"><span>7</span><strong>Complete</strong><small>Closed out</small></div>
+          <div class="timeline-step" data-step="ready_to_print"><span>1</span><strong>Ready</strong><small>Ready to print</small></div>
+          <div class="timeline-step" data-step="printing"><span>2</span><strong>Printing</strong><small>On machine</small></div>
+          <div class="timeline-step" data-step="qc"><span>3</span><strong>QC</strong><small>Finishing / checks</small></div>
+          <div class="timeline-step" data-step="ready_for_fulfillment"><span>4</span><strong>Fulfillment</strong><small>Pickup / ship</small></div>
+          <div class="timeline-step" data-step="closed"><span>5</span><strong>Closed</strong><small>Fulfilled</small></div>
         </div>
 
         <div class="form-grid">
@@ -1131,7 +1130,7 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="status">Status</label><select id="status"><option value="quote_sent">Quote Sent</option><option value="awaiting_approval">Awaiting Production</option><option value="awaiting_deposit">Awaiting Payment / Deposit</option><option value="in_production">In Production</option><option value="production_complete">Production Complete</option><option value="ready_for_pickup">Ready for Pickup / Ship</option><option value="shipped">Shipped</option><option value="completed">Completed</option><option value="issue_review">Issue Review</option><option value="on_hold">On Hold</option><option value="canceled">Canceled</option></select></div>
+          <div><label for="status">Status</label><select id="status"><option value="ready_to_print">Ready to Print</option><option value="printing">Printing</option><option value="qc">QC / Finishing</option><option value="ready_for_fulfillment">Ready for Pickup / Shipment</option><option value="closed">Closed</option></select></div>
           <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
@@ -1360,28 +1359,14 @@ Aurora, OH 44202</textarea></div>
     const money = v => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(num(v));
     const today = () => new Date().toISOString().slice(0,10);
 
-    const statusLabel = v => ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Production',awaiting_deposit:'Awaiting Payment / Deposit',awaiting_production:'Awaiting Production',in_design:'Awaiting Production',in_production:'In Production',post_processing:'In Production',production_complete:'Production Complete',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',completed:'Completed',issue_review:'Issue Review', quote_declined:'Quote Declined',on_hold:'On Hold',canceled:'Canceled', quote_declined:'Quote Declined'})[v] || v;
+    const statusLabel = v => window.OliPolyWorkflow.orderStatusLabel(v);
     const paymentLabel = v => ({unpaid:'Unpaid / Due on Completion',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded',not_required:'Not Required'})[v] || v;
 
-    // ERP Bridge Pass 19: keep friendly UI wording separate from Supabase check-constrained values.
-    const DB_ORDER_STATUSES = new Set(['quote_sent','awaiting_approval','awaiting_deposit','in_design','in_production','post_processing','production_complete','ready_for_pickup','shipped','completed','on_hold','issue_review','canceled']);
-    const ORDER_STATUS_DB_MAP = {
-      awaiting_production:'awaiting_approval',
-      due_on_completion:'awaiting_approval',
-      production_pending:'awaiting_approval',
-      awaiting_design:'awaiting_approval',
-      ready_to_print:'awaiting_approval',
-      printing:'in_production',
-      qc_complete:'production_complete',
-      production_closed:'production_complete',
-      ready:'ready_for_pickup',
-      delivered:'completed',
-      cancelled:'canceled'
-    };
+    // Milestone 2A: Orders contain accepted work only. Persist and expose the
+    // same five lifecycle states used by Production Control.
+    const DB_ORDER_STATUSES = new Set(window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES);
     function normalizeOrderStatusForDb(value){
-      const raw = String(value || 'quote_sent').trim();
-      const mapped = ORDER_STATUS_DB_MAP[raw] || raw;
-      return DB_ORDER_STATUSES.has(mapped) ? mapped : 'quote_sent';
+      return window.OliPolyWorkflow.normalizeOrderStatus(value);
     }
     const DB_PAYMENT_STATUSES = new Set(['unpaid','deposit_due','deposit_paid','paid','refunded']);
     const PAYMENT_STATUS_DB_MAP = {due_on_completion:'unpaid',payment_due_on_completion:'unpaid',not_required:'unpaid',balance_due:'unpaid'};
@@ -1453,12 +1438,12 @@ Aurora, OH 44202</textarea></div>
 
     function orderNeedsAction(order){
       if(!order) return false;
-      if(order.status !== 'completed') return true;
+      if(order.status !== 'closed') return true;
       return !(paymentIsClosed(order) && financeIsClosed(order) && completionEmailIsClosed(order));
     }
 
     function orderIsClosed(order){
-      return !!order && order.status === 'completed' && !orderNeedsAction(order);
+      return !!order && order.status === 'closed' && !orderNeedsAction(order);
     }
 
     function activeOrders(){
@@ -1767,7 +1752,7 @@ Aurora, OH 44202</textarea></div>
             ${T.card('Order #', order.order_number)}
             ${T.card('Customer', order.customer_name || '—')}
             ${T.card('Qty', quantity)}
-            ${T.card('Status', statusLabel(order.status || 'quote_sent'))}
+            ${T.card('Status', statusLabel(order.status || 'ready_to_print'))}
             ${T.card('OliPoly Part #', order.olipoly_part_number || '—')}
             ${T.card('Customer Part #', order.po_part_number || '—')}
             ${T.card('Rev', order.part_revision || 'Rev A')}
@@ -2110,7 +2095,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('orderTotal').value = 0;
       $('depositAmount').value = 0;
       $('balanceAmount').value = 0;
-      $('status').value = 'quote_sent';
+      $('status').value = 'ready_to_print';
       $('paymentStatus').value = 'unpaid';
       $('fulfillment').value = 'pickup';
       $('paidDate').value = '';
@@ -2139,7 +2124,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('orderTotal').value = o.order_total ?? 0;
       $('depositAmount').value = o.deposit_amount ?? 0;
       $('balanceAmount').value = o.balance_amount ?? 0;
-      $('status').value = normalizeOrderStatusForDb(o.status || 'quote_sent');
+      $('status').value = normalizeOrderStatusForDb(o.status || 'ready_to_print');
       $('paymentStatus').value = normalizePaymentStatusForDb(o.payment_status || 'unpaid');
       $('fulfillment').value = o.fulfillment || 'pickup';
       $('trackingNumber').value = o.tracking_number || '';
@@ -3055,7 +3040,7 @@ resetForm();
       if(!currentUser){ updateAuthVisibility(); return setMsg($('authMessage'),'Login first',true); }
       const {data,error} = await api(`/rest/v1/orders?select=*&user_id=eq.${currentUser.id}&order=updated_at.desc`);
       if(error) return setMsg($('authMessage'), error.message || 'Load failed', true);
-      orders = data || [];
+      orders = (data || []).map(order => ({...order, status: normalizeOrderStatusForDb(order.status)}));
       renderList();
       setMsg($('authMessage'),`Loaded ${orders.length} orders.`);
       tryOpenDeepLinkedOrder();
@@ -3095,18 +3080,11 @@ resetForm();
       if(!forceRepair && nextStatus === prevStatus && previousOrder?.order_number === orderNumber) return;
 
       const productionMap = {
-        quote_sent:'quote_sent',
-        awaiting_approval:'awaiting_design',
-        awaiting_deposit:'awaiting_design',
-        in_production:'printing',
-        post_processing:'post_processing',
-        production_complete:'qc_complete',
-        ready_for_pickup:'production_closed',
-        shipped:'production_closed',
-        completed:'production_closed',
-        canceled:'canceled',
-        on_hold:'on_hold',
-        issue_review:'failed_scrap'
+        ready_to_print:'ready_to_print',
+        printing:'printing',
+        qc:'qc',
+        ready_for_fulfillment:'ready_for_fulfillment',
+        closed:'closed'
       };
       const productionStatus = productionMap[nextStatus];
       if(!productionStatus) return;
@@ -4121,7 +4099,7 @@ if ($('openVenmoBtn')) {
   setValue('paymentLinkStripe', data.paymentLink);
 
   // Optional defaults if blank
-  setValue('status', document.getElementById('status')?.value || 'quote_sent');
+  setValue('status', document.getElementById('status')?.value || 'ready_to_print');
   setValue('paymentStatus', document.getElementById('paymentStatus')?.value || 'unpaid');
 
   // If order date is empty, default today
@@ -5473,13 +5451,9 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
       if (s) s.textContent = `Status: ${ordersAdminV2StatusText(status)}`;
       if (p) p.textContent = `Payment: ${ordersAdminV2PaymentText(payment)}`;
 
-      const timelineOrder = ['quote_sent','awaiting_deposit','awaiting_production','in_design','in_production','post_processing','production_complete','ready_for_pickup','completed','on_hold','issue_review','canceled'];
-      const timelineStepMap = {
-        quote_sent:'quote_sent', awaiting_approval:'quote_sent', awaiting_deposit:'awaiting_deposit', awaiting_production:'awaiting_production',
-        in_design:'in_design', in_production:'in_production', post_processing:'post_processing', production_complete:'post_processing',
-        ready_for_pickup:'ready_for_pickup', shipped:'ready_for_pickup', completed:'completed', on_hold:'on_hold', issue_review:'issue_review', canceled:'canceled'
-      };
-      const mapped = timelineStepMap[status] || status || 'quote_sent';
+      const timelineOrder = ['ready_to_print','printing','qc','ready_for_fulfillment','closed'];
+      const timelineStepMap = Object.fromEntries(timelineOrder.map(value => [value, value]));
+      const mapped = timelineStepMap[status] || 'ready_to_print';
       const activeIndex = timelineOrder.indexOf(mapped);
       document.querySelectorAll('.timeline-step').forEach(step => {
         const stepValue = step.dataset.step;
@@ -5942,7 +5916,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   function currentDefaults(){
     if (businessTermsOrderForTracker()) return businessTermsTrackerDefaults();
 
-    const status = $("status")?.value || "quote_sent";
+    const status = $("status")?.value || "ready_to_print";
     const payment = $("paymentStatus")?.value || ""; 
     const fulfillment = $("fulfillment")?.value || "";
     const tracking = $("trackingNumber")?.value?.trim() || "";
@@ -7245,7 +7219,7 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
     if(byId('orderNumber')) byId('orderNumber').value = '';
     if(byId('orderDate')) byId('orderDate').value = new Date().toISOString().slice(0,10);
     if(byId('orderTitle')) byId('orderTitle').value = (o.order_title || 'Order') + ' - Copy';
-    if(byId('status')) byId('status').value = 'quote_sent';
+    if(byId('status')) byId('status').value = 'ready_to_print';
     if(byId('paymentStatus')) byId('paymentStatus').value = 'unpaid';
     ['trackingNumber','invoiceNumber','invoiceDate','invoiceDueDate','stripeInvoiceId'].forEach(function(id){
       if(byId(id)) byId(id).value = '';

@@ -527,6 +527,7 @@ img{max-width:100%}
 <span>Ask Poly</span>
 </button>
 </div>
+<script src="js/workflow-status.js?v=20260716-m2a"></script>
 <script>
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
@@ -566,19 +567,13 @@ img{max-width:100%}
       return {data,error:!res.ok?data:null};
     }
 
-    function statusLabel(v){return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'Preparing File',in_production:'In Production',post_processing:'Finishing / QC',ready_to_pack:'Final Packing',packed:'Packed',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Completed'})[v]||v;}
+    function canonicalStatus(v){ return window.OliPolyWorkflow.normalizeOrderStatus(v); }
+    function statusLabel(v){ return window.OliPolyWorkflow.orderStatusLabel(v); }
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
-    function progressStep(status){return ({quote_sent:1,awaiting_approval:1,awaiting_deposit:1,in_design:2,in_production:3,post_processing:4,ready_to_pack:4,packed:5,ready_for_pickup:5,shipped:5,delivered:5,completed:5})[status]||1;}
-
-    function statusHeadline(status){
-      return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'Preparing for Production',in_production:'In Production',post_processing:'Finishing / QC',ready_to_pack:'Final Packing',packed:'Packed and Ready',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Order Complete'})[status] || statusLabel(status) || 'Status Update';
-    }
-    function statusHelper(status){
-      return ({quote_sent:'Your order details are being reviewed.',awaiting_approval:'Your project is waiting for approval before production begins.',awaiting_deposit:'A deposit is needed before production can begin.',in_design:'Your project is being prepared and scheduled for production.',in_production:'Your order is in the production stage.',post_processing:'Your order is being cleaned, checked, finished, or packed.',ready_to_pack:'Your order is nearly ready for handoff.',packed:'Your order is packed and ready for pickup, delivery, or shipping.',ready_for_pickup:'Your order is ready for pickup or local handoff.',shipped:'Your order has shipped. Tracking details will appear when available.',delivered:'Your order has been delivered.',completed:'Your order has been completed. Thank you for choosing OliPoly 3D!'})[status] || 'This is the latest customer-safe update from OliPoly 3D.';
-    }
-    function autoNextText(status){
-      return ({quote_sent:'Next, OliPoly 3D will confirm the details and move the project toward approval or production.',awaiting_approval:'Next, confirm any requested order details so production can move forward.',awaiting_deposit:'Next, submit the deposit using the available payment options so production can begin.',in_design:'Next, we’ll finish prep and move the project into the production queue.',in_production:'Next, we’ll finish production, inspect the parts, and move them into finishing or QC.',post_processing:'Next, we’ll complete final cleanup, quality checks, and prepare your order for pickup or shipping.',ready_to_pack:'Next, we’ll package your order and prepare it for pickup, delivery, or shipping.',packed:'Next, your order will be handed off, picked up, delivered, or shipped.',ready_for_pickup:'Next, arrange pickup or follow the provided pickup instructions.',shipped:'Next, watch for tracking updates while your package is on the way.',delivered:'Next, check your package and contact OliPoly 3D if anything needs attention.',completed:'Your order is complete. Save your order number if you need a future reorder or matching project.'})[status] || 'We’ll keep this page updated as your order moves forward.';
-    }
+    function progressStep(status){return ({ready_to_print:1,printing:2,qc:3,ready_for_fulfillment:4,closed:5})[canonicalStatus(status)]||1;}
+    function statusHeadline(status){return ({ready_to_print:'Ready to Print',printing:'Printing',qc:'QC / Finishing',ready_for_fulfillment:'Ready for Pickup / Shipment',closed:'Order Complete'})[canonicalStatus(status)];}
+    function statusHelper(status){return ({ready_to_print:'Your accepted order is ready for production.',printing:'Your order is currently printing.',qc:'Your order is being inspected, cleaned, and finished.',ready_for_fulfillment:'Your order is ready for pickup, delivery, or shipment.',closed:'Your order has been fulfilled and closed. Thank you for choosing OliPoly 3D!'})[canonicalStatus(status)];}
+    function autoNextText(status){return ({ready_to_print:'Next, printing will begin when the assigned machine is available.',printing:'Next, the finished print will move to quality control and finishing.',qc:'Next, the order will be prepared for pickup, delivery, or shipment.',ready_for_fulfillment:'Next, follow the provided fulfillment instructions for the final handoff.',closed:'Your order is complete. Save your order number for future reference.'})[canonicalStatus(status)];}
     function formatLastChecked(){
       return new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
     }
@@ -726,6 +721,7 @@ if(venmo && canShowPaymentButtons){
     }
 
     function renderOrder(o){
+      o = {...o, status:canonicalStatus(o.status)};
       els.resultCard.classList.remove('hidden');
       els.viewOrderNumber.textContent=o.order_number||'—';
       els.viewProject.textContent=o.order_title||'—';

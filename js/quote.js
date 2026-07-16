@@ -3946,14 +3946,14 @@ https://olipoly3d.com`;
 
     const now = new Date().toISOString();
     const fullPatch = {
-      production_status: 'awaiting_design',
+      production_status: 'ready_to_print',
       order_number: orderNumber,
       quote_accepted_at: now,
       quote_handoff_status: 'accepted_created_order',
       updated_at: now
     };
     const minimalPatch = {
-      production_status: 'awaiting_design',
+      production_status: 'ready_to_print',
       order_number: orderNumber,
       updated_at: now
     };
