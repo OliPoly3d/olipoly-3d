@@ -469,12 +469,18 @@
     .close-roll-row label{font-size:.74rem}
     @media(max-width:900px){.close-roll-row{grid-template-columns:1fr 1fr}.close-roll-row label:first-child{grid-column:1/-1}}
 
-    .machine-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .machine-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .machine-card{border-radius:24px;padding:15px;background:rgba(255,255,255,.76);border:1px solid var(--line);box-shadow:0 12px 30px rgba(84,38,94,.08);display:grid;gap:10px}
     .machine-card h3{margin:0;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:10px}
     .machine-slot{padding:10px;border-radius:16px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.10)}
     .machine-slot span{display:block;font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:var(--muted);margin-bottom:3px}
     .machine-slot strong{display:block;color:var(--ink);font-size:.9rem}
+    .machine-state{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(154,138,163,.12);color:var(--muted);font-size:.68rem;font-weight:950;text-transform:uppercase;letter-spacing:.04em}
+    .machine-state.printing{background:rgba(95,207,255,.16);color:#1d5d7d}
+    .queue-more{display:inline-flex;margin-top:6px;padding:4px 7px;border-radius:999px;background:rgba(157,109,243,.12);color:#5e3fa3;font-size:.66rem;font-weight:900}
+    .printer-dashboard{padding:14px;border-radius:24px;background:rgba(255,255,255,.62);border:1px solid var(--line);box-shadow:0 10px 26px rgba(84,38,94,.07)}
+    .printer-dashboard .collapse-body{padding:0}
+    .printer-dashboard .board-header{margin-bottom:10px}
     .suggestion-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .suggestion{padding:13px;border-radius:20px;background:linear-gradient(135deg,rgba(232,79,183,.08),rgba(157,109,243,.08));border:1px solid var(--line)}
     .suggestion h3{margin:0 0 6px;font-size:1rem;color:var(--ink)}
@@ -697,11 +703,11 @@
       display:none !important;
     }
 
-    #todaySection{order:3 !important;}
-    #queueSection{order:4 !important;}
-    #addJobSection{order:5 !important;}
-    #pmSection{order:6 !important;}
-    #machineSection{order:7 !important;}
+    #machineSection{order:3 !important;}
+    #todaySection{order:4 !important;}
+    #queueSection{order:5 !important;}
+    #addJobSection{order:6 !important;}
+    #pmSection{order:7 !important;}
     #detailsSection{order:8 !important;}
     #historySection{order:9 !important;}
 
@@ -1339,6 +1345,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     </div>
   </section>
 
+  <section class="section-card printer-dashboard" id="machineSection" aria-labelledby="printerDashboardTitle">
+    <div class="collapse-body">
+      <div class="board-header"><div><span class="kicker">Printer dashboard</span><h2 id="printerDashboardTitle">Current work + next in queue</h2></div></div>
+      <div class="machine-grid" id="machineBoard"></div>
+    </div>
+  </section>
+
 
   
   <details class="ops-collapse section-card" id="capacitySection" open>
@@ -1525,13 +1538,6 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         </div>
       </div>
       <div class="pm-log" id="pmLogBoard"></div>
-    </div>
-  </details>
-
-  <details class="ops-collapse section-card" id="machineSection">
-    <summary><span class="summary-title"><span class="kicker">Printer command center</span><strong>Printer status + next queue guidance</strong></span></summary>
-    <div class="collapse-body">
-      <div class="machine-grid" id="machineBoard"></div>
     </div>
   </details>
 
@@ -1733,6 +1739,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
 <script src="olipoly-auth.js"></script>
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
+<script src="js/printer-dashboard.js?v=20260716-m2c"></script>
   <script>
 (() => {
   'use strict';
@@ -4963,18 +4970,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   function renderMachineBoard(){
-    const active = activeJobs();
-    $('machineBoard').innerHTML = machineList().map(machine=>{
-      const pm = state.pm.find(p=>p.machine===machine);
-      const st = pm ? pmStatus(pm) : {cls:'pm-good',label:'No PM record'};
-      const printing = active.filter(j=>j.production_status==='printing' && (j.actual_machine===machine || j.machine_preference===machine));
-      const queued = active.filter(j=>isRecommendedCandidate(j) && (j.machine_preference===machine || j.machine_preference==='either')).sort(compareJobs).slice(0,3);
-      const suggested = queued[0];
+    const dashboard = window.OliPolyPrinterDashboard;
+    $('machineBoard').innerHTML = dashboard.PRINTERS.map(machine=>{
+      const snapshot = dashboard.selectPrinterSnapshot(state.jobs, machine, compareJobs);
+      const current = snapshot.current;
+      const next = snapshot.next;
+      const eta = current ? dashboard.estimatedFinishAt(current) : null;
+      const identifier = job => jobRef(job) === job.job_title ? '—' : jobRef(job);
       return `<article class="machine-card">
-        <h3>${esc(machine)} <span class="pm-pill ${st.cls}"><span class="pm-dot"></span>${esc(st.label)}</span></h3>
-        <div class="machine-slot"><span>Currently Printing</span><strong>${printing[0] ? esc(printing[0].job_title) : 'Idle'}</strong>${printing[0] ? `<div class="tiny-note">${esc(finishText(printing[0].estimated_finish_at))}</div>` : ''}</div>
-        <div class="machine-slot"><span>Suggested Next</span><strong>${suggested ? esc(suggested.job_title) : 'No matching queued job'}</strong>${suggested ? `<div class="tiny-note">${fmtHours(suggested.estimated_total_hours)} · ${esc(suggested.primary_material||'')} ${esc(suggested.primary_color||'')}</div>` : ''}</div>
-        <div class="machine-slot"><span>Next Queue</span><strong>${queued.length ? queued.map(j=>esc(j.job_title)).join(' → ') : '—'}</strong></div>
+        <h3>${esc(machine)} <span class="machine-state ${current ? 'printing' : ''}">${current ? 'Printing' : 'Idle'}</span></h3>
+        <div class="machine-slot"><span>Current Job</span><strong>${current ? esc(current.job_title) : 'No active print'}</strong><div class="tiny-note">${current ? `${esc(identifier(current))} · ${eta ? `Estimated finish ${esc(new Date(eta).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'}))}` : 'ETA unavailable'}` : 'Waiting for assigned work'}</div></div>
+        <div class="machine-slot"><span>Next Queued Job</span><strong>${next ? esc(next.job_title) : 'No queued job'}</strong><div class="tiny-note">${next ? `${esc(identifier(next))} · ${fmtHours(dashboard.estimatedDurationHours(next))}` : '—'}</div>${snapshot.additionalQueued ? `<span class="queue-more">+${snapshot.additionalQueued} additional queued</span>` : ''}</div>
       </article>`;
     }).join('');
   }
