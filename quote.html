@@ -1445,6 +1445,11 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
     input::placeholder,textarea::placeholder{color:rgba(218,226,255,.62)!important}
 
   .customer-360-inline{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;min-height:34px;padding:7px 10px;border-radius:999px;background:rgba(126,123,255,.12);border:1px solid rgba(126,123,255,.24);color:var(--text,#eef4ff);font-size:.76rem;font-weight:900;text-decoration:none}
+
+.production-snapshot-card details>summary{cursor:pointer;font-weight:900;font-size:1.05rem;list-style-position:inside}
+.production-snapshot-card details[open]>summary{margin-bottom:12px}
+.production-snapshot-grid{margin-top:12px}
+.read-only-price{display:flex;align-items:center;min-height:44px;padding:10px 12px;border:1px solid rgba(151,179,255,.24);border-radius:14px;background:rgba(255,255,255,.045);font-weight:900}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
@@ -1559,25 +1564,33 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
         <div class="note hidden" id="missingInputsNotice"></div>
       </section>
 
-      <section class="card">
-        <h3>Legacy Calculator Inputs</h3>
-        <p class="sub">Fallback estimator only. Use Production Control first whenever possible.</p>
-        <div class="form-grid">
-          <div><label for="filamentCount">Number of Colors / Filaments</label><input id="filamentCount" type="number" min="1" max="4" step="1" value="1" /></div>
-          <div><label for="spoolWeight">Roll Weight (g)</label><input id="spoolWeight" type="number" min="1" step="1" value="1000" /></div>
-          <div><label for="filament1Cost">Filament Roll Cost</label><input id="filament1Cost" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="filament1Used">Total Grams Used</label><input id="filament1Used" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="machineHours">Machine Hours</label><input id="machineHours" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="machineRate">Machine Cost / Hour</label><input id="machineRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="designHours">Design Hours</label><input id="designHours" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="designRate">Design Rate / Hour</label><input id="designRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="postHours">Post-Process Hours</label><input id="postHours" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="postRate">Post-Process Rate / Hour</label><input id="postRate" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="simplePackaging">Packaging</label><input id="simplePackaging" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="simpleShipping">Shipping / Delivery Cost</label><input id="simpleShipping" type="number" min="0" step="0.01" value="0" /></div>
-          <div class="full"><label for="simpleHardware">Hardware / Inserts / Magnets</label><input id="simpleHardware" type="number" min="0" step="0.01" value="0" /></div>
+      <section class="card production-snapshot-card">
+        <details id="productionEstimateSnapshot">
+          <summary>Production Estimate Snapshot</summary>
+          <p class="sub">Read-only costing captured from Production Control for internal reference.</p>
+          <div class="summary-grid production-snapshot-grid">
+            <div class="summary"><span>Suggested Piece Price</span><strong id="snapshotSuggestedPiece">$0.00</strong></div>
+            <div class="summary"><span>Suggested Total</span><strong id="snapshotSuggestedTotal">$0.00</strong></div>
+            <div class="summary"><span>Direct Cost</span><strong id="sumDirect">$0.00</strong></div>
+            <div class="summary"><span>Overhead</span><strong id="sumOverhead">$0.00</strong></div>
+            <div class="summary"><span>Break-Even</span><strong id="sumBreakEven">$0.00</strong></div>
+            <div class="summary"><span>Estimated Profit</span><strong id="snapshotProfit">$0.00</strong></div>
+            <div class="summary"><span>Estimated Margin</span><strong id="snapshotMargin">0.0%</strong></div>
+          </div>
+        </details>
+        <div hidden aria-hidden="true" id="productionEstimatePersistenceFields">
+          <input id="filamentCount" type="hidden" value="1"><input id="spoolWeight" type="hidden" value="1000">
+          <input id="filament1Cost" type="hidden" value="0"><input id="filament1Used" type="hidden" value="0">
+          <input id="filament2Cost" type="hidden" value="0"><input id="filament2Used" type="hidden" value="0">
+          <input id="filament3Cost" type="hidden" value="0"><input id="filament3Used" type="hidden" value="0">
+          <input id="filament4Cost" type="hidden" value="0"><input id="filament4Used" type="hidden" value="0">
+          <input id="machineHours" type="hidden" value="0"><input id="machineRate" type="hidden" value="0">
+          <input id="designHours" type="hidden" value="0"><input id="designRate" type="hidden" value="0">
+          <input id="postHours" type="hidden" value="0"><input id="postRate" type="hidden" value="0">
+          <input id="simplePackaging" type="hidden" value="0"><input id="simpleShipping" type="hidden" value="0"><input id="simpleHardware" type="hidden" value="0">
+          <input id="profitMode" type="hidden" value="percent"><input id="suggestedMode" type="hidden" value="standard">
+          <input id="profitValue" type="hidden" value="35"><input id="marketplacePercent" type="hidden" value="0">
         </div>
-        <p class="note" id="simpleSummary">Simple inputs: $0.00 material, $0.00 packaging, $0.00 shipping, $0.00 hardware, $0.00 design labor, $0.00 machine time, $0.00 post-process labor.</p>
       </section>
     </div>
 
@@ -1651,35 +1664,22 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
           </div>
         </section>
 
-        <section class="card">
-          <h3>Additional Filaments</h3>
-          <div class="form-grid">
-            <div><label for="filament2Cost">Filament 2 Roll Cost</label><input id="filament2Cost" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="filament2Used">Total Filament 2 Grams Used</label><input id="filament2Used" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="filament3Cost">Filament 3 Roll Cost</label><input id="filament3Cost" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="filament3Used">Total Filament 3 Grams Used</label><input id="filament3Used" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="filament4Cost">Filament 4 Roll Cost</label><input id="filament4Cost" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="filament4Used">Total Filament 4 Grams Used</label><input id="filament4Used" type="number" min="0" step="0.01" value="0" /></div>
-          </div>
-        </section>
+
 
         <section class="card">
-          <h3>Profit, Tax, and Rounding</h3>
+          <h3>Customer Pricing</h3>
           <div class="form-grid">
-            <div><label for="profitMode">Profit Mode</label><select id="profitMode"><option value="percent">Percent Markup</option><option value="flat">Flat Profit</option></select></div>
-            <div><label for="suggestedMode">Suggested Profit</label><select id="suggestedMode"><option value="standard">Standard</option><option value="aggressive">Aggressive</option><option value="off">Off</option></select></div>
-            <div><label for="profitValue">Profit Value</label><input id="profitValue" type="number" min="0" step="0.01" value="35" /></div>
-            <div><label for="manualPiecePriceOverride">Manual Piece Price Override ($ / piece)</label><input id="manualPiecePriceOverride" type="number" min="0" step="0.001" placeholder="Blank = calculated pricing" /></div>
-            <div><label for="manualPiecePriceReason">Override Reason / Notes</label><input id="manualPiecePriceReason" placeholder="Optional: bulk price, strategic quote, matched price..." /></div>
+            <div><label>Suggested Selling Price</label><output id="suggestedSellingPrice" class="read-only-price">$0.00 per piece</output></div>
+            <div><label for="manualPiecePriceOverride">Custom Selling Price ($ / piece)</label><input id="manualPiecePriceOverride" type="number" min="0" step="0.001" placeholder="Blank = suggested price" /></div>
+            <div><label for="manualPiecePriceReason">Custom Price Reason / Notes</label><input id="manualPiecePriceReason" placeholder="Optional: bulk price, strategic quote, matched price..." /></div>
             <div><label for="discount">Discount</label><input id="discount" type="number" min="0" step="0.01" value="0" /></div>
-            <div><label for="taxPreset">Tax County / Jurisdiction</label><select id="taxPreset"><option value="custom">Custom / Manual Rate</option><option value="out_of_state">Out of State / No Tax</option><option value="tax_exempt">Tax Exempt</option></select><small id="taxJurisdictionHint" style="display:block;margin-top:6px;color:var(--muted,#8c7892);font-size:.78rem;line-height:1.35;">Loads county rates from Finance Pro income entries when available.</small></div>
-            <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="0" /><small id="salesTaxRateHint" style="display:block;margin-top:6px;color:var(--muted,#8c7892);font-size:.78rem;line-height:1.35;">Select a county to auto-fill the rate, or choose Custom to type one manually.</small></div>
-            <div><label for="roundingMode">Rounding</label><select id="roundingMode"><option value="0">No Rounding</option><option value="1">Nearest $1</option><option value="5">Nearest $5</option><option value="10">Nearest $10</option></select></div>
-            <div><label for="marketplacePercent">Marketplace / Processing %</label><input id="marketplacePercent" type="number" min="0" step="0.01" value="0" /></div>
+            <div><label for="taxPreset">Tax County / Jurisdiction</label><select id="taxPreset"><option value="custom">Custom / Manual Rate</option><option value="out_of_state">Out of State / No Tax</option><option value="tax_exempt">Tax Exempt</option></select><small id="taxJurisdictionHint">Loads county rates from Finance Pro income entries when available.</small></div>
+            <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="0" /><small id="salesTaxRateHint">Select a county to auto-fill the rate, or choose Custom to type one manually.</small></div>
+            <div><label for="roundingMode">Final Total Rounding</label><select id="roundingMode"><option value="0">No Rounding</option><option value="1">Nearest $1</option><option value="5">Nearest $5</option><option value="10">Nearest $10</option></select></div>
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" hidden aria-hidden="true">
           <h3>Line Items</h3>
           <p class="sub">These are automatically fed by Quick Pricing, but can be edited here.</p>
           <div class="grid">
@@ -1700,13 +1700,13 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
         
 
 
-        <section class="card">
+        <section class="card" hidden aria-hidden="true">
           <h3>Detailed Output</h3>
           <div class="summary-grid">
-            <div class="summary"><span>Direct Costs</span><strong id="sumDirect">$0.00</strong></div>
-            <div class="summary"><span>Overhead</span><strong id="sumOverhead">$0.00</strong></div>
+            <div class="summary"><span>Direct Costs</span><strong id="legacySumDirect">$0.00</strong></div>
+            <div class="summary"><span>Overhead</span><strong id="legacySumOverhead">$0.00</strong></div>
             <div class="summary"><span>Target Profit</span><strong id="sumProfit">$0.00</strong></div>
-            <div class="summary"><span>Break-Even</span><strong id="sumBreakEven">$0.00</strong></div>
+            <div class="summary"><span>Break-Even</span><strong id="legacySumBreakEven">$0.00</strong></div>
             <div class="summary"><span>Profit Guardrail</span><strong id="profitGuardrail">OK</strong></div>
             <div class="summary"><span>Batch Cost / Unit</span><strong id="batchUnitCost">$0.00</strong></div>
           </div>
@@ -1717,7 +1717,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
           <button class="btn-ghost" id="copyFinanceBtn" type="button">Copy Finance Entry</button>
         </section>
 
-        <section class="card">
+        <section class="card" hidden aria-hidden="true">
           <h3>Batch / Inventory Helper</h3>
           <div class="form-grid">
             <div><label for="batchName">Batch Name</label><input id="batchName" /></div>
