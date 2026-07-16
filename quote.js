@@ -3439,14 +3439,14 @@ https://olipoly3d.com`;
 
     const now = new Date().toISOString();
     const fullPatch = {
-      production_status: 'awaiting_design',
+      production_status: 'ready_to_print',
       order_number: orderNumber,
       quote_accepted_at: now,
       quote_handoff_status: 'accepted_created_order',
       updated_at: now
     };
     const minimalPatch = {
-      production_status: 'awaiting_design',
+      production_status: 'ready_to_print',
       order_number: orderNumber,
       updated_at: now
     };
@@ -3501,6 +3501,17 @@ https://olipoly3d.com`;
       const result = await acceptQuoteThroughServer(currentQuoteNumber, publicToken);
       const orderNumber = result?.order_number || orderNumberFromQuote();
       if (!orderNumber) throw new Error("The server did not return an order number.");
+      const acceptedAt = new Date().toISOString();
+      await api(`/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ status: 'ready_to_print', updated_at: acceptedAt })
+      });
+      await api('/rest/v1/order_tracking_public?order_number=eq.' + encodeURIComponent(orderNumber), {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ status: 'ready_to_print', updated_at: acceptedAt })
+      });
       await updateLinkedProductionJobAfterAcceptance(orderNumber);
 
       const statusEl = $("quoteStatus");
