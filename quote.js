@@ -1,4 +1,9 @@
 
+/* PASS 1A.1 — Quote render-loop stabilization
+   Repeating startup intervals and the totals MutationObserver were removed.
+   Field events remain responsible for normal user-driven rendering.
+*/
+
 /* === OliPoly Standalone Supabase Bridge ===
    quote-tool.js is archived, so quote.js provides sbApi/getCurrentSbUser directly.
    This version waits for OliPolyAuth so Hub login works without opening Orders Admin first.
@@ -1971,14 +1976,10 @@ document.addEventListener("DOMContentLoaded", () => {
       ["input", "change"].forEach((eventName) => el.addEventListener(eventName, syncPartFields));
     });
 
-    const timer = setInterval(() => {
-      patchRender();
-      syncPartFields();
-    }, 250);
-    setTimeout(() => clearInterval(timer), 5000);
-
+    // Pass 1A.1: bind once. Repeating render-patch polling caused startup churn.
     patchRender();
     syncPartFields();
+    setTimeout(() => { patchRender(); syncPartFields(); }, 250);
   }
 
   document.addEventListener("DOMContentLoaded", initPartNumbers);
@@ -2237,15 +2238,12 @@ document.addEventListener("DOMContentLoaded", () => {
     bindInputs();
     patchPdfButtons();
 
-    const timer = setInterval(() => {
-      bindInputs();
-      patchPdfButtons();
-      patchRender();
-      if (isActive()) applyManualPiecePriceOverride();
-      else restorePdfAssumptionsIfInactive();
-    }, 250);
-
-    setTimeout(() => clearInterval(timer), 7000);
+    // Pass 1A.1: initialize once instead of polling every 250 ms.
+    bindInputs();
+    patchPdfButtons();
+    patchRender();
+    if (isActive()) applyManualPiecePriceOverride();
+    else restorePdfAssumptionsIfInactive();
 
     if (patchRender() && typeof window.render === "function") {
       window.render();
@@ -2397,14 +2395,11 @@ document.addEventListener("DOMContentLoaded", () => {
     ensureCustomerTermsOption();
     bind();
 
-    const timer = setInterval(() => {
-      ensureCustomerTermsOption();
-      bind();
-      patchRender();
-      applyCustomerTermsWorkflow();
-    }, 250);
-
-    setTimeout(() => clearInterval(timer), 6000);
+    // Pass 1A.1: one initialization pass; no repeating render wrapper polling.
+    ensureCustomerTermsOption();
+    bind();
+    patchRender();
+    applyCustomerTermsWorkflow();
 
     patchRender();
     applyCustomerTermsWorkflow();
@@ -2560,13 +2555,10 @@ document.addEventListener("DOMContentLoaded", () => {
     bind();
     patchRender();
 
-    const timer = setInterval(()=>{
-      bind();
-      patchRender();
-      applyProfessionalWorkflow();
-    },100);
-
-    setTimeout(()=>clearInterval(timer),15000);
+    // Pass 1A.1: initialize once. The former 100 ms loop repeatedly rewrote the page.
+    bind();
+    patchRender();
+    applyProfessionalWorkflow();
     applyProfessionalWorkflow();
   }
 
@@ -4290,12 +4282,10 @@ Open Orders Admin now?`);
     bindInputs();
     patchRender();
     applySoon();
-    const timer = setInterval(() => {
-      bindInputs();
-      patchRender();
-      applyQuoteCalculationFix();
-    }, 300);
-    setTimeout(() => clearInterval(timer), 7000);
+    // Pass 1A.1: no recurring calculation/render polling.
+    bindInputs();
+    patchRender();
+    applyQuoteCalculationFix();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
@@ -5756,13 +5746,11 @@ https://olipoly3d.com`;
     patchRender();
     bindSyncTriggers();
     syncTotals();
-    const timer = setInterval(() => {
-      injectCompactPdfCss();
-      patchRender();
-      bindSyncTriggers();
-      syncTotals();
-    }, 300);
-    setTimeout(() => clearInterval(timer), 3500);
+    // Pass 1A.1: bind/sync once. Input and action handlers perform later updates.
+    injectCompactPdfCss();
+    patchRender();
+    bindSyncTriggers();
+    syncTotals();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
@@ -7261,29 +7249,9 @@ https://olipoly3d.com`;
 
     window.addEventListener("beforeprint", apply, { capture: true });
 
-    // Legacy code in this file performs delayed DOM writes. Observe those writes
-    // and restore the authoritative customer values immediately afterward.
-    if (!window.olipolyCustomerTotalsObserverV2) {
-      const observer = new MutationObserver((mutations) => {
-        if (applying || !hasOverride()) return;
-        const touchedPricingOutput = mutations.some((mutation) => {
-          const el = mutation.target.nodeType === Node.TEXT_NODE
-            ? mutation.target.parentElement
-            : mutation.target;
-          if (!(el instanceof Element)) return false;
-          return !!el.closest([
-            "#sumQuote", "#sumSubtotal", "#sumTax", "#sumPerItem", "#sumDeposit", "#sumBalance",
-            "#outPreDiscount", "#outDiscount", "#outBeforeTax", "#outRoundedBeforeTax",
-            "#outTax", "#outDeposit", "#outBalance", "#outFinal", "#finalTotal",
-            "#pdfSubtotal", "#pdfTax", "#pdfDeposit", "#pdfBalance", "#pdfTotal",
-            "[data-sync-id='pdfSubtotal']", "[data-sync-id='pdfTax']", "[data-sync-id='pdfTotal']"
-          ].join(","));
-        });
-        if (touchedPricingOutput) scheduleApply();
-      });
-      observer.observe(document.body, { subtree: true, childList: true, characterData: true });
-      window.olipolyCustomerTotalsObserverV2 = observer;
-    }
+    // Pass 1A.1: MutationObserver removed. It was creating a feedback loop
+    // by reacting to totals written by other render layers.
+
 
     apply();
   }

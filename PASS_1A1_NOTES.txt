@@ -1,0 +1,19 @@
+OliPoly ERP — Quote Pass 1A.1
+
+Changed files:
+- quote.html
+- quote.js
+- js/quote.js
+
+Changes:
+- Removed all repeating setInterval loops from the Quote JavaScript.
+- Removed the pricing-output MutationObserver feedback loop.
+- Preserved normal input/change/button-driven updates.
+- Changed startup polling to one-time initialization.
+- Updated the quote.js cache-busting version in quote.html.
+
+Test target for this pass:
+- Open quote.html and confirm the upper totals no longer rapidly switch back and forth during startup.
+- Edit quantity, manual piece price, and tax rate once each and confirm totals update without flickering.
+
+This pass stabilizes rendering only. Pricing authority cleanup follows in Pass 1A.2.
