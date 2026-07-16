@@ -1,0 +1,16 @@
+PASS 1A.2 — Single Customer Selling Price Engine
+
+Test case:
+- Quantity: 4
+- Manual Piece Price Override: 5.125
+- Sales Tax: 6.5
+- Discount: 0
+- Deposit: 0
+
+Expected:
+- Piece Price: $5.13 display ($5.125 internal)
+- Subtotal: $20.50
+- Tax: $1.33
+- Final / Balance: $21.83
+
+Internal Production Control direct cost may remain $20.78 in internal cost rows, but it must not replace the customer subtotal.

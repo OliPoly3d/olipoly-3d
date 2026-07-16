@@ -7262,3 +7262,200 @@ https://olipoly3d.com`;
   setTimeout(bind, 1000);
   setTimeout(bind, 2500);
 })();
+
+/* === PASS 1A.2: SINGLE CUSTOMER SELLING PRICE ENGINE ===
+   Manual Piece Price Override is the authoritative customer price when populated.
+   Internal Production Control costs remain visible but do not affect customer subtotal.
+   No interval, observer, or repeated render loop is used here.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const money = (value) => new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(Number(value) || 0);
+  const number = (value) => Number(String(value ?? "").replace(/[^0-9.-]/g, "")) || 0;
+  const fieldNumber = (id) => number($(id)?.value);
+  const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+  const manualRaw = () => String($("manualPiecePriceOverride")?.value ?? "").trim();
+  const hasManualPrice = () => manualRaw() !== "";
+  let rendering = false;
+  let installed = false;
+  let legacyRender = null;
+
+  function setText(id, value) {
+    document.querySelectorAll(`#${id}, [data-sync-id="${id}"]`).forEach((el) => {
+      el.textContent = value;
+    });
+  }
+
+  function calculateManualTotals() {
+    if (!hasManualPrice()) return null;
+
+    const quantity = Math.max(1, Math.round(fieldNumber("qty") || fieldNumber("quantity") || 1));
+    const piecePrice = Math.max(0, number(manualRaw()));
+    const grossSubtotal = roundCurrency(piecePrice * quantity);
+    const discount = Math.max(0, fieldNumber("discount"));
+    const subtotal = roundCurrency(Math.max(0, grossSubtotal - discount));
+    const taxExempt = ($("taxExempt")?.value || "no") === "yes";
+    const taxRate = taxExempt ? 0 : Math.max(0, fieldNumber("salesTax"));
+    const tax = roundCurrency(subtotal * taxRate / 100);
+    const total = roundCurrency(subtotal + tax);
+    const depositPercent = Math.min(100, Math.max(0, fieldNumber("depositPercent")));
+    const deposit = roundCurrency(total * depositPercent / 100);
+    const balance = roundCurrency(Math.max(0, total - deposit));
+
+    return {
+      pricingMode: "manual",
+      quantity,
+      qty: quantity,
+      piecePrice,
+      perItem: piecePrice,
+      grossSubtotal,
+      discount,
+      subtotal,
+      taxRate,
+      tax,
+      total,
+      final: total,
+      deposit,
+      balance,
+      piecePriceText: money(piecePrice),
+      subtotalText: money(subtotal),
+      taxText: money(tax),
+      totalText: money(total),
+      depositText: money(deposit),
+      balanceText: money(balance)
+    };
+  }
+
+  function renderManualTotals() {
+    if (rendering) return window.olipolyQuoteTotals || null;
+    const totals = calculateManualTotals();
+    if (!totals) return null;
+
+    rendering = true;
+    try {
+      document.body.classList.add("manual-piece-price-active");
+      document.body.classList.toggle("explicit-free-quote-active", totals.piecePrice === 0);
+
+      // Customer-facing summary.
+      setText("sumQuote", totals.totalText);
+      setText("sumSubtotal", totals.subtotalText);
+      setText("sumTax", totals.taxText);
+      setText("sumPerItem", totals.piecePriceText);
+      setText("sumDeposit", totals.depositText);
+      setText("sumBalance", totals.balanceText);
+      setText("sumProfit", totals.piecePrice === 0 ? "Complimentary" : "Manual");
+
+      // Customer-selling rows only. Internal Direct/Base/Break-Even remain cost snapshots.
+      setText("outProfit", totals.piecePrice === 0 ? "Complimentary" : "Manual");
+      setText("outPerItem", totals.piecePriceText);
+      setText("outMargin", totals.piecePrice === 0 ? "N/A" : "Manual");
+      setText("outPreDiscount", money(totals.grossSubtotal));
+      setText("outDiscount", money(totals.discount));
+      setText("outBeforeTax", totals.subtotalText);
+      setText("outRoundedBeforeTax", totals.subtotalText);
+      setText("outRoundingGain", money(0));
+      setText("outTax", totals.taxText);
+      setText("outDeposit", totals.depositText);
+      setText("outBalance", totals.balanceText);
+      setText("outFinal", totals.totalText);
+      setText("finalTotal", totals.totalText);
+
+      // PDF fields are display-only copies of the same totals object.
+      setText("pdfQty", String(totals.quantity));
+      setText("pdfPerItem", totals.piecePriceText);
+      setText("pdfSubtotal", totals.subtotalText);
+      setText("pdfTax", totals.taxText);
+      setText("pdfDeposit", totals.depositText);
+      setText("pdfBalance", totals.balanceText);
+      setText("pdfTotal", totals.totalText);
+      setText("pdfInvoiceAmount", totals.totalText);
+      setText("pdfHeroTotal", totals.totalText);
+
+      const notice = $("manualPiecePriceNotice");
+      if (notice) {
+        const reason = String($("manualPiecePriceReason")?.value || "").trim();
+        notice.classList.remove("hidden");
+        notice.classList.add("manual-override-active");
+        notice.innerHTML = totals.piecePrice === 0
+          ? `<strong>Complimentary quote:</strong> ${totals.piecePriceText} × ${totals.quantity} = ${totals.subtotalText}.${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`
+          : `<strong>Custom selling price:</strong> ${totals.piecePriceText} × ${totals.quantity} = ${totals.subtotalText} before tax.${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`;
+      }
+
+      window.olipolyQuoteTotals = Object.freeze({ ...totals });
+      window.olipolyRenderedQuoteTotals = {
+        qty: totals.quantity,
+        pricingMode: totals.pricingMode,
+        piecePrice: totals.piecePrice,
+        perItem: totals.piecePrice,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        deposit: totals.deposit,
+        balance: totals.balance,
+        total: totals.total,
+        perItemText: totals.piecePriceText,
+        subtotalText: totals.subtotalText,
+        taxText: totals.taxText,
+        depositText: totals.depositText,
+        balanceText: totals.balanceText,
+        totalText: totals.totalText,
+        capturedAt: new Date().toISOString()
+      };
+      return totals;
+    } finally {
+      rendering = false;
+    }
+  }
+
+  function renderSingleSource() {
+    if (hasManualPrice()) return renderManualTotals();
+    document.body.classList.remove("manual-piece-price-active", "explicit-free-quote-active");
+    return typeof legacyRender === "function" ? legacyRender() : null;
+  }
+
+  function install() {
+    if (installed) return;
+    installed = true;
+    legacyRender = typeof window.render === "function" ? window.render.bind(window) : null;
+    window.calculateQuoteTotals = () => hasManualPrice()
+      ? calculateManualTotals()
+      : (window.olipolyQuoteTotals || null);
+    window.renderQuote = renderSingleSource;
+    window.render = renderSingleSource;
+
+    const blockedLegacyPricingFields = new Set([
+      "manualPiecePriceOverride", "manualPiecePriceReason", "qty", "quantity",
+      "discount", "salesTax", "taxExempt", "depositPercent"
+    ]);
+
+    ["input", "change"].forEach((eventName) => {
+      document.addEventListener(eventName, (event) => {
+        const id = event.target?.id;
+        if (!blockedLegacyPricingFields.has(id)) return;
+        // Prevent old pricing listeners from rewriting the customer subtotal.
+        event.stopImmediatePropagation();
+        renderSingleSource();
+      }, true);
+    });
+
+    // Allow the existing tax-jurisdiction selector to update salesTax, then render once.
+    $("taxPreset")?.addEventListener("change", () => queueMicrotask(renderSingleSource), true);
+
+    [
+      "customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn",
+      "prepareCustomerEmailBtn", "emailQuoteBtn", "saveQuoteBtn",
+      "createOrderFromQuoteBtn", "acceptQuoteBtn"
+    ].forEach((id) => {
+      $(id)?.addEventListener("click", renderSingleSource, true);
+    });
+    window.addEventListener("beforeprint", renderSingleSource, true);
+
+    renderSingleSource();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
+  else install();
+  window.addEventListener("load", renderSingleSource, { once: true });
+})();
