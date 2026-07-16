@@ -6074,64 +6074,45 @@ https://olipoly3d.com`;
     return Number(String(draft?.[key] ?? '').replace(/[^0-9.-]/g, '')) || 0;
   }
 
+  const productionSnapshotFields = {
+    productionMaterialCost: 'estimated_material_cost',
+    productionMachineCost: 'estimated_machine_cost',
+    productionDesignCost: 'estimated_design_cost',
+    productionPostProcessingCost: 'estimated_post_cost',
+    productionPackagingCost: 'estimated_packaging_cost',
+    productionShippingEstimate: 'estimated_shipping_cost',
+    productionHardwareCost: 'estimated_supply_cost',
+    productionDirectCost: 'estimated_direct_cost',
+    productionOverhead: 'estimated_overhead_cost',
+    productionBreakEvenCost: 'estimated_break_even'
+  };
+
+  function ensureProductionSnapshotFields(){
+    ensureHidden('productionJobId');
+    ensureHidden('productionQuoteSource');
+    ensureHidden('productionSuggestedTotal');
+    ensureHidden('productionSuggestedPiecePrice');
+    Object.keys(productionSnapshotFields).forEach(ensureHidden);
+  }
+
   function applyProductionCostInputs(draft){
     if(!draft) return;
-
-    const material = draftNumber(draft, 'estimated_material_cost');
-    const machineHours = draftNumber(draft, 'estimated_machine_hours');
-    const machineCost = draftNumber(draft, 'estimated_machine_cost');
-    const machineRate = draftNumber(draft, 'estimated_machine_rate') || (machineHours ? machineCost / machineHours : 0);
-    const designHours = draftNumber(draft, 'estimated_design_hours');
-    const designCost = draftNumber(draft, 'estimated_design_cost');
-    const designRate = draftNumber(draft, 'estimated_design_rate') || (designHours ? designCost / designHours : 0);
-    const postCost = draftNumber(draft, 'estimated_post_cost');
-    const supply = draftNumber(draft, 'estimated_supply_cost');
-    const packaging = draftNumber(draft, 'estimated_packaging_cost');
-    const shipping = draftNumber(draft, 'estimated_shipping_cost');
-    const overhead = draftNumber(draft, 'estimated_overhead_cost');
-
-    // Feed existing Quote Tool calculator inputs using the internal production estimate.
-    // Material is represented as a 1000g virtual roll so filamentCost() equals the
-    // Production Control material cost without needing to expose roll-level details.
-    if(material > 0){
-      setVal('spoolWeight', 1000);
-      setVal('filament1Cost', material);
-      setVal('filament1Used', 1000);
-    }
-    if(machineHours > 0){ setVal('machineHours', machineHours); setVal('machineRate', machineRate || 0); }
-    else if(machineCost > 0){ setVal('machineHours', 1); setVal('machineRate', machineCost); }
-    if(designHours > 0){ setVal('designHours', designHours); setVal('designRate', designRate || 0); }
-    else if(designCost > 0){ setVal('designHours', 1); setVal('designRate', designCost); }
-    if(postCost > 0){ setVal('postHours', 1); setVal('postRate', postCost); }
-    setVal('simpleHardware', supply);
-    setVal('simplePackaging', packaging);
-    setVal('simpleShipping', shipping);
-    if(overhead > 0 && draftNumber(draft, 'suggested_total') > 0){
-      setVal('marketplacePercent', (overhead / Math.max(1, draftNumber(draft, 'suggested_total'))) * 100);
-    }
+    ensureProductionSnapshotFields();
+    Object.entries(productionSnapshotFields).forEach(([fieldId, draftKey]) => {
+      $(fieldId).value = draft[draftKey] ?? '';
+    });
   }
 
   function applyProductionDetailedOutput(draft){
     if(!draft) return;
-    const direct = draftNumber(draft, 'estimated_direct_cost');
-    const overhead = draftNumber(draft, 'estimated_overhead_cost');
-    const breakEven = draftNumber(draft, 'estimated_break_even') || (direct + overhead);
-    const total = draftNumber(draft, 'suggested_total');
-    if(direct > 0){
-      document.querySelectorAll('#sumDirect,#outDirect').forEach((el) => { el.textContent = '$' + direct.toFixed(2); });
-    }
-    if(overhead > 0 || direct > 0){
-      document.querySelectorAll('#sumOverhead,#outOverhead').forEach((el) => { el.textContent = '$' + overhead.toFixed(2); });
-    }
-    if(breakEven > 0){
-      document.querySelectorAll('#sumBreakEven').forEach((el) => { el.textContent = '$' + breakEven.toFixed(2); });
-    }
-    if(total > 0 && breakEven > 0){
-      const margin = ((total - breakEven) / total) * 100;
-      document.querySelectorAll('#sumMargin,#outProfit').forEach((el) => {
-        if(el.id === 'sumMargin') el.textContent = margin.toFixed(1) + '%';
-      });
-    }
+    const values = {
+      '#sumDirect,#outDirect': draftNumber(draft, 'estimated_direct_cost'),
+      '#sumOverhead,#outOverhead': draftNumber(draft, 'estimated_overhead_cost'),
+      '#sumBreakEven,#outBreakEven': draftNumber(draft, 'estimated_break_even')
+    };
+    Object.entries(values).forEach(([selector, value]) => {
+      document.querySelectorAll(selector).forEach((el) => { el.textContent = '$' + value.toFixed(2); });
+    });
   }
 
   function applyProductionDraft(){
@@ -6159,8 +6140,8 @@ https://olipoly3d.com`;
 
     ensureHidden('productionJobId').value = draft.production_job_id || '';
     ensureHidden('productionQuoteSource').value = 'production-control';
-    ensureHidden('productionSuggestedTotal').value = draft.suggested_total || '';
-    ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price || '';
+    ensureHidden('productionSuggestedTotal').value = draft.suggested_total ?? '';
+    ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price ?? '';
 
     applyProductionIdentity(draft);
     applyProductionCostInputs(draft);
@@ -6174,13 +6155,8 @@ https://olipoly3d.com`;
     setVal('customerNotes', draft.customer_notes || '');
     setVal('quoteNotes', draft.internal_notes || '');
 
-    if(Number(draft.suggested_piece_price) > 0){
-      setVal('manualPiecePriceOverride', money(draft.suggested_piece_price));
-      setVal('manualPiecePriceReason', 'Production Control suggested price');
-    } else if(Number(draft.suggested_total) > 0 && Number(draft.quantity) > 0){
-      setVal('manualPiecePriceOverride', money(Number(draft.suggested_total) / Number(draft.quantity)));
-      setVal('manualPiecePriceReason', 'Production Control suggested total');
-    }
+    // The manual selling-price field intentionally remains blank. Production's
+    // suggestion is a separate input to the customer-pricing engine.
 
     const note = $('productionQuoteSourceNote');
     if(note){
@@ -6188,28 +6164,20 @@ https://olipoly3d.com`;
       note.innerHTML = `<strong>Linked Production Job:</strong> ${draft.production_job_title || draft.production_job_id}<br><span>Suggested total: ${Number(draft.suggested_total) ? '$' + Number(draft.suggested_total).toFixed(2) : 'not set'} · Adjust/round as needed before sending.</span>`;
     }
 
-    // Some legacy quote initializers run after DOMContentLoaded and may generate
-    // standalone document numbers. Re-apply the linked identity a couple of times
-    // so Q/INV stay tied to the Production Control estimate.
-    setTimeout(() => { applyProductionIdentity(draft); applyProductionCostInputs(draft); if(typeof window.render === 'function') window.render(); applyProductionDetailedOutput(draft); }, 250);
-    setTimeout(() => { applyProductionIdentity(draft); applyProductionCostInputs(draft); if(typeof window.render === 'function') window.render(); applyProductionDetailedOutput(draft); }, 1000);
-    setTimeout(() => { applyProductionIdentity(draft); applyProductionDetailedOutput(draft); }, 1800);
-
     if(typeof window.render === 'function') window.render();
     applyProductionDetailedOutput(draft);
     if(typeof window.quotePatchToast === 'function') window.quotePatchToast('Production quote draft loaded.');
   }
 
   function run(){
+    ensureProductionSnapshotFields();
     addPresentationStyles();
     movePricingFields();
     applyProductionDraft();
   }
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once:true });
   else run();
-  setTimeout(run, 300);
-  setTimeout(run, 1200);
 })();
 
 
@@ -7270,203 +7238,104 @@ https://olipoly3d.com`;
   setTimeout(bind, 2500);
 })();
 
-/* === PASS 1A.2: SINGLE CUSTOMER SELLING PRICE ENGINE ===
-   Manual Piece Price Override is the authoritative customer price when populated.
-   Internal Production Control costs remain visible but do not affect customer subtotal.
-   No interval, observer, or repeated render loop is used here.
-*/
+/* === PASS 1A.3: PRODUCTION ESTIMATE / CUSTOMER PRICE OWNERSHIP === */
 (() => {
   const $ = (id) => document.getElementById(id);
-  const money = (value) => new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD"
-  }).format(Number(value) || 0);
-  const number = (value) => Number(String(value ?? "").replace(/[^0-9.-]/g, "")) || 0;
-  const fieldNumber = (id) => number($(id)?.value);
-  const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-  const manualRaw = () => String($("manualPiecePriceOverride")?.value ?? "").trim();
-  const hasManualPrice = () => manualRaw() !== "";
+  const money = (value) => new Intl.NumberFormat("en-US", { style:"currency", currency:"USD" }).format(Number(value) || 0);
+  const raw = (id) => String($(id)?.value ?? "").trim();
+  const number = (id) => Number(raw(id).replace(/[^0-9.-]/g, "")) || 0;
+  const setText = (id, value) => document.querySelectorAll(`#${id}, [data-sync-id="${id}"]`).forEach((el) => { el.textContent = value; });
+  const isProductionQuote = () => raw("productionQuoteSource") === "production-control";
+  let legacyRender;
   let rendering = false;
-  let installed = false;
-  let legacyRender = null;
 
-  function setText(id, value) {
-    document.querySelectorAll(`#${id}, [data-sync-id="${id}"]`).forEach((el) => {
-      el.textContent = value;
-    });
-  }
-
-  function calculateManualTotals() {
-    if (!hasManualPrice()) return null;
-
-    const quantity = Math.max(1, Math.round(fieldNumber("qty") || fieldNumber("quantity") || 1));
-    const piecePrice = Math.max(0, number(manualRaw()));
-    const grossSubtotal = roundCurrency(piecePrice * quantity);
-    const discount = Math.max(0, fieldNumber("discount"));
-    const subtotal = roundCurrency(Math.max(0, grossSubtotal - discount));
-    const taxExempt = ($("taxExempt")?.value || "no") === "yes";
-    const taxRate = taxExempt ? 0 : Math.max(0, fieldNumber("salesTax"));
-    const tax = roundCurrency(subtotal * taxRate / 100);
-    const total = roundCurrency(subtotal + tax);
-    const depositPercent = Math.min(100, Math.max(0, fieldNumber("depositPercent")));
-    const deposit = roundCurrency(total * depositPercent / 100);
-    const balance = roundCurrency(Math.max(0, total - deposit));
-
+  function pricingInput(){
     return {
-      pricingMode: "manual",
-      quantity,
-      qty: quantity,
-      piecePrice,
-      perItem: piecePrice,
-      grossSubtotal,
-      discount,
-      subtotal,
-      taxRate,
-      tax,
-      total,
-      final: total,
-      deposit,
-      balance,
-      piecePriceText: money(piecePrice),
-      subtotalText: money(subtotal),
-      taxText: money(tax),
-      totalText: money(total),
-      depositText: money(deposit),
-      balanceText: money(balance)
+      quantity: number("qty") || number("quantity") || 1,
+      manualPiecePrice: raw("manualPiecePriceOverride"),
+      suggestedTotal: isProductionQuote() ? raw("productionSuggestedTotal") : "",
+      suggestedPiecePrice: isProductionQuote() ? raw("productionSuggestedPiecePrice") : "",
+      costSnapshot: isProductionQuote() ? {
+        material: raw("productionMaterialCost"),
+        machine: raw("productionMachineCost"),
+        design: raw("productionDesignCost"),
+        postProcessing: raw("productionPostProcessingCost"),
+        packaging: raw("productionPackagingCost"),
+        shippingEstimate: raw("productionShippingEstimate"),
+        hardware: raw("productionHardwareCost"),
+        direct: raw("productionDirectCost"),
+        overhead: raw("productionOverhead"),
+        breakEven: raw("productionBreakEvenCost")
+      } : null,
+      material: number("materialCost"),
+      machine: number("machineHours") * number("machineRate"),
+      design: number("designHours") * number("designRate"),
+      post: number("postHours") * number("postRate"),
+      packaging: number("simplePackaging") + number("packagingCost"),
+      shipping: number("simpleShipping") + number("shippingCost"),
+      hardware: number("simpleHardware"),
+      profitMode: raw("profitMode"),
+      profitValue: number("profitValue"),
+      marketplacePercent: number("marketplacePercent"),
+      discount: number("discount"),
+      taxExempt: raw("taxExempt") === "yes",
+      taxRate: number("salesTax"),
+      roundingIncrement: number("roundingMode"),
+      depositPercent: number("depositPercent")
     };
   }
 
-  function renderManualTotals() {
-    if (rendering) return window.olipolyQuoteTotals || null;
-    const totals = calculateManualTotals();
-    if (!totals) return null;
-
+  function renderAuthoritativeTotals(){
+    if(rendering || typeof window.calculateQuoteTotals !== "function") return window.olipolyQuoteTotals || null;
+    if(!isProductionQuote() && raw("manualPiecePriceOverride") === "") return legacyRender?.();
     rendering = true;
     try {
-      document.body.classList.add("manual-piece-price-active");
-      document.body.classList.toggle("explicit-free-quote-active", totals.piecePrice === 0);
-
-      // Customer-facing summary.
-      setText("sumQuote", totals.totalText);
-      setText("sumSubtotal", totals.subtotalText);
-      setText("sumTax", totals.taxText);
-      setText("sumPerItem", totals.piecePriceText);
-      setText("sumDeposit", totals.depositText);
-      setText("sumBalance", totals.balanceText);
-      setText("sumProfit", totals.piecePrice === 0 ? "Complimentary" : "Manual");
-
-      // Customer-selling rows only. Internal Direct/Base/Break-Even remain cost snapshots.
-      setText("outProfit", totals.piecePrice === 0 ? "Complimentary" : "Manual");
-      setText("outPerItem", totals.piecePriceText);
-      setText("outMargin", totals.piecePrice === 0 ? "N/A" : "Manual");
-      setText("outPreDiscount", money(totals.grossSubtotal));
-      setText("outDiscount", money(totals.discount));
-      setText("outBeforeTax", totals.subtotalText);
-      setText("outRoundedBeforeTax", totals.subtotalText);
-      setText("outRoundingGain", money(0));
-      setText("outTax", totals.taxText);
-      setText("outDeposit", totals.depositText);
-      setText("outBalance", totals.balanceText);
-      setText("outFinal", totals.totalText);
-      setText("finalTotal", totals.totalText);
-
-      // PDF fields are display-only copies of the same totals object.
-      setText("pdfQty", String(totals.quantity));
-      setText("pdfPerItem", totals.piecePriceText);
-      setText("pdfSubtotal", totals.subtotalText);
-      setText("pdfTax", totals.taxText);
-      setText("pdfDeposit", totals.depositText);
-      setText("pdfBalance", totals.balanceText);
-      setText("pdfTotal", totals.totalText);
-      setText("pdfInvoiceAmount", totals.totalText);
-      setText("pdfHeroTotal", totals.totalText);
-
-      const notice = $("manualPiecePriceNotice");
-      if (notice) {
-        const reason = String($("manualPiecePriceReason")?.value || "").trim();
-        notice.classList.remove("hidden");
-        notice.classList.add("manual-override-active");
-        notice.innerHTML = totals.piecePrice === 0
-          ? `<strong>Complimentary quote:</strong> ${totals.piecePriceText} × ${totals.quantity} = ${totals.subtotalText}.${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`
-          : `<strong>Custom selling price:</strong> ${totals.piecePriceText} × ${totals.quantity} = ${totals.subtotalText} before tax.${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`;
-      }
-
-      window.olipolyQuoteTotals = Object.freeze({ ...totals });
-      window.olipolyRenderedQuoteTotals = {
-        qty: totals.quantity,
-        pricingMode: totals.pricingMode,
-        piecePrice: totals.piecePrice,
-        perItem: totals.piecePrice,
-        subtotal: totals.subtotal,
-        tax: totals.tax,
-        deposit: totals.deposit,
-        balance: totals.balance,
-        total: totals.total,
-        perItemText: totals.piecePriceText,
-        subtotalText: totals.subtotalText,
-        taxText: totals.taxText,
-        depositText: totals.depositText,
-        balanceText: totals.balanceText,
-        totalText: totals.totalText,
-        capturedAt: new Date().toISOString()
+      const totals = window.calculateQuoteTotals(pricingInput());
+      const values = {
+        sumQuote:money(totals.total), sumSubtotal:money(totals.subtotal), sumTax:money(totals.tax),
+        sumPerItem:money(totals.perItem), sumDeposit:money(totals.deposit), sumBalance:money(totals.balance),
+        sumDirect:money(totals.direct), sumOverhead:money(totals.overhead), sumBreakEven:money(totals.breakEven),
+        batchUnitCost:money(totals.breakEven / totals.quantity), outDirect:money(totals.direct),
+        outOverhead:money(totals.overhead), outBase:money(totals.direct), outBreakEven:money(totals.breakEven),
+        outPerItem:money(totals.perItem), outPreDiscount:money(totals.preDiscount), outDiscount:money(totals.discount),
+        outBeforeTax:money(totals.subtotal), outRoundedBeforeTax:money(totals.subtotal),
+        outRoundingGain:money(totals.roundingAdjustment), outTax:money(totals.tax),
+        outDeposit:money(totals.deposit), outBalance:money(totals.balance), outFinal:money(totals.total),
+        finalTotal:money(totals.total), pdfQty:String(totals.quantity), pdfPerItem:money(totals.perItem),
+        pdfSubtotal:money(totals.subtotal), pdfTax:money(totals.tax), pdfDeposit:money(totals.deposit),
+        pdfBalance:money(totals.balance), pdfTotal:money(totals.total), pdfInvoiceAmount:money(totals.total),
+        pdfHeroTotal:money(totals.total)
       };
+      Object.entries(values).forEach(([id,value]) => setText(id,value));
+      setText("sumProfit", totals.pricingMode === "manual" ? "Manual" : money(totals.profit));
+      setText("outProfit", totals.pricingMode === "manual" ? "Manual" : money(totals.profit));
+      setText("outMargin", totals.pricingMode === "manual" ? "Manual" : `${totals.margin.toFixed(1)}%`);
+      window.olipolyQuoteTotals = totals;
+      window.olipolyRenderedQuoteTotals = Object.freeze({
+        qty:totals.quantity, pricingMode:totals.pricingMode, piecePrice:totals.perItem,
+        perItem:totals.perItem, subtotal:totals.subtotal, tax:totals.tax, deposit:totals.deposit,
+        balance:totals.balance, total:totals.total, perItemText:money(totals.perItem),
+        subtotalText:money(totals.subtotal), taxText:money(totals.tax), depositText:money(totals.deposit),
+        balanceText:money(totals.balance), totalText:money(totals.total)
+      });
       return totals;
-    } finally {
-      rendering = false;
-    }
+    } finally { rendering = false; }
   }
 
-  function renderSingleSource() {
-    if (hasManualPrice()) return renderManualTotals();
-    document.body.classList.remove("manual-piece-price-active", "explicit-free-quote-active");
-    return typeof legacyRender === "function" ? legacyRender() : null;
-  }
-
-  function install() {
-    if (installed) return;
-    installed = true;
+  function install(){
     legacyRender = typeof window.render === "function" ? window.render.bind(window) : null;
-    window.calculateQuoteTotals = () => hasManualPrice()
-      ? calculateManualTotals()
-      : (window.olipolyQuoteTotals || null);
-    window.renderQuote = renderSingleSource;
-    window.render = renderSingleSource;
-
-    const blockedLegacyPricingFields = new Set([
-      "manualPiecePriceOverride", "manualPiecePriceReason", "qty", "quantity",
-      "discount", "salesTax", "taxExempt", "depositPercent"
-    ]);
-
-    ["input", "change"].forEach((eventName) => {
-      document.addEventListener(eventName, (event) => {
-        const id = event.target?.id;
-        if (!blockedLegacyPricingFields.has(id)) return;
-        // Prevent old pricing listeners from rewriting the customer subtotal.
-        event.stopImmediatePropagation();
-        renderSingleSource();
-      }, true);
-    });
-
-    // Allow the existing tax-jurisdiction selector to update salesTax, then render once.
-    $("taxPreset")?.addEventListener("change", () => queueMicrotask(renderSingleSource), true);
-
-    [
-      "customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn",
-      "prepareCustomerEmailBtn", "emailQuoteBtn", "saveQuoteBtn",
-      "createOrderFromQuoteBtn", "acceptQuoteBtn"
-    ].forEach((id) => {
-      $(id)?.addEventListener("click", renderSingleSource, true);
-    });
-    window.addEventListener("beforeprint", renderSingleSource, true);
-
-    renderSingleSource();
+    window.render = renderAuthoritativeTotals;
+    window.renderQuote = renderAuthoritativeTotals;
+    window.olipolySyncQuoteTotals = renderAuthoritativeTotals;
+    window.olipolyGetQuoteTotals = () => window.olipolyQuoteTotals || renderAuthoritativeTotals();
+    ["manualPiecePriceOverride","qty","quantity","discount","salesTax","taxPreset","taxExempt","roundingMode","depositPercent"]
+      .forEach((id) => ["input","change"].forEach((eventName) => $(id)?.addEventListener(eventName, renderAuthoritativeTotals)));
+    renderAuthoritativeTotals();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once:true });
   else install();
-  window.addEventListener("load", renderSingleSource, { once: true });
 })();
-
 
 /* === PASS 1A.3B — AUTHORITATIVE PDF CLICK GATE ===
    One capture-phase handler owns customer/invoice PDF actions. It prevents
