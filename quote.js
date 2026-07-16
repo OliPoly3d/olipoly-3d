@@ -884,7 +884,7 @@ ${err.message || err}`);
 (() => {
   const $ = (id) => document.getElementById(id);
   const getField = (id) => ($(id)?.value || "").trim();
-  const quoteTotalText = () => ($("sumQuote")?.textContent || $("outFinal")?.textContent || $("finalTotal")?.textContent || "").trim();
+  const quoteTotalText = () => window.olipolyGetQuoteTotals().totalText;
 
   function makeToken() {
     const arr = new Uint8Array(24);
@@ -1319,15 +1319,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const $ = (id) => document.getElementById(id);
   let lastPdfMode = "quote";
 
-  const moneyText = (idList, fallback = "$0.00") => {
-    for (const id of idList) {
-      const el = $(id);
-      const text = (el?.textContent || el?.value || "").trim();
-      if (text) return text;
-    }
-    return fallback;
-  };
-
   const fieldText = (idList, fallback = "—") => {
     for (const id of idList) {
       const el = $(id);
@@ -1387,10 +1378,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const paymentTerms = labelForPaymentTerms(fieldText(["paymentTerms"], ""));
     const turnaround = fieldText(["turnaround", "pdfTurnaround"], "To be confirmed");
 
-    const total = moneyText(["sumQuote", "outFinal", "pdfTotal"], "$0.00");
-    const deposit = moneyText(["sumDeposit", "outDeposit", "pdfDeposit"], "$0.00");
-    const balance = moneyText(["sumBalance", "outBalance", "pdfBalance"], "$0.00");
-    const invoiceAmount = moneyText(["pdfInvoiceAmount", "sumBalance", "outBalance", "outFinal"], total);
+    const totals = window.olipolyGetQuoteTotals();
+    const total = totals.totalText;
+    const deposit = totals.depositText;
+    const balance = totals.balanceText;
+    const invoiceAmount = totals.totalText;
 
     if (invoiceMode) {
       setText("pdfHeroTotalLabel", professional ? "Invoice Amount" : "Amount Due");
@@ -2265,10 +2257,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return ($(id)?.value || "").trim();
   }
 
-  function textFrom(id) {
-    return ($(id)?.textContent || "").trim();
-  }
-
   function escapeHtml(value) {
     return String(value || "").replace(/[&<>"']/g, (m) => ({
       "&": "&amp;",
@@ -2290,28 +2278,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return type === "business" || type === "po" || terms === "customer_terms" || professionalMode === "on";
   }
 
-  function emailNum(id) {
-    return Number(String(getField(id) || "").replace(/[^0-9.-]/g, "")) || 0;
-  }
-
   function emailMoney(value) {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
-  }
-
-  function emailRoundTo(value, increment) {
-    const inc = Number(increment) || 0;
-    if (!inc) return value;
-    return Math.round(value / inc) * inc;
-  }
-
-  function manualOverrideEmailTotal() {
-    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
-    return totals?.finalText || "";
-  }
-
-  function quoteTotalText() {
-    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
-    return totals?.finalText || textFrom("sumQuote") || textFrom("outFinal") || textFrom("pdfTotal") || "See attached quote";
   }
 
   function selectedPaymentTermsText() {
@@ -2327,12 +2295,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return project ? `OliPoly 3D Quote ${quoteNumber} - ${project}` : `OliPoly 3D Quote ${quoteNumber}`;
   }
 
-  function professionalData() {
+  function professionalData(totals) {
     const rawContact = getField("contactName") || getField("customerName") || "";
     const companyName = getField("companyName") || "";
     const quoteNumber = getField("quoteNumber") || "";
     const project = getField("quoteTitle") || getField("projectTitle") || "the requested items";
-    const total = quoteTotalText();
+    const total = totals.totalText;
     const leadTime = getField("turnaround") || "as noted in the attached quote";
     const terms = selectedPaymentTermsText() || "Customer Standard Terms / PO Terms";
     const poNumber = getField("poNumber");
@@ -2340,10 +2308,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const customerPart = getField("customerPartNumber");
     const partRevision = getField("partRevision");
     const customerEmail = getField("customerEmail");
-    const manualOverridePiece = emailNum("manualPiecePriceOverride");
-    const manualOverrideQty = Math.max(1, Math.round(emailNum("qty") || 1));
-    const manualOverridePricingNote = manualOverridePiece
-      ? `${emailMoney(manualOverridePiece)} × ${manualOverrideQty} pcs`
+    const manualOverridePricingNote = totals.hasManualPrice
+      ? `${emailMoney(totals.manualPiecePrice)} × ${totals.quantity} pcs`
       : "";
 
     return {
@@ -2364,8 +2330,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function buildProfessionalPlainEmail() {
-    const d = professionalData();
+  function buildProfessionalPlainEmail(d) {
     const refs = [
       d.quoteNumber ? `Quote: ${d.quoteNumber}` : "",
       d.companyName ? `Company: ${d.companyName}` : "",
@@ -2416,8 +2381,7 @@ https://olipoly3d.com`;
       </tr>`;
   }
 
-  function buildProfessionalHtmlEmail() {
-    const d = professionalData();
+  function buildProfessionalHtmlEmail(d) {
 
     return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
   <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:26px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
@@ -2622,9 +2586,10 @@ https://olipoly3d.com`;
     try {
       if (typeof window.render === "function") window.render();
 
-      const plain = buildProfessionalPlainEmail();
-      const html = buildProfessionalHtmlEmail();
-      const d = professionalData();
+      const totals = window.olipolyGetQuoteTotals();
+      const d = professionalData(totals);
+      const plain = buildProfessionalPlainEmail(d);
+      const html = buildProfessionalHtmlEmail(d);
 
       lastProfessionalEmail = {
         html,
@@ -2822,15 +2787,9 @@ https://olipoly3d.com`;
     if (typeof window.render === "function") window.render();
   }
 
-  function quoteTotalText(){
-    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
-    return totals?.finalText || text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
-  }
+  function quoteTotalText(){ return window.olipolyGetQuoteTotals().totalText; }
 
-  function quotePerItemText(){
-    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
-    return totals?.perItemText || text("sumPerItem") || text("outPerItem") || "";
-  }
+  function quotePerItemText(){ return window.olipolyGetQuoteTotals().perItemText; }
 
   function termsLabel(){
     const raw = val("paymentTerms");
@@ -3066,9 +3025,7 @@ https://olipoly3d.com`;
     if (typeof window.render === "function") window.render();
   }
 
-  function totalText(){
-    return text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
-  }
+  function totalText(){ return window.olipolyGetQuoteTotals().totalText; }
 
   function termsLabel(){
     const raw = val("paymentTerms");
@@ -3845,89 +3802,15 @@ Open Orders Admin now?`);
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  function raw(id) { return ($(id)?.value ?? "").toString(); }
   function val(id, fallback = "") { return ($(id)?.value || fallback || "").trim(); }
   function text(id, fallback = "") { return ($(id)?.textContent || fallback || "").trim(); }
-  function num(id) { return Number(raw(id).replace(/[^0-9.-]/g, "")) || 0; }
   function esc(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
       "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
     }[ch]));
   }
-  function money(value) {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
-  }
-  function roundFinal(value, increment) {
-    const inc = Number(increment) || 0;
-    if (!inc) return value;
-    return Math.round(value / inc) * inc;
-  }
-  function qty() {
-    return Math.max(1, Math.round(num("qty") || num("quantity") || 1));
-  }
-  function filamentCost() {
-    const spoolWeight = Math.max(1, num("spoolWeight") || 1000);
-    let total = 0;
-    for (let i = 1; i <= 4; i += 1) {
-      total += num(`filament${i}Cost`) * (num(`filament${i}Used`) / spoolWeight);
-    }
-    return total;
-  }
-  function calcTotals() {
-    if (typeof window.olipolyGetQuoteTotals === "function") {
-      const t = window.olipolyGetQuoteTotals();
-      if (t && Number.isFinite(Number(t.final))) return t;
-    }
-
-    const q = qty();
-    const manualPiece = num("manualPiecePriceOverride");
-    const material = filamentCost() + num("materialCost");
-    const machine = (num("machineHours") || num("printHours")) * num("machineRate");
-    const design = num("designHours") * num("designRate");
-    const post = (num("postHours") * num("postRate")) + num("laborCost");
-    const packaging = num("simplePackaging") + num("packagingCost");
-    const shipping = num("simpleShipping") + num("shipping") + num("shippingCost") + num("deliveryCost");
-    const hardware = num("simpleHardware");
-    const taxRate = (document.getElementById("taxExempt")?.value || "no") === "yes" ? 0 : num("salesTax");
-    const discount = num("discount");
-    const rounding = num("roundingMode");
-    const depositPercent = Math.min(100, Math.max(0, num("depositPercent")));
-    const marketplacePercent = Math.max(0, num("marketplacePercent"));
-
-    let direct, base, profit, preDiscount;
-    if (manualPiece > 0) {
-      const itemSubtotal = manualPiece * q;
-      direct = itemSubtotal + packaging + shipping + hardware;
-      base = direct;
-      profit = 0;
-      preDiscount = base;
-    } else {
-      direct = material + machine + design + post + packaging + shipping + hardware;
-      base = direct;
-      const profitMode = raw("profitMode") || "percent";
-      const profitValue = num("profitValue");
-      profit = profitMode === "flat" ? profitValue : base * (profitValue / 100);
-      preDiscount = base + profit;
-    }
-
-    const marketplaceFee = preDiscount * (marketplacePercent / 100);
-    preDiscount += marketplaceFee;
-    const beforeTax = Math.max(0, preDiscount - discount);
-    const tax = beforeTax * (taxRate / 100);
-    const unroundedFinal = beforeTax + tax;
-    const final = Math.max(0, roundFinal(unroundedFinal, rounding));
-    const deposit = final * (depositPercent / 100);
-    const balance = Math.max(0, final - deposit);
-    const perItem = final / q;
-
-    return {
-      q, direct, base, profit, marketplaceFee, preDiscount, discount, beforeTax,
-      taxRate, tax, unroundedFinal, final, deposit, balance, perItem,
-      finalText: money(final),
-      perItemText: money(perItem),
-      depositText: money(deposit),
-      balanceText: money(balance)
-    };
+  function authoritativeTotals() {
+    return window.olipolyGetQuoteTotals();
   }
   function termsLabel() {
     const rawTerms = val("paymentTerms");
@@ -3978,7 +3861,7 @@ Open Orders Admin now?`);
   }
   function buildQuotePdfHtml() {
     if (typeof window.render === "function") window.render();
-    const totals = calcTotals();
+    const totals = authoritativeTotals();
 
     const quoteNumber = val("quoteNumber", "Quote");
     const quoteDate = val("quoteDate", new Date().toISOString().slice(0,10));
@@ -3986,7 +3869,7 @@ Open Orders Admin now?`);
     const customerEmail = val("customerEmail");
     const contactName = val("contactName");
     const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
-    const q = totals.q || qty();
+    const q = totals.quantity;
     const total = totals.finalText;
     const unit = totals.perItemText;
     const notes = val("customerNotes") || "Quote is based on the information provided and may be updated if scope, quantity, materials, or requirements change.";
@@ -4111,14 +3994,6 @@ Open Orders Admin now?`);
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const moneyText = (...ids) => {
-    for (const id of ids.flat()) {
-      const text = $(id)?.textContent?.trim() || $(id)?.value?.trim();
-      if (text) return text;
-    }
-    return "$0.00";
-  };
-
   const field = (id, fallback = "") => ($(id)?.value || "").trim() || fallback;
   const quotePlaceholderImage = "images/quote-placeholder.png";
 
@@ -4131,9 +4006,6 @@ Open Orders Admin now?`);
   function projectImageUrl() {
     return absoluteAssetUrl(field("projectImageUrl", quotePlaceholderImage));
   }
-
-
-  const numberValue = (id) => Number(String($(id)?.value || "").replace(/[^0-9.-]/g, "")) || 0;
 
   const clean = (value, fallback = "—") => {
     const text = String(value ?? "").trim();
@@ -4178,28 +4050,14 @@ Open Orders Admin now?`);
     // Pass 1A.3B: PDF generation is strictly display-only. Never call render(),
     // renderQuote(), or any calculator while collecting PDF data.
     const quoteNumber = field("quoteNumber", "Q-######");
-    const authoritative = window.olipolyQuoteTotals || null;
-    const snapshot = authoritative
-      ? {
-          qty: authoritative.quantity || authoritative.qty,
-          totalText: authoritative.totalText,
-          subtotalText: authoritative.subtotalText,
-          taxText: authoritative.taxText,
-          perItemText: authoritative.piecePriceText || authoritative.perItemText,
-          depositText: authoritative.depositText,
-          balanceText: authoritative.balanceText
-        }
-      : (typeof window.olipolyCaptureRenderedQuoteTotals === "function"
-          ? window.olipolyCaptureRenderedQuoteTotals()
-          : null);
-
-    const qty = snapshot?.qty || numberValue("qty") || numberValue("quantity") || 1;
-    const total = snapshot?.totalText || moneyText("sumQuote", "outFinal", "finalTotal");
-    const subtotal = snapshot?.subtotalText || moneyText("sumSubtotal", "outBeforeTax", "outSubtotal");
-    const tax = snapshot?.taxText || moneyText("sumTax", "outTax");
-    const perItem = snapshot?.perItemText || moneyText("sumPerItem", "outPerItem");
-    const deposit = snapshot?.depositText || moneyText("sumDeposit", "outDeposit");
-    const balance = snapshot?.balanceText || moneyText("sumBalance", "outBalance");
+    const totals = window.olipolyGetQuoteTotals();
+    const qty = totals.quantity;
+    const total = totals.totalText;
+    const subtotal = totals.subtotalText;
+    const tax = totals.taxText;
+    const perItem = totals.perItemText;
+    const deposit = totals.depositText;
+    const balance = totals.balanceText;
     const project = field("quoteTitle", field("projectTitle", "Custom 3D Printed Project"));
 
     return {
@@ -4455,7 +4313,6 @@ Open Orders Admin now?`);
 (() => {
   const $ = (id) => document.getElementById(id);
   const val = (id, fallback = "") => ($(id)?.value || fallback || "").trim();
-  const text = (id, fallback = "") => ($(id)?.textContent || fallback || "").trim();
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   }[ch]));
@@ -4472,10 +4329,6 @@ Open Orders Admin now?`);
     el.classList.add("show");
     clearTimeout(el._quoteEmailV2Timer);
     el._quoteEmailV2Timer = setTimeout(() => el.classList.remove("show"), ms);
-  }
-
-  function totalText(){
-    return text("sumQuote") || text("outFinal") || text("finalTotal") || "$0.00";
   }
 
   function termsLabel(){
@@ -4562,11 +4415,11 @@ Open Orders Admin now?`);
     return `${origin}/quote-response.html?q=${encodeURIComponent(quoteNumber)}&token=${encodeURIComponent(publicToken)}`;
   }
 
-  function buildQuotePlainEmailV2(responseLink){
+  function buildQuotePlainEmailV2(responseLink, totals){
     const customer = val("customerName") || val("contactName");
     const project = val("quoteTitle") || val("projectTitle") || "your custom 3D print";
     const quoteNumber = val("quoteNumber") || "Quote";
-    const total = totalText();
+    const total = totals.totalText;
     const turnaround = val("turnaround") || "to be confirmed based on approval timing";
     const notes = val("customerNotes");
     const assumptions = val("assumptions");
@@ -4600,12 +4453,12 @@ OliPoly3D@gmail.com
 https://olipoly3d.com`;
   }
 
-  function buildQuoteStyledEmailV2(responseLink){
+  function buildQuoteStyledEmailV2(responseLink, totals){
     const customer = val("customerName") || val("contactName");
     const company = val("companyName");
     const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
     const quoteNumber = val("quoteNumber") || "Quote";
-    const total = totalText();
+    const total = totals.totalText;
     const turnaround = val("turnaround") || "To be confirmed";
     const notes = val("customerNotes");
     const assumptions = val("assumptions");
@@ -4718,8 +4571,9 @@ https://olipoly3d.com`;
       const quoteNumber = val("quoteNumber") || "Quote";
       const to = val("customerEmail");
       const subject = `Quote Ready: ${quoteNumber} - OliPoly 3D`;
-      const html = buildQuoteStyledEmailV2(link);
-      const plain = buildQuotePlainEmailV2(link);
+      const totals = window.olipolyGetQuoteTotals();
+      const html = buildQuoteStyledEmailV2(link, totals);
+      const plain = buildQuotePlainEmailV2(link, totals);
       quoteEmailV2Last = { to, subject, html, plain };
 
       window._quoteEmailV2Last = quoteEmailV2Last;
