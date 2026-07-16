@@ -1530,14 +1530,10 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
         <p class="sub">Customer-facing details for the PDF, email, and approval page.</p>
 
         <div class="quote-type-panel customer-priority">
-          <label for="liteQuoteType">Quote Format / Customer Type</label>
+          <label for="liteQuoteType">Customer Type</label>
           <select id="liteQuoteType">
-            <option value="retail">Retail / Individual Customer</option>
-            <option value="custom">Custom Design Project</option>
-            <option value="business">Business / Bulk Order</option>
-            <option value="repeat">Repeat Customer</option>
-            <option value="craft">Craft Show / Pre-Made</option>
-            <option value="po">Professional / PO Customer</option>
+            <option value="retail">Individual / Retail</option>
+            <option value="business">Business / PO</option>
           </select>
           <div class="note lite-format-summary" id="liteFormatSummary">
             <strong>Retail / Individual Customer</strong><br>
@@ -1548,13 +1544,39 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
         <div class="form-grid">
           <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /><a class="customer-360-inline" id="quoteCustomer360Btn" href="customer-360.html">👤 Customer 360</a></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="email@example.com" /></div>
+          <div><label for="customerPhone">Customer Phone</label><input id="customerPhone" type="tel" placeholder="Phone number" /></div>
           <div class="full"><label for="quoteTitle">Project / Quote Title</label><input id="quoteTitle" placeholder="Example: Custom name sign, replacement clip, beach toy set" /></div>
           <div class="full"><label for="projectImageUrl">Project Image URL <span style="font-weight:600;color:#9b8b9a;">(optional)</span></label><input id="projectImageUrl" placeholder="Optional: paste a JPG/PNG/WebP URL, CAD screenshot URL, or leave blank for OliPoly placeholder" /><p class="hint" style="margin:6px 0 0;font-size:.82rem;line-height:1.4;">Leave blank to use the built-in OliPoly project preview placeholder in quote PDFs.</p></div>
           <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
           <div><label for="turnaround">Turnaround</label><input id="turnaround" placeholder="Example: 5–7 business days" /></div>
           <div><label for="shippingMode">Fulfillment</label><select id="shippingMode"><option value="pickup">Local Pickup</option><option value="delivery">Local Delivery</option><option value="ship_estimated">Shipped Order (Estimated Shipping)</option><option value="ship_customer_label">Customer-Provided Label</option></select></div>
           <div><label for="depositPercent">Deposit %</label><input id="depositPercent" type="number" min="0" max="100" step="0.01" value="50" /></div>
+          <div><label for="paymentTerms">Payment Terms</label><select id="paymentTerms"><option value="due_on_receipt">Due on Receipt</option><option value="deposit_to_start" selected>Deposit Required to Start</option><option value="due_on_completion">Due on Completion</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="customer_terms">Customer Standard Terms / PO Terms</option></select></div>
           <div class="full"><label for="customerNotes">Customer-Facing Notes</label><textarea id="customerNotes" placeholder="What the quote includes, material/color notes, pickup/shipping expectations, etc."></textarea></div>
+          <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions"></textarea></div>
+        </div>
+
+        <div class="form-grid lite-field-hidden" id="businessCustomerFields" aria-label="Business and purchase order details">
+          <div><label for="companyName">Company Name</label><input id="companyName" placeholder="Company or client" /></div>
+          <div><label for="contactName">Contact Name</label><input id="contactName" placeholder="Purchasing contact" /></div>
+          <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Purchase order number" /></div>
+          <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
+          <div><label for="olipolyPartNumber">OliPoly Part Number</label><input id="olipolyPartNumber" placeholder="Example: OPP-000123" /></div>
+          <div><label for="customerPartNumber">Customer Part Number</label><input id="customerPartNumber" placeholder="Customer SKU / part number" /></div>
+          <div><label for="partRevision">Revision</label><input id="partRevision" placeholder="Rev A / Rev B" /></div>
+          <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
+          <div><label for="taxExemptReason">Certificate / Exemption Information</label><input id="taxExemptReason" placeholder="Certificate number, exemption reason, or notes" /></div>
+          <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
+          <div><label for="invoiceRequired">Invoice Workflow</label><select id="invoiceRequired"><option value="no">Invoice not required</option><option value="yes">Invoice required</option></select></div>
+          <div><label for="invoiceType">Invoice Type</label><select id="invoiceType"><option value="deposit">Deposit Invoice</option><option value="final">Final Balance Invoice</option><option value="full">Full / Custom Invoice</option></select></div>
+          <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="INV-000001" /></div>
+          <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
+          <div><label for="paymentDueDate">Payment Due Date</label><input id="paymentDueDate" type="date" /></div>
+          <div><label for="shippingContactName">Shipping Contact</label><input id="shippingContactName" placeholder="Receiving contact / attention line" /></div>
+          <div><label for="shippingCompany">Shipping Company</label><input id="shippingCompany" placeholder="Receiving company" /></div>
+          <div class="full"><label for="shippingAddress">Shipping Address</label><textarea id="shippingAddress" placeholder="Ship-to / receiving address"></textarea></div>
+          <div class="full"><label for="billingAddress">Billing Address</label><textarea id="billingAddress" placeholder="Billing / AP address"></textarea></div>
+          <div class="full"><label for="invoiceNotes">Invoice Notes</label><textarea id="invoiceNotes"></textarea></div>
         </div>
 
         <div class="action-strip">
@@ -1632,35 +1654,14 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
           <p class="sub">These are auto-filled where possible and kept for your existing PDF/order workflow.</p>
           <div class="form-grid">
             <div><label for="quoteNumber">Quote Number</label><input id="quoteNumber" placeholder="Q-000001" /></div>
-            <div><label for="invoiceNumber">Invoice Number</label><input id="invoiceNumber" placeholder="INV-000001" /></div>
             <div><label for="quoteDate">Quote Date</label><input id="quoteDate" type="date" /></div>
-            <div><label for="invoiceDate">Invoice Date</label><input id="invoiceDate" type="date" /></div>
             <div><label for="validThrough">Valid Through</label><input id="validThrough" type="date" /></div>
-            <div><label for="paymentDueDate">Payment Due Date</label><input id="paymentDueDate" type="date" /></div>
-            <div><label for="companyName">Company / Client Name</label><input id="companyName" placeholder="Optional for business orders" /></div>
-            <div><label for="contactName">Contact Person</label><input id="contactName" placeholder="Optional" /></div>
-            <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Optional" /></div>
-            <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
-            <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
-            <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
-            <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
-            <div class="professional-part-field"><label for="olipolyPartNumber">OliPoly Part Number</label><input id="olipolyPartNumber" placeholder="Example: OPP-000123" /></div>
-            <div class="professional-part-field"><label for="customerPartNumber">Customer Part Number</label><input id="customerPartNumber" placeholder="Customer SKU / part # / reference" /></div>
-            <div class="professional-part-field"><label for="partRevision">Part Revision</label><input id="partRevision" placeholder="Rev A / Rev B" /></div>
-            <div><label for="shippingContactName">Shipping Contact</label><input id="shippingContactName" placeholder="Receiving contact / attention line" /></div>
-            <div><label for="shippingCompany">Shipping Company</label><input id="shippingCompany" placeholder="Receiving company" /></div>
-            <div class="full"><label for="shippingAddress">Shipping Address</label><textarea id="shippingAddress" placeholder="Ship-to / receiving address"></textarea></div>
-            <div class="full"><label for="billingAddress">Billing Address</label><textarea id="billingAddress" placeholder="Billing / AP address if different"></textarea></div>
             <div><label for="quoteStatus">Quote Status</label><select id="quoteStatus"><option value="draft">Draft</option><option value="sent">Sent</option><option value="viewed">Viewed</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="converted_to_order">Converted to Order</option><option value="declined">Declined</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
             <div><label for="orderType">Order Type</label><select id="orderType"><option value="custom">Custom Order</option><option value="repeat">Repeat Order</option><option value="craft_show">Craft Show / Pre-Made</option><option value="business_bulk">Business / Bulk Order</option></select></div>
             <div><label for="presetSelect">Preset</label><select id="presetSelect"><option value="custom">Custom</option><option value="small_print">Small Print</option><option value="medium_print">Medium Print</option><option value="custom_job">Custom Job</option><option value="bagg_accessory">Bogg Accessory</option><option value="beach_toy">Beach Toy</option><option value="name_sign">Name Sign</option></select></div>
             <div><label for="professionalMode">Professional / Bulk Client Mode</label><select id="professionalMode"><option value="off">Off — Standard Customer Style</option><option value="on">On — Professional Company Style</option></select></div>
-            <div><label for="invoiceType">Invoice Type</label><select id="invoiceType"><option value="deposit">Deposit Invoice</option><option value="final">Final Balance Invoice</option><option value="full">Full / Custom Invoice</option></select></div>
-            <div><label for="paymentTerms">Payment Terms</label><select id="paymentTerms"><option value="due_on_receipt">Due on Receipt</option><option value="deposit_to_start">Deposit Required to Start</option><option value="due_on_completion">Due on Completion</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="customer_terms">Customer Standard Terms / PO Terms</option></select></div>
             <div><label for="unitsPerItem">Print Units Per Item</label><input id="unitsPerItem" type="number" min="1" step="1" value="1" /></div>
             <div class="full"><label for="quoteNotes">Internal Notes</label><textarea id="quoteNotes"></textarea></div>
-            <div class="full"><label for="assumptions">Assumptions / Exclusions</label><textarea id="assumptions"></textarea></div>
-            <div class="full professional-only hidden"><label for="invoiceNotes">Invoice Notes</label><textarea id="invoiceNotes"></textarea></div>
           </div>
         </section>
 

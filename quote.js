@@ -99,7 +99,7 @@
   function loadDemoStandalone() {
     const n = String(Math.floor(Date.now() / 1000)).slice(-6);
     const demo = {
-      liteQuoteType: "po",
+      liteQuoteType: "business",
       customerName: "Demo Customer",
       customerEmail: "customer@example.com",
       quoteTitle: "Demo custom 3D printed parts",
@@ -280,106 +280,36 @@
 
   const CONFIGS = {
     retail: {
-      label: "Retail / Individual Customer",
+      label: "Individual / Retail",
       chip: "Friendly customer quote",
-      summary: "Friendly customer quote with simple payment terms and minimal business fields.",
-      orderType: "custom",
+      summary: "Customer quote with contact, project, pricing, tax, payment, and fulfillment details.",
       professionalMode: "off",
-      paymentTerms: "deposit_to_start",
-      depositPercent: 50,
-      invoiceType: "deposit",
-      showBusinessFields: false,
-      showPo: false,
+      invoiceRequired: "no",
       assumptions:
         "Quote is based on the details shared so far. Final color, finish, and small print details may vary slightly.",
       notes:
         "Includes the printed item(s) described and standard print preparation."
     },
-    custom: {
-      label: "Custom Design Project",
-      chip: "Design-focused quote",
-      summary: "Best for projects that need design work, proofing, measurements, or back-and-forth review.",
-      orderType: "custom",
-      professionalMode: "off",
-      paymentTerms: "deposit_to_start",
-      depositPercent: 60,
-      invoiceType: "deposit",
-      showBusinessFields: false,
-      showPo: false,
-      assumptions:
-        "Includes standard design iteration and print setup. Final output may vary slightly.",
-      notes:
-        "Includes custom design support based on the information provided. Please confirm fit, color, and use before approval."
-    },
     business: {
-      label: "Business / Bulk Order",
-      chip: "Bulk/company quote",
-      summary: "Turns on professional formatting, company/contact fields, and bulk-friendly payment wording.",
-      orderType: "business_bulk",
+      label: "Business / PO",
+      chip: "Professional PO-ready quote",
+      summary: "Professional quote with company, PO, part, tax-exemption, billing, shipping, and invoice details.",
       professionalMode: "on",
-      paymentTerms: "deposit_to_start",
-      depositPercent: 50,
-      invoiceType: "deposit",
-      showBusinessFields: true,
-      showPo: false,
+      invoiceRequired: "yes",
       assumptions:
         "Quote is based on the listed quantity, materials, and production approach. Final requirements should be confirmed at approval.",
       notes:
         "Bulk pricing is based on the quantity shown and may change if requirements change.",
       invoiceNotes:
         "Please reference the invoice number with payment or internal approval."
-    },
-    repeat: {
-      label: "Repeat Customer",
-      chip: "Repeat/reorder quote",
-      summary: "Fast reorder format using lighter deposit defaults and repeat-order wording.",
-      orderType: "repeat",
-      professionalMode: "off",
-      paymentTerms: "deposit_to_start",
-      depositPercent: 25,
-      invoiceType: "deposit",
-      showBusinessFields: false,
-      showPo: false,
-      assumptions:
-        "Repeat quote based on current material, labor, and machine assumptions.",
-      notes:
-        "Repeat-order quote based on requested quantity and available materials."
-    },
-    craft: {
-      label: "Craft Show / Pre-Made",
-      chip: "Event/inventory style",
-      summary: "Best for pre-made inventory, craft show items, or simple event-stock pricing.",
-      orderType: "craft_show",
-      professionalMode: "off",
-      paymentTerms: "due_on_receipt",
-      depositPercent: 0,
-      invoiceType: "full",
-      showBusinessFields: false,
-      showPo: false,
-      assumptions:
-        "Pricing is for available or planned event inventory. Quantities may change as inventory sells.",
-      notes:
-        "Pickup, event purchase, or shipping details can be confirmed separately."
-    },
-    po: {
-      label: "Professional / PO Customer",
-      chip: "Formal PO-ready quote",
-      summary: "Most formal format. Shows company/contact/PO fields, professional PDF styling, and invoice-ready terms.",
-      orderType: "business_bulk",
-      professionalMode: "on",
-      paymentTerms: "customer_terms",
-      depositPercent: 0,
-      invoiceType: "full",
-      showBusinessFields: true,
-      showPo: true,
-      assumptions:
-        "Quote is based on the listed scope, quantity, materials, and production assumptions. Scope changes may require an updated quote.",
-      notes:
-        "Prepared for business purchasing review. Please confirm PO, delivery, and vendor setup requirements before approval.",
-      invoiceNotes:
-        "Please reference the invoice number and PO number with payment or internal approval."
     }
   };
+
+  function customerType(value) {
+    return ["business", "po", "business_bulk"].includes(String(value || "").toLowerCase())
+      ? "business"
+      : "retail";
+  }
 
   function relabelButtons() {
     const review = $("generateQuoteBtn");
@@ -396,29 +326,17 @@
   }
 
   function applyQuoteType(type, options = {}) {
-    const cfg = CONFIGS[type] || CONFIGS.retail;
+    type = customerType(type);
+    const cfg = CONFIGS[type];
     const allowAutofill = options.allowAutofill !== false;
 
     document.body.dataset.liteQuoteType = type;
 
-    setVal("orderType", cfg.orderType);
     setVal("professionalMode", cfg.professionalMode);
-    setVal("paymentTerms", cfg.paymentTerms);
-    setVal("depositPercent", cfg.depositPercent);
-    setVal("invoiceType", cfg.invoiceType);
+    if (options.applyInvoiceDefault === true) setVal("invoiceRequired", cfg.invoiceRequired);
 
-    if (type === "craft") setVal("quoteStatus", "accepted", false);
-
-    showField("companyName", cfg.showBusinessFields);
-    showField("contactName", cfg.showBusinessFields);
-    showField("poNumber", cfg.showPo);
-    showField("customerPartNumber", cfg.showBusinessFields || cfg.showPo);
-    showField("olipolyPartNumber", cfg.showBusinessFields || cfg.showPo);
-    showField("partRevision", cfg.showBusinessFields || cfg.showPo);
-    showField("shippingContactName", cfg.showBusinessFields || cfg.showPo);
-    showField("shippingCompany", cfg.showBusinessFields || cfg.showPo);
-    showField("shippingAddress", cfg.showBusinessFields || cfg.showPo);
-    showField("billingAddress", cfg.showBusinessFields || cfg.showPo);
+    const businessFields = $("businessCustomerFields");
+    if (businessFields) businessFields.classList.toggle("lite-field-hidden", type !== "business");
 
     if (allowAutofill) {
       setAutoText("assumptions", cfg.assumptions);
@@ -506,7 +424,7 @@
       el.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
-    const liteType = fields.liteQuoteType || $("liteQuoteType")?.value || "retail";
+    const liteType = customerType(fields.liteQuoteType || $("liteQuoteType")?.value);
     if ($("liteQuoteType")) $("liteQuoteType").value = liteType;
     applyQuoteType(liteType, { allowAutofill: false });
 
@@ -551,7 +469,7 @@
 
   function buildQuoteData(totalsSnapshot = authoritativeTotalsSnapshot()) {
     const fields = collectFields();
-    const liteQuoteType = $("liteQuoteType")?.value || "retail";
+    const liteQuoteType = customerType($("liteQuoteType")?.value);
     fields.liteQuoteType = liteQuoteType;
 
     return {
@@ -822,11 +740,11 @@ ${err.message || err}`);
   }
 
   function beforePdf() {
-    const type = $("liteQuoteType")?.value || "retail";
+    const type = customerType($("liteQuoteType")?.value);
     applyQuoteType(type);
 
     if (!$("turnaround")?.value.trim()) {
-      setAutoText("turnaround", type === "po" || type === "business" ? "To be confirmed at approval" : "Usually 5–7 business days");
+      setAutoText("turnaround", type === "business" ? "To be confirmed at approval" : "Usually 5–7 business days");
     }
   }
 
@@ -890,8 +808,9 @@ ${err.message || err}`);
   function initQuoteType() {
     const selector = $("liteQuoteType");
     if (selector) {
-      selector.addEventListener("change", () => applyQuoteType(selector.value));
-      applyQuoteType(selector.value || "retail");
+      selector.addEventListener("change", () => applyQuoteType(selector.value, { applyInvoiceDefault: true }));
+      selector.value = customerType(selector.value);
+      applyQuoteType(selector.value, { applyInvoiceDefault: true });
     }
   }
 
@@ -5232,7 +5151,7 @@ https://olipoly3d.com`;
 
     applyProductionIdentity(draft);
     applyProductionCostInputs(draft);
-    setVal('liteQuoteType', draft.quote_type || 'custom');
+    setVal('liteQuoteType', ['business','po','business_bulk'].includes(String(draft.quote_type || '').toLowerCase()) ? 'business' : 'retail');
     setVal('customerName', draft.customer_name || '');
     setVal('customerEmail', draft.customer_email || '');
     setVal('quoteTitle', draft.quote_title || draft.production_job_title || 'Custom 3D printed project');
@@ -5353,7 +5272,7 @@ https://olipoly3d.com`;
 /* === ERP RC1 Quote Tool Final Button/Reset Fix V4 ===
    Source of truth for RC1 quote reset / validation buttons.
    - No recursive input/change events while resetting.
-   - Quote type change clears customer/project fields once.
+   - Customer type changes preserve customer, project, and business fields.
    - Check Missing Inputs validates only; it never opens PDFs.
 */
 (() => {
@@ -5362,14 +5281,14 @@ https://olipoly3d.com`;
 
   const $ = (id) => document.getElementById(id);
   const customerFacingIds = [
-    'customerName','customerEmail','quoteTitle','projectImageUrl','turnaround','customerNotes',
+    'customerName','customerEmail','customerPhone','quoteTitle','projectImageUrl','turnaround','customerNotes',
     'companyName','contactName','poNumber','customerPartNumber','olipolyPartNumber','partRevision',
     'shippingContactName','shippingCompany','shippingAddress','billingAddress','quoteNotes','invoiceNotes',
     'quoteNumber','invoiceNumber','manualPiecePriceOverride','manualPiecePriceReason','discount'
   ];
   const defaultValues = {
     qty:'1', quantity:'1', shippingMode:'pickup', depositPercent:'50', quoteStatus:'draft',
-    orderType:'custom', professionalMode:'off', invoiceType:'deposit', paymentTerms:'deposit_to_start',
+    orderType:'custom', professionalMode:'off', invoiceRequired:'no', invoiceType:'deposit', paymentTerms:'deposit_to_start',
     taxPreset:'custom', salesTax:'0', roundingMode:'0', marketplacePercent:'0', taxExempt:'no',
     certificateOnFile:'no', poFileOnFile:'no', filamentCount:'1', spoolWeight:'1000',
     filament1Cost:'0', filament1Used:'0', machineHours:'0', machineRate:'0', designHours:'0',
@@ -5456,10 +5375,8 @@ https://olipoly3d.com`;
       if (saved) saved.value = '';
       document.body.classList.remove('production-prefilled');
 
-      showNotice(opts.typeChanged
-        ? '<strong>Quote type changed:</strong> customer/project fields were cleared for a fresh quote.'
-        : '<strong>Reset complete:</strong> start a new quote or enter customer/project details.');
-      toast(opts.typeChanged ? 'Quote type changed.' : 'Quote tool reset.');
+      showNotice('<strong>Reset complete:</strong> start a new quote or enter customer/project details.');
+      toast('Quote tool reset.');
       rerenderOnce();
     } finally {
       setTimeout(() => { window.__olipolyQuoteRc1Resetting = false; }, 0);
@@ -5497,14 +5414,6 @@ https://olipoly3d.com`;
     const text = (btn.textContent || '').trim().toLowerCase();
     if (btn.id === 'checkMissingInputsBtn' || text.includes('check missing')) return checkMissingInputs(event);
     if (btn.id === 'resetBtn' || text === 'reset') return resetQuoteTool(event);
-  }, true);
-
-  document.addEventListener('change', (event) => {
-    const target = event.target;
-    if (!target || target.id !== 'liteQuoteType') return;
-    if (window.__olipolyQuoteRc1Resetting) return;
-    const selected = target.value || 'retail';
-    return resetQuoteTool(event, { keepType:selected, typeChanged:true });
   }, true);
 
   window.olipolyResetQuoteTool = resetQuoteTool;
