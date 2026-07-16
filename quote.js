@@ -4734,17 +4734,20 @@ Open Orders Admin now?`);
     if (typeof window.render === "function") window.render();
 
     const quoteNumber = field("quoteNumber", "Q-######");
-    const totals = typeof window.olipolySyncQuoteTotals === "function"
-      ? window.olipolySyncQuoteTotals()
-      : (typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null);
+    // The rendered Quote page is the canonical pricing source.
+    // Customer documents must copy these exact displayed values and must not
+    // run a second pricing calculation while the PDF is being generated.
+    const snapshot = typeof window.olipolyCaptureRenderedQuoteTotals === "function"
+      ? window.olipolyCaptureRenderedQuoteTotals()
+      : null;
 
-    const qty = totals?.q || numberValue("qty") || numberValue("quantity") || 1;
-    const total = totals?.finalText || moneyText("sumQuote", "outFinal", "finalTotal");
-    const subtotal = totals?.subtotalText || moneyText("sumSubtotal", "outSubtotal");
-    const tax = totals?.taxText || moneyText("sumTax", "outTax");
-    const perItem = totals?.perItemText || moneyText("sumPerItem", "outPerItem");
-    const deposit = totals?.depositText || moneyText("sumDeposit", "outDeposit");
-    const balance = totals?.balanceText || moneyText("sumBalance", "outBalance");
+    const qty = snapshot?.qty || numberValue("qty") || numberValue("quantity") || 1;
+    const total = snapshot?.totalText || moneyText("sumQuote", "outFinal", "finalTotal");
+    const subtotal = snapshot?.subtotalText || moneyText("sumSubtotal", "outBeforeTax", "outSubtotal");
+    const tax = snapshot?.taxText || moneyText("sumTax", "outTax");
+    const perItem = snapshot?.perItemText || moneyText("sumPerItem", "outPerItem");
+    const deposit = snapshot?.depositText || moneyText("sumDeposit", "outDeposit");
+    const balance = snapshot?.balanceText || moneyText("sumBalance", "outBalance");
     const project = field("quoteTitle", field("projectTitle", "Custom 3D Printed Project"));
 
     return {
@@ -4951,9 +4954,9 @@ Open Orders Admin now?`);
     }
 
     if (typeof window.ensureDocumentNumbers === "function") window.ensureDocumentNumbers(false);
-    if (typeof window.render === "function") window.render();
-    if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
 
+    // Do not call render() or any totals calculator here. The PDF must use the
+    // exact values already shown in the Calculation Breakdown.
     const data = collectQuotePdfData(mode);
     const html = buildQuotePdfV2Html(data);
     const title = `${mode === "invoice" ? data.invoiceNumber : data.quoteNumber} - OliPoly 3D`;
@@ -5838,8 +5841,11 @@ https://olipoly3d.com`;
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
-      if (typeof window.render === "function") window.render();
+      // Preserve the displayed calculation as-is. PDF generation is display-only
+      // and must never trigger another pricing pass.
+      if (typeof window.olipolyCaptureRenderedQuoteTotals === "function") {
+        window.olipolyCaptureRenderedQuoteTotals();
+      }
 
       if (typeof window.openQuotePdfV2 === "function") {
         window.openQuotePdfV2(mode);
@@ -6743,6 +6749,79 @@ https://olipoly3d.com`;
 
     window.addEventListener("beforeprint", applyFreeOverride, { capture: true });
     applySoon();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+})();
+
+
+/* === Rendered Quote Totals: Single Source of Truth V1 ===
+   The Calculation Breakdown already shown on quote.html is authoritative.
+   PDFs, emails, cloud saves, and order handoff read this frozen display snapshot
+   instead of recalculating pricing independently.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const text = (...ids) => {
+    for (const id of ids) {
+      const value = ($(id)?.textContent || "").trim();
+      if (value) return value;
+    }
+    return "$0.00";
+  };
+  const parseMoney = (value) => Number(String(value || "").replace(/[^0-9.-]/g, "")) || 0;
+
+  function captureRenderedQuoteTotals() {
+    const qty = Math.max(1, Number($("qty")?.value || $("quantity")?.value || 1) || 1);
+    const snapshot = {
+      qty,
+      directText: text("sumDirect", "outDirect"),
+      overheadText: text("sumOverhead", "outOverhead"),
+      baseText: text("outBase"),
+      preDiscountText: text("outPreDiscount"),
+      discountText: text("outDiscount"),
+      subtotalText: text("sumSubtotal", "outBeforeTax", "outRoundedBeforeTax"),
+      taxText: text("sumTax", "outTax"),
+      depositText: text("sumDeposit", "outDeposit"),
+      balanceText: text("sumBalance", "outBalance"),
+      perItemText: text("sumPerItem", "outPerItem"),
+      totalText: text("sumQuote", "outFinal", "finalTotal")
+    };
+
+    snapshot.subtotal = parseMoney(snapshot.subtotalText);
+    snapshot.tax = parseMoney(snapshot.taxText);
+    snapshot.deposit = parseMoney(snapshot.depositText);
+    snapshot.balance = parseMoney(snapshot.balanceText);
+    snapshot.perItem = parseMoney(snapshot.perItemText);
+    snapshot.total = parseMoney(snapshot.totalText);
+    snapshot.capturedAt = new Date().toISOString();
+
+    window.olipolyRenderedQuoteTotals = snapshot;
+    return snapshot;
+  }
+
+  window.olipolyCaptureRenderedQuoteTotals = captureRenderedQuoteTotals;
+  window.olipolyGetRenderedQuoteTotals = () => window.olipolyRenderedQuoteTotals || captureRenderedQuoteTotals();
+
+  function captureBeforeAction() {
+    captureRenderedQuoteTotals();
+  }
+
+  function bind() {
+    [
+      "customerPdfBtn", "invoicePdfBtn", "prepareCustomerEmailBtn", "emailQuoteBtn",
+      "saveQuoteBtn", "createOrderFromQuoteBtn", "acceptQuoteBtn"
+    ].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.renderedTotalsSourceBound === "true") return;
+      btn.dataset.renderedTotalsSourceBound = "true";
+      btn.addEventListener("click", captureBeforeAction, { capture: true });
+    });
+
+    captureRenderedQuoteTotals();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
