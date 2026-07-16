@@ -4721,10 +4721,8 @@ Open Orders Admin now?`);
   }
 
   function collectQuotePdfData(mode = "quote") {
-    // Pass 1A.3A: the PDF consumes the same authoritative quoteTotals object
-    // as the on-screen summary. It does not calculate prices independently.
-    if (typeof window.renderQuote === "function") window.renderQuote();
-
+    // Pass 1A.3B: PDF generation is strictly display-only. Never call render(),
+    // renderQuote(), or any calculator while collecting PDF data.
     const quoteNumber = field("quoteNumber", "Q-######");
     const authoritative = window.olipolyQuoteTotals || null;
     const snapshot = authoritative
@@ -7467,4 +7465,34 @@ https://olipoly3d.com`;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
   else install();
   window.addEventListener("load", renderSingleSource, { once: true });
+})();
+
+
+/* === PASS 1A.3B — AUTHORITATIVE PDF CLICK GATE ===
+   One capture-phase handler owns customer/invoice PDF actions. It prevents
+   older target-level listeners from opening a second PDF or recalculating.
+*/
+(() => {
+  if (window.__olipolyPdfClickGateInstalled) return;
+  window.__olipolyPdfClickGateInstalled = true;
+
+  document.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("#customerPdfBtn, #invoicePdfBtn");
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const mode = button.id === "invoicePdfBtn" ? "invoice" : "quote";
+    if (typeof window.openQuotePdfV2 === "function") {
+      window.openQuotePdfV2(mode);
+      return;
+    }
+    if (typeof window.openQuotePdf === "function") {
+      window.openQuotePdf(mode);
+      return;
+    }
+    alert("Quote PDF renderer is still loading. Please try again in a moment.");
+  }, true);
 })();
