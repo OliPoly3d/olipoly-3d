@@ -4050,7 +4050,8 @@ Open Orders Admin now?`);
     // Pass 1A.3B: PDF generation is strictly display-only. Never call render(),
     // renderQuote(), or any calculator while collecting PDF data.
     const quoteNumber = field("quoteNumber", "Q-######");
-    const totals = window.olipolyGetQuoteTotals();
+    const totals = window.olipolyQuoteTotals;
+    if (!totals) throw new Error("Authoritative quote totals are not available.");
     const qty = totals.quantity;
     const total = totals.totalText;
     const subtotal = totals.subtotalText;
@@ -4061,6 +4062,9 @@ Open Orders Admin now?`);
     const project = field("quoteTitle", field("projectTitle", "Custom 3D Printed Project"));
 
     return {
+      // Retain the authoritative object on the data model so downstream PDF
+      // assertions can verify that presentation never substituted DOM values.
+      totals,
       mode,
       quoteNumber,
       invoiceNumber: field("invoiceNumber", `INV-${quoteNumber.replace(/^Q-/, "")}`),
@@ -4095,6 +4099,8 @@ Open Orders Admin now?`);
       shippingContactName: field("shippingContactName", field("contactName", ""))
     };
   }
+
+  window.collectQuotePdfDataV2 = collectQuotePdfData;
 
   function buildQuotePdfV2Html(data) {
     const T = window.OliPolyDocumentTheme;
@@ -4364,7 +4370,6 @@ Open Orders Admin now?`);
 
   async function ensureQuoteResponseLinkV2(){
     if (typeof window.ensureDocumentNumbers === "function") await window.ensureDocumentNumbers(false);
-    if (typeof window.render === "function") window.render();
 
     const quoteNumber = val("quoteNumber");
     if (!quoteNumber) throw new Error("Quote number is missing. Save or generate a quote number first.");
@@ -4571,10 +4576,11 @@ https://olipoly3d.com`;
       const quoteNumber = val("quoteNumber") || "Quote";
       const to = val("customerEmail");
       const subject = `Quote Ready: ${quoteNumber} - OliPoly 3D`;
-      const totals = window.olipolyGetQuoteTotals();
+      const totals = window.olipolyQuoteTotals;
+      if (!totals) throw new Error("Authoritative quote totals are not available.");
       const html = buildQuoteStyledEmailV2(link, totals);
       const plain = buildQuotePlainEmailV2(link, totals);
-      quoteEmailV2Last = { to, subject, html, plain };
+      quoteEmailV2Last = { to, subject, html, plain, totals };
 
       window._quoteEmailV2Last = quoteEmailV2Last;
 
