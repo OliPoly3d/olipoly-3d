@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const P=require('../js/authoritative-persistence.js');
+const remote={id:'same',updated_at:'2026-07-16T12:00:00Z',status:'printing'};
+const stale={id:'same',updated_at:'2026-07-15T12:00:00Z',status:'estimate'};
+assert.equal(P.choose(remote,stale).row.status,'printing','remote wins over stale local');
+assert.equal(P.choose(remote,{...remote,status:'local draft'}).source,'remote','remote wins equal timestamps');
+assert.equal(P.choose({...remote,updated_at:null},{...stale,updated_at:null}).source,'remote','remote wins missing timestamps');
+assert.equal(P.choose(remote,{...stale,updated_at:'2026-07-17T00:00:00Z'}).source,'local-recovery','newer local is recovery, not an automatic write');
+const deviceA=P.reconcile([remote],[]), deviceB=P.reconcile([remote],[stale]);
+assert.deepEqual(deviceA.map(x=>x.row),deviceB.map(x=>x.row),'devices render the same durable record');
+assert.equal(P.importableRecovery([remote],[stale]).length,0,'stale recovery cannot overwrite remote');
+assert.equal(P.importableRecovery([],[{id:'offline',updated_at:'2026-07-17T00:00:00Z'}]).length,1,'orphan recovery requires explicit import');
+assert.equal(P.reconcile([remote,remote],[]).length,1,'stable IDs prevent duplicates');
+assert.equal(P.reconcile([{...remote,status:'qc'}],[])[0].row.status,'qc','workflow status remains remote');
+assert.equal(P.reconcile([{id:'recipe',name:'Remote recipe'}],[{id:'recipe',name:'cache'}])[0].row.name,'Remote recipe','recipe remains remote-authoritative');
+assert.equal(P.reconcile([remote],[])[0].row.id,'same','clearing browser cache does not erase remote data');
+console.log('authoritative persistence assertions passed');
