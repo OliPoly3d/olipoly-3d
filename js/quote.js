@@ -4731,20 +4731,24 @@ Open Orders Admin now?`);
   }
 
   function collectQuotePdfData(mode = "quote") {
-    if (typeof window.render === "function") window.render();
-
+    // IMPORTANT: Do not call render() here. The on-screen Calculation Breakdown
+    // is the canonical total source. Calling render() at PDF time invokes an
+    // older calculation layer and can change the displayed/customer total.
     const quoteNumber = field("quoteNumber", "Q-######");
-    const totals = typeof window.olipolySyncQuoteTotals === "function"
-      ? window.olipolySyncQuoteTotals()
-      : (typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null);
+    // The rendered Quote page is the canonical pricing source.
+    // Customer documents must copy these exact displayed values and must not
+    // run a second pricing calculation while the PDF is being generated.
+    const snapshot = typeof window.olipolyCaptureRenderedQuoteTotals === "function"
+      ? window.olipolyCaptureRenderedQuoteTotals()
+      : null;
 
-    const qty = totals?.q || numberValue("qty") || numberValue("quantity") || 1;
-    const total = totals?.finalText || moneyText("sumQuote", "outFinal", "finalTotal");
-    const subtotal = totals?.subtotalText || moneyText("sumSubtotal", "outSubtotal");
-    const tax = totals?.taxText || moneyText("sumTax", "outTax");
-    const perItem = totals?.perItemText || moneyText("sumPerItem", "outPerItem");
-    const deposit = totals?.depositText || moneyText("sumDeposit", "outDeposit");
-    const balance = totals?.balanceText || moneyText("sumBalance", "outBalance");
+    const qty = snapshot?.qty || numberValue("qty") || numberValue("quantity") || 1;
+    const total = snapshot?.totalText || moneyText("sumQuote", "outFinal", "finalTotal");
+    const subtotal = snapshot?.subtotalText || moneyText("sumSubtotal", "outBeforeTax", "outSubtotal");
+    const tax = snapshot?.taxText || moneyText("sumTax", "outTax");
+    const perItem = snapshot?.perItemText || moneyText("sumPerItem", "outPerItem");
+    const deposit = snapshot?.depositText || moneyText("sumDeposit", "outDeposit");
+    const balance = snapshot?.balanceText || moneyText("sumBalance", "outBalance");
     const project = field("quoteTitle", field("projectTitle", "Custom 3D Printed Project"));
 
     return {
@@ -4951,9 +4955,9 @@ Open Orders Admin now?`);
     }
 
     if (typeof window.ensureDocumentNumbers === "function") window.ensureDocumentNumbers(false);
-    if (typeof window.render === "function") window.render();
-    if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
 
+    // Do not call render() or any totals calculator here. The PDF must use the
+    // exact values already shown in the Calculation Breakdown.
     const data = collectQuotePdfData(mode);
     const html = buildQuotePdfV2Html(data);
     const title = `${mode === "invoice" ? data.invoiceNumber : data.quoteNumber} - OliPoly 3D`;
@@ -5838,8 +5842,11 @@ https://olipoly3d.com`;
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      if (typeof window.olipolySyncQuoteTotals === "function") window.olipolySyncQuoteTotals();
-      if (typeof window.render === "function") window.render();
+      // Preserve the displayed calculation as-is. PDF generation is display-only
+      // and must never trigger another pricing pass.
+      if (typeof window.olipolyCaptureRenderedQuoteTotals === "function") {
+        window.olipolyCaptureRenderedQuoteTotals();
+      }
 
       if (typeof window.openQuotePdfV2 === "function") {
         window.openQuotePdfV2(mode);
@@ -6172,13 +6179,12 @@ https://olipoly3d.com`;
     setVal('customerNotes', draft.customer_notes || '');
     setVal('quoteNotes', draft.internal_notes || '');
 
-    // Production Control supplies the estimator recommendation separately.
-    // Do not populate Manual Piece Price Override: blank means use the estimator price,
-    // while any explicit value (including 0) is a deliberate customer-price override.
     if(Number(draft.suggested_piece_price) > 0){
-      ensureHidden('productionSuggestedPiecePrice').value = String(Number(draft.suggested_piece_price));
+      setVal('manualPiecePriceOverride', money(draft.suggested_piece_price));
+      setVal('manualPiecePriceReason', 'Production Control suggested price');
     } else if(Number(draft.suggested_total) > 0 && Number(draft.quantity) > 0){
-      ensureHidden('productionSuggestedPiecePrice').value = String(Number(draft.suggested_total) / Number(draft.quantity));
+      setVal('manualPiecePriceOverride', money(Number(draft.suggested_total) / Number(draft.quantity)));
+      setVal('manualPiecePriceReason', 'Production Control suggested total');
     }
 
     const note = $('productionQuoteSourceNote');
@@ -6604,272 +6610,436 @@ https://olipoly3d.com`;
   setTimeout(initTaxJurisdictions, 1600);
 })();
 
-/* === OliPoly Authoritative Quote Pricing Engine V1 (2026-07-16) ===
-   Single source of truth for customer selling totals.
-   Production Control supplies internal costs and a suggested piece price.
-   Quote selects either the suggested piece price or an explicit manual override.
-   Screen, PDF, email, save, and order workflows consume the same totals object.
+/* === Explicit $0 Manual Price Override Guard V1 ===
+   Blank manual override = use normal calculated pricing.
+   Explicit 0 manual override = complimentary/free customer quote.
+
+   Internal Production Control costs remain visible for business tracking,
+   while every customer-facing subtotal, tax, deposit, balance, PDF, email,
+   and saved quote total is forced to $0.00.
 */
 (() => {
-  'use strict';
-
   const $ = (id) => document.getElementById(id);
-  const raw = (id) => (($ (id)?.value ?? '') + '').trim();
-  const numberFrom = (id) => {
-    const cleaned = raw(id).replace(/[^0-9.-]/g, '');
-    const value = Number(cleaned);
-    return Number.isFinite(value) ? value : 0;
-  };
-  const money = (value) => new Intl.NumberFormat('en-US', {
-    style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2
-  }).format(Number.isFinite(Number(value)) ? Number(value) : 0);
-  const roundCents = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-  const setText = (id, value) => document.querySelectorAll(`#${id},[data-sync-id="${id}"]`).forEach((el) => { el.textContent = value; });
+  const ZERO = "$0.00";
 
-  function hasExplicitValue(id) {
-    const el = $(id);
-    return !!el && String(el.value ?? '').trim() !== '';
+  function rawOverride() {
+    return ($("manualPiecePriceOverride")?.value ?? "").toString().trim();
+  }
+
+  function isExplicitFreeOverride() {
+    const raw = rawOverride();
+    if (raw === "") return false;
+    const value = Number(raw.replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(value) && value === 0;
+  }
+
+  function setTextAll(id, value) {
+    document.querySelectorAll(`#${id}`).forEach((el) => {
+      el.textContent = value;
+    });
+  }
+
+  function freeNoticeHtml() {
+    const reason = ($("manualPiecePriceReason")?.value || "").trim();
+    return `<strong>Complimentary quote override applied:</strong> Customer price is intentionally set to $0.00.` +
+      `<br>Calculated Production Control costs are retained internally and are not charged to the customer.` +
+      (reason ? `<br><strong>Reason:</strong> ${reason}` : "");
+  }
+
+  function applyFreeOverride() {
+    if (!isExplicitFreeOverride()) {
+      document.body.classList.remove("explicit-free-quote-active");
+      return false;
+    }
+
+    document.body.classList.add("manual-piece-price-active", "explicit-free-quote-active");
+
+    // Customer-facing totals and downstream saved values.
+    [
+      "sumQuote", "sumSubtotal", "sumTax", "sumPerItem", "sumDeposit", "sumBalance",
+      "outPerItem", "outPreDiscount", "outDiscount", "outBeforeTax", "outRoundedBeforeTax",
+      "outRoundingGain", "outTax", "outDeposit", "outBalance", "outFinal", "finalTotal",
+      "pdfPerItem", "pdfSubtotal", "pdfTax", "pdfTotal", "pdfDeposit", "pdfBalance",
+      "pdfInvoiceAmount", "pdfHeroTotal"
+    ].forEach((id) => setTextAll(id, ZERO));
+
+    // Keep internal direct cost / overhead / break-even fields untouched.
+    setTextAll("sumProfit", "Complimentary");
+    setTextAll("sumMargin", "N/A");
+    setTextAll("outProfit", "Complimentary");
+    setTextAll("outMargin", "N/A");
+
+    const guardrail = $("profitGuardrail");
+    if (guardrail) guardrail.textContent = "Complimentary Quote";
+
+    const confidence = $("quoteConfidence");
+    if (confidence) {
+      confidence.textContent = "Free Override";
+      confidence.className = "confidence-ok";
+    }
+
+    const notice = $("manualPiecePriceNotice");
+    if (notice) {
+      notice.classList.remove("hidden");
+      notice.classList.add("manual-override-active");
+      notice.innerHTML = freeNoticeHtml();
+    }
+
+    const pdfAssumptions = $("pdfAssumptions");
+    if (pdfAssumptions) {
+      if (!pdfAssumptions.dataset.freeOverrideOriginalHtml) {
+        pdfAssumptions.dataset.freeOverrideOriginalHtml = pdfAssumptions.innerHTML || "";
+      }
+      const original = pdfAssumptions.dataset.freeOverrideOriginalHtml || "";
+      const reason = ($("manualPiecePriceReason")?.value || "").trim();
+      const freeText = `<strong>Pricing Method</strong><br>Complimentary project — customer total intentionally set to $0.00.` +
+        (reason ? `<br><strong>Override Note:</strong> ${reason}` : "");
+      pdfAssumptions.innerHTML = original ? `${freeText}<br><br>${original}` : freeText;
+    }
+
+    return true;
+  }
+
+  function restoreFreePdfText() {
+    if (isExplicitFreeOverride()) return;
+    const pdfAssumptions = $("pdfAssumptions");
+    if (pdfAssumptions?.dataset.freeOverrideOriginalHtml != null) {
+      pdfAssumptions.innerHTML = pdfAssumptions.dataset.freeOverrideOriginalHtml;
+      delete pdfAssumptions.dataset.freeOverrideOriginalHtml;
+    }
+  }
+
+  function applySoon(delays = [0, 25, 75, 180, 400, 850]) {
+    delays.forEach((delay) => setTimeout(() => {
+      if (!applyFreeOverride()) restoreFreePdfText();
+    }, delay));
+  }
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._explicitFreeOverridePatchedV1) return;
+    const original = window.render;
+    window.render = function explicitFreeOverrideRender(...args) {
+      const result = original.apply(this, args);
+      applySoon();
+      return result;
+    };
+    window.render._explicitFreeOverridePatchedV1 = true;
+  }
+
+  function bind() {
+    patchRender();
+
+    ["manualPiecePriceOverride", "manualPiecePriceReason"].forEach((id) => {
+      const el = $(id);
+      if (!el || el.dataset.explicitFreeOverrideBound === "true") return;
+      el.dataset.explicitFreeOverrideBound = "true";
+      ["input", "change", "blur"].forEach((eventName) => {
+        el.addEventListener(eventName, () => {
+          if (typeof window.render === "function") window.render();
+          applySoon();
+        });
+      });
+    });
+
+    ["saveQuoteBtn", "customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn", "emailQuoteBtn"].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.explicitFreeOverrideBound === "true") return;
+      btn.dataset.explicitFreeOverrideBound = "true";
+      btn.addEventListener("click", () => applySoon([0, 20, 80, 180, 450, 900, 1500]), { capture: true });
+    });
+
+    window.addEventListener("beforeprint", applyFreeOverride, { capture: true });
+    applySoon();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+})();
+
+
+/* === Rendered Quote Totals: Single Source of Truth V1 ===
+   The Calculation Breakdown already shown on quote.html is authoritative.
+   PDFs, emails, cloud saves, and order handoff read this frozen display snapshot
+   instead of recalculating pricing independently.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const text = (...ids) => {
+    for (const id of ids) {
+      const value = ($(id)?.textContent || "").trim();
+      if (value) return value;
+    }
+    return "$0.00";
+  };
+  const parseMoney = (value) => Number(String(value || "").replace(/[^0-9.-]/g, "")) || 0;
+
+  function captureRenderedQuoteTotals() {
+    const qty = Math.max(1, Number($("qty")?.value || $("quantity")?.value || 1) || 1);
+    const snapshot = {
+      qty,
+      directText: text("sumDirect", "outDirect"),
+      overheadText: text("sumOverhead", "outOverhead"),
+      baseText: text("outBase"),
+      preDiscountText: text("outPreDiscount"),
+      discountText: text("outDiscount"),
+      subtotalText: text("sumSubtotal", "outBeforeTax", "outRoundedBeforeTax"),
+      taxText: text("sumTax", "outTax"),
+      depositText: text("sumDeposit", "outDeposit"),
+      balanceText: text("sumBalance", "outBalance"),
+      perItemText: text("sumPerItem", "outPerItem"),
+      totalText: text("sumQuote", "outFinal", "finalTotal")
+    };
+
+    snapshot.subtotal = parseMoney(snapshot.subtotalText);
+    snapshot.tax = parseMoney(snapshot.taxText);
+    snapshot.deposit = parseMoney(snapshot.depositText);
+    snapshot.balance = parseMoney(snapshot.balanceText);
+    snapshot.perItem = parseMoney(snapshot.perItemText);
+    snapshot.total = parseMoney(snapshot.totalText);
+    snapshot.capturedAt = new Date().toISOString();
+
+    window.olipolyRenderedQuoteTotals = snapshot;
+    return snapshot;
+  }
+
+  window.olipolyCaptureRenderedQuoteTotals = captureRenderedQuoteTotals;
+  window.olipolyGetRenderedQuoteTotals = () => window.olipolyRenderedQuoteTotals || captureRenderedQuoteTotals();
+
+  function captureBeforeAction() {
+    captureRenderedQuoteTotals();
+  }
+
+  function bind() {
+    [
+      "customerPdfBtn", "invoicePdfBtn", "prepareCustomerEmailBtn", "emailQuoteBtn",
+      "saveQuoteBtn", "createOrderFromQuoteBtn", "acceptQuoteBtn"
+    ].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.renderedTotalsSourceBound === "true") return;
+      btn.dataset.renderedTotalsSourceBound = "true";
+      btn.addEventListener("click", captureBeforeAction, { capture: true });
+    });
+
+    captureRenderedQuoteTotals();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+})();
+
+/* === Manual / Suggested Selling Price Authority V1 ===
+   Final authority for quotes with a populated Manual Piece Price Override.
+
+   Production Control costs remain internal (Direct / Break Even). The customer
+   subtotal is exactly quantity × selected piece price, then discount, tax,
+   deposit, and balance are calculated once. PDF, email, save, and order actions
+   consume these same rendered values.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const money = (value) => new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(Number(value) || 0);
+  const numeric = (value) => {
+    const n = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const fieldNumber = (id) => numeric($(id)?.value);
+  const setAll = (id, value) => {
+    document.querySelectorAll(`#${id}`).forEach((el) => { el.textContent = value; });
+  };
+  const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+
+  function overrideRaw() {
+    return ($("manualPiecePriceOverride")?.value ?? "").toString().trim();
+  }
+
+  function hasSellingPriceOverride() {
+    return overrideRaw() !== "";
   }
 
   function quantity() {
-    return Math.max(1, Math.round(numberFrom('qty') || numberFrom('quantity') || 1));
+    return Math.max(1, Math.round(fieldNumber("qty") || fieldNumber("quantity") || 1));
   }
 
-  function internalCosts() {
-    const spoolWeight = Math.max(1, numberFrom('spoolWeight') || 1000);
-    let filament = 0;
-    for (let i = 1; i <= 4; i += 1) {
-      filament += numberFrom(`filament${i}Cost`) * (numberFrom(`filament${i}Used`) / spoolWeight);
-    }
-
-    const material = filament + numberFrom('materialCost');
-    const machine = (numberFrom('machineHours') || numberFrom('printHours')) * numberFrom('machineRate');
-    const design = numberFrom('designHours') * numberFrom('designRate');
-    const labor = (numberFrom('postHours') * numberFrom('postRate')) + numberFrom('laborCost');
-    const packaging = numberFrom('simplePackaging') + numberFrom('packagingCost');
-    const shipping = numberFrom('simpleShipping') + numberFrom('shipping') + numberFrom('shippingCost') + numberFrom('deliveryCost');
-    const hardware = numberFrom('simpleHardware');
-    const direct = material + machine + design + labor + packaging + shipping + hardware;
-
-    return { filament, material, machine, design, labor, packaging, shipping, hardware, direct };
+  function taxRate() {
+    if (($("taxExempt")?.value || "no") === "yes") return 0;
+    return Math.max(0, fieldNumber("salesTax"));
   }
 
-  function legacySuggestedSubtotal(costs) {
-    const profitMode = raw('profitMode') || 'percent';
-    const profitValue = Math.max(0, numberFrom('profitValue'));
-    const profit = profitMode === 'flat' ? profitValue : costs.direct * (profitValue / 100);
-    const marketplacePercent = Math.max(0, numberFrom('marketplacePercent'));
-    const beforeMarketplace = costs.direct + profit;
-    const marketplaceFee = beforeMarketplace * (marketplacePercent / 100);
-    return { profit, marketplaceFee, subtotal: beforeMarketplace + marketplaceFee };
-  }
+  function calculateManualSellingTotals() {
+    if (!hasSellingPriceOverride()) return null;
 
-  function calculateAuthoritativeQuoteTotals() {
     const qty = quantity();
-    const costs = internalCosts();
-    const legacy = legacySuggestedSubtotal(costs);
-
-    const manualActive = hasExplicitValue('manualPiecePriceOverride');
-    const manualPiecePrice = Math.max(0, numberFrom('manualPiecePriceOverride'));
-
-    const productionSuggestedRaw = hasExplicitValue('productionSuggestedPiecePrice')
-      ? numberFrom('productionSuggestedPiecePrice')
-      : 0;
-    const productionSuggestedActive = !manualActive && productionSuggestedRaw >= 0 && hasExplicitValue('productionSuggestedPiecePrice');
-
-    let pricingMode = 'calculated';
-    let piecePrice;
-    let grossSubtotal;
-
-    if (manualActive) {
-      pricingMode = 'manual';
-      piecePrice = manualPiecePrice;
-      grossSubtotal = piecePrice * qty;
-    } else if (productionSuggestedActive) {
-      pricingMode = 'production_suggested';
-      piecePrice = Math.max(0, productionSuggestedRaw);
-      grossSubtotal = piecePrice * qty;
-    } else {
-      grossSubtotal = Math.max(0, legacy.subtotal);
-      piecePrice = qty ? grossSubtotal / qty : 0;
-    }
-
-    const discount = Math.min(Math.max(0, numberFrom('discount')), grossSubtotal);
-    const subtotal = roundCents(Math.max(0, grossSubtotal - discount));
-    const taxExempt = (raw('taxExempt') || 'no') === 'yes' || raw('taxPreset') === 'tax_exempt';
-    const taxRate = taxExempt ? 0 : Math.max(0, numberFrom('salesTax'));
-    const tax = roundCents(subtotal * (taxRate / 100));
-    const unroundedTotal = subtotal + tax;
-    const roundingIncrement = Math.max(0, numberFrom('roundingMode'));
-    const final = roundCents(roundingIncrement ? Math.round(unroundedTotal / roundingIncrement) * roundingIncrement : unroundedTotal);
-    const roundingGain = roundCents(final - unroundedTotal);
-    const depositPercent = Math.min(100, Math.max(0, numberFrom('depositPercent')));
-    const deposit = roundCents(final * (depositPercent / 100));
-    const balance = roundCents(Math.max(0, final - deposit));
-    const customerPerItem = qty ? final / qty : 0;
-    const breakEven = costs.direct;
-    const margin = subtotal > 0 ? ((subtotal - breakEven) / subtotal) * 100 : 0;
+    const piecePrice = Math.max(0, numeric(overrideRaw()));
+    const grossSubtotal = roundCurrency(piecePrice * qty);
+    const discount = Math.max(0, fieldNumber("discount"));
+    const subtotal = roundCurrency(Math.max(0, grossSubtotal - discount));
+    const rate = taxRate();
+    const tax = roundCurrency(subtotal * (rate / 100));
+    const final = roundCurrency(subtotal + tax);
+    const depositPercent = Math.min(100, Math.max(0, fieldNumber("depositPercent")));
+    const deposit = roundCurrency(final * (depositPercent / 100));
+    const balance = roundCurrency(Math.max(0, final - deposit));
 
     return {
-      version: 'authoritative-quote-v1',
-      pricingMode,
+      pricingMode: "manual",
       qty,
       piecePrice,
       grossSubtotal,
       discount,
       subtotal,
-      taxableSubtotal: subtotal,
-      taxRate,
+      taxRate: rate,
       tax,
-      final,
       deposit,
       balance,
-      customerPerItem,
-      breakEven,
-      margin,
-      roundingGain,
-      profit: legacy.profit,
-      marketplaceFee: legacy.marketplaceFee,
-      costs,
+      final,
       piecePriceText: money(piecePrice),
+      grossSubtotalText: money(grossSubtotal),
       subtotalText: money(subtotal),
+      discountText: money(discount),
       taxText: money(tax),
-      finalText: money(final),
       depositText: money(deposit),
       balanceText: money(balance),
-      perItemText: money(customerPerItem),
-      breakEvenText: money(breakEven)
+      finalText: money(final)
     };
   }
 
-  function renderAuthoritativeQuoteTotals() {
-    const v = calculateAuthoritativeQuoteTotals();
-    window.currentQuoteTotals = v;
-    window.olipolyLastSyncedQuoteTotals = v;
+  function applyManualSellingTotals() {
+    const totals = calculateManualSellingTotals();
+    if (!totals) return null;
 
-    setText('sumQuote', v.finalText);
-    setText('sumSubtotal', v.subtotalText);
-    setText('sumTax', v.taxText);
-    setText('sumPerItem', v.perItemText);
-    setText('sumDeposit', v.depositText);
-    setText('sumBalance', v.balanceText);
-    setText('sumDirect', money(v.costs.direct));
-    setText('sumOverhead', money(v.marketplaceFee));
-    setText('sumProfit', v.pricingMode === 'calculated' ? money(v.profit) : (v.pricingMode === 'manual' ? 'Manual' : 'Estimator'));
-    setText('sumBreakEven', v.breakEvenText);
-    setText('batchUnitCost', money(v.breakEven / Math.max(1, v.qty)));
+    document.body.classList.add("manual-piece-price-active");
+    document.body.classList.toggle("explicit-free-quote-active", totals.piecePrice === 0);
 
-    setText('outDirect', money(v.costs.direct));
-    setText('outOverhead', money(v.marketplaceFee));
-    setText('outBase', money(v.grossSubtotal));
-    setText('outProfit', v.pricingMode === 'calculated' ? money(v.profit) : (v.pricingMode === 'manual' ? 'Manual' : 'Estimator'));
-    setText('outPerItem', v.perItemText);
-    setText('outBreakEven', v.breakEvenText);
-    setText('outMargin', Number.isFinite(v.margin) ? `${v.margin.toFixed(1)}%` : '0.0%');
-    setText('outPreDiscount', money(v.grossSubtotal));
-    setText('outDiscount', money(v.discount));
-    setText('outBeforeTax', v.subtotalText);
-    setText('outRoundedBeforeTax', v.subtotalText);
-    setText('outRoundingGain', money(v.roundingGain));
-    setText('outTax', v.taxText);
-    setText('outDeposit', v.depositText);
-    setText('outBalance', v.balanceText);
-    setText('outFinal', v.finalText);
-    setText('finalTotal', v.finalText);
+    // Customer-facing summary.
+    setAll("sumQuote", totals.finalText);
+    setAll("sumSubtotal", totals.subtotalText);
+    setAll("sumTax", totals.taxText);
+    setAll("sumPerItem", totals.piecePriceText);
+    setAll("sumDeposit", totals.depositText);
+    setAll("sumBalance", totals.balanceText);
+    setAll("sumProfit", totals.piecePrice === 0 ? "Complimentary" : "Manual");
 
-    setText('pdfQty', String(v.qty));
-    setText('pdfPerItem', v.perItemText);
-    setText('pdfSubtotal', v.subtotalText);
-    setText('pdfTax', v.taxText);
-    setText('pdfTotal', v.finalText);
-    setText('pdfDeposit', v.depositText);
-    setText('pdfBalance', v.balanceText);
-    setText('pdfInvoiceAmount', v.finalText);
-    setText('pdfHeroTotal', v.finalText);
+    // Calculation Breakdown: internal cost rows remain untouched.
+    setAll("outProfit", totals.piecePrice === 0 ? "Complimentary" : "Manual");
+    setAll("outPerItem", totals.piecePriceText);
+    setAll("outMargin", totals.piecePrice === 0 ? "N/A" : "Manual");
+    setAll("outPreDiscount", totals.grossSubtotalText);
+    setAll("outDiscount", totals.discountText);
+    setAll("outBeforeTax", totals.subtotalText);
+    setAll("outRoundedBeforeTax", totals.subtotalText);
+    setAll("outRoundingGain", money(0));
+    setAll("outTax", totals.taxText);
+    setAll("outDeposit", totals.depositText);
+    setAll("outBalance", totals.balanceText);
+    setAll("outFinal", totals.finalText);
+    setAll("finalTotal", totals.finalText);
 
-    const notice = $('manualPiecePriceNotice');
+    // Quote and invoice PDFs use this exact result; no independent pricing math.
+    setAll("pdfQty", String(totals.qty));
+    setAll("pdfPerItem", totals.piecePriceText);
+    setAll("pdfSubtotal", totals.subtotalText);
+    setAll("pdfTax", totals.taxText);
+    setAll("pdfDeposit", totals.depositText);
+    setAll("pdfBalance", totals.balanceText);
+    setAll("pdfTotal", totals.finalText);
+    setAll("pdfInvoiceAmount", totals.finalText);
+    setAll("pdfHeroTotal", totals.finalText);
+
+    const notice = $("manualPiecePriceNotice");
     if (notice) {
-      if (v.pricingMode === 'manual') {
-        notice.classList.remove('hidden');
-        notice.classList.add('manual-override-active');
-        notice.innerHTML = `<strong>Manual selling price applied:</strong> ${v.piecePriceText} × ${v.qty} = ${money(v.grossSubtotal)} before tax.`;
-      } else if (v.pricingMode === 'production_suggested') {
-        notice.classList.remove('hidden');
-        notice.classList.remove('manual-override-active');
-        notice.innerHTML = `<strong>Production Control suggested price:</strong> ${v.piecePriceText} × ${v.qty} = ${money(v.grossSubtotal)} before tax.`;
-      } else {
-        notice.classList.add('hidden');
-        notice.classList.remove('manual-override-active');
-        notice.textContent = '';
-      }
+      const reason = ($("manualPiecePriceReason")?.value || "").trim();
+      notice.classList.remove("hidden");
+      notice.classList.add("manual-override-active");
+      notice.innerHTML = totals.piecePrice === 0
+        ? `<strong>Complimentary quote:</strong> ${totals.piecePriceText} × ${totals.qty} = ${totals.subtotalText} before tax.${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`
+        : `<strong>Manual selling price applied:</strong> ${totals.piecePriceText} × ${totals.qty} = ${totals.grossSubtotalText} before discount and tax.${reason ? `<br><strong>Reason:</strong> ${reason}` : ""}`;
     }
 
-    return v;
-  }
-
-  function capture() {
-    const v = renderAuthoritativeQuoteTotals();
-    return {
-      qty: v.qty,
-      piecePrice: v.piecePrice,
-      subtotal: v.subtotal,
-      tax: v.tax,
-      final: v.final,
-      deposit: v.deposit,
-      balance: v.balance,
-      perItem: v.customerPerItem,
-      piecePriceText: v.piecePriceText,
-      subtotalText: v.subtotalText,
-      taxText: v.taxText,
-      totalText: v.finalText,
-      finalText: v.finalText,
-      depositText: v.depositText,
-      balanceText: v.balanceText,
-      perItemText: v.perItemText
+    const snapshot = {
+      qty: totals.qty,
+      pricingMode: totals.pricingMode,
+      piecePrice: totals.piecePrice,
+      perItem: totals.piecePrice,
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      deposit: totals.deposit,
+      balance: totals.balance,
+      total: totals.final,
+      perItemText: totals.piecePriceText,
+      subtotalText: totals.subtotalText,
+      taxText: totals.taxText,
+      depositText: totals.depositText,
+      balanceText: totals.balanceText,
+      totalText: totals.finalText,
+      capturedAt: new Date().toISOString()
     };
+
+    window.olipolyAuthoritativeQuoteTotals = totals;
+    window.olipolyRenderedQuoteTotals = snapshot;
+    window.olipolyLastSyncedQuoteTotals = totals;
+    return totals;
   }
 
-  window.calculateQuoteTotals = calculateAuthoritativeQuoteTotals;
-  window.olipolyGetQuoteTotals = calculateAuthoritativeQuoteTotals;
-  window.olipolySyncQuoteTotals = renderAuthoritativeQuoteTotals;
-  window.olipolyCaptureRenderedQuoteTotals = capture;
+  window.olipolyCalculateManualSellingTotals = calculateManualSellingTotals;
+  window.olipolyApplyManualSellingTotals = applyManualSellingTotals;
 
-  function installRenderOwner() {
-    if (window.render?._olipolyAuthoritativeV1) return;
-    const priorRender = typeof window.render === 'function' ? window.render : null;
-    const authoritativeRender = function (...args) {
-      let result;
-      if (priorRender && !priorRender._olipolyAuthoritativeV1) {
-        try { result = priorRender.apply(this, args); } catch (err) { console.warn('Legacy quote render failed:', err); }
-      }
-      renderAuthoritativeQuoteTotals();
+  function applyAfterLegacyWork() {
+    [0, 1, 20, 75, 180, 450].forEach((delay) => setTimeout(applyManualSellingTotals, delay));
+  }
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._manualSellingAuthorityV1) return;
+    const original = window.render;
+    window.render = function manualSellingAuthorityRender(...args) {
+      const result = original.apply(this, args);
+      applyAfterLegacyWork();
       return result;
     };
-    authoritativeRender._olipolyAuthoritativeV1 = true;
-    window.render = authoritativeRender;
-  }
-
-  function scheduleAuthoritativeRender() {
-    queueMicrotask(renderAuthoritativeQuoteTotals);
-    setTimeout(renderAuthoritativeQuoteTotals, 0);
-    setTimeout(renderAuthoritativeQuoteTotals, 60);
+    window.render._manualSellingAuthorityV1 = true;
   }
 
   function bind() {
-    installRenderOwner();
-    document.addEventListener('input', scheduleAuthoritativeRender);
-    document.addEventListener('change', scheduleAuthoritativeRender);
-    document.addEventListener('click', (event) => {
-      if (event.target.closest('#customerPdfBtn,#invoicePdfBtn,#emailCustomerBtn,#saveQuoteBtn,#acceptQuoteBtn,#convertOrderBtn')) {
-        renderAuthoritativeQuoteTotals();
-      }
-    }, true);
-    window.addEventListener('beforeprint', renderAuthoritativeQuoteTotals);
-    renderAuthoritativeQuoteTotals();
-    setTimeout(() => { installRenderOwner(); renderAuthoritativeQuoteTotals(); }, 500);
-    setTimeout(() => { installRenderOwner(); renderAuthoritativeQuoteTotals(); }, 1500);
+    patchRender();
+
+    [
+      "manualPiecePriceOverride", "manualPiecePriceReason", "qty", "quantity",
+      "discount", "salesTax", "taxPreset", "taxExempt", "depositPercent"
+    ].forEach((id) => {
+      const el = $(id);
+      if (!el || el.dataset.manualSellingAuthorityBound === "true") return;
+      el.dataset.manualSellingAuthorityBound = "true";
+      ["input", "change", "blur"].forEach((eventName) => {
+        el.addEventListener(eventName, applyAfterLegacyWork);
+      });
+    });
+
+    [
+      "customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn",
+      "prepareCustomerEmailBtn", "emailQuoteBtn", "saveQuoteBtn",
+      "createOrderFromQuoteBtn", "acceptQuoteBtn"
+    ].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.manualSellingAuthorityActionBound === "true") return;
+      btn.dataset.manualSellingAuthorityActionBound = "true";
+      btn.addEventListener("click", () => {
+        applyManualSellingTotals();
+        window.olipolyCaptureRenderedQuoteTotals?.();
+      }, { capture: true });
+    });
+
+    window.addEventListener("beforeprint", applyManualSellingTotals, { capture: true });
+    applyAfterLegacyWork();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
   else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
 })();
