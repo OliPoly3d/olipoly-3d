@@ -1031,8 +1031,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </script>
 
   <link rel="stylesheet" href="assets/erp-upgrade.css">
-  <script defer src="js/workflow-status.js?v=20260716-m2a"></script>
-  <script defer src="js/inventory-lifecycle.js?v=20260716-m2b"></script>
+  <script defer src="js/workflow-status.js?v=20260716-m2b1"></script>
+  <script defer src="js/inventory-lifecycle.js?v=20260716-m2b1"></script>
   <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
@@ -2768,27 +2768,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
-    const publicTextMap = {
-      ready_to_print:'Your order is ready for production.', printing:'Your order is printing.',
-      qc:'Your order is in quality control and finishing.',
-      ready_for_fulfillment:'Your order is ready for pickup or shipment.', closed:'Your order is complete.'
-    };
-    const nextStepMap = {
-      ready_to_print:'Printing will begin when the assigned machine is available.',
-      printing:'Quality control and finishing follow printing.',
-      qc:'The finished order will be prepared for pickup or shipment.',
-      ready_for_fulfillment:'OliPoly 3D will coordinate the final handoff.',
-      closed:'No further production action is required.'
-    };
-    const now = new Date().toISOString();
-    const patch = {status:targetStatus, public_status_text:publicTextMap[targetStatus], public_next_step:nextStepMap[targetStatus], updated_at:now};
-    try{
-      await sbApi(`/rest/v1/orders?order_number=eq.${encodeURIComponent(job.order_number)}`, {method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(patch)});
-      await sbApi('/rest/v1/order_tracking_public?on_conflict=order_number', {
-        method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
-        body:JSON.stringify({order_number:job.order_number,user_id:state.user.id,order_title:job.job_title || null,...patch})
-      });
-    }catch(err){ console.warn('Production → Orders Admin status sync failed.', err); }
+    const request = window.OliPolyWorkflow.workflowRpcRequest(job.order_number, targetStatus);
+    await sbApi(request.path, {
+      method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
+    });
   }
 
   async function saveJob(e){
@@ -2820,6 +2803,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
     const now = new Date();
+    const warning = j.order_number && window.OliPolyWorkflow.backwardMoveWarning(j.production_status, status);
+    if(warning && !confirm(warning)) return;
     const updated = {...j, production_status:status, updated_at:now.toISOString()};
     if(status === 'printing' && !updated.print_started_at){
       updated.print_started_at = now.toISOString();
@@ -2838,9 +2823,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       ? {...updated, material_reservations:[]}
       : j;
     if(lifecycleAction === 'consume_and_reserve_reprint') await applyReservationDelta(j, reservationBase);
-    updated.material_reservations = shouldReserveInventory(updated, status)
-      ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
-      : [];
+    updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
+      ? []
+      : shouldReserveInventory(updated, status)
+        ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
+        : [];
     await applyReservationDelta(reservationBase, updated);
     if(lifecycleAction === 'consume_and_reserve_reprint'){
       updated.actual_grams_used = null;
@@ -2872,23 +2859,26 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!j) return;
     const choice = prompt(
       `Move "${j.job_title}" back to which step?\n\n` +
-      `1 = Awaiting Design / Actuals\n` +
+      `${j.order_number ? '' : '1 = Awaiting Design / Actuals\n'}` +
       `2 = Ready to Print / Plan Confirmed\n` +
       `3 = Keep In Production / Rework Needed\n\n` +
-      `Enter 1, 2, or 3:`,
-      '1'
+      `Enter ${j.order_number ? '2 or 3' : '1, 2, or 3'}:`,
+      '2'
     );
     if(choice === null) return;
     const cleaned = String(choice).trim().toLowerCase();
     let nextStatus = null;
     let extraNote = '';
-    if(cleaned === '1' || cleaned.includes('design')) nextStatus = 'awaiting_design';
+    if(!j.order_number && (cleaned === '1' || cleaned.includes('design'))) nextStatus = 'awaiting_design';
     else if(cleaned === '2' || cleaned.includes('ready')) nextStatus = 'ready_to_print';
     else if(cleaned === '3' || cleaned.includes('rework') || cleaned.includes('production')) {
       nextStatus = 'printing';
       extraNote = 'Rework needed / moved back within production.';
     }
     if(!nextStatus) return toast('Move back canceled. Choose 1, 2, or 3.');
+
+    const workflowWarning = j.order_number && window.OliPolyWorkflow.backwardMoveWarning(j.production_status, nextStatus);
+    if(workflowWarning && !confirm(workflowWarning)) return;
 
     const currentReserved = (j.material_reservations || []).reduce((sum,r)=>sum+num(r.grams_reserved),0);
     const releasesReservation = currentReserved > 0 && !RESERVABLE_STATUSES.includes(nextStatus);

@@ -47,8 +47,34 @@
     const status = normalizeOrderStatus(value);
     return ORDER_STATUS_LABELS[status];
   }
+  function isPostAcceptanceStatus(value){
+    return POST_ACCEPTANCE_STATUSES.includes(String(value || '').trim().toLowerCase());
+  }
+  function transitionDirection(from, to){
+    const fromIndex = POST_ACCEPTANCE_STATUSES.indexOf(normalizeOrderStatus(from));
+    const toIndex = POST_ACCEPTANCE_STATUSES.indexOf(normalizeOrderStatus(to));
+    return toIndex < fromIndex ? 'backward' : toIndex > fromIndex ? 'forward' : 'same';
+  }
+  function backwardMoveWarning(from, to){
+    if(transitionDirection(from, to) !== 'backward') return '';
+    return 'This moves manufacturing backward. Production attempts, actual usage, scrap, and consumed inventory will be preserved; reservations and consumption will not be recreated or reversed automatically. Continue?';
+  }
+  function workflowRpcRequest(orderNumber, status, expectedUpdatedAt){
+    if(!orderNumber) throw new Error('A linked Order number is required.');
+    if(!isPostAcceptanceStatus(status)) throw new Error('Orders can only use post-acceptance workflow states.');
+    return {
+      path:'/rest/v1/rpc/set_linked_workflow_status',
+      body:{
+        p_order_number:String(orderNumber).trim(),
+        p_status:String(status).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt || null
+      }
+    };
+  }
   return Object.freeze({
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
-    LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus, orderStatusLabel
+    LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
+    isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
+    workflowRpcRequest, orderStatusLabel
   });
 });
