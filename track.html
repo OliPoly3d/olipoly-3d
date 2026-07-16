@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Track Your Order | OliPoly 3D</title>
-<meta content="Track an OliPoly 3D quote or order number and see the latest customer-safe project status, payment options, and pickup or shipping details." name="description"/>
+<meta content="Track an OliPoly 3D order number and see the latest customer-safe production status, payment options, and pickup or shipping details." name="description"/>
 <link href="https://olipoly3d.com/track.html" rel="canonical"/>
 <meta content="index, follow" name="robots"/>
 <meta content="#fff7fb" name="theme-color"/>
@@ -410,18 +410,18 @@ img{max-width:100%}
 <div class="lookup-layout">
 <div class="lookup-copy">
 <span class="eyebrow">Order Tracking</span>
-<h1>Follow your project through the <span class="gradient-word">studio.</span></h1>
-<p class="sub">Enter your quote or order number to see the latest customer-safe update from OliPoly 3D — including status, next steps, payment options, and pickup or shipping details when available.</p>
+<h1>Track Your <span class="gradient-word">Order</span></h1>
+<p class="sub">Enter your Order Number (OP-xxxxx) below to view the current production and delivery status of your order.</p>
 </div>
 <div class="lookup-form">
 <div class="search-row">
 <div>
-<label for="orderLookup">Quote or Order Number</label>
-<input autocomplete="off" id="orderLookup" placeholder="Example: Q-000205 or OP-000205"/>
+<label for="orderLookup">Order Number</label>
+<input autocomplete="off" id="orderLookup" placeholder="Order Number (OP-000001)"/>
 </div>
 <div class="search-action"><button class="btn" id="lookupBtn" type="button">Track Order</button></div>
 </div>
-<div class="lookup-note" id="lookupMessage">Enter your order number to see the current status.</div>
+<div class="lookup-note" id="lookupMessage">Enter your Order Number to view its current status.</div>
 </div>
 </div>
 </section>
@@ -504,7 +504,7 @@ img{max-width:100%}
 <div>
 <span class="eyebrow">Need help?</span>
 <h3>Questions about your order?</h3>
-<p>Email us with your quote or order number and we’ll help confirm the latest status.</p>
+<p>Email us with your Order Number and we’ll help confirm the latest status.</p>
 </div>
 <a class="btn" href="mailto:OliPoly3D@gmail.com">Email OliPoly 3D</a>
 </section>
@@ -574,10 +574,10 @@ img{max-width:100%}
       return ({quote_sent:'Quote Sent',awaiting_approval:'Awaiting Approval',awaiting_deposit:'Deposit Needed',in_design:'Preparing for Production',in_production:'In Production',post_processing:'Finishing / QC',ready_to_pack:'Final Packing',packed:'Packed and Ready',ready_for_pickup:'Ready for Pickup',shipped:'Shipped',delivered:'Delivered',completed:'Order Complete'})[status] || statusLabel(status) || 'Status Update';
     }
     function statusHelper(status){
-      return ({quote_sent:'Your quote or order details are being reviewed.',awaiting_approval:'Your project is waiting for approval before production begins.',awaiting_deposit:'A deposit is needed before production can begin.',in_design:'Your project is being prepared and scheduled for production.',in_production:'Your order is in the production stage.',post_processing:'Your order is being cleaned, checked, finished, or packed.',ready_to_pack:'Your order is nearly ready for handoff.',packed:'Your order is packed and ready for pickup, delivery, or shipping.',ready_for_pickup:'Your order is ready for pickup or local handoff.',shipped:'Your order has shipped. Tracking details will appear when available.',delivered:'Your order has been delivered.',completed:'Your order has been completed. Thank you for choosing OliPoly 3D!'})[status] || 'This is the latest customer-safe update from OliPoly 3D.';
+      return ({quote_sent:'Your order details are being reviewed.',awaiting_approval:'Your project is waiting for approval before production begins.',awaiting_deposit:'A deposit is needed before production can begin.',in_design:'Your project is being prepared and scheduled for production.',in_production:'Your order is in the production stage.',post_processing:'Your order is being cleaned, checked, finished, or packed.',ready_to_pack:'Your order is nearly ready for handoff.',packed:'Your order is packed and ready for pickup, delivery, or shipping.',ready_for_pickup:'Your order is ready for pickup or local handoff.',shipped:'Your order has shipped. Tracking details will appear when available.',delivered:'Your order has been delivered.',completed:'Your order has been completed. Thank you for choosing OliPoly 3D!'})[status] || 'This is the latest customer-safe update from OliPoly 3D.';
     }
     function autoNextText(status){
-      return ({quote_sent:'Next, OliPoly 3D will confirm the details and move the project toward approval or production.',awaiting_approval:'Next, approve the quote or confirm any requested details so production can move forward.',awaiting_deposit:'Next, submit the deposit using the available payment options so production can begin.',in_design:'Next, we’ll finish prep and move the project into the production queue.',in_production:'Next, we’ll finish production, inspect the parts, and move them into finishing or QC.',post_processing:'Next, we’ll complete final cleanup, quality checks, and prepare your order for pickup or shipping.',ready_to_pack:'Next, we’ll package your order and prepare it for pickup, delivery, or shipping.',packed:'Next, your order will be handed off, picked up, delivered, or shipped.',ready_for_pickup:'Next, arrange pickup or follow the provided pickup instructions.',shipped:'Next, watch for tracking updates while your package is on the way.',delivered:'Next, check your package and contact OliPoly 3D if anything needs attention.',completed:'Your order is complete. Save your order number if you need a future reorder or matching project.'})[status] || 'We’ll keep this page updated as your order moves forward.';
+      return ({quote_sent:'Next, OliPoly 3D will confirm the details and move the project toward approval or production.',awaiting_approval:'Next, confirm any requested order details so production can move forward.',awaiting_deposit:'Next, submit the deposit using the available payment options so production can begin.',in_design:'Next, we’ll finish prep and move the project into the production queue.',in_production:'Next, we’ll finish production, inspect the parts, and move them into finishing or QC.',post_processing:'Next, we’ll complete final cleanup, quality checks, and prepare your order for pickup or shipping.',ready_to_pack:'Next, we’ll package your order and prepare it for pickup, delivery, or shipping.',packed:'Next, your order will be handed off, picked up, delivered, or shipped.',ready_for_pickup:'Next, arrange pickup or follow the provided pickup instructions.',shipped:'Next, watch for tracking updates while your package is on the way.',delivered:'Next, check your package and contact OliPoly 3D if anything needs attention.',completed:'Your order is complete. Save your order number if you need a future reorder or matching project.'})[status] || 'We’ll keep this page updated as your order moves forward.';
     }
     function formatLastChecked(){
       return new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -774,7 +774,7 @@ if(venmo && canShowPaymentButtons){
 
     async function lookup(){
       const typedId = els.orderLookup.value.trim();
-      if(!typedId) return setMessage('Enter a quote or order number first.',true);
+      if(!typedId) return setMessage('Please enter a valid Order Number.',true);
 
       const id = normalizeLookupNumber(typedId);
       const safeId = encodeURIComponent(id);
@@ -788,7 +788,7 @@ if(venmo && canShowPaymentButtons){
       if(!data||!data.length){
         els.resultCard.classList.add('hidden');
         if (typedId.toUpperCase().startsWith('Q-')) {
-  return setMessage(`We could not find an accepted order for ${typedId} yet. If this quote was just accepted, try again in a moment using ${id}.`, true);
+  return setMessage(`We could not find an active order for ${typedId} yet. If this order was just created, try again in a moment using ${id}.`, true);
 }
 return setMessage('We could not find that order number yet. It may not be active in tracking yet, or the number may need double-checking.',true);
       }
