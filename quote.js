@@ -3702,7 +3702,10 @@ Open Orders Admin now?`);
       outProfit:t.hasManualPrice?manualLabel:money(t.profit),outPerItem:t.perItemText,outBreakEven:money(t.breakEven),
       outMargin:t.hasManualPrice?(t.manualPiecePrice===0?'N/A':'Manual'):`${t.margin.toFixed(1)}%`,outPreDiscount:money(t.preDiscount),
       outDiscount:money(t.discount),outBeforeTax:t.subtotalText,outRoundedBeforeTax:t.subtotalText,outRoundingGain:money(t.roundingAdjustment),
-      outTax:t.taxText,outDeposit:t.depositText,outBalance:t.balanceText,outFinal:t.totalText,finalTotal:t.totalText};
+      outTax:t.taxText,outDeposit:t.depositText,outBalance:t.balanceText,outFinal:t.totalText,finalTotal:t.totalText,
+      snapshotSuggestedPiece:money(number('productionSuggestedPiecePrice') || t.perItem),snapshotSuggestedTotal:money(number('productionSuggestedTotal') || t.total),
+      snapshotProfit:money(t.profit),snapshotMargin:`${t.margin.toFixed(1)}%`,
+      suggestedSellingPrice:`${money(number('productionSuggestedPiecePrice') || t.perItem)} per piece`};
     Object.entries(outputs).forEach(([id,text])=>setText(id,text));
     document.body.classList.toggle('manual-piece-price-active',t.hasManualPrice);
     document.body.classList.toggle('explicit-free-quote-active',t.hasManualPrice&&t.manualPiecePrice===0);
@@ -3725,8 +3728,12 @@ Open Orders Admin now?`);
   window.olipolySyncQuoteTotals=renderQuotePricing;
   window.olipolyCaptureRenderedQuoteTotals=()=>{renderQuotePricing();return window.olipolyRenderedQuoteTotals;};
   window.olipolyGetRenderedQuoteTotals=window.olipolyCaptureRenderedQuoteTotals;
-  function bind(){document.querySelectorAll('input[id], select[id], textarea[id]').forEach((el)=>{if(el.dataset.quotePricingBound==='true')return;
-    el.dataset.quotePricingBound='true';el.addEventListener('input',renderQuotePricing);el.addEventListener('change',renderQuotePricing);});renderQuotePricing();}
+  function bind(){
+    const customerPricingIds=['qty','quantity','manualPiecePriceOverride','discount','taxExempt','salesTax','roundingMode','depositPercent'];
+    customerPricingIds.forEach((id)=>{const el=$(id);if(!el||el.dataset.quotePricingBound==='true')return;
+      el.dataset.quotePricingBound='true';el.addEventListener('input',renderQuotePricing);el.addEventListener('change',renderQuotePricing);});
+    renderQuotePricing();
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
 })();
 
@@ -5066,7 +5073,7 @@ https://olipoly3d.com`;
     const card = buildPriceCard();
     const target = $('productionQuotePriceFields');
     if(!card || !target) return;
-    ['manualPiecePriceOverride','manualPiecePriceReason','roundingMode','discount','taxPreset','salesTax','paymentTerms','depositPercent'].forEach((id) => {
+    ['suggestedSellingPrice','manualPiecePriceOverride','manualPiecePriceReason','roundingMode','discount','taxPreset','salesTax','paymentTerms','depositPercent'].forEach((id) => {
       const wrap = fieldWrap(id);
       if(wrap && !target.contains(wrap)) target.appendChild(wrap);
     });
@@ -5171,6 +5178,13 @@ https://olipoly3d.com`;
     const overhead = draftNumber(draft, 'estimated_overhead_cost');
     const breakEven = draftNumber(draft, 'estimated_break_even') || (direct + overhead);
     const total = draftNumber(draft, 'suggested_total');
+    const piece = draftNumber(draft, 'suggested_piece_price') || (total && draftNumber(draft, 'quantity') ? total / draftNumber(draft, 'quantity') : 0);
+    const profit = draftNumber(draft, 'estimated_profit') || (total - breakEven);
+    const margin = draftNumber(draft, 'estimated_margin') || (total ? profit / total * 100 : 0);
+    if(piece > 0) document.querySelectorAll('#snapshotSuggestedPiece,#suggestedSellingPrice').forEach((el) => { el.textContent = '$' + piece.toFixed(2) + (el.id === 'suggestedSellingPrice' ? ' per piece' : ''); });
+    if(total > 0) document.querySelectorAll('#snapshotSuggestedTotal').forEach((el) => { el.textContent = '$' + total.toFixed(2); });
+    document.querySelectorAll('#snapshotProfit').forEach((el) => { el.textContent = '$' + profit.toFixed(2); });
+    document.querySelectorAll('#snapshotMargin').forEach((el) => { el.textContent = margin.toFixed(1) + '%'; });
     if(direct > 0){
       document.querySelectorAll('#sumDirect,#outDirect').forEach((el) => { el.textContent = '$' + direct.toFixed(2); });
     }
@@ -5310,7 +5324,7 @@ https://olipoly3d.com`;
       advanced.insertBefore(responsePanel, advanced.firstChild);
     }
 
-    ['manualPiecePriceOverride','manualPiecePriceReason','roundingMode','discount','taxPreset','salesTax','paymentTerms','depositPercent'].forEach((id) => {
+    ['suggestedSellingPrice','manualPiecePriceOverride','manualPiecePriceReason','roundingMode','discount','taxPreset','salesTax','paymentTerms','depositPercent'].forEach((id) => {
       const priceTarget = $('productionQuotePriceFields');
       const wrap = fieldWrap(id);
       if(priceTarget && wrap && !priceTarget.contains(wrap)) priceTarget.appendChild(wrap);
