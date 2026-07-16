@@ -1,95 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow" />
-  <title>OliPoly Engine | Customer 360</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
-  <script defer src="js/erp-reliability.js?v=20260608"></script>
-  <style>
-    :root{--bg:#060b16;--panel:rgba(12,19,40,.90);--panel2:rgba(17,26,52,.96);--line:rgba(126,144,255,.22);--line2:rgba(255,255,255,.11);--text:#f2f6ff;--muted:#c8d5f4;--accent:#7e7bff;--accent2:#2ee6c4;--pink:#ff77c8;--warn:#ffc45e;--good:#4fe0a3;--danger:#ff6e91;--shadow:0 20px 60px rgba(0,0,0,.35)}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(126,123,255,.22),transparent 30rem),radial-gradient(circle at top right,rgba(46,230,196,.12),transparent 28rem),linear-gradient(180deg,#060b16 0%,#0a1225 52%,#08101f 100%)}
-    a{color:inherit}.wrap{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:18px 0 56px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:26px;background:rgba(8,14,30,.82);backdrop-filter:blur(16px);box-shadow:var(--shadow);position:sticky;top:12px;z-index:20}.brand{display:flex;align-items:center;gap:12px;text-decoration:none}.brand-mark{width:44px;height:44px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.2rem}.brand h1{margin:0;font-size:1.1rem}.brand span{display:block;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:3px}.actions{display:flex;gap:9px;flex-wrap:wrap}.btn,.ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border-radius:999px;padding:10px 14px;text-decoration:none;font-weight:900;border:0}.btn{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 26px rgba(102,112,255,.25)}.ghost{background:rgba(255,255,255,.07);border:1px solid var(--line);color:var(--text)}
-    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:16px}.card{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow);border-radius:28px;padding:20px}.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;color:#cffff0;background:rgba(79,224,163,.10);border:1px solid rgba(79,224,163,.18);font-size:.72rem;font-weight:950;text-transform:uppercase;letter-spacing:.08em}.hero h2{margin:12px 0 10px;font-size:clamp(2rem,5vw,3.8rem);letter-spacing:-.06em;line-height:.94}.muted,.card p{color:var(--muted);line-height:1.55}.search-row{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:14px}input{width:100%;min-height:46px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);padding:10px 13px;font:inherit;outline:none}input:focus{border-color:rgba(126,123,255,.65);box-shadow:0 0 0 4px rgba(126,123,255,.14)}.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}.quick{border:1px solid var(--line2);background:rgba(255,255,255,.05);border-radius:20px;padding:13px;text-decoration:none}.quick strong{display:block}.quick small{display:block;color:var(--muted);margin-top:5px;line-height:1.35}.results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.panel{border:1px solid var(--line);background:var(--panel2);border-radius:24px;padding:16px}.panel h3{margin:0 0 10px}.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px;border-radius:16px;background:rgba(255,255,255,.055);border:1px solid var(--line2);text-decoration:none;margin-top:8px}.row b{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:rgba(126,123,255,.16)}.row strong{display:block}.row small{display:block;color:var(--muted);margin-top:2px;font-size:.8rem}.tag{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:950;color:#cffff0;background:rgba(79,224,163,.10);border:1px solid rgba(79,224,163,.18);border-radius:999px;padding:6px 8px}.empty{padding:14px;border-radius:18px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.045);line-height:1.45}.footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.8rem}@media(max-width:850px){.hero,.results-grid{grid-template-columns:1fr}.topbar{position:relative;top:auto;flex-direction:column;align-items:flex-start}.actions,.actions a{width:100%}.quick-grid{grid-template-columns:1fr}.search-row{grid-template-columns:1fr}.wrap{width:min(100% - 16px,1180px)}}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header class="topbar">
-      <a class="brand" href="hub.html"><span class="brand-mark">👤</span><span><h1>Customer 360</h1><span>Private customer command view</span></span></a>
-      <nav class="actions"><a class="ghost" href="hub.html">← Hub</a><a class="ghost" href="orders-admin.html">Orders</a><a class="ghost" href="finance-pro.html">Finance</a><a class="btn" href="quote.html">Quote</a></nav>
-    </header>
-    <main>
-      <section class="hero">
-        <div class="card">
-          <span class="eyebrow">Customer lookup</span>
-          <h2>Find a customer, then open the right tool already filtered.</h2>
-          <p>Customer 360 v1 is a safe launcher: it does not change Supabase or rewrite records. It gives you one place to jump into Orders, Production, Finance, and Quote with the same customer search.</p>
-          <div class="search-row"><input id="customerSearch" placeholder="Customer name, company, email, OP#, quote..." autocomplete="off"><button class="btn" id="runBtn" type="button">Search</button></div>
-          <div class="quick-grid" id="quickLinks"></div>
-        </div>
-        <div class="card">
-          <span class="eyebrow">How to use</span>
-          <p>Type a customer, project, OP number, or quote reference. Use the module links to open the source page with that search applied.</p>
-          <div class="empty" id="statusBox">Enter a search term to build customer-focused links.</div>
-        </div>
-      </section>
-      <section class="results-grid">
-        <div class="panel"><h3>Open in source modules</h3><div id="moduleResults"></div></div>
-        <div class="panel"><h3>Possible local matches</h3><div id="localResults"></div></div>
-      </section>
-      <p class="footer">Customer 360 v1 is intentionally read-only and link-based. Source pages remain the system of record.</p>
-    </main>
-  </div>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>OliPoly Engine | Customer 360</title>
+<link rel="stylesheet" href="css/erp-reliability.css?v=20260608"><style>
+:root{--bg:#060b16;--panel:rgba(12,19,40,.92);--line:rgba(126,144,255,.22);--text:#f2f6ff;--muted:#c8d5f4;--accent:#7e7bff;--accent2:#2ee6c4;--good:#4fe0a3;--warn:#ffc45e}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(126,123,255,.2),transparent 30rem),#060b16}.wrap{width:min(1200px,calc(100% - 28px));margin:auto;padding:18px 0 50px}.topbar,.card,.section{border:1px solid var(--line);background:var(--panel);border-radius:24px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;position:sticky;top:10px;z-index:5}.brand{text-decoration:none}.brand h1{margin:0;font-size:1.15rem}.brand small,.muted{color:var(--muted)}nav,.actions{display:flex;gap:8px;flex-wrap:wrap}.btn,.ghost{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 13px;border-radius:999px;text-decoration:none;color:white;font-weight:800;border:1px solid var(--line);background:rgba(255,255,255,.06);cursor:pointer}.btn{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2))}.lookup{display:grid;grid-template-columns:1fr auto;gap:9px;margin:16px 0}.lookup input{min-height:48px;border-radius:15px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:white;padding:10px 14px;font:inherit}.card,.section{padding:18px;margin-top:14px}.overview-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.overview-head h2{margin:4px 0}.eyebrow,.pill{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:#cffff0}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:15px}.metric,.item{padding:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);border-radius:16px}.metric span,.item small{display:block;color:var(--muted);font-size:.76rem}.metric strong{display:block;margin-top:5px;font-size:1.08rem}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.section h3{margin:0 0 10px}.list{display:grid;gap:8px}.item-head{display:flex;justify-content:space-between;gap:10px}.item h4{margin:0 0 5px}.item p{margin:6px 0;color:var(--muted);font-size:.84rem}.item .actions{margin-top:9px}.item .ghost,.item .btn{font-size:.75rem;min-height:34px;padding:7px 10px}.timeline .item{display:grid;grid-template-columns:125px 1fr;gap:12px}.empty{padding:13px;border:1px dashed var(--line);border-radius:15px;color:var(--muted)}.business{border-color:rgba(255,196,94,.35)}.hidden{display:none!important}@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:600px){.wrap{width:calc(100% - 16px)}.topbar,.overview-head{align-items:stretch;flex-direction:column}.topbar nav a{flex:1}.lookup{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}.timeline .item{grid-template-columns:1fr}}
+</style><script src="js/olipoly-auth.js"></script><script src="js/workflow-status.js"></script><script src="js/customer-360.js"></script></head><body><div class="wrap">
+<header class="topbar"><a class="brand" href="hub.html"><h1>👤 Customer 360</h1><small>Complete read-only customer history</small></a><nav><a class="ghost" href="hub.html">← Hub</a><a class="ghost" href="orders-admin.html">Orders</a><a class="ghost" href="finance-pro.html">Finance</a><a class="btn" href="quote.html">Quote</a></nav></header>
+<div class="lookup"><input id="search" placeholder="Exact customer name, email, phone, company, Q- or OP- number" autocomplete="off"><button id="searchBtn" class="btn">Find Customer</button></div><div id="message" class="empty">Loading customer records…</div>
+<main id="content" class="hidden"><section class="card"><div class="overview-head"><div><span class="eyebrow">Customer overview</span><h2 id="customerName"></h2><div id="customerContact" class="muted"></div></div><div id="customerType" class="pill"></div></div><div id="metrics" class="metrics"></div></section>
+<section id="businessPanel" class="section business hidden"><h3>Business / PO Details</h3><div id="businessDetails" class="metrics"></div></section>
+<div class="grid"><section class="section"><h3>Active Work</h3><div id="active" class="list"></div></section><section class="section"><h3>Financial Summary</h3><div id="finance" class="metrics"></div><div id="financeLinks" class="actions"></div></section></div>
+<div class="grid"><section class="section"><h3>Quote History</h3><div id="quotes" class="list"></div></section><section class="section"><h3>Completed Orders & Repeat Opportunities</h3><div id="completed" class="list"></div></section></div>
+<section class="section timeline"><h3>Unified Timeline</h3><div id="timeline" class="list"></div></section></main></div>
 <script>
-(function(){
-  const $=id=>document.getElementById(id);
-  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-  const clean=s=>String(s||'').trim();
-  const enc=s=>encodeURIComponent(clean(s));
-  function modules(q){
-    const e=enc(q);
-    return [
-      ['📦','Orders Admin','Orders, customer records, invoices, labels','orders-admin.html?search='+e],
-      ['🖨️','Production Control','Jobs, OP references, materials, history','production-control.html?search='+e],
-      ['💰','Finance Pro','Income, expenses, vendors, notes','finance-pro.html?search='+e],
-      ['◈','Quote Tool','Customer quote work and project fields','quote.html?search='+e],
-      ['⬢','Inventory Control','Material/customer/project references in notes','inventory-control.html?search='+e]
-    ];
-  }
-  function row(icon,title,sub,href,tag='Open'){
-    return `<a class="row" href="${esc(href)}"><b>${esc(icon)}</b><span><strong>${esc(title)}</strong><small>${esc(sub)}</small></span><span class="tag">${esc(tag)}</span></a>`;
-  }
-  function scanLocal(q){
-    const needle=clean(q).toLowerCase(); if(!needle) return [];
-    const hits=[];
-    for(let i=0;i<localStorage.length;i++){
-      const key=localStorage.key(i); let raw='';
-      try{ raw=localStorage.getItem(key)||''; }catch(e){ continue; }
-      if(!raw || !raw.toLowerCase().includes(needle)) continue;
-      let label=key.replace(/^olipoly_/,'').replace(/_/g,' ');
-      hits.push({key,label,raw});
-      if(hits.length>=8) break;
-    }
-    return hits;
-  }
-  function render(){
-    const q=clean($('customerSearch').value);
-    $('quickLinks').innerHTML = q ? modules(q).slice(0,4).map(m=>`<a class="quick" href="${esc(m[3])}"><strong>${esc(m[1])}</strong><small>${esc(m[2])}</small></a>`).join('') : '';
-    $('moduleResults').innerHTML = q ? modules(q).map(m=>row(m[0],m[1],m[2],m[3])).join('') : '<div class="empty">Enter a customer or project search above.</div>';
-    const hits=scanLocal(q);
-    $('localResults').innerHTML = q ? (hits.length ? hits.map(h=>row('•',h.label,`Local browser data key: ${h.key}`,'#','Local')).join('') : '<div class="empty">No matching local summary data found. Use the source module links to search live page data.</div>') : '<div class="empty">Local matches appear here when browser summary data contains the search term.</div>';
-    $('statusBox').textContent = q ? `Ready to search modules for “${q}”.` : 'Enter a search term to build customer-focused links.';
-    if(q) history.replaceState(null,'','?search='+enc(q));
-  }
-  function init(){ const p=new URLSearchParams(location.search); const q=p.get('search')||p.get('customer')||p.get('q')||''; if(q) $('customerSearch').value=q; render(); }
-  $('customerSearch').addEventListener('input', render);
-  $('customerSearch').addEventListener('keydown', e=>{if(e.key==='Enter'){e.preventDefault();render();}});
-  $('runBtn').addEventListener('click', render);
-  init();
-})();
-</script>
-</body>
-</html>
+(function(){'use strict';const C=window.OliPolyCustomer360,$=id=>document.getElementById(id),money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),clean=v=>String(v??'').trim(),SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co',SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';let data={orders:[],quotes:[],jobs:[],events:[]};
+function local(key){try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[]}catch{return[]}}
+async function table(name,order='updated_at.desc'){const token=window.OliPolyAuth?.getToken?.()||localStorage.getItem('sb_token');if(!token)return[];try{const res=await fetch(`${SUPABASE_URL}/rest/v1/${name}?select=*&order=${order}&limit=1000`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${token}`}});return res.ok?await res.json():[]}catch{return[]}}
+function normalizeLocalQuote(q){const fields=q.quoteData?.fields||{};return {...q,quote_number:q.quote_number||q.quoteNumber,quote_status:q.quote_status||q.quoteStatus,customer_name:q.customer_name||q.customerName||fields.customerName,customer_email:q.customer_email||q.customerEmail||fields.customerEmail,customer_phone:q.customer_phone||fields.customerPhone,company_name:q.company_name||fields.companyName,quote_title:q.quote_title||q.quoteTitle,quote_total:q.quote_total??q.quoteTotal,updated_at:q.updated_at||q.updatedAt};}
+async function load(){await window.OliPolyAuth?.ensure?.();const [orders,quotes,jobs,events]=await Promise.all([table('orders','updated_at.desc'),table('quotes','updated_at.desc'),table('production_jobs','updated_at.desc'),table('project_events','created_at.desc')]);data={orders:C.dedupe(orders,'order'),quotes:C.dedupe([...local('olipoly_quote_history_v3').map(normalizeLocalQuote),...quotes],'quote'),jobs:C.dedupe([...local('olipoly_production_jobs_v3'),...jobs],'job'),events:C.dedupe(events,'event')};renderSearch();}
+function findSeed(q){const n=clean(q).toLowerCase();if(!n)return null;const all=[...data.orders,...data.quotes,...data.jobs];return all.find(r=>[r.order_number,r.quote_number,r.quoteNumber,r.customer_id].some(v=>clean(v).toLowerCase()===n))||all.find(r=>[r.customer_email,r.customerEmail,r.customer_phone,r.phone,r.company_name,r.shipping_company,r.customer_name,r.customerName].some(v=>clean(v).toLowerCase()===n))||null;}
+const empty=t=>`<div class="empty">${esc(t)}</div>`,link=(label,href,primary=false)=>`<a class="${primary?'btn':'ghost'}" href="${esc(href)}">${esc(label)}</a>`;
+function orderCard(o,reorder=false){const job=data.jobs.find(j=>clean(j.order_number)===clean(o.order_number)),st=job?.production_status||o.status||'active',due=o.invoice_due_date||o.due_date||o.target_date||o.turnaround||'No due date',paid=o.payment_status||'unpaid';return `<article class="item"><div class="item-head"><h4>${esc(o.order_number||'OP-')} · ${esc(o.order_title||job?.job_title||'Untitled project')}</h4><strong>${money(C.amount(o))}</strong></div><p>${esc(st.replace(/_/g,' '))} · Payment: ${esc(paid.replace(/_/g,' '))} · Due/turnaround: ${esc(due)}</p><div class="actions">${link('Orders Admin',C.deepLink('orders-admin.html',o))}${link('Production',C.deepLink('production-control.html',o))}${o.tracking_number?link('Track',`orders-admin.html?search=${encodeURIComponent(o.tracking_number)}`):''}${reorder?`<button class="btn reorder" data-order="${esc(o.order_number)}">Repeat / Reorder</button>`:''}</div></article>`}
+function render(bundle){const seed=bundle.seed,name=seed.customer_name||seed.customerName||seed.contact_name||'Customer',company=seed.company_name||seed.shipping_company||'',email=seed.customer_email||seed.customerEmail||'',phone=seed.customer_phone||seed.phone||'';$('customerName').textContent=name;$('customerContact').textContent=[company,email,phone].filter(Boolean).join(' • ')||'No contact fields recorded';$('customerType').textContent=bundle.business?'Business / PO':'Retail';const metrics=[['First activity',bundle.firstActivity.slice(0,10)||'—'],['Most recent',bundle.lastActivity.slice(0,10)||'—'],['Accepted value',money(bundle.finance.acceptedValue)],['Total paid',money(bundle.finance.paid)],['Outstanding',money(bundle.finance.outstanding)],['Active orders',bundle.activeOrders.length],['Completed orders',bundle.completedOrders.length]];$('metrics').innerHTML=metrics.map(x=>`<div class="metric"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('active').innerHTML=bundle.activeOrders.length?bundle.activeOrders.map(o=>orderCard(o)).join(''):empty('No active orders.');$('completed').innerHTML=bundle.completedOrders.length?bundle.completedOrders.map(o=>orderCard(o,true)).join(''):empty('No completed orders available for repeat ordering.');
+$('quotes').innerHTML=bundle.quotes.length?bundle.quotes.map(q=>{const order=C.quoteOrderLink(q,bundle.orders);return `<article class="item"><div class="item-head"><h4>${esc(q.quote_number||q.quoteNumber||'Quote')} · ${esc(q.quote_title||q.quoteTitle||'Untitled')}</h4><strong>${money(C.amount(q))}</strong></div><p>${esc(q.quote_status||q.quoteStatus||'saved')} · ${esc((q.sent_at||q.updated_at||q.updatedAt||'').slice(0,10))}</p><div class="actions">${link('Open Quote',`quote.html?quote=${encodeURIComponent(q.quote_number||q.quoteNumber||'')}`)}${order?link('Accepted Order',order):''}</div></article>`}).join(''):empty('No quote history matched this identity.');
+$('finance').innerHTML=[['Accepted orders',money(bundle.finance.acceptedValue)],['Paid',money(bundle.finance.paid)],['Balance',money(bundle.finance.outstanding)],['Invoice balance',money(bundle.finance.invoiceOutstanding)]].map(x=>`<div class="metric"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('financeLinks').innerHTML=link('Open Finance',`finance-pro.html?search=${encodeURIComponent(email||name)}`)+link('Orders Admin',`orders-admin.html?search=${encodeURIComponent(email||name)}`);
+$('timeline').innerHTML=bundle.timeline.length?bundle.timeline.map(i=>`<article class="item"><small>${esc(i.date.slice(0,16).replace('T',' '))}</small><div><strong>${esc(i.title)}</strong><p>${typeof i.detail==='number'?money(i.detail):esc(i.detail)}</p></div></article>`).join(''):empty('No dated activity is available.');$('businessPanel').classList.toggle('hidden',!bundle.business);if(bundle.business){const po=[...new Set(bundle.orders.map(o=>o.po_number).filter(Boolean))].join(', ')||'—',inv=[...new Set(bundle.orders.map(o=>o.invoice_number).filter(Boolean))].join(', ')||'—',terms=[...new Set(bundle.orders.map(o=>o.invoice_terms).filter(Boolean))].join(', ')||'—';$('businessDetails').innerHTML=[['Company',company||'—'],['PO numbers',po],['Invoices',inv],['Payment terms',terms],['Outstanding invoices',money(bundle.finance.invoiceOutstanding)]].map(x=>`<div class="metric"><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join('')}$('message').classList.add('hidden');$('content').classList.remove('hidden');document.querySelectorAll('.reorder').forEach(btn=>btn.onclick=()=>{const order=bundle.completedOrders.find(o=>clean(o.order_number)===btn.dataset.order);if(!order)return;localStorage.setItem('olipoly_reorder_quote_draft_v1',JSON.stringify(C.reorderDraft(order)));location.href=`quote.html?reorder=${encodeURIComponent(order.order_number||'reorder')}`});}
+function renderSearch(){const q=$('search').value||new URLSearchParams(location.search).get('search')||'';if(q&&!$('search').value)$('search').value=q;const seed=findSeed(q);if(!seed){$('content').classList.add('hidden');$('message').classList.remove('hidden');$('message').textContent=q?'No exact customer identity or identifier match found. Similar names are not combined.':'Enter an exact customer identity or record identifier.';return}history.replaceState(null,'','?search='+encodeURIComponent(q));render(C.build(data,seed));}
+$('searchBtn').onclick=renderSearch;$('search').onkeydown=e=>{if(e.key==='Enter')renderSearch()};load();})();
+</script></body></html>
