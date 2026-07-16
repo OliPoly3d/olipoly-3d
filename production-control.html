@@ -1732,6 +1732,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   <div id="toast" class="toast"></div>
 
 <script src="olipoly-auth.js"></script>
+<script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
   <script>
 (() => {
   'use strict';
@@ -1909,16 +1910,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
 
   function mergeUniqueJobs(lists){
-    const map = new Map();
-    lists.flat().filter(Boolean).forEach(raw => {
-      const job = normalizeJob(raw);
-      const key = job.id || `${job.job_title}|${job.created_at || ''}|${job.customer_name || ''}`;
-      const existing = map.get(key);
-      if(!existing || String(job.updated_at || '').localeCompare(String(existing.updated_at || '')) > 0){
-        map.set(key, job);
-      }
-    });
-    return [...map.values()].sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
+    return window.OliPolyProductionPersistence.mergeJobs([], lists.flat(), normalizeJob);
   }
 
   function migrateLocalJobs(){
@@ -3708,7 +3700,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       try{
         const localMigrated = migrateLocalJobs();
         const cloudMigrated = await loadCloudJobs();
-        state.jobs = mergeUniqueJobs([cloudMigrated, localMigrated]);
+        // Supabase and browser storage share IDs. Newest updated_at wins; an exact
+        // timestamp tie belongs to Supabase so a local fallback cannot rewrite it.
+        state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudMigrated, localMigrated, normalizeJob);
         localWrite(LS_JOBS,state.jobs);
         await refreshRawInventoryFromCloud();
         await refreshNonFilamentSuppliesFromCloud();
@@ -5617,20 +5611,19 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   async function patchProductionJobHandoff(job, draft){
     const jobs = readJson(LS_JOBS, []);
-    const updated = {
-      ...job,
-      production_status: 'waiting_customer',
+    const updated = window.OliPolyProductionPersistence.transition(job, 'waiting_customer', {
+      quote_number: draft.quote_number,
+      production_quote_id: draft.quote_number,
       quote_handoff_status: 'draft_sent_to_quote',
       quote_handoff_at: new Date().toISOString(),
-      linked_quote_draft: draft,
-      updated_at: new Date().toISOString()
-    };
+      linked_quote_draft: draft
+    });
     writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? updated : j));
 
-    const token = localStorage.getItem('sb_token');
+    const token = window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token');
     if(!token || !job.id) return;
     try{
-      await fetch(`${SUPABASE_URL}/rest/v1/production_jobs?id=eq.${encodeURIComponent(job.id)}`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/production_jobs?id=eq.${encodeURIComponent(job.id)}`, {
         method: 'PATCH',
         headers: {
           apikey: SUPABASE_KEY,
@@ -5638,10 +5631,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           'Content-Type': 'application/json',
           Prefer: 'return=minimal'
         },
-        body: JSON.stringify({ job_payload: updated, updated_at: updated.updated_at })
+        body: JSON.stringify({
+          production_status: 'waiting_customer',
+          quote_number: draft.quote_number,
+          job_payload: updated,
+          updated_at: updated.updated_at
+        })
       });
+      if(!response.ok) throw new Error(`Supabase status update failed (${response.status}).`);
     }catch(error){
-      console.warn('Production handoff cloud marker failed; local draft still created.', error);
+      console.warn('Production handoff cloud update failed; local fallback was retained.', error);
+      throw error;
     }
   }
 
@@ -5653,7 +5653,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!job.quote_number) return toast('Save this estimate first so Production Control can assign a Q-number.');
     const draft = buildQuoteDraft(job);
     writeJson(QUOTE_DRAFT_KEY, draft);
-    await patchProductionJobHandoff(job, draft);
+    try{
+      await patchProductionJobHandoff(job, draft);
+    }catch(error){
+      return toast('Quote draft saved locally, but cloud status failed. Retry before handoff.');
+    }
     toast('Quote draft prepared from Production Control.');
     const url = `quote.html?fromProduction=1&production_job_id=${encodeURIComponent(job.id)}`;
     window.location.href = url;

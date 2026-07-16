@@ -3451,6 +3451,21 @@ https://olipoly3d.com`;
       updated_at: now
     };
 
+    const updateLocalFallback = () => {
+      try{
+        const key = 'olipoly_production_jobs_v3';
+        const localJobs = JSON.parse(localStorage.getItem(key) || '[]');
+        const updatedJobs = localJobs.map(job => {
+          const matchesId = productionJobId && String(job.id) === productionJobId;
+          const matchesQuote = q && String(job.quote_number || '').toUpperCase() === q.toUpperCase();
+          return matchesId || matchesQuote ? {...job, ...fullPatch} : job;
+        });
+        localStorage.setItem(key, JSON.stringify(updatedJobs));
+      }catch(err){
+        console.warn('Could not update the local production fallback after acceptance.', err);
+      }
+    };
+
     const filters = [];
     if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
     if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
@@ -3462,6 +3477,7 @@ https://olipoly3d.com`;
           headers:{Prefer:'return=minimal'},
           body:JSON.stringify(fullPatch)
         });
+        updateLocalFallback();
         return;
       }catch(err){
         console.warn('Linked production job full acceptance update failed; trying minimal patch.', path, err);
@@ -3471,6 +3487,7 @@ https://olipoly3d.com`;
             headers:{Prefer:'return=minimal'},
             body:JSON.stringify(minimalPatch)
           });
+          updateLocalFallback();
           return;
         }catch(minErr){
           console.warn('Linked production job minimal acceptance update failed for', path, minErr);
