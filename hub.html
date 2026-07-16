@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="css/erp-core.css?v=20260708-workflow4">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
   <script defer src="js/erp-core.js?v=20260708-workflow4"></script>
+  <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
+  <script src="js/hub-business-pulse.js?v=20260716-m3a"></script>
   <style>
     :root{
       --bg:#060b16;--bg2:#0a1225;--panel:rgba(12,19,40,.88);--panel2:rgba(17,26,52,.94);
@@ -24,11 +26,11 @@
     .hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:16px;margin-top:16px}.panel,.hero-card,.metric,.tool-card,.attention-card,.search-card{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow);border-radius:28px}.hero-card{padding:24px}.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;color:#cffff0;background:rgba(79,224,163,.10);border:1px solid rgba(79,224,163,.18);font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.hero h2{margin:12px 0 10px;font-size:clamp(2.05rem,5vw,4rem);letter-spacing:-.06em;line-height:.92}.hero p{margin:0;color:var(--muted);line-height:1.55;max-width:720px}.quick-stack{display:grid;gap:10px}.quick-card{padding:18px;border-radius:24px;background:var(--panel2);border:1px solid var(--line);text-decoration:none;display:flex;align-items:center;gap:12px}.quick-card strong{display:block}.quick-card small{display:block;margin-top:3px;color:var(--muted);line-height:1.35}.quick-icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--pink));font-size:1.1rem;flex:0 0 auto}.arrow{margin-left:auto;color:var(--muted);font-weight:900}
     .section{margin-top:16px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:10px}.section h3{margin:0;font-size:1.05rem;letter-spacing:-.02em}.section p{margin:4px 0 0;color:var(--muted);font-size:.9rem;line-height:1.45}.tool-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.tool-card{padding:16px;text-decoration:none;min-height:134px;display:flex;flex-direction:column;justify-content:space-between;transition:.16s}.tool-card:hover,.quick-card:hover{transform:translateY(-2px);border-color:rgba(126,123,255,.42)}.tool-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.tool-icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 22px rgba(126,123,255,.16)}.tool-card strong{display:block;margin-top:12px;font-size:1rem}.tool-card small{display:block;margin-top:5px;color:var(--muted);font-size:.82rem;line-height:1.35}.tag{align-self:flex-start;margin-top:12px;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--muted);font-size:.68rem;font-weight:950;letter-spacing:.06em;text-transform:uppercase}
     .attention-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}.attention-card{padding:18px}.attention-list{display:grid;gap:9px;margin-top:12px}.attention-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line2)}.attention-item b{width:30px;height:30px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;background:rgba(255,196,94,.12);color:#ffe2af}.attention-item strong{display:block}.attention-item small{display:block;color:var(--muted);font-size:.82rem;line-height:1.35;margin-top:3px}.attention-item.info b{background:rgba(126,123,255,.14);color:#dcdcff}.attention-item.good b{background:rgba(79,224,163,.12);color:#cffff0}.attention-item.danger b{background:rgba(255,110,145,.12);color:#ffd7e1}.attention-item.warn b{background:rgba(255,196,94,.12);color:#ffe2af}.metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.metric{padding:14px;box-shadow:none;background:rgba(255,255,255,.04)}.metric span{display:block;color:var(--muted);font-size:.68rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.metric strong{display:block;margin-top:6px;font-size:1.35rem;line-height:1}.metric small{display:block;margin-top:5px;color:var(--muted);font-size:.78rem;line-height:1.3}
-    .pulse-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}.pulse-tile{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:20px;background:rgba(255,255,255,.045);border:1px solid var(--line2);text-decoration:none}.pulse-tile b{width:34px;height:34px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;background:rgba(126,123,255,.14)}.pulse-tile strong{display:block;font-size:.92rem}.pulse-tile small{display:block;color:var(--muted);font-size:.78rem;line-height:1.32;margin-top:3px}.pulse-tile.danger{border-color:rgba(255,110,145,.28);background:rgba(255,110,145,.075)}.pulse-tile.danger b{background:rgba(255,110,145,.13);color:#ffd7e1}.pulse-tile.warn{border-color:rgba(255,196,94,.24);background:rgba(255,196,94,.07)}.pulse-tile.warn b{background:rgba(255,196,94,.12);color:#ffe2af}.pulse-tile.good{border-color:rgba(79,224,163,.22);background:rgba(79,224,163,.07)}.pulse-tile.good b{background:rgba(79,224,163,.12);color:#cffff0}.pulse-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pulse-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--muted);font-size:.72rem;font-weight:900}
+    .pulse-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:12px}.pulse-tile{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:20px;background:rgba(255,255,255,.045);border:1px solid var(--line2);text-decoration:none}.pulse-tile b{width:34px;height:34px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;background:rgba(126,123,255,.14)}.pulse-tile strong{display:block;font-size:.92rem}.pulse-tile small{display:block;color:var(--muted);font-size:.78rem;line-height:1.32;margin-top:3px}.pulse-tile.danger{border-color:rgba(255,110,145,.28);background:rgba(255,110,145,.075)}.pulse-tile.danger b{background:rgba(255,110,145,.13);color:#ffd7e1}.pulse-tile.warn{border-color:rgba(255,196,94,.24);background:rgba(255,196,94,.07)}.pulse-tile.warn b{background:rgba(255,196,94,.12);color:#ffe2af}.pulse-tile.good{border-color:rgba(79,224,163,.22);background:rgba(79,224,163,.07)}.pulse-tile.good b{background:rgba(79,224,163,.12);color:#cffff0}.pulse-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pulse-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--muted);font-size:.72rem;font-weight:900}
     .search-card{padding:14px;margin-top:12px}.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}input{width:100%;min-height:44px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);padding:10px 13px;font:inherit;outline:none}input:focus{border-color:rgba(126,123,255,.58);box-shadow:0 0 0 4px rgba(126,123,255,.12)}.results{display:grid;gap:8px;margin-top:10px}.result{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line2);text-decoration:none}.result span:first-child{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:rgba(126,123,255,.15)}.result strong{display:block}.result small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.group-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.mini-panel{padding:16px;border-radius:24px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}.mini-panel h4{margin:0 0 10px;font-size:.95rem}.mini-links{display:grid;gap:8px}.mini-links a{display:flex;justify-content:space-between;gap:10px;padding:10px 11px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line2);text-decoration:none;color:var(--text);font-weight:800}.mini-links a span{color:var(--muted);font-weight:900}.footer{margin-top:18px;color:var(--muted);font-size:.8rem;text-align:center}.mobile-nav{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:30;padding:8px;border-radius:24px;background:rgba(8,14,30,.92);border:1px solid var(--line);backdrop-filter:blur(16px);box-shadow:var(--shadow);grid-template-columns:repeat(5,1fr);gap:6px}.mobile-nav a{display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;font-size:.67rem;font-weight:900;color:var(--muted);padding:7px 4px;border-radius:16px}.mobile-nav a b{font-size:1rem;color:var(--text)}.mobile-nav a.active{background:rgba(126,123,255,.16);color:var(--text)}
     .activity-card{padding:18px}.activity-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px}.activity-filters{display:flex;gap:7px;flex-wrap:wrap}.activity-filter{min-height:32px;padding:7px 10px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.045);color:var(--muted);font-weight:900;font-size:.72rem;cursor:pointer}.activity-filter.active{color:#cffff0;background:rgba(79,224,163,.10);border-color:rgba(79,224,163,.24)}.activity-list{display:grid;gap:9px;margin-top:12px}.activity-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:flex-start;padding:12px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line2)}.activity-icon{width:34px;height:34px;border-radius:13px;display:grid;place-items:center;background:rgba(126,123,255,.14)}.activity-item strong{display:block}.activity-item small{display:block;color:var(--muted);font-size:.8rem;line-height:1.35;margin-top:3px}.activity-time{font-size:.72rem;color:var(--muted);font-weight:900;white-space:nowrap}.activity-empty{padding:16px;border-radius:18px;border:1px dashed var(--line);color:var(--muted);background:rgba(255,255,255,.035);line-height:1.45}.activity-actions{display:flex;gap:8px;flex-wrap:wrap}.activity-actions button{min-height:32px;padding:7px 10px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.045);color:var(--text);font-weight:900;cursor:pointer}
-    @media(max-width:980px){.hero,.attention-grid{grid-template-columns:1fr}.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.group-grid{grid-template-columns:1fr}.topbar{position:relative;top:auto}.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-    @media(max-width:640px){.wrap{width:min(100% - 16px,1180px);padding-top:10px;padding-bottom:92px}.topbar{align-items:flex-start;flex-direction:column;border-radius:22px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .ghost,.top-actions .btn{width:100%;font-size:.82rem}.hero-card,.panel,.attention-card,.search-card,.mini-panel{border-radius:22px;padding:15px}.tool-grid,.metric-grid{grid-template-columns:1fr}.tool-card{min-height:112px}.quick-card{padding:14px}.hero h2{font-size:2.15rem}.search-row{grid-template-columns:1fr}.search-row .ghost{width:100%}.mobile-nav{display:grid}.section-head{align-items:flex-start;flex-direction:column}.brand h1{font-size:1rem}.brand span{font-size:.68rem}}
+    @media(max-width:980px){.hero,.attention-grid{grid-template-columns:1fr}.pulse-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.group-grid{grid-template-columns:1fr}.topbar{position:relative;top:auto}.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media(max-width:640px){.pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{width:min(100% - 16px,1180px);padding-top:10px;padding-bottom:92px}.topbar{align-items:flex-start;flex-direction:column;border-radius:22px}.top-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.top-actions .ghost,.top-actions .btn{width:100%;font-size:.82rem}.hero-card,.panel,.attention-card,.search-card,.mini-panel{border-radius:22px;padding:15px}.tool-grid,.metric-grid{grid-template-columns:1fr}.tool-card{min-height:112px}.quick-card{padding:14px}.hero h2{font-size:2.15rem}.search-row{grid-template-columns:1fr}.search-row .ghost{width:100%}.mobile-nav{display:grid}.section-head{align-items:flex-start;flex-direction:column}.brand h1{font-size:1rem}.brand span{font-size:.68rem}}
   
 
     /* === OliPoly ERP readability cleanup 2026-07-02 === */
@@ -84,6 +86,19 @@
         </div>
       </section>
 
+      <section class="section" id="pulse">
+        <div class="section-head">
+          <div><h3>Business Pulse</h3><p>Live operating counts from the production workflow saved by Production Control.</p></div>
+          <span class="chip" id="pulseModeChip">Read only</span>
+        </div>
+        <div class="attention-card">
+          <div class="pulse-grid" id="workflowCounts"></div>
+          <div class="section-head" style="margin-top:18px"><div><h3>Printer Status</h3><p>P1S and P2S use Production Control’s shared queue selection.</p></div></div>
+          <div class="metric-grid" id="printerSummary"></div>
+        </div>
+      </section>
+
+
       <section class="section" id="tools">
         <div class="section-head">
           <div><h3>Continue Working</h3><p>Big touch-friendly links for the core backend pages.</p></div>
@@ -92,32 +107,15 @@
         <div class="tool-grid" id="coreTools"></div>
       </section>
 
-      <section class="section" id="pulse">
-        <div class="section-head">
-          <div><h3>Business Pulse</h3><p>Today’s best quick read on what needs action across orders, production, inventory, finance, and printers.</p></div>
-          <span class="chip" id="pulseModeChip">Pulse Lite</span>
-        </div>
-        <div class="attention-card">
-          <h3 id="pulseTitle">What needs attention today?</h3>
-          <div class="pulse-summary" id="pulseSummary"></div>
-          <div class="pulse-grid" id="pulseGrid"></div>
-        </div>
+      <section class="section" id="attention">
+        <div class="section-head"><div><h3>Attention Needed</h3><p>Only actionable exceptions, prioritized by urgency.</p></div><span class="chip" id="attentionCount">0 items</span></div>
+        <div class="attention-card"><div class="attention-list" id="attentionList"></div></div>
       </section>
 
-      <section class="section" id="attention">
-        <div class="section-head">
-          <div><h3>Attention + Snapshot</h3><p>Lightweight status from local/cloud summaries where available. These are hints, not a replacement for the source pages.</p></div>
-          <span class="chip" id="dataModeChip">Local summaries</span>
-        </div>
+      <section class="section" id="snapshots">
         <div class="attention-grid">
-          <div class="attention-card">
-            <h3>Needs Attention</h3>
-            <div class="attention-list" id="attentionList"></div>
-          </div>
-          <div class="attention-card">
-            <h3>Business Snapshot</h3>
-            <div class="metric-grid" id="metricGrid"></div>
-          </div>
+          <div class="attention-card"><h3>Money Snapshot</h3><div class="metric-grid" id="moneySnapshot"></div></div>
+          <div class="attention-card"><h3>Inventory Snapshot</h3><div class="metric-grid" id="inventorySnapshot"></div></div>
         </div>
       </section>
 
@@ -318,91 +316,44 @@
     function pulseTile(icon,title,sub,kind='warn',href='#tools'){
       return `<a class="pulse-tile ${esc(kind)}" href="${esc(href)}"><b>${esc(icon)}</b><span><strong>${esc(title)}</strong><small>${esc(sub)}</small></span></a>`;
     }
+    function hubRows(){ return firstArray(['olipoly_production_jobs_v3']); }
+    function hubOrders(){ return firstArray(['olipoly_orders_admin_v1','olipoly_orders_v1']); }
     function renderBusinessPulse(){
-      const f = read('olipoly_finance_dashboard_summary_v1') || {};
-      const p = read('olipoly_production_dashboard_summary_v1') || read('olipoly_production_control_summary_v1') || {};
-      const o = read('olipoly_orders_dashboard_summary_v1') || read('olipoly_orders_admin_summary_v1') || {};
-      const invLive = summarizeInventoryV2();
-      const pulse = window.OliPolyERP?.businessPulse?.build?.({finance:f, production:p, orders:o, inventory:invLive}) || null;
-      let items = pulse?.items || [];
-      if(!items.length){
-        const overdue = Number(o.overdueCount || o.unpaidOrders || f.unpaidCount || 0);
-        const openOrders = Number(o.openOrders ?? o.activeOrders ?? 0);
-        const activeJobs = Number(p.activeJobs ?? p.openJobs ?? p.jobsActive ?? 0);
-        const unassigned = Number(p.unassignedPrinterRisk || p.unassignedJobs || 0);
-        const waiting = Number(p.waitingJobs || p.awaitingApproval || p.jobsWaiting || 0);
-        const openQuotes = Number(o.openQuotes || p.openQuotes || p.quoteSent || p.quotesSent || 0);
-        const needsActuals = Number(p.awaitingDesign || p.awaiting_design || p.needsActuals || 0);
-        if(overdue>0) items.push({icon:'💸',title:'Payment follow-up',sub:`${overdue} unpaid or overdue item(s) may need review.`,kind:'danger',href:'orders-admin.html'});
-        if(invLive.counts.reorder>0) items.push({icon:'⬢',title:'Material to order',sub:`${invLive.counts.reorder} material/supply item(s) are below reorder point.`,kind:'danger',href:'inventory-control.html?status=low#forecastPanel'});
-        if(unassigned>0) items.push({icon:'🖨️',title:'Printer assignment',sub:`${unassigned} job(s) may need printer assignment.`,kind:'warn',href:'production-control.html'});
-        if(waiting>0) items.push({icon:'⏳',title:'Jobs waiting',sub:`${waiting} job(s) are waiting for approval or printer time.`,kind:'warn',href:'production-control.html'});
-        if(openQuotes>0) items.push({icon:'◈',title:'Quote follow-up',sub:`${openQuotes} quote(s) are sent/active and may need customer response check.`,kind:'warn',href:'production-control.html?status=quote_sent'});
-        if(needsActuals>0) items.push({icon:'🧮',title:'Production actuals needed',sub:`${needsActuals} accepted job(s) need design/slicer actuals before reservation.`,kind:'warn',href:'production-control.html?status=awaiting_design'});
-        if(activeJobs>0 && !unassigned && !waiting) items.push({icon:'🖨️',title:'Production active',sub:`${activeJobs} active job(s) are currently in the workflow.`,kind:'info',href:'production-control.html'});
-        if(openOrders>0 && !overdue) items.push({icon:'📦',title:'Orders in motion',sub:`${openOrders} open order(s) are active.`,kind:'info',href:'orders-admin.html'});
-        if(!items.length) items.push({icon:'✓',title:'No urgent actions',sub:'Orders, production, inventory, finance, and printers look clear from saved summaries.',kind:'good',href:'#tools'});
-      }
-      items = items.slice(0,8);
-      const grid = document.getElementById('pulseGrid');
-      if(grid) grid.innerHTML = items.map(x => pulseTile(x.icon || '•', x.title || 'ERP item', x.sub || '', x.kind || 'warn', x.href || '#tools')).join('');
-      const summary = document.getElementById('pulseSummary');
-      if(summary){
-        const danger = items.filter(x=>x.kind==='danger').length;
-        const warn = items.filter(x=>x.kind==='warn').length;
-        const good = !danger && !warn;
-        summary.innerHTML = [
-          `<span class="pulse-chip">${danger ? '🔴' : '🟢'} ${danger} critical</span>`,
-          `<span class="pulse-chip">${warn ? '🟡' : '🟢'} ${warn} watch</span>`,
-          `<span class="pulse-chip">${good ? 'Clear' : 'Review'} status</span>`
-        ].join('');
-      }
-      const chip = document.getElementById('pulseModeChip');
-      if(chip){ chip.textContent = (items.some(x=>x.kind==='danger') ? 'Needs action' : items.some(x=>x.kind==='warn') ? 'Watch list' : 'Clear'); chip.className = items.some(x=>x.kind==='danger') ? 'chip danger' : items.some(x=>x.kind==='warn') ? 'chip warn' : 'chip'; }
-    }
-
-    function renderSnapshot(){
-      const f = read('olipoly_finance_dashboard_summary_v1') || {};
-      const p = read('olipoly_production_dashboard_summary_v1') || read('olipoly_production_control_summary_v1') || {};
-      const i = read('olipoly_inventory_dashboard_summary_v1') || read('olipoly_inventory_control_summary_v1') || {};
-      const invLive = summarizeInventoryV2();
-      const o = read('olipoly_orders_dashboard_summary_v1') || read('olipoly_orders_admin_summary_v1') || {};
-      const metrics = [
-        metric('Month Revenue', money(f.monthRevenue || f.revenueMonth || 0), 'From Finance Pro summary'),
-        metric('Month Profit', money(f.monthProfit || f.profitMonth || 0), 'Revenue minus visible costs'),
-        metric('Open Orders', String(o.openOrders ?? o.activeOrders ?? 0), 'Orders Admin summary'),
-        metric('Active Jobs', String(p.activeJobs ?? p.openJobs ?? p.jobsActive ?? 0), 'Production summary'),
-        metric('Inventory Watch', `${invLive.counts.reorder || 0} reorder`, `${invLive.counts.specialty + invLive.counts.watch + invLive.counts.seasonal} non-nag low item(s)`),
-        metric('Tax Collected', money(f.taxCollected || f.salesTaxCollected || 0), 'Current finance summary')
+      const jobs = hubRows();
+      const inventory = firstArray(['olipoly_raw_material_inventory_v3','olipoly_raw_material_inventory_v2']);
+      const finance = read('olipoly_finance_dashboard_summary_v1') || {};
+      const pulse = window.OliPolyHubPulse.build({jobs, orders:hubOrders(), inventory, finance, today:todayISO()});
+      const labels = [
+        ['waiting_for_customer','Waiting for Customer','quote.html?status=waiting_for_customer'],
+        ['ready_to_print','Ready to Print','production-control.html?status=ready_to_print'],
+        ['printing','Printing','production-control.html?status=printing'],
+        ['qc','QC / Finishing','production-control.html?status=qc'],
+        ['ready_for_fulfillment','Ready for Pickup / Shipment','orders-admin.html?status=ready_for_fulfillment'],
+        ['closed_today','Closed Today','orders-admin.html?status=closed']
       ];
-      document.getElementById('metricGrid').innerHTML = metrics.join('');
-
-      const attention = [];
-      const overdue = Number(o.overdueCount || o.unpaidOrders || f.unpaidCount || 0);
-      const unassigned = Number(p.unassignedPrinterRisk || p.unassignedJobs || 0);
-      const openQuotes = Number(o.openQuotes || p.openQuotes || p.quoteSent || p.quotesSent || 0);
-        const needsActuals = Number(p.awaitingDesign || p.awaiting_design || p.needsActuals || 0);
-      if (overdue>0) attention.push(item('💸','Cash collection check',`${overdue} unpaid or overdue item(s) may need review.`,'danger','orders-admin.html'));
-      if (invLive.counts.reorder>0) {
-        const firstReorder = invLive.lowItems.find(x => !x.snoozed && (!x.policy || x.policy === 'auto'));
-        attention.push(item('⬢', invLive.counts.reorder === 1 && firstReorder ? `Reorder ${firstReorder.label}` : 'Inventory reorder needed', invLive.counts.reorder === 1 ? '1 material or supply is below its reorder point.' : `${invLive.counts.reorder} materials or supplies are below reorder points.`, 'warn', 'inventory-control.html?status=low#forecastPanel'));
-      }
-      const quietLow = invLive.counts.specialty + invLive.counts.watch + invLive.counts.seasonal + invLive.counts.discontinued + invLive.counts.snoozed;
-      if (quietLow>0) {
-        const quietLabel = quietLow === 1 ? '1 item below preferred stock.' : `${quietLow} items below preferred stock.`;
-        attention.push(item('◌','Specialty inventory',`${quietLabel} No reorder action required.`, 'info', 'inventory-control.html?status=low#forecastPanel'));
-      }
-      if (unassigned>0) attention.push(item('🖨️','Printer assignment needed',`${unassigned} production job(s) may need printer assignment.`,'warn','production-control.html'));
-      if (openQuotes>0) attention.push(item('◈','Open quote follow-up',`${openQuotes} quote(s) are sent/active and may need customer follow-up.`,'warn','production-control.html?status=quote_sent'));
-      const awaitingDesign = Number(p.awaitingDesign || p.awaiting_design || p.needsActuals || 0);
-      if (awaitingDesign>0) attention.push(item('🧮','Production actuals needed',`${awaitingDesign} accepted job(s) need actual design/slicer/material plan before inventory reservation.`,'warn','production-control.html?status=awaiting_design')); 
-      if (!attention.length) attention.push(item('✓','No urgent actions detected','Open Orders, Production, Inventory, or Finance for a deeper check.','good','#tools'));
-      document.getElementById('attentionList').innerHTML = attention.join('');
-
-      const online = navigator.onLine;
-      document.getElementById('dataModeChip').textContent = online ? 'Online + local summaries' : 'Offline local summaries';
-      document.getElementById('dataModeChip').className = online ? 'chip' : 'chip warn';
+      document.getElementById('workflowCounts').innerHTML = labels.map(([key,label,href]) => pulseTile('•',label,`${pulse.counts[key]} record(s)`,key==='printing'?'good':'info',href)).join('');
+      const queueOrder = (a,b) => Number(a.manual_rank || 999) - Number(b.manual_rank || 999);
+      document.getElementById('printerSummary').innerHTML = window.OliPolyPrinterDashboard.PRINTERS.map(printer => {
+        const snap = window.OliPolyPrinterDashboard.selectPrinterSnapshot(jobs, printer, queueOrder);
+        const current = snap.current ? `Printing ${snap.current.order_number || snap.current.job_title || 'job'}` : 'Idle';
+        const next = snap.next ? `Next: ${snap.next.order_number || snap.next.job_title || 'job'}${snap.additionalQueued ? ` (+${snap.additionalQueued})` : ''}` : 'No queued job';
+        return metric(printer,current,next);
+      }).join('');
+      document.getElementById('attentionList').innerHTML = pulse.attention.length ? pulse.attention.map(x => item(x.kind==='danger'?'!':'•',x.title,x.detail,x.kind,x.href)).join('') : item('✓','No actionable exceptions','Review source pages for routine work.','good','#tools');
+      document.getElementById('attentionCount').textContent = `${pulse.attention.length} item(s)`;
+      document.getElementById('moneySnapshot').innerHTML = [
+        metric('Unpaid accepted orders',money(pulse.money.unpaidAcceptedTotal),'Remaining customer balances'),
+        metric('Deposits due',money(pulse.money.depositsDue),'Required deposits not recorded'),
+        metric('Overdue invoices',String(pulse.money.overdueInvoices.length),'Business invoices past due'),
+        metric('Paid today',pulse.money.paidTodayAvailable?money(pulse.money.paidToday):'Unavailable','Shown only when existing payment data is available')
+      ].join('');
+      document.getElementById('inventorySnapshot').innerHTML = [
+        metric('Reserved grams',`${Math.round(pulse.inventory.reservedGrams*10)/10}g`,'Active production reservations'),
+        metric('Below reorder',String(pulse.inventory.belowReorder.length),'Materials at or below threshold'),
+        metric('Reservation shortages',String(pulse.inventory.shortageJobs.length),'Jobs missing required grams')
+      ].join('');
     }
+
     function cleanQuery(value){ return String(value || '').trim(); }
     function searchFallbacks(qRaw){
       const q = encodeURIComponent(qRaw);
@@ -454,15 +405,14 @@
       const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
       document.getElementById('greetingPill').textContent = `${part}, Rob`;
     }
-    renderTools(); renderBusinessPulse(); renderSnapshot(); renderActivity(); greet();
-    setInterval(() => { renderBusinessPulse(); renderSnapshot(); }, 30000);
+    renderTools(); renderBusinessPulse(); renderActivity(); greet();
     document.getElementById('hubSearch').addEventListener('input', renderSearch);
     document.getElementById('activityFilters')?.addEventListener('click', e => { const btn = e.target.closest('[data-filter]'); if(!btn) return; activityState.filter = btn.dataset.filter || 'all'; renderActivity(); });
     document.getElementById('activityRefresh')?.addEventListener('click', renderActivity);
     document.getElementById('activityClear')?.addEventListener('click', () => { if(confirm('Clear the local ERP activity log on this browser?')) { if(window.OliPolyERP?.events?.clear) window.OliPolyERP.events.clear(); else localStorage.setItem('olipoly_erp_event_log_v1','[]'); renderActivity(); } });
-    window.addEventListener('storage', () => { renderBusinessPulse(); renderSnapshot(); renderActivity(); });
-    window.addEventListener('online', () => { renderBusinessPulse(); renderSnapshot(); renderActivity(); });
-    window.addEventListener('offline', () => { renderBusinessPulse(); renderSnapshot(); renderActivity(); });
+    window.addEventListener('storage', () => { renderBusinessPulse(); renderActivity(); });
+    window.addEventListener('online', () => { renderBusinessPulse(); renderActivity(); });
+    window.addEventListener('offline', () => { renderBusinessPulse(); renderActivity(); });
     window.addEventListener('olipoly:erp-event', () => { renderBusinessPulse(); renderActivity(); });
     window.addEventListener('olipoly:erp-events-cleared', renderActivity);
   </script>
