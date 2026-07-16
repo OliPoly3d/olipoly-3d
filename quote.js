@@ -4721,16 +4721,25 @@ Open Orders Admin now?`);
   }
 
   function collectQuotePdfData(mode = "quote") {
-    // IMPORTANT: Do not call render() here. The on-screen Calculation Breakdown
-    // is the canonical total source. Calling render() at PDF time invokes an
-    // older calculation layer and can change the displayed/customer total.
+    // Pass 1A.3A: the PDF consumes the same authoritative quoteTotals object
+    // as the on-screen summary. It does not calculate prices independently.
+    if (typeof window.renderQuote === "function") window.renderQuote();
+
     const quoteNumber = field("quoteNumber", "Q-######");
-    // The rendered Quote page is the canonical pricing source.
-    // Customer documents must copy these exact displayed values and must not
-    // run a second pricing calculation while the PDF is being generated.
-    const snapshot = typeof window.olipolyCaptureRenderedQuoteTotals === "function"
-      ? window.olipolyCaptureRenderedQuoteTotals()
-      : null;
+    const authoritative = window.olipolyQuoteTotals || null;
+    const snapshot = authoritative
+      ? {
+          qty: authoritative.quantity || authoritative.qty,
+          totalText: authoritative.totalText,
+          subtotalText: authoritative.subtotalText,
+          taxText: authoritative.taxText,
+          perItemText: authoritative.piecePriceText || authoritative.perItemText,
+          depositText: authoritative.depositText,
+          balanceText: authoritative.balanceText
+        }
+      : (typeof window.olipolyCaptureRenderedQuoteTotals === "function"
+          ? window.olipolyCaptureRenderedQuoteTotals()
+          : null);
 
     const qty = snapshot?.qty || numberValue("qty") || numberValue("quantity") || 1;
     const total = snapshot?.totalText || moneyText("sumQuote", "outFinal", "finalTotal");
@@ -4869,7 +4878,7 @@ Open Orders Admin now?`);
                 </div>
               </td>
               <td style="text-align:center;">${T.esc(data.qty)}</td>
-              <td style="text-align:right;">${T.esc(data.total)}</td>
+              <td style="text-align:right;">${T.esc(data.subtotal)}</td>
             </tr>
           </tbody>
         </table>

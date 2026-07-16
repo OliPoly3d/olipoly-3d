@@ -1,0 +1,12 @@
+Pass 1A.3A — PDF totals authority
+
+Changed:
+- PDF collection now calls the single renderQuote() entry point once.
+- PDF reads window.olipolyQuoteTotals first.
+- PDF does not calculate subtotal, tax, deposit, balance, or total independently.
+- Quote line item displays pre-tax subtotal; tax remains in the totals section.
+- Updated quote.js cache-busting version in quote.html.
+
+Acceptance test:
+Qty 4, manual piece price 5.125, tax 6.5%, no deposit:
+Subtotal $20.50; tax $1.33; total/balance $21.83.
