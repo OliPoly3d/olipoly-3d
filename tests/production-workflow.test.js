@@ -32,6 +32,7 @@ assert.match(production, /data-complete-print=/);
 assert.match(production, /data-status="\$\{j\.id\}\|ready_for_fulfillment"[^>]*>Pass/);
 assert.match(production, /data-status="\$\{j\.id\}\|ready_to_print"[^>]*>Needs Reprint/);
 assert.match(production, /data-status="\$\{j\.id\}\|closed"[^>]*>Fulfilled \/ Close/);
+assert.match(production, /const RESERVABLE_STATUSES = \['ready_to_print','printing','qc'\]/);
 
 assert.match(quote, /status: 'ready_to_print'/);
 assert.match(quote, /production_status: 'ready_to_print'/);

@@ -156,10 +156,7 @@
       on_hold:'On Hold'
     },
     productionClosed: ['completed','failed_scrap','canceled','archived'],
-    productionReservesInventory: [
-      'idea','awaiting_approval','ready_to_print','queued','printing','post_processing',
-      'packaging','ready','awaiting_pickup','delivery_scheduled','shipped','delivered','on_hold'
-    ],
+    productionReservesInventory: ['ready_to_print','printing','qc'],
     order: {
       quote_sent:'Quote Sent', awaiting_approval:'Awaiting Approval', awaiting_deposit:'Awaiting Deposit',
       in_design:'In Design', in_production:'In Production', post_processing:'Post-Processing',
