@@ -1032,6 +1032,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   <link rel="stylesheet" href="assets/erp-upgrade.css">
   <script defer src="js/workflow-status.js?v=20260716-m2a"></script>
+  <script defer src="js/inventory-lifecycle.js?v=20260716-m2b"></script>
   <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
@@ -1646,7 +1647,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <div class="modal hidden" id="closeModal" aria-hidden="true">
   <div class="modal-dialog">
     <h2>Complete Print</h2>
-    <p class="muted">Enter actuals here so printer maintenance and inventory update from real print activity. Inventory deducts good-part grams plus scrap/purge/failed grams.</p>
+    <p class="muted">Enter actuals here for QC review. Inventory remains reserved until QC Pass consumes good-part grams plus scrap/purge/failed grams.</p>
     <div class="next-box" id="closeJobName"><strong>Job</strong><span>Close-out details</span></div>
 
     <div class="closeout-summary" id="closeoutSummary">
@@ -1699,7 +1700,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       </div>
       <label class="full">Close Note<textarea id="closeNote" placeholder="QC, delivery, scrap reason, customer handoff, etc."></textarea></label>
 
-      <label class="full closeout-check"><input id="closeConfirmDeduct" type="checkbox"> <span>I reviewed the actual grams/scrap and understand this closeout may deduct inventory or finished-good quantities unless inventory reduction is excluded or already deducted.</span></label>
+      <label class="full closeout-check"><input id="closeConfirmDeduct" type="checkbox"> <span>I reviewed the actual grams and scrap. This step records actuals; inventory is consumed only after QC Pass.</span></label>
     </div>
     <div class="modal-actions">
       <button class="ghost" id="cancelCloseBtn" type="button">Cancel</button>
@@ -1786,8 +1787,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   const PRINT_WORK_STATUSES = ['ready_to_print','printing'];
   const RECOMMENDABLE_STATUSES = ['ready_to_print'];
   const ESTIMATE_PHASE_STATUSES = ['estimate','waiting_customer'];
-  // Preserve current inventory timing until the dedicated inventory milestone.
-  const RESERVABLE_STATUSES = ['ready_to_print','printing','qc','ready_for_fulfillment'];
+  const RESERVABLE_STATUSES = ['ready_to_print','printing','qc'];
   const POST_PRINT_STATUSES = ['qc','ready_for_fulfillment'];
 
   function needsPrinterTime(j){ return PRINT_WORK_STATUSES.includes(j.production_status); }
@@ -1803,7 +1803,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
   function shouldReserveInventory(j, statusOverride){
     const status = statusOverride || j?.production_status;
-    return !!j && !j.exclude_inventory_reduction && RESERVABLE_STATUSES.includes(status) && hasProductionActualPlan({...j, production_status:status});
+    const lifecycleAllows = window.OliPolyInventoryLifecycle?.shouldReserve
+      ? window.OliPolyInventoryLifecycle.shouldReserve(status)
+      : RESERVABLE_STATUSES.includes(status);
+    return !!j && !j.exclude_inventory_reduction && lifecycleAllows && hasProductionActualPlan({...j, production_status:status});
   }
   const LANES = [
     {id:'estimate', title:'Estimate', icon:'🧾', cls:'ready', statuses:['estimate']},
@@ -2358,6 +2361,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       inventory_deducted: existing?.inventory_deducted || false,
       inventory_deducted_at: existing?.inventory_deducted_at || null,
       total_inventory_grams_deducted: existing?.total_inventory_grams_deducted || null,
+      material_reservations: existing?.material_reservations || [],
+      production_attempts: existing?.production_attempts || [],
+      current_attempt_id: existing?.current_attempt_id || null,
+      actuals_captured_at: existing?.actuals_captured_at || null,
       closed_at: existing?.closed_at || null,
       created_at: existing?.created_at || now,
       manual_rank: existing?.manual_rank ?? Date.now(),
@@ -2831,8 +2838,29 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         if(['ready_to_print','printing'].includes(status) && !hasProductionActualPlan(updated)){
       return toast('Add/confirm slicer grams and print hours before reserving material or starting production.');
     }
-    updated.material_reservations = shouldReserveInventory(updated, status) ? buildMaterialReservations(updated) : [];
-    await applyReservationDelta(j, updated);
+    const lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
+    if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
+      await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release'});
+    }
+    const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
+      ? {...updated, material_reservations:[]}
+      : j;
+    if(lifecycleAction === 'consume_and_reserve_reprint') await applyReservationDelta(j, reservationBase);
+    updated.material_reservations = shouldReserveInventory(updated, status)
+      ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
+      : [];
+    await applyReservationDelta(reservationBase, updated);
+    if(lifecycleAction === 'consume_and_reserve_reprint'){
+      updated.actual_grams_used = null;
+      updated.scrap_grams = null;
+      updated.roll_usages = [];
+      updated.actual_filament_breakdown = null;
+      updated.current_attempt_id = null;
+      updated.actuals_captured_at = null;
+      updated.print_started_at = null;
+      updated.estimated_finish_at = null;
+    }
+    if(status === 'closed') updated.closed_at = updated.closed_at || now.toISOString();
     try{
       await cloudSaveJob(updated);
       window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
@@ -2886,7 +2914,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(extraNote){
       updated.notes = [j.notes, extraNote].filter(Boolean).join('\n');
     }
-    updated.material_reservations = shouldReserveInventory(updated, nextStatus) ? buildMaterialReservations(updated) : [];
+    updated.material_reservations = shouldReserveInventory(updated, nextStatus)
+      ? (j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
+      : [];
     try{
       await applyReservationDelta(j, updated);
       await cloudSaveJob(updated);
@@ -3308,11 +3338,49 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
   }
 
+  function currentProductionAttempt(job){
+    const attempts = Array.isArray(job?.production_attempts) ? job.production_attempts : [];
+    return attempts.find(attempt=>attempt.id === job.current_attempt_id) || null;
+  }
+
+  async function syncRawInventoryAfterConsumption(rollIds=[]){
+    const ids = new Set((rollIds || []).filter(Boolean));
+    const rows = rawRowsForProduction().filter(row=>!ids.size || ids.has(row.id));
+    for(const row of rows) await cloudSaveRawFromProduction(row);
+  }
+
+  async function consumeCapturedAttempt(job, options={}){
+    const attempt = currentProductionAttempt(job);
+    if(!attempt || attempt.consumed_at) return false;
+    const consumedAt = new Date().toISOString();
+    const usages = Array.isArray(attempt.roll_usages) ? attempt.roll_usages : [];
+    if(!job.exclude_inventory_reduction){
+      if(usages.some(row=>row.raw_material_roll_id)){
+        applyRollCloseoutLocal(usages);
+        await syncRawInventoryAfterConsumption(usages.map(row=>row.raw_material_roll_id));
+        if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
+      }else{
+        const breakdown = parseBreakdown(attempt.actual_filament_breakdown, attempt.primary_material, attempt.primary_color, attempt.good_grams);
+        applyInventoryLocal(job, addScrapToBreakdownRows(breakdown, attempt.scrap_grams, attempt.primary_material, attempt.primary_color), !!options.addFinished && !!attempt.add_finished_good);
+        await syncRawInventoryAfterConsumption();
+      }
+    }else if(options.addFinished){
+      applyInventoryLocal(job, [], true);
+    }
+    job.production_attempts = (job.production_attempts || []).map(row=>row.id === attempt.id ? {...row, consumed_at:consumedAt} : row);
+    const consumedGrams = job.exclude_inventory_reduction ? 0 : num(attempt.good_grams) + num(attempt.scrap_grams);
+    job.total_inventory_grams_deducted = num(job.total_inventory_grams_deducted) + consumedGrams;
+    job.inventory_deducted = job.inventory_deducted || consumedGrams > 0;
+    job.inventory_deducted_at = consumedGrams > 0 ? consumedAt : job.inventory_deducted_at;
+    return true;
+  }
+
   async function confirmClose(){
     const j = state.jobs.find(x=>x.id===state.closingId);
     if(!j) return closeClose();
     const now = new Date().toISOString();
-    const wasInventoryDeducted = !!j.inventory_deducted;
+    const existingAttempt = currentProductionAttempt(j);
+    const wasInventoryDeducted = !!existingAttempt?.consumed_at;
     const expectedCloseoutGrams = closeoutExpectedGrams(j);
     if(!wasInventoryDeducted && !j.exclude_inventory_reduction && !$('closeConfirmDeduct')?.checked){
       return toast('Review and check the closeout inventory confirmation before saving.');
@@ -3340,51 +3408,36 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       pm_hours_applied:true,
       pm_hours_applied_machine:$('closeMachine').value,
       pm_hours_applied_hours:num($('closeHours').value),
-      total_inventory_grams_deducted: wasInventoryDeducted ? num(j.total_inventory_grams_deducted) : (closeGoodTotal + closeScrapTotal),
-      inventory_deducted: wasInventoryDeducted || (!j.exclude_inventory_reduction && (closeGoodTotal + closeScrapTotal > 0 || $('closeAddFinished').value === 'yes')),
-      inventory_deducted_at: wasInventoryDeducted ? (j.inventory_deducted_at || now) : ((!j.exclude_inventory_reduction && (closeGoodTotal + closeScrapTotal > 0 || $('closeAddFinished').value === 'yes')) ? now : null),
+      total_inventory_grams_deducted:num(j.total_inventory_grams_deducted),
+      production_attempts:Array.isArray(j.production_attempts) ? j.production_attempts : [],
+      current_attempt_id:j.current_attempt_id || null,
+      inventory_deducted:!!j.inventory_deducted,
+      inventory_deducted_at:j.inventory_deducted_at || null,
       pm_hours_applied_at:now,
       actuals_captured_at:now,
       updated_at:now
     };
+    const attemptId = existingAttempt?.id || `attempt-${updated.id}-${now}`;
+    const capturedAttempt = {
+      id:attemptId,
+      captured_at:existingAttempt?.captured_at || now,
+      consumed_at:existingAttempt?.consumed_at || null,
+      good_grams:closeGoodTotal,
+      scrap_grams:closeScrapTotal,
+      roll_usages:closeAllocations,
+      actual_filament_breakdown:updated.actual_filament_breakdown,
+      primary_material:updated.primary_material,
+      primary_color:updated.primary_color,
+      failure_reason:updated.failure_reason,
+      add_finished_good:$('closeAddFinished').value === 'yes'
+    };
+    updated.production_attempts = [...(j.production_attempts || []).filter(row=>row.id !== attemptId), capturedAttempt];
+    updated.current_attempt_id = attemptId;
     updated.production_closeout_snapshot = productionCloseoutSnapshot(updated);
-    const breakdown = parseBreakdown(updated.actual_filament_breakdown, updated.primary_material, updated.primary_color, updated.actual_grams_used);
-    const deductionBreakdown = addScrapToBreakdownRows(breakdown, updated.scrap_grams, updated.primary_material, updated.primary_color);
-    const addFinished = $('closeAddFinished').value === 'yes';
     try{
-      await releaseReservationForJob(j);
-      updated.material_reservations = [];
-      if(state.user?.id){
-        try{
-          await sbApi('/rest/v1/rpc/complete_production_job',{
-            method:'POST',
-            body:JSON.stringify({
-              p_job_id: updated.id,
-              p_status: updated.production_status,
-              p_actual_machine: updated.actual_machine,
-              p_actual_quantity: updated.actual_quantity,
-              p_actual_print_hours: updated.actual_print_hours,
-              p_actual_grams_used: num(updated.actual_grams_used) + num(updated.scrap_grams),
-              p_actual_filament_breakdown: updated.actual_filament_breakdown,
-              p_close_note: updated.close_note,
-              p_add_finished_good: addFinished,
-              p_skip_inventory_reduction: updated.exclude_inventory_reduction || wasInventoryDeducted,
-              p_roll_usages: wasInventoryDeducted ? [] : (updated.roll_usages || [])
-            })
-          });
-        }catch(rpcErr){
-          await cloudSaveJob(updated);
-        }
-      }
+      updated.material_reservations = j.material_reservations || [];
+      if(state.user?.id) await cloudSaveJob(updated);
       applyPmUsageForCloseout(j, updated);
-      if(wasInventoryDeducted){
-        // Safety guard: a previously closed job should not subtract filament, supplies, or finished-good quantities a second time.
-      } else if(!updated.exclude_inventory_reduction){
-        if(updated.roll_usages && updated.roll_usages.some(x=>x.raw_material_roll_id)) applyRollCloseoutLocal(updated.roll_usages);
-        else applyInventoryLocal(updated, deductionBreakdown, addFinished);
-      } else if(addFinished) {
-        applyInventoryLocal(updated, [], addFinished);
-      }
       addCloseoutAudit(j, updated, {expected_grams:expectedCloseoutGrams, wasInventoryDeducted});
       await logProjectEvent('production_actuals_captured', updated, {snapshot: updated.production_closeout_snapshot});
       await syncProductionStatusToOrder(updated, updated.production_status);
@@ -3392,7 +3445,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       localWrite(LS_JOBS,state.jobs);
       closeClose();
       render();
-      toast(wasInventoryDeducted ? 'Print actuals saved and moved to QC / Finishing. Inventory was already deducted, so no second deduction was made.' : 'Print actuals saved and moved to QC / Finishing. PM updated; current inventory behavior was preserved.');
+      toast('Print actuals and scrap saved. Moved to QC / Finishing; inventory will be consumed on QC Pass.');
     }catch(err){
       alert(`Could not close job:\n\n${err.message || err}`);
     }
@@ -3766,6 +3819,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       inventory_deducted:!!j.inventory_deducted,
       inventory_deducted_at:j.inventory_deducted_at || null,
       total_inventory_grams_deducted:num(j.total_inventory_grams_deducted),
+      material_reservations:Array.isArray(j.material_reservations) ? j.material_reservations : [],
+      roll_usages:Array.isArray(j.roll_usages) ? j.roll_usages : [],
+      production_attempts:Array.isArray(j.production_attempts) ? j.production_attempts : [],
+      current_attempt_id:j.current_attempt_id || null,
+      actuals_captured_at:j.actuals_captured_at || null,
       pm_hours_applied:!!j.pm_hours_applied,
       pm_hours_applied_machine:j.pm_hours_applied_machine || null,
       pm_hours_applied_hours:num(j.pm_hours_applied_hours),
