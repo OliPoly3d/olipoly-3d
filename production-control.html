@@ -796,10 +796,17 @@
     .analytics-card span{display:block;color:var(--muted);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
     .analytics-card strong{display:block;margin-top:5px;color:var(--ink);font-size:1.32rem;line-height:1.05}
     .analytics-list{display:grid;gap:8px;margin-top:12px}
+    .variance-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+    .variance-card{padding:12px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.72)}
+    .variance-card span{display:block;color:var(--muted);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.variance-card strong{display:block;margin-top:5px;color:var(--ink)}
+    .variance-table{display:grid;gap:7px;margin-top:12px}.variance-row{display:grid;grid-template-columns:minmax(180px,1.4fr) repeat(3,minmax(100px,.7fr));gap:8px;align-items:center;padding:9px 10px;border-radius:15px;background:rgba(255,255,255,.7);font-size:.78rem}
+    .variance-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}.variance-links a{font-weight:900;color:#69419b}.variance-tag{font-size:.68rem;font-weight:900}.variance-tag.favorable{color:#23763b}.variance-tag.unfavorable{color:#9a2140}.variance-tag.neutral{color:var(--muted)}
+    .job-variance{margin:8px 0;padding:10px;border-radius:16px;background:rgba(244,220,255,.28);border:1px solid var(--line)}.job-variance h4{margin:0 0 8px;color:var(--ink)}
+    .job-variance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.job-variance-item{padding:7px;border-radius:12px;background:rgba(255,255,255,.72)}.job-variance-item span{display:block;color:var(--muted);font-size:.62rem;font-weight:900}.job-variance-item strong{font-size:.76rem;color:var(--ink)}
     .analytics-row{display:grid;grid-template-columns:1.15fr repeat(3,minmax(80px,.55fr));gap:8px;align-items:center;padding:9px 10px;border-radius:15px;background:rgba(255,255,255,.66);border:1px solid rgba(101,60,120,.09);font-size:.82rem}
     .analytics-row.header{background:transparent;border:0;color:var(--muted);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;padding:0 10px 2px}
     .analytics-row strong{color:var(--ink)}
-    @media(max-width:900px){.analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-row{grid-template-columns:1fr 1fr}.analytics-row div:nth-child(n+3){display:none}}
+    @media(max-width:900px){.analytics-grid,.variance-summary,.job-variance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-row{grid-template-columns:1fr 1fr}.analytics-row div:nth-child(n+3){display:none}.variance-row{grid-template-columns:1fr 1fr}.variance-row>div:first-child{grid-column:1/-1}}
 
 
     /* === Production Capacity Dashboard add-on === */
@@ -1721,16 +1728,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         <div>
           <span class="kicker">Production analytics</span>
           <h2>What the shop is using most.</h2>
-          <p class="muted">Quick read on closed work, material usage, printer hours, revenue estimates, and jobs worth reviewing.</p>
+          <p class="muted">Read-only estimate-versus-actual results for completed work. Missing source records remain unavailable.</p>
         </div>
         <div class="finance-health" id="productionAnalyticsHealth">Based on saved jobs</div>
       </div>
       <div class="analytics-grid">
         <div class="analytics-card"><span>Closed Jobs</span><strong id="analyticsClosedJobs">0</strong></div>
-        <div class="analytics-card"><span>Material Used</span><strong id="analyticsMaterialUsed">0g</strong></div>
-        <div class="analytics-card"><span>Machine Hours</span><strong id="analyticsMachineHours">0h</strong></div>
-        <div class="analytics-card"><span>Estimated Revenue</span><strong id="analyticsRevenue">$0.00</strong></div>
+        <div class="analytics-card"><span>Avg. Material Variance</span><strong id="analyticsMaterialVariance">Unavailable</strong></div>
+        <div class="analytics-card"><span>Avg. Print-Time Variance</span><strong id="analyticsPrintVariance">Unavailable</strong></div>
+        <div class="analytics-card"><span>Total Scrap</span><strong id="analyticsScrap">Unavailable</strong></div>
       </div>
+      <div class="variance-summary" id="analyticsProfitSummary"></div>
       <div class="analytics-list" id="analyticsRows"></div>
     </section>
 
@@ -1740,6 +1748,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <script src="olipoly-auth.js"></script>
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
+<script src="js/estimate-actual-analytics.js?v=20260716-m3c"></script>
   <script>
 (() => {
   'use strict';
@@ -3813,6 +3822,29 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       material_reservations:Array.isArray(j.material_reservations) ? j.material_reservations : [],
       roll_usages:Array.isArray(j.roll_usages) ? j.roll_usages : [],
       production_attempts:Array.isArray(j.production_attempts) ? j.production_attempts : [],
+      quote_totals_snapshot:j.quote_totals_snapshot || null,
+      totals_snapshot:j.totals_snapshot || null,
+      authoritative_quote_totals:j.authoritative_quote_totals || null,
+      linked_quote_draft:j.linked_quote_draft || null,
+      production_closeout_snapshot:j.production_closeout_snapshot || null,
+      estimated_direct_cost:j.estimated_direct_cost ?? null,
+      estimated_machine_cost:j.estimated_machine_cost ?? null,
+      estimated_design_cost:j.estimated_design_cost ?? null,
+      estimated_post_cost:j.estimated_post_cost ?? null,
+      estimated_design_hours:j.estimated_design_hours ?? j.design_hours ?? null,
+      estimated_post_processing_hours:j.estimated_post_processing_hours ?? j.post_processing_hours ?? null,
+      actual_material_cost:j.actual_material_cost ?? null,
+      actual_machine_cost:j.actual_machine_cost ?? null,
+      actual_design_cost:j.actual_design_cost ?? null,
+      actual_post_processing_cost:j.actual_post_processing_cost ?? null,
+      actual_direct_cost:j.actual_direct_cost ?? null,
+      actual_design_hours:j.actual_design_hours ?? null,
+      actual_post_processing_hours:j.actual_post_processing_hours ?? null,
+      machine_hourly_rate:j.machine_hourly_rate ?? null,
+      design_hourly_rate:j.design_hourly_rate ?? null,
+      quoted_revenue:j.quoted_revenue ?? null,
+      quote_total:j.quote_total ?? null,
+      order_total:j.order_total ?? null,
       current_attempt_id:j.current_attempt_id || null,
       actuals_captured_at:j.actuals_captured_at || null,
       pm_hours_applied:!!j.pm_hours_applied,
@@ -4916,12 +4948,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       .filter(j=>CLOSED.includes(j.production_status) || j.closed_at)
       .filter(j=>{
         if(!q) return true;
-        const hay = [j.job_title,j.customer_name,j.actual_machine,j.machine_preference,j.primary_material,j.primary_color,j.other_colors,j.actual_filament_breakdown,j.filament_breakdown,j.close_note,j.cancellation_reason,j.order_number,j.quote_number].join(' ').toLowerCase();
+        const hay = [j.id,j.job_title,j.customer_name,j.actual_machine,j.machine_preference,j.primary_material,j.primary_color,j.other_colors,j.actual_filament_breakdown,j.filament_breakdown,j.close_note,j.cancellation_reason,j.order_number,j.quote_number].join(' ').toLowerCase();
         return hay.includes(q);
       })
       .sort((a,b)=>String(b.closed_at||b.updated_at).localeCompare(String(a.closed_at||a.updated_at)));
     $('historyBody').innerHTML = closed.length ? closed.map(j=>{
       const t = TYPE[j.job_type] || {};
+      const result = window.OliPolyEstimateActual?.calculate(j);
       return `<tr>
         <td><strong>${esc(j.job_title)}</strong><br><small>${esc(j.close_note || '')}</small></td>
         <td>${esc(t.label || j.job_type)}</td>
@@ -4933,8 +4966,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         <td>${j.exclude_inventory_reduction ? 'Skipped inventory reduction · ' : ''}${j.finished_roll ? 'Finished roll · ' : ''}${j.spool_freed ? 'Spool freed · ' : ''}${Array.isArray(j.roll_usages) && j.roll_usages.length ? `${j.roll_usages.length} roll allocation(s) · ` : ''}${esc(j.actual_filament_breakdown || j.filament_breakdown || fmtG(j.actual_grams_used))}</td>
         <td>${fmtG(j.scrap_grams)}</td>
         <td>${esc((j.closed_at || j.updated_at || '').slice(0,10))}</td>
-      </tr>`;
+      </tr><tr><td colspan="10">${result ? jobVarianceHtml(result) : ''}</td></tr>`;
     }).join('') : `<tr><td colspan="10">No completed jobs match the history search.</td></tr>`;
+  }
+
+  function jobVarianceHtml(result){
+    const pair = (label, estimated, actual, formatter, variance) => `<div class="job-variance-item"><span>${label} · estimate / actual</span><strong>${analyticsValue(estimated, formatter)} / ${analyticsValue(actual, formatter)}</strong><br>${varianceBadge(variance)} ${varianceText(variance)}</div>`;
+    return `<section class="job-variance" id="job-${esc(result.id || '')}"><h4>Estimate vs. Actual</h4><div class="job-variance-grid">
+      ${pair('Consumed filament',result.estimatedGrams,result.actualConsumedGrams,fmtG,result.variances.material)}
+      <div class="job-variance-item"><span>Good / scrap</span><strong>${analyticsValue(result.actualGoodGrams,fmtG)} / ${analyticsValue(result.actualScrapGrams,fmtG)}</strong></div>
+      ${pair('Print time',result.estimatedPrintHours,result.actualPrintHours,formatHours,result.variances.printTime)}
+      ${pair('Design time',result.estimatedDesignHours,result.actualDesignHours,formatHours)}
+      ${pair('Post-processing',result.estimatedPostHours,result.actualPostHours,formatHours)}
+      ${pair('Internal cost',result.estimatedCost,result.actualCost,money,result.variances.cost)}
+      ${pair('Profit',result.estimatedProfit,result.actualProfit,money,result.variances.profit)}
+      ${pair('Margin',result.estimatedMargin,result.actualMargin,value=>`${value.toFixed(1)}%`,result.variances.margin)}
+      <div class="job-variance-item"><span>Quoted revenue</span><strong>${analyticsValue(result.quotedRevenue,money)}</strong></div>
+      <div class="job-variance-item"><span>Attempt history</span><strong>${result.attemptCount ? `${result.attemptCount} preserved attempt(s)` : 'Unavailable'}</strong></div>
+    </div>${analyticsLinks(result)}</section>`;
   }
 
 
@@ -5139,44 +5188,46 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return num(j?.estimated_price_each || j?.price_each || j?.piece_price) * qty;
   }
 
-  function renderProductionAnalytics(){
-    const panel = $('productionAnalyticsPanel');
-    if(!panel) return;
-    const closed = state.jobs.filter(j=>CLOSED.includes(j.production_status) || j.closed_at);
-    const material = closed.reduce((s,j)=>s+num(j.actual_grams_used || j.estimated_total_grams)+num(j.scrap_grams),0);
-    const hours = closed.reduce((s,j)=>s+num(j.actual_print_hours || j.estimated_total_hours),0);
-    const revenue = closed.reduce((s,j)=>s+projectRevenue(j),0);
-    if($('analyticsClosedJobs')) $('analyticsClosedJobs').textContent = closed.length;
-    if($('analyticsMaterialUsed')) $('analyticsMaterialUsed').textContent = material>=1000 ? `${(material/1000).toFixed(2)}kg` : `${Math.round(material)}g`;
-    if($('analyticsMachineHours')) $('analyticsMachineHours').textContent = formatHours(hours);
-    if($('analyticsRevenue')) $('analyticsRevenue').textContent = money(revenue);
-    if($('productionAnalyticsHealth')) $('productionAnalyticsHealth').textContent = `${closed.length} closed · ${state.jobs.length} total jobs`;
-
-    const byMaterial = {};
-    closed.forEach(j=>{
-      const key = `${j.primary_material || 'Material'} / ${j.primary_color || 'No color'}`;
-      byMaterial[key] ??= {grams:0,hours:0,revenue:0,jobs:0};
-      byMaterial[key].grams += num(j.actual_grams_used || j.estimated_total_grams)+num(j.scrap_grams);
-      byMaterial[key].hours += num(j.actual_print_hours || j.estimated_total_hours);
-      byMaterial[key].revenue += projectRevenue(j);
-      byMaterial[key].jobs += 1;
-    });
-    const topMaterials = Object.entries(byMaterial).sort((a,b)=>b[1].grams-a[1].grams).slice(0,8);
-    const machine = {};
-    closed.forEach(j=>{
-      const key = j.actual_machine || j.machine_preference || 'Unassigned';
-      machine[key] ??= {hours:0,jobs:0};
-      machine[key].hours += num(j.actual_print_hours || j.estimated_total_hours);
-      machine[key].jobs += 1;
-    });
-    const topMachine = Object.entries(machine).sort((a,b)=>b[1].hours-a[1].hours).slice(0,3).map(([k,v])=>`${k}: ${formatHours(v.hours)}`).join(' · ') || 'No closed jobs yet';
-    const rows = $('analyticsRows');
-    if(rows){
-      rows.innerHTML = `<div class="analytics-row header"><div>Top Material</div><div>Used</div><div>Jobs</div><div>Revenue</div></div>` +
-        (topMaterials.length ? topMaterials.map(([k,v])=>`<div class="analytics-row"><div><strong>${esc(k)}</strong><small class="muted">${esc(topMachine)}</small></div><div>${v.grams>=1000?(v.grams/1000).toFixed(2)+'kg':Math.round(v.grams)+'g'}</div><div>${v.jobs}</div><div>${money(v.revenue)}</div></div>`).join('') : '<div class="empty">No closed production jobs yet.</div>');
-    }
+  function analyticsValue(value, formatter){
+    return value === null || value === undefined ? 'Unavailable' : formatter(value);
   }
 
+  function varianceText(item, unit=''){
+    if(!item || item.numeric === null) return 'Unavailable';
+    const sign = item.numeric > 0 ? '+' : '';
+    const pct = item.percent === null ? '' : ` (${item.percent > 0 ? '+' : ''}${item.percent.toFixed(1)}%)`;
+    return `${sign}${item.numeric.toFixed(1)}${unit}${pct}`;
+  }
+
+  function varianceBadge(item){
+    if(!item || item.direction === 'unavailable') return '<span class="variance-tag">Unavailable</span>';
+    return `<span class="variance-tag ${item.direction}">${esc(item.direction[0].toUpperCase()+item.direction.slice(1))}</span>`;
+  }
+
+  function analyticsLinks(row){
+    const production = `production-control.html?job=${encodeURIComponent(row.id || '')}`;
+    const order = row.orderNumber ? `orders-admin.html?order=${encodeURIComponent(row.orderNumber)}` : '';
+    return `<div class="variance-links"><a href="${production}">Production job</a>${order ? `<a href="${order}">Order ${esc(row.orderNumber)}</a>` : ''}</div>`;
+  }
+
+  function renderProductionAnalytics(){
+    const panel = $('productionAnalyticsPanel');
+    if(!panel || !window.OliPolyEstimateActual) return;
+    const closed = state.jobs.filter(j=>CLOSED.includes(j.production_status) || j.closed_at);
+    const report = window.OliPolyEstimateActual.aggregate(closed);
+    $('analyticsClosedJobs').textContent = report.completedJobs;
+    $('analyticsMaterialVariance').textContent = analyticsValue(report.averageMaterialVariancePercent, value=>`${value.toFixed(1)}%`);
+    $('analyticsPrintVariance').textContent = analyticsValue(report.averagePrintTimeVariancePercent, value=>`${value.toFixed(1)}%`);
+    $('analyticsScrap').textContent = analyticsValue(report.totalScrapGrams, value=>fmtG(value));
+    $('productionAnalyticsHealth').textContent = `${closed.length} completed · stored actuals only`;
+    $('analyticsProfitSummary').innerHTML = `
+      <div class="variance-card"><span>Estimated Profit</span><strong>${analyticsValue(report.estimatedProfit, money)}</strong></div>
+      <div class="variance-card"><span>Actual Profit</span><strong>${analyticsValue(report.actualProfit, money)}</strong></div>
+      <div class="variance-card"><span>Margin Variance</span><strong>${varianceText(report.marginVariance, ' pts')} ${varianceBadge(report.marginVariance)}</strong></div>`;
+    const group = (title, rows) => `<div class="variance-table"><strong>${title}</strong>${rows.length ? rows.map(row=>`
+      <div class="variance-row"><div><strong>${esc(row.jobTitle)}</strong>${analyticsLinks(row)}</div><div>Material ${varianceText(row.variances.material, 'g')}</div><div>Print ${varianceText(row.variances.printTime, 'h')}</div><div>${varianceBadge(row.variances.material)}</div></div>`).join('') : '<div class="empty">No mathematically valid variance records.</div>'}</div>`;
+    $('analyticsRows').innerHTML = group('Most underestimated material use', report.mostUnderestimated) + group('Most overestimated material use', report.mostOverestimated);
+  }
 
   function hubDraftRead(){
     try{return JSON.parse(localStorage.getItem('olipoly_workflow_draft_v1') || 'null')}catch{return null}
@@ -5699,9 +5750,19 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <!-- === OliPoly Search Link Support: Production === -->
 <script>
 (function(){
-  function query(){ const p=new URLSearchParams(window.location.search||''); return (p.get('search')||p.get('q')||p.get('order')||p.get('op')||p.get('customer')||p.get('quote')||p.get('material')||'').trim(); }
+  function params(){ return new URLSearchParams(window.location.search||''); }
+  function query(){ const p=params(); return (p.get('search')||p.get('q')||p.get('order')||p.get('op')||p.get('customer')||p.get('quote')||p.get('material')||'').trim(); }
   function fire(el){ if(!el) return; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }
-  function apply(){ const value=query(); if(!value) return; const el=document.getElementById('searchInput'); if(el){ el.value=value; fire(el); } }
+  function apply(){
+    const job=params().get('job');
+    if(job){
+      const history=document.getElementById('historySection'); if(history) history.open=true;
+      const search=document.getElementById('historySearch'); if(search){ search.value=job; fire(search); }
+      setTimeout(()=>document.getElementById(`job-${job}`)?.scrollIntoView({block:'center'}),100);
+      return;
+    }
+    const value=query(); if(!value) return; const el=document.getElementById('searchInput'); if(el){ el.value=value; fire(el); }
+  }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{setTimeout(apply,250);setTimeout(apply,1200);});
   else {setTimeout(apply,250);setTimeout(apply,1200);}
 })();
