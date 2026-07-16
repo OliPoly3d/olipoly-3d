@@ -4731,8 +4731,9 @@ Open Orders Admin now?`);
   }
 
   function collectQuotePdfData(mode = "quote") {
-    if (typeof window.render === "function") window.render();
-
+    // IMPORTANT: Do not call render() here. The on-screen Calculation Breakdown
+    // is the canonical total source. Calling render() at PDF time invokes an
+    // older calculation layer and can change the displayed/customer total.
     const quoteNumber = field("quoteNumber", "Q-######");
     // The rendered Quote page is the canonical pricing source.
     // Customer documents must copy these exact displayed values and must not
