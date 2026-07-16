@@ -1,0 +1,13 @@
+Pass 1A.3B — PDF action isolation
+
+Changed:
+- Removed the remaining renderQuote() call from PDF data collection.
+- PDF collection is now strictly display-only.
+- Added one capture-phase PDF click gate so older click handlers cannot open a second PDF or recalculate totals.
+- Customer and invoice PDF buttons both route to the final v2 renderer only.
+- Updated quote.js cache-busting version in quote.html.
+
+Test:
+Qty 4; manual piece price 5.125; tax 6.5%.
+On-screen and PDF must show subtotal $20.50, tax $1.33, total $21.83.
+Only one PDF window should open per click.
