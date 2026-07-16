@@ -13,6 +13,8 @@
   function reservationAction(fromStatus, toStatus){
     const from = normalize(fromStatus);
     const to = normalize(toStatus);
+    // Reopening consumed work is a workflow correction, not a new attempt.
+    if(['ready_for_fulfillment', 'closed'].includes(from) && shouldReserve(to)) return 'preserve_consumed_no_reserve';
     if(to === 'ready_to_print' && from === 'qc') return 'consume_and_reserve_reprint';
     if(to === 'ready_for_fulfillment' && from === 'qc') return 'consume_and_release';
     if(to === 'qc' && from === 'printing') return 'capture_actuals_keep_reservation';

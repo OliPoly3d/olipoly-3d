@@ -3860,7 +3860,7 @@ https://olipoly3d.com`;
       order_total: total,
       deposit_amount: deposit,
       balance_amount: balance,
-      status: "awaiting_approval",
+      status: "ready_to_print",
       payment_status: safeOrderPaymentStatus(deposit > 0 ? "deposit_due" : "unpaid", deposit),
       fulfillment: val("shippingAddress") ? "shipping" : "pickup",
       source_quote_number: quoteNumber() || null,
@@ -3902,10 +3902,12 @@ https://olipoly3d.com`;
     const encoded = encodeURIComponent(payload.order_number);
     const existing = await api(`/rest/v1/orders?select=id&order_number=eq.${encoded}&limit=1`, { method: "GET" });
     if (Array.isArray(existing) && existing[0]?.id) {
+      // Acceptance is idempotent: retrying it must not reset manufacturing.
+      const { status, ...nonWorkflowPayload } = payload;
       return await api(`/rest/v1/orders?id=eq.${existing[0].id}`, {
         method: "PATCH",
         headers: { Prefer: "return=representation" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(nonWorkflowPayload)
       });
     }
     return await api("/rest/v1/orders", {
