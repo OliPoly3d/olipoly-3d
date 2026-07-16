@@ -219,10 +219,6 @@
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  function safeMoneyNumber(text) {
-    return Number(String(text || "").replace(/[^0-9.-]/g, "")) || 0;
-  }
-
   function toast(message) {
     let el = $("liteStatusToast");
     if (!el) {
@@ -517,17 +513,55 @@
     if (typeof window.render === "function") window.render();
   }
 
-  function buildQuoteData() {
+  function authoritativeTotalsSnapshot() {
+    if (typeof window.render === "function") window.render();
+    const totals = window.olipolyQuoteTotals;
+    if (!totals) throw new Error("Authoritative quote totals are not available.");
+    return Object.freeze({
+      quantity: totals.quantity,
+      price_source: totals.pricingMode,
+      piece_price: totals.piecePrice,
+      subtotal: totals.subtotal,
+      discount: totals.discount,
+      taxable_subtotal: totals.beforeTax,
+      tax_rate: totals.taxRate,
+      tax: totals.tax,
+      deposit: totals.deposit,
+      balance: totals.balance,
+      final_total: totals.total
+    });
+  }
+
+  function productionEstimateSnapshot(fields) {
+    if (!fields.productionJobId && fields.productionQuoteSource !== "production-control") return null;
+    return Object.freeze({
+      production_job_id: fields.productionJobId || null,
+      source: fields.productionQuoteSource || "production-control",
+      suggested_total: fields.productionSuggestedTotal ?? null,
+      suggested_piece_price: fields.productionSuggestedPiecePrice ?? null,
+      material_cost: fields.materialCost ?? null,
+      machine_hours: fields.machineHours ?? fields.printHours ?? null,
+      machine_rate: fields.machineRate ?? null,
+      design_hours: fields.designHours ?? null,
+      design_rate: fields.designRate ?? null,
+      post_hours: fields.postHours ?? null,
+      post_rate: fields.postRate ?? null
+    });
+  }
+
+  function buildQuoteData(totalsSnapshot = authoritativeTotalsSnapshot()) {
     const fields = collectFields();
     const liteQuoteType = $("liteQuoteType")?.value || "retail";
     fields.liteQuoteType = liteQuoteType;
 
     return {
-      version: "quote-tool-lite-v6",
+      version: "quote-tool-lite-v7",
       saved_at: new Date().toISOString(),
       source: "quote-tool-lite",
       lite_quote_type: liteQuoteType,
-      fields
+      fields,
+      customer_totals: totalsSnapshot,
+      production_estimate: productionEstimateSnapshot(fields)
     };
   }
 
@@ -543,8 +577,7 @@
     localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
   }
 
-  function localSaveFallback() {
-    const data = buildQuoteData();
+  function localSaveFallback(data = buildQuoteData(), totalsSnapshot = data.customer_totals) {
     const quoteNumber = $("quoteNumber")?.value?.trim();
     if (!quoteNumber) return;
 
@@ -558,7 +591,7 @@
       customerName: $("customerName")?.value?.trim() || $("companyName")?.value?.trim() || "",
       customerEmail: $("customerEmail")?.value?.trim() || "",
       quoteTitle: $("quoteTitle")?.value?.trim() || "",
-      quoteTotal: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
+      quoteTotal: totalsSnapshot.final_total,
       quoteData: data,
       updatedAt: new Date().toISOString()
     };
@@ -634,7 +667,8 @@
     const quoteNumber = $("quoteNumber")?.value?.trim();
     if (!quoteNumber) throw new Error("Quote number is missing.");
 
-    const data = buildQuoteData();
+    const totalsSnapshot = authoritativeTotalsSnapshot();
+    const data = buildQuoteData(totalsSnapshot);
     const payload = {
       user_id: user.id,
       quote_number: quoteNumber,
@@ -643,7 +677,7 @@
       customer_name: ($("customerName")?.value?.trim() || $("companyName")?.value?.trim() || null),
       customer_email: $("customerEmail")?.value?.trim() || null,
       quote_title: $("quoteTitle")?.value?.trim() || null,
-      quote_total: safeMoneyNumber($("sumQuote")?.textContent || $("outFinal")?.textContent),
+      quote_total: totalsSnapshot.final_total,
       po_number: $("poNumber")?.value?.trim() || null,
       tax_exempt: ($("taxExempt")?.value || "no") === "yes",
       tax_exempt_reason: $("taxExemptReason")?.value?.trim() || null,
@@ -667,7 +701,7 @@
       body: JSON.stringify(payload)
     });
 
-    localSaveFallback();
+    localSaveFallback(data, totalsSnapshot);
     return saved;
   }
 
@@ -860,6 +894,12 @@ ${err.message || err}`);
       applyQuoteType(selector.value || "retail");
     }
   }
+
+  window.olipolyQuotePersistence = Object.freeze({
+    saveCloudQuote,
+    localSaveFallback,
+    authoritativeTotalsSnapshot
+  });
 
   async function init() {
     clearAutoFlagOnUserEdit();
@@ -3403,8 +3443,6 @@ https://olipoly3d.com`;
   const $ = (id) => document.getElementById(id);
   const val = (id) => ($(id)?.value || "").trim();
   const text = (id) => ($(id)?.textContent || "").trim();
-  const moneyNumber = (value) => Number(String(value || "").replace(/[^0-9.-]/g, "")) || 0;
-  const today = () => new Date().toISOString().slice(0, 10);
 
   function toast(message) {
     if (typeof window.quotePatchToast === "function") return window.quotePatchToast(message);
@@ -3432,150 +3470,48 @@ https://olipoly3d.com`;
   }
 
 
-  function safeOrderPaymentStatus(value, deposit) {
-    const allowed = new Set(["unpaid", "deposit_due", "paid", "refunded"]);
-    const normalized = String(value || "").trim();
-    if (allowed.has(normalized)) return normalized;
-    return Number(deposit || 0) > 0 ? "deposit_due" : "unpaid";
-  }
-
-  function selectedInvoiceTerms() {
-    const terms = val("paymentTerms");
-    if (["net_15", "net_30", "net_45", "due_on_receipt", "customer_terms"].includes(terms)) return terms;
-    if (terms === "due_on_completion") return "due_on_receipt";
-    return val("liteQuoteType") === "po" || val("professionalMode") === "on" ? "customer_terms" : "due_on_receipt";
-  }
-
-  function totalAmount() {
-    if (typeof window.render === "function") window.render();
-    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
-    return totals?.final ?? moneyNumber(text("sumQuote") || text("outFinal") || text("finalTotal") || val("quoteTotal"));
-  }
-
-  function depositAmount(total) {
-    const totals = typeof window.olipolyGetQuoteTotals === "function" ? window.olipolyGetQuoteTotals() : null;
-    if (totals?.deposit > 0) return totals.deposit;
-    const shown = moneyNumber(text("sumDeposit") || text("outDeposit") || text("pdfDeposit"));
-    if (shown > 0) return shown;
-    const pct = Number(val("depositPercent")) || 0;
-    return pct > 0 ? +(total * pct / 100).toFixed(2) : 0;
-  }
-
   async function api(path, options = {}) {
     if (typeof window.sbApi !== "function") throw new Error("Supabase helper is not available.");
-    const res = await window.sbApi(path, options);
-    if (!res.ok || res.error) {
-      throw new Error(res.error?.message || res.error?.error_description || JSON.stringify(res.error || res.data || {}));
+    const response = await window.sbApi(path, options);
+    if (!response.ok || response.error) {
+      throw new Error(response.error?.message || response.error?.error_description || JSON.stringify(response.error || response.data || {}));
     }
-    return res.data;
+    return response.data;
   }
 
   async function currentUser() {
-    if (typeof window.getCurrentSbUser === "function") return await window.getCurrentSbUser();
-    return null;
+    return typeof window.getCurrentSbUser === "function" ? await window.getCurrentSbUser() : null;
   }
 
-  function buildOrderPayload(userId) {
-    const total = totalAmount();
-    const deposit = depositAmount(total);
-    const balance = Math.max(0, total - deposit);
-    const orderNumber = orderNumberFromQuote();
-    const company = val("companyName");
-    const contact = val("contactName") || val("customerName");
-    const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
-    const qty = Math.max(1, Math.round(Number(val("qty") || val("quantity") || 1) || 1));
-    const paymentTerms = val("paymentTerms");
-    const professional = val("liteQuoteType") === "po" || val("professionalMode") === "on" || !!val("poNumber");
-
-    return {
-      user_id: userId,
-      order_number: orderNumber,
-      order_date: today(),
-      customer_name: contact || company || null,
-      customer_email: val("customerEmail") || null,
-      order_title: project,
-      quantity: qty,
-      order_total: total,
-      deposit_amount: deposit,
-      balance_amount: balance,
-      status: "awaiting_approval",
-      payment_status: safeOrderPaymentStatus(deposit > 0 ? "deposit_due" : "unpaid", deposit),
-      fulfillment: val("shippingAddress") ? "shipping" : "pickup",
-      source_quote_number: quoteNumber() || null,
-      created_from_quote: true,
-      accepted_date: new Date().toISOString(),
-      po_number: val("poNumber") || null,
-      tax_exempt: val("taxExempt") === "yes",
-      tax_exempt_reason: val("taxExemptReason") || null,
-      exemption_certificate_on_file: val("certificateOnFile") === "yes",
-      po_file_on_file: val("poFileOnFile") === "yes",
-      po_part_number: val("customerPartNumber") || null,
-      olipoly_part_number: val("olipolyPartNumber") || null,
-      part_revision: val("partRevision") || null,
-      shipping_contact_name: val("shippingContactName") || contact || null,
-      shipping_company: val("shippingCompany") || company || null,
-      shipping_address: val("shippingAddress") || null,
-      billing_address: val("billingAddress") || null,
-      invoice_number: val("invoiceNumber") || null,
-      invoice_date: val("invoiceDate") || null,
-      invoice_terms: selectedInvoiceTerms(),
-      internal_notes: [
-        `Created from quote ${quoteNumber() || ""}.`,
-        professional ? "Professional / PO quote workflow." : "Retail/customer quote workflow.",
-        val("taxExempt") === "yes" ? `Tax Exempt: yes${val("certificateOnFile") === "yes" ? " — certificate on file" : " — certificate status not confirmed"}` : "",
-        val("taxExemptReason") ? `Tax exemption notes: ${val("taxExemptReason")}` : "",
-        val("poFileOnFile") === "yes" ? "PO file stored externally." : "",
-        val("quoteNotes") ? `Quote notes: ${val("quoteNotes")}` : "",
-        val("assumptions") ? `Assumptions: ${val("assumptions")}` : ""
-      ].filter(Boolean).join("\n\n"),
-      public_status_text: "Order created from accepted quote.",
-      public_next_step: deposit > 0
-        ? "Deposit/payment is the next step before production begins."
-        : "No deposit is due now. OliPoly 3D will move the accepted quote into design and production prep, with payment due at completion.",
-      shipping_or_pickup_note: val("turnaround") ? `Estimated timing: ${val("turnaround")}` : null
-    };
-  }
-
-  async function upsertOrder(payload) {
-    const encoded = encodeURIComponent(payload.order_number);
-    const existing = await api(`/rest/v1/orders?select=id&order_number=eq.${encoded}&limit=1`, { method: "GET" });
-    if (Array.isArray(existing) && existing[0]?.id) {
-      return await api(`/rest/v1/orders?id=eq.${existing[0].id}`, {
+  async function ensureAcceptanceToken(quoteNumberValue) {
+    const encoded = encodeURIComponent(quoteNumberValue);
+    const rows = await api(`/rest/v1/quotes?select=public_token&quote_number=eq.${encoded}&limit=1`, { method: "GET" });
+    let publicToken = Array.isArray(rows) ? rows[0]?.public_token : null;
+    if (!publicToken) {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      publicToken = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+      await api(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
         method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify(payload)
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ public_token: publicToken, updated_at: new Date().toISOString() })
       });
     }
-    return await api("/rest/v1/orders", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(payload)
-    });
+    return publicToken;
   }
 
-  async function updateQuoteAccepted(orderNumber) {
-    const q = quoteNumber();
-    if (!q) return;
-    const encoded = encodeURIComponent(q);
-    await api(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
+  async function acceptQuoteThroughServer(quoteNumberValue, publicToken) {
+    const result = await api("/rest/v1/rpc/respond_to_quote_public", {
+      method: "POST",
       body: JSON.stringify({
-        quote_status: "converted_to_order",
-        customer_response: "accepted",
-        converted_to_order: true,
-        converted_order_number: orderNumber,
-        tax_exempt: (document.getElementById("taxExempt")?.value || "no") === "yes",
-        tax_exempt_reason: document.getElementById("taxExemptReason")?.value?.trim() || null,
-        exemption_certificate_on_file: (document.getElementById("certificateOnFile")?.value || "no") === "yes",
-        po_file_on_file: (document.getElementById("poFileOnFile")?.value || "no") === "yes",
-        accepted_date: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        p_quote_number: quoteNumberValue,
+        p_public_token: publicToken,
+        p_response: "accepted",
+        p_message: "Accepted internally by OliPoly 3D."
       })
     });
+    return Array.isArray(result) ? result[0] : result;
   }
-
-
 
   async function updateLinkedProductionJobAfterAcceptance(orderNumber){
     const productionJobId = document.getElementById('productionJobId')?.value?.trim();
@@ -3633,29 +3569,28 @@ https://olipoly3d.com`;
 
     try {
       if (typeof window.ensureDocumentNumbers === "function") await window.ensureDocumentNumbers(false);
-      if (typeof window.saveCurrentQuote === "function") {
-        try { await window.saveCurrentQuote(); } catch (_) {}
-      }
-
       const user = await currentUser();
       if (!user?.id) throw new Error("Log into Orders Admin in this browser first, then return here and try again.");
-      if (!quoteNumber()) throw new Error("Quote number is required before creating an order.");
+      const currentQuoteNumber = quoteNumber();
+      if (!currentQuoteNumber) throw new Error("Quote number is required before creating an order.");
 
-      const payload = buildOrderPayload(user.id);
-      if (!payload.order_number) throw new Error("Could not derive an OP order number from the quote number.");
-      if (!payload.order_title) throw new Error("Project / item title is required.");
-
-      await upsertOrder(payload);
-      await updateQuoteAccepted(payload.order_number);
-      await updateLinkedProductionJobAfterAcceptance(payload.order_number);
+      // Persist the engine snapshot first, then use the same atomic server acceptance
+      // path as the public customer flow. The RPC marks the quote accepted before it
+      // creates/updates the order from the persisted quote totals snapshot.
+      await window.olipolyQuotePersistence.saveCloudQuote();
+      const publicToken = await ensureAcceptanceToken(currentQuoteNumber);
+      const result = await acceptQuoteThroughServer(currentQuoteNumber, publicToken);
+      const orderNumber = result?.order_number || orderNumberFromQuote();
+      if (!orderNumber) throw new Error("The server did not return an order number.");
+      await updateLinkedProductionJobAfterAcceptance(orderNumber);
 
       const statusEl = $("quoteStatus");
       if (statusEl) statusEl.value = "accepted";
-      toast(`Created ${payload.order_number} in Orders Admin.`);
+      toast(`Created ${orderNumber} in Orders Admin.`);
 
       const openOrders = confirm(`Your project has officially entered the OliPoly production workflow.
 
-Order Number: ${payload.order_number}
+Order Number: ${orderNumber}
 
 PO, part number, revision, shipping, and quote references were preserved for production and future reorders.
 
