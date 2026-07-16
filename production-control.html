@@ -1295,6 +1295,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     <div class="top-actions">
       <a class="ghost" href="hub.html">← Hub</a>
       <a class="ghost" href="customer-360.html">Customer 360</a>
+      <a class="ghost" href="product-recipes.html">Recipe Library</a>
       <a class="ghost" href="inventory-control.html">Inventory Control</a>
       <button class="ghost" id="syncRepairBtn" type="button">Sync / Repair</button>
       <button class="ghost" id="exportBackupBtn" type="button">Export Backup</button>
@@ -1749,6 +1750,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
 <script src="js/estimate-actual-analytics.js?v=20260716-m3c"></script>
+<script src="js/product-recipe-model.js?v=20260716-m4a"></script>
   <script>
 (() => {
   'use strict';
@@ -1850,6 +1852,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     historySearch:'',
     selectedIds:new Set(),
     draggingId:null
+    ,repeatRecipeSnapshot:null
   };
 
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
@@ -2355,6 +2358,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       filament_recipe: JSON.stringify(recipe),
       exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes',
       notes:$('notes').value.trim() || null,
+      recipe_id:existing?.recipe_id || state.repeatRecipeSnapshot?.recipe_id || null,
+      recipe_revision:existing?.recipe_revision || state.repeatRecipeSnapshot?.recipe_revision || null,
+      recipe_snapshot:existing?.recipe_snapshot || state.repeatRecipeSnapshot?.recipe_snapshot || null,
       actual_machine: existing?.actual_machine || null,
       actual_quantity: existing?.actual_quantity || null,
       actual_print_hours: existing?.actual_print_hours || null,
@@ -2420,6 +2426,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   function resetForm(){
     state.editingId = null;
+    state.repeatRecipeSnapshot = null;
     $('jobForm').reset();
     $('quantity').value = 1;
     $('colorCount').value = 1;
@@ -5517,6 +5524,34 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   $('closeRollAllocations')?.addEventListener('change', updateCloseoutSummary);
 
   renderRecipeRows([]);
+  function applyRecipeRepeatPreload(){
+    const key='olipoly_recipe_repeat_preload_v1';
+    let draft=null;
+    try{ draft=JSON.parse(localStorage.getItem(key)||'null'); }catch{}
+    if(!draft || draft.source!=='product-recipe-library') return;
+    resetForm();
+    state.repeatRecipeSnapshot={recipe_id:draft.recipe_id,recipe_revision:draft.recipe_revision,recipe_snapshot:draft.recipe_snapshot};
+    $('jobTitle').value=draft.job_title||'';
+    $('jobType').value=TYPE[draft.job_type]?draft.job_type:'customer_custom';
+    $('productionStatus').value='estimate';
+    $('quantity').value=draft.quantity||1;
+    $('machine').value=draft.machine_preference||'either';
+    $('hoursEach').value=draft.estimated_hours_each||'';
+    $('priceEach').value=draft.estimated_price_each||'';
+    $('designFee').value=draft.design_fee||'';
+    $('designFeeMode').value=draft.design_fee_mode||'flat';
+    $('postProcessingFee').value=draft.post_processing_fee||'';
+    $('postProcessingFeeMode').value=draft.post_processing_fee_mode||'flat';
+    $('supplyCount').value=(draft.supply_usage||[]).length;
+    renderSupplyRows(draft.supply_usage||[]);
+    renderRecipeRows(draft.filament_recipe||[]);
+    $('notes').value=[draft.notes,`Recipe ${draft.recipe_revision||''} · ${draft.recipe_id||''}`].filter(Boolean).join('\n');
+    updateRecipeDerivedFields(); updateSupplyDerivedFields(); updatePricingPreview();
+    localStorage.removeItem(key);
+    openSectionAndScroll('addJobSection');
+    toast('Recipe loaded as a new editable estimate. No Order or inventory reservation was created.');
+  }
+  applyRecipeRepeatPreload();
   loadAll();
 })();
 </script>
