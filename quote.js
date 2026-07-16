@@ -6602,3 +6602,151 @@ https://olipoly3d.com`;
   setTimeout(initTaxJurisdictions, 600);
   setTimeout(initTaxJurisdictions, 1600);
 })();
+
+/* === Explicit $0 Manual Price Override Guard V1 ===
+   Blank manual override = use normal calculated pricing.
+   Explicit 0 manual override = complimentary/free customer quote.
+
+   Internal Production Control costs remain visible for business tracking,
+   while every customer-facing subtotal, tax, deposit, balance, PDF, email,
+   and saved quote total is forced to $0.00.
+*/
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const ZERO = "$0.00";
+
+  function rawOverride() {
+    return ($("manualPiecePriceOverride")?.value ?? "").toString().trim();
+  }
+
+  function isExplicitFreeOverride() {
+    const raw = rawOverride();
+    if (raw === "") return false;
+    const value = Number(raw.replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(value) && value === 0;
+  }
+
+  function setTextAll(id, value) {
+    document.querySelectorAll(`#${id}`).forEach((el) => {
+      el.textContent = value;
+    });
+  }
+
+  function freeNoticeHtml() {
+    const reason = ($("manualPiecePriceReason")?.value || "").trim();
+    return `<strong>Complimentary quote override applied:</strong> Customer price is intentionally set to $0.00.` +
+      `<br>Calculated Production Control costs are retained internally and are not charged to the customer.` +
+      (reason ? `<br><strong>Reason:</strong> ${reason}` : "");
+  }
+
+  function applyFreeOverride() {
+    if (!isExplicitFreeOverride()) {
+      document.body.classList.remove("explicit-free-quote-active");
+      return false;
+    }
+
+    document.body.classList.add("manual-piece-price-active", "explicit-free-quote-active");
+
+    // Customer-facing totals and downstream saved values.
+    [
+      "sumQuote", "sumSubtotal", "sumTax", "sumPerItem", "sumDeposit", "sumBalance",
+      "outPerItem", "outPreDiscount", "outDiscount", "outBeforeTax", "outRoundedBeforeTax",
+      "outRoundingGain", "outTax", "outDeposit", "outBalance", "outFinal", "finalTotal",
+      "pdfPerItem", "pdfSubtotal", "pdfTax", "pdfTotal", "pdfDeposit", "pdfBalance",
+      "pdfInvoiceAmount", "pdfHeroTotal"
+    ].forEach((id) => setTextAll(id, ZERO));
+
+    // Keep internal direct cost / overhead / break-even fields untouched.
+    setTextAll("sumProfit", "Complimentary");
+    setTextAll("sumMargin", "N/A");
+    setTextAll("outProfit", "Complimentary");
+    setTextAll("outMargin", "N/A");
+
+    const guardrail = $("profitGuardrail");
+    if (guardrail) guardrail.textContent = "Complimentary Quote";
+
+    const confidence = $("quoteConfidence");
+    if (confidence) {
+      confidence.textContent = "Free Override";
+      confidence.className = "confidence-ok";
+    }
+
+    const notice = $("manualPiecePriceNotice");
+    if (notice) {
+      notice.classList.remove("hidden");
+      notice.classList.add("manual-override-active");
+      notice.innerHTML = freeNoticeHtml();
+    }
+
+    const pdfAssumptions = $("pdfAssumptions");
+    if (pdfAssumptions) {
+      if (!pdfAssumptions.dataset.freeOverrideOriginalHtml) {
+        pdfAssumptions.dataset.freeOverrideOriginalHtml = pdfAssumptions.innerHTML || "";
+      }
+      const original = pdfAssumptions.dataset.freeOverrideOriginalHtml || "";
+      const reason = ($("manualPiecePriceReason")?.value || "").trim();
+      const freeText = `<strong>Pricing Method</strong><br>Complimentary project — customer total intentionally set to $0.00.` +
+        (reason ? `<br><strong>Override Note:</strong> ${reason}` : "");
+      pdfAssumptions.innerHTML = original ? `${freeText}<br><br>${original}` : freeText;
+    }
+
+    return true;
+  }
+
+  function restoreFreePdfText() {
+    if (isExplicitFreeOverride()) return;
+    const pdfAssumptions = $("pdfAssumptions");
+    if (pdfAssumptions?.dataset.freeOverrideOriginalHtml != null) {
+      pdfAssumptions.innerHTML = pdfAssumptions.dataset.freeOverrideOriginalHtml;
+      delete pdfAssumptions.dataset.freeOverrideOriginalHtml;
+    }
+  }
+
+  function applySoon(delays = [0, 25, 75, 180, 400, 850]) {
+    delays.forEach((delay) => setTimeout(() => {
+      if (!applyFreeOverride()) restoreFreePdfText();
+    }, delay));
+  }
+
+  function patchRender() {
+    if (typeof window.render !== "function" || window.render._explicitFreeOverridePatchedV1) return;
+    const original = window.render;
+    window.render = function explicitFreeOverrideRender(...args) {
+      const result = original.apply(this, args);
+      applySoon();
+      return result;
+    };
+    window.render._explicitFreeOverridePatchedV1 = true;
+  }
+
+  function bind() {
+    patchRender();
+
+    ["manualPiecePriceOverride", "manualPiecePriceReason"].forEach((id) => {
+      const el = $(id);
+      if (!el || el.dataset.explicitFreeOverrideBound === "true") return;
+      el.dataset.explicitFreeOverrideBound = "true";
+      ["input", "change", "blur"].forEach((eventName) => {
+        el.addEventListener(eventName, () => {
+          if (typeof window.render === "function") window.render();
+          applySoon();
+        });
+      });
+    });
+
+    ["saveQuoteBtn", "customerPdfBtn", "invoicePdfBtn", "printBtn", "generateQuoteBtn", "emailQuoteBtn"].forEach((id) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.explicitFreeOverrideBound === "true") return;
+      btn.dataset.explicitFreeOverrideBound = "true";
+      btn.addEventListener("click", () => applySoon([0, 20, 80, 180, 450, 900, 1500]), { capture: true });
+    });
+
+    window.addEventListener("beforeprint", applyFreeOverride, { capture: true });
+    applySoon();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+  setTimeout(bind, 1500);
+})();
