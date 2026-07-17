@@ -511,7 +511,9 @@
       quoteTitle: $("quoteTitle")?.value?.trim() || "",
       quoteTotal: totalsSnapshot.final_total,
       quoteData: data,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      durable: false,
+      recovery_reason: "remote-save-failed"
     };
 
     if (idx >= 0) list[idx] = { ...list[idx], ...record };
@@ -619,7 +621,7 @@
       body: JSON.stringify(payload)
     });
 
-    localSaveFallback(data, totalsSnapshot);
+    writeLocalHistory(readLocalHistory().filter((q) => q.quoteNumber !== quoteNumber));
     return saved;
   }
 
@@ -643,23 +645,14 @@
       select.appendChild(opt);
     });
 
-    localRows.forEach((q) => {
-      if (cloudRows.some((c) => c.quote_number === q.quoteNumber)) return;
-      const opt = document.createElement("option");
-      opt.value = `local:${q.quoteNumber}`;
-      opt.textContent = quoteLabel(q, "local");
-      select.appendChild(opt);
-    });
-
     if ([...select.options].some((o) => o.value === current)) select.value = current;
 
     if (summary) {
       const cloudCount = cloudRows.length;
       const localCount = localRows.length;
-      const status = cloudCount
-        ? `<span class="saved-source-pill">Cloud active</span>`
-        : `<span class="saved-source-pill local">Browser fallback</span>`;
-      summary.innerHTML = `${status}<div class="saved-cloud-status">${cloudCount} cloud quote${cloudCount === 1 ? "" : "s"} loaded. ${localCount} browser backup${localCount === 1 ? "" : "s"} available.</div>`;
+      const status = `<span class="saved-source-pill">Supabase authoritative</span>`;
+      summary.innerHTML = `${status}<div class="saved-cloud-status">${cloudCount} durable cloud quote${cloudCount === 1 ? "" : "s"} loaded. ${localCount} non-durable recovery cop${localCount === 1 ? "y" : "ies"} require explicit review.</div>${localCount ? '<button type="button" id="reviewQuoteRecoveryBtn">Review recovery copies</button>' : ''}`;
+      $("reviewQuoteRecoveryBtn")?.addEventListener("click", reviewQuoteRecovery);
     }
   }
 
@@ -670,15 +663,29 @@
       populateDropdown(cloudRows, localRows, "cloud");
       return { source: "cloud", cloudRows, localRows };
     } catch (err) {
-      console.warn("Cloud quote load failed; using browser fallback:", err);
-      populateDropdown([], localRows, "local");
-      const summary = $("savedQuotesSummary");
+      console.warn("Cloud quote load failed; durable quotes are unavailable:", err);
+      populateDropdown([], localRows, "remote-failure");
+      const summary = $("historySummary");
       if (summary) {
         const tokenPresent = !!(window.OliPolyAuth?.getToken?.() || localStorage.getItem("sb_token"));
-        summary.innerHTML += `<div class="saved-cloud-status">Debug: token ${tokenPresent ? "found" : "missing"} · ${String(err.message || err)}</div>`;
+        summary.innerHTML = `<span class="saved-source-pill local">Supabase unavailable</span><div class="saved-cloud-status">No browser copy is being shown as durable. ${localRows.length} recovery cop${localRows.length === 1 ? "y is" : "ies are"} available only for explicit review. Token ${tokenPresent ? "found" : "missing"} · ${String(err.message || err)}</div>${localRows.length ? '<button type="button" id="reviewQuoteRecoveryBtn">Review recovery copies</button>' : ''}`;
+        $("reviewQuoteRecoveryBtn")?.addEventListener("click", reviewQuoteRecovery);
       }
-      return { source: "local", cloudRows: [], localRows, error: err };
+      return { source: "remote-failure", cloudRows: [], localRows, error: err };
     }
+  }
+
+  function reviewQuoteRecovery() {
+    const rows = readLocalHistory();
+    if (!rows.length) return toast("No quote recovery copies found.");
+    const choices = rows.map((row, index) => `${index + 1}. ${row.quoteNumber} · ${row.updatedAt || "timestamp missing"}`).join("\n");
+    const selected = Number(prompt(`Recovery copies are non-durable and will not upload automatically. Enter a number to load one as an unsaved draft, then review it and use Save Quote to import explicitly:\n\n${choices}`));
+    const row = rows[selected - 1];
+    if (!row) return;
+    const fields = mergeSavedQuoteRowIntoFields(row.quoteData?.fields || {}, row);
+    populateFields(fields);
+    if (typeof window.render === "function") window.render();
+    toast(`${row.quoteNumber} loaded as an unsaved recovery draft. Review, then Save Quote explicitly.`);
   }
 
   async function loadSelectedQuote() {
@@ -695,10 +702,7 @@
       if (source === "cloud") {
         row = await fetchCloudQuoteByNumber(quoteNumber);
         data = row.quote_data || {};
-      } else {
-        row = readLocalHistory().find((q) => q.quoteNumber === quoteNumber) || null;
-        data = row?.quoteData || row?.quote_data || {};
-      }
+      } else throw new Error("Browser recovery must be opened through Review recovery copies.");
 
       const fields = mergeSavedQuoteRowIntoFields(data.fields || {}, row || {});
       if (!fields || !Object.keys(fields).length) throw new Error("Saved quote data is missing fields.");
@@ -774,7 +778,7 @@ ${err.message || err}`);
           console.warn("Cloud save failed; saving browser fallback:", err);
           localSaveFallback();
           await refreshSavedQuotes();
-          toast("Saved browser backup. Log into orders-admin for cloud save.");
+          toast("Cloud save failed. A non-durable recovery copy was retained for explicit review; this quote is not saved.");
         }
       };
     }

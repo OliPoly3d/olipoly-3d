@@ -931,7 +931,7 @@
   ];
   const LEGACY_LEDGER_KEYS=['olipoly_inventory_ledger_v1','olipoly_inventory_ledger_v2'];
   const $=id=>document.getElementById(id);
-  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',supplySearch:'',supplyCategory:'all',supplySort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false};
+  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',supplySearch:'',supplyCategory:'all',supplySort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false,authorityUnavailable:false};
 
   function uid(){return crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
   function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
@@ -1262,19 +1262,15 @@
   async function recoverLocalInventory(){
     const result=migrate();
     render();
-    if(state.cloud){
-      try{ await syncLocalInventoryToCloud(); }
-      catch(err){ console.warn('cloud sync after recovery failed', err); }
-    }
-    render();
-    toast(`Recovered/imported ${result.rawCount} raw material row(s).`);
+    toast(`Reviewed ${result.rawCount} local raw material recovery row(s). Nothing was uploaded. Use the explicit cloud import only after verification.`);
+    return {...result, uploaded:false};
   }
 
-  function raw(){return read(RAW_KEY,[]).map(normalizeRaw)}
+  function raw(){return state.authorityUnavailable?[]:read(RAW_KEY,[]).map(normalizeRaw)}
   function saveRaw(list){write(RAW_KEY,list.map(normalizeRaw))}
-  function finished(){return read(FG_KEY,[]).map(normalizeFg)}
+  function finished(){return state.authorityUnavailable?[]:read(FG_KEY,[]).map(normalizeFg)}
   function saveFinished(list){write(FG_KEY,list.map(normalizeFg))}
-  function ledger(){return read(LEDGER_KEY,[]).map(normalizeLedger)}
+  function ledger(){return state.authorityUnavailable?[]:read(LEDGER_KEY,[]).map(normalizeLedger)}
   function ledgerFingerprint(x){
     const r=normalizeLedger(x||{});
     const d=new Date(r.date||0);
@@ -1294,7 +1290,7 @@
   }
   function saveLedger(list){write(LEDGER_KEY,dedupeLedgerRows(list))}
 
-  function supplies(){return read(SUPPLY_KEY,[]).map(normalizeSupply)}
+  function supplies(){return state.authorityUnavailable?[]:read(SUPPLY_KEY,[]).map(normalizeSupply)}
   function saveSupplies(list){write(SUPPLY_KEY,list.map(normalizeSupply))}
 
   function normalizeSupply(s){
@@ -1578,19 +1574,14 @@
         sbApi(`/rest/v1/non_filament_materials?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'}).catch(()=>null),
         sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=created_at.desc`,{method:'GET'}).catch(()=>null)
       ]);
-      if(Array.isArray(rawRows) && rawRows.length){
-        const merged=mergeByIdOrFingerprint([...raw(),...rawRows], normalizeRaw, x=>`${norm(x.material_type)}|${norm(x.color)}|${norm(x.brand)}|${norm(x.roll_label)}|${x.starting_grams}|${x.remaining_grams}`);
-        write(RAW_KEY, merged);
+      if([rawRows,fgRows,supplyRows,ledgerRows].some(rows=>!Array.isArray(rows))){
+        throw new Error('One or more authoritative inventory tables could not be loaded.');
       }
-      if(Array.isArray(fgRows) && fgRows.length){
-        const merged=mergeByIdOrFingerprint([...finished(),...fgRows], normalizeFg, x=>`${norm(x.product_name)}|${norm(x.sku)}|${x.quantity_on_hand}`);
-        write(FG_KEY, merged);
-      }
-      if(Array.isArray(supplyRows) && supplyRows.length){
-        const merged=mergeByIdOrFingerprint([...supplies(),...supplyRows], normalizeSupply, x=>`${norm(x.item_name)}|${norm(x.category)}|${norm(x.unit_type)}`);
-        write(SUPPLY_KEY, merged);
-      }
-      if(Array.isArray(ledgerRows) && ledgerRows.length){
+      state.authorityUnavailable=false;
+      if(Array.isArray(rawRows)) write(RAW_KEY, rawRows.map(normalizeRaw));
+      if(Array.isArray(fgRows)) write(FG_KEY, fgRows.map(normalizeFg));
+      if(Array.isArray(supplyRows)) write(SUPPLY_KEY, supplyRows.map(normalizeSupply));
+      if(Array.isArray(ledgerRows)){
         const cloudLedger=ledgerRows.map(x=>normalizeLedger({
           id:x.id,
           date:x.created_at||x.date,
@@ -1599,10 +1590,13 @@
           amount:x.amount ?? x.quantity_change,
           note:x.note||x.notes||x.source||''
         }));
-        saveLedger(dedupeLedgerRows([...ledger(),...cloudLedger]));
+        saveLedger(dedupeLedgerRows(cloudLedger));
       }
-      await syncLocalInventoryToCloud();
-    }catch(err){console.warn(err); toast('Cloud inventory load failed. Using browser data.')}
+    }catch(err){
+      console.warn(err);
+      state.authorityUnavailable=true;
+      toast('Authoritative inventory is unavailable. Browser recovery data is not being displayed as durable.');
+    }
   }
 
   async function cloudSaveRaw(r){

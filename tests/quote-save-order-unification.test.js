@@ -42,7 +42,9 @@ assert.match(quoteSource, /customer_totals: totalsSnapshot/);
 assert.match(quoteSource, /production_estimate: productionEstimateSnapshot\(fields\)/);
 assert.match(quoteSource, /quoteTotal: totalsSnapshot\.final_total/);
 assert.match(quoteSource, /quote_total: totalsSnapshot\.final_total/);
-assert.match(quoteSource, /localSaveFallback\(data, totalsSnapshot\)/);
+assert.match(quoteSource, /writeLocalHistory\(readLocalHistory\(\)\.filter\(\(q\) => q\.quoteNumber !== quoteNumber\)\)/, "successful remote save clears its recovery copy");
+assert.match(quoteSource, /durable: false/);
+assert.match(quoteSource, /No browser copy is being shown as durable/);
 
 const internalAcceptance = quoteSource.match(/async function acceptAndCreateOrder\([\s\S]*?\n  \}/)?.[0] || "";
 assert.match(internalAcceptance, /saveCloudQuote\(\)/);

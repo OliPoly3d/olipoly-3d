@@ -6,7 +6,7 @@
   'use strict';
 
   const time = row => {
-    const parsed = Date.parse(row?.updated_at || '');
+    const parsed = Date.parse(row?.updated_at || row?.updatedAt || '');
     return Number.isFinite(parsed) ? parsed : null;
   };
   const stableId = row => row?.id || row?.recipe_key || row?.quote_number || row?.order_number || null;
@@ -31,5 +31,26 @@
     return reconcile(remoteRows,localRows).filter(item=>item.source==='local-recovery');
   }
 
-  return Object.freeze({time,stableId,choose,reconcile,importableRecovery});
+  function recoveryReview(remoteRows, localRows){
+    return importableRecovery(remoteRows,localRows).map(item=>Object.freeze({
+      id:item.id,
+      row:item.row,
+      reason:(remoteRows || []).some(row=>String(stableId(row))===item.id)
+        ? 'newer-local-copy'
+        : 'missing-from-supabase'
+    }));
+  }
+
+  function missingRecoveryImports(remoteRows, reviewedRows){
+    const remoteIds=new Set((remoteRows || []).map(stableId).filter(Boolean).map(String));
+    const seen=new Set();
+    return (reviewedRows || []).filter(row=>{
+      const id=stableId(row);
+      if(!id || remoteIds.has(String(id)) || seen.has(String(id))) return false;
+      seen.add(String(id));
+      return true;
+    });
+  }
+
+  return Object.freeze({time,stableId,choose,reconcile,importableRecovery,recoveryReview,missingRecoveryImports});
 });
