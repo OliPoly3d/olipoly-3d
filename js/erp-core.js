@@ -6,7 +6,8 @@
   if (window.OliPolyERP) return;
 
   const ERP = {
-    version: '2026.07.08-workflow-pass4-business-pulse-lite',
+    version: '1.0',
+    releaseLabel: 'OliPoly ERP 1.0',
     page: (location.pathname.split('/').pop() || 'index.html').toLowerCase(),
     startedAt: new Date().toISOString(),
     memory: new Map()
@@ -130,6 +131,16 @@
       {label:'Orders', icon:'✓', href:'orders-admin.html'},
       {label:'Quote', icon:'$', href:'quote.html'}
     ]);
+  };
+
+  ERP.installReleaseIdentifier = function(){
+    const internalPages = ['hub.html','production-control.html','inventory-control.html','orders-admin.html','quote.html'];
+    if (!internalPages.includes(ERP.page) || document.querySelector('.erp-release-identifier')) return;
+    const identifier = document.createElement('div');
+    identifier.className = 'erp-release-identifier';
+    identifier.textContent = ERP.releaseLabel;
+    identifier.setAttribute('aria-label', 'Application version: ' + ERP.releaseLabel);
+    document.body.appendChild(identifier);
   };
 
 
@@ -567,6 +578,7 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     ERP.installDefaultInternalDock();
+    ERP.installReleaseIdentifier();
     ERP.markReady();
   });
 

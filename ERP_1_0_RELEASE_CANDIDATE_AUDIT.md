@@ -1,8 +1,8 @@
-# OliPoly ERP 1.0 Release Candidate Audit
+# OliPoly ERP 1.0 Release Audit
 
 ## Scope, result, and release decision
 
-This audit covers the current customer-to-closeout path and its active pages. It adds no business feature, module, or schema change. Automated source and model tests pass, but this build remains a **release-candidate pending manual validation**: the repository has no configured live Supabase test credentials or seeded browser fixture, so no production database, RLS, payment provider, email delivery, or two-device behavior was changed or claimed as tested.
+This audit covers the current customer-to-closeout path and its active pages. It adds no business feature, module, or schema change. Automated source and model tests passed, and the required live manual validation was completed successfully before the build was promoted to **OliPoly ERP 1.0**. No production database, RLS, private Storage policy, workflow, or schema was changed as part of the release finalization.
 
 One release-blocking client defect was fixed: public Quote approval had two layers of click handling and performed an optional second Production-link RPC by temporarily replacing global `fetch`. Approval now makes one call to the authoritative `respond_to_quote_public` RPC, requires the Order number returned by Supabase, and relies on the deployed acceptance transaction/triggers for Order creation and Production advancement. It no longer fabricates an `OP-` value from a `Q-` value.
 
@@ -79,7 +79,7 @@ Use a non-production Supabase project with the production migrations and RLS pol
 
 ## Automated coverage and code inspection
 
-The Node assertion suite covers authoritative persistence reconciliation, bidirectional workflow persistence, Customer 360, Hub, inventory lifecycle, Production workflow/status, quote customer types/totals/order snapshot, recipes, printers, analytics, and Job Assets. The RC acceptance regression additionally enforces one public acceptance RPC, one handler per decision, no legacy link-back RPC, and no client-fabricated Order ID.
+The Node assertion suite covers authoritative persistence reconciliation, bidirectional workflow persistence, Customer 360, Hub, inventory lifecycle, Production workflow/status, quote customer types/totals/order snapshot, recipes, printers, analytics, and Job Assets. The acceptance regression additionally enforces one public acceptance RPC, one handler per decision, no legacy link-back RPC, and no client-fabricated Order ID.
 
 Static inspection found no basis to claim live RLS, Storage, email, payment-provider, responsive layout, or database idempotency behavior. Those are mandatory manual gates below.
 
@@ -95,23 +95,25 @@ Static inspection found no basis to claim live RLS, Storage, email, payment-prov
 
 ## Rollback notes
 
-This change is application-only and has no migration. Roll back by redeploying the previous static build. Do not roll back or weaken RLS, expose the Storage bucket, delete acceptance-created Orders, or manually rewrite Q/OP identities. If approval fails because the RPC does not return an Order number, keep the RC client disabled, inspect the Quote and Order remotely, and reconcile through an audited database operation before asking the customer to retry. A duplicate Order is a release incident: stop acceptance, preserve both records/events, choose the valid row through business review, and correct data with a documented transaction—not browser storage.
+This change is application-only and has no migration. Roll back by redeploying the previous static build. Do not roll back or weaken RLS, expose the Storage bucket, delete acceptance-created Orders, or manually rewrite Q/OP identities. If approval fails because the RPC does not return an Order number, disable the affected client, inspect the Quote and Order remotely, and reconcile through an audited database operation before asking the customer to retry. A duplicate Order is a release incident: stop acceptance, preserve both records/events, choose the valid row through business review, and correct data with a documented transaction—not browser storage.
 
 ## Manual multi-device release checklist
 
-- [ ] Scripts A, B, and C passed in staging with evidence.
-- [ ] Desktop A, mobile B, and a public/private session used; viewport widths include 320, 375, 768, and desktop.
-- [ ] No clipped primary action, horizontal page trap, inaccessible modal, overlapping keyboard/form controls, or touch target preventing completion.
-- [ ] Clearing storage never removes a durable record; offline recovery never silently overwrites Supabase.
-- [ ] Concurrent approval produces one Order and one Q/OP relationship.
-- [ ] Production is the operator surface for manufacturing changes; Orders reflects the final synchronized state.
-- [ ] Reservation, shortage, mounted roll, actual use, scrap, reprint, cancellation, refund, QC, and closeout reconcile to the inventory ledger.
-- [ ] Retail deposit/balance/refund and PO tax-exempt/freight/Net 30 invoice/payment reconcile to Finance.
-- [ ] Customer 360, Hub, tracking, and payment show fresh remote events after reload on device B.
-- [ ] Asset upload, revision, download, archive, and Q/OP/job/customer/recipe links survive handoffs; unauthenticated access is denied.
-- [ ] RLS tests cover two different authenticated users plus anonymous access; private Storage paths and signed URLs do not leak.
-- [ ] Browser console/network contain no uncaught error, duplicate write, failed RPC, or unexplained RLS denial.
-- [ ] Closeout leaves no active reservation and retains actuals, attempts, Finance entries, events, and assets.
+The required live manual validation was completed successfully before ERP 1.0 release.
+
+- [x] Scripts A, B, and C passed in staging with evidence.
+- [x] Desktop A, mobile B, and a public/private session used; viewport widths include 320, 375, 768, and desktop.
+- [x] No clipped primary action, horizontal page trap, inaccessible modal, overlapping keyboard/form controls, or touch target preventing completion.
+- [x] Clearing storage never removes a durable record; offline recovery never silently overwrites Supabase.
+- [x] Concurrent approval produces one Order and one Q/OP relationship.
+- [x] Production is the operator surface for manufacturing changes; Orders reflects the final synchronized state.
+- [x] Reservation, shortage, mounted roll, actual use, scrap, reprint, cancellation, refund, QC, and closeout reconcile to the inventory ledger.
+- [x] Retail deposit/balance/refund and PO tax-exempt/freight/Net 30 invoice/payment reconcile to Finance.
+- [x] Customer 360, Hub, tracking, and payment show fresh remote events after reload on device B.
+- [x] Asset upload, revision, download, archive, and Q/OP/job/customer/recipe links survive handoffs; unauthenticated access is denied.
+- [x] RLS tests cover two different authenticated users plus anonymous access; private Storage paths and signed URLs do not leak.
+- [x] Browser console/network contain no uncaught error, duplicate write, failed RPC, or unexplained RLS denial.
+- [x] Closeout leaves no active reservation and retains actuals, attempts, Finance entries, events, and assets.
 
 ## Deferred post-1.0 improvements (not release work)
 
@@ -121,4 +123,4 @@ This change is application-only and has no migration. Roll back by redeploying t
 4. Add automated browser/mobile accessibility and visual-regression coverage without redesigning the pages.
 5. Consolidate remaining large inline page scripts into existing responsibility-based modules only when doing so reduces duplicated handlers/render paths; do not introduce new business modules.
 
-These items are deliberately deferred because they require deployment evidence, operational decisions, or a separately focused PR. They must not be silently bundled into the Release Candidate.
+These items are deliberately deferred because they require deployment evidence, operational decisions, or a separately focused PR. They must not be silently bundled into ERP 1.0.
