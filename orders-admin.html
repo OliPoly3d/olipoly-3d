@@ -969,6 +969,7 @@ body{font-family:Inter,Arial,sans-serif}
   <script defer src="js/erp-core.js?v=20260708-workflow3"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script defer src="js/erp-reliability.js?v=20260608"></script>
+<link rel="stylesheet" href="css/job-assets.css">
 </head>
 <body>
   <div class="wrap">
@@ -3260,6 +3261,9 @@ const payload = snapshotForm();
 </style></head><body>${bodyHtml}
 
 
+
+<div data-job-assets></div>
+<script src="js/job-asset-model.js"></script><script src="js/job-assets-ui.js"></script>
 </body></html>`);
       win.document.close();
       setTimeout(() => {
