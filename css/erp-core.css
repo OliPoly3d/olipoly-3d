@@ -117,6 +117,23 @@
   .erp-toast{animation:none;}
 }
 
+.erp-release-identifier{
+  position:fixed;
+  left:12px;
+  bottom:10px;
+  z-index:8998;
+  padding:4px 8px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:999px;
+  background:rgba(15,23,42,.82);
+  color:#a8b5db;
+  font:700 10px/1.2 Inter,system-ui,sans-serif;
+  letter-spacing:.03em;
+  pointer-events:none;
+  opacity:.78;
+}
+@media(max-width:760px){.erp-release-identifier{bottom:74px;}}
+
 
 /* === ERP Foundation Sprint Pass 4: shared UI primitives === */
 .erp-status-pill{
