@@ -1029,3 +1029,92 @@ Migration `supabase/migrations/202607200004_quote_acceptance_runtime_correctness
 `supabase/migrations/202607200005_quote_acceptance_runtime_safety.sql` supersedes `202607200004` and is the only runtime deployment artifact for the Quote acceptance runtime-safety correction. Existing deployed databases that manually applied `202607200002` and `202607200003` should apply only `202607200005`; fresh/sequential environments may safely execute the no-op `202607200004` marker and then `202607200005`.
 
 No deployed SQL was run by Codex in this milestone, and no deployed data was modified or repaired.
+
+## Deployment closeout — 2026-07-20 Quote Acceptance Runtime Safety
+
+This documentation-only closeout records operator-supplied deployed evidence for the Quote Acceptance Runtime Safety milestone. Codex did not reopen or redesign the implementation, deploy SQL, modify application code, create another migration, alter schema/RLS/grants/functions/triggers, mutate deployed data, or repair historical records.
+
+### Deployment status
+
+- Migration `202607200002_quote_acceptance_authority.sql` was applied.
+- Migration `202607200003_quote_accepted_snapshot_security.sql` was applied.
+- Migration `202607200004_quote_acceptance_runtime_correctness.sql` was neutralized in source control as a no-op.
+- Migration `202607200005_quote_acceptance_runtime_safety.sql` was successfully applied.
+- The `202607200005` transaction completed successfully.
+- No historical Quote, Order, Production, tracking, snapshot, or event repair was performed.
+
+### Operator-supplied preflight evidence
+
+- `duplicate_source_quotes = 0`.
+- `duplicate_events = 0`.
+- Snapshot RLS was enabled.
+- `anon` and `authenticated` could not read accepted commercial snapshots.
+- `PUBLIC` could not execute `respond_to_quote_public`.
+- `anon` could execute the token-protected `respond_to_quote_public`.
+- The deployed fulfillment constraint allowed only `pickup`, `delivery`, and `shipping`.
+- Before `202607200005`, `orders_sync_workflow_to_production` still fired on `INSERT OR UPDATE`.
+- Before `202607200005`, `quotes_advance_linked_production` was already absent. This records only the observed deployed state and does not speculate about how or when it was removed.
+
+### Operator-supplied post-deployment verification evidence
+
+| Verification item | Operator-supplied result |
+|---|---:|
+| `anon_can_accept` | `true` |
+| `public_can_accept` | `false` |
+| `rpc_security_definer` | `true` |
+| `rpc_search_path` | `public, pg_temp` |
+| `rpc_has_quote_lock` | `true` |
+| `rpc_validates_quote_identity` | `true` |
+| `rpc_uses_deposit_due` | `true` |
+| `rpc_maps_change_requested` | `true` |
+| `rpc_uses_real_event_causation` | `true` |
+| `snapshot_rls_enabled` | `true` |
+| `anon_can_read_snapshots` | `false` |
+| `authenticated_can_read_snapshots` | `false` |
+| `duplicate_source_quotes` | `0` |
+| `duplicate_events` | `0` |
+| `quote_trigger_removed` | `true` |
+| `order_trigger_has_insert` | `false` |
+
+Deployed Order trigger definition:
+
+```sql
+CREATE TRIGGER orders_sync_workflow_to_production
+AFTER UPDATE OF status ON public.orders
+FOR EACH ROW
+WHEN ((old.status IS DISTINCT FROM new.status))
+EXECUTE FUNCTION sync_order_workflow_to_production()
+```
+
+### Deployed database contract classification
+
+The deployed database contract is now classified as **Compliant** for the following Quote acceptance runtime-safety contract areas:
+
+- least-privilege public acceptance execution;
+- fixed `SECURITY DEFINER` search path;
+- Quote-row locking;
+- exact Quote identity validation;
+- exactly-one source Quote uniqueness prerequisite;
+- protected immutable snapshot storage;
+- Finance-safe `deposit_due`/unpaid projection;
+- canonical change-request handling;
+- durable event causation;
+- RPC-only initial Production handoff;
+- update-only post-acceptance Order workflow synchronization.
+
+### Manual browser verification status
+
+Manual browser verification remains **pending, not passed**. The following operator tests are still required before end-to-end browser behavior can be closed:
+
+- fresh Quote acceptance;
+- returned `OP-######` identity;
+- exactly one Order;
+- immutable snapshot contents;
+- exactly-once `quote.accepted` and `order.created` events;
+- tracking projection;
+- Production handoff;
+- repeated acceptance returning the same Order without writes;
+- Request Changes creating no Order;
+- network confirmation that browser clients perform no acceptance side-effect writes.
+
+The database deployment is verified from operator-supplied deployed evidence. Full end-to-end browser behavior remains pending operator testing and must not be claimed as passed until those browser checks are actually performed.
