@@ -3089,6 +3089,7 @@ resetForm();
           method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
         });
         if(result.error) throw result.error;
+        window.OliPolyWorkflow.clearCommandIdentity('fulfillment', orderNumber, command, previousOrder?.updated_at || payload?.updated_at);
       }catch(err){
         console.warn('Orders Admin → Production status sync failed.', err);
         setMsg($('formMessage'), `Saved order, but Production Control status sync needs review: ${err.message || err}`, true);
@@ -3165,7 +3166,7 @@ const payload = snapshotForm();
       if(error) return setMsg($('formMessage'), error.message || 'Delete failed', true);
 
       if(orderNumber){
-        await api(`/rest/v1/order_tracking_public?order_number=eq.${encodeURIComponent(orderNumber)}`, { method:'DELETE' });
+        console.info('Tracking cleanup is projection-only and must be handled by an approved server-side command.', orderNumber);
       }
 
       resetForm();

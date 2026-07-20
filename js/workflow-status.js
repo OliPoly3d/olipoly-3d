@@ -59,6 +59,20 @@
     if(transitionDirection(from, to) !== 'backward') return '';
     return 'This moves manufacturing backward. Production attempts, actual usage, scrap, and consumed inventory will be preserved; reservations and consumption will not be recreated or reversed automatically. Continue?';
   }
+  function commandIdentity(scope, orderNumber, command, expectedUpdatedAt){
+    if(!globalThis.localStorage) return `${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`;
+    const key = `olipoly_workflow_command:${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`;
+    let value = globalThis.localStorage.getItem(key);
+    if(!value){
+      value = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
+      globalThis.localStorage.setItem(key, value);
+    }
+    return value;
+  }
+  function clearCommandIdentity(scope, orderNumber, command, expectedUpdatedAt){
+    if(!globalThis.localStorage) return;
+    globalThis.localStorage.removeItem(`olipoly_workflow_command:${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`);
+  }
   function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
     if(!orderNumber) throw new Error('A linked Order number is required.');
     if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
@@ -69,7 +83,7 @@
         p_command:String(command).trim().toLowerCase(),
         p_expected_updated_at:expectedUpdatedAt,
         p_payload:payload || {},
-        p_correlation_id:(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+        p_correlation_id:commandIdentity('production', String(orderNumber).trim(), String(command).trim().toLowerCase(), expectedUpdatedAt),
         p_causation_id:null
       }
     };
@@ -84,7 +98,7 @@
         p_command:String(command).trim().toLowerCase(),
         p_expected_updated_at:expectedUpdatedAt,
         p_payload:payload || {},
-        p_correlation_id:(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+        p_correlation_id:commandIdentity('fulfillment', String(orderNumber).trim(), String(command).trim().toLowerCase(), expectedUpdatedAt),
         p_causation_id:null
       }
     };
@@ -98,6 +112,6 @@
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    workflowRpcRequest, productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, orderStatusLabel
+    workflowRpcRequest, productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });

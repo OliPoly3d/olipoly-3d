@@ -2778,13 +2778,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
-    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
+    const command = ({printing:'start_print', qc:'complete_print', ready_to_print:'needs_reprint'})[targetStatus];
+    if(targetStatus === 'ready_for_fulfillment') throw new Error('Production QC is recorded at qc; use Orders/Fulfillment for ready-for-fulfillment handoff.');
     if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
     const actuals = targetStatus === 'qc' ? {actual_grams_used:job.actual_grams_used, scrap_grams:job.scrap_grams || 0, actual_print_hours:job.actual_print_hours} : {};
     const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals);
-    await sbApi(request.path, {
+    const result = await sbApi(request.path, {
       method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
+    window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
+    return Array.isArray(result) ? result[0] : result;
   }
 
   async function saveJob(e){
@@ -2855,7 +2858,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(status === 'closed') updated.closed_at = updated.closed_at || now.toISOString();
     try{
       if(j.order_number && window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(status)){
-        await syncProductionStatusToOrder(updated, status);
+        const authoritative = await syncProductionStatusToOrder(j, status);
+        Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
       } else {
         await cloudSaveJob(updated);
         window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
@@ -4827,7 +4831,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){
-      actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass</button>`;
+      actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Approve Handoff in Orders</a>`;
       actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
       actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
