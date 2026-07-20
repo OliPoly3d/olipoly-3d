@@ -1118,3 +1118,114 @@ Manual browser verification remains **pending, not passed**. The following opera
 - network confirmation that browser clients perform no acceptance side-effect writes.
 
 The database deployment is verified from operator-supplied deployed evidence. Full end-to-end browser behavior remains pending operator testing and must not be claimed as passed until those browser checks are actually performed.
+
+## Production vs. Orders Workflow Authority Verification closeout — 2026-07-20
+
+> **Scope:** Documentation-only deployed evidence closeout. No functionality, migration, application/UI code, tests, deployed Supabase objects, or historical data were changed.
+
+### Confirmed deployed function and trigger evidence
+
+- `public.normalize_accepted_order_status(text)` is deployed as `SECURITY INVOKER` and `IMMUTABLE`. It maps manufacturing and legacy aliases into the accepted Order statuses, defaults unknown values to `ready_to_print`, and grants `EXECUTE` to `PUBLIC`, `anon`, `authenticated`, `postgres`, and `service_role`.
+- `public.set_linked_workflow_status(text, text, timestamptz)` is deployed as `SECURITY INVOKER` with `search_path=public`. It is executable by `authenticated`, `postgres`, and `service_role`; accepts `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, and `closed`; locks and updates `orders`; then directly updates `order_tracking_public`. Its optimistic concurrency check is optional and is bypassed when the expected timestamp is null. It does not enforce domain-specific transition ownership or legal transition edges.
+- `public.sync_order_workflow_to_production()` is deployed as `SECURITY DEFINER` with `search_path=public`. It grants `EXECUTE` to `PUBLIC`, `anon`, `authenticated`, `postgres`, and `service_role`; blindly copies changed `orders.status` into linked `production_jobs.production_status`; and can overwrite Production state, including backward movement or closure, without a Production-owned command.
+- The deployed Orders trigger is limited to changed status updates:
+
+```sql
+CREATE TRIGGER orders_sync_workflow_to_production
+AFTER UPDATE OF status ON public.orders
+FOR EACH ROW
+WHEN ((old.status IS DISTINCT FROM new.status))
+EXECUTE FUNCTION sync_order_workflow_to_production()
+```
+
+- Orders and `order_tracking_public` normalize status on `INSERT` and `UPDATE`.
+- Orders, tracking, and Production have `updated_at` triggers.
+- The retired Quote acceptance trigger is absent.
+
+### Confirmed deployed RLS, grant, and policy evidence
+
+- RLS is enabled on `orders`, `production_jobs`, and `order_tracking_public`.
+- Owner isolation is present.
+- Authenticated owners retain direct CRUD capability on all three tables.
+- Orders and Production have broad browser table grants.
+- Production has duplicate owner CRUD policy sets.
+- Anonymous table grants exist on Orders and Production, although deployed RLS owner checks prevent ordinary anonymous row access.
+- Direct authenticated table writes can bypass the intended workflow command boundary.
+- Public tracking is not technically enforced as projection-only because authenticated owners can write it directly.
+
+### Confirmed deployed data evidence
+
+- `order_tracking_public`: `closed=3`, `ready_to_print=1`.
+- `orders`: `closed=3`.
+- `production_jobs`: `closed=23`, `estimate=2`, `ready_to_print=3`.
+- No current `printing`, `qc`, or `ready_for_fulfillment` records exist.
+- The focused linked-record mismatch query returned no rows.
+- Current linked records are consistent, but live workflow handoff behavior cannot be verified from current data.
+- Confirmed real Orders:
+  - `OP-000178`, Rocky-PHM, direct/manual Order, `closed`, with matching tracking and no Production job.
+  - `OP-000184`, PETG Pocket Door Spacer Clip, source Quote `Q-000184`, `created_from_quote=true`, `closed`, with matching tracking and no Production job.
+
+### Historical/test/abandoned records
+
+The operator confirmed that the following Production rows reference absent Orders and are historical/test/abandoned evidence:
+
+- `OP-000006` / `Q-000006`
+- `OP-000002` / `Q-000002`
+- `OP-805877` / `Q-805877`
+- `OP-000005` / `Q-000005`
+
+This milestone does not propose deleting, repairing, backfilling, or otherwise cleaning them.
+
+### Manufacturing-actuals deployed data-integrity check
+
+- The first query produced five early-state rows only because `actual_filaments` and `actual_filament_usage` contain empty JSON arrays rather than empty objects.
+- The corrected query treated both empty arrays and empty objects as empty.
+- The corrected query returned no rows.
+- Therefore, no current `estimate`, `waiting_customer`, or `ready_to_print` Production job retains nonempty manufacturing actuals, start timestamps, or completion timestamps.
+
+Classification: **Compliant**.
+
+### Event evidence
+
+- `project_events` contains the full Blueprint envelope columns: `event_id`, `occurred_at`, `aggregate_type`, `aggregate_id`, `actor_type`, `actor_id`, `correlation_id`, `causation_id`, `schema_version`, and `payload`.
+- All 16 existing events are legacy pre-envelope records: `production_closed=1`, `production_job_canceled=8`, `production_status_changed=3`, and `quote_voided=4`.
+- All 16 have null envelope fields.
+- The non-null `event_id` duplicate query returned no rows.
+- Null legacy event IDs are not characterized as duplicate IDs.
+- No envelope-format events currently exist.
+- Historical event evidence is **Partially compliant**.
+- Existing envelope completeness is **Missing**.
+- Duplicate assigned event identities were not found.
+- Current runtime event-envelope emission is **Unable to verify** because no new workflow transition has been performed since the contract was introduced.
+
+### Closeout classifications
+
+| Area | Classification |
+|---|---|
+| Owner isolation | Compliant |
+| Current linked-record status consistency | Compliant |
+| Early-state Production jobs retaining manufacturing actuals | Compliant; none found |
+| Least-privilege table/function grants | Partially compliant |
+| Production policy duplication | Partially compliant |
+| Workflow command boundary | Conflicting |
+| Production ownership of printing, qc, reprint, and manufacturing actuals | Conflicting |
+| Orders/Fulfillment ownership of ready_for_fulfillment and closed | Conflicting or not technically enforced |
+| Public tracking as projection-only | Conflicting |
+| Optional optimistic concurrency enforcement | Partially compliant |
+| Historical event evidence | Partially compliant |
+| Blueprint event-envelope completeness for existing records | Missing |
+| Duplicate non-null event IDs | Compliant; none found |
+| Current runtime workflow event emission | Unable to verify |
+| Live Production-to-Fulfillment handoff behavior | Unable to verify because no active real linked workflow exists |
+
+### Decision gate and next milestone
+
+The deployed workflow authority is **not Blueprint-compliant**, even though current linked rows are consistent. The primary conflict is that authenticated browser clients can directly mutate workflow tables and the Orders trigger blindly writes Order status into Production.
+
+Recommend exactly one next corrective milestone: **Enforce Production and Fulfillment Workflow Command Authority.**
+
+That future milestone is limited to Production-owned commands for `printing`, `qc`, `needs_reprint`, and manufacturing actuals; Orders/Fulfillment-owned commands for `ready_for_fulfillment` and `closed`; explicit legal transition validation; mandatory optimistic concurrency for workflow changes; projection-only public tracking updates; removal of blind Orders-to-Production status overwrites; removal of unnecessary function/table grants and duplicate Production policies; Blueprint-envelope event emission for new transitions; preservation of existing historical records without cleanup or backfill unless separately approved; focused contract tests; and read-only deployment verification.
+
+Explicit exclusions: Finance, Inventory consumption, Quote acceptance redesign, UI redesign, Fundraiser work, and historical data cleanup.
+
+No corrective migration is created in this milestone.

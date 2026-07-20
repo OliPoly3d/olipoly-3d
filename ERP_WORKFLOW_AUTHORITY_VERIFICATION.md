@@ -21,7 +21,7 @@
 
 ### Operator-supplied deployed evidence
 
-No fresh operator-supplied query results are included in this milestone. The SQL in section 4 is designed for an operator to run read-only against the deployed Supabase project and paste results into a later review.
+Initial sections preserve the pre-closeout verification plan. Section 9 records the fresh operator-supplied deployed Supabase evidence for this documentation-only closeout and supersedes the pending placeholders where it provides confirmed deployed facts.
 
 ### Repository inference
 
@@ -560,3 +560,153 @@ Documentation checks for this milestone should include:
 - `git diff --check`.
 
 Manual browser testing is not required for this documentation-only milestone and must not be claimed. Future implementation work should include staging browser verification of Production Control, Orders Admin, and public tracking network writes.
+
+## 9. Documentation-only closeout: Production vs. Orders Workflow Authority Verification
+
+> **Closeout date:** 2026-07-20
+> **Evidence source:** operator-supplied deployed Supabase verification.
+> **Change boundary:** documentation only. This closeout did not implement functionality, create migrations, modify application/UI code, change tests, alter deployed Supabase objects, or clean historical data.
+
+### 9.1 Evidence classification
+
+#### Confirmed deployed evidence
+
+The operator supplied the following deployed Supabase findings for the current Production vs. Orders workflow authority contract:
+
+- `public.normalize_accepted_order_status(text)` is `SECURITY INVOKER` and `IMMUTABLE`; maps manufacturing and legacy aliases into accepted Order statuses; defaults unknown values to `ready_to_print`; and has `EXECUTE` granted to `PUBLIC`, `anon`, `authenticated`, `postgres`, and `service_role`.
+- `public.set_linked_workflow_status(text, text, timestamptz)` is `SECURITY INVOKER` with `search_path=public`; is executable by `authenticated`, `postgres`, and `service_role`; accepts `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, and `closed`; locks and updates `orders`, then directly updates `order_tracking_public`; bypasses optional optimistic concurrency when the expected timestamp is null; and does not enforce domain-specific transition ownership or legal transition edges.
+- `public.sync_order_workflow_to_production()` is `SECURITY DEFINER` with `search_path=public`; has `EXECUTE` granted to `PUBLIC`, `anon`, `authenticated`, `postgres`, and `service_role`; blindly copies changed `orders.status` into linked `production_jobs.production_status`; and can overwrite Production state, including backward movement or closure, without a Production-owned command.
+- The deployed Orders trigger is:
+
+```sql
+CREATE TRIGGER orders_sync_workflow_to_production
+AFTER UPDATE OF status ON public.orders
+FOR EACH ROW
+WHEN ((old.status IS DISTINCT FROM new.status))
+EXECUTE FUNCTION sync_order_workflow_to_production()
+```
+
+- Orders and `order_tracking_public` normalize status on `INSERT` and `UPDATE`.
+- Orders invokes `sync_order_workflow_to_production` only after a changed status.
+- Orders, tracking, and Production have `updated_at` triggers.
+- The retired Quote acceptance trigger is absent.
+- RLS is enabled on `orders`, `production_jobs`, and `order_tracking_public`.
+- Owner isolation is present.
+- Authenticated owners retain direct CRUD capability on all three workflow tables.
+- Orders and Production have broad browser table grants.
+- Production has duplicate owner CRUD policy sets.
+- Anonymous table grants exist on Orders and Production, although deployed RLS owner checks prevent ordinary anonymous row access.
+- Direct authenticated table writes can bypass the intended workflow command boundary.
+- Public tracking is not technically enforced as projection-only because authenticated owners can write it directly.
+
+#### Confirmed deployed data evidence
+
+- `order_tracking_public` status distribution: `closed=3`, `ready_to_print=1`.
+- `orders` status distribution: `closed=3`.
+- `production_jobs` status distribution: `closed=23`, `estimate=2`, `ready_to_print=3`.
+- No current `printing`, `qc`, or `ready_for_fulfillment` records exist.
+- The focused linked-record mismatch query returned no rows.
+- Current linked records are consistent, but live workflow handoff behavior cannot be verified from current data.
+- Confirmed real Orders:
+  - `OP-000178`, Rocky-PHM, direct/manual Order, `closed`, with matching tracking and no Production job.
+  - `OP-000184`, PETG Pocket Door Spacer Clip, source Quote `Q-000184`, `created_from_quote=true`, `closed`, with matching tracking and no Production job.
+
+#### Historical/test/abandoned evidence
+
+The operator confirmed that these Production rows reference absent Orders and should be classified as historical/test/abandoned evidence, not current authority defects to repair in this milestone:
+
+- `OP-000006` / `Q-000006`
+- `OP-000002` / `Q-000002`
+- `OP-805877` / `Q-805877`
+- `OP-000005` / `Q-000005`
+
+No deletion, repair, backfill, or cleanup is proposed for these records in this milestone.
+
+#### Repository evidence
+
+Repository evidence continues to show intended domain boundaries, browser write paths, migrations, tests, and architecture documents. It is useful for interpreting the contract, but it is not treated as proof of deployed Supabase behavior unless matched by operator-supplied deployed evidence.
+
+#### Inference
+
+The primary inference from the confirmed deployed evidence is that current linked rows can be internally consistent while the command authority boundary remains non-compliant. Consistency exists because active linked records currently match, not because deployed grants, policies, triggers, and functions technically prevent unauthorized cross-domain workflow mutation.
+
+#### Unable to verify
+
+- Current runtime workflow event-envelope emission is unable to verify because no new workflow transition has been performed since the contract was introduced.
+- Live Production-to-Fulfillment handoff behavior is unable to verify because no active real linked workflow exists in `printing`, `qc`, or `ready_for_fulfillment`.
+- Browser behavior was not manually verified during this documentation-only closeout.
+
+### 9.2 Manufacturing-actuals verification
+
+The operator supplied a corrected deployed data-integrity check for early-state Production jobs:
+
+- The first query produced five early-state rows only because `actual_filaments` and `actual_filament_usage` contain empty JSON arrays rather than empty JSON objects.
+- The corrected query treated both empty arrays and empty objects as empty.
+- The corrected query returned no rows.
+- Therefore, no current `estimate`, `waiting_customer`, or `ready_to_print` Production job retains nonempty manufacturing actuals, start timestamps, or completion timestamps.
+
+Classification: **Compliant**.
+
+### 9.3 Event evidence
+
+- `project_events` contains the full Blueprint envelope columns: `event_id`, `occurred_at`, `aggregate_type`, `aggregate_id`, `actor_type`, `actor_id`, `correlation_id`, `causation_id`, `schema_version`, and `payload`.
+- All 16 existing events are legacy pre-envelope records:
+  - `production_closed`: 1
+  - `production_job_canceled`: 8
+  - `production_status_changed`: 3
+  - `quote_voided`: 4
+- All 16 existing events have null envelope fields.
+- The non-null `event_id` duplicate query returned no rows.
+- Null legacy event IDs are historical missing envelope values, not duplicate IDs.
+- No envelope-format events currently exist.
+- Historical event evidence is **Partially compliant**.
+- Existing envelope completeness is **Missing**.
+- Duplicate assigned event identities are **Compliant** because none were found.
+- Current runtime event-envelope emission is **Unable to verify** because no new workflow transition has been performed since the contract was introduced.
+
+### 9.4 Required classifications
+
+| Verification area | Closeout classification | Basis |
+|---|---|---|
+| Owner isolation | Compliant | RLS is enabled and owner isolation is present on the workflow tables. |
+| Current linked-record status consistency | Compliant | Focused linked-record mismatch query returned no rows. |
+| Early-state Production jobs retaining manufacturing actuals | Compliant | Corrected deployed query found none. |
+| Least-privilege table/function grants | Partially compliant | Anonymous access is constrained by RLS for ordinary row access, but broad grants remain on workflow functions/tables. |
+| Production policy duplication | Partially compliant | Duplicate owner CRUD policy sets exist on Production. |
+| Workflow command boundary | Conflicting | Authenticated browser clients can directly mutate workflow tables, and Orders status changes trigger direct Production overwrites. |
+| Production ownership of printing, qc, reprint, and manufacturing actuals | Conflicting | Orders-trigger synchronization and shared write paths can overwrite Production workflow state without Production-owned commands. |
+| Orders/Fulfillment ownership of ready_for_fulfillment and closed | Conflicting or not technically enforced | `set_linked_workflow_status` accepts workflow states without domain-specific transition ownership checks. |
+| Public tracking as projection-only | Conflicting | Authenticated owners can write `order_tracking_public` directly. |
+| Optional optimistic concurrency enforcement | Partially compliant | RPC supports an expected timestamp but bypasses the check when the expected timestamp is null. |
+| Historical event evidence | Partially compliant | Legacy workflow/audit events exist, but they predate the envelope. |
+| Blueprint event-envelope completeness for existing records | Missing | All 16 existing events have null envelope fields. |
+| Duplicate non-null event IDs | Compliant | Non-null duplicate query returned no rows. |
+| Current runtime workflow event emission | Unable to verify | No new workflow transition has been performed since the contract was introduced. |
+| Live Production-to-Fulfillment handoff behavior | Unable to verify | No active real linked workflow exists in `printing`, `qc`, or `ready_for_fulfillment`. |
+
+### 9.5 Decision gate
+
+The deployed workflow authority is **not Blueprint-compliant**, even though current linked rows are consistent. The primary conflict is that authenticated browser clients can directly mutate workflow tables and the Orders trigger blindly writes changed Order status into Production.
+
+### 9.6 Exactly one recommended next corrective milestone
+
+Recommend exactly one future corrective milestone:
+
+> **Enforce Production and Fulfillment Workflow Command Authority.**
+
+That future milestone should be narrowly limited to:
+
+- Production-owned commands for `printing`, `qc`, `needs_reprint`, and manufacturing actuals.
+- Orders/Fulfillment-owned commands for `ready_for_fulfillment` and `closed`.
+- Explicit legal transition validation.
+- Mandatory optimistic concurrency for workflow changes.
+- Projection-only updates to public tracking.
+- Removal of blind Orders-to-Production status overwrites.
+- Removal of unnecessary function/table grants and duplicate Production policies.
+- Blueprint-envelope event emission for new transitions.
+- Preservation of existing historical records without cleanup or backfill unless separately approved.
+- Focused contract tests and read-only deployment verification.
+
+Explicitly excluded from that future milestone: Finance, Inventory consumption, Quote acceptance redesign, UI redesign, Fundraiser work, and historical data cleanup.
+
+No corrective migration is created in this milestone.
