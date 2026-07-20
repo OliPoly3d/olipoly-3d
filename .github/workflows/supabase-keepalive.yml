@@ -10,38 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ping Supabase tables
+      - name: Ping Supabase
         run: |
           set -e
 
-          echo "Pinging orders..."
-          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/orders?select=*&limit=1" \
+          echo "Pinging Supabase..."
+          curl -f -sS \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/orders?select=id&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
 
           echo ""
-          echo "Pinging order_tracking_public..."
-          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/order_tracking_public?select=*&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
-
-          echo ""
-          echo "Pinging financial_entries..."
-          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/financial_entries?select=*&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
-
-          echo ""
-          echo "Pinging hub_notes..."
-          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/hub_notes?select=*&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
-
-          echo ""
-          echo "Pinging hub_reminders..."
-          curl -f -sS "${{ secrets.SUPABASE_URL }}/rest/v1/hub_reminders?select=*&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
-
-          echo ""
-          echo "Supabase keep-alive completed."
+          echo "Supabase keep-alive completed successfully."
