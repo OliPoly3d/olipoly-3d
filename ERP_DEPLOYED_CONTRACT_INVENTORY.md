@@ -110,6 +110,49 @@ The operator reports that migration `202607200001_public_access_ownership_securi
 - Browser behavior was not manually exercised by this agent. The public tracking and Orders Admin results above are operator-supplied deployed verification evidence.
 - Unrelated Blueprint gaps remain open: quote acceptance behavior, Quote-to-Order linkage, Order/Production workflow authority, Inventory lifecycle, Finance architecture, customer identity, Fundraiser Manager, Product Recipes, Job Assets, and unrelated UI/styling.
 
+## Deployment closeout — 2026-07-20 Public Quote Acceptance Transaction Verification
+
+This closeout is documentation-only and records operator-supplied deployed Supabase evidence. This repository environment did not independently connect to Supabase, mutate deployed data, alter schema/RLS/grants, run live acceptance, or repair historical records.
+
+### Confirmed deployed acceptance behavior
+
+- `public.respond_to_quote_public(p_public_token text, p_quote_number text, p_response text, p_message text)` exists as a PL/pgSQL, volatile, `SECURITY DEFINER` RPC with fixed `search_path=public` and `jsonb` return type.
+- The RPC validates quote number/public token, accepts only `accepted` or `declined`, derives the Order number by replacing `Q-` with `OP-`, updates Quote response/status and `converted_order_number`, inserts `orders` with `ON CONFLICT (order_number) DO NOTHING`, and upserts `order_tracking_public`.
+- The RPC does not populate `orders.source_quote_number`, does not populate `created_from_quote` or `accepted_date`, does not preserve an explicit immutable accepted commercial snapshot, and does not emit `quote.accepted` or `order.created` events.
+- All RPC and trigger writes participate in the PostgreSQL function transaction, but the transaction omits required Blueprint state.
+
+### Confirmed grants and access posture
+
+- `get_quote_public` and `respond_to_quote_public` are executable by `PUBLIC`, `anon`, `authenticated`, `postgres`, and `service_role`.
+- `set_linked_workflow_status` is executable by `PUBLIC` and `anon` as well as authenticated roles. It is `SECURITY INVOKER`, so deployed RLS currently prevents anonymous mutation.
+- `orders` and `order_tracking_public` policies are authenticated-only and owner-scoped. Workflow RPC grants are unnecessarily broad, but are not confirmed anonymous-write bypasses.
+
+### Confirmed deployed records and interpretation
+
+- `Q-000006` is accepted/converted and references `OP-000006`, but no Order exists; its Production job references `Q-000006`/`OP-000006` and is marked `accepted_created_order`.
+- `Q-000008` has one correctly linked test Order. The operator confirmed `Q-000006`, `Q-000008`, and most other early rows are historical test/abandoned data, so they are test residue rather than current customer workflow failures.
+- `OP-000178` / Rocky-PHM is a direct/manual Order, not Quote-created.
+- `OP-000184` / PETG Pocket Door Spacer Clip is marked `created_from_quote` and references missing Quote `Q-000184`; public tracking lookup for `OP-000184` succeeded and both `OP-000178` and `OP-000184` have synchronized closed public tracking rows. Neither has a linked Production row.
+- A blank-order-number tracking row titled `500 Toys` is operator-confirmed test/abandoned residue.
+- Existing real records cannot prove a complete current end-to-end Quote acceptance transaction.
+
+### Confirmed event and snapshot gaps
+
+- Deployed `project_events` columns are `id`, `user_id`, `project_id`, `quote_number`, `order_number`, `event_type`, `details`, and `created_at`; the Blueprint event envelope fields are absent.
+- No `quote.accepted` or `order.created` events were found; matching deployed events were Production lifecycle and `quote_voided` evidence only. Blueprint-compliant acceptance events are Missing/Conflicting.
+- `quotes` contains `quote_total` and `quote_data`; `orders` contains `order_total`, `deposit_amount`, `balance_amount`, and `invoice_terms`; no accepted snapshot columns exist. The immutable accepted commercial snapshot is Missing.
+
+### Confirmed constraints, idempotency, and trigger interactions
+
+- `orders.order_number` is globally unique; `orders.source_quote_number` is not unique and has no foreign key; no constraint enforces exactly one Order per accepted Quote.
+- `ON CONFLICT (order_number) DO NOTHING` prevents one narrow duplicate case but does not validate ownership/linkage; a pre-existing Order-number collision could cause the RPC to mark the Quote accepted, return the conflicting number, and overwrite its tracking projection. Idempotency is Partially compliant/Conflicting.
+- `advance_linked_production_on_quote_acceptance` is `SECURITY DEFINER` and advances `waiting_customer` Production rows to `ready_to_print`. `enforce_accepted_order_status` normalizes legacy statuses. `sync_order_workflow_to_production` is `SECURITY DEFINER` and links/synchronizes Production using `order_number` or `source_quote_number`. Because acceptance does not populate `source_quote_number`, Order-trigger linkage is incomplete unless Production already has the derived order number.
+- Root `quote.js` browser follow-up Production/tracking writes remain a conflicting second authority.
+
+### Focused future milestone
+
+The confirmed deployed evidence supports one focused future implementation milestone: **Make `respond_to_quote_public` the sole atomic Quote acceptance authority.** That milestone must address validated permanent Quote→Order linkage, collision-safe and retry-safe idempotency, exactly one Order per accepted Quote, immutable accepted commercial snapshot, required append-only acceptance events, one approved Production handoff path, customer-safe tracking projection, removal of browser acceptance side effects, and least-privilege RPC grants. It should not include speculative unrelated schema, Finance, Inventory, UI, or cleanup work.
+
 ## Deployed or repository-inferred contract catalog
 
 ### Summary table of found Supabase tables, views, RPCs, functions, triggers, policies, and buckets
@@ -136,7 +179,7 @@ The operator reports that migration `202607200001_public_access_ownership_securi
 | `public.catalog_parts` | table | Orders/catalog compatibility | Repository-inferred; definition unresolved |
 | `public.parts_catalog` | table | Orders/catalog compatibility | Repository-inferred; definition unresolved |
 | `storage.buckets: job-assets` | private Storage bucket | Shared Services / Assets | Repository-inferred from migration |
-| `public.respond_to_quote_public` | RPC | Quote acceptance / Orders handoff | Repository-inferred call; definition unresolved |
+| `public.respond_to_quote_public` | RPC | Quote acceptance / Orders handoff | Confirmed deployed; Partially compliant/Conflicting with Blueprint acceptance contract |
 | `public.set_linked_workflow_status` | RPC | Orders workflow in current implementation | Repository-inferred from migration |
 | `public.next_document_counter` | RPC | Shared Services / Identity | Repository-inferred call; definition unresolved |
 | `public.next_quote_invoice_number` | RPC | Quote/Finance document numbering compatibility | Repository-inferred archived call; obsolete/unresolved |
@@ -252,19 +295,19 @@ The operator reports that migration `202607200001_public_access_ownership_securi
 | Exact name | `public.respond_to_quote_public` RPC. |
 | Purpose | Public customer decision endpoint for accepting a quote or requesting changes. Should atomically record response, create/return exactly one Order on acceptance, preserve snapshot, and emit events. |
 | Owning Blueprint domain | Quote acceptance service with Orders handoff. |
-| Primary key | Unresolved inside RPC. Input uses `p_quote_number` and `p_public_token`. |
-| Stable business identifiers | Input `p_quote_number`; output expected to include `order_number`. |
-| Important parameters/columns | `p_quote_number`, `p_public_token`, `p_response`, `p_message`; returned structure unresolved. |
-| Foreign-key relationships | Unresolved. |
-| Status fields | `customer_response` on `quotes`; `orders.status`; public tracking status. |
-| Insert/update/delete authority | Public RPC should be sole public authority. Current `quote.js` performs post-RPC patches to `order_tracking_public` and linked production jobs, so some acceptance side effects may be outside the RPC. |
-| Public vs authenticated access | Anonymous/public endpoint using anon key and token; grants/RLS/security definer unresolved. |
-| RLS behavior | Unresolved. No migration defines RPC grants or policies. |
+| Primary key | No internal primary key exposed by the RPC. Input uses `p_quote_number` and `p_public_token`; Order identity is derived by replacing `Q-` with `OP-`. |
+| Stable business identifiers | Input `p_quote_number`; returned `order_number`; Quote `converted_order_number` is updated. Deployed RPC does not populate `orders.source_quote_number`. |
+| Important parameters/columns | Signature is `respond_to_quote_public(p_public_token text, p_quote_number text, p_response text, p_message text)` and return type is `jsonb`. It updates Quote response/status and `converted_order_number`, inserts `orders`, and upserts `order_tracking_public`. |
+| Foreign-key relationships | Deployed evidence found no FK on `orders.source_quote_number`; no constraint enforces exactly one Order per accepted Quote. |
+| Status fields | Accepts only `accepted` or `declined`; updates Quote response/status; triggers can advance/synchronize Production and normalize Order/tracking statuses. |
+| Insert/update/delete authority | RPC writes acceptance state, Order, and tracking projection, but root `quote.js` still performs post-RPC Production/tracking patches. This is a conflicting second authority. |
+| Public vs authenticated access | Executable by `PUBLIC`, `anon`, `authenticated`, `postgres`, and `service_role`; public token access is intended, but grant scope is broader than least privilege. |
+| RLS behavior | RPC is `SECURITY DEFINER` with fixed `search_path=public`. `orders` and `order_tracking_public` policies are authenticated-only and owner-scoped. Broad `set_linked_workflow_status` grants are not confirmed anonymous-write bypasses because it is `SECURITY INVOKER` and RLS blocks anonymous mutation. |
 | Application files/functions | `quote-response.html` calls `rpc('respond_to_quote_public', ...)`; `quote.js` calls `/rest/v1/rpc/respond_to_quote_public` and performs follow-up writes. |
-| Relevant migrations | None found for RPC definition. |
+| Relevant migrations | None found for RPC definition; repository migrations define related triggers/RPCs. |
 | Relevant tests | `tests/release-candidate-acceptance.test.js`, `tests/quote-save-order-unification.test.js`. |
-| Status | Repository-inferred call; definition unresolved. |
-| Blueprint conflict | Deployment-verification gate: atomicity, idempotency, event emission, one-order enforcement, and snapshot immutability cannot be verified from repository evidence. |
+| Status | Confirmed deployed; Partially compliant/Conflicting. |
+| Blueprint conflict | RPC is transactional but omits required permanent Quote→Order linkage, immutable accepted snapshot, acceptance events, complete collision-safe idempotency, exactly-one-Order enforcement, and single handoff authority. |
 
 ### 6. Orders
 
@@ -895,7 +938,7 @@ Repository-inferred contracts that appear structurally safe to use as design inp
 ## 3. Missing contracts
 
 1. Deployed DDL/RLS/grants for core tables: `quotes`, `orders`, `order_tracking_public`, `production_jobs`, inventory tables, `financial_entries`, `project_events`, `document_counters`, `printer_pm`, catalog tables.
-2. Deployed RPC definitions/grants for `respond_to_quote_public`, `next_document_counter`, and any Finance/Inventory command functions.
+2. Deployed RPC definitions/grants for `next_document_counter` and any Finance/Inventory command functions. `respond_to_quote_public` is now operator-confirmed, but its acceptance contract is Partially compliant/Conflicting.
 3. Unique one-Order-per-accepted-Quote enforcement.
 4. Database-allocated and permanently linked `Q-######`/`OP-######` identity contract.
 5. Accepted totals immutable snapshot contract.
@@ -917,7 +960,7 @@ Repository-inferred contracts that appear structurally safe to use as design inp
 Before implementation changes, perform read-only deployed verification for:
 
 1. All core table columns, PKs, FKs, unique constraints, CHECK constraints, indexes, RLS policies, and grants.
-2. `respond_to_quote_public` function definition, security mode, grants, transaction boundaries, idempotency behavior, and returned shape.
+2. Future corrective implementation for the confirmed `respond_to_quote_public` gaps: permanent linkage, collision-safe idempotency, immutable snapshot, events, single handoff path, tracking safety, browser side-effect removal, and least-privilege grants.
 3. `next_document_counter`/`document_counters` allocation semantics and uniqueness guarantees.
 4. Active triggers and whether both Quote-to-Production and Orders-to-Production sync are deployed.
 5. Public policies for `order_tracking_public` and RPC access to ensure least-privilege projections.
