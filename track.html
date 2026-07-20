@@ -561,8 +561,9 @@ img{max-width:100%}
       els.lookupMessage.style.color=isError?'#b34f72':'#866a86';
     }
 
-    async function api(path){
-      const res=await fetch(`${SUPABASE_URL}${path}`,{headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'}});
+    async function api(path, options={}){
+      const headers = {apikey:SUPABASE_KEY,'Content-Type':'application/json', ...(options.headers || {})};
+      const res=await fetch(`${SUPABASE_URL}${path}`,{...options,headers});
       const data=await res.json().catch(()=>null);
       return {data,error:!res.ok?data:null};
     }
@@ -773,9 +774,10 @@ if(venmo && canShowPaymentButtons){
       if(!typedId) return setMessage('Please enter a valid Order Number.',true);
 
       const id = normalizeLookupNumber(typedId);
-      const safeId = encodeURIComponent(id);
-      const path=`/rest/v1/order_tracking_public?select=order_number,order_title,status,payment_status,order_total,public_status_text,public_next_step,shipping_or_pickup_note,tracking_number,payment_link,payment_link_stripe,payment_link_paypal,payment_link_venmo,paid_date,po_number,invoice_number,invoice_terms&order_number=eq.${safeId}&limit=1`;
-      const {data,error}=await api(path);
+      const {data,error}=await api('/rest/v1/rpc/public_order_tracking_lookup', {
+        method:'POST',
+        body:JSON.stringify({tracking_identifier:id})
+      });
 
       if(error){
         els.resultCard.classList.add('hidden');
