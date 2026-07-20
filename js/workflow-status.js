@@ -104,8 +104,10 @@
     };
   }
   function workflowRpcRequest(orderNumber, status, expectedUpdatedAt){
-    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'ready_for_fulfillment', closed:'close_order', ready_to_print:'needs_reprint'})[String(status || '').trim().toLowerCase()];
-    if(status === 'closed' || status === 'ready_for_fulfillment') return fulfillmentWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, status === 'closed' ? {fulfilled_at:new Date().toISOString()} : {});
+    const normalized = String(status || '').trim().toLowerCase();
+    if(!POST_ACCEPTANCE_STATUSES.includes(normalized)) throw new Error('Invalid workflow status for accepted Order command.');
+    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'ready_for_fulfillment', closed:'close_order', ready_to_print:'needs_reprint'})[normalized];
+    if(normalized === 'closed' || normalized === 'ready_for_fulfillment') return fulfillmentWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, status === 'closed' ? {fulfilled_at:new Date().toISOString()} : {});
     return productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, {});
   }
   return Object.freeze({

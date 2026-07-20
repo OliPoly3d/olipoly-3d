@@ -16,11 +16,14 @@ assert(!migration.includes('fulfilled_at') && !migration.includes('closed_at'), 
 assert(!/\n\s*update\s+public\.project_events\b/i.test(migration), 'must not update legacy events');
 assert(!/\n\s*delete\s+from\s+public\.project_events\b/i.test(migration), 'must not delete legacy events');
 assert(migration.includes('revoke insert, update, delete on table public.order_tracking_public from authenticated'), 'tracking browser writes must be revoked');
-assert(migration.includes('revoke update on table public.orders from authenticated'), 'direct order status update must be removed before column grants');
+assert(migration.includes('revoke insert, update, delete on table public.orders from authenticated'), 'inherited Orders insert/update/delete privileges must be explicitly revoked');
+assert(migration.includes('revoke insert, update, delete on table public.production_jobs from authenticated'), 'inherited Production insert/update/delete privileges must be explicitly revoked');
 assert(!migration.includes('grant select, insert') && !migration.includes('grant insert on table public.orders'), 'orders must not have unrestricted browser insert');
 assert(migration.includes('grant update(order_number') && !migration.includes('grant update(status'), 'ordinary Orders Admin updates must be column-granted without status');
+assert(migration.includes('has_table_privilege') && migration.includes('has_column_privilege'), 'effective privilege verification queries must be present');
 assert(migration.includes('grant insert(id, user_id, job_title') && migration.includes("production_status in ('estimate','waiting_customer')"), 'production pre-acceptance insert must be narrow and state-limited');
 assert(migration.includes('grant update(job_title') && !migration.includes('grant update(production_status'), 'Production ordinary edits must be column-granted without workflow status/actuals');
+assert(migration.includes('actual_machine = case when v_command=') && migration.includes('completed_at = case when v_command=') && migration.includes('production_attempts'), 'complete_print must persist deployed actuals and attempt evidence');
 assert(migration.includes("v_command = 'pass_qc'") && migration.includes("v_to := 'ready_for_fulfillment'; v_event := 'order.qc_passed'"), 'pass_qc must be Production-owned and emit qc_passed');
 assert(!migration.includes("v_command = 'ready_for_fulfillment'"), 'Fulfillment must not provide a second ready_for_fulfillment command');
 assert((migration.match(/v_to := 'ready_for_fulfillment'/g) || []).length === 1, 'exactly one authority may produce ready_for_fulfillment');
@@ -29,6 +32,7 @@ assert(migration.includes("'order',v_order.id::text"), 'event aggregate_id must 
 assert(migration.includes("jsonb_build_object('from',v_from,'to',v_to)"), 'events must capture pre/post states distinctly');
 assert(migration.includes("!~ '^[0-9]+") && migration.includes("in ('NaN','Infinity','-Infinity')"), 'numeric actuals must reject invalid finite values');
 assert(migration.includes('Command identity is already used for a different workflow command'), 'command identity collision must be rejected');
+assert(migration.includes("when v_command='needs_reprint' then null") && migration.includes('last_completed_attempt'), 'Needs Reprint must preserve prior attempt evidence and reset current attempt projection');
 assert(migration.includes('set search_path = public, pg_temp'), 'functions must set fixed search_path');
 assert(migration.includes('revoke execute on function public.workflow_public_status_text(text) from public, anon, authenticated'), 'internal helper grants must be revoked');
 assert(migration.includes('production_jobs_owner_delete') && migration.includes("production_status in ('estimate','waiting_customer')") && migration.includes('order_number is null'), 'accepted/completed Production evidence must not be directly deleted');
@@ -37,10 +41,18 @@ assert(production.includes('productionWorkflowRpcRequest(job.order_number, comma
 assert(production.includes('const authoritative = await syncProductionStatusToOrder(j, status)'), 'success must consume server-returned row');
 assert(production.includes('Object.assign(updated, authoritative'), 'server-returned row must replace local fabricated row');
 assert(production.includes("ready_for_fulfillment:'pass_qc'"), 'Production UI must call pass_qc');
+assert(production.includes("if(j.order_number){") && production.includes('Unsupported linked workflow transition'), 'linked setStatus must route through command path before local mutation');
+assert(production.includes('Bulk workflow status changes are disabled'), 'bulk workflow mutation must be disabled');
+assert(production.includes('Linked accepted work cannot be moved back directly') && production.includes('Linked accepted work cannot be canceled from Production Control'), 'move-back/cancel must not bypass linked commands');
+assert(production.includes('Linked accepted Production evidence cannot be directly deleted'), 'linked Production evidence direct delete must be blocked');
 assert(production.includes('ordinaryJobPayload') && production.includes("delete ordinaryJobPayload[key]"), 'Production ordinary saves must omit command-owned fields');
+assert(production.includes("syncProductionStatusToOrder(j, 'qc', updated)"), 'confirmClose must call complete_print with persisted old job row and captured evidence');
+assert(!/if\(state\.user\?\.id\) await cloudSaveJob\(updated\);[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not cloudSaveJob before linked complete_print');
+assert(!/logProjectEvent\('production_actuals_captured'[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not emit legacy event before linked complete_print');
 assert(!production.includes('actual_grams_used: num(full') && !production.includes('production_status: full.production_status'), 'Production REST payload must not directly send actuals/status updates');
 assert(orders.includes('const {status, public_status_text, public_next_step, shipping_or_pickup_note, ...ordinaryPayload} = payload'), 'Orders Admin ordinary saves must omit status/tracking projection fields');
 assert(orders.includes("Orders are created through approved Quote acceptance"), 'Orders Admin direct create must remain disabled');
+assert(orders.includes('const patchedOrder =') && orders.includes('updated_at:patchedOrder.updated_at'), 'Orders close must use updated_at returned by preceding PATCH');
 assert(orders.includes("if(nextStatus !== 'closed')"), 'Fulfillment RPC must only be used for close_order');
 assert(!orders.includes('/rest/v1/order_tracking_public?on_conflict=order_number'), 'Orders Admin must not directly mutate tracking projection');
 

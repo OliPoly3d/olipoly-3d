@@ -3089,6 +3089,8 @@ resetForm();
           method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
         });
         if(result.error) throw result.error;
+        const authoritative = Array.isArray(result.data) ? result.data[0] : result.data;
+        if(authoritative?.id) orders = orders.map(row => row.id === authoritative.id ? {...row, ...authoritative} : row);
         window.OliPolyWorkflow.clearCommandIdentity('fulfillment', orderNumber, command, previousOrder?.updated_at || payload?.updated_at);
       }catch(err){
         console.warn('Orders Admin → Production status sync failed.', err);
@@ -3138,13 +3140,14 @@ const payload = snapshotForm();
       }
 
       if(res.error) return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true);
+      const patchedOrder = (Array.isArray(res.data) ? res.data[0] : res.data) || {...currentRow, ...ordinaryPayload};
 
       if(oldOrderNumber && oldOrderNumber !== payload.order_number){
         setMsg($('formMessage'),'Order number changed; public tracking projection will update through approved workflow commands.');
       }
 
       if(currentRow && currentRow.status !== payload.status){
-        await syncOrderStatusToProduction({...payload, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, currentRow, false);
+        await syncOrderStatusToProduction({...payload, updated_at:patchedOrder.updated_at, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, patchedOrder, false);
       }
 
       setMsg($('formMessage'),'Saved');

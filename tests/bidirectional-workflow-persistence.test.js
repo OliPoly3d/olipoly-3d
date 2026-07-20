@@ -5,10 +5,10 @@ const persistence = require('../js/production-status-persistence.js');
 const lifecycle = require('../js/inventory-lifecycle.js');
 
 for (const status of workflow.POST_ACCEPTANCE_STATUSES) {
-  assert.equal(workflow.workflowRpcRequest('OP-000123', status).body.p_status, status);
+  assert.equal(workflow.workflowRpcRequest('OP-000123', status, '2026-07-20T00:00:00Z').body.p_expected_updated_at, '2026-07-20T00:00:00Z');
 }
 for (const status of ['estimate', 'waiting_customer', 'quote_pending', 'quoted', 'draft_quote']) {
-  assert.throws(() => workflow.workflowRpcRequest('OP-000123', status), /post-acceptance/);
+  assert.throws(() => workflow.workflowRpcRequest('OP-000123', status, '2026-07-20T00:00:00Z'), /Invalid workflow status|command/i);
 }
 assert.equal(workflow.transitionDirection('ready_to_print', 'closed'), 'forward');
 assert.equal(workflow.transitionDirection('closed', 'printing'), 'backward');
@@ -28,8 +28,8 @@ const orders = fs.readFileSync(require.resolve('../orders-admin.html'), 'utf8');
 const quote = fs.readFileSync(require.resolve('../js/quote.js'), 'utf8');
 const migration = fs.readFileSync(require.resolve('../supabase/migrations/202607160004_authoritative_bidirectional_workflow.sql'), 'utf8');
 
-assert.match(production, /workflowRpcRequest\(job\.order_number, targetStatus\)/);
-assert.match(orders, /workflowRpcRequest\(orderNumber, nextStatus\)/);
+assert.match(production, /productionWorkflowRpcRequest\(job\.order_number, command, job\.updated_at/);
+assert.match(orders, /fulfillmentWorkflowRpcRequest\(orderNumber, command/);
 assert.match(migration, /create or replace function public\.set_linked_workflow_status/);
 assert.match(migration, /orders_sync_workflow_to_production/);
 assert.match(migration, /p\.production_status is distinct from o\.status/);

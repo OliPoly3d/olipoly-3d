@@ -22,8 +22,10 @@
 -- select proname, prosecdef, proacl from pg_proc join pg_namespace on pg_namespace.oid=pronamespace where nspname='public' and proname in ('set_linked_workflow_status','sync_order_workflow_to_production','production_workflow_command','fulfillment_workflow_command');
 --
 -- Post-deployment verification queries:
--- select has_table_privilege('authenticated','public.orders','update') as authenticated_can_update_orders; -- expect false
--- select has_table_privilege('authenticated','public.production_jobs','update') as authenticated_can_update_production_jobs; -- expect false
+-- select has_table_privilege('authenticated','public.orders','insert') as authenticated_can_insert_orders, has_table_privilege('authenticated','public.orders','delete') as authenticated_can_delete_orders, has_table_privilege('authenticated','public.orders','update') as authenticated_can_update_orders; -- expect all false
+-- select has_table_privilege('authenticated','public.production_jobs','insert') as authenticated_can_insert_all_production_jobs, has_table_privilege('authenticated','public.production_jobs','delete') as authenticated_can_delete_production_jobs, has_table_privilege('authenticated','public.production_jobs','update') as authenticated_can_update_all_production_jobs; -- expect insert=false, delete=true with restrictive RLS, update=false
+-- select has_column_privilege('authenticated','public.production_jobs','production_status','insert') as can_insert_preacceptance_status, has_column_privilege('authenticated','public.production_jobs','production_status','update') as can_update_status, has_column_privilege('authenticated','public.production_jobs','actual_grams_used','insert') as can_insert_actuals, has_column_privilege('authenticated','public.production_jobs','actual_grams_used','update') as can_update_actuals; -- expect true,false,false,false
+-- select has_column_privilege('authenticated','public.orders','status','update') as can_update_order_status, has_column_privilege('authenticated','public.orders','order_title','update') as can_update_order_title; -- expect false,true
 -- select has_table_privilege('authenticated','public.order_tracking_public','insert') as authenticated_can_insert_tracking, has_table_privilege('authenticated','public.order_tracking_public','update') as authenticated_can_update_tracking, has_table_privilege('authenticated','public.order_tracking_public','delete') as authenticated_can_delete_tracking; -- expect all false
 -- select has_function_privilege('PUBLIC','public.sync_order_workflow_to_production()','execute') as public_can_sync_trigger_helper; -- expect false
 -- select has_function_privilege('anon','public.set_linked_workflow_status(text,text,timestamptz)','execute') as anon_can_old_workflow; -- expect false
@@ -94,6 +96,11 @@ declare
   v_actual_grams numeric;
   v_scrap_grams numeric;
   v_actual_hours numeric;
+  v_actual_quantity numeric;
+  v_actual_machine text;
+  v_actual_filament_breakdown text;
+  v_roll_usage jsonb;
+  v_attempt jsonb;
 begin
   if v_actor is null then raise exception 'Authentication is required for Production workflow commands' using errcode='28000'; end if;
   if p_expected_updated_at is null then raise exception 'expected_updated_at is required' using errcode='22004'; end if;
@@ -126,6 +133,17 @@ begin
     if v_actual_grams::text in ('NaN','Infinity','-Infinity') or v_scrap_grams::text in ('NaN','Infinity','-Infinity') or v_actual_hours::text in ('NaN','Infinity','-Infinity') then
       raise exception 'Complete Print actuals must be finite' using errcode='22023';
     end if;
+    if coalesce(p_payload->>'actual_machine','') = '' then raise exception 'Complete Print requires actual_machine' using errcode='22023'; end if;
+    if coalesce(p_payload->>'actual_quantity','') !~ '^[0-9]+(\.[0-9]+)?$' then raise exception 'Complete Print requires finite nonnegative actual_quantity' using errcode='22023'; end if;
+    v_actual_quantity := (p_payload->>'actual_quantity')::numeric;
+    if v_actual_quantity::text in ('NaN','Infinity','-Infinity') or v_actual_quantity < 0 then raise exception 'Complete Print actual_quantity must be finite and nonnegative' using errcode='22023'; end if;
+    if p_payload ? 'actual_filament_breakdown' and jsonb_typeof(p_payload->'actual_filament_breakdown') not in ('array','object','string','null') then raise exception 'actual_filament_breakdown has invalid JSON structure' using errcode='22023'; end if;
+    if p_payload ? 'roll_usages' and jsonb_typeof(p_payload->'roll_usages') <> 'array' then raise exception 'roll_usages must be an array' using errcode='22023'; end if;
+    if p_payload ? 'production_attempt' and jsonb_typeof(p_payload->'production_attempt') <> 'object' then raise exception 'production_attempt must be an object' using errcode='22023'; end if;
+    v_actual_machine := p_payload->>'actual_machine';
+    v_actual_filament_breakdown := nullif(p_payload->>'actual_filament_breakdown','');
+    v_roll_usage := coalesce(p_payload->'roll_usages', '[]'::jsonb);
+    v_attempt := coalesce(p_payload->'production_attempt', jsonb_build_object('captured_at', v_now, 'actual_grams_used', v_actual_grams, 'scrap_grams', v_scrap_grams, 'actual_print_hours', v_actual_hours, 'actual_machine', v_actual_machine, 'actual_quantity', v_actual_quantity, 'roll_usages', v_roll_usage));
   elsif v_command = 'pass_qc' then
     v_to := 'ready_for_fulfillment'; v_event := 'order.qc_passed';
   elsif v_command = 'needs_reprint' then
@@ -156,11 +174,20 @@ begin
 
   update public.production_jobs
      set production_status = v_to,
-         actual_grams_used = coalesce(v_actual_grams, actual_grams_used),
-         scrap_grams = coalesce(v_scrap_grams, scrap_grams),
-         actual_print_hours = coalesce(v_actual_hours, actual_print_hours),
-         print_started_at = case when v_command='start_print' then coalesce(print_started_at, v_now) else print_started_at end,
-         job_payload = coalesce(job_payload,'{}'::jsonb) || jsonb_build_object('production_status', v_to, 'order_number', v_order.order_number, 'updated_at', v_now),
+         actual_machine = case when v_command='complete_print' then v_actual_machine else actual_machine end,
+         actual_quantity = case when v_command='complete_print' then v_actual_quantity else actual_quantity end,
+         actual_print_hours = case when v_command='needs_reprint' then null else coalesce(v_actual_hours, actual_print_hours) end,
+         actual_grams_used = case when v_command='needs_reprint' then null else coalesce(v_actual_grams, actual_grams_used) end,
+         scrap_grams = case when v_command='needs_reprint' then null else coalesce(v_scrap_grams, scrap_grams) end,
+         actual_filament_breakdown = case when v_command='needs_reprint' then null when v_command='complete_print' then v_actual_filament_breakdown else actual_filament_breakdown end,
+         roll_usages = case when v_command='needs_reprint' then '[]'::jsonb when v_command='complete_print' then v_roll_usage else roll_usages end,
+         completed_at = case when v_command='complete_print' then v_now else completed_at end,
+         print_started_at = case when v_command='start_print' then coalesce(print_started_at, v_now) when v_command='needs_reprint' then null else print_started_at end,
+         job_payload = case
+           when v_command='complete_print' then coalesce(job_payload,'{}'::jsonb) || jsonb_build_object('production_status', v_to, 'order_number', v_order.order_number, 'updated_at', v_now, 'last_completed_attempt', v_attempt, 'production_attempts', coalesce(job_payload->'production_attempts','[]'::jsonb) || jsonb_build_array(v_attempt))
+           when v_command='needs_reprint' then coalesce(job_payload,'{}'::jsonb) || jsonb_build_object('production_status', v_to, 'order_number', v_order.order_number, 'updated_at', v_now, 'current_attempt', jsonb_build_object('created_at', v_now), 'needs_reprint_at', v_now)
+           else coalesce(job_payload,'{}'::jsonb) || jsonb_build_object('production_status', v_to, 'order_number', v_order.order_number, 'updated_at', v_now)
+         end,
          updated_at = v_now
    where id = v_job.id and user_id = v_actor
    returning * into v_job;
@@ -272,8 +299,8 @@ alter table if exists public.production_jobs enable row level security;
 alter table if exists public.order_tracking_public enable row level security;
 
 revoke insert, update, delete on table public.order_tracking_public from authenticated;
-revoke update on table public.orders from authenticated;
-revoke update on table public.production_jobs from authenticated;
+revoke insert, update, delete on table public.orders from authenticated;
+revoke insert, update, delete on table public.production_jobs from authenticated;
 grant select on table public.orders, public.production_jobs to authenticated;
 grant select on table public.order_tracking_public to authenticated;
 grant update(order_number, order_date, customer_name, customer_email, order_title, quantity, order_total, deposit_amount, balance_amount, payment_status, fulfillment, tracking_number, payment_link, payment_link_stripe, payment_link_paypal, payment_link_venmo, stripe_invoice_id, paid_date, po_number, tax_exempt, tax_exempt_reason, exemption_certificate_on_file, po_file_on_file, po_part_number, olipoly_part_number, part_revision, shipping_contact_name, shipping_company, material, color, printer_profile, layer_height, nozzle_size, estimated_print_time, estimated_piece_price, production_notes, post_processing_notes, invoice_number, invoice_date, invoice_due_date, invoice_terms, ap_email, billing_address, shipping_address, internal_notes, finance_pushed, finance_pushed_at, invoice_sent, invoice_sent_at, updated_at) on public.orders to authenticated;
@@ -292,9 +319,9 @@ begin
 end
 $drop_policies$;
 create policy production_jobs_owner_select on public.production_jobs for select to authenticated using (auth.uid() = user_id);
-create policy production_jobs_owner_insert on public.production_jobs for insert to authenticated with check (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and print_started_at is null);
+create policy production_jobs_owner_insert on public.production_jobs for insert to authenticated with check (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and actual_machine is null and actual_quantity is null and actual_filament_breakdown is null and print_started_at is null and completed_at is null);
 create policy production_jobs_owner_update on public.production_jobs for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy production_jobs_owner_delete on public.production_jobs for delete to authenticated using (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and print_started_at is null);
+create policy production_jobs_owner_delete on public.production_jobs for delete to authenticated using (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and actual_machine is null and actual_quantity is null and actual_filament_breakdown is null and print_started_at is null and completed_at is null);
 create policy production_jobs_service_role_recovery on public.production_jobs for all to service_role using (true) with check (true);
 
 -- Public tracking remains projection-only: owner SELECT for active clients; service-role recovery only for mutation.
