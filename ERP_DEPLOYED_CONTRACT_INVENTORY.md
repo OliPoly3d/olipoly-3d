@@ -987,3 +987,13 @@ Before implementation changes, perform read-only deployed verification for:
 **Reasoning:** the strongest evidence-based blockers are not missing UI or simple code defects; they are unknown deployed contracts for `respond_to_quote_public`, `orders`, `quotes`, identity allocation, RLS, Finance, Inventory, and event persistence. Implementing the workflow, acceptance, Finance, Inventory, or Fundraiser corrections before read-only deployed verification would risk patching against inferred rather than actual production contracts.
 
 **Stop condition:** after deployed verification, choose exactly one corrective implementation milestone based on confirmed deployed facts. Do not begin that implementation automatically from this document.
+
+## Reviewed corrective contract inventory update — repository evidence, not deployed proof (2026-07-20)
+
+A focused corrective migration has been added at `supabase/migrations/202607200002_quote_acceptance_authority.sql`. It has not been applied by Codex and is not evidence that the deployed Supabase project has changed.
+
+When reviewed and deployed, the intended contract is that `respond_to_quote_public(p_public_token text, p_quote_number text, p_response text, p_message text)` becomes the single acceptance command for both anonymous public and authenticated internal acceptance. The migration adds compatible event-envelope columns to the legacy `project_events` table, an immutable `quote_accepted_commercial_snapshots` table owned by Quote, a partial unique index for exactly one nonblank `orders.source_quote_number`, least-privilege RPC grants, and an RPC body that handles Order creation/retry/collision checks, snapshot creation, required events, valid Production handoff, and tracking projection in one PostgreSQL transaction.
+
+The migration deliberately avoids historical repair and does not add a Quote foreign key, so known historical anomalies such as OP-000184 referencing a deleted/missing Q-000184 row do not block deployment. Duplicate nonblank `orders.source_quote_number` rows remain a hard preflight stop because the uniqueness contract cannot be safely enforced until those rows are reviewed outside this milestone.
+
+Browser inventory is updated accordingly: root `quote.js` and legacy `js/quote.js` now call the RPC for acceptance and do not perform acceptance-time writes to Orders, Production, tracking, or events after the RPC.
