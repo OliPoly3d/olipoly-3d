@@ -30,14 +30,21 @@ lacks(/create policy project_events_owner_update/, 'events must not be updateabl
 lacks(/create policy project_events_owner_delete/, 'events must not be deleteable by normal authenticated clients');
 
 has(/revoke all on table public\.order_tracking_public from anon;/, 'anon direct tracking table access is revoked');
+has(/drop policy if exists "Public can read tracking by lookup"/, 'deployed anonymous tracking lookup policy is removed');
+has(/drop policy if exists order_tracking_public_read_all/, 'deployed read-all tracking policy is removed');
+has(/drop policy if exists order_tracking_public_delete_own/, 'deployed owner delete tracking policy is replaced cleanly');
+has(/drop policy if exists order_tracking_public_insert_own/, 'deployed owner insert tracking policy is replaced cleanly');
+has(/drop policy if exists order_tracking_public_update_own/, 'deployed owner update tracking policy is replaced cleanly');
 has(/drop policy if exists "Public can read order tracking"/, 'old overlapping public tracking policy is removed');
 has(/drop policy if exists "Anon can read order tracking"/, 'old overlapping anon tracking policy is removed');
 has(/create or replace function public\.public_order_tracking_lookup\(tracking_identifier text\)/, 'public lookup RPC exists');
 has(/returns table \([\s\S]*order_number text[\s\S]*invoice_terms text[\s\S]*\)/, 'public lookup has an explicit allowlisted result shape');
-lacks(/returns table \([\s\S]*user_id/, 'public lookup must not return user_id');
+const lookupReturnShape = migration.match(/returns table \([\s\S]*?\n\)/)?.[0] || '';
+assert.doesNotMatch(lookupReturnShape, /user_id/, 'public lookup must not return user_id');
 has(/where n\.lookup_order_number is not null[\s\S]*limit 1;/, 'public lookup returns at most one row');
 has(/set search_path = public, pg_temp/, 'security definer RPCs use a fixed search_path');
 has(/grant execute on function public\.public_order_tracking_lookup\(text\) to anon;/, 'anon receives only the narrow lookup RPC');
+has(/Review gate:[\s\S]*must return zero rows[\s\S]*'anon' = any\(roles\)[\s\S]*qual = 'true'[\s\S]*coalesce\(qual, ''\) <> '\(user_id = auth\.uid\(\)\)'/, 'verification query flags anon, USING true, and cross-owner tracking policies');
 
 assert.match(track, /\/rest\/v1\/rpc\/public_order_tracking_lookup/, 'track.html uses the narrow public lookup RPC');
 assert.doesNotMatch(track, /\/rest\/v1\/order_tracking_public\?select=/, 'track.html must not query the listable tracking table');
