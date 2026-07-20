@@ -625,3 +625,11 @@ The reviewed contract now requires the RPC to lock the matching Quote row by exa
 The root `quote.js` and referenced legacy `js/quote.js` acceptance paths now delegate acceptance state to `respond_to_quote_public`; browser code no longer creates Orders, patches accepted Quote state, patches acceptance-time Production handoff state, writes project events, or patches tracking after the RPC. UI refresh/display behavior remains browser-owned.
 
 This is repository evidence of the intended corrective contract only. Deployment proof still requires running the migration preflight queries, applying the migration through the reviewed Supabase process, and then running the included post-deployment verification and manual browser checklist.
+
+## Deployed snapshot security repair closeout — operator evidence (2026-07-20)
+
+Operator-supplied deployed evidence records that `quote_accepted_commercial_snapshots` was initially deployed with RLS disabled after the acceptance-authority migration, and that `anon` and `authenticated` inherited broad table privileges. The operator immediately applied and verified the focused security repair outside Codex.
+
+The deployed contract is now that RLS is enabled for `quote_accepted_commercial_snapshots`, and `PUBLIC`, `anon`, and `authenticated` have no direct table privileges. The accepted commercial snapshot remains an internal artifact created through `respond_to_quote_public`; no browser table policies are required or expected.
+
+The operator-supplied verification also records that the duplicate source-Quote check and the duplicate acceptance-event check returned no rows. Repository migration `supabase/migrations/202607200003_quote_accepted_snapshot_security.sql` only synchronizes source control with this already-applied deployed state. Codex did not deploy or reapply the migration.

@@ -997,3 +997,11 @@ When reviewed and deployed, the intended contract is that `respond_to_quote_publ
 The migration deliberately avoids historical repair and does not add a Quote foreign key, so known historical anomalies such as OP-000184 referencing a deleted/missing Q-000184 row do not block deployment. Duplicate nonblank `orders.source_quote_number` rows remain a hard preflight stop because the uniqueness contract cannot be safely enforced until those rows are reviewed outside this milestone.
 
 Browser inventory is updated accordingly: root `quote.js` and legacy `js/quote.js` now call the RPC for acceptance and do not perform acceptance-time writes to Orders, Production, tracking, or events after the RPC.
+
+## Deployed snapshot security repair closeout — operator evidence (2026-07-20)
+
+Operator-supplied deployed evidence records that the new `quote_accepted_commercial_snapshots` table from the quote acceptance authority migration was initially deployed with row level security disabled, and that `anon` and `authenticated` inherited broad table privileges from the default Supabase grant posture.
+
+The operator immediately applied and verified the deployed security repair. The deployed table now has RLS enabled, and `PUBLIC`, `anon`, and `authenticated` have no direct table privileges on `quote_accepted_commercial_snapshots`. Snapshot creation remains internal to the SECURITY DEFINER acceptance RPC; no browser policies are part of the deployed contract.
+
+The operator also verified that the duplicate source-Quote check and the duplicate acceptance-event check returned no rows. Repository migration `supabase/migrations/202607200003_quote_accepted_snapshot_security.sql` is therefore a forward-only synchronization of already-applied deployed state, not a Codex deployment action.
