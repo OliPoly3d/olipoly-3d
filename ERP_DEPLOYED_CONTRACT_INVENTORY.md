@@ -1005,3 +1005,11 @@ Operator-supplied deployed evidence records that the new `quote_accepted_commerc
 The operator immediately applied and verified the deployed security repair. The deployed table now has RLS enabled, and `PUBLIC`, `anon`, and `authenticated` have no direct table privileges on `quote_accepted_commercial_snapshots`. Snapshot creation remains internal to the SECURITY DEFINER acceptance RPC; no browser policies are part of the deployed contract.
 
 The operator also verified that the duplicate source-Quote check and the duplicate acceptance-event check returned no rows. Repository migration `supabase/migrations/202607200003_quote_accepted_snapshot_security.sql` is therefore a forward-only synchronization of already-applied deployed state, not a Codex deployment action.
+
+## 202607200004 planned corrective contract inventory update
+
+Repository evidence now includes `supabase/migrations/202607200004_quote_acceptance_runtime_correctness.sql` as a forward-only corrective migration for the confirmed deployed Quote acceptance issues. Codex did **not** apply or deploy this migration.
+
+Planned contract after reviewed deployment: `respond_to_quote_public(p_public_token text, p_quote_number text, p_response text, p_message text)` remains the only public/internal Quote acceptance command. First acceptance must create or reuse exactly one validated Order, persist the immutable accepted snapshot, emit exactly-once `quote.accepted` and `order.created` events, initialize customer-safe tracking projection, and perform the sole acceptance-time Production handoff. Accepted idempotent retries that already have the required Order, snapshot, and events must return the same `order_number` without updating Quote, Order, snapshot, tracking, Production, events, accepted/responded timestamps, or `updated_at`.
+
+The planned corrective migration retires the overlapping `quotes_advance_linked_production` trigger while preserving `orders_sync_workflow_to_production` for normal post-acceptance Order workflow synchronization. It does not repair historical records, redesign UI, modify Finance or Inventory, deploy data changes, or broaden access to `quote_accepted_commercial_snapshots`.

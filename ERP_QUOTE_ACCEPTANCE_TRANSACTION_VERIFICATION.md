@@ -633,3 +633,15 @@ Operator-supplied deployed evidence records that `quote_accepted_commercial_snap
 The deployed contract is now that RLS is enabled for `quote_accepted_commercial_snapshots`, and `PUBLIC`, `anon`, and `authenticated` have no direct table privileges. The accepted commercial snapshot remains an internal artifact created through `respond_to_quote_public`; no browser table policies are required or expected.
 
 The operator-supplied verification also records that the duplicate source-Quote check and the duplicate acceptance-event check returned no rows. Repository migration `supabase/migrations/202607200003_quote_accepted_snapshot_security.sql` only synchronizes source control with this already-applied deployed state. Codex did not deploy or reapply the migration.
+
+## 202607200004 forward-only runtime correctness evidence
+
+Migration `supabase/migrations/202607200004_quote_acceptance_runtime_correctness.sql` is the next focused corrective repository artifact for the deployed Quote acceptance authority. Codex did **not** apply this migration, did not deploy it, and did not mutate production or historical data.
+
+The migration replaces `public.respond_to_quote_public` as a `SECURITY DEFINER` RPC with `search_path = public, pg_temp`, preserves locked Quote/token validation, rejects post-acceptance attempts to decline or request changes, returns an accepted retry before any writes when the Order, immutable snapshot, and required events already exist, and keeps the first accepted commercial snapshot authoritative.
+
+On first acceptance, the RPC explicitly projects the locked accepted Quote values into `orders`: quantity from `quote_data.fields.qty` with default `1`, `order_total` from `quote_total`, deposit from `quote_data.fields.depositAmount`, balance as `greatest(order_total - deposit, 0)`, payment status, fulfillment, customer fields, `order_title`, `source_quote_number`, `created_from_quote`, and `accepted_date`. It initializes `order_tracking_public` with customer-safe approved projection fields, including title, total, payment status, `ready_to_print` status, public status text, and next-step text, without resetting existing advanced tracking rows on retry.
+
+The migration retires the overlapping `quotes_advance_linked_production` trigger and removes its unused trigger function after repository-reference inspection. It preserves `orders_sync_workflow_to_production` for normal post-acceptance workflow synchronization. Acceptance-time Production handoff remains inside the RPC and only updates the linked owner/Quote row in approved pre-acceptance states while avoiding closed or actual-work rows.
+
+The migration includes read-only preflight queries, post-deployment verification queries, and forward-recovery guidance. It preserves the least-privilege grants from the acceptance authority and snapshot security migrations and does not broaden direct access to `quote_accepted_commercial_snapshots`.
