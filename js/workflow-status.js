@@ -59,15 +59,62 @@
     if(transitionDirection(from, to) !== 'backward') return '';
     return 'This moves manufacturing backward. Production attempts, actual usage, scrap, and consumed inventory will be preserved; reservations and consumption will not be recreated or reversed automatically. Continue?';
   }
-  function workflowRpcRequest(orderNumber, status, expectedUpdatedAt){
+  function commandIdentity(scope, orderNumber, command, expectedUpdatedAt){
+    if(!globalThis.localStorage) return `${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`;
+    const key = `olipoly_workflow_command:${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`;
+    let value = globalThis.localStorage.getItem(key);
+    if(!value){
+      value = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
+      globalThis.localStorage.setItem(key, value);
+    }
+    return value;
+  }
+  function clearCommandIdentity(scope, orderNumber, command, expectedUpdatedAt){
+    if(!globalThis.localStorage) return;
+    globalThis.localStorage.removeItem(`olipoly_workflow_command:${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`);
+  }
+  function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
     if(!orderNumber) throw new Error('A linked Order number is required.');
-    if(!isPostAcceptanceStatus(status)) throw new Error('Orders can only use post-acceptance workflow states.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
     return {
-      path:'/rest/v1/rpc/set_linked_workflow_status',
+      path:'/rest/v1/rpc/production_workflow_command',
       body:{
         p_order_number:String(orderNumber).trim(),
-        p_status:String(status).trim().toLowerCase(),
-        p_expected_updated_at:expectedUpdatedAt || null
+        p_command:String(command).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_payload:payload || {},
+        p_correlation_id:commandIdentity('production', String(orderNumber).trim(), String(command).trim().toLowerCase(), expectedUpdatedAt),
+        p_causation_id:null
+      }
+    };
+  }
+  function fulfillmentWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
+    if(!orderNumber) throw new Error('A linked Order number is required.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/fulfillment_workflow_command',
+      body:{
+        p_order_number:String(orderNumber).trim(),
+        p_command:String(command).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_payload:payload || {},
+        p_correlation_id:commandIdentity('fulfillment', String(orderNumber).trim(), String(command).trim().toLowerCase(), expectedUpdatedAt),
+        p_causation_id:null
+      }
+    };
+  }
+  function preAcceptanceProductionRpcRequest(jobId, command, expectedUpdatedAt, payload){
+    if(!jobId) throw new Error('A Production job id is required.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before changing pre-acceptance Production state; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/preacceptance_production_command',
+      body:{
+        p_job_id:String(jobId),
+        p_command:String(command).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_payload:payload || {},
+        p_correlation_id:commandIdentity('preacceptance-production', String(jobId), String(command).trim().toLowerCase(), expectedUpdatedAt),
+        p_causation_id:null
       }
     };
   }
@@ -75,6 +122,6 @@
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    workflowRpcRequest, orderStatusLabel
+    productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });

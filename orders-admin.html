@@ -3082,11 +3082,16 @@ resetForm();
       if(!forceRepair && nextStatus === prevStatus && previousOrder?.order_number === orderNumber) return;
 
       try{
-        const request = window.OliPolyWorkflow.workflowRpcRequest(orderNumber, nextStatus);
+        if(nextStatus !== 'closed') throw new Error('Orders/Fulfillment owns only close_order; Production owns manufacturing and Pass QC.');
+        const command = 'close_order';
+        const request = window.OliPolyWorkflow.fulfillmentWorkflowRpcRequest(orderNumber, command, previousOrder?.updated_at || payload?.updated_at, {fulfillment_confirmed_at:new Date().toISOString(), fulfillment_method:payload.fulfillment || 'confirmed'});
         const result = await api(request.path, {
           method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
         });
         if(result.error) throw result.error;
+        const authoritative = Array.isArray(result.data) ? result.data[0] : result.data;
+        if(authoritative?.id) orders = orders.map(row => row.id === authoritative.id ? {...row, ...authoritative} : row);
+        window.OliPolyWorkflow.clearCommandIdentity('fulfillment', orderNumber, command, previousOrder?.updated_at || payload?.updated_at);
       }catch(err){
         console.warn('Orders Admin → Production status sync failed.', err);
         setMsg($('formMessage'), `Saved order, but Production Control status sync needs review: ${err.message || err}`, true);
@@ -3122,39 +3127,28 @@ const payload = snapshotForm();
       const backwardWarning = currentRow && window.OliPolyWorkflow.backwardMoveWarning(currentRow.status, payload.status);
       if(backwardWarning && !confirm(backwardWarning)) return setMsg($('formMessage'),'Backward workflow move canceled.');
 
+      const {status, public_status_text, public_next_step, shipping_or_pickup_note, ...ordinaryPayload} = payload;
       let res;
       if(activeId){
         res = await api(`/rest/v1/orders?id=eq.${activeId}`,{
           method:'PATCH',
           headers:{Prefer:'return=representation'},
-          body:JSON.stringify(payload)
+          body:JSON.stringify(ordinaryPayload)
         });
       } else {
-        res = await api('/rest/v1/orders',{
-          method:'POST',
-          headers:{Prefer:'return=representation'},
-          body:JSON.stringify(payload)
-        });
+        return setMsg($('formMessage'),'Orders are created through approved Quote acceptance; direct Orders Admin creation is disabled by workflow authority.',true);
       }
 
       if(res.error) return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true);
+      const patchedOrder = (Array.isArray(res.data) ? res.data[0] : res.data) || {...currentRow, ...ordinaryPayload};
 
       if(oldOrderNumber && oldOrderNumber !== payload.order_number){
-        await api(`/rest/v1/order_tracking_public?order_number=eq.${encodeURIComponent(oldOrderNumber)}`, { method:'DELETE' });
+        setMsg($('formMessage'),'Order number changed; public tracking projection will update through approved workflow commands.');
       }
 
-      const publicRes = await api('/rest/v1/order_tracking_public?on_conflict=order_number', {
-        method:'POST',
-        headers:{ Prefer:'resolution=merge-duplicates,return=representation' },
-        body:JSON.stringify(publicTrackingPayload(payload))
-      });
-
-      if(publicRes.error) return setMsg($('formMessage'), publicRes.error.message || JSON.stringify(publicRes.error) || 'Saved order, but public tracking update failed.', true);
-
-      // Pass 17: Save also acts as a bridge repair. Even if the visible order status
-      // did not change, push the current status/OP/Q back to Production Control so
-      // older accepted orders do not remain stuck in quote mode.
-      await syncOrderStatusToProduction({...payload, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, currentRow, true);
+      if(currentRow && currentRow.status !== payload.status){
+        await syncOrderStatusToProduction({...payload, updated_at:patchedOrder.updated_at, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, patchedOrder, false);
+      }
 
       setMsg($('formMessage'),'Saved');
       await fetchOrders();
@@ -3164,20 +3158,7 @@ const payload = snapshotForm();
 
     async function deleteOrder(){
       if(!activeId) return setMsg($('formMessage'),'Select an order first.',true);
-
-      const currentRow = orders.find(o => o.id === activeId);
-      const orderNumber = currentRow?.order_number;
-
-      const {error} = await api(`/rest/v1/orders?id=eq.${activeId}`,{method:'DELETE'});
-      if(error) return setMsg($('formMessage'), error.message || 'Delete failed', true);
-
-      if(orderNumber){
-        await api(`/rest/v1/order_tracking_public?order_number=eq.${encodeURIComponent(orderNumber)}`, { method:'DELETE' });
-      }
-
-      resetForm();
-      await fetchOrders();
-      setMsg($('formMessage'),'Deleted');
+      return setMsg($('formMessage'),'Orders cannot be deleted from Orders Admin. Accepted work is closed through the approved fulfillment command.',true);
     }
 
 

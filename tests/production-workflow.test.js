@@ -26,13 +26,13 @@ for(const html of statusSelects){
 const production = fs.readFileSync(require.resolve('../production-control.html'), 'utf8');
 const quote = fs.readFileSync(require.resolve('../quote.js'), 'utf8');
 assert.match(production, /Estimate[\s\S]*Push to Quote/);
-assert.match(production, /production_status: 'waiting_customer'/);
+assert.match(production, /syncPreAcceptanceProductionStatus[\s\S]*waiting_customer/);
 assert.doesNotMatch(quote, /production_status: 'ready_to_print'/, 'browser quote acceptance must not patch Production ready state');
 assert.match(fs.readFileSync(require.resolve('../supabase/migrations/202607200002_quote_acceptance_authority.sql'), 'utf8'), /production_status = 'ready_to_print'/);
 assert.match(production, /data-complete-print=/);
 assert.match(production, /data-status="\$\{j\.id\}\|ready_for_fulfillment"[^>]*>Pass/);
 assert.match(production, /data-status="\$\{j\.id\}\|ready_to_print"[^>]*>Needs Reprint/);
-assert.match(production, /data-status="\$\{j\.id\}\|closed"[^>]*>Fulfilled \/ Close/);
+assert.match(production, /Fulfill \/ Close in Orders/);
 assert.match(production, /const RESERVABLE_STATUSES = \['ready_to_print','printing','qc'\]/);
 
 assert.match(fs.readFileSync(require.resolve('../supabase/migrations/202607200002_quote_acceptance_authority.sql'), 'utf8'), /status, customer_name/);

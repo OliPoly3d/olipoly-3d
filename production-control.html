@@ -2452,16 +2452,18 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!state.user?.id) return false;
 
     const full = jobPayload(j);
+    const isExisting = !!state.jobs.find(existing => existing.id === full.id);
+    const isPreAcceptanceCreate = !isExisting && ['estimate','waiting_customer'].includes(full.production_status) && !full.order_number;
+    const ordinaryJobPayload = {...full};
+    ['production_status','order_number','actual_machine','actual_quantity','actual_print_hours','actual_filaments','actual_filament_usage','actual_filament_breakdown','actual_grams_used','scrap_grams','print_started_at','completed_at','closed_at','actuals_captured_at','roll_usages'].forEach(key => delete ordinaryJobPayload[key]);
     const payload = {
       id: full.id,
       user_id: state.user.id,
       job_title: full.job_title,
       job_type: full.job_type,
-      production_status: full.production_status,
       priority: full.priority,
       customer_name: full.customer_name,
       quote_number: full.quote_number,
-      order_number: full.order_number,
       quantity: full.quantity,
       machine_preference: full.machine_preference,
       due_date: full.due_date,
@@ -2472,14 +2474,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       // Do not write estimated_total_hours / estimated_total_grams as top-level columns;
       // Supabase may define them as generated columns. They are preserved in job_payload.
       estimated_hours_each: num(full.estimated_hours_each),
-      actual_print_hours: num(full.actual_print_hours),
       estimated_grams_each: num(full.estimated_grams_each),
-      actual_grams_used: num(full.actual_grams_used),
-      scrap_grams: num(full.scrap_grams),
       filament_breakdown: full.filament_breakdown,
-      actual_filament_breakdown: full.actual_filament_breakdown,
       filament_recipe: full.filament_recipe,
-      roll_usages: full.roll_usages,
       finished_sku: full.finished_sku,
       estimated_price_each: num(full.estimated_price_each),
       design_fee: num(full.design_fee),
@@ -2493,18 +2490,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       notes: full.notes,
       failure_reason: full.failure_reason,
       close_note: full.close_note,
-      actual_machine: full.actual_machine,
-      actual_quantity: num(full.actual_quantity),
       exclude_inventory_reduction: full.exclude_inventory_reduction,
       finished_roll: full.finished_roll,
       spool_freed: full.spool_freed,
       manual_rank: full.manual_rank,
-      print_started_at: full.print_started_at,
-      estimated_finish_at: full.estimated_finish_at,
-      closed_at: full.closed_at,
-      job_payload: full,
+      job_payload: ordinaryJobPayload,
       updated_at: new Date().toISOString()
     };
+    if(isPreAcceptanceCreate) payload.production_status = full.production_status;
 
     try{
       const saved = await sbApi('/rest/v1/production_jobs?on_conflict=id',{
@@ -2526,18 +2519,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       // until refresh, then revert from the older cloud row. Always try a narrow
       // PATCH with only the durable closeout/status fields that the board needs.
       const minimal = {
-        production_status: full.production_status,
-        actual_machine: full.actual_machine || null,
-        actual_quantity: num(full.actual_quantity),
-        actual_print_hours: num(full.actual_print_hours),
-        actual_grams_used: num(full.actual_grams_used),
-        actual_filament_breakdown: full.actual_filament_breakdown || null,
-        scrap_grams: num(full.scrap_grams),
         failure_reason: full.failure_reason || null,
         close_note: full.close_note || null,
-        closed_at: full.closed_at || null,
         updated_at: new Date().toISOString(),
-        job_payload: full
+        job_payload: ordinaryJobPayload
       };
 
       try{
@@ -2776,12 +2761,72 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     };
   }
 
-  async function syncProductionStatusToOrder(job, targetStatus){
+
+  async function syncPreAcceptanceProductionStatus(job, targetStatus, payload = {}){
+    if(!state.user?.id || !job?.id || job.order_number) return null;
+    const command = targetStatus === 'waiting_customer' ? 'mark_waiting_customer' : targetStatus === 'estimate' ? 'return_to_estimate' : null;
+    if(!command) throw new Error('Pre-acceptance Production can only move between estimate and waiting_customer.');
+    const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload);
+    const result = await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+    window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
+    return Array.isArray(result) ? result[0] : result;
+  }
+
+  async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
-    const request = window.OliPolyWorkflow.workflowRpcRequest(job.order_number, targetStatus);
-    await sbApi(request.path, {
+    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
+    if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
+    const actuals = targetStatus === 'qc' ? {
+      actual_machine:evidenceJob.actual_machine,
+      actual_quantity:evidenceJob.actual_quantity,
+      actual_print_hours:evidenceJob.actual_print_hours,
+      actual_grams_used:evidenceJob.actual_grams_used,
+      scrap_grams:evidenceJob.scrap_grams || 0,
+      actual_filament_breakdown:evidenceJob.actual_filament_breakdown || null,
+      actual_filaments:evidenceJob.actual_filaments || null,
+      actual_filament_usage:evidenceJob.actual_filament_usage || null,
+      roll_usages:evidenceJob.roll_usages || [],
+      production_attempt:currentProductionAttempt(evidenceJob) || null
+    } : {};
+    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals);
+    const result = await sbApi(request.path, {
       method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
+    window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
+    return Array.isArray(result) ? result[0] : result;
+  }
+
+  const LINKED_WORKFLOW_RECOVERY_KEY = 'olipoly_linked_workflow_recovery_v1';
+  function linkedWorkflowRecovery(){
+    return readJson(LINKED_WORKFLOW_RECOVERY_KEY, {});
+  }
+  function pendingLinkedWorkflowRecovery(job, status){
+    const pending = linkedWorkflowRecovery()?.[job?.id];
+    if(!pending) return null;
+    if(pending.status !== status || pending.from_status !== job.production_status || pending.expected_updated_at !== job.updated_at) return null;
+    return pending;
+  }
+  function rememberLinkedWorkflowRecovery(job, status, pendingJob, lifecycleAction){
+    const pending = linkedWorkflowRecovery();
+    pending[job.id] = {
+      job_id:job.id,
+      order_number:job.order_number,
+      status,
+      from_status:job.production_status,
+      expected_updated_at:job.updated_at,
+      lifecycle_action:lifecycleAction || null,
+      pending_job:pendingJob,
+      recorded_at:new Date().toISOString(),
+      recovery_note:'Inventory side effects were prepared before the workflow RPC completed; retry this command to finish without duplicating consumed attempts or reservation deltas.'
+    };
+    localWrite(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+  }
+  function clearLinkedWorkflowRecovery(jobId){
+    const pending = linkedWorkflowRecovery();
+    if(pending[jobId]){
+      delete pending[jobId];
+      localWrite(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+    }
   }
 
   async function saveJob(e){
@@ -2791,13 +2836,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const j = formJob();
       if(!j.job_title) throw new Error('Job title is required.');
       const previousJob = state.jobs.find(x=>x.id===j.id);
-      j.material_reservations = shouldReserveInventory(j) ? buildMaterialReservations(j) : [];
-      await applyReservationDelta(previousJob, j);
+      const isPreAcceptanceStatusChange = previousJob && !previousJob.order_number && ['estimate','waiting_customer'].includes(previousJob.production_status) && ['estimate','waiting_customer'].includes(j.production_status) && previousJob.production_status !== j.production_status;
+      const ordinarySaveJob = isPreAcceptanceStatusChange ? {...j, production_status:previousJob.production_status} : j;
+      ordinarySaveJob.material_reservations = shouldReserveInventory(ordinarySaveJob) ? buildMaterialReservations(ordinarySaveJob) : [];
+      await applyReservationDelta(previousJob, ordinarySaveJob);
 
+      let cloudOk = await cloudSaveJob(ordinarySaveJob);
+      if(isPreAcceptanceStatusChange){
+        try{
+          const authoritative = await syncPreAcceptanceProductionStatus(previousJob, j.production_status, {quote_number:j.quote_number || null});
+          if(authoritative) Object.assign(j, authoritative);
+        }catch(error){
+          state.jobs = [previousJob, ...state.jobs.filter(x=>x.id!==previousJob.id)];
+          localWrite(LS_JOBS,state.jobs);
+          throw error;
+        }
+      }
       state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
       localWrite(LS_JOBS,state.jobs);
-
-      const cloudOk = await cloudSaveJob(j);
       window.OliPolyERP?.logEvent?.('production_job_saved', {job_id:j.id, title:j.job_title, status:j.production_status, reserved_grams:(j.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
 
       resetForm();
@@ -2812,8 +2868,64 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function setStatus(id,status){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
+    if(j.order_number){
+      if(status === 'qc') return toast('Use Complete Print to capture actuals before moving to QC.');
+      if(!({ready_to_print:1, printing:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
+      if(status === 'printing' && !hasProductionActualPlan(j)) return toast('Add/confirm slicer grams and print hours before starting production.');
+      const now = new Date();
+      const recovery = pendingLinkedWorkflowRecovery(j, status);
+      const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
+      let lifecycleAction = recovery?.lifecycle_action || null;
+      if(!recovery){
+        if(status === 'printing' && !updated.print_started_at){
+          updated.print_started_at = now.toISOString();
+          if(num(updated.estimated_total_hours)){
+            updated.estimated_finish_at = new Date(now.getTime() + num(updated.estimated_total_hours)*3600000).toISOString();
+          }
+        }
+        lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
+        if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
+          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release'});
+        }
+        const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
+          ? {...updated, material_reservations:[]}
+          : j;
+        if(lifecycleAction === 'consume_and_reserve_reprint') await applyReservationDelta(j, reservationBase);
+        updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
+          ? []
+          : shouldReserveInventory(updated, status)
+            ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
+            : [];
+        await applyReservationDelta(reservationBase, updated);
+        if(lifecycleAction === 'consume_and_reserve_reprint'){
+          updated.actual_grams_used = null;
+          updated.scrap_grams = null;
+          updated.roll_usages = [];
+          updated.actual_filament_breakdown = null;
+          updated.current_attempt_id = null;
+          updated.actuals_captured_at = null;
+          updated.print_started_at = null;
+          updated.estimated_finish_at = null;
+        }
+        rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
+      }
+      try{
+        const authoritative = await syncProductionStatusToOrder(j, status);
+        Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
+        state.jobs = state.jobs.map(x=>x.id===id ? updated : x);
+        localWrite(LS_JOBS,state.jobs);
+        clearLinkedWorkflowRecovery(id);
+        render();
+        toast(`Moved to ${STATUS[status] || status}.`);
+      }catch(err){ toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
+
+${err.message || err}`); }
+      return;
+    }
     const now = new Date();
+    if(j.order_number && !({ready_to_print:1, printing:1, qc:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
     const warning = j.order_number && window.OliPolyWorkflow.backwardMoveWarning(j.production_status, status);
+    if(warning && status !== 'ready_to_print') return toast('Backward linked workflow moves are not supported outside Needs Reprint.');
     if(warning && !confirm(warning)) return;
     const updated = {...j, production_status:status, updated_at:now.toISOString()};
     if(status === 'printing' && !updated.print_started_at){
@@ -2851,10 +2963,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
     if(status === 'closed') updated.closed_at = updated.closed_at || now.toISOString();
     try{
-      await cloudSaveJob(updated);
-      window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
-      await logProjectEvent('production_status_changed', updated, {from:j.production_status, to:status});
-      await syncProductionStatusToOrder(updated, status);
+      if(j.order_number && window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(status)){
+        const authoritative = await syncProductionStatusToOrder(j, status);
+        Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
+      } else {
+        await cloudSaveJob(updated);
+        window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
+        await logProjectEvent('production_status_changed', updated, {from:j.production_status, to:status});
+      }
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       render();
@@ -2867,6 +2983,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function moveBackJob(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
+    if(j.order_number) return toast('Linked accepted work cannot be moved back directly. Use Needs Reprint from QC when applicable.');
     const choice = prompt(
       `Move "${j.job_title}" back to which step?\n\n` +
       `${j.order_number ? '' : '1 = Awaiting Design / Actuals\n'}` +
@@ -2927,6 +3044,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function cancelJob(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
+    if(j.order_number) return toast('Linked accepted work cannot be canceled from Production Control.');
     if(CLOSED.includes(j.production_status)) return toast('This job is already closed/canceled.');
     const reason = prompt(`Cancel "${j.job_title}"?\n\nReason (optional):`, j.cancellation_reason || '');
     if(reason === null) return;
@@ -2963,6 +3081,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   async function deleteJob(id){
     const j = state.jobs.find(x=>x.id===id);
+    if(j?.order_number) return toast('Linked accepted Production evidence cannot be directly deleted.');
     if(!j || !confirm(`Delete "${j.job_title}"?`)) return;
     try{
       await releaseReservationForJob(j);
@@ -3428,11 +3547,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     updated.production_closeout_snapshot = productionCloseoutSnapshot(updated);
     try{
       updated.material_reservations = j.material_reservations || [];
-      if(state.user?.id) await cloudSaveJob(updated);
+      if(j.order_number){
+        const authoritative = await syncProductionStatusToOrder(j, 'qc', updated);
+        Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
+      } else {
+        if(state.user?.id) await cloudSaveJob(updated);
+        await logProjectEvent('production_actuals_captured', updated, {snapshot: updated.production_closeout_snapshot});
+      }
       applyPmUsageForCloseout(j, updated);
       addCloseoutAudit(j, updated, {expected_grams:expectedCloseoutGrams, wasInventoryDeducted});
-      await logProjectEvent('production_actuals_captured', updated, {snapshot: updated.production_closeout_snapshot});
-      await syncProductionStatusToOrder(updated, updated.production_status);
       state.jobs = state.jobs.map(x=>x.id===updated.id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       closeClose();
@@ -4722,6 +4845,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!ids.length) return toast('Select one or more cards first.');
     const status = $('bulkStatus').value;
     const machine = $('bulkMachine').value;
+    if(status) return toast('Bulk workflow status changes are disabled; use per-job command actions.');
     if(!status && !machine) return toast('Choose a bulk action first.');
     for(const id of ids){
       const j = state.jobs.find(x=>x.id===id);
@@ -4821,10 +4945,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){
-      actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass QC</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
-      actions += `<button class="mini-btn" data-status="${j.id}|closed" type="button">Fulfilled / Close</button>`;
+      actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
     }
     if(!isClosed){
       if(!hasOrder && j.production_status === 'estimate') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
@@ -5679,37 +5803,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   async function patchProductionJobHandoff(job, draft){
-    const jobs = readJson(LS_JOBS, []);
-    const updated = window.OliPolyProductionPersistence.transition(job, 'waiting_customer', {
+    const recoveryDraft = window.OliPolyProductionPersistence.transition(job, 'waiting_customer', {
       quote_number: draft.quote_number,
       production_quote_id: draft.quote_number,
       quote_handoff_status: 'draft_sent_to_quote',
       quote_handoff_at: new Date().toISOString(),
-      linked_quote_draft: draft
+      linked_quote_draft: draft,
+      recovery_draft_only: true
     });
-    writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? updated : j));
+    writeJson('olipoly_production_to_quote_recovery_draft_v1', recoveryDraft);
 
-    const token = window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token');
-    if(!token || !job.id) return;
     try{
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/production_jobs?id=eq.${encodeURIComponent(job.id)}`, {
-        method: 'PATCH',
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({
-          production_status: 'waiting_customer',
-          quote_number: draft.quote_number,
-          job_payload: updated,
-          updated_at: updated.updated_at
-        })
-      });
-      if(!response.ok) throw new Error(`Supabase status update failed (${response.status}).`);
+      const authoritative = await syncPreAcceptanceProductionStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft});
+      if(authoritative){
+        state.jobs = state.jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j);
+        writeJson(LS_JOBS, state.jobs);
+      }
     }catch(error){
-      console.warn('Production handoff cloud update failed; local fallback was retained.', error);
+      console.warn('Production handoff command failed; recovery quote draft retained without changing Production lifecycle state.', error);
       throw error;
     }
   }

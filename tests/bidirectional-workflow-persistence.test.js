@@ -4,12 +4,11 @@ const workflow = require('../js/workflow-status.js');
 const persistence = require('../js/production-status-persistence.js');
 const lifecycle = require('../js/inventory-lifecycle.js');
 
-for (const status of workflow.POST_ACCEPTANCE_STATUSES) {
-  assert.equal(workflow.workflowRpcRequest('OP-000123', status).body.p_status, status);
-}
-for (const status of ['estimate', 'waiting_customer', 'quote_pending', 'quoted', 'draft_quote']) {
-  assert.throws(() => workflow.workflowRpcRequest('OP-000123', status), /post-acceptance/);
-}
+assert.equal(workflow.productionWorkflowRpcRequest('OP-000123', 'start_print', '2026-07-20T00:00:00Z').body.p_expected_updated_at, '2026-07-20T00:00:00Z');
+assert.equal(workflow.productionWorkflowRpcRequest('OP-000123', 'pass_qc', '2026-07-20T00:00:00Z').body.p_command, 'pass_qc');
+assert.equal(workflow.fulfillmentWorkflowRpcRequest('OP-000123', 'close_order', '2026-07-20T00:00:00Z', {fulfillment_confirmed_at:'2026-07-20T00:00:00Z', fulfillment_method:'pickup'}).body.p_command, 'close_order');
+assert.equal(workflow.preAcceptanceProductionRpcRequest('job-1', 'mark_waiting_customer', '2026-07-20T00:00:00Z').path, '/rest/v1/rpc/preacceptance_production_command');
+assert.equal(workflow.workflowRpcRequest, undefined);
 assert.equal(workflow.transitionDirection('ready_to_print', 'closed'), 'forward');
 assert.equal(workflow.transitionDirection('closed', 'printing'), 'backward');
 assert.match(workflow.backwardMoveWarning('qc', 'ready_to_print'), /consumed inventory will be preserved/);
@@ -28,8 +27,8 @@ const orders = fs.readFileSync(require.resolve('../orders-admin.html'), 'utf8');
 const quote = fs.readFileSync(require.resolve('../js/quote.js'), 'utf8');
 const migration = fs.readFileSync(require.resolve('../supabase/migrations/202607160004_authoritative_bidirectional_workflow.sql'), 'utf8');
 
-assert.match(production, /workflowRpcRequest\(job\.order_number, targetStatus\)/);
-assert.match(orders, /workflowRpcRequest\(orderNumber, nextStatus\)/);
+assert.match(production, /productionWorkflowRpcRequest\(job\.order_number, command, job\.updated_at/);
+assert.match(orders, /fulfillmentWorkflowRpcRequest\(orderNumber, command/);
 assert.match(migration, /create or replace function public\.set_linked_workflow_status/);
 assert.match(migration, /orders_sync_workflow_to_production/);
 assert.match(migration, /p\.production_status is distinct from o\.status/);

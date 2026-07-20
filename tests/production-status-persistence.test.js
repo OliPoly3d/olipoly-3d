@@ -27,7 +27,7 @@ assert.equal(reloaded.length, 1, 'quote linkage deterministically collapses dupl
 assert.equal(reloaded[0].id, 'job-1');
 
 const production = fs.readFileSync(require.resolve('../production-control.html'), 'utf8');
-assert.match(production, /production_status: 'waiting_customer',[\s\S]*quote_number: draft\.quote_number/);
+assert.match(production, /syncPreAcceptanceProductionStatus[\s\S]*mark_waiting_customer/);
 assert.match(production, /OliPolyProductionPersistence\.mergeJobs\(cloudMigrated, localMigrated/);
 
 const quote = fs.readFileSync(require.resolve('../quote.js'), 'utf8');
