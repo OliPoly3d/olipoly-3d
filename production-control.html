@@ -2676,31 +2676,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function nextDocumentCounterValue(counterKey='quote'){
     if(!state.user?.id) throw new Error('Cloud login is required before assigning a quote number.');
 
-    // Preferred: atomic Supabase function from ERP bridge migration.
-    // This prevents duplicate Q numbers if two estimate saves happen close together.
-    try{
-      const rpc = await sbApi('/rest/v1/rpc/next_document_counter', {
-        method:'POST',
-        body:JSON.stringify({counter_key:counterKey})
-      });
-      const val = Array.isArray(rpc) ? rpc[0] : rpc;
-      const n = num(val);
-      if(n) return n;
-    }catch(err){
-      console.warn('Atomic document counter RPC unavailable; falling back to document_counters upsert.', err);
-    }
-
-    // Safe cloud fallback: still Supabase only. No browser/local numbering is allowed.
-    const key = encodeURIComponent(counterKey);
-    const rows = await sbApi(`/rest/v1/document_counters?select=key,value&key=eq.${key}&limit=1`, {method:'GET'});
-    const current = Array.isArray(rows) && rows[0] ? num(rows[0].value) : 0;
-    const next = current + 1;
-    await sbApi('/rest/v1/document_counters?on_conflict=key', {
+    // Atomic Supabase function is the only browser-approved allocation path.
+    // Direct document_counters reads/writes are intentionally denied by RLS.
+    const rpc = await sbApi('/rest/v1/rpc/next_document_counter', {
       method:'POST',
-      headers:{Prefer:'resolution=merge-duplicates,return=representation'},
-      body:JSON.stringify({key:counterKey, value:next, updated_at:new Date().toISOString()})
+      body:JSON.stringify({counter_key:counterKey})
     });
-    return next;
+    const val = Array.isArray(rpc) ? rpc[0] : rpc;
+    const n = num(val);
+    if(n) return n;
+    throw new Error('Document counter allocation failed.');
   }
   async function ensureQuoteNumberForEstimateForm(){
     const el = $('quoteNumber');

@@ -49,6 +49,38 @@
 | Obsolete | Compatibility or archived path still present and not part of the intended Blueprint contract. |
 | Unresolved | Referenced or required by application/Blueprint, but repository evidence is incomplete or conflicting. |
 
+
+## Deployed verification update — 2026-07-19 / hardening milestone 2026-07-20
+
+Direct Supabase verification on 2026-07-19 confirmed the first corrective milestone: **Public Access and Ownership Security Hardening**. Migration `supabase/migrations/202607200001_public_access_ownership_security_hardening.sql` addresses only the confirmed public/ownership gaps below and does not apply itself automatically.
+
+### Confirmed structures and live aggregate findings
+
+| Object | Confirmed deployed finding | Hardening response |
+|---|---|---|
+| `public.document_counters` | RLS disabled; broad `anon`, `authenticated`, and `service_role` privileges; two rows present; anonymous callers could read and increment global counters through direct table access and executable SECURITY DEFINER RPCs. | Enable RLS, revoke direct browser table access, preserve existing rows, keep atomic allocation through `next_document_counter(text)`, allowlist counter keys, revoke anon/PUBLIC counter RPC execution, and restrict archived `next_quote_invoice_number()` to `service_role`. |
+| `public.parts_catalog` | RLS disabled; anon had broad privileges; one row exists with non-null `user_id`; one distinct owner. | Enable RLS, revoke anon access, add owner-scoped authenticated select/insert/update policies using `user_id = auth.uid()`, and avoid delete because active Orders Admin evidence only selects/upserts this compatibility table. |
+| `public.project_events` | RLS disabled; anon had broad privileges; 16 rows exist, all with non-null `user_id`; one distinct owner; no append-only protection. | Enable RLS, revoke anon access, add owner-scoped authenticated select/insert only, and intentionally omit normal authenticated update/delete policies to align with the append-only event contract. |
+| `public.order_tracking_public` | RLS enabled but overlapping anonymous SELECT policies used `USING (true)`; four rows exist, all with non-null `user_id`; rows include order totals, payment links, tracking, PO/invoice data, status, and owner `user_id`; anonymous callers could enumerate all rows. | Remove anonymous direct table reads, keep owner-scoped authenticated write policies for Orders Admin tracking workflows, and introduce `public_order_tracking_lookup(text)` with exact identifier validation, fixed `search_path`, `limit 1`, and an explicit customer-safe field allowlist that omits `user_id`. |
+
+### Confirmed RPCs, grants, triggers, and public read path
+
+- `next_document_counter(text)` and `next_quote_invoice_number()` were confirmed as SECURITY DEFINER RPCs executable by `anon`; the hardening migration revokes `PUBLIC`/`anon` execution from both and grants only the minimum required roles. `next_document_counter(text)` remains executable by authenticated ERP users because active Production Control code allocates quote counters through that RPC. `next_quote_invoice_number()` is referenced only by archived quote tooling in this repository, so browser execution is not preserved.
+- The new public read path is `public.public_order_tracking_lookup(tracking_identifier text)`. It accepts only exact `OP-######` identifiers or approved `Q-######` compatibility input normalized to the matching OP number, returns at most one row, and excludes owner/private columns.
+- Existing workflow triggers and acceptance/Finance/Inventory authority issues remain out of scope for this milestone and are not corrected by this migration.
+
+### Confirmed private Job Asset security
+
+The private `job-assets` bucket and owner-folder Storage policies were verified as correctly secured during the deployed verification. This milestone intentionally does not change Asset migrations or behavior.
+
+### Deployment and recovery note
+
+Apply the migration before deploying the updated `track.html` client, verify `public_order_tracking_lookup(text)` against a known OP number, then deploy the static client. The old static tracker will temporarily fail after direct anonymous table reads are removed; forward recovery is to deploy the updated client or correct the RPC in a new reviewed migration, not to weaken RLS.
+
+### Remaining unresolved architecture gaps
+
+This hardening milestone does not address quote acceptance behavior, Quote-to-Order linkage, Order/Production workflow authority, Inventory lifecycle, Finance architecture, customer identity, Fundraiser Manager, Product Recipes, Job Assets, or unrelated UI/styling. Those remain separate corrective milestones.
+
 ## Deployed or repository-inferred contract catalog
 
 ### Summary table of found Supabase tables, views, RPCs, functions, triggers, policies, and buckets
@@ -132,7 +164,7 @@
 | Stable business identifiers | `quote_number`, `order_number`, job title/project fields; `Q-######`/`OP-######` linkage is repository-inferred but not verified. |
 | Important columns | `id`, `user_id`, `quote_number`, `order_number`, `production_status`, `job_payload`, `updated_at`, production estimate/calculation fields, material/color/grams, actual and scrap fields. Exact deployed columns unresolved. |
 | Foreign-key relationships | `user_id` owner relationship inferred from queries. No migration confirms FKs. Order/quote linkage is text-key based in migration sync logic. |
-| Status fields and values | `production_status`; repository code uses/normalizes `estimate`, `waiting_customer`, `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`, plus legacy names. Blueprint names differ for `qc_finishing` and `ready_for_pickup_shipment`. |
+| Status fields and values | `production_status`; repository code uses/normalizes `estimate`, `waiting_customer`, `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`, plus legacy names. The authoritative Blueprint v1 lifecycle uses `qc` and `ready_for_fulfillment`. |
 | Insert/update/delete authority | Production Control saves, patches, and deletes production jobs. Quote acceptance code and workflow triggers also patch linked production status. |
 | Public vs authenticated access | Authenticated owner workflow. Public pages should not expose production/cost/margin; no public direct query found. |
 | RLS behavior | Unresolved. No migration here defines `production_jobs` RLS. |
@@ -216,7 +248,7 @@
 | Stable business identifiers | `order_number` (`OP-######`), `source_quote_number`, customer/project identifiers. |
 | Important columns | `id`, `user_id`, `order_number`, `source_quote_number`, `status`, `updated_at`, `customer_name`, `customer_email`, payment/invoice/fulfillment fields. Exact deployed columns unresolved. |
 | Foreign-key relationships | `user_id` owner inferred. Quote link via `source_quote_number`; no FK verified. |
-| Status fields and values | Migration-enforced repository set: `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`. Blueprint set uses `qc_finishing` and `ready_for_pickup_shipment`. |
+| Status fields and values | Migration-enforced repository set: `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`. Blueprint v1 uses `qc` and `ready_for_fulfillment`. |
 | Insert/update/delete authority | Acceptance RPC creates orders; Orders Admin reads/writes orders; `set_linked_workflow_status` RPC updates status; triggers normalize status. |
 | Public vs authenticated access | Authenticated owner workflows query full orders. Public tracking uses separate `order_tracking_public`. |
 | RLS behavior | Unresolved. No `orders` RLS migration in this repo. |
@@ -238,7 +270,7 @@
 | Important columns | `quote_number`, `order_number`, `source_quote_number`, counter `key/value`. |
 | Foreign-key relationships | No FK/unique constraints verified. |
 | Status fields | Acceptance should set quote accepted and order ready to print. |
-| Insert/update/delete authority | Server-side counters/RPC should allocate. Production Control calls `next_document_counter` but falls back to `document_counters` upsert. Quote acceptance expects RPC `order_number` and has fallback derivation. |
+| Insert/update/delete authority | Server-side counters/RPC should allocate. Production Control calls `next_document_counter`; the browser-side `document_counters` upsert fallback was removed by the 2026-07-20 hardening milestone. Quote acceptance expects RPC `order_number` and has fallback derivation. |
 | Public vs authenticated access | Public acceptance should not allocate/fabricate outside RPC. |
 | RLS behavior | Unresolved for counters and identity RPC. |
 | Application files/functions | `production-control.html` `next_document_counter` and fallback; `quote.js` `orderNumberFromQuote` and acceptance; `orders-admin.html`; tests. |
@@ -258,7 +290,7 @@
 | Stable business identifiers | `order_number`, `source_quote_number`, `quote_number`. |
 | Important columns | Status and updated timestamps. |
 | Foreign-key relationships | Text-link sync by `order_number` or `source_quote_number`; no FK verified. |
-| Status fields and values | Repository set: `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`. Blueprint set: `ready_to_print`, `printing`, `qc_finishing`, `ready_for_pickup_shipment`, `closed`; `needs_reprint` returns to `ready_to_print`. |
+| Status fields and values | Repository set: `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`. Blueprint v1 set: `ready_to_print`, `printing`, `qc`, `ready_for_fulfillment`, `closed`; `needs_reprint` returns to `ready_to_print`. |
 | Insert/update/delete authority | `set_linked_workflow_status` updates `orders` and `order_tracking_public`; trigger updates `production_jobs`. Production Control and Orders Admin also have status-related paths. |
 | Public vs authenticated access | Public sees tracking projection only. Authenticated owners mutate. |
 | RLS behavior | Unresolved. Security invoker/definer semantics partially visible in migrations. |
@@ -869,7 +901,7 @@ Before implementation changes, perform read-only deployed verification for:
 ## 6. Blocking decisions
 
 1. Decide whether Blueprint v1 remains authoritative that Production owns manufacturing workflow. If yes, the current repository-inferred Orders-canonical workflow must be corrected in a later migration/application milestone.
-2. Decide the canonical persisted workflow status names: Blueprint names (`qc_finishing`, `ready_for_pickup_shipment`) versus current repository names (`qc`, `ready_for_fulfillment`) and the required compatibility mapping.
+2. Confirm any remaining legacy compatibility mapping while preserving the authoritative Blueprint v1 persisted names (`qc`, `ready_for_fulfillment`).
 3. Decide the server-side acceptance contract: one RPC/transaction that owns Quote response, Order creation, identity linkage, snapshot immutability, tracking projection, and event emission.
 4. Decide whether Finance will keep `financial_entries` as the only ledger-like table or introduce/verify separate invoice, receipt, payment, allocation, refund, expense, and PO contracts.
 5. Decide Inventory command boundaries before touching reservation/consumption/release/scrap behavior.
