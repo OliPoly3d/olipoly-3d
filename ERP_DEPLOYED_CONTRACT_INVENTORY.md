@@ -6,9 +6,9 @@
 
 ## Evidence boundary
 
-- **Confirmed deployed evidence:** none. This environment contains a hard-coded Supabase project URL in browser code, but no service credentials, SQL connection string, Supabase CLI session, or owner session were available for authenticated read-only metadata inspection.
+- **Confirmed deployed evidence:** operator-supplied deployment verification is recorded only where explicitly labeled, including the 2026-07-20 closeout for migration `202607200001_public_access_ownership_security_hardening.sql`. This repository environment still has no service credentials, SQL connection string, Supabase CLI session, or owner session for independent deployed inspection.
 - **Repository-inferred evidence:** migration SQL, browser REST calls, Supabase client calls, tests, architecture documents, recovery/import code paths, and comments in this repository.
-- **Important limitation:** a migration file is not proof that the deployed Supabase project contains the object. Every item marked `repository-inferred` remains a deployment-verification gate until read-only metadata confirms it.
+- **Important limitation:** a migration file is not proof that the deployed Supabase project contains the object. Every item marked `repository-inferred` remains a deployment-verification gate until read-only metadata confirms it, unless a later operator-supplied deployed verification note explicitly closes that gate.
 - **Branch baseline:** the checkout had no `origin` remote and no `main` branch. `git fetch origin main` failed because `origin` was not configured. This document was created on a fresh feature branch from the available `work` branch.
 
 ## Repository evidence inspected
@@ -80,6 +80,35 @@ Apply the migration before deploying the updated `track.html` client, verify `pu
 ### Remaining unresolved architecture gaps
 
 This hardening milestone does not address quote acceptance behavior, Quote-to-Order linkage, Order/Production workflow authority, Inventory lifecycle, Finance architecture, customer identity, Fundraiser Manager, Product Recipes, Job Assets, or unrelated UI/styling. Those remain separate corrective milestones.
+
+
+## Deployment closeout — 2026-07-20 Public Access and Ownership Security Hardening
+
+### Repository evidence
+
+- Migration `supabase/migrations/202607200001_public_access_ownership_security_hardening.sql` is the repository artifact for this milestone. It hardens public access and owner-scoped security for `document_counters`, `parts_catalog`, `project_events`, and `order_tracking_public`; replaces anonymous direct tracking table reads with `public.public_order_tracking_lookup(text)`; and keeps the public tracking RPC on an explicit customer-safe allowlist.
+- `track.html` now uses `/rest/v1/rpc/public_order_tracking_lookup` for the public tracker instead of directly selecting from `order_tracking_public`.
+- This closeout is documentation-only. No application code, migration SQL, data migration, destructive data change, or deployed Supabase state was changed by this documentation update.
+
+### Deployed verification supplied by the operator
+
+The operator reports that migration `202607200001_public_access_ownership_security_hardening.sql` was successfully applied to the deployed Supabase project and manually verified. Supplied verification evidence:
+
+- `public_order_tracking_lookup(text)` successfully returned the customer-safe tracking projection for `OP-000184`.
+- The returned projection omitted `user_id` and other non-allowlisted fields.
+- The `OP-000184` order was closed and paid, with the expected public status, tracking, PO, invoice, and terms fields.
+- The post-deployment `order_tracking_public` security review gate returned zero rows.
+- Valid public tracking worked.
+- Invalid tracking returned no order.
+- Authenticated Orders Admin tracking behavior remained operational.
+- Anonymous direct access and cross-owner access checks passed.
+- No data migration or destructive data changes were required.
+
+### Still unverified by this repository environment
+
+- This agent did not independently connect to deployed Supabase or inspect live metadata/data because deployed credentials and sessions are not present in the repository environment.
+- Browser behavior was not manually exercised by this agent. The public tracking and Orders Admin results above are operator-supplied deployed verification evidence.
+- Unrelated Blueprint gaps remain open: quote acceptance behavior, Quote-to-Order linkage, Order/Production workflow authority, Inventory lifecycle, Finance architecture, customer identity, Fundraiser Manager, Product Recipes, Job Assets, and unrelated UI/styling.
 
 ## Deployed or repository-inferred contract catalog
 
