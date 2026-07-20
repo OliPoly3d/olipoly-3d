@@ -2761,6 +2761,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     };
   }
 
+
+  async function syncPreAcceptanceProductionStatus(job, targetStatus, payload = {}){
+    if(!state.user?.id || !job?.id || job.order_number) return null;
+    const command = targetStatus === 'waiting_customer' ? 'mark_waiting_customer' : targetStatus === 'estimate' ? 'return_to_estimate' : null;
+    if(!command) throw new Error('Pre-acceptance Production can only move between estimate and waiting_customer.');
+    const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload);
+    const result = await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+    window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
+    return Array.isArray(result) ? result[0] : result;
+  }
+
   async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
     const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
@@ -2798,7 +2809,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       state.jobs = [j, ...state.jobs.filter(x=>x.id!==j.id)];
       localWrite(LS_JOBS,state.jobs);
 
-      const cloudOk = await cloudSaveJob(j);
+      let cloudOk = await cloudSaveJob(j);
+      if(previousJob && !previousJob.order_number && ['estimate','waiting_customer'].includes(previousJob.production_status) && ['estimate','waiting_customer'].includes(j.production_status) && previousJob.production_status !== j.production_status){
+        const authoritative = await syncPreAcceptanceProductionStatus(previousJob, j.production_status, {quote_number:j.quote_number || null});
+        if(authoritative) Object.assign(j, authoritative);
+      }
       window.OliPolyERP?.logEvent?.('production_job_saved', {job_id:j.id, title:j.job_title, status:j.production_status, reserved_grams:(j.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
 
       resetForm();
@@ -5719,27 +5734,13 @@ ${err.message || err}`); }
     });
     writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? updated : j));
 
-    const token = window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token');
-    if(!token || !job.id) return;
     try{
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/production_jobs?id=eq.${encodeURIComponent(job.id)}`, {
-        method: 'PATCH',
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({
-          production_status: 'waiting_customer',
-          quote_number: draft.quote_number,
-          job_payload: updated,
-          updated_at: updated.updated_at
-        })
-      });
-      if(!response.ok) throw new Error(`Supabase status update failed (${response.status}).`);
+      const authoritative = await syncPreAcceptanceProductionStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft});
+      if(authoritative){
+        writeJson(LS_JOBS, readJson(LS_JOBS, []).map((j) => j.id === job.id ? {...updated, ...authoritative} : j));
+      }
     }catch(error){
-      console.warn('Production handoff cloud update failed; local fallback was retained.', error);
+      console.warn('Production handoff command failed; local fallback was retained.', error);
       throw error;
     }
   }

@@ -3158,20 +3158,7 @@ const payload = snapshotForm();
 
     async function deleteOrder(){
       if(!activeId) return setMsg($('formMessage'),'Select an order first.',true);
-
-      const currentRow = orders.find(o => o.id === activeId);
-      const orderNumber = currentRow?.order_number;
-
-      const {error} = await api(`/rest/v1/orders?id=eq.${activeId}`,{method:'DELETE'});
-      if(error) return setMsg($('formMessage'), error.message || 'Delete failed', true);
-
-      if(orderNumber){
-        console.info('Tracking cleanup is projection-only and must be handled by an approved server-side command.', orderNumber);
-      }
-
-      resetForm();
-      await fetchOrders();
-      setMsg($('formMessage'),'Deleted');
+      return setMsg($('formMessage'),'Orders cannot be deleted from Orders Admin. Accepted work is closed through the approved fulfillment command.',true);
     }
 
 

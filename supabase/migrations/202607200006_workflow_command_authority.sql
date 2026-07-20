@@ -19,7 +19,7 @@
 -- select policyname, cmd, roles from pg_policies where schemaname='public' and tablename in ('orders','production_jobs','order_tracking_public') order by tablename, policyname;
 -- select grantee, privilege_type from information_schema.role_table_grants where table_schema='public' and table_name in ('orders','production_jobs','order_tracking_public') and grantee in ('anon','authenticated','PUBLIC','public','service_role') order by table_name, grantee, privilege_type;
 -- select tgname, pg_get_triggerdef(oid) from pg_trigger where tgrelid='public.orders'::regclass and tgname='orders_sync_workflow_to_production';
--- select proname, prosecdef, proacl from pg_proc join pg_namespace on pg_namespace.oid=pronamespace where nspname='public' and proname in ('set_linked_workflow_status','sync_order_workflow_to_production','production_workflow_command','fulfillment_workflow_command');
+-- select proname, prosecdef, proacl from pg_proc join pg_namespace on pg_namespace.oid=pronamespace where nspname='public' and proname in ('set_linked_workflow_status','sync_order_workflow_to_production','production_workflow_command','fulfillment_workflow_command','preacceptance_production_command');
 --
 -- Post-deployment verification queries:
 -- select has_table_privilege('authenticated','public.orders','insert') as authenticated_can_insert_orders, has_table_privilege('authenticated','public.orders','delete') as authenticated_can_delete_orders, has_table_privilege('authenticated','public.orders','update') as authenticated_can_update_orders; -- expect all false
@@ -101,10 +101,13 @@ declare
   v_actual_filament_breakdown text;
   v_roll_usage jsonb;
   v_attempt jsonb;
+  v_actual_filaments jsonb;
+  v_actual_filament_usage jsonb;
 begin
   if v_actor is null then raise exception 'Authentication is required for Production workflow commands' using errcode='28000'; end if;
   if p_expected_updated_at is null then raise exception 'expected_updated_at is required' using errcode='22004'; end if;
   if v_command_id is null then raise exception 'p_correlation_id command identity is required' using errcode='22004'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_command_id, 0));
 
   select * into v_order from public.orders where order_number = p_order_number for update;
   if not found or v_order.user_id is distinct from v_actor then raise exception 'Order not found for authenticated owner' using errcode='42501'; end if;
@@ -140,10 +143,14 @@ begin
     if p_payload ? 'actual_filament_breakdown' and jsonb_typeof(p_payload->'actual_filament_breakdown') not in ('array','object','string','null') then raise exception 'actual_filament_breakdown has invalid JSON structure' using errcode='22023'; end if;
     if p_payload ? 'roll_usages' and jsonb_typeof(p_payload->'roll_usages') <> 'array' then raise exception 'roll_usages must be an array' using errcode='22023'; end if;
     if p_payload ? 'production_attempt' and jsonb_typeof(p_payload->'production_attempt') <> 'object' then raise exception 'production_attempt must be an object' using errcode='22023'; end if;
+    if p_payload ? 'actual_filaments' and jsonb_typeof(p_payload->'actual_filaments') not in ('array','object','null') then raise exception 'actual_filaments must be JSON array/object' using errcode='22023'; end if;
+    if p_payload ? 'actual_filament_usage' and jsonb_typeof(p_payload->'actual_filament_usage') not in ('array','object','null') then raise exception 'actual_filament_usage must be JSON array/object' using errcode='22023'; end if;
     v_actual_machine := p_payload->>'actual_machine';
     v_actual_filament_breakdown := nullif(p_payload->>'actual_filament_breakdown','');
     v_roll_usage := coalesce(p_payload->'roll_usages', '[]'::jsonb);
-    v_attempt := coalesce(p_payload->'production_attempt', jsonb_build_object('captured_at', v_now, 'actual_grams_used', v_actual_grams, 'scrap_grams', v_scrap_grams, 'actual_print_hours', v_actual_hours, 'actual_machine', v_actual_machine, 'actual_quantity', v_actual_quantity, 'roll_usages', v_roll_usage));
+    v_actual_filaments := coalesce(p_payload->'actual_filaments', 'null'::jsonb);
+    v_actual_filament_usage := coalesce(p_payload->'actual_filament_usage', 'null'::jsonb);
+    v_attempt := coalesce(p_payload->'production_attempt', jsonb_build_object('captured_at', v_now, 'actual_grams_used', v_actual_grams, 'scrap_grams', v_scrap_grams, 'actual_print_hours', v_actual_hours, 'actual_machine', v_actual_machine, 'actual_quantity', v_actual_quantity, 'roll_usages', v_roll_usage, 'actual_filaments', v_actual_filaments, 'actual_filament_usage', v_actual_filament_usage));
   elsif v_command = 'pass_qc' then
     v_to := 'ready_for_fulfillment'; v_event := 'order.qc_passed';
   elsif v_command = 'needs_reprint' then
@@ -174,14 +181,16 @@ begin
 
   update public.production_jobs
      set production_status = v_to,
-         actual_machine = case when v_command='complete_print' then v_actual_machine else actual_machine end,
-         actual_quantity = case when v_command='complete_print' then v_actual_quantity else actual_quantity end,
+         actual_machine = case when v_command='needs_reprint' then null when v_command='complete_print' then v_actual_machine else actual_machine end,
+         actual_quantity = case when v_command='needs_reprint' then null when v_command='complete_print' then v_actual_quantity else actual_quantity end,
          actual_print_hours = case when v_command='needs_reprint' then null else coalesce(v_actual_hours, actual_print_hours) end,
          actual_grams_used = case when v_command='needs_reprint' then null else coalesce(v_actual_grams, actual_grams_used) end,
          scrap_grams = case when v_command='needs_reprint' then null else coalesce(v_scrap_grams, scrap_grams) end,
          actual_filament_breakdown = case when v_command='needs_reprint' then null when v_command='complete_print' then v_actual_filament_breakdown else actual_filament_breakdown end,
+         actual_filaments = case when v_command='needs_reprint' then null when v_command='complete_print' then v_actual_filaments else actual_filaments end,
+         actual_filament_usage = case when v_command='needs_reprint' then null when v_command='complete_print' then v_actual_filament_usage else actual_filament_usage end,
          roll_usages = case when v_command='needs_reprint' then '[]'::jsonb when v_command='complete_print' then v_roll_usage else roll_usages end,
-         completed_at = case when v_command='complete_print' then v_now else completed_at end,
+         completed_at = case when v_command='needs_reprint' then null when v_command='complete_print' then v_now else completed_at end,
          print_started_at = case when v_command='start_print' then coalesce(print_started_at, v_now) when v_command='needs_reprint' then null else print_started_at end,
          job_payload = case
            when v_command='complete_print' then coalesce(job_payload,'{}'::jsonb) || jsonb_build_object('production_status', v_to, 'order_number', v_order.order_number, 'updated_at', v_now, 'last_completed_attempt', v_attempt, 'production_attempts', coalesce(job_payload->'production_attempts','[]'::jsonb) || jsonb_build_array(v_attempt))
@@ -233,6 +242,7 @@ begin
   if v_actor is null then raise exception 'Authentication is required for Fulfillment workflow commands' using errcode='28000'; end if;
   if p_expected_updated_at is null then raise exception 'expected_updated_at is required' using errcode='22004'; end if;
   if v_command_id is null then raise exception 'p_correlation_id command identity is required' using errcode='22004'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_command_id, 0));
 
   select * into v_order from public.orders where order_number = p_order_number for update;
   if not found or v_order.user_id is distinct from v_actor then raise exception 'Order not found for authenticated owner' using errcode='42501'; end if;
@@ -278,6 +288,54 @@ begin
 end;
 $$;
 
+
+create or replace function public.preacceptance_production_command(
+  p_job_id uuid,
+  p_command text,
+  p_expected_updated_at timestamptz,
+  p_payload jsonb default '{}'::jsonb,
+  p_correlation_id text default null,
+  p_causation_id text default null
+)
+returns public.production_jobs
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_actor uuid := auth.uid();
+  v_now timestamptz := now();
+  v_job public.production_jobs%rowtype;
+  v_command text := lower(btrim(coalesce(p_command,'')));
+  v_to text;
+  v_command_id text := nullif(btrim(p_correlation_id),'');
+  v_quote_number text := nullif(btrim(p_payload->>'quote_number'),'');
+begin
+  if v_actor is null then raise exception 'Authentication is required for pre-acceptance Production commands' using errcode='28000'; end if;
+  if p_expected_updated_at is null then raise exception 'expected_updated_at is required' using errcode='22004'; end if;
+  if v_command_id is null then raise exception 'p_correlation_id command identity is required' using errcode='22004'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_command_id, 0));
+
+  select * into v_job from public.production_jobs where id = p_job_id for update;
+  if not found or v_job.user_id is distinct from v_actor then raise exception 'Production job not found for authenticated owner' using errcode='42501'; end if;
+  if v_job.order_number is not null then raise exception 'Pre-acceptance command cannot mutate linked Order work' using errcode='22023'; end if;
+  if v_job.production_status not in ('estimate','waiting_customer') then raise exception 'Pre-acceptance Production command requires estimate or waiting_customer' using errcode='22023'; end if;
+  if v_job.actual_grams_used is not null or v_job.scrap_grams is not null or v_job.actual_print_hours is not null or v_job.print_started_at is not null or v_job.completed_at is not null then raise exception 'Pre-acceptance command rejects actual or completion evidence' using errcode='22023'; end if;
+  if v_job.updated_at is distinct from p_expected_updated_at then raise exception 'Production job changed since this page loaded; refresh before retrying' using errcode='40001'; end if;
+
+  if v_command = 'mark_waiting_customer' then v_to := 'waiting_customer';
+  elsif v_command = 'return_to_estimate' then v_to := 'estimate';
+  else raise exception 'Invalid pre-acceptance Production command: %', p_command using errcode='22023'; end if;
+
+  update public.production_jobs
+     set production_status = v_to,
+         quote_number = coalesce(v_quote_number, quote_number),
+         job_payload = coalesce(job_payload,'{}'::jsonb) || jsonb_build_object('production_status', v_to, 'quote_number', coalesce(v_quote_number, quote_number), 'updated_at', v_now),
+         updated_at = v_now
+   where id = v_job.id and user_id = v_actor
+   returning * into v_job;
+  if not found then raise exception 'Pre-acceptance Production update affected no rows' using errcode='40001'; end if;
+  return v_job;
+end;
+$$;
+
 -- Retire blind Orders-to-Production status copying. Commands above own projections.
 drop trigger if exists orders_sync_workflow_to_production on public.orders;
 create or replace function public.sync_order_workflow_to_production()
@@ -319,9 +377,9 @@ begin
 end
 $drop_policies$;
 create policy production_jobs_owner_select on public.production_jobs for select to authenticated using (auth.uid() = user_id);
-create policy production_jobs_owner_insert on public.production_jobs for insert to authenticated with check (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and actual_machine is null and actual_quantity is null and actual_filament_breakdown is null and print_started_at is null and completed_at is null);
+create policy production_jobs_owner_insert on public.production_jobs for insert to authenticated with check (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and actual_machine is null and actual_quantity is null and actual_filament_breakdown is null and actual_filaments is null and actual_filament_usage is null and print_started_at is null and completed_at is null);
 create policy production_jobs_owner_update on public.production_jobs for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy production_jobs_owner_delete on public.production_jobs for delete to authenticated using (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and actual_machine is null and actual_quantity is null and actual_filament_breakdown is null and print_started_at is null and completed_at is null);
+create policy production_jobs_owner_delete on public.production_jobs for delete to authenticated using (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and actual_machine is null and actual_quantity is null and actual_filament_breakdown is null and actual_filaments is null and actual_filament_usage is null and print_started_at is null and completed_at is null);
 create policy production_jobs_service_role_recovery on public.production_jobs for all to service_role using (true) with check (true);
 
 -- Public tracking remains projection-only: owner SELECT for active clients; service-role recovery only for mutation.
@@ -336,8 +394,10 @@ revoke execute on function public.workflow_public_status_text(text) from public,
 revoke execute on function public.workflow_public_next_step(text) from public, anon, authenticated;
 revoke execute on function public.sync_order_workflow_to_production() from public, anon, authenticated;
 revoke execute on function public.set_linked_workflow_status(text,text,timestamptz) from public, anon, authenticated;
+revoke execute on function public.preacceptance_production_command(uuid,text,timestamptz,jsonb,text,text) from public, anon;
 revoke execute on function public.production_workflow_command(text,text,timestamptz,jsonb,text,text) from public, anon;
 revoke execute on function public.fulfillment_workflow_command(text,text,timestamptz,jsonb,text,text) from public, anon;
+grant execute on function public.preacceptance_production_command(uuid,text,timestamptz,jsonb,text,text) to authenticated, service_role;
 grant execute on function public.production_workflow_command(text,text,timestamptz,jsonb,text,text) to authenticated, service_role;
 grant execute on function public.fulfillment_workflow_command(text,text,timestamptz,jsonb,text,text) to authenticated, service_role;
 

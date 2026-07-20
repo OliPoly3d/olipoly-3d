@@ -4,12 +4,11 @@ const workflow = require('../js/workflow-status.js');
 const persistence = require('../js/production-status-persistence.js');
 const lifecycle = require('../js/inventory-lifecycle.js');
 
-for (const status of workflow.POST_ACCEPTANCE_STATUSES) {
-  assert.equal(workflow.workflowRpcRequest('OP-000123', status, '2026-07-20T00:00:00Z').body.p_expected_updated_at, '2026-07-20T00:00:00Z');
-}
-for (const status of ['estimate', 'waiting_customer', 'quote_pending', 'quoted', 'draft_quote']) {
-  assert.throws(() => workflow.workflowRpcRequest('OP-000123', status, '2026-07-20T00:00:00Z'), /Invalid workflow status|command/i);
-}
+assert.equal(workflow.productionWorkflowRpcRequest('OP-000123', 'start_print', '2026-07-20T00:00:00Z').body.p_expected_updated_at, '2026-07-20T00:00:00Z');
+assert.equal(workflow.productionWorkflowRpcRequest('OP-000123', 'pass_qc', '2026-07-20T00:00:00Z').body.p_command, 'pass_qc');
+assert.equal(workflow.fulfillmentWorkflowRpcRequest('OP-000123', 'close_order', '2026-07-20T00:00:00Z', {fulfillment_confirmed_at:'2026-07-20T00:00:00Z', fulfillment_method:'pickup'}).body.p_command, 'close_order');
+assert.equal(workflow.preAcceptanceProductionRpcRequest('job-1', 'mark_waiting_customer', '2026-07-20T00:00:00Z').path, '/rest/v1/rpc/preacceptance_production_command');
+assert.equal(workflow.workflowRpcRequest, undefined);
 assert.equal(workflow.transitionDirection('ready_to_print', 'closed'), 'forward');
 assert.equal(workflow.transitionDirection('closed', 'printing'), 'backward');
 assert.match(workflow.backwardMoveWarning('qc', 'ready_to_print'), /consumed inventory will be preserved/);

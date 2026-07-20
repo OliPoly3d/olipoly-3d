@@ -103,17 +103,25 @@
       }
     };
   }
-  function workflowRpcRequest(orderNumber, status, expectedUpdatedAt){
-    const normalized = String(status || '').trim().toLowerCase();
-    if(!POST_ACCEPTANCE_STATUSES.includes(normalized)) throw new Error('Invalid workflow status for accepted Order command.');
-    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'ready_for_fulfillment', closed:'close_order', ready_to_print:'needs_reprint'})[normalized];
-    if(normalized === 'closed' || normalized === 'ready_for_fulfillment') return fulfillmentWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, status === 'closed' ? {fulfilled_at:new Date().toISOString()} : {});
-    return productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, {});
+  function preAcceptanceProductionRpcRequest(jobId, command, expectedUpdatedAt, payload){
+    if(!jobId) throw new Error('A Production job id is required.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before changing pre-acceptance Production state; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/preacceptance_production_command',
+      body:{
+        p_job_id:String(jobId),
+        p_command:String(command).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_payload:payload || {},
+        p_correlation_id:commandIdentity('preacceptance-production', String(jobId), String(command).trim().toLowerCase(), expectedUpdatedAt),
+        p_causation_id:null
+      }
+    };
   }
   return Object.freeze({
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    workflowRpcRequest, productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, clearCommandIdentity, orderStatusLabel
+    productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });
