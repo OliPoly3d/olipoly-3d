@@ -2452,16 +2452,18 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!state.user?.id) return false;
 
     const full = jobPayload(j);
+    const isExisting = !!state.jobs.find(existing => existing.id === full.id);
+    const isPreAcceptanceCreate = !isExisting && ['estimate','waiting_customer'].includes(full.production_status) && !full.order_number;
+    const ordinaryJobPayload = {...full};
+    ['production_status','order_number','actual_machine','actual_quantity','actual_print_hours','actual_filaments','actual_filament_usage','actual_filament_breakdown','actual_grams_used','scrap_grams','print_started_at','completed_at','closed_at','actuals_captured_at'].forEach(key => delete ordinaryJobPayload[key]);
     const payload = {
       id: full.id,
       user_id: state.user.id,
       job_title: full.job_title,
       job_type: full.job_type,
-      production_status: full.production_status,
       priority: full.priority,
       customer_name: full.customer_name,
       quote_number: full.quote_number,
-      order_number: full.order_number,
       quantity: full.quantity,
       machine_preference: full.machine_preference,
       due_date: full.due_date,
@@ -2472,12 +2474,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       // Do not write estimated_total_hours / estimated_total_grams as top-level columns;
       // Supabase may define them as generated columns. They are preserved in job_payload.
       estimated_hours_each: num(full.estimated_hours_each),
-      actual_print_hours: num(full.actual_print_hours),
       estimated_grams_each: num(full.estimated_grams_each),
-      actual_grams_used: num(full.actual_grams_used),
-      scrap_grams: num(full.scrap_grams),
       filament_breakdown: full.filament_breakdown,
-      actual_filament_breakdown: full.actual_filament_breakdown,
       filament_recipe: full.filament_recipe,
       roll_usages: full.roll_usages,
       finished_sku: full.finished_sku,
@@ -2493,18 +2491,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       notes: full.notes,
       failure_reason: full.failure_reason,
       close_note: full.close_note,
-      actual_machine: full.actual_machine,
-      actual_quantity: num(full.actual_quantity),
       exclude_inventory_reduction: full.exclude_inventory_reduction,
       finished_roll: full.finished_roll,
       spool_freed: full.spool_freed,
       manual_rank: full.manual_rank,
-      print_started_at: full.print_started_at,
-      estimated_finish_at: full.estimated_finish_at,
-      closed_at: full.closed_at,
-      job_payload: full,
+      job_payload: ordinaryJobPayload,
       updated_at: new Date().toISOString()
     };
+    if(isPreAcceptanceCreate) payload.production_status = full.production_status;
 
     try{
       const saved = await sbApi('/rest/v1/production_jobs?on_conflict=id',{
@@ -2526,18 +2520,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       // until refresh, then revert from the older cloud row. Always try a narrow
       // PATCH with only the durable closeout/status fields that the board needs.
       const minimal = {
-        production_status: full.production_status,
-        actual_machine: full.actual_machine || null,
-        actual_quantity: num(full.actual_quantity),
-        actual_print_hours: num(full.actual_print_hours),
-        actual_grams_used: num(full.actual_grams_used),
-        actual_filament_breakdown: full.actual_filament_breakdown || null,
-        scrap_grams: num(full.scrap_grams),
         failure_reason: full.failure_reason || null,
         close_note: full.close_note || null,
-        closed_at: full.closed_at || null,
         updated_at: new Date().toISOString(),
-        job_payload: full
+        job_payload: ordinaryJobPayload
       };
 
       try{
@@ -2778,8 +2764,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
-    const command = ({printing:'start_print', qc:'complete_print', ready_to_print:'needs_reprint'})[targetStatus];
-    if(targetStatus === 'ready_for_fulfillment') throw new Error('Production QC is recorded at qc; use Orders/Fulfillment for ready-for-fulfillment handoff.');
+    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
     if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
     const actuals = targetStatus === 'qc' ? {actual_grams_used:job.actual_grams_used, scrap_grams:job.scrap_grams || 0, actual_print_hours:job.actual_print_hours} : {};
     const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals);
@@ -4831,7 +4816,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){
-      actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Approve Handoff in Orders</a>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass QC</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
       actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;

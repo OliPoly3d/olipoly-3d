@@ -108,17 +108,10 @@ begin
    limit 1 for update;
   if not found then raise exception 'Linked Production job not found for %', p_order_number using errcode='P0002'; end if;
   if v_job.order_number is distinct from v_order.order_number then raise exception 'Production/Order linkage mismatch for %', p_order_number using errcode='23514'; end if;
-  if exists (select 1 from public.project_events where correlation_id = v_command_id and event_type in ('order.printing_started','order.print_completed','order.needs_reprint')) then
-    return v_job;
-  end if;
-  if v_job.updated_at is distinct from p_expected_updated_at then raise exception 'Production workflow changed since this page loaded; refresh before retrying' using errcode='40001'; end if;
-  v_from := v_job.production_status;
-
   if v_command = 'start_print' then
-    if v_job.production_status <> 'ready_to_print' then raise exception 'Start Print requires ready_to_print' using errcode='22023'; end if;
     v_to := 'printing'; v_event := 'order.printing_started';
   elsif v_command = 'complete_print' then
-    if v_job.production_status <> 'printing' then raise exception 'Complete Print requires printing' using errcode='22023'; end if;
+    v_to := 'qc'; v_event := 'order.print_completed';
     if coalesce(jsonb_typeof(p_payload->'actual_grams_used') not in ('number','string'), true)
        or coalesce(jsonb_typeof(p_payload->'actual_print_hours') not in ('number','string'), true)
        or (p_payload ? 'scrap_grams' and coalesce(jsonb_typeof(p_payload->'scrap_grams') not in ('number','string'), true))
@@ -133,13 +126,33 @@ begin
     if v_actual_grams::text in ('NaN','Infinity','-Infinity') or v_scrap_grams::text in ('NaN','Infinity','-Infinity') or v_actual_hours::text in ('NaN','Infinity','-Infinity') then
       raise exception 'Complete Print actuals must be finite' using errcode='22023';
     end if;
-    v_to := 'qc'; v_event := 'order.print_completed';
+  elsif v_command = 'pass_qc' then
+    v_to := 'ready_for_fulfillment'; v_event := 'order.qc_passed';
   elsif v_command = 'needs_reprint' then
-    if v_job.production_status <> 'qc' then raise exception 'Needs Reprint requires qc' using errcode='22023'; end if;
     v_to := 'ready_to_print'; v_event := 'order.needs_reprint';
   else
     raise exception 'Invalid Production workflow command: %', p_command using errcode='22023';
   end if;
+
+  if exists (
+    select 1 from public.project_events
+     where correlation_id = v_command_id
+       and event_type = v_event
+       and user_id = v_actor
+       and aggregate_type = 'order'
+       and aggregate_id = v_order.id::text
+       and payload->>'command' = v_command
+  ) then
+    return v_job;
+  end if;
+  if exists (select 1 from public.project_events where correlation_id = v_command_id and not (event_type = v_event and user_id = v_actor and aggregate_type = 'order' and aggregate_id = v_order.id::text and payload->>'command' = v_command)) then
+    raise exception 'Command identity is already used for a different workflow command' using errcode='23505';
+  end if;
+  if v_job.updated_at is distinct from p_expected_updated_at then raise exception 'Production workflow changed since this page loaded; refresh before retrying' using errcode='40001'; end if;
+  v_from := v_job.production_status;
+  if v_command = 'start_print' and (v_job.production_status <> 'ready_to_print' or v_order.status <> 'ready_to_print') then raise exception 'Start Print requires ready_to_print' using errcode='22023'; end if;
+  if v_command = 'complete_print' and (v_job.production_status <> 'printing' or v_order.status <> 'printing') then raise exception 'Complete Print requires printing' using errcode='22023'; end if;
+  if v_command in ('pass_qc','needs_reprint') and (v_job.production_status <> 'qc' or v_order.status <> 'qc') then raise exception 'QC command requires qc' using errcode='22023'; end if;
 
   update public.production_jobs
      set production_status = v_to,
@@ -162,7 +175,7 @@ begin
   if not found then raise exception 'Tracking projection affected no rows' using errcode='40001'; end if;
 
   insert into public.project_events(event_id,user_id,quote_number,order_number,event_type,details,created_at,occurred_at,aggregate_type,aggregate_id,actor_type,actor_id,correlation_id,causation_id,schema_version,payload)
-  values(gen_random_uuid(),v_actor,v_order.source_quote_number,v_order.order_number,v_event,jsonb_build_object('from',v_from,'to',v_to),v_now,v_now,'order',v_order.order_number,'authenticated_user',v_actor::text,v_command_id,p_causation_id,1,jsonb_build_object('command',v_command,'from',v_from,'status',v_to,'production_job_id',v_job.id,'actuals',coalesce(p_payload,'{}'::jsonb)))
+  values(gen_random_uuid(),v_actor,v_order.source_quote_number,v_order.order_number,v_event,jsonb_build_object('from',v_from,'to',v_to),v_now,v_now,'order',v_order.id::text,'authenticated_user',v_actor::text,v_command_id,p_causation_id,1,jsonb_build_object('command',v_command,'from',v_from,'status',v_to,'production_job_id',v_job.id,'actuals',coalesce(p_payload,'{}'::jsonb)))
   on conflict (correlation_id, event_type) where correlation_id is not null and event_type in ('order.printing_started','order.print_completed','order.qc_passed','order.needs_reprint','order.ready_to_print','order.closed') do nothing;
 
   return v_job;
@@ -196,26 +209,35 @@ begin
 
   select * into v_order from public.orders where order_number = p_order_number for update;
   if not found or v_order.user_id is distinct from v_actor then raise exception 'Order not found for authenticated owner' using errcode='42501'; end if;
-  if exists (select 1 from public.project_events where correlation_id = v_command_id and event_type in ('order.qc_passed','order.closed')) then
+  if v_command = 'close_order' then
+    v_to := 'closed'; v_event := 'order.closed';
+  else
+    raise exception 'Invalid Fulfillment workflow command: %', p_command using errcode='22023';
+  end if;
+
+  if exists (
+    select 1 from public.project_events
+     where correlation_id = v_command_id
+       and event_type = v_event
+       and user_id = v_actor
+       and aggregate_type = 'order'
+       and aggregate_id = v_order.id::text
+       and payload->>'command' = v_command
+  ) then
     return v_order;
+  end if;
+  if exists (select 1 from public.project_events where correlation_id = v_command_id and not (event_type = v_event and user_id = v_actor and aggregate_type = 'order' and aggregate_id = v_order.id::text and payload->>'command' = v_command)) then
+    raise exception 'Command identity is already used for a different workflow command' using errcode='23505';
   end if;
   if v_order.updated_at is distinct from p_expected_updated_at then raise exception 'Order workflow changed since this page loaded; refresh before retrying' using errcode='40001'; end if;
   v_from := v_order.status;
 
   select * into v_job from public.production_jobs where user_id=v_actor and order_number=v_order.order_number limit 1 for update;
   if not found then raise exception 'Linked Production job not found for %', p_order_number using errcode='P0002'; end if;
-  if v_command = 'ready_for_fulfillment' then
-    if v_order.status <> 'qc' or v_job.production_status <> 'qc' then raise exception 'Ready for fulfillment requires qc' using errcode='22023'; end if;
-    v_to := 'ready_for_fulfillment'; v_event := 'order.qc_passed';
-  elsif v_command = 'close_order' then
-    if v_order.status <> 'ready_for_fulfillment' or v_job.production_status <> 'ready_for_fulfillment' then raise exception 'Close requires ready_for_fulfillment' using errcode='22023'; end if;
-    if coalesce(p_payload->>'fulfilled_at','') = '' then raise exception 'Fulfillment confirmation requires fulfilled_at' using errcode='22023'; end if;
-    v_to := 'closed'; v_event := 'order.closed';
-  else
-    raise exception 'Invalid Fulfillment workflow command: %', p_command using errcode='22023';
-  end if;
+  if v_order.status <> 'ready_for_fulfillment' or v_job.production_status <> 'ready_for_fulfillment' then raise exception 'Close requires ready_for_fulfillment' using errcode='22023'; end if;
+  if coalesce(p_payload->>'fulfillment_confirmed_at','') = '' or coalesce(p_payload->>'fulfillment_method','') = '' then raise exception 'Fulfillment confirmation requires fulfillment_confirmed_at and fulfillment_method' using errcode='22023'; end if;
 
-  update public.orders set status=v_to, fulfilled_at=case when v_command='close_order' then (p_payload->>'fulfilled_at')::timestamptz else fulfilled_at end, closed_at=case when v_command='close_order' then v_now else closed_at end, updated_at=v_now where id=v_order.id and user_id=v_actor returning * into v_order;
+  update public.orders set status=v_to, updated_at=v_now where id=v_order.id and user_id=v_actor returning * into v_order;
   if not found then raise exception 'Order workflow update affected no rows' using errcode='40001'; end if;
   update public.production_jobs set production_status=v_to, updated_at=v_now where id=v_job.id and user_id=v_actor returning * into v_job;
   if not found then raise exception 'Production fulfillment projection affected no rows' using errcode='40001'; end if;
@@ -223,7 +245,7 @@ begin
   if not found then raise exception 'Tracking projection affected no rows' using errcode='40001'; end if;
 
   insert into public.project_events(event_id,user_id,quote_number,order_number,event_type,details,created_at,occurred_at,aggregate_type,aggregate_id,actor_type,actor_id,correlation_id,causation_id,schema_version,payload)
-  values(gen_random_uuid(),v_actor,v_order.source_quote_number,v_order.order_number,v_event,jsonb_build_object('from',v_from,'to',v_to),v_now,v_now,'order',v_order.order_number,'authenticated_user',v_actor::text,v_command_id,p_causation_id,1,jsonb_build_object('command',v_command,'from',v_from,'status',v_to,'fulfillment',coalesce(p_payload,'{}'::jsonb)))
+  values(gen_random_uuid(),v_actor,v_order.source_quote_number,v_order.order_number,v_event,jsonb_build_object('from',v_from,'to',v_to),v_now,v_now,'order',v_order.id::text,'authenticated_user',v_actor::text,v_command_id,p_causation_id,1,jsonb_build_object('command',v_command,'from',v_from,'status',v_to,'occurred_at',v_now,'fulfillment_confirmation',coalesce(p_payload,'{}'::jsonb)))
   on conflict (correlation_id, event_type) where correlation_id is not null and event_type in ('order.printing_started','order.print_completed','order.qc_passed','order.needs_reprint','order.ready_to_print','order.closed') do nothing;
   return v_order;
 end;
@@ -252,10 +274,12 @@ alter table if exists public.order_tracking_public enable row level security;
 revoke insert, update, delete on table public.order_tracking_public from authenticated;
 revoke update on table public.orders from authenticated;
 revoke update on table public.production_jobs from authenticated;
-grant select, insert, delete on table public.orders, public.production_jobs to authenticated;
+grant select on table public.orders, public.production_jobs to authenticated;
 grant select on table public.order_tracking_public to authenticated;
 grant update(order_number, order_date, customer_name, customer_email, order_title, quantity, order_total, deposit_amount, balance_amount, payment_status, fulfillment, tracking_number, payment_link, payment_link_stripe, payment_link_paypal, payment_link_venmo, stripe_invoice_id, paid_date, po_number, tax_exempt, tax_exempt_reason, exemption_certificate_on_file, po_file_on_file, po_part_number, olipoly_part_number, part_revision, shipping_contact_name, shipping_company, material, color, printer_profile, layer_height, nozzle_size, estimated_print_time, estimated_piece_price, production_notes, post_processing_notes, invoice_number, invoice_date, invoice_due_date, invoice_terms, ap_email, billing_address, shipping_address, internal_notes, finance_pushed, finance_pushed_at, invoice_sent, invoice_sent_at, updated_at) on public.orders to authenticated;
-grant update(job_title, job_type, priority, customer_name, quote_number, order_number, quantity, machine_preference, due_date, primary_material, primary_color, other_colors, color_count, estimated_hours_each, estimated_grams_each, filament_breakdown, filament_recipe, finished_sku, estimated_price_each, design_fee, design_fee_mode, post_processing_fee, post_processing_fee_mode, supply_usage, supply_cost, estimated_material_cost, image_url, notes, failure_reason, close_note, exclude_inventory_reduction, finished_roll, spool_freed, manual_rank, estimated_finish_at, closed_at, job_payload, updated_at) on public.production_jobs to authenticated;
+grant insert(id, user_id, job_title, job_type, production_status, priority, customer_name, quote_number, quantity, machine_preference, due_date, primary_material, primary_color, other_colors, color_count, estimated_hours_each, estimated_grams_each, filament_breakdown, filament_recipe, finished_sku, estimated_price_each, design_fee, design_fee_mode, post_processing_fee, post_processing_fee_mode, supply_usage, supply_cost, estimated_material_cost, image_url, notes, failure_reason, close_note, exclude_inventory_reduction, finished_roll, spool_freed, manual_rank, job_payload, updated_at) on public.production_jobs to authenticated;
+grant update(job_title, job_type, priority, customer_name, quote_number, quantity, machine_preference, due_date, primary_material, primary_color, other_colors, color_count, estimated_hours_each, estimated_grams_each, filament_breakdown, filament_recipe, finished_sku, estimated_price_each, design_fee, design_fee_mode, post_processing_fee, post_processing_fee_mode, supply_usage, supply_cost, estimated_material_cost, image_url, notes, failure_reason, close_note, exclude_inventory_reduction, finished_roll, spool_freed, manual_rank, job_payload, updated_at) on public.production_jobs to authenticated;
+grant delete on table public.production_jobs to authenticated;
 grant all on table public.orders, public.production_jobs, public.order_tracking_public to service_role;
 
 -- Remove duplicate Production owner CRUD policy sets and replace with reviewed least privilege.
@@ -268,9 +292,9 @@ begin
 end
 $drop_policies$;
 create policy production_jobs_owner_select on public.production_jobs for select to authenticated using (auth.uid() = user_id);
-create policy production_jobs_owner_insert on public.production_jobs for insert to authenticated with check (auth.uid() = user_id);
+create policy production_jobs_owner_insert on public.production_jobs for insert to authenticated with check (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and print_started_at is null);
 create policy production_jobs_owner_update on public.production_jobs for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy production_jobs_owner_delete on public.production_jobs for delete to authenticated using (auth.uid() = user_id);
+create policy production_jobs_owner_delete on public.production_jobs for delete to authenticated using (auth.uid() = user_id and production_status in ('estimate','waiting_customer') and order_number is null and actual_grams_used is null and scrap_grams is null and actual_print_hours is null and print_started_at is null);
 create policy production_jobs_service_role_recovery on public.production_jobs for all to service_role using (true) with check (true);
 
 -- Public tracking remains projection-only: owner SELECT for active clients; service-role recovery only for mutation.

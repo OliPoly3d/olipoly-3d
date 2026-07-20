@@ -3082,9 +3082,9 @@ resetForm();
       if(!forceRepair && nextStatus === prevStatus && previousOrder?.order_number === orderNumber) return;
 
       try{
-        if(!['ready_for_fulfillment','closed'].includes(nextStatus)) throw new Error('Orders/Fulfillment cannot set manufacturing states.');
-        const command = nextStatus === 'closed' ? 'close_order' : 'ready_for_fulfillment';
-        const request = window.OliPolyWorkflow.fulfillmentWorkflowRpcRequest(orderNumber, command, previousOrder?.updated_at || payload?.updated_at, nextStatus === 'closed' ? {fulfilled_at:new Date().toISOString()} : {});
+        if(nextStatus !== 'closed') throw new Error('Orders/Fulfillment owns only close_order; Production owns manufacturing and Pass QC.');
+        const command = 'close_order';
+        const request = window.OliPolyWorkflow.fulfillmentWorkflowRpcRequest(orderNumber, command, previousOrder?.updated_at || payload?.updated_at, {fulfillment_confirmed_at:new Date().toISOString(), fulfillment_method:payload.fulfillment || 'confirmed'});
         const result = await api(request.path, {
           method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
         });
@@ -3125,19 +3125,16 @@ const payload = snapshotForm();
       const backwardWarning = currentRow && window.OliPolyWorkflow.backwardMoveWarning(currentRow.status, payload.status);
       if(backwardWarning && !confirm(backwardWarning)) return setMsg($('formMessage'),'Backward workflow move canceled.');
 
+      const {status, public_status_text, public_next_step, shipping_or_pickup_note, ...ordinaryPayload} = payload;
       let res;
       if(activeId){
         res = await api(`/rest/v1/orders?id=eq.${activeId}`,{
           method:'PATCH',
           headers:{Prefer:'return=representation'},
-          body:JSON.stringify(payload)
+          body:JSON.stringify(ordinaryPayload)
         });
       } else {
-        res = await api('/rest/v1/orders',{
-          method:'POST',
-          headers:{Prefer:'return=representation'},
-          body:JSON.stringify(payload)
-        });
+        return setMsg($('formMessage'),'Orders are created through approved Quote acceptance; direct Orders Admin creation is disabled by workflow authority.',true);
       }
 
       if(res.error) return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true);
