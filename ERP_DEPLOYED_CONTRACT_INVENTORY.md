@@ -1013,3 +1013,19 @@ Repository evidence now includes `supabase/migrations/202607200004_quote_accepta
 Planned contract after reviewed deployment: `respond_to_quote_public(p_public_token text, p_quote_number text, p_response text, p_message text)` remains the only public/internal Quote acceptance command. First acceptance must create or reuse exactly one validated Order, persist the immutable accepted snapshot, emit exactly-once `quote.accepted` and `order.created` events, initialize customer-safe tracking projection, and perform the sole acceptance-time Production handoff. Accepted idempotent retries that already have the required Order, snapshot, and events must return the same `order_number` without updating Quote, Order, snapshot, tracking, Production, events, accepted/responded timestamps, or `updated_at`.
 
 The planned corrective migration retires the overlapping `quotes_advance_linked_production` trigger while preserving `orders_sync_workflow_to_production` for normal post-acceptance Order workflow synchronization. It does not repair historical records, redesign UI, modify Finance or Inventory, deploy data changes, or broaden access to `quote_accepted_commercial_snapshots`.
+
+## Repository update — 2026-07-20 Quote Acceptance Runtime Safety correction
+
+Migration `supabase/migrations/202607200004_quote_acceptance_runtime_correctness.sql` was merged as repository evidence but was **not deployed**. Review found transaction, payment-ownership, response-vocabulary, fulfillment, causation, and tracking-idempotency defects, so it must not be deployed as written.
+
+Migration `supabase/migrations/202607200005_quote_acceptance_runtime_safety.sql` supersedes `202607200004` for deployment. The correction preserves the intended forward-only acceptance authority milestone while adding explicit transaction boundaries, an UPDATE-only Order workflow trigger contract, exact `Q-######` Quote identity validation, strict commercial value validation, due/unpaid payment semantics, deployed compatibility normalization to `change_requested`, constrained fulfillment projection, durable event-ID causation, and tracking `DO NOTHING` idempotency.
+
+Neither Codex nor this milestone deployed SQL, applied migrations, modified deployed data, or repaired historical records. The deployed contract remains unchanged until an operator applies a reviewed migration through the normal deployment process. After deployment, `respond_to_quote_public` is intended to be the sole initial acceptance-time Production handoff; `orders_sync_workflow_to_production` should synchronize only post-acceptance Order status updates.
+
+## Repository update — 2026-07-20 migration-chain neutralization for 202607200004
+
+Migration `supabase/migrations/202607200004_quote_acceptance_runtime_correctness.sql` was merged as repository evidence but was never deployed. Before any migration runner executed it, review found it unsafe, and this PR neutralizes it as a transaction-safe no-op supersession marker.
+
+`supabase/migrations/202607200005_quote_acceptance_runtime_safety.sql` supersedes `202607200004` and is the only runtime deployment artifact for the Quote acceptance runtime-safety correction. Existing deployed databases that manually applied `202607200002` and `202607200003` should apply only `202607200005`; fresh/sequential environments may safely execute the no-op `202607200004` marker and then `202607200005`.
+
+No deployed SQL was run by Codex in this milestone, and no deployed data was modified or repaired.
