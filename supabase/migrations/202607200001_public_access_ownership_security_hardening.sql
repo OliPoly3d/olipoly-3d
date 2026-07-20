@@ -131,6 +131,11 @@ revoke all on table public.order_tracking_public from anon;
 grant select, insert, update, delete on table public.order_tracking_public to authenticated;
 grant all on table public.order_tracking_public to service_role;
 
+drop policy if exists "Public can read tracking by lookup" on public.order_tracking_public;
+drop policy if exists order_tracking_public_read_all on public.order_tracking_public;
+drop policy if exists order_tracking_public_delete_own on public.order_tracking_public;
+drop policy if exists order_tracking_public_insert_own on public.order_tracking_public;
+drop policy if exists order_tracking_public_update_own on public.order_tracking_public;
 drop policy if exists "Public can read order tracking" on public.order_tracking_public;
 drop policy if exists "Anon can read order tracking" on public.order_tracking_public;
 drop policy if exists order_tracking_public_anon_select on public.order_tracking_public;
@@ -233,3 +238,13 @@ commit;
 -- select routine_name, grantee, privilege_type from information_schema.routine_privileges where routine_schema='public' and routine_name in ('next_document_counter','next_quote_invoice_number','public_order_tracking_lookup') order by routine_name, grantee;
 -- select policyname, roles, cmd, qual, with_check from pg_policies where schemaname='public' and tablename in ('parts_catalog','project_events','order_tracking_public') order by tablename, policyname;
 -- select * from public.public_order_tracking_lookup('OP-000001');
+-- Review gate: this query must return zero rows. Any row means order_tracking_public still has an anonymous, USING (true), or non-owner read policy.
+-- select policyname, roles, cmd, qual, with_check
+-- from pg_policies
+-- where schemaname = 'public'
+--   and tablename = 'order_tracking_public'
+--   and (
+--     'anon' = any(roles)
+--     or qual = 'true'
+--     or (cmd in ('SELECT', 'ALL') and 'authenticated' = any(roles) and coalesce(qual, '') <> '(user_id = auth.uid())')
+--   );
