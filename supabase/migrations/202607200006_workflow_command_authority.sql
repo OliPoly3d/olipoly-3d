@@ -32,8 +32,9 @@
 -- select has_function_privilege('anon','public.set_linked_workflow_status(text,text,timestamptz)','execute') as anon_can_old_workflow; -- expect false
 -- select policyname, cmd, roles from pg_policies where schemaname='public' and tablename='production_jobs' order by policyname; -- expect one owner SELECT policy and service-role recovery policies only
 -- select indexname from pg_indexes where schemaname='public' and tablename='project_events' and indexname='project_events_workflow_command_once_idx'; -- expect one row
--- select indexname from pg_indexes where schemaname='public' and tablename='workflow_command_receipts' and indexname='workflow_command_receipts_identity_idx'; -- expect one row
--- select has_table_privilege('authenticated','public.workflow_command_receipts','select') as authenticated_can_select_receipts, has_table_privilege('authenticated','public.workflow_command_receipts','insert') as authenticated_can_insert_receipts; -- expect false,false
+-- select relrowsecurity from pg_class where oid='public.workflow_command_receipts'::regclass; -- expect true
+-- select has_table_privilege('PUBLIC','public.workflow_command_receipts','select') as public_can_select_receipts, has_table_privilege('anon','public.workflow_command_receipts','select') as anon_can_select_receipts, has_table_privilege('authenticated','public.workflow_command_receipts','select') as authenticated_can_select_receipts, has_table_privilege('authenticated','public.workflow_command_receipts','insert') as authenticated_can_insert_receipts; -- expect all false
+-- select policyname from pg_policies where schemaname='public' and tablename='workflow_command_receipts' and roles && array['anon','authenticated','public']::name[]; -- expect zero rows
 --
 -- Forward-recovery guidance:
 -- If any statement fails before COMMIT, PostgreSQL rolls back this entire
@@ -57,12 +58,10 @@ create table if not exists public.workflow_command_receipts (
   from_state text not null,
   to_state text not null,
   resulting_updated_at timestamptz not null,
+  result_snapshot jsonb not null,
   created_at timestamptz not null default now(),
   check (command <> '')
 );
-
-create unique index if not exists workflow_command_receipts_identity_idx
-  on public.workflow_command_receipts(command_identity);
 
 comment on table public.workflow_command_receipts is 'Technical idempotency receipts for workflow commands; not a Blueprint business event stream.';
 
@@ -341,7 +340,7 @@ begin
       raise exception 'Command identity is already used for a different pre-acceptance Production command' using errcode='23505';
     end if;
     select * into v_job from public.production_jobs where id = v_receipt.production_job_id and user_id = v_actor for update;
-    if not found or v_job.updated_at is distinct from v_receipt.resulting_updated_at then raise exception 'Pre-acceptance command receipt no longer matches Production state' using errcode='40001'; end if;
+    if not found then raise exception 'Pre-acceptance command receipt no longer matches Production owner/job' using errcode='40001'; end if;
     return v_job;
   end if;
 
@@ -366,8 +365,8 @@ begin
    returning * into v_job;
   if not found then raise exception 'Pre-acceptance Production update affected no rows' using errcode='40001'; end if;
 
-  insert into public.workflow_command_receipts(command_identity, owner_id, production_job_id, command, from_state, to_state, resulting_updated_at, created_at)
-  values(v_command_id, v_actor, v_job.id, v_command, v_from, v_to, v_job.updated_at, v_now);
+  insert into public.workflow_command_receipts(command_identity, owner_id, production_job_id, command, from_state, to_state, resulting_updated_at, result_snapshot, created_at)
+  values(v_command_id, v_actor, v_job.id, v_command, v_from, v_to, v_job.updated_at, to_jsonb(v_job), v_now);
 
   return v_job;
 end;
@@ -392,6 +391,7 @@ $$;
 alter table if exists public.orders enable row level security;
 alter table if exists public.production_jobs enable row level security;
 alter table if exists public.order_tracking_public enable row level security;
+alter table if exists public.workflow_command_receipts enable row level security;
 
 revoke insert, update, delete on table public.order_tracking_public from authenticated;
 revoke insert, update, delete on table public.orders from authenticated;
@@ -405,6 +405,8 @@ grant update(job_title, job_type, priority, customer_name, quote_number, quantit
 grant delete on table public.production_jobs to authenticated;
 grant all on table public.orders, public.production_jobs, public.order_tracking_public to service_role;
 grant all on table public.workflow_command_receipts to service_role;
+drop policy if exists workflow_command_receipts_service_role_recovery on public.workflow_command_receipts;
+create policy workflow_command_receipts_service_role_recovery on public.workflow_command_receipts for all to service_role using (true) with check (true);
 
 -- Remove duplicate Production owner CRUD policy sets and replace with reviewed least privilege.
 do $drop_policies$

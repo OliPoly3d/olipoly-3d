@@ -2796,6 +2796,39 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return Array.isArray(result) ? result[0] : result;
   }
 
+  const LINKED_WORKFLOW_RECOVERY_KEY = 'olipoly_linked_workflow_recovery_v1';
+  function linkedWorkflowRecovery(){
+    return readJson(LINKED_WORKFLOW_RECOVERY_KEY, {});
+  }
+  function pendingLinkedWorkflowRecovery(job, status){
+    const pending = linkedWorkflowRecovery()?.[job?.id];
+    if(!pending) return null;
+    if(pending.status !== status || pending.from_status !== job.production_status || pending.expected_updated_at !== job.updated_at) return null;
+    return pending;
+  }
+  function rememberLinkedWorkflowRecovery(job, status, pendingJob, lifecycleAction){
+    const pending = linkedWorkflowRecovery();
+    pending[job.id] = {
+      job_id:job.id,
+      order_number:job.order_number,
+      status,
+      from_status:job.production_status,
+      expected_updated_at:job.updated_at,
+      lifecycle_action:lifecycleAction || null,
+      pending_job:pendingJob,
+      recorded_at:new Date().toISOString(),
+      recovery_note:'Inventory side effects were prepared before the workflow RPC completed; retry this command to finish without duplicating consumed attempts or reservation deltas.'
+    };
+    localWrite(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+  }
+  function clearLinkedWorkflowRecovery(jobId){
+    const pending = linkedWorkflowRecovery();
+    if(pending[jobId]){
+      delete pending[jobId];
+      localWrite(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+    }
+  }
+
   async function saveJob(e){
     e?.preventDefault();
     try{
@@ -2840,45 +2873,51 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       if(!({ready_to_print:1, printing:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
       if(status === 'printing' && !hasProductionActualPlan(j)) return toast('Add/confirm slicer grams and print hours before starting production.');
       const now = new Date();
-      const updated = {...j, production_status:status, updated_at:now.toISOString()};
-      if(status === 'printing' && !updated.print_started_at){
-        updated.print_started_at = now.toISOString();
-        if(num(updated.estimated_total_hours)){
-          updated.estimated_finish_at = new Date(now.getTime() + num(updated.estimated_total_hours)*3600000).toISOString();
+      const recovery = pendingLinkedWorkflowRecovery(j, status);
+      const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
+      let lifecycleAction = recovery?.lifecycle_action || null;
+      if(!recovery){
+        if(status === 'printing' && !updated.print_started_at){
+          updated.print_started_at = now.toISOString();
+          if(num(updated.estimated_total_hours)){
+            updated.estimated_finish_at = new Date(now.getTime() + num(updated.estimated_total_hours)*3600000).toISOString();
+          }
         }
-      }
-      const lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
-      if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-        await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release'});
-      }
-      const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
-        ? {...updated, material_reservations:[]}
-        : j;
-      if(lifecycleAction === 'consume_and_reserve_reprint') await applyReservationDelta(j, reservationBase);
-      updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
-        ? []
-        : shouldReserveInventory(updated, status)
-          ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
-          : [];
-      await applyReservationDelta(reservationBase, updated);
-      if(lifecycleAction === 'consume_and_reserve_reprint'){
-        updated.actual_grams_used = null;
-        updated.scrap_grams = null;
-        updated.roll_usages = [];
-        updated.actual_filament_breakdown = null;
-        updated.current_attempt_id = null;
-        updated.actuals_captured_at = null;
-        updated.print_started_at = null;
-        updated.estimated_finish_at = null;
+        lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
+        if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
+          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release'});
+        }
+        const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
+          ? {...updated, material_reservations:[]}
+          : j;
+        if(lifecycleAction === 'consume_and_reserve_reprint') await applyReservationDelta(j, reservationBase);
+        updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
+          ? []
+          : shouldReserveInventory(updated, status)
+            ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
+            : [];
+        await applyReservationDelta(reservationBase, updated);
+        if(lifecycleAction === 'consume_and_reserve_reprint'){
+          updated.actual_grams_used = null;
+          updated.scrap_grams = null;
+          updated.roll_usages = [];
+          updated.actual_filament_breakdown = null;
+          updated.current_attempt_id = null;
+          updated.actuals_captured_at = null;
+          updated.print_started_at = null;
+          updated.estimated_finish_at = null;
+        }
+        rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
       }
       try{
         const authoritative = await syncProductionStatusToOrder(j, status);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         state.jobs = state.jobs.map(x=>x.id===id ? updated : x);
         localWrite(LS_JOBS,state.jobs);
+        clearLinkedWorkflowRecovery(id);
         render();
         toast(`Moved to ${STATUS[status] || status}.`);
-      }catch(err){ alert(`Could not update status:
+      }catch(err){ toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
 
 ${err.message || err}`); }
       return;
