@@ -645,3 +645,19 @@ On first acceptance, the RPC explicitly projects the locked accepted Quote value
 The migration retires the overlapping `quotes_advance_linked_production` trigger and removes its unused trigger function after repository-reference inspection. It preserves `orders_sync_workflow_to_production` for normal post-acceptance workflow synchronization. Acceptance-time Production handoff remains inside the RPC and only updates the linked owner/Quote row in approved pre-acceptance states while avoiding closed or actual-work rows.
 
 The migration includes read-only preflight queries, post-deployment verification queries, and forward-recovery guidance. It preserves the least-privilege grants from the acceptance authority and snapshot security migrations and does not broaden direct access to `quote_accepted_commercial_snapshots`.
+
+## Forward correction — 202607200005 Quote Acceptance Runtime Safety
+
+Migration `supabase/migrations/202607200004_quote_acceptance_runtime_correctness.sql` was merged as repository evidence, but the operator reports it was **not deployed** and must not be deployed as written. A follow-up review found defects in transaction safety, payment ownership, deployed response vocabulary compatibility, fulfillment normalization, event causation, and tracking idempotency.
+
+Migration `supabase/migrations/202607200005_quote_acceptance_runtime_safety.sql` supersedes `202607200004` for deployment. It is a forward-only correction that leaves migrations `202607200002`, `202607200003`, and `202607200004` unedited. It wraps RPC replacement, Order workflow trigger replacement, Quote trigger retirement, and grant enforcement in one explicit transaction so a statement failure preserves the previously deployed RPC and trigger state. The corrected trigger contract recreates `orders_sync_workflow_to_production` as `AFTER UPDATE OF status` only, with an `old.status is distinct from new.status` condition, so Order insert no longer acts as a second acceptance-time Production authority.
+
+Neither Codex nor this milestone deployed SQL, applied migrations, modified deployed data, or performed historical repairs. Operators must run the included read-only preflight checks before deployment and the included post-deployment verification checks after deployment, including `pg_get_triggerdef` verification that the Order workflow trigger is UPDATE-only and has no INSERT event.
+
+## Deployment sequencing correction — 202607200004 neutralized before deployment
+
+Migration `supabase/migrations/202607200004_quote_acceptance_runtime_correctness.sql` was merged as repository evidence but was never deployed. Before any normal migration runner executed it, review found it unsafe, so this PR replaces its executable contents with a transaction-safe no-op supersession marker.
+
+`supabase/migrations/202607200005_quote_acceptance_runtime_safety.sql` supersedes `202607200004` and is the sole runtime deployment artifact for this correction. Existing deployed databases where an operator manually applied `202607200002` and `202607200003` should apply only `202607200005`. Fresh or sequential environments may safely run the no-op `202607200004` marker followed by `202607200005`.
+
+Neither Codex nor this milestone deployed SQL, applied migrations, modified deployed data, or performed historical repairs.
