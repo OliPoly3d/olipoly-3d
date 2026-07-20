@@ -1229,3 +1229,11 @@ That future milestone is limited to Production-owned commands for `printing`, `q
 Explicit exclusions: Finance, Inventory consumption, Quote acceptance redesign, UI redesign, Fundraiser work, and historical data cleanup.
 
 No corrective migration is created in this milestone.
+
+## Repository-planned inventory update — workflow command authority (2026-07-20)
+
+`supabase/migrations/202607200006_workflow_command_authority.sql` is planned but **not deployed**. It records the next corrective database contract for Production/Fulfillment workflow authority after the deployed Quote Acceptance Runtime Safety contract. Codex did not deploy the migration and did not apply data repair.
+
+Planned changes: authenticated browser clients lose direct workflow table write privileges; `production_workflow_command` and `fulfillment_workflow_command` become the narrow mutation authorities; `orders_sync_workflow_to_production`/`sync_order_workflow_to_production` and `set_linked_workflow_status` are retired from client/trigger use; public tracking becomes server-side projection-only; and workflow events use the Blueprint envelope without modifying existing legacy rows.
+
+Classification: **Repository-planned, not deployed until operator verification is provided**.

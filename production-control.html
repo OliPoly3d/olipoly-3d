@@ -2778,7 +2778,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   async function syncProductionStatusToOrder(job, targetStatus){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
-    const request = window.OliPolyWorkflow.workflowRpcRequest(job.order_number, targetStatus);
+    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
+    if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
+    const actuals = targetStatus === 'qc' ? {actual_grams_used:job.actual_grams_used, scrap_grams:job.scrap_grams || 0, actual_print_hours:job.actual_print_hours} : {};
+    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals);
     await sbApi(request.path, {
       method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
@@ -2851,10 +2854,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
     if(status === 'closed') updated.closed_at = updated.closed_at || now.toISOString();
     try{
-      await cloudSaveJob(updated);
-      window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
-      await logProjectEvent('production_status_changed', updated, {from:j.production_status, to:status});
-      await syncProductionStatusToOrder(updated, status);
+      if(j.order_number && window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(status)){
+        await syncProductionStatusToOrder(updated, status);
+      } else {
+        await cloudSaveJob(updated);
+        window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
+        await logProjectEvent('production_status_changed', updated, {from:j.production_status, to:status});
+      }
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       render();
@@ -4824,7 +4830,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
-      actions += `<button class="mini-btn" data-status="${j.id}|closed" type="button">Fulfilled / Close</button>`;
+      actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
     }
     if(!isClosed){
       if(!hasOrder && j.production_status === 'estimate') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;

@@ -59,22 +59,45 @@
     if(transitionDirection(from, to) !== 'backward') return '';
     return 'This moves manufacturing backward. Production attempts, actual usage, scrap, and consumed inventory will be preserved; reservations and consumption will not be recreated or reversed automatically. Continue?';
   }
-  function workflowRpcRequest(orderNumber, status, expectedUpdatedAt){
+  function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
     if(!orderNumber) throw new Error('A linked Order number is required.');
-    if(!isPostAcceptanceStatus(status)) throw new Error('Orders can only use post-acceptance workflow states.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
     return {
-      path:'/rest/v1/rpc/set_linked_workflow_status',
+      path:'/rest/v1/rpc/production_workflow_command',
       body:{
         p_order_number:String(orderNumber).trim(),
-        p_status:String(status).trim().toLowerCase(),
-        p_expected_updated_at:expectedUpdatedAt || null
+        p_command:String(command).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_payload:payload || {},
+        p_correlation_id:(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+        p_causation_id:null
       }
     };
+  }
+  function fulfillmentWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
+    if(!orderNumber) throw new Error('A linked Order number is required.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/fulfillment_workflow_command',
+      body:{
+        p_order_number:String(orderNumber).trim(),
+        p_command:String(command).trim().toLowerCase(),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_payload:payload || {},
+        p_correlation_id:(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+        p_causation_id:null
+      }
+    };
+  }
+  function workflowRpcRequest(orderNumber, status, expectedUpdatedAt){
+    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'ready_for_fulfillment', closed:'close_order', ready_to_print:'needs_reprint'})[String(status || '').trim().toLowerCase()];
+    if(status === 'closed' || status === 'ready_for_fulfillment') return fulfillmentWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, status === 'closed' ? {fulfilled_at:new Date().toISOString()} : {});
+    return productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, {});
   }
   return Object.freeze({
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    workflowRpcRequest, orderStatusLabel
+    workflowRpcRequest, productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, orderStatusLabel
   });
 });

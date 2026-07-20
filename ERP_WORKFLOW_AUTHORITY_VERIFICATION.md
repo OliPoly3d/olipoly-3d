@@ -710,3 +710,13 @@ That future milestone should be narrowly limited to:
 Explicitly excluded from that future milestone: Finance, Inventory consumption, Quote acceptance redesign, UI redesign, Fundraiser work, and historical data cleanup.
 
 No corrective migration is created in this milestone.
+
+## Repository-planned corrective contract — workflow command authority (2026-07-20)
+
+Migration `supabase/migrations/202607200006_workflow_command_authority.sql` is the focused repository artifact for enforcing the Blueprint workflow command boundary. It is **not deployed**. Codex did not apply the migration, run SQL against Supabase, mutate historical/test data, or backfill legacy events.
+
+The planned contract retires blind Orders-to-Production status copying, replaces browser-writable workflow mutation with authenticated command RPCs, requires non-null optimistic concurrency for every workflow mutation, locks authoritative rows before validation, and projects customer-safe tracking only inside approved server-side commands. Production commands own manufacturing transitions and actual recording (`start_print`, `complete_print`, `pass_qc`, `needs_reprint`). Fulfillment commands own readiness/closeout (`ready_for_fulfillment`, `close_order`). `needs_reprint` remains internal Production evidence and projects publicly as `ready_to_print`.
+
+The planned migration also revokes authenticated direct INSERT/UPDATE/DELETE authority on `orders`, `production_jobs`, and `order_tracking_public` where those grants bypass command authority, preserves owner-scoped SELECT access and service-role recovery access, removes duplicate Production owner CRUD policies, and revokes unnecessary execution grants from retired workflow helper functions. Every successful workflow command appends one Blueprint-envelope `project_events` row with database uniqueness on `(correlation_id, event_type)` for retry-safe event emission. Existing legacy events remain untouched.
+
+Deployment proof remains pending operator-supplied Supabase verification using the migration's preflight and post-deployment queries. Until that evidence is supplied, this is repository-planned corrective evidence only, not a deployed-state claim.
