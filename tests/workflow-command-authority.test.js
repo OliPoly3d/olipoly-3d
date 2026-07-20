@@ -23,6 +23,12 @@ assert(!migration.includes('grant select, insert') && !migration.includes('grant
 assert(migration.includes('grant update(order_number') && !migration.includes('grant update(status'), 'ordinary Orders Admin updates must be column-granted without status');
 assert(migration.includes('has_table_privilege') && migration.includes('has_column_privilege'), 'effective privilege verification queries must be present');
 assert(migration.includes('perform pg_advisory_xact_lock'), 'command identity handling must be serialized with an advisory lock');
+assert(migration.includes('create table if not exists public.workflow_command_receipts'), 'technical command receipts must be durable for pre-acceptance retries');
+assert(migration.includes('command_identity text primary key') && migration.includes('workflow_command_receipts_identity_idx'), 'command receipt identity must be unique');
+assert(migration.includes('v_receipt.owner_id is distinct from v_actor') && migration.includes('v_receipt.production_job_id is distinct from p_job_id') && migration.includes('v_receipt.command is distinct from v_command'), 'receipt retries must bind owner, job, and command');
+assert(migration.includes('return v_job;') && migration.includes('resulting_updated_at'), 'same-command receipt retry must return the committed Production row');
+assert(migration.includes('revoke all on table public.workflow_command_receipts from public, anon, authenticated'), 'command receipts must not become a browser table surface');
+assert(!migration.includes('preacceptance.') && !migration.includes('production.preacceptance'), 'pre-acceptance receipts must not invent a new business event type');
 assert(migration.includes('grant insert(id, user_id, job_title') && migration.includes("production_status in ('estimate','waiting_customer')"), 'production pre-acceptance insert must be narrow and state-limited');
 assert(migration.includes('grant update(job_title') && !migration.includes('grant update(production_status'), 'Production ordinary edits must be column-granted without workflow status/actuals');
 assert(migration.includes('actual_machine = case when v_command=') && migration.includes('completed_at = case when v_command=') && migration.includes('production_attempts'), 'complete_print must persist deployed actuals and attempt evidence');
@@ -49,9 +55,13 @@ assert(production.includes("ready_for_fulfillment:'pass_qc'"), 'Production UI mu
 assert(production.includes("if(j.order_number){") && production.includes('Unsupported linked workflow transition'), 'linked setStatus must route through command path before local mutation');
 assert(production.includes('Bulk workflow status changes are disabled'), 'bulk workflow mutation must be disabled');
 assert(production.includes('consumeCapturedAttempt(updated') && production.includes('applyReservationDelta(reservationBase, updated)'), 'Inventory lifecycle orchestration must remain present for linked commands');
+assert(/if\(j\.order_number\)\{[\s\S]*?consumeCapturedAttempt\(updated[\s\S]*?syncProductionStatusToOrder\(j, status\)/.test(production), 'linked Pass QC must reach consumeCapturedAttempt before command success updates local state');
+assert(/if\(j\.order_number\)\{[\s\S]*?consume_and_reserve_reprint[\s\S]*?applyReservationDelta\(j, reservationBase\)/.test(production), 'linked Needs Reprint must reach existing reprint reservation path');
 assert(production.includes('Linked accepted work cannot be moved back directly') && production.includes('Linked accepted work cannot be canceled from Production Control'), 'move-back/cancel must not bypass linked commands');
 assert(production.includes('Linked accepted Production evidence cannot be directly deleted'), 'linked Production evidence direct delete must be blocked');
 assert(production.includes('ordinaryJobPayload') && production.includes("delete ordinaryJobPayload[key]"), 'Production ordinary saves must omit command-owned fields');
+assert(production.includes('ordinarySaveJob = isPreAcceptanceStatusChange ? {...j, production_status:previousJob.production_status} : j'), 'pre-acceptance editor status changes must not shadow-write local lifecycle state before command success');
+assert(production.includes('recovery_draft_only: true') && !/writeJson\(LS_JOBS,[\s\S]{0,120}waiting_customer[\s\S]{0,120}syncPreAcceptanceProductionStatus/.test(production), 'Push to Quote must retain only a recovery draft before the pre-acceptance command succeeds');
 assert(production.includes("syncProductionStatusToOrder(j, 'qc', updated)"), 'confirmClose must call complete_print with persisted old job row and captured evidence');
 assert(!/if\(state\.user\?\.id\) await cloudSaveJob\(updated\);[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not cloudSaveJob before linked complete_print');
 assert(!/logProjectEvent\('production_actuals_captured'[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not emit legacy event before linked complete_print');

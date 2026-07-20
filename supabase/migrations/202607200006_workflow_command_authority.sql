@@ -20,6 +20,7 @@
 -- select grantee, privilege_type from information_schema.role_table_grants where table_schema='public' and table_name in ('orders','production_jobs','order_tracking_public') and grantee in ('anon','authenticated','PUBLIC','public','service_role') order by table_name, grantee, privilege_type;
 -- select tgname, pg_get_triggerdef(oid) from pg_trigger where tgrelid='public.orders'::regclass and tgname='orders_sync_workflow_to_production';
 -- select proname, prosecdef, proacl from pg_proc join pg_namespace on pg_namespace.oid=pronamespace where nspname='public' and proname in ('set_linked_workflow_status','sync_order_workflow_to_production','production_workflow_command','fulfillment_workflow_command','preacceptance_production_command');
+-- select command_identity, owner_id, production_job_id, command, from_state, to_state, resulting_updated_at from public.workflow_command_receipts limit 5;
 --
 -- Post-deployment verification queries:
 -- select has_table_privilege('authenticated','public.orders','insert') as authenticated_can_insert_orders, has_table_privilege('authenticated','public.orders','delete') as authenticated_can_delete_orders, has_table_privilege('authenticated','public.orders','update') as authenticated_can_update_orders; -- expect all false
@@ -31,6 +32,8 @@
 -- select has_function_privilege('anon','public.set_linked_workflow_status(text,text,timestamptz)','execute') as anon_can_old_workflow; -- expect false
 -- select policyname, cmd, roles from pg_policies where schemaname='public' and tablename='production_jobs' order by policyname; -- expect one owner SELECT policy and service-role recovery policies only
 -- select indexname from pg_indexes where schemaname='public' and tablename='project_events' and indexname='project_events_workflow_command_once_idx'; -- expect one row
+-- select indexname from pg_indexes where schemaname='public' and tablename='workflow_command_receipts' and indexname='workflow_command_receipts_identity_idx'; -- expect one row
+-- select has_table_privilege('authenticated','public.workflow_command_receipts','select') as authenticated_can_select_receipts, has_table_privilege('authenticated','public.workflow_command_receipts','insert') as authenticated_can_insert_receipts; -- expect false,false
 --
 -- Forward-recovery guidance:
 -- If any statement fails before COMMIT, PostgreSQL rolls back this entire
@@ -45,6 +48,23 @@ create unique index if not exists project_events_workflow_command_once_idx
   on public.project_events(correlation_id, event_type)
   where correlation_id is not null
     and event_type in ('order.printing_started','order.print_completed','order.qc_passed','order.needs_reprint','order.ready_to_print','order.closed');
+
+create table if not exists public.workflow_command_receipts (
+  command_identity text primary key,
+  owner_id uuid not null,
+  production_job_id uuid not null,
+  command text not null,
+  from_state text not null,
+  to_state text not null,
+  resulting_updated_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  check (command <> '')
+);
+
+create unique index if not exists workflow_command_receipts_identity_idx
+  on public.workflow_command_receipts(command_identity);
+
+comment on table public.workflow_command_receipts is 'Technical idempotency receipts for workflow commands; not a Blueprint business event stream.';
 
 create or replace function public.workflow_public_status_text(p_status text)
 returns text language sql immutable
@@ -307,11 +327,23 @@ declare
   v_to text;
   v_command_id text := nullif(btrim(p_correlation_id),'');
   v_quote_number text := nullif(btrim(p_payload->>'quote_number'),'');
+  v_receipt public.workflow_command_receipts%rowtype;
+  v_from text;
 begin
   if v_actor is null then raise exception 'Authentication is required for pre-acceptance Production commands' using errcode='28000'; end if;
   if p_expected_updated_at is null then raise exception 'expected_updated_at is required' using errcode='22004'; end if;
   if v_command_id is null then raise exception 'p_correlation_id command identity is required' using errcode='22004'; end if;
   perform pg_advisory_xact_lock(hashtextextended(v_command_id, 0));
+
+  select * into v_receipt from public.workflow_command_receipts where command_identity = v_command_id for update;
+  if found then
+    if v_receipt.owner_id is distinct from v_actor or v_receipt.production_job_id is distinct from p_job_id or v_receipt.command is distinct from v_command then
+      raise exception 'Command identity is already used for a different pre-acceptance Production command' using errcode='23505';
+    end if;
+    select * into v_job from public.production_jobs where id = v_receipt.production_job_id and user_id = v_actor for update;
+    if not found or v_job.updated_at is distinct from v_receipt.resulting_updated_at then raise exception 'Pre-acceptance command receipt no longer matches Production state' using errcode='40001'; end if;
+    return v_job;
+  end if;
 
   select * into v_job from public.production_jobs where id = p_job_id for update;
   if not found or v_job.user_id is distinct from v_actor then raise exception 'Production job not found for authenticated owner' using errcode='42501'; end if;
@@ -319,6 +351,7 @@ begin
   if v_job.production_status not in ('estimate','waiting_customer') then raise exception 'Pre-acceptance Production command requires estimate or waiting_customer' using errcode='22023'; end if;
   if v_job.actual_grams_used is not null or v_job.scrap_grams is not null or v_job.actual_print_hours is not null or v_job.print_started_at is not null or v_job.completed_at is not null then raise exception 'Pre-acceptance command rejects actual or completion evidence' using errcode='22023'; end if;
   if v_job.updated_at is distinct from p_expected_updated_at then raise exception 'Production job changed since this page loaded; refresh before retrying' using errcode='40001'; end if;
+  v_from := v_job.production_status;
 
   if v_command = 'mark_waiting_customer' then v_to := 'waiting_customer';
   elsif v_command = 'return_to_estimate' then v_to := 'estimate';
@@ -332,6 +365,10 @@ begin
    where id = v_job.id and user_id = v_actor
    returning * into v_job;
   if not found then raise exception 'Pre-acceptance Production update affected no rows' using errcode='40001'; end if;
+
+  insert into public.workflow_command_receipts(command_identity, owner_id, production_job_id, command, from_state, to_state, resulting_updated_at, created_at)
+  values(v_command_id, v_actor, v_job.id, v_command, v_from, v_to, v_job.updated_at, v_now);
+
   return v_job;
 end;
 $$;
@@ -359,6 +396,7 @@ alter table if exists public.order_tracking_public enable row level security;
 revoke insert, update, delete on table public.order_tracking_public from authenticated;
 revoke insert, update, delete on table public.orders from authenticated;
 revoke insert, update, delete on table public.production_jobs from authenticated;
+revoke all on table public.workflow_command_receipts from public, anon, authenticated;
 grant select on table public.orders, public.production_jobs to authenticated;
 grant select on table public.order_tracking_public to authenticated;
 grant update(order_number, order_date, customer_name, customer_email, order_title, quantity, order_total, deposit_amount, balance_amount, payment_status, fulfillment, tracking_number, payment_link, payment_link_stripe, payment_link_paypal, payment_link_venmo, stripe_invoice_id, paid_date, po_number, tax_exempt, tax_exempt_reason, exemption_certificate_on_file, po_file_on_file, po_part_number, olipoly_part_number, part_revision, shipping_contact_name, shipping_company, material, color, printer_profile, layer_height, nozzle_size, estimated_print_time, estimated_piece_price, production_notes, post_processing_notes, invoice_number, invoice_date, invoice_due_date, invoice_terms, ap_email, billing_address, shipping_address, internal_notes, finance_pushed, finance_pushed_at, invoice_sent, invoice_sent_at, updated_at) on public.orders to authenticated;
@@ -366,6 +404,7 @@ grant insert(id, user_id, job_title, job_type, production_status, priority, cust
 grant update(job_title, job_type, priority, customer_name, quote_number, quantity, machine_preference, due_date, primary_material, primary_color, other_colors, color_count, estimated_hours_each, estimated_grams_each, filament_breakdown, filament_recipe, finished_sku, estimated_price_each, design_fee, design_fee_mode, post_processing_fee, post_processing_fee_mode, supply_usage, supply_cost, estimated_material_cost, image_url, notes, failure_reason, close_note, exclude_inventory_reduction, finished_roll, spool_freed, manual_rank, job_payload, updated_at) on public.production_jobs to authenticated;
 grant delete on table public.production_jobs to authenticated;
 grant all on table public.orders, public.production_jobs, public.order_tracking_public to service_role;
+grant all on table public.workflow_command_receipts to service_role;
 
 -- Remove duplicate Production owner CRUD policy sets and replace with reviewed least privilege.
 do $drop_policies$
