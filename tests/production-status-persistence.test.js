@@ -33,7 +33,9 @@ assert.match(production, /OliPolyProductionPersistence\.mergeJobs\(cloudMigrated
 const quote = fs.readFileSync(require.resolve('../quote.js'), 'utf8');
 const quoteSave = quote.slice(quote.indexOf('async function saveCloudQuote'), quote.indexOf('async function deleteCloudQuote'));
 assert.doesNotMatch(quoteSave, /production_status/, 'ordinary quote save must not reset Production status');
-assert.match(quote, /production_status: 'ready_to_print'/);
+assert.doesNotMatch(quote, /production_status: 'ready_to_print'/, 'browser quote acceptance must not patch Production ready state');
+const acceptanceMigration = fs.readFileSync(require.resolve('../supabase/migrations/202607200002_quote_acceptance_authority.sql'), 'utf8');
+assert.match(acceptanceMigration, /production_status = 'ready_to_print'/, 'acceptance RPC owns the ready_to_print handoff');
 
 const migration = fs.readFileSync(require.resolve('../supabase/migrations/202607160003_persist_production_quote_status.sql'), 'utf8');
 assert.match(migration, /customer_response = 'accepted'/);

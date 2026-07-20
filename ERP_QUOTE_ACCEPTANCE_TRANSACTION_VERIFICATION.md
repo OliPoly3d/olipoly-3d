@@ -615,3 +615,13 @@ Do not design speculative unrelated schema, Finance, Inventory, UI, or cleanup w
 ## Manual browser tests required later, not now
 
 No browser mutation test is allowed for this documentation-only milestone. After a future corrective implementation is built in a safe test environment, manual tests should verify double-click/retry behavior, returned `OP-######`, tracking lookup, Quote/Order/Admin reload consistency, Production linkage, and event audit evidence. Those tests must not be claimed for production unless actually performed in an approved non-destructive or test environment.
+
+## Reviewed corrective contract — repository evidence, not deployed proof (2026-07-20)
+
+Migration `supabase/migrations/202607200002_quote_acceptance_authority.sql` is the focused repository artifact for making `respond_to_quote_public` the sole atomic Quote acceptance authority. Codex did **not** apply this migration to Supabase and did not mutate production data.
+
+The reviewed contract now requires the RPC to lock the matching Quote row by exact `quote_number` and `public_token`, normalize only the supported acceptance vocabulary, create or reuse exactly one Order with permanent `orders.source_quote_number`, reject OP-number collisions that do not belong to the same Quote owner, preserve Q/OP suffix parity, create an immutable accepted commercial snapshot, emit exactly-once `quote.accepted` and `order.created` events, perform the valid waiting-state Production handoff, and initialize the public tracking projection without resetting advanced tracking rows on retry.
+
+The root `quote.js` and referenced legacy `js/quote.js` acceptance paths now delegate acceptance state to `respond_to_quote_public`; browser code no longer creates Orders, patches accepted Quote state, patches acceptance-time Production handoff state, writes project events, or patches tracking after the RPC. UI refresh/display behavior remains browser-owned.
+
+This is repository evidence of the intended corrective contract only. Deployment proof still requires running the migration preflight queries, applying the migration through the reviewed Supabase process, and then running the included post-deployment verification and manual browser checklist.

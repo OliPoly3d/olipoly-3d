@@ -33,8 +33,8 @@ assert.match(orders, /workflowRpcRequest\(orderNumber, nextStatus\)/);
 assert.match(migration, /create or replace function public\.set_linked_workflow_status/);
 assert.match(migration, /orders_sync_workflow_to_production/);
 assert.match(migration, /p\.production_status is distinct from o\.status/);
-assert.doesNotMatch(quote.slice(quote.indexOf('if \(Array\.isArray\(existing\)')), /body: JSON\.stringify\(payload\)[\s\S]*?method: "POST"/);
-assert.match(quote, /const \{ status, \.\.\.nonWorkflowPayload \} = payload/);
+assert.match(quote, /acceptQuoteThroughServer/);
+assert.doesNotMatch(quote, /function (?:buildOrderPayload|upsertOrder|updateQuoteAccepted|updateLinkedProductionJobAfterAcceptance)\b/);
 
 const laneStatuses = [...production.matchAll(/statuses:\['([^']+)'\]/g)].map(match => match[1]);
 assert.equal(new Set(laneStatuses).size, laneStatuses.length, 'each canonical lane status appears once');

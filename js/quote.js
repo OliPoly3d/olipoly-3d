@@ -3836,157 +3836,36 @@ https://olipoly3d.com`;
     if (typeof window.getCurrentSbUser === "function") return await window.getCurrentSbUser();
     return null;
   }
-
-  function buildOrderPayload(userId) {
-    const total = totalAmount();
-    const deposit = depositAmount(total);
-    const balance = Math.max(0, total - deposit);
-    const orderNumber = orderNumberFromQuote();
-    const company = val("companyName");
-    const contact = val("contactName") || val("customerName");
-    const project = val("quoteTitle") || val("projectTitle") || "Custom 3D printed items";
-    const qty = Math.max(1, Math.round(Number(val("qty") || val("quantity") || 1) || 1));
-    const paymentTerms = val("paymentTerms");
-    const professional = val("liteQuoteType") === "po" || val("professionalMode") === "on" || !!val("poNumber");
-
-    return {
-      user_id: userId,
-      order_number: orderNumber,
-      order_date: today(),
-      customer_name: contact || company || null,
-      customer_email: val("customerEmail") || null,
-      order_title: project,
-      quantity: qty,
-      order_total: total,
-      deposit_amount: deposit,
-      balance_amount: balance,
-      status: "ready_to_print",
-      payment_status: safeOrderPaymentStatus(deposit > 0 ? "deposit_due" : "unpaid", deposit),
-      fulfillment: val("shippingAddress") ? "shipping" : "pickup",
-      source_quote_number: quoteNumber() || null,
-      created_from_quote: true,
-      accepted_date: new Date().toISOString(),
-      po_number: val("poNumber") || null,
-      tax_exempt: val("taxExempt") === "yes",
-      tax_exempt_reason: val("taxExemptReason") || null,
-      exemption_certificate_on_file: val("certificateOnFile") === "yes",
-      po_file_on_file: val("poFileOnFile") === "yes",
-      po_part_number: val("customerPartNumber") || null,
-      olipoly_part_number: val("olipolyPartNumber") || null,
-      part_revision: val("partRevision") || null,
-      shipping_contact_name: val("shippingContactName") || contact || null,
-      shipping_company: val("shippingCompany") || company || null,
-      shipping_address: val("shippingAddress") || null,
-      billing_address: val("billingAddress") || null,
-      invoice_number: val("invoiceNumber") || null,
-      invoice_date: val("invoiceDate") || null,
-      invoice_terms: selectedInvoiceTerms(),
-      internal_notes: [
-        `Created from quote ${quoteNumber() || ""}.`,
-        professional ? "Professional / PO quote workflow." : "Retail/customer quote workflow.",
-        val("taxExempt") === "yes" ? `Tax Exempt: yes${val("certificateOnFile") === "yes" ? " — certificate on file" : " — certificate status not confirmed"}` : "",
-        val("taxExemptReason") ? `Tax exemption notes: ${val("taxExemptReason")}` : "",
-        val("poFileOnFile") === "yes" ? "PO file stored externally." : "",
-        val("quoteNotes") ? `Quote notes: ${val("quoteNotes")}` : "",
-        val("assumptions") ? `Assumptions: ${val("assumptions")}` : ""
-      ].filter(Boolean).join("\n\n"),
-      public_status_text: "Order created from accepted quote.",
-      public_next_step: deposit > 0
-        ? "Deposit/payment is the next step before production begins."
-        : "No deposit is due now. OliPoly 3D will move the accepted quote into design and production prep, with payment due at completion.",
-      shipping_or_pickup_note: val("turnaround") ? `Estimated timing: ${val("turnaround")}` : null
-    };
-  }
-
-  async function upsertOrder(payload) {
-    const encoded = encodeURIComponent(payload.order_number);
-    const existing = await api(`/rest/v1/orders?select=id&order_number=eq.${encoded}&limit=1`, { method: "GET" });
-    if (Array.isArray(existing) && existing[0]?.id) {
-      // Acceptance is idempotent: retrying it must not reset manufacturing.
-      const { status, ...nonWorkflowPayload } = payload;
-      return await api(`/rest/v1/orders?id=eq.${existing[0].id}`, {
+  async function ensureAcceptanceToken(quoteNumberValue) {
+    const encoded = encodeURIComponent(quoteNumberValue);
+    const rows = await api(`/rest/v1/quotes?select=public_token&quote_number=eq.${encoded}&limit=1`, { method: "GET" });
+    let publicToken = Array.isArray(rows) ? rows[0]?.public_token : null;
+    if (!publicToken) {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      publicToken = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+      await api(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
         method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify(nonWorkflowPayload)
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ public_token: publicToken, updated_at: new Date().toISOString() })
       });
     }
-    return await api("/rest/v1/orders", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(payload)
-    });
+    return publicToken;
   }
 
-  async function updateQuoteAccepted(orderNumber) {
-    const q = quoteNumber();
-    if (!q) return;
-    const encoded = encodeURIComponent(q);
-    await api(`/rest/v1/quotes?quote_number=eq.${encoded}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
+  async function acceptQuoteThroughServer(quoteNumberValue, publicToken) {
+    const result = await api("/rest/v1/rpc/respond_to_quote_public", {
+      method: "POST",
       body: JSON.stringify({
-        quote_status: "converted_to_order",
-        customer_response: "accepted",
-        converted_to_order: true,
-        converted_order_number: orderNumber,
-        tax_exempt: (document.getElementById("taxExempt")?.value || "no") === "yes",
-        tax_exempt_reason: document.getElementById("taxExemptReason")?.value?.trim() || null,
-        exemption_certificate_on_file: (document.getElementById("certificateOnFile")?.value || "no") === "yes",
-        po_file_on_file: (document.getElementById("poFileOnFile")?.value || "no") === "yes",
-        accepted_date: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        p_quote_number: quoteNumberValue,
+        p_public_token: publicToken,
+        p_response: "accepted",
+        p_message: "Accepted internally by OliPoly 3D."
       })
     });
+    return Array.isArray(result) ? result[0] : result;
   }
 
-
-
-  async function updateLinkedProductionJobAfterAcceptance(orderNumber){
-    const productionJobId = document.getElementById('productionJobId')?.value?.trim();
-    const q = quoteNumber();
-    if(!productionJobId && !q) return;
-
-    const now = new Date().toISOString();
-    const fullPatch = {
-      production_status: 'ready_to_print',
-      order_number: orderNumber,
-      quote_accepted_at: now,
-      quote_handoff_status: 'accepted_created_order',
-      updated_at: now
-    };
-    const minimalPatch = {
-      production_status: 'ready_to_print',
-      order_number: orderNumber,
-      updated_at: now
-    };
-
-    const filters = [];
-    if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
-    if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
-
-    for(const path of filters){
-      try{
-        await api(path, {
-          method:'PATCH',
-          headers:{Prefer:'return=minimal'},
-          body:JSON.stringify(fullPatch)
-        });
-        return;
-      }catch(err){
-        console.warn('Linked production job full acceptance update failed; trying minimal patch.', path, err);
-        try{
-          await api(path, {
-            method:'PATCH',
-            headers:{Prefer:'return=minimal'},
-            body:JSON.stringify(minimalPatch)
-          });
-          return;
-        }catch(minErr){
-          console.warn('Linked production job minimal acceptance update failed for', path, minErr);
-        }
-      }
-    }
-  }
 
   async function acceptAndCreateOrder() {
     const btn = $("acceptCreateBtn");
@@ -4005,21 +3884,20 @@ https://olipoly3d.com`;
       if (!user?.id) throw new Error("Log into Orders Admin in this browser first, then return here and try again.");
       if (!quoteNumber()) throw new Error("Quote number is required before creating an order.");
 
-      const payload = buildOrderPayload(user.id);
-      if (!payload.order_number) throw new Error("Could not derive an OP order number from the quote number.");
-      if (!payload.order_title) throw new Error("Project / item title is required.");
-
-      await upsertOrder(payload);
-      await updateQuoteAccepted(payload.order_number);
-      await updateLinkedProductionJobAfterAcceptance(payload.order_number);
+      const currentQuoteNumber = quoteNumber();
+      if (!currentQuoteNumber) throw new Error("Quote number is required before creating an order.");
+      const publicToken = await ensureAcceptanceToken(currentQuoteNumber);
+      const result = await acceptQuoteThroughServer(currentQuoteNumber, publicToken);
+      const orderNumber = result?.order_number;
+      if (!orderNumber) throw new Error("The server did not return an order number.");
 
       const statusEl = $("quoteStatus");
       if (statusEl) statusEl.value = "accepted";
-      toast(`Created ${payload.order_number} in Orders Admin.`);
+      toast(`Created ${orderNumber} in Orders Admin.`);
 
       const openOrders = confirm(`Your project has officially entered the OliPoly production workflow.
 
-Order Number: ${payload.order_number}
+Order Number: ${orderNumber}
 
 PO, part number, revision, shipping, and quote references were preserved for production and future reorders.
 

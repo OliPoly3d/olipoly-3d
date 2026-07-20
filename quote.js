@@ -3436,70 +3436,6 @@ https://olipoly3d.com`;
     return Array.isArray(result) ? result[0] : result;
   }
 
-  async function updateLinkedProductionJobAfterAcceptance(orderNumber){
-    const productionJobId = document.getElementById('productionJobId')?.value?.trim();
-    const q = quoteNumber();
-    if(!productionJobId && !q) return;
-
-    const now = new Date().toISOString();
-    const fullPatch = {
-      production_status: 'ready_to_print',
-      order_number: orderNumber,
-      quote_accepted_at: now,
-      quote_handoff_status: 'accepted_created_order',
-      updated_at: now
-    };
-    const minimalPatch = {
-      production_status: 'ready_to_print',
-      order_number: orderNumber,
-      updated_at: now
-    };
-
-    const updateLocalFallback = () => {
-      try{
-        const key = 'olipoly_production_jobs_v3';
-        const localJobs = JSON.parse(localStorage.getItem(key) || '[]');
-        const updatedJobs = localJobs.map(job => {
-          const matchesId = productionJobId && String(job.id) === productionJobId;
-          const matchesQuote = q && String(job.quote_number || '').toUpperCase() === q.toUpperCase();
-          return matchesId || matchesQuote ? {...job, ...fullPatch} : job;
-        });
-        localStorage.setItem(key, JSON.stringify(updatedJobs));
-      }catch(err){
-        console.warn('Could not update the local production fallback after acceptance.', err);
-      }
-    };
-
-    const filters = [];
-    if(productionJobId) filters.push(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(productionJobId)}`);
-    if(q) filters.push(`/rest/v1/production_jobs?quote_number=eq.${encodeURIComponent(q)}`);
-
-    for(const path of filters){
-      try{
-        await api(path, {
-          method:'PATCH',
-          headers:{Prefer:'return=minimal'},
-          body:JSON.stringify(fullPatch)
-        });
-        updateLocalFallback();
-        return;
-      }catch(err){
-        console.warn('Linked production job full acceptance update failed; trying minimal patch.', path, err);
-        try{
-          await api(path, {
-            method:'PATCH',
-            headers:{Prefer:'return=minimal'},
-            body:JSON.stringify(minimalPatch)
-          });
-          updateLocalFallback();
-          return;
-        }catch(minErr){
-          console.warn('Linked production job minimal acceptance update failed for', path, minErr);
-        }
-      }
-    }
-  }
-
   async function acceptAndCreateOrder() {
     const btn = $("acceptCreateBtn");
     if (btn) {
@@ -3520,20 +3456,8 @@ https://olipoly3d.com`;
       await window.olipolyQuotePersistence.saveCloudQuote();
       const publicToken = await ensureAcceptanceToken(currentQuoteNumber);
       const result = await acceptQuoteThroughServer(currentQuoteNumber, publicToken);
-      const orderNumber = result?.order_number || orderNumberFromQuote();
+      const orderNumber = result?.order_number;
       if (!orderNumber) throw new Error("The server did not return an order number.");
-      const acceptedAt = new Date().toISOString();
-      await api(`/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`, {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ status: 'ready_to_print', updated_at: acceptedAt })
-      });
-      await api('/rest/v1/order_tracking_public?order_number=eq.' + encodeURIComponent(orderNumber), {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ status: 'ready_to_print', updated_at: acceptedAt })
-      });
-      await updateLinkedProductionJobAfterAcceptance(orderNumber);
 
       const statusEl = $("quoteStatus");
       if (statusEl) statusEl.value = "accepted";
