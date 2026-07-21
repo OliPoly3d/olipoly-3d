@@ -2885,7 +2885,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         }
         lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
         if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release'});
+          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc'});
         }
         const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
           ? {...updated, material_reservations:[]}
@@ -2939,7 +2939,7 @@ ${err.message || err}`); }
     }
     const lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
     if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-      await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release'});
+      await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc'});
     }
     const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
       ? {...updated, material_reservations:[]}
@@ -3463,26 +3463,18 @@ ${err.message || err}`); }
   async function consumeCapturedAttempt(job, options={}){
     const attempt = currentProductionAttempt(job);
     if(!attempt || attempt.consumed_at) return false;
-    const consumedAt = new Date().toISOString();
     const usages = Array.isArray(attempt.roll_usages) ? attempt.roll_usages : [];
     if(!job.exclude_inventory_reduction){
-      if(usages.some(row=>row.raw_material_roll_id)){
-        applyRollCloseoutLocal(usages);
-        await syncRawInventoryAfterConsumption(usages.map(row=>row.raw_material_roll_id));
-        if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
-      }else{
-        const breakdown = parseBreakdown(attempt.actual_filament_breakdown, attempt.primary_material, attempt.primary_color, attempt.good_grams);
-        applyInventoryLocal(job, addScrapToBreakdownRows(breakdown, attempt.scrap_grams, attempt.primary_material, attempt.primary_color), !!options.addFinished && !!attempt.add_finished_good);
-        await syncRawInventoryAfterConsumption();
+      if(!usages.length || usages.some(row=>!row.raw_material_roll_id)){
+        throw new Error('Linked Production attempts require explicit roll usage before Inventory can consume material.');
       }
+      const workflowCommand = options.workflowCommand || (options.lifecycleAction === 'consume_and_reserve_reprint' ? 'needs_reprint' : 'pass_qc');
+      const request = window.OliPolyWorkflow.inventoryConsumptionRpcRequest(job, workflowCommand, job.updated_at, usages, attempt);
+      await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+      if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
     }else if(options.addFinished){
       applyInventoryLocal(job, [], true);
     }
-    job.production_attempts = (job.production_attempts || []).map(row=>row.id === attempt.id ? {...row, consumed_at:consumedAt} : row);
-    const consumedGrams = job.exclude_inventory_reduction ? 0 : num(attempt.good_grams) + num(attempt.scrap_grams);
-    job.total_inventory_grams_deducted = num(job.total_inventory_grams_deducted) + consumedGrams;
-    job.inventory_deducted = job.inventory_deducted || consumedGrams > 0;
-    job.inventory_deducted_at = consumedGrams > 0 ? consumedAt : job.inventory_deducted_at;
     return true;
   }
 

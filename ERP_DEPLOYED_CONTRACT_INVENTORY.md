@@ -1301,3 +1301,18 @@ This focused milestone records operator-supplied deployed evidence and the plann
 ### Active-client inspection
 
 Repository inspection found no active client call to `complete_production_job`. The focused test scans Production Control, Orders Admin, Inventory Control, Finance Pro, Quote, and public tracking entry points to keep the retired RPC out of active browser paths.
+
+## Corrective contract update — Production-attempt Inventory consumption (2026-07-21)
+
+Repository migration `supabase/migrations/202607210002_consume_production_attempt_inventory.sql` defines `public.consume_production_attempt(...)`, an authenticated owner-scoped Inventory command for linked Production-attempt material consumption. It is a forward-only successor to the legacy `complete_production_job` retirement migration and does not re-enable any retired overload.
+
+Contract summary:
+
+- Consumption is attempted only from the browser orchestration at QC Pass or Needs Reprint, using workflow command/correlation identity.
+- The RPC locks the Production job, linked accepted Order, and affected raw material rows; verifies owner isolation; verifies attempt evidence in Production `job_payload`; requires completed manufacturing actuals; and rejects missing roll IDs, invalid attempt identity, invalid quantities, cross-owner rolls, insufficient material, stale `updated_at`, and arbitrary workflow states.
+- The Inventory decrement and immutable `inventory_transactions` insert occur in one database function transaction.
+- The raw authority column is `raw_material_inventory.remaining_grams`; `current_grams` is not updated as a competing authority.
+- Idempotency is enforced with uniqueness on consumed attempt/roll evidence and command identity. A valid same-command retry returns the original result without consuming material again; identity reuse for another owner, job, attempt, roll set, or command fails.
+- Production, Orders, tracking, Finance, finished goods, Quote acceptance, and historical unlinked transactions remain untouched by the Inventory command.
+
+The Production Control client now calls the command RPC for linked attempt consumption instead of directly decrementing raw inventory and writing raw-usage ledger rows in the browser. Existing Inventory Control CRUD remains unchanged for this milestone.

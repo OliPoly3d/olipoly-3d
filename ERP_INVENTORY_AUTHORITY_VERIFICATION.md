@@ -821,3 +821,21 @@ This focused milestone records operator-supplied deployed evidence and the plann
 ### Active-client inspection
 
 Repository inspection found no active client call to `complete_production_job`. The focused test scans Production Control, Orders Admin, Inventory Control, Finance Pro, Quote, and public tracking entry points to keep the retired RPC out of active browser paths.
+
+## Corrective milestone — authoritative Production-attempt material consumption (2026-07-21)
+
+Migration `supabase/migrations/202607210002_consume_production_attempt_inventory.sql` adds the reviewed Inventory command `public.consume_production_attempt(...)` as the only linked Production-attempt material consumption path introduced by this milestone. The command is designed for the QC Pass and Needs Reprint orchestration boundaries only; it does not mutate Production status, Orders, tracking, Finance, finished goods, Quote acceptance, reservations outside the raw-material rows it consumes from, or historical data.
+
+The migration uses the deployed raw quantity authority selected from repository/deployed-contract evidence: `raw_material_inventory.remaining_grams`. It intentionally does not update `current_grams` as a competing raw quantity authority. Historical unlinked `inventory_transactions` rows remain untouched.
+
+### Operator verification to run after deploying the migration
+
+Use the read-only preflight and post-deployment JSONB verification queries embedded in `202607210002_consume_production_attempt_inventory.sql`. Confirm that:
+
+- `consume_production_attempt` exists as `SECURITY DEFINER` with `search_path=public, pg_temp`.
+- `PUBLIC` and `anon` cannot execute it.
+- `authenticated` and `service_role` can execute it.
+- The function body references `remaining_grams` and does not update `current_grams`.
+- The uniqueness indexes for `(user_id, production_job_id, raw_material_id, attempt_id)` and `(user_id, correlation_id)` are present.
+
+Manual browser testing is still required after deployment because this repository environment does not have deployed Supabase credentials and did not run live SQL.
