@@ -1483,3 +1483,26 @@ Status: **Repository-planned, not deployed. Manual browser verification pending.
 A focused repository change is planned to guard Inventory authority from browser localStorage recovery/reset behavior. The planned contract removes the Inventory Control Force Full Cloud Rebuild path and the unused browser helper that bulk-deleted user rows from `raw_material_inventory`, `finished_goods_inventory`, `non_filament_materials`, `inventory_transactions`, and `inventory_spool_pool`. Local recovery review/export remains available without cloud mutation, and duplicate local ledger cleanup remains local-only.
 
 This is not deployed-contract evidence. It does not change Supabase schema, RLS, grants, data, or historical records. The deployed contract remains unchanged until the branch is reviewed, merged, deployed, and manually browser-verified.
+
+## Repository-planned Orders Admin action regression correction (2026-07-21)
+
+This focused corrective milestone addresses a deployed Orders Admin ordinary-save regression introduced by the workflow-authority privilege boundary. `orders-admin.html` still captured `user_id` in `snapshotForm()`, and `saveOrder()` only removed status/public projection fields before PATCHing `orders`. Because deployed workflow authority intentionally does not grant authenticated `UPDATE` on `orders.user_id`, unchanged ordinary saves could fail under PostgREST column privilege checks.
+
+Repository changes made in this milestone:
+
+- Ordinary Order save now builds a positive allowlist via `ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS` and `buildOrdinaryOrderEditPayload()`. The ordinary PATCH excludes identity, workflow-owned status, source Quote linkage, accepted commercial snapshots, public tracking projection fields, Finance command-owned fields, completion-email command marker fields, and catalog link command fields.
+- Direct Orders Admin creation remains disabled; Orders are still created through approved Quote acceptance.
+- Workflow status changes continue to call the approved fulfillment workflow RPC path instead of directly PATCHing `orders.status`.
+- Visible Orders Admin action buttons are rebound once after page initialization by a focused action guard so legacy duplicate handlers do not stack on the Core Order Actions, Customer Communication, Documents & Labels, Closeout Exceptions, and Business/Finance action areas.
+- Database-writing visible actions now surface API failures beside the action area and log actionable errors to the browser console.
+- Document/label actions retain visible pop-up-blocked messaging; no browser behavior was manually verified by Codex.
+
+Permission reconciliation:
+
+- The ordinary save allowlist matches the narrow authenticated `orders` UPDATE grant in deployed migration `202607200008_workflow_command_authority_parameter_default_compatibility.sql`.
+- A forward-only migration is required for non-workflow Orders Admin action markers that are proven necessary but absent from the deployed grant: `completion_email_sent`, `completion_email_sent_at`, and `catalog_part_id`.
+- The planned migration is `supabase/migrations/202607210007_reconcile_orders_admin_action_column_privileges.sql`.
+- This migration intentionally does **not** grant UPDATE on `user_id`, `status`, source Quote linkage, accepted commercial snapshots, public tracking projection fields, or Finance command-owned flags.
+- Codex did not deploy SQL, execute migrations, modify deployed Supabase state, backfill data, repair historical rows, or alter OP-000010.
+
+Post-merge operator deployment note: deploy `supabase/migrations/202607210007_reconcile_orders_admin_action_column_privileges.sql` only after review. Then perform manual browser testing for Save Order, completion-email marking, catalog linking, document pop-up handling, and Finance push RPC behavior with deployed credentials.

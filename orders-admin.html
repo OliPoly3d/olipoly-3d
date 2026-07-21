@@ -2067,6 +2067,26 @@ function publicTrackingPayload(payload) {
     invoice_terms: payload.invoice_terms || null
   };
 }
+
+
+    const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object.freeze([
+      'order_number','order_date','customer_name','customer_email','order_title','quantity','order_total','deposit_amount','balance_amount',
+      'payment_status','fulfillment','tracking_number','payment_link','payment_link_stripe','payment_link_paypal','payment_link_venmo',
+      'stripe_invoice_id','paid_date','po_number','tax_exempt','tax_exempt_reason','exemption_certificate_on_file','po_file_on_file',
+      'po_part_number','olipoly_part_number','part_revision','shipping_contact_name','shipping_company','material','color','printer_profile',
+      'layer_height','nozzle_size','estimated_print_time','estimated_piece_price','production_notes','post_processing_notes','invoice_number',
+      'invoice_date','invoice_due_date','invoice_terms','ap_email','billing_address','shipping_address','internal_notes','updated_at'
+    ]);
+
+    function buildOrdinaryOrderEditPayload(formPayload){
+      const next = {};
+      ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS.forEach(column => {
+        if (Object.prototype.hasOwnProperty.call(formPayload, column)) next[column] = formPayload[column];
+      });
+      next.updated_at = new Date().toISOString();
+      return next;
+    }
+
     function resetForm(){
       activeId = null;
       $('detailTitle').textContent = 'Order Details';
@@ -2580,11 +2600,15 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
       const saved = res.data?.[0];
       if(saved?.id && activeId) {
-        await api(`/rest/v1/orders?id=eq.${activeId}`, {
+        const linkRes = await api(`/rest/v1/orders?id=eq.${activeId}`, {
           method:'PATCH',
           headers:{Prefer:'return=representation'},
           body: JSON.stringify({ catalog_part_id: saved.id })
         });
+        if (linkRes.error) {
+          console.error('Catalog part saved but Order catalog link failed:', linkRes.error);
+          return setMsg($('formMessage'), `Catalog part saved, but linking it to the order failed: ${linkRes.error.message || JSON.stringify(linkRes.error)}`, true);
+        }
       }
 
       setMsg($('formMessage'), `${method === 'PATCH' ? 'Updated' : 'Saved'} catalog part ${catalogPayload.olipoly_part_number || catalogPayload.customer_part_number || catalogPayload.part_name}.`);
@@ -3034,7 +3058,7 @@ const payload = snapshotForm();
       const backwardWarning = currentRow && window.OliPolyWorkflow.backwardMoveWarning(currentRow.status, payload.status);
       if(backwardWarning && !confirm(backwardWarning)) return setMsg($('formMessage'),'Backward workflow move canceled.');
 
-      const {status, public_status_text, public_next_step, shipping_or_pickup_note, ...ordinaryPayload} = payload;
+      const ordinaryPayload = buildOrdinaryOrderEditPayload(payload);
       let res;
       if(activeId){
         res = await api(`/rest/v1/orders?id=eq.${activeId}`,{
@@ -3046,7 +3070,7 @@ const payload = snapshotForm();
         return setMsg($('formMessage'),'Orders are created through approved Quote acceptance; direct Orders Admin creation is disabled by workflow authority.',true);
       }
 
-      if(res.error) return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true);
+      if(res.error) { console.error('Orders Admin save failed:', { error: res.error, payload: ordinaryPayload }); return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true); }
       const patchedOrder = (Array.isArray(res.data) ? res.data[0] : res.data) || {...currentRow, ...ordinaryPayload};
 
       if(oldOrderNumber && oldOrderNumber !== payload.order_number){
@@ -3733,7 +3757,8 @@ https://olipoly3d.com`;
         const saved = orders.find(o => o.order_number === orderNumber);
         if (saved) loadIntoForm(saved);
       } catch (err) {
-        alert(`The sent status could not be saved:\n\n${err.message || err}`);
+        console.error('Completion email sent marker failed:', err);
+        setMsg($('formMessage'), `Completion email sent marker failed: ${err.message || err}`, true);
       }
     }
 
@@ -3768,7 +3793,8 @@ https://olipoly3d.com`;
         if (saved) loadIntoForm(saved);
         else updateCompletionEmailButton(null);
       } catch (err) {
-        alert(`Could not unmark completion email:\n\n${err.message || err}`);
+        console.error('Completion email unmark failed:', err);
+        setMsg($('formMessage'), `Completion email unmark failed: ${err.message || err}`, true);
       }
     }
 
@@ -4681,14 +4707,15 @@ if ($('openVenmoBtn')) {
         downloadInvoiceEmailHtmlSafe();
       }
     }, true);
-$('generateTravelerPdfBtn')?.addEventListener('click',()=>{
+function generateTravelerPdf(){
       const order = activeId ? orders.find(o=>o.id===activeId) : snapshotForm();
       if(!order || !order.order_number){
-        alert('Select or save an order first.');
+        setMsg($('formMessage'), 'Select or save an order first.', true);
         return;
       }
-      generateManufacturingTravelerPDF(order);
-    });
+      return generateManufacturingTravelerPDF(order);
+    }
+    $('generateTravelerPdfBtn')?.addEventListener('click', generateTravelerPdf);
 
 
     function generatePackingSlipPDFFallback(order){
@@ -7153,6 +7180,60 @@ $('generateTravelerPdfBtn')?.addEventListener('click',()=>{
   }
 
   document.addEventListener('DOMContentLoaded', start);
+})();
+
+
+/* Focused Orders Admin action-regression guard.
+   Clone visible action buttons once after initialization to remove legacy duplicate listeners,
+   then attach one explicit handler per visible action. */
+(function bindOrdersAdminVisibleActionsOnce(){
+  function bind(id, handler, label){
+    var original = document.getElementById(id);
+    if(!original || typeof handler !== 'function') return;
+    var btn = original.cloneNode(true);
+    btn.dataset.ordersAdminActionBound = 'true';
+    original.replaceWith(btn);
+    btn.addEventListener('click', function(event){
+      event.preventDefault();
+      event.stopPropagation();
+      try { return handler(event); }
+      catch(error) {
+        console.error(label + ' failed:', error);
+        if (typeof setMsg === 'function' && document.getElementById('formMessage')) setMsg(document.getElementById('formMessage'), label + ' failed: ' + (error && error.message ? error.message : error), true);
+      }
+    });
+  }
+  function requireOrder(action, handler){
+    return function(event){
+      var selected = !!activeId || !!(document.getElementById('orderNumber') && document.getElementById('orderNumber').value.trim());
+      if(!selected) return setMsg(document.getElementById('formMessage'), 'Select an order before using ' + action + '.', true);
+      return handler(event);
+    };
+  }
+  function run(){
+    bind('saveBtn', saveOrder, 'Save Order');
+    bind('newBtn', resetForm, 'New Order');
+    bind('newBtnInline', resetForm, 'New Order');
+    bind('deleteBtn', requireOrder('Delete Order', deleteOrder), 'Delete Order');
+    bind('prepareInvoiceEmailBtn', requireOrder('Prepare Invoice Email', openInvoiceEmailModal), 'Prepare Invoice Email');
+    bind('sendCompleteEmailBtn', requireOrder('Prepare Completion Email', openCompletionEmailModal), 'Prepare Completion Email');
+    bind('orderStartedEmailBtn', requireOrder('Order Started Email', function(){ return openLifecycleEmailModal('started'); }), 'Order Started Email');
+    bind('readyPickupEmailBtn', requireOrder('Ready for Pickup Email', function(){ return openLifecycleEmailModal('pickup'); }), 'Ready for Pickup Email');
+    bind('shippedEmailBtn', requireOrder('Shipping Confirmation Email', function(){ return openLifecycleEmailModal('shipped'); }), 'Shipping Confirmation Email');
+    bind('markInvoiceSentBtn', requireOrder('Mark Invoice Sent', markInvoiceSent), 'Mark Invoice Sent');
+    bind('paymentNotRequiredBtn', requireOrder('Payment Not Required', function(){ return toggleClosureFlag('payment_not_required'); }), 'Payment Not Required');
+    bind('financeNotRequiredBtn', requireOrder('Finance Not Required', function(){ return toggleClosureFlag('finance_not_required'); }), 'Finance Not Required');
+    bind('completionEmailNotRequiredBtn', requireOrder('Completion Email Not Required', function(){ return toggleClosureFlag('completion_email_not_required'); }), 'Completion Email Not Required');
+    bind('generateProfessionalInvoicePdfBtn', requireOrder('Generate Invoice PDF', generateProfessionalInvoicePdf), 'Generate Invoice PDF');
+    bind('generatePackingSlipBtn', requireOrder('Packing Slip PDF', generatePackingSlip), 'Packing Slip PDF');
+    bind('generateTravelerPdfBtn', requireOrder('Manufacturing Traveler PDF', generateTravelerPdf), 'Manufacturing Traveler PDF');
+    bind('printShippingLabelBtn', requireOrder('Avery 5168 Shipping Label', printAvery5168Label), 'Avery 5168 Shipping Label');
+    bind('printInnerPackLabelBtn', requireOrder('Avery 5366 Inner Pack Labels', printAvery5366InnerPackLabels), 'Avery 5366 Inner Pack Labels');
+    bind('pushFinanceBtn', requireOrder('Push to Finance', pushCurrentOrderToFinance), 'Push to Finance');
+    bind('saveCatalogPartBtn', requireOrder('Save as Catalog Part', saveCurrentOrderAsCatalogPart), 'Save as Catalog Part');
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once:true });
+  else run();
 })();
 </script>
 
