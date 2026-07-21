@@ -2407,45 +2407,35 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       return orders.filter(isFinanceReadyOrder);
     }
 
+    function financeOrderPostingRequest(order){
+      const apiHelpers = window.OliPolyWorkflow;
+      if (!apiHelpers?.financeOrderPostingRpcRequest) throw new Error('Finance command helper is unavailable.');
+      return apiHelpers.financeOrderPostingRpcRequest(order, order.updated_at);
+    }
+
+    async function postOrderToFinanceCommand(order){
+      const req = financeOrderPostingRequest(order);
+      const { ok, data, error } = await api(req.path, {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(req.body)
+      });
+      if (!ok) throw new Error(error?.message || JSON.stringify(error) || `Could not push ${order.order_number}.`);
+      return Array.isArray(data) ? data[0] : data;
+    }
+
     async function pushOrderObjectToFinance(order, {skipExistingCheck=false} = {}){
       if (!currentUser?.id) throw new Error('Log in before pushing orders to Finance Pro.');
+      if (!order?.id) throw new Error('Order UUID is required before pushing to Finance Pro.');
       if (!order?.order_number) throw new Error('Order number is required before pushing to Finance Pro.');
+      if (!order?.updated_at) throw new Error('Refresh the order before pushing to Finance Pro.');
       if (!isFinanceReadyOrder(order)) throw new Error(`${order.order_number || 'Order'} is not ready for Finance Pro.`);
-
       if (!skipExistingCheck) {
         const exists = await financeEntryExists(order.order_number);
         if (exists) throw new Error(`Finance Pro already appears to have entries for ${order.order_number}.`);
       }
-
-      const split = calculateFinanceSplitFromOrder(order);
-      const entryDate = order.paid_date || today();
-      const financeEntries = buildFinanceEntriesOptionB(order, split, entryDate);
-
-      if (!financeEntries.length) throw new Error(`No Finance Pro entries were created for ${order.order_number}.`);
-
-      const { ok, error } = await api('/rest/v1/financial_entries', {
-        method: 'POST',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(financeEntries)
-      });
-      if (!ok) throw new Error(error?.message || JSON.stringify(error) || `Could not push ${order.order_number}.`);
-
-      const pushedAt = new Date().toISOString();
-      const note = `Finance Pro entries created ${new Date().toLocaleString()} for ${order.order_number}. Option B split: sale ${money(split.productRevenue)} + shipping ${money(split.shippingRevenue)} + sales tax ${money(split.tax)}.`;
-      const internalNotes = [order.internal_notes || '', note].filter(Boolean).join('\n\n');
-
-      const flagRes = await api(`/rest/v1/orders?id=eq.${order.id}`, {
-        method: 'PATCH',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({
-          finance_pushed: true,
-          finance_pushed_at: pushedAt,
-          internal_notes: internalNotes
-        })
-      });
-      if (flagRes.error) throw new Error(flagRes.error?.message || JSON.stringify(flagRes.error) || `Finance entries created for ${order.order_number}, but the order was not marked pushed.`);
-
-      return {orderNumber: order.order_number, entries: financeEntries.length, split};
+      const result = await postOrderToFinanceCommand(order);
+      return {orderNumber: result?.order_number || order.order_number, entries: result?.entry_id ? 1 : 0, split: result?.snapshot || {}};
     }
 
     async function pushAllReadyFinanceOrders(){
@@ -2492,117 +2482,34 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
     async function pushCurrentOrderToFinance() {
       clearMsg($('formMessage'));
-
       if (!currentUser?.id) {
         setMsg($('formMessage'), 'Log in before pushing an order to Finance Pro.', true);
         return;
       }
-
-      const payload = snapshotForm();
-      const orderNumber = payload.order_number;
+      const orderNumber = snapshotForm().order_number;
       const currentOrder = activeId ? orders.find(o => o.id === activeId) : orders.find(o => o.order_number === orderNumber);
-
-      if (currentOrder?.finance_pushed) {
-        const okRepush = confirm(`This order was already pushed to Finance Pro${currentOrder.finance_pushed_at ? ` on ${formatDateTime(currentOrder.finance_pushed_at)}` : ''}.\n\nPush it again anyway?`);
-        if (!okRepush) {
-          setMsg($('formMessage'), `Push cancelled. ${orderNumber} is already marked as pushed to Finance Pro.`, true);
-          return;
-        }
-      }
-
-      if (!orderNumber) {
-        setMsg($('formMessage'), 'Order number is required before pushing to Finance Pro.', true);
+      if (!currentOrder) {
+        setMsg($('formMessage'), 'Save and refresh the Order before pushing it to Finance Pro.', true);
         return;
       }
-
-      if (!payload.order_total || num(payload.order_total) <= 0) {
-        setMsg($('formMessage'), 'Order total must be greater than $0 before pushing to Finance Pro.', true);
+      if (!isFinanceReadyOrder(currentOrder)) {
+        setMsg($('formMessage'), `${currentOrder.order_number || 'Order'} is not ready for Finance Pro.`, true);
         return;
       }
-
-      if (!['paid', 'deposit_paid'].includes(payload.payment_status)) {
-        const okPush = confirm(`This order is not marked paid in full. Push it to Finance Pro anyway?\n\nPayment status: ${paymentLabel(payload.payment_status)}`);
-        if (!okPush) return;
-      }
-
-      let exists = false;
+      if (!confirm(`Push ${currentOrder.order_number} to Finance Pro through the authoritative Finance command?`)) return;
       try {
-        exists = await financeEntryExists(orderNumber);
-      } catch (err) {
-        const okContinue = confirm(`Could not check for an existing Finance Pro entry.\n\n${err.message || err}\n\nContinue and create the entries anyway?`);
-        if (!okContinue) return;
-      }
-
-      if (exists) {
-        const okDuplicate = confirm(`Finance Pro already appears to have one or more entries for ${orderNumber}.\n\nCreate another set anyway?`);
-        if (!okDuplicate) {
-          setMsg($('formMessage'), `Push cancelled. Finance Pro already has an entry for ${orderNumber}.`, true);
-          return;
+        const result = await postOrderToFinanceCommand(currentOrder);
+        setMsg($('formMessage'), `Pushed ${result?.order_number || currentOrder.order_number} to Finance Pro. Finance entry: ${result?.entry_id || 'created'}.`);
+        await fetchOrders();
+        const saved = orders.find(o => o.id === currentOrder.id || o.order_number === currentOrder.order_number);
+        if (saved) {
+          loadIntoForm(saved);
+          updateFinanceStatusNote(saved);
         }
-      }
-
-      const split = calculateFinanceSplitFromOrder(payload);
-      const entryDate = payload.paid_date || today();
-      const financeEntries = buildFinanceEntriesOptionB(payload, split, entryDate);
-
-      if (!financeEntries.length) {
-        setMsg($('formMessage'), 'No Finance Pro entries were created because the calculated sale, shipping, and tax amounts are all $0.', true);
-        return;
-      }
-
-      const okSplit = confirm(
-        `Push ${orderNumber} to Finance Pro as separate entries?\n\n` +
-        `Sale revenue: ${money(split.productRevenue)}\n` +
-        `Shipping / freight: ${money(split.shippingRevenue)}\n` +
-        `Sales tax collected: ${money(split.tax)}\n\n` +
-        `This will create ${financeEntries.length} Finance Pro ${financeEntries.length === 1 ? 'entry' : 'entries'}.`
-      );
-      if (!okSplit) return;
-
-      const { ok, data, error } = await api('/rest/v1/financial_entries', {
-        method: 'POST',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(financeEntries)
-      });
-
-      if (!ok) {
-        setMsg($('formMessage'), `Could not push to Finance Pro: ${error?.message || JSON.stringify(error)}`, true);
-        return;
-      }
-
-      const pushedAt = new Date().toISOString();
-      const note = `Finance Pro entries created ${new Date().toLocaleString()} for ${orderNumber}. Option B split: sale ${money(split.productRevenue)} + shipping ${money(split.shippingRevenue)} + sales tax ${money(split.tax)}.`;
-      $('internalNotes').value = [$('internalNotes').value.trim(), note].filter(Boolean).join('\n\n');
-
-      const financePatch = {
-        finance_pushed: true,
-        finance_pushed_at: pushedAt,
-        internal_notes: $('internalNotes').value.trim() || null
-      };
-
-      const targetPath = activeId ? `/rest/v1/orders?id=eq.${activeId}` : `/rest/v1/orders?order_number=eq.${encodeURIComponent(orderNumber)}`;
-      const flagRes = await api(targetPath, {
-        method: 'PATCH',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(financePatch)
-      });
-
-      if (flagRes.error) {
-        setMsg($('formMessage'), `Finance entries created, but Orders Admin could not save the pushed badge: ${flagRes.error?.message || JSON.stringify(flagRes.error)}`, true);
-        return;
-      }
-
-      setMsg($('formMessage'), `Pushed ${orderNumber} to Finance Pro as separate entries: sale ${money(split.productRevenue)}, shipping ${money(split.shippingRevenue)}, tax ${money(split.tax)}.`);
-      await fetchOrders();
-      const saved = orders.find(o => o.order_number === orderNumber);
-      if (saved) {
-        loadIntoForm(saved);
-        updateFinanceStatusNote(saved);
-        updateFinancePushButton(saved);
+      } catch (err) {
+        setMsg($('formMessage'), `Could not push to Finance Pro: ${err.message || err}`, true);
       }
     }
-
-
 
     function buildCatalogPartPayload(payload){
       const partNumber = payload.olipoly_part_number || payload.po_part_number || payload.order_number;

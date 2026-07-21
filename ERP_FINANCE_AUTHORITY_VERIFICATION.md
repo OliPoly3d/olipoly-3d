@@ -55,7 +55,20 @@ Fundraiser Finance behavior is **deferred** behind an explicit extension gate. D
 
 ## Operator-supplied deployed evidence
 
-None captured in this milestone. Operators should run the consolidated read-only query below and paste/store the resulting JSON in the result-capture table.
+The following deployed findings were supplied by the operator for this corrective milestone. Codex did not connect to Supabase, run SQL, deploy, backfill, or modify historical data.
+
+- `financial_entries` has 74 rows: 22 income and 52 expense.
+- Income totals 1179.33; expense totals 4181.64.
+- All three paid/closed Orders have matching Finance evidence.
+- No Finance references point to missing Orders.
+- No negative or impossible financial values were found.
+- One entry has shipping charged without shipping cost; this is historical evidence and is intentionally unchanged.
+- Five craft-show income rows are duplicate candidates but are not proven duplicates; they remain unresolved, not duplicates.
+- No refund, reversal, or correction evidence exists.
+- RLS is enabled.
+- Authenticated clients can directly mutate `financial_entries`.
+- `anon` has table-level mutation privileges, although deployed RLS is owner-scoped.
+- Historical cleanup and duplicate reinterpretation are prohibited.
 
 ## Repository inference
 
@@ -378,3 +391,22 @@ Do not begin corrective implementation until an operator captures the consolidat
 **Future milestone: Finance command and idempotency contract.**
 
 Based only on repository evidence, define one Finance-owned command/RPC or service boundary for order revenue import, invoice issuance, payment allocation, refund/reversal, and tax evidence. Orders Admin should request Finance actions and render returned projections, not insert `financial_entries` directly. The milestone must include idempotency keys/order linkage, duplicate-prevention tests, deployed RLS/grant verification, and explicit correction/reversal behavior. It must not redesign Inventory, workflow, Quote acceptance, UI, fundraiser behavior, or historical cleanup.
+
+
+## Finance posting and correction command milestone
+
+Forward-only migration `supabase/migrations/202607210005_authoritative_finance_posting_corrections.sql` adds the planned Finance-owned RPC boundary for future Order-derived income posting and append-only corrections/reversals. The migration is not deployed by this repository change and does not automatically post historical Orders.
+
+Planned command behavior:
+
+- `post_order_finance_income(p_order_id, p_order_number, p_expected_updated_at, p_correlation_id)` is authenticated-owner scoped, `SECURITY DEFINER`, idempotent for the same immutable command identity, and binds identity reuse to the same owner, Order UUID, Order number, and command. It locks the Order and relevant Finance rows, persists explicit `order_id`/`order_number` linkage, preserves an accepted Order commercial snapshot from the Order row, creates exactly one command-owned income entry, and atomically marks the Order as Finance pushed.
+- `append_finance_correction(p_original_entry_id, p_command, p_amount, p_reason, p_correlation_id)` appends compensating Finance evidence for corrections/reversals, preserves and links the original entry identity, blocks double reversal, and does not update or delete the original entry.
+- `anon` direct mutation privileges on `financial_entries` are revoked. Owner-scoped authenticated reads and ordinary manual Finance Pro insert/update/delete remain temporarily available because active repository evidence shows Finance Pro still uses direct browser writes for manual entries. Command-owned linkage, idempotency, actor, timestamp, and reversal fields are protected from browser-direct authenticated updates.
+
+Manual browser tests required after deployment:
+
+1. Sign in as an owner, create a normal manual income entry in Finance Pro, edit an ordinary manual field, and delete a test manual entry if deletion remains an approved manual Finance operation.
+2. Push one paid Order from Orders Admin and verify the network call is `/rest/v1/rpc/post_order_finance_income`, not direct `financial_entries` insertion.
+3. Simulate a failed/retried push and verify the same correlation identity returns the original Finance entry without a duplicate.
+4. Attempt to post the same Order with a different command identity and verify the duplicate Order income posting is rejected.
+5. Append one correction/reversal in a non-production environment and verify the original Finance row is unchanged and the correction row links to it.

@@ -1420,3 +1420,23 @@ Historical unlinked `inventory_transactions` remain historical evidence only. Th
 **Finance ownership and cross-domain write verification.**
 
 Review Finance-owned writes and cross-domain writes between Finance, Inventory, and Production so each domain mutates only its own authoritative records or uses reviewed command boundaries.
+
+
+## Finance authority corrective milestone evidence — 2026-07-21
+
+Operator-supplied deployed Finance findings for this milestone:
+
+- `financial_entries` has 74 rows: 22 income and 52 expense.
+- Income totals 1179.33; expense totals 4181.64.
+- All three paid/closed Orders have matching Finance evidence.
+- No Finance references point to missing Orders.
+- No negative or impossible financial values were found.
+- One entry has shipping charged without shipping cost; this milestone does not alter it.
+- Five craft-show income rows are duplicate candidates but are not proven duplicates; they are unresolved, not duplicates.
+- No refund, reversal, or correction evidence exists.
+- RLS is enabled.
+- Authenticated clients can directly mutate `financial_entries`.
+- `anon` has table-level mutation privileges, although deployed RLS is owner-scoped.
+- Historical cleanup and duplicate reinterpretation are prohibited.
+
+Repository migration `supabase/migrations/202607210005_authoritative_finance_posting_corrections.sql` is the forward-only planned correction for authoritative, idempotent Finance posting and append-only Finance correction/reversal commands. Codex did not deploy it, run SQL, backfill historical Orders, reinterpret craft-show candidates, alter historical rows, merge, or clean deployed data.
