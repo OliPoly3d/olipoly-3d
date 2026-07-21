@@ -558,7 +558,7 @@
         <a class="ghost" href="ERP_1_0_HANDBOOK.md#inventory-master-data-and-reservation">Help</a>
         <button class="ghost" id="exportBtn" type="button">Export Backup</button>
         <button class="ghost" id="importBtn" type="button">Import</button>
-        <button class="btn" id="syncCloudBtn" type="button">Sync Inventory to Cloud</button>
+        <button class="ghost" id="syncCloudBtn" type="button">Review Local Recovery</button>
         <input id="importFile" class="hidden" type="file" accept="application/json">
       </div>
     </header>
@@ -584,9 +584,9 @@
     <section class="card cloud-card" id="cloudSection">
       <div class="cloud-main-row">
         <div>
-          <span class="kicker">Cloud sync</span>
+          <span class="kicker">Cloud authority</span>
           <div class="decision-pills" id="cloudStatus"><span class="decision-pill">Checking sign-in...</span></div>
-          <p class="muted" id="cloudSyncDetails">Cloud sync uses reviewed owner save paths. Local recovery tools can export or inspect browser data, but cannot rebuild or bulk-delete cloud Inventory rows.</p>
+          <p class="muted" id="cloudSyncDetails">Supabase is authoritative. Local recovery tools can review/export browser data, but cannot sync, rebuild, replace, or bulk-delete cloud Inventory rows.</p>
         </div>
         <div class="cloud-quick-actions">
           <button class="ghost" id="syncSpoolPoolBtn" type="button">Sync Spool Count</button>
@@ -599,7 +599,7 @@
           <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
           <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
           <button class="ghost" id="cleanDuplicateLedgerBtn" type="button">Clean Duplicate Ledger Rows</button>
-          <p class="muted full">Local recovery tools are browser-only unless they use reviewed normal Inventory save actions. They do not rebuild or bulk-delete cloud Inventory rows.</p>
+          <p class="muted full">Local recovery tools are browser-only. They do not sync, rebuild, replace, or bulk-delete cloud Inventory rows; explicit imports must use reviewed normal Inventory commands.</p>
         </div>
       </details>
     </section>
@@ -908,6 +908,7 @@
 
   const RAW_KEY='olipoly_raw_material_inventory_v3';
   const FG_KEY='olipoly_finished_goods_inventory_v3';
+  const RECOVERY_KEY='olipoly_inventory_recovery_review_v1';
   const LEDGER_KEY='olipoly_inventory_ledger_v2';
   const SUPPLY_KEY='olipoly_non_filament_supplies_v1';
   const LEGACY_RAW_KEYS=[
@@ -937,6 +938,10 @@
   function uid(){return crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
   function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
   function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
+  function recoveryRecords(){return read(RECOVERY_KEY,{raw:[],finished:[],supplies:[],ledger:[]})}
+  function writeRecovery(records){write(RECOVERY_KEY,{raw:records.raw||[],finished:records.finished||[],supplies:records.supplies||[],ledger:records.ledger||[]})}
+  function retainRecovery(kind,row,reason){const records=recoveryRecords(); const list=records[kind]||[]; records[kind]=mergeByIdOrFingerprint([row,...list], x=>({...x,recovery_reason:reason,recovery_retained_at:new Date().toISOString()}), x=>x.id||JSON.stringify(x)); writeRecovery(records); return records[kind].length}
+  function cacheAuthoritativeInventory({rawRows=[],fgRows=[],supplyRows=[],ledgerRows=[]}){write(RAW_KEY,rawRows.map(normalizeRaw)); write(FG_KEY,fgRows.map(normalizeFg)); write(SUPPLY_KEY,supplyRows.map(normalizeSupply)); saveLedger(dedupeLedgerRows(ledgerRows.map(normalizeLedger)))}
   function num(v){return Number(v)||0}
   function norm(v){return String(v||'').trim().toLowerCase()}
   function searchMatch(parts, query){
@@ -1099,66 +1104,15 @@
   }
 
   async function syncLocalInventoryToCloud(options){
-    options = options || {};
-    const showToast=!!options.showToast;
-
-    if(!state.cloud || !state.user?.id){
-      if(showToast) toast('Log in first, then sync inventory to cloud.');
-      return {ok:false, raw:0, finished:0, supplies:0, ledger:0, errors:1};
-    }
-
-    try{ migrate(); }catch(err){ console.warn('migration before cloud sync failed', err); }
-
-    const rows=raw();
-    const goods=finished();
-    const supplyRows=supplies();
-    const ledgerRows=ledger();
-    let errors=0;
-
-    if(showToast) toast(`Syncing reviewed inventory owner saves: ${rows.length} filament roll(s), ${goods.length} finished good(s), ${supplyRows.length} supply item(s), ${ledgerRows.length} movement(s)...`);
-
-    if(!rows.length && !goods.length && !supplyRows.length){
-      if(showToast) toast('Nothing local found to sync. Recover Local or import your backup first.');
-      return {ok:false, raw:0, finished:0, supplies:0, ledger:0, errors:1};
-    }
-
-    // Browser recovery/cache state must never bulk-delete or rebuild authoritative cloud Inventory rows.
-
-    for(const r of rows){
-      try{ await cloudSaveRaw(normalizeRaw(r)); }
-      catch(err){ errors++; console.error('raw cloud sync failed', r, err); }
-    }
-    for(const f of goods){
-      try{ await cloudSaveFg(normalizeFg(f)); }
-      catch(err){ errors++; console.error('finished cloud sync failed', f, err); }
-    }
-    for(const s of supplyRows){
-      try{ await cloudSaveSupply(normalizeSupply(s)); }
-      catch(err){ errors++; console.error('supply cloud sync failed', s, err); }
-    }
-    for(const l of ledgerRows){
-      try{ await cloudSaveLedger(normalizeLedger(l)); }
-      catch(err){ errors++; console.warn('ledger cloud sync failed', l, err); }
-    }
-    try{ await cloudSaveSpoolPool(currentSpoolPool()); }
-    catch(err){ errors++; console.warn('spool pool cloud sync failed', err); }
-
-    const counts=await cloudCounts().catch(err=>{console.warn('cloud count check failed',err); return null;});
-    if($('cloudSyncDetails') && counts){
-      $('cloudSyncDetails').textContent=`Cloud rows — filament: ${counts.raw ?? '?'}, supplies: ${counts.supplies ?? '?'}, finished: ${counts.finished ?? '?'}, ledger: ${counts.ledger ?? '?'}. Local filament: ${rows.length}.`;
-    }
-
+    const showToast=!!(options && options.showToast);
+    const records=recoveryRecords();
+    const total=(records.raw||[]).length+(records.finished||[]).length+(records.supplies||[]).length+(records.ledger||[]).length;
     if(showToast){
-      if(errors){
-        toast(`Cloud sync finished with ${errors} issue(s). Check console/Supabase SQL.`);
-      }else if(counts && rows.length && counts.raw !== rows.length){
-        toast(`Cloud sync finished, but raw count mismatch: local ${rows.length}, cloud ${counts.raw}.`);
-      }else{
-        toast(`Cloud sync complete: ${rows.length} filament roll(s), ${supplyRows.length} supply item(s), ${ledgerRows.length} ledger row(s).`);
-      }
+      toast(total
+        ? `Local recovery review only: ${total} browser recovery row(s) found. Export and import explicitly after review; no cloud rows were changed.`
+        : 'No local Inventory recovery rows need review. No cloud rows were changed.');
     }
-
-    return {ok:errors===0, raw:rows.length, finished:goods.length, supplies:supplyRows.length, ledger:ledgerRows.length, errors, counts};
+    return {ok:false, blocked:true, uploaded:false, cloudMutated:false, recoveryRows:total, reason:'browser-to-cloud full replacement is disabled'};
   }
 
   async function manualSyncInventoryToCloud(){
@@ -1177,9 +1131,10 @@
   }
 
   function exportLocalRecovery(){
-    exportBackup();
-    toast('Local Inventory recovery exported. Nothing was uploaded or deleted in cloud Inventory.');
-    return {exported:true, cloudMutated:false};
+    const records=recoveryRecords();
+    exportBackup({recovery:records});
+    toast('Local Inventory recovery exported for review. Nothing was uploaded or deleted in cloud Inventory.');
+    return {exported:true, cloudMutated:false, recovery:records};
   }
 
   async function cleanDuplicateLedgerRows(){
@@ -1515,20 +1470,15 @@
         throw new Error('One or more authoritative inventory tables could not be loaded.');
       }
       state.authorityUnavailable=false;
-      if(Array.isArray(rawRows)) write(RAW_KEY, rawRows.map(normalizeRaw));
-      if(Array.isArray(fgRows)) write(FG_KEY, fgRows.map(normalizeFg));
-      if(Array.isArray(supplyRows)) write(SUPPLY_KEY, supplyRows.map(normalizeSupply));
-      if(Array.isArray(ledgerRows)){
-        const cloudLedger=ledgerRows.map(x=>normalizeLedger({
-          id:x.id,
-          date:x.created_at||x.date,
-          type:x.transaction_type||x.type,
-          item:x.item_label||x.item,
-          amount:x.amount ?? x.quantity_change,
-          note:x.note||x.notes||x.source||''
-        }));
-        saveLedger(dedupeLedgerRows(cloudLedger));
-      }
+      const cloudLedger=ledgerRows.map(x=>normalizeLedger({
+        id:x.id,
+        date:x.created_at||x.date,
+        type:x.transaction_type||x.type,
+        item:x.item_label||x.item,
+        amount:x.amount ?? x.quantity_change,
+        note:x.note||x.notes||x.source||''
+      }));
+      cacheAuthoritativeInventory({rawRows,fgRows,supplyRows,ledgerRows:cloudLedger});
     }catch(err){
       console.warn(err);
       state.authorityUnavailable=true;
@@ -2270,7 +2220,7 @@
   }
 
 
-  window.OP_INVENTORY_DEBUG = { raw, finished, supplies, syncDebugCounts, syncLocalInventoryToCloud, cloudRawCount, exportLocalRecovery, recoverLocalInventory };
+  window.OP_INVENTORY_DEBUG = { raw, finished, supplies, recoveryRecords, syncDebugCounts, syncLocalInventoryToCloud, cloudRawCount, exportLocalRecovery, recoverLocalInventory };
 
 
   function deepLinkInventoryParam(){
@@ -2494,8 +2444,8 @@
     render(); toast(dir==='add'?'Finished goods added.':'Finished goods reduced.');
   }
 
-  function exportBackup(){
-    const data={version:'inventory-control-v4',exported_at:new Date().toISOString(),raw:raw(),finished:finished(),supplies:supplies(),spool_pool:currentSpoolPool(),ledger:ledger()};
+  function exportBackup(extra={}){
+    const data={version:'inventory-control-v4',exported_at:new Date().toISOString(),raw:raw(),finished:finished(),supplies:supplies(),spool_pool:currentSpoolPool(),ledger:ledger(),...extra};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`olipoly-inventory-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
   }
@@ -2543,11 +2493,11 @@
 
   function bind(){
     document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
-    $('rawForm').addEventListener('submit',e=>{e.preventDefault(); const r=rawFromForm(); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); cloudSaveRaw(r).catch(console.warn); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); try{window.OliPolyERP?.logEvent?.('inventory_raw_saved',{category:'inventory', title:`${r.material_type} ${r.color}`, reserved_grams:r.reserved_grams||0, note:`${grams(r.remaining_grams)} on hand`});}catch{} resetRaw();render();toast('Raw material saved.');});
+    $('rawForm').addEventListener('submit',async e=>{e.preventDefault(); const r=rawFromForm(); try{if(state.cloud) await cloudSaveRaw(r); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); try{window.OliPolyERP?.logEvent?.('inventory_raw_saved',{category:'inventory', title:`${r.material_type} ${r.color}`, reserved_grams:r.reserved_grams||0, note:`${grams(r.remaining_grams)} on hand`});}catch{} resetRaw();render();toast(state.cloud?'Raw material saved to Supabase.':'Raw material retained as browser recovery; log in to save durably.');}catch(err){console.warn('raw save failed; recovery retained',err); retainRecovery('raw',r,'failed-remote-save'); toast('Raw material was NOT saved to Supabase. A non-durable recovery copy was retained for review/export.');}});
     $('rawResetBtn').addEventListener('click',resetRaw);
-    $('supplyForm')?.addEventListener('submit',e=>{e.preventDefault(); const s=supplyFromForm(); if(!s.item_name)return toast('Supply item name is required.'); const list=supplies().filter(x=>x.id!==s.id); list.unshift(s); saveSupplies(list); cloudSaveSupply(s).catch(console.warn); addLedger({type:'supply_adjust',item:s.item_name,amount:`Saved ${s.quantity_on_hand} ${s.unit_type}`,note:'Non-filament supply saved'}); try{window.OliPolyERP?.logEvent?.('inventory_supply_saved',{category:'inventory', title:s.item_name, note:`${s.quantity_on_hand} ${s.unit_type} on hand`});}catch{} resetSupply();render();toast('Supply saved.');});
+    $('supplyForm')?.addEventListener('submit',async e=>{e.preventDefault(); const s=supplyFromForm(); if(!s.item_name)return toast('Supply item name is required.'); try{if(state.cloud) await cloudSaveSupply(s); const list=supplies().filter(x=>x.id!==s.id); list.unshift(s); saveSupplies(list); addLedger({type:'supply_adjust',item:s.item_name,amount:`Saved ${s.quantity_on_hand} ${s.unit_type}`,note:'Non-filament supply saved'}); try{window.OliPolyERP?.logEvent?.('inventory_supply_saved',{category:'inventory', title:s.item_name, note:`${s.quantity_on_hand} ${s.unit_type} on hand`});}catch{} resetSupply();render();toast(state.cloud?'Supply saved to Supabase.':'Supply retained as browser recovery; log in to save durably.');}catch(err){console.warn('supply save failed; recovery retained',err); retainRecovery('supplies',s,'failed-remote-save'); toast('Supply was NOT saved to Supabase. A non-durable recovery copy was retained for review/export.');}});
     $('supplyResetBtn')?.addEventListener('click',resetSupply);
-    $('finishedForm').addEventListener('submit',e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); cloudSaveFg(f).catch(console.warn); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); try{window.OliPolyERP?.logEvent?.('inventory_finished_good_saved',{category:'inventory', title:f.product_name, note:`Qty ${f.quantity_on_hand}`});}catch{} resetFg();render();toast('Finished good saved.');});
+    $('finishedForm').addEventListener('submit',async e=>{e.preventDefault(); const f=fgFromForm(); if(!f.product_name)return toast('Product name is required.'); try{if(state.cloud) await cloudSaveFg(f); const list=finished().filter(x=>x.id!==f.id); list.unshift(f); saveFinished(list); addLedger({type:'fg_adjust',item:f.product_name,amount:`Saved qty ${f.quantity_on_hand}`,note:'Finished good saved'}); try{window.OliPolyERP?.logEvent?.('inventory_finished_good_saved',{category:'inventory', title:f.product_name, note:`Qty ${f.quantity_on_hand}`});}catch{} resetFg();render();toast(state.cloud?'Finished good saved to Supabase.':'Finished good retained as browser recovery; log in to save durably.');}catch(err){console.warn('finished save failed; recovery retained',err); retainRecovery('finished',f,'failed-remote-save'); toast('Finished good was NOT saved to Supabase. A non-durable recovery copy was retained for review/export.');}});
     $('fgResetBtn').addEventListener('click',resetFg);
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());
