@@ -73,6 +73,26 @@
     if(!globalThis.localStorage) return;
     globalThis.localStorage.removeItem(`olipoly_workflow_command:${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`);
   }
+  function inventoryConsumptionRpcRequest(job, command, expectedUpdatedAt, rollUsages, attempt){
+    if(!job?.id) throw new Error('A Production job id is required for Inventory consumption.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before consuming Inventory; expected_updated_at is required.');
+    const normalizedCommand = String(command || '').trim().toLowerCase();
+    if(!['pass_qc','needs_reprint'].includes(normalizedCommand)) throw new Error('Inventory consumption is only allowed for QC Pass or Needs Reprint.');
+    const attemptId = attempt?.id || job.current_attempt_id;
+    if(!attemptId) throw new Error('A completed Production attempt id is required for Inventory consumption.');
+    return {
+      path:'/rest/v1/rpc/consume_production_attempt',
+      body:{
+        p_production_job_id:String(job.id),
+        p_attempt_id:String(attemptId),
+        p_correlation_id:commandIdentity('inventory-consumption', String(job.id), normalizedCommand, expectedUpdatedAt),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_roll_usages:Array.isArray(rollUsages) ? rollUsages : [],
+        p_workflow_command:normalizedCommand
+      }
+    };
+  }
+
   function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
     if(!orderNumber) throw new Error('A linked Order number is required.');
     if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
@@ -122,6 +142,6 @@
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    productionWorkflowRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
+    productionWorkflowRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });
