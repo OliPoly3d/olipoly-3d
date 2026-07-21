@@ -839,3 +839,38 @@ Use the read-only preflight and post-deployment JSONB verification queries embed
 - The uniqueness indexes for `(user_id, production_job_id, raw_material_id, attempt_id)` and `(user_id, correlation_id)` are present.
 
 Manual browser testing is still required after deployment because this repository environment does not have deployed Supabase credentials and did not run live SQL.
+
+## Deployment reconciliation — 2026-07-21 authoritative Inventory consumption repair
+
+This repository reconciliation records operator-supplied deployed evidence for the authoritative Inventory consumption deployment. The operator already applied the equivalent repair manually in Supabase; this repository migration must not be manually rerun solely for deployment.
+
+### Operator-supplied deployed evidence
+
+- The original authoritative consumption migration failed and rolled back because `inventory_transactions.attempt_id` did not exist.
+- The operator manually and successfully added `inventory_transactions.occurred_at timestamptz`, `attempt_id text`, `correlation_id text`, `quantity_grams numeric`, `order_number text`, and `quote_number text`.
+- Existing ledger rows received `occurred_at = created_at` only where `occurred_at` was `NULL`; `occurred_at` now defaults to `now()`.
+- The operator created `inventory_transactions_production_attempt_roll_once`, unique on `user_id`, `production_job_id`, `raw_material_id`, and `attempt_id` for authoritative `production_attempt_consumption` rows.
+- The operator created `inventory_transactions_production_command_roll_once`, unique on `user_id`, `correlation_id`, and `raw_material_id` for authoritative `production_attempt_consumption` rows.
+- The originally proposed correlation-only unique index was rejected because one command may consume multiple rolls.
+- `public.consume_production_attempt` was successfully deployed as `SECURITY DEFINER` with `search_path = public, pg_temp`.
+- Execute privileges are: `PUBLIC` false, `anon` false, `authenticated` true, and `service_role` true.
+- `remaining_grams` is the sole raw quantity authority; the function does not update `current_grams`.
+- Completed retry recognition happens before optimistic-concurrency rejection.
+- There are currently zero authoritative `production_attempt_consumption` ledger rows.
+
+### Verification status
+
+| Verification area | Status | Notes |
+| --- | --- | --- |
+| Database structure | Passed | Operator supplied deployed evidence for required columns, backfill/default behavior, verified partial unique indexes, RPC security posture, fixed search path, grants, and raw quantity authority. |
+| Live consumption | Pending | Runtime workflow testing remains pending and was not claimed passed. |
+| Retry behavior | Pending | Contract is deployed, but live retry workflow testing remains pending. |
+| Insufficient-material rejection | Pending | Runtime negative-path testing remains pending. |
+| Cross-owner rejection | Pending | Runtime negative-path testing remains pending. |
+| Needs Reprint consumption path | Pending | Runtime Needs Reprint workflow testing remains pending. |
+| Workflow recovery after Inventory success | Pending | Runtime workflow-recovery testing remains pending. |
+
+### Repository reconciliation artifact
+
+- Forward-only migration `supabase/migrations/202607210003_reconcile_authoritative_inventory_consumption_repair.sql` reconciles the repository with the manually repaired deployed contract.
+- The reconciliation adds missing ledger columns idempotently, backfills only missing `occurred_at` values from `created_at`, preserves historical rows otherwise, creates the two verified partial unique indexes, does not create the rejected correlation-only unique index, replaces `consume_production_attempt` with the corrected implementation, preserves retry-before-concurrency behavior, preserves grants/search path, and includes one consolidated read-only JSONB verification query using ACL inspection without `has_function_privilege('PUBLIC', ...)`.
