@@ -1614,3 +1614,88 @@ Static repository tests prove the browser source is wired to the deployed comman
 ### Explicit non-actions
 
 Codex did not deploy SQL, execute SQL against Supabase, alter Supabase state, modify `pay.html`, modify `track.html`, alter public tracking RPCs, modify Inventory behavior, add payment processor integration, modify OP-000010, modify recovery evidence, clean historical Finance data, reinterpret craft-show duplicate candidates, or create a migration in this milestone.
+
+## Repository update — Inventory Browser-Authority Guard (2026-07-21)
+
+### Scope and root cause
+
+This repository pass audited Inventory browser persistence and destructive-maintenance paths. The root cause of the remaining browser-authority risk was that `inventory-control.html` still exposed a legacy operator path labeled as cloud sync that could iterate local browser Inventory rows and upsert them into authoritative Inventory tables. Even without a bulk delete helper, that path blurred recovery/cache data with durable Supabase state and could allow stale or newer local browser records to silently replace cloud records outside reviewed narrow Inventory commands.
+
+### Audited browser-storage and Inventory paths
+
+| Path | Files | Classification | Guard outcome |
+|---|---|---|---|
+| Supabase Inventory loads for `raw_material_inventory`, `finished_goods_inventory`, `non_filament_materials`, and `inventory_transactions` | `inventory-control.html` | Approved authoritative Inventory read/cache refresh | Supabase load now routes through a cache-replacement helper. Browser cache is overwritten from Supabase and recovery records stay separate. |
+| Raw material save form | `inventory-control.html` | Approved narrow Inventory owner save | Preserved. When signed in, the remote save must succeed before durable success is reported; failures retain separate non-durable recovery only. |
+| Non-filament supply save form | `inventory-control.html` | Approved narrow Inventory owner save | Preserved with the same failed-save recovery boundary. |
+| Finished-goods save form | `inventory-control.html` | Approved narrow Inventory owner save | Preserved with the same failed-save recovery boundary. |
+| Reusable spool pool save/load | `inventory-control.html` | Approved narrow Inventory setting/spool update | Preserved. It upserts only the owner spool-pool/settings row and does not delete or rebuild cloud rows. |
+| Production reservation/consume/release commands | `production-control.html`, `js/workflow-status.js`, `js/inventory-lifecycle.js` | Approved authoritative Inventory commands | Preserved. Static regression continues to assert the reserve, release, and consume RPC paths remain present. |
+| Export Backup / Export Local Recovery | `inventory-control.html` | Local non-authoritative recovery/export | Preserved. Export is explicitly review/export and reports that no cloud rows were uploaded or deleted. |
+| Recover Local | `inventory-control.html` | Local non-authoritative recovery review | Preserved as browser-only review. It does not upload cloud data. |
+| Import Backup file picker | `inventory-control.html` | Explicit operator import into local browser workspace/recovery | Preserved as an intentional local action. Supabase reload remains authoritative and replaces the cache; this path is not automatic startup upload. |
+| Clean Bad Imports and Clean Duplicate Ledger Rows | `inventory-control.html` | Local browser repair | Preserved as local-only cleanup. These actions do not delete cloud Inventory rows. |
+| Legacy “Sync Inventory to Cloud” / full local-to-cloud replacement | `inventory-control.html` | Legacy destructive browser-authority path | Neutralized. The button is relabeled `Review Local Recovery`, and the underlying helper returns a visible blocked result with `cloudMutated:false` and `reason:'browser-to-cloud full replacement is disabled'`. |
+| Bulk-delete / Force Full Cloud Rebuild helpers | `inventory-control.html` and repository search | Legacy destructive path | No active `Force Full Cloud Rebuild`, `deleteUserCloudRows`, or browser REST `DELETE` reset/rebuild path remains for deployed Inventory tables. Static regression covers all deployed Inventory tables listed below. |
+| IndexedDB / sessionStorage Inventory authority | Repository search | Not found in active Inventory runtime | No active IndexedDB or Inventory `sessionStorage` authority path was found. |
+| Startup local-to-cloud reconciliation | `inventory-control.html` | Legacy risk | No startup auto-upload remains. Startup cloud load replaces browser cache from Supabase; local recovery is reviewed/exported separately. |
+
+Deployed Inventory tables covered by the static guard are `raw_material_inventory`, `finished_goods_inventory`, `non_filament_materials`, `inventory_transactions`, `inventory_settings`, and `inventory_spool_pool`.
+
+### Browser-authority protections added
+
+- Browser recovery records are stored under `olipoly_inventory_recovery_review_v1`, separate from authoritative cache keys.
+- Supabase Inventory load replaces the local authoritative display cache through `cacheAuthoritativeInventory(...)`.
+- The former local-to-cloud full sync path is blocked and visibly reports that browser-to-cloud full replacement is disabled.
+- Failed signed-in saves for raw material, non-filament supplies, and finished goods no longer report durable success after a remote failure. They retain a non-durable recovery copy for review/export.
+- Recovery review/export actions explicitly report that no cloud Inventory rows were uploaded, deleted, rebuilt, or bulk-replaced.
+- Static regression asserts timestamp conflict semantics from `js/authoritative-persistence.js`: equal, missing, invalid, and stale local timestamps favor Supabase; newer local rows remain recovery data rather than automatic writes.
+
+### Files changed
+
+- `inventory-control.html`
+- `tests/inventory-browser-storage-authority.test.js`
+- `ERP_DEPLOYED_CONTRACT_INVENTORY.md`
+
+### Tests added or updated
+
+- `tests/inventory-browser-storage-authority.test.js` now asserts no active Force Full Cloud Rebuild path, no browser bulk delete path against deployed Inventory tables, no active local-to-cloud full replacement wording/path, Supabase cache replacement, separate recovery storage, failed-save non-durable recovery messaging, duplicate-safe explicit recovery semantics, normal reserve/consume/release command presence, and no OP-000010 touch in Inventory code.
+
+### Live runtime verification still required
+
+Static tests are repository proof only. They do not prove deployed browser credentials, RLS behavior, or Supabase runtime results. Use this operator checklist in a staging or controlled owner session before declaring runtime closeout:
+
+1. Load Inventory on a clean browser profile. Confirm Supabase rows render and local recovery is not required.
+2. Load Inventory with stale local cache rows. Confirm Supabase rows replace the cache and stale rows do not overwrite cloud rows.
+3. Load Inventory with newer local recovery rows. Confirm newer local rows remain in recovery review/export and are not automatically uploaded.
+4. Simulate a failed signed-in save for raw material, supply, and finished good. Confirm the UI does not report durable success and says a non-durable recovery copy was retained.
+5. Use Export Local Recovery. Confirm the export is browser-only and no Supabase rows change.
+6. Use the explicit recovery/import workflow only after operator review. Confirm it is intentional, duplicate-safe, preserves stable IDs, and never destructively overwrites existing newer/equal Supabase rows.
+7. Attempt a duplicate import. Confirm no duplicate authoritative cloud rows are created.
+8. Use local clear/repair actions. Confirm they clear only local browser cache/recovery rows and do not delete cloud Inventory rows.
+9. Confirm no operator-facing Force Full Cloud Rebuild, full sync, rebuild, reset-cloud, truncate, or bulk-replace action is available.
+10. Smoke test reserve, consume, return/release, and scrap/attempt workflows from Production Control against controlled test records.
+11. Open a second device/browser after each operation and confirm Supabase state is consistent across devices.
+12. Confirm no cloud rows are deleted or rebuilt during any recovery/export/local-clear operation.
+
+Safe consolidated read-only SQL verification query for an operator to run manually, if appropriate; do not run it from Codex:
+
+```sql
+select 'raw_material_inventory' as table_name, count(*) as row_count, max(updated_at) as latest_updated_at from public.raw_material_inventory
+union all
+select 'finished_goods_inventory', count(*), max(updated_at) from public.finished_goods_inventory
+union all
+select 'non_filament_materials', count(*), max(updated_at) from public.non_filament_materials
+union all
+select 'inventory_transactions', count(*), max(created_at) from public.inventory_transactions
+union all
+select 'inventory_settings', count(*), max(updated_at) from public.inventory_settings
+union all
+select 'inventory_spool_pool', count(*), max(updated_at) from public.inventory_spool_pool;
+```
+
+Record row counts before and after recovery/export/local-clear tests. The counts must not decrease or rebuild as a result of browser recovery/maintenance actions. Any intentional import should be reconciled row-by-row and must not overwrite newer/equal remote records.
+
+### Explicit non-actions
+
+Codex did not deploy SQL, execute SQL against Supabase, alter Supabase state, create a migration, broaden RLS/grants/security, modify Finance, modify Quote acceptance, modify public tracking, modify `pay.html`, modify `track.html`, modify Fundraiser behavior, modify OP-000010, mutate recovery evidence, clean historical Inventory data, or delete historical recovery records. OP-000010 was not modified.
