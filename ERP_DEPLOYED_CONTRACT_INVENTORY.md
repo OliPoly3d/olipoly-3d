@@ -1272,3 +1272,32 @@ Classification: **Operator-reported deployed; runtime verification pending; not 
 ### Remaining risk
 
 Proceeding after migration 008 without SQL and manual browser verification leaves material runtime risk. The deployed system may still have incompatible RPC signatures/defaults, grants or RLS mismatches, direct table mutation paths, cross-domain status overwrites, missing command-event envelopes, stale optimistic-concurrency acceptance, Inventory retry/recovery gaps, public tracking projection errors, cross-owner exposure, or UI paths that fail only under deployed browser credentials. These risks remain open until verified by read-only SQL checks and manual browser workflow tests.
+
+
+## Corrective milestone — 2026-07-21 Retire legacy `complete_production_job` RPC overloads
+
+This focused milestone records operator-supplied deployed evidence and the planned forward-only correction in `supabase/migrations/202607210001_retire_complete_production_job_overloads.sql`. This repository environment did not connect to deployed Supabase, execute SQL, deploy, merge, or modify historical data.
+
+### Operator-supplied deployed findings
+
+- Five overloads of `public.complete_production_job` coexist.
+- All overloads grant `EXECUTE` to `PUBLIC`, `anon`, `authenticated`, and `service_role`.
+- Multiple overloads are `SECURITY DEFINER`.
+- The overload bodies directly update `production_jobs` workflow status and actuals.
+- The overload bodies directly reduce `raw_material_inventory`, add `finished_goods_inventory`, and insert `inventory_transactions`.
+- The overloads use conflicting legacy quantity columns, including `current_grams` and `remaining_grams`.
+- The deployed `inventory_transactions` ledger contains 384 `raw_usage` rows with no Production, attempt, command, or reference linkage.
+- Migration `202607200008_workflow_command_authority_parameter_default_compatibility.sql` is deployed successfully and is the active workflow command authority.
+
+### Planned correction
+
+- Preserve every deployed `complete_production_job` overload identity by reading parameter names, defaults, identity arguments, and return types from `pg_proc`.
+- Do not drop the functions, preserving PostgREST compatibility and avoiding dependency churn.
+- Replace each body with an explicit retired-function exception using `SECURITY DEFINER` and fixed `search_path = public, pg_temp`.
+- Revoke `EXECUTE` from `PUBLIC`, `anon`, `authenticated`, and `service_role`; no reviewed recovery path requires retaining service-role execution for this obsolete bypass.
+- Include read-only preflight and post-deployment verification queries.
+- Do not create a new Inventory command, alter migration 008, redesign schema/UI/Finance/Quote/workflow authority, or clean historical transaction data.
+
+### Active-client inspection
+
+Repository inspection found no active client call to `complete_production_job`. The focused test scans Production Control, Orders Admin, Inventory Control, Finance Pro, Quote, and public tracking entry points to keep the retired RPC out of active browser paths.
