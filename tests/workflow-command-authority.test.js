@@ -2,9 +2,13 @@ const assert = require('assert');
 const fs = require('fs');
 const vm = require('vm');
 
-const migration = fs.readFileSync('supabase/migrations/202607200006_workflow_command_authority.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/202607200007_workflow_command_authority_parameter_compatibility.sql', 'utf8');
 const production = fs.readFileSync('production-control.html', 'utf8');
 const orders = fs.readFileSync('orders-admin.html', 'utf8');
+
+assert(/create or replace function public\.set_linked_workflow_status\(\s*p_order_number text,\s*p_status text,\s*p_expected_updated_at timestamptz\s*\)/i.test(migration), 'corrective migration must preserve deployed set_linked_workflow_status parameter names');
+assert(!/drop function\s+(if exists\s+)?public\.set_linked_workflow_status/i.test(migration), 'corrective migration must not drop legacy workflow function');
+assert(migration.includes('set_linked_workflow_status is retired; use production_workflow_command or fulfillment_workflow_command'), 'corrective migration must preserve retired-function behavior');
 
 assert(migration.includes('create or replace function public.production_workflow_command'), 'Production command RPC missing');
 assert(migration.includes('create or replace function public.fulfillment_workflow_command'), 'Fulfillment command RPC missing');
