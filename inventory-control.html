@@ -586,7 +586,7 @@
         <div>
           <span class="kicker">Cloud sync</span>
           <div class="decision-pills" id="cloudStatus"><span class="decision-pill">Checking sign-in...</span></div>
-          <p class="muted" id="cloudSyncDetails">Use Export Backup before a full rebuild. Sync pushes local inventory, supplies, finished goods, ledger, and reusable spool pool.</p>
+          <p class="muted" id="cloudSyncDetails">Cloud sync uses reviewed owner save paths. Local recovery tools can export or inspect browser data, but cannot rebuild or bulk-delete cloud Inventory rows.</p>
         </div>
         <div class="cloud-quick-actions">
           <button class="ghost" id="syncSpoolPoolBtn" type="button">Sync Spool Count</button>
@@ -595,11 +595,11 @@
       <details class="ops-collapse compact-tools" id="advancedInventoryTools">
         <summary>Advanced backup / repair tools</summary>
         <div class="collapse-body advanced-tool-row">
-          <button class="ghost" id="forceCloudRebuildBtn" type="button">Force Full Cloud Rebuild</button>
+          <button class="ghost" id="exportLocalRecoveryBtn" type="button">Export Local Recovery</button>
           <button class="ghost" id="recoverBtn" type="button">Recover Local</button>
           <button class="ghost" id="cleanBadImportsBtn" type="button">Clean Bad Imports</button>
           <button class="ghost" id="cleanDuplicateLedgerBtn" type="button">Clean Duplicate Ledger Rows</button>
-          <p class="muted full">Use these only after exporting a backup. They are kept here so the daily dashboard stays clean.</p>
+          <p class="muted full">Local recovery tools are browser-only unless they use reviewed normal Inventory save actions. They do not rebuild or bulk-delete cloud Inventory rows.</p>
         </div>
       </details>
     </section>
@@ -1101,7 +1101,6 @@
   async function syncLocalInventoryToCloud(options){
     options = options || {};
     const showToast=!!options.showToast;
-    const forceRebuild=!!options.forceRebuild;
 
     if(!state.cloud || !state.user?.id){
       if(showToast) toast('Log in first, then sync inventory to cloud.');
@@ -1116,14 +1115,14 @@
     const ledgerRows=ledger();
     let errors=0;
 
-    if(showToast) toast(`${forceRebuild?'Rebuilding':'Syncing'} cloud inventory: ${rows.length} filament roll(s), ${goods.length} finished good(s), ${supplyRows.length} supply item(s), ${ledgerRows.length} movement(s)...`);
+    if(showToast) toast(`Syncing reviewed inventory owner saves: ${rows.length} filament roll(s), ${goods.length} finished good(s), ${supplyRows.length} supply item(s), ${ledgerRows.length} movement(s)...`);
 
     if(!rows.length && !goods.length && !supplyRows.length){
       if(showToast) toast('Nothing local found to sync. Recover Local or import your backup first.');
       return {ok:false, raw:0, finished:0, supplies:0, ledger:0, errors:1};
     }
 
-    if(forceRebuild) await deleteUserCloudRows();
+    // Browser recovery/cache state must never bulk-delete or rebuild authoritative cloud Inventory rows.
 
     for(const r of rows){
       try{ await cloudSaveRaw(normalizeRaw(r)); }
@@ -1177,16 +1176,14 @@
     toast(`Spool count synced: ${Number(pool.available_empty||0)} free reusable spool(s).`);
   }
 
-  async function manualForceCloudRebuild(){
-    if(!confirm('Force Full Cloud Rebuild will replace your cloud inventory with this browser\'s current local Inventory Control data. Make sure you exported a backup first. Continue?')) return;
-    const result = await syncLocalInventoryToCloud({showToast:true, forceRebuild:true});
-    updateCloudStatus();
-    render();
-    return result;
+  function exportLocalRecovery(){
+    exportBackup();
+    toast('Local Inventory recovery exported. Nothing was uploaded or deleted in cloud Inventory.');
+    return {exported:true, cloudMutated:false};
   }
 
   async function cleanDuplicateLedgerRows(){
-    if(!confirm('Clean duplicate movement rows? This keeps one row per identical movement/minute and removes repeated cloud/local copies. Export a backup first if you are unsure.')) return;
+    if(!confirm('Clean duplicate movement rows? This keeps one row per identical movement/minute and removes repeated local browser copies. Export a backup first if you are unsure.')) return;
 
     // Always clean local first. This corrects cached rows and prevents re-upload loops.
     const beforeLocal=ledger().length;
@@ -1194,70 +1191,9 @@
     saveLedger(localClean);
     const localRemoved=Math.max(0,beforeLocal-localClean.length);
 
-    let cloudRemoved=0;
-    let cloudGroups=0;
-
-    if(state.cloud && state.user?.id){
-      try{
-        const uid=encodeURIComponent(state.user.id);
-        const rows=await sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${uid}&order=created_at.desc`,{method:'GET'});
-        const groups=new Map();
-        (Array.isArray(rows)?rows:[]).forEach(x=>{
-          const normalized=normalizeLedger({
-            id:x.id,
-            date:x.created_at||x.date,
-            type:x.transaction_type||x.type,
-            item:x.item_label||x.item,
-            amount:x.amount ?? x.quantity_change,
-            note:x.note||x.notes||x.source||''
-          });
-          const key=ledgerFingerprint(normalized);
-          if(!groups.has(key)) groups.set(key,[]);
-          groups.get(key).push({raw:x,normalized});
-        });
-
-        const deleteIds=[];
-        groups.forEach(group=>{
-          if(group.length<=1) return;
-          cloudGroups++;
-          // Keep the newest row, delete repeated copies that have the same operation, item, quantity, note, and minute.
-          group.sort((a,b)=>String(b.raw.created_at||b.raw.date||'').localeCompare(String(a.raw.created_at||a.raw.date||'')));
-          group.slice(1).forEach(g=>{ if(g.raw.id) deleteIds.push(g.raw.id); });
-        });
-
-        for(const id of deleteIds){
-          try{
-            await sbApi(`/rest/v1/inventory_transactions?id=eq.${encodeURIComponent(id)}&user_id=eq.${uid}`,{method:'DELETE'});
-            cloudRemoved++;
-          }catch(err){
-            console.warn('duplicate ledger delete failed', id, err);
-          }
-        }
-
-        // Reload the cleaned cloud ledger into local cache so Hub and Inventory agree immediately.
-        const cleaned=await sbApi(`/rest/v1/inventory_transactions?select=*&user_id=eq.${uid}&order=created_at.desc`,{method:'GET'}).catch(()=>[]);
-        if(Array.isArray(cleaned)){
-          const cleanedLocal=cleaned.map(x=>normalizeLedger({
-            id:x.id,
-            date:x.created_at||x.date,
-            type:x.transaction_type||x.type,
-            item:x.item_label||x.item,
-            amount:x.amount ?? x.quantity_change,
-            note:x.note||x.notes||x.source||''
-          }));
-          saveLedger(dedupeLedgerRows(cleanedLocal));
-        }
-      }catch(err){
-        console.warn('cloud duplicate ledger cleanup failed', err);
-        toast(`Local duplicate cleanup complete, but cloud cleanup failed: ${err.message||err}`);
-        render();
-        return;
-      }
-    }
-
     updateCloudStatus();
     render();
-    toast(`Duplicate ledger cleanup complete: removed ${localRemoved} local repeat(s) and ${cloudRemoved} cloud repeat(s) across ${cloudGroups} duplicate group(s).`);
+    toast(`Duplicate ledger cleanup complete: removed ${localRemoved} local repeat(s). Cloud ledger rows were not deleted by this browser repair tool.`);
   }
 
   async function recoverLocalInventory(){
@@ -1930,18 +1866,6 @@
     }
   }
 
-  async function deleteUserCloudRows(){
-    if(!state.cloud || !state.user?.id) throw new Error('Not signed in.');
-    const uid=encodeURIComponent(state.user.id);
-    await Promise.all([
-      sbApi(`/rest/v1/raw_material_inventory?user_id=eq.${uid}`,{method:'DELETE'}),
-      sbApi(`/rest/v1/finished_goods_inventory?user_id=eq.${uid}`,{method:'DELETE'}).catch(err=>console.warn('finished delete failed',err)),
-      sbApi(`/rest/v1/non_filament_materials?user_id=eq.${uid}`,{method:'DELETE'}).catch(err=>console.warn('supply delete failed',err)),
-      sbApi(`/rest/v1/inventory_transactions?user_id=eq.${uid}`,{method:'DELETE'}).catch(err=>console.warn('ledger delete failed',err)),
-      sbApi(`/rest/v1/inventory_spool_pool?user_id=eq.${uid}`,{method:'DELETE'}).catch(err=>console.warn('spool pool delete failed',err))
-    ]);
-  }
-
   async function cloudCounts(){
     if(!state.cloud || !state.user?.id) return null;
     const uid=encodeURIComponent(state.user.id);
@@ -2346,7 +2270,7 @@
   }
 
 
-  window.OP_INVENTORY_DEBUG = { raw, finished, supplies, syncDebugCounts, syncLocalInventoryToCloud, cloudRawCount };
+  window.OP_INVENTORY_DEBUG = { raw, finished, supplies, syncDebugCounts, syncLocalInventoryToCloud, cloudRawCount, exportLocalRecovery, recoverLocalInventory };
 
 
   function deepLinkInventoryParam(){
@@ -2628,7 +2552,7 @@
     $('exportBtn').addEventListener('click',exportBackup);
     $('importBtn').addEventListener('click',()=>$('importFile').click());
     $('syncCloudBtn')?.addEventListener('click',manualSyncInventoryToCloud);
-    $('forceCloudRebuildBtn')?.addEventListener('click',manualForceCloudRebuild);
+    $('exportLocalRecoveryBtn')?.addEventListener('click',exportLocalRecovery);
     $('syncSpoolPoolBtn')?.addEventListener('click',manualSyncSpoolPool);
     $('recoverBtn')?.addEventListener('click',recoverLocalInventory);
     $('cleanBadImportsBtn')?.addEventListener('click',cleanBadProductionImports);

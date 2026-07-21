@@ -1475,3 +1475,11 @@ This reconciliation does not change historical Finance rows, post historical Ord
 | Reversal workflow | Pending | No deployed reversal test was performed. |
 | Concurrency workflow | Pending | No deployed concurrency test was performed. |
 | Runtime browser tests | Pending | Runtime browser behavior remains pending, not passed. |
+
+## Repository-planned browser storage guard — not deployed (2026-07-21)
+
+Status: **Repository-planned, not deployed. Manual browser verification pending.**
+
+A focused repository change is planned to guard Inventory authority from browser localStorage recovery/reset behavior. The planned contract removes the Inventory Control Force Full Cloud Rebuild path and the unused browser helper that bulk-deleted user rows from `raw_material_inventory`, `finished_goods_inventory`, `non_filament_materials`, `inventory_transactions`, and `inventory_spool_pool`. Local recovery review/export remains available without cloud mutation, and duplicate local ledger cleanup remains local-only.
+
+This is not deployed-contract evidence. It does not change Supabase schema, RLS, grants, data, or historical records. The deployed contract remains unchanged until the branch is reviewed, merged, deployed, and manually browser-verified.
