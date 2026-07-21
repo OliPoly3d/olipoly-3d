@@ -720,3 +720,40 @@ The planned contract retires blind Orders-to-Production status copying, replaces
 The planned migration also revokes authenticated direct INSERT/UPDATE/DELETE authority on `orders`, `production_jobs`, and `order_tracking_public` where those grants bypass command authority, preserves owner-scoped SELECT access and service-role recovery access, removes duplicate Production owner CRUD policies, and revokes unnecessary execution grants from retired workflow helper functions. Every successful post-acceptance workflow command appends one Blueprint-envelope `project_events` row with database uniqueness on `(correlation_id, event_type)` for retry-safe event emission. Pre-acceptance Production retries use the planned technical `workflow_command_receipts` table instead of inventing a business event; receipts are RLS-protected, inaccessible to browser roles, and bind command identity to owner, Production job UUID, command, from/to state, resulting `updated_at`, and an immutable result snapshot so valid retries still succeed after unrelated permitted job edits. Linked Production/Inventory browser orchestration is explicitly a recoverable saga: Inventory side effects remain idempotent via existing attempt/reservation markers, pending recovery is recorded client-side if the workflow RPC fails after Inventory preparation, and retry completes the same workflow command without claiming cross-domain database atomicity. Existing legacy events remain untouched.
 
 Deployment proof remains pending operator-supplied Supabase verification using the migration's preflight and post-deployment queries. Until that evidence is supplied, this is repository-planned corrective evidence only, not a deployed-state claim.
+
+## Deployment closeout — 2026-07-20 Workflow Command Authority Parameter Default Compatibility
+
+This closeout is documentation-only. It records operator-supplied deployment evidence for `supabase/migrations/202607200008_workflow_command_authority_parameter_default_compatibility.sql`; it does not change application code, SQL migrations, tests, schema, RLS, grants, data, or UI.
+
+### Operator-reported migration sequence
+
+| Migration artifact | Deployment result | Closeout handling |
+|---|---|---|
+| `supabase/migrations/202607200006_workflow_command_authority.sql` | Failed and rolled back because legacy function parameter names were not preserved. | Superseded failed artifact. Do **not** execute this migration against deployed Supabase. |
+| `supabase/migrations/202607200007_workflow_command_authority_parameter_compatibility.sql` | Failed and rolled back because the existing third-parameter default was removed. | Superseded failed artifact. Do **not** execute this migration against deployed Supabase. |
+| `supabase/migrations/202607200008_workflow_command_authority_parameter_default_compatibility.sql` | Operator reports successful Supabase execution with response: “Success. No rows returned.” | Operator-reported deployed artifact. Treat execution success as migration application evidence only, not runtime verification. |
+
+### Execution success versus verified runtime behavior
+
+Migration 008 is recorded as **operator-reported deployed**. That means the migration script completed successfully in Supabase according to the operator-provided deployment result. It does **not** prove that the deployed ERP workflow behaves correctly at runtime, that every UI path now uses only the intended command authority, or that Blueprint workflow ownership is fully enforced under real browser, concurrency, retry, Inventory, or cross-owner scenarios.
+
+Do not claim full Blueprint compliance from this closeout. The remaining workflow authority classification is **deployment executed, runtime verification pending**.
+
+### Pending post-deployment verification
+
+| Verification area | Status | Notes |
+|---|---|---|
+| Post-deployment SQL verification | Pending | Operator intentionally deferred SQL verification; no Supabase metadata, grant, RLS, trigger, function, status-distribution, mismatch, event-envelope, or data-integrity checks are marked passed here. |
+| Manual Production workflow tests | Pending | Start Print, Complete Print, Production-owned actual usage/scrap capture, and Production-to-QC behavior have not been browser-verified after migration 008. |
+| Manual QC tests | Pending | QC pass behavior and the handoff into fulfillment readiness have not been browser-verified after migration 008. |
+| Manual Needs Reprint tests | Pending | Reprint return to `ready_to_print`, preservation of actual usage, and public projection behavior have not been browser-verified after migration 008. |
+| Manual Fulfillment closure tests | Pending | Orders/Fulfillment closeout authority and closure behavior have not been browser-verified after migration 008. |
+| Manual Inventory retry/recovery tests | Pending | Inventory reservation/prepare side effects, command retry, pending recovery, consumption/release, and failure recovery have not been browser-verified after migration 008. |
+| Manual concurrency tests | Pending | Required optimistic concurrency and stale-command rejection behavior have not been browser-verified after migration 008. |
+| Manual cross-owner tests | Pending | Owner isolation and cross-owner denial for workflow commands and projections have not been browser-verified after migration 008. |
+
+### Remaining risk accepted by proceeding without checks
+
+Because SQL verification and manual workflow testing were deferred, the deployed environment may still contain unresolved defects despite successful migration execution. Remaining risks include incompatible deployed function signatures or defaults, incorrect grants or RLS policy behavior, stale direct table write paths, triggers or functions that still overwrite another domain's workflow state, missing or duplicate event-envelope emission, optimistic concurrency gaps, Inventory side effects that do not recover safely after retry, public tracking projection drift, owner-isolation failures, and browser workflows that fail only under live Supabase permissions or real user sessions.
+
+No production behavior is independently verified by this documentation update. The next closeout step should be read-only SQL verification followed by the listed manual browser tests, with results recorded separately and without retroactively marking this documentation-only closeout as full Blueprint compliance.
