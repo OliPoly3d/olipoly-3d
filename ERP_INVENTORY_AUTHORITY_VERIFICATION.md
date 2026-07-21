@@ -946,3 +946,17 @@ Historical unlinked `inventory_transactions` rows remain historical evidence. Th
 **Finance ownership and cross-domain write verification.**
 
 Verify that Finance-owned records, Inventory-owned records, and linked Production workflow records are mutated only by their authoritative owners and reviewed command boundaries. Do not combine that milestone with historical cleanup, UI redesign, or additional Inventory runtime testing.
+
+## Repository-planned browser reset guard — not deployed (2026-07-21)
+
+Status: **Repository-planned, not deployed. Manual browser verification pending.**
+
+The Inventory browser reset/recovery corrective milestone removes browser-owned cloud bulk delete/rebuild behavior from `inventory-control.html`. The planned repository contract is:
+
+- Browser local recovery review/export may inspect and export local Inventory keys.
+- Browser local recovery review/export must not upload, rebuild, overwrite, or bulk-delete authoritative cloud Inventory rows.
+- Duplicate-ledger browser cleanup is local-only and must not delete cloud `inventory_transactions` evidence.
+- Ordinary Inventory CRUD/sync owner save paths remain unchanged.
+- Linked Production reservation, release, and consumption authority remains through `reserve_production_material(...)`, `release_production_material_reservation(...)`, and `consume_production_attempt(...)`.
+
+This milestone does not modify schema, migrations, RLS, grants, historical rows, deployed data, Finance authority, Quote acceptance, or workflow command authority. It records repository intent only; deployed browser behavior still requires manual verification before claiming runtime compliance.

@@ -238,3 +238,21 @@ select jsonb_build_object(
 - No historical cleanup.
 - No SQL execution.
 - No browser/cloud data modification.
+
+## Repository-planned corrective milestone — Inventory browser reset cloud-delete guard (2026-07-21)
+
+Status: **Repository-planned, not deployed. Manual browser verification pending.**
+
+This milestone removes the active Inventory browser rebuild path that could bulk-delete and rebuild authoritative cloud Inventory rows from localStorage state. Inventory Control now separates local recovery inspection/export from authoritative cloud mutation:
+
+- Local recovery review remains browser-only and reports that nothing was uploaded.
+- Local recovery export downloads the reviewed Inventory backup data without uploading, rebuilding, or deleting cloud Inventory.
+- Normal Inventory owner save paths remain available for ordinary CRUD/sync behavior.
+- The browser repair tool for duplicate ledger rows now cleans only local duplicate browser log entries and does not delete cloud `inventory_transactions` rows.
+- The dead `deleteUserCloudRows()` helper and the Force Full Cloud Rebuild UI entry point were removed after repository reference inspection.
+
+No schema, RLS, grant, migration, historical-data, browser-data, or cloud-data change was performed by this repository milestone. Authentication/session keys, workflow command retry keys, Quote recovery keys, and Production recovery keys are outside this local Inventory reset/export boundary and are preserved.
+
+### Updated verification expectations
+
+Manual browser verification item 8 is superseded for repository code by this planned change: Inventory reset/rebuild controls should no longer expose a cloud-delete or cloud-rebuild action. Browser verification remains pending and must confirm in DevTools Network that local recovery review/export and duplicate-ledger cleanup do not issue `DELETE` requests to `raw_material_inventory`, `finished_goods_inventory`, `non_filament_materials`, `inventory_transactions`, or `inventory_spool_pool`.
