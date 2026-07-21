@@ -102,6 +102,344 @@ No operator-supplied deployed query results are included in this repository mile
 | Supabase tables/RPCs/functions/triggers/policies/grants | Unable to verify from repository evidence | Production workflow migrations are checked in; inventory authority DDL/RLS/grants are not. |
 | Legacy/localStorage compatibility paths | Partially compliant | Compatibility exists, but it weakens command authority unless deployed cloud authority is proven. |
 
+
+## Recommended consolidated deployed verification query
+
+> Recommended operator check: run this single read-only SQL statement first in the deployed/staging Supabase SQL editor. It returns exactly one row with one JSONB column named `inventory_authority_verification`. The individual queries later in this document remain diagnostic follow-ups when a section needs deeper inspection or if the deployed schema differs from the expected inventory tables.
+>
+> This statement uses only `SELECT` CTEs and JSON aggregation. It does not create temporary tables, functions, migrations, DDL, DML, or data mutations. It intentionally returns metadata, counts, classifications, identifiers needed for diagnosis, and function/policy definitions; it does not return customer-sensitive row contents.
+>
+> PostgreSQL validates referenced relations before execution. This consolidated query handles optional columns through `to_jsonb(row)->>'column_name'`, but the core tables referenced by the existing verification checks must exist for the data-quality sections to run. If a deployed table is absent, capture the error below and use the metadata follow-up queries to confirm the actual schema.
+
+```sql
+with target_tables(table_name, authority_area) as (
+  values
+    ('raw_material_inventory', 'raw_material_authority'),
+    ('finished_goods_inventory', 'finished_goods_authority'),
+    ('non_filament_materials', 'non_filament_authority'),
+    ('inventory_transactions', 'inventory_transaction_authority'),
+    ('inventory_spool_pool', 'spool_pool_authority'),
+    ('inventory_settings', 'inventory_settings_authority'),
+    ('production_jobs', 'production_consumption_lifecycle'),
+    ('orders', 'orders_boundary'),
+    ('financial_entries', 'finance_boundary'),
+    ('finance_entries', 'finance_boundary')
+), relevant_relations as (
+  select tt.table_name, tt.authority_area, c.oid, n.nspname as table_schema,
+         c.relrowsecurity, c.relforcerowsecurity
+  from target_tables tt
+  left join pg_class c on c.relname = tt.table_name
+  left join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+  where c.oid is null or n.nspname = 'public'
+), relevant_columns as (
+  select table_name,
+         jsonb_agg(jsonb_build_object(
+           'column_name', column_name,
+           'ordinal_position', ordinal_position,
+           'data_type', data_type,
+           'udt_name', udt_name,
+           'is_nullable', is_nullable,
+           'column_default', column_default,
+           'is_generated', is_generated,
+           'generation_expression', generation_expression
+         ) order by ordinal_position) as columns
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name in (select table_name from target_tables)
+  group by table_name
+), relevant_constraints as (
+  select conrelid::regclass::text as table_name,
+         jsonb_agg(jsonb_build_object(
+           'constraint_name', conname,
+           'constraint_type', contype,
+           'definition', pg_get_constraintdef(oid)
+         ) order by conname) as constraints
+  from pg_constraint
+  where connamespace = 'public'::regnamespace
+    and conrelid::regclass::text in (select table_name from target_tables)
+  group by conrelid::regclass::text
+), relevant_indexes as (
+  select tablename as table_name,
+         jsonb_agg(jsonb_build_object('index_name', indexname, 'definition', indexdef) order by indexname) as indexes
+  from pg_indexes
+  where schemaname = 'public'
+    and tablename in (select table_name from target_tables)
+  group by tablename
+), relevant_policies as (
+  select tablename as table_name,
+         jsonb_agg(jsonb_build_object(
+           'policy_name', policyname,
+           'permissive', permissive,
+           'roles', roles,
+           'command', cmd,
+           'qual', qual,
+           'with_check', with_check
+         ) order by policyname) as policies
+  from pg_policies
+  where schemaname = 'public'
+    and tablename in (select table_name from target_tables)
+  group by tablename
+), table_privileges as (
+  select t.table_name, r.role_name, p.privilege,
+         case when to_regclass('public.' || t.table_name) is null then null
+              else has_table_privilege(r.role_name, 'public.' || t.table_name, p.privilege)
+         end as has_privilege
+  from target_tables t
+  cross join (values ('anon'), ('authenticated'), ('service_role')) as r(role_name)
+  cross join (values ('select'), ('insert'), ('update'), ('delete')) as p(privilege)
+), table_privileges_json as (
+  select table_name,
+         jsonb_object_agg(role_name, role_privileges order by role_name) as effective_privileges
+  from (
+    select table_name, role_name,
+           jsonb_object_agg(privilege, has_privilege order by privilege) as role_privileges
+    from table_privileges
+    group by table_name, role_name
+  ) rp
+  group by table_name
+), schema_report as (
+  select jsonb_agg(jsonb_build_object(
+    'table_name', rr.table_name,
+    'authority_area', rr.authority_area,
+    'exists', rr.oid is not null,
+    'rls_enabled', rr.relrowsecurity,
+    'rls_forced', rr.relforcerowsecurity,
+    'columns', coalesce(rc.columns, '[]'::jsonb),
+    'constraints', coalesce(rcon.constraints, '[]'::jsonb),
+    'indexes', coalesce(ri.indexes, '[]'::jsonb),
+    'policies', coalesce(rp.policies, '[]'::jsonb),
+    'effective_privileges', coalesce(tpj.effective_privileges, '{}'::jsonb)
+  ) order by rr.table_name) as value
+  from relevant_relations rr
+  left join relevant_columns rc using (table_name)
+  left join relevant_constraints rcon using (table_name)
+  left join relevant_indexes ri using (table_name)
+  left join relevant_policies rp using (table_name)
+  left join table_privileges_json tpj using (table_name)
+), relevant_functions as (
+  select jsonb_agg(jsonb_build_object(
+    'schema', n.nspname,
+    'name', p.proname,
+    'signature', p.oid::regprocedure::text,
+    'security_definer', p.prosecdef,
+    'volatility', p.provolatile,
+    'arguments', pg_get_function_arguments(p.oid),
+    'return_type', pg_get_function_result(p.oid),
+    'acl', p.proacl::text,
+    'definition', pg_get_functiondef(p.oid)
+  ) order by p.proname, p.oid::regprocedure::text) as value
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and (
+      p.proname ilike '%inventory%' or p.proname ilike '%material%' or p.proname ilike '%reserve%' or
+      p.proname ilike '%consume%' or p.proname ilike '%production_workflow%' or p.proname ilike '%workflow_command%' or
+      pg_get_functiondef(p.oid) ~* '(raw_material_inventory|finished_goods_inventory|non_filament_materials|inventory_transactions|inventory_spool_pool|financial_entries|finance_entries)'
+    )
+), relevant_triggers as (
+  select jsonb_agg(jsonb_build_object(
+    'event_table', event_object_table,
+    'trigger_name', trigger_name,
+    'action_timing', action_timing,
+    'event_manipulation', event_manipulation,
+    'action_statement', action_statement
+  ) order by event_object_table, trigger_name, event_manipulation) as value
+  from information_schema.triggers
+  where event_object_schema = 'public'
+    and (
+      event_object_table in (select table_name from target_tables)
+      or action_statement ~* '(raw_material_inventory|finished_goods_inventory|non_filament_materials|inventory_transactions|financial_entries|finance_entries)'
+    )
+), inventory_transactions_normalized as (
+  select to_jsonb(t) as row_json,
+         t.id::text as id,
+         t.created_at,
+         nullif(coalesce(to_jsonb(t)->>'user_id', ''), '') as user_id,
+         nullif(coalesce(to_jsonb(t)->>'transaction_type', to_jsonb(t)->>'type', to_jsonb(t)->>'movement_type', ''), '') as txn_type,
+         nullif(coalesce(to_jsonb(t)->>'production_job_id', to_jsonb(t)->>'job_id', to_jsonb(t)->>'order_number', to_jsonb(t)->>'reference_id', to_jsonb(t)->>'source_id', ''), '') as production_link,
+         nullif(coalesce(to_jsonb(t)->>'attempt_id', to_jsonb(t)->>'production_attempt_id', to_jsonb(t)->>'correlation_id', to_jsonb(t)->>'command_id', t.id::text, ''), '') as attempt_or_command,
+         nullif(coalesce(to_jsonb(t)->>'item_type', to_jsonb(t)->>'inventory_kind', ''), '') as item_kind,
+         nullif(coalesce(to_jsonb(t)->>'raw_material_roll_id', to_jsonb(t)->>'roll_id', ''), '') as roll_id,
+         nullif(coalesce(to_jsonb(t)->>'quantity_grams', to_jsonb(t)->>'amount_grams', to_jsonb(t)->>'grams', to_jsonb(t)->>'quantity', ''), '')::numeric as qty
+  from public.inventory_transactions t
+), consumption as (
+  select *
+  from inventory_transactions_normalized
+  where lower(coalesce(txn_type, '')) similar to '%(consume|consumption|usage|raw_usage|production)%'
+), production_attempts as (
+  select pj.id::text as production_job_id,
+         nullif(coalesce(to_jsonb(pj)->>'user_id', ''), '') as user_id,
+         nullif(coalesce(to_jsonb(pj)->>'order_number', ''), '') as order_number,
+         attempt.value->>'id' as attempt_id,
+         attempt.value->>'captured_at' as captured_at,
+         attempt.value->>'consumed_at' as payload_consumed_at,
+         attempt.value as attempt_payload
+  from public.production_jobs pj
+  cross join lateral jsonb_array_elements(coalesce(to_jsonb(pj)->'job_payload'->'production_attempts','[]'::jsonb)) as attempt(value)
+), duplicate_consumption as (
+  select user_id, production_link, attempt_or_command, count(*) as duplicate_count, sum(coalesce(qty,0)) as total_quantity, min(created_at) as first_seen, max(created_at) as last_seen
+  from consumption
+  group by user_id, production_link, attempt_or_command
+  having count(*) > 1
+), attempts_without_consumption as (
+  select a.production_job_id, a.user_id, a.order_number, a.attempt_id, a.captured_at, a.payload_consumed_at
+  from production_attempts a
+  left join consumption c on c.production_link in (a.production_job_id, a.order_number) and (c.attempt_or_command = a.attempt_id or c.attempt_or_command is null)
+  where c.production_link is null and a.payload_consumed_at is null
+), consumption_without_production_linkage as (
+  select id, user_id, created_at, txn_type, attempt_or_command, qty
+  from consumption
+  where production_link is null
+), needs_reprint_evidence as (
+  select pj.id::text as production_job_id,
+         nullif(coalesce(to_jsonb(pj)->>'user_id', ''), '') as user_id,
+         nullif(coalesce(to_jsonb(pj)->>'order_number', ''), '') as order_number,
+         nullif(coalesce(to_jsonb(pj)->>'production_status', ''), '') as production_status,
+         to_jsonb(pj)->'job_payload'->>'needs_reprint_at' as needs_reprint_at,
+         jsonb_array_length(coalesce(to_jsonb(pj)->'job_payload'->'production_attempts','[]'::jsonb)) as attempt_count,
+         count(c.*) as consumption_rows
+  from public.production_jobs pj
+  left join consumption c on c.production_link in (pj.id::text, to_jsonb(pj)->>'order_number')
+  where to_jsonb(pj)->'job_payload' ? 'needs_reprint_at'
+     or (to_jsonb(pj)->>'production_status' = 'ready_to_print' and to_jsonb(pj)->'job_payload' ? 'production_attempts')
+  group by pj.id, to_jsonb(pj)
+), reservation_inconsistencies as (
+  select pj.id::text as production_job_id,
+         nullif(coalesce(to_jsonb(pj)->>'user_id', ''), '') as user_id,
+         nullif(coalesce(to_jsonb(pj)->>'order_number', ''), '') as order_number,
+         nullif(coalesce(to_jsonb(pj)->>'production_status', ''), '') as production_status,
+         case
+           when to_jsonb(pj)->>'production_status' in ('estimate','waiting_customer','ready_for_fulfillment','closed','canceled','void')
+             and jsonb_array_length(coalesce(to_jsonb(pj)->'material_reservations','[]'::jsonb)) > 0 then 'reservation_in_non_reserving_status'
+           when to_jsonb(pj)->>'production_status' in ('ready_to_print','printing','qc')
+             and coalesce((to_jsonb(pj)->>'exclude_inventory_reduction')::boolean,false) = false
+             and jsonb_array_length(coalesce(to_jsonb(pj)->'material_reservations','[]'::jsonb)) = 0
+             and coalesce(nullif(to_jsonb(pj)->>'estimated_total_grams','')::numeric, nullif(to_jsonb(pj)->>'estimated_grams_each','')::numeric * nullif(to_jsonb(pj)->>'quantity','')::numeric, 0) > 0 then 'missing_reservation_for_printable_work'
+         end as inconsistency_type
+  from public.production_jobs pj
+  where (
+      to_jsonb(pj)->>'production_status' in ('estimate','waiting_customer','ready_for_fulfillment','closed','canceled','void')
+      and jsonb_array_length(coalesce(to_jsonb(pj)->'material_reservations','[]'::jsonb)) > 0
+    )
+    or (
+      to_jsonb(pj)->>'production_status' in ('ready_to_print','printing','qc')
+      and coalesce((to_jsonb(pj)->>'exclude_inventory_reduction')::boolean,false) = false
+      and jsonb_array_length(coalesce(to_jsonb(pj)->'material_reservations','[]'::jsonb)) = 0
+      and coalesce(nullif(to_jsonb(pj)->>'estimated_total_grams','')::numeric, nullif(to_jsonb(pj)->>'estimated_grams_each','')::numeric * nullif(to_jsonb(pj)->>'quantity','')::numeric, 0) > 0
+    )
+), negative_impossible_balances as (
+  select 'raw_material_inventory' as table_name, r.id::text as id, nullif(coalesce(to_jsonb(r)->>'user_id', ''), '') as user_id,
+         nullif(to_jsonb(r)->>'remaining_grams','')::numeric as balance,
+         nullif(to_jsonb(r)->>'starting_grams','')::numeric as max_expected,
+         case when coalesce(nullif(to_jsonb(r)->>'remaining_grams','')::numeric,0) < 0 then 'negative_balance' else 'balance_above_starting_grams' end as issue
+  from public.raw_material_inventory r
+  where coalesce(nullif(to_jsonb(r)->>'remaining_grams','')::numeric,0) < 0
+     or (to_jsonb(r) ? 'starting_grams' and nullif(to_jsonb(r)->>'remaining_grams','')::numeric > nullif(to_jsonb(r)->>'starting_grams','')::numeric and coalesce(to_jsonb(r)->>'roll_status','') <> 'refilled')
+  union all
+  select 'non_filament_materials', n.id::text, nullif(coalesce(to_jsonb(n)->>'user_id', ''), ''), nullif(to_jsonb(n)->>'quantity_on_hand','')::numeric, null::numeric, 'negative_balance'
+  from public.non_filament_materials n
+  where coalesce(nullif(to_jsonb(n)->>'quantity_on_hand','')::numeric,0) < 0
+  union all
+  select 'finished_goods_inventory', f.id::text, nullif(coalesce(to_jsonb(f)->>'user_id', ''), ''), nullif(to_jsonb(f)->>'quantity_on_hand','')::numeric, null::numeric, 'negative_balance'
+  from public.finished_goods_inventory f
+  where coalesce(nullif(to_jsonb(f)->>'quantity_on_hand','')::numeric,0) < 0
+), roll_usage as (
+  select pj.id::text as production_job_id,
+         nullif(coalesce(to_jsonb(pj)->>'user_id', ''), '') as user_id,
+         nullif(coalesce(to_jsonb(pj)->>'order_number', ''), '') as order_number,
+         coalesce(ru.value->>'raw_material_roll_id', ru.value->>'roll_id') as roll_id,
+         ru.value->>'roll_label' as roll_label
+  from public.production_jobs pj
+  cross join lateral jsonb_array_elements(coalesce(to_jsonb(pj)->'roll_usages', to_jsonb(pj)->'job_payload'->'roll_usages', '[]'::jsonb)) ru(value)
+), roll_lot_linkage_gaps as (
+  select ru.production_job_id, ru.user_id, ru.order_number, ru.roll_id, ru.roll_label
+  from roll_usage ru
+  left join public.raw_material_inventory r on nullif(coalesce(to_jsonb(r)->>'user_id', ''), '') = ru.user_id and r.id::text = ru.roll_id
+  where coalesce(ru.roll_id, '') <> '' and r.id is null
+), transaction_type_distributions as (
+  select txn_type, item_kind, count(*) as row_count, min(created_at) as first_seen, max(created_at) as last_seen
+  from inventory_transactions_normalized
+  group by txn_type, item_kind
+), authority_counts as (
+  select jsonb_build_object(
+    'inventory_transactions', (select count(*) from public.inventory_transactions),
+    'production_jobs', (select count(*) from public.production_jobs),
+    'raw_material_inventory', (select count(*) from public.raw_material_inventory),
+    'non_filament_materials', (select count(*) from public.non_filament_materials),
+    'finished_goods_inventory', (select count(*) from public.finished_goods_inventory),
+    'inventory_spool_pool', (select count(*) from public.inventory_spool_pool),
+    'inventory_settings', (select count(*) from public.inventory_settings),
+    'duplicate_production_attempt_consumption', (select count(*) from duplicate_consumption),
+    'production_attempts_without_consumption', (select count(*) from attempts_without_consumption),
+    'consumption_without_production_linkage', (select count(*) from consumption_without_production_linkage),
+    'needs_reprint_or_repeated_consumption_rows', (select count(*) from needs_reprint_evidence),
+    'reservation_inconsistencies', (select count(*) from reservation_inconsistencies),
+    'negative_or_impossible_balances', (select count(*) from negative_impossible_balances),
+    'roll_lot_linkage_gaps', (select count(*) from roll_lot_linkage_gaps)
+  ) as value
+), direct_browser_mutation_authority as (
+  select jsonb_agg(jsonb_build_object(
+    'table_name', table_name,
+    'anon_insert', effective_privileges->'anon'->'insert',
+    'anon_update', effective_privileges->'anon'->'update',
+    'anon_delete', effective_privileges->'anon'->'delete',
+    'authenticated_insert', effective_privileges->'authenticated'->'insert',
+    'authenticated_update', effective_privileges->'authenticated'->'update',
+    'authenticated_delete', effective_privileges->'authenticated'->'delete',
+    'browser_accessible_direct_mutation', coalesce((effective_privileges->'anon'->>'insert')::boolean,false)
+      or coalesce((effective_privileges->'anon'->>'update')::boolean,false)
+      or coalesce((effective_privileges->'anon'->>'delete')::boolean,false)
+      or coalesce((effective_privileges->'authenticated'->>'insert')::boolean,false)
+      or coalesce((effective_privileges->'authenticated'->>'update')::boolean,false)
+      or coalesce((effective_privileges->'authenticated'->>'delete')::boolean,false)
+  ) order by table_name) as value
+  from table_privileges_json
+  where table_name in ('raw_material_inventory','finished_goods_inventory','non_filament_materials','inventory_transactions','inventory_spool_pool','inventory_settings')
+), finance_inventory_cross_domain_write_evidence as (
+  select jsonb_build_object(
+    'functions_or_rpcs', coalesce((select value from relevant_functions), '[]'::jsonb),
+    'triggers', coalesce((select value from relevant_triggers), '[]'::jsonb)
+  ) as value
+), detail_samples as (
+  select jsonb_build_object(
+    'transaction_type_distributions', coalesce((select jsonb_agg(to_jsonb(d) order by row_count desc nulls last, txn_type, item_kind) from transaction_type_distributions d), '[]'::jsonb),
+    'duplicate_production_attempt_consumption', coalesce((select jsonb_agg(to_jsonb(d) order by duplicate_count desc, last_seen desc nulls last) from duplicate_consumption d), '[]'::jsonb),
+    'production_attempts_without_consumption', coalesce((select jsonb_agg(to_jsonb(a) order by captured_at desc nulls last) from attempts_without_consumption a), '[]'::jsonb),
+    'consumption_without_production_linkage', coalesce((select jsonb_agg(to_jsonb(c) order by created_at desc nulls last) from (select * from consumption_without_production_linkage order by created_at desc nulls last limit 200) c), '[]'::jsonb),
+    'needs_reprint_and_repeated_consumption_evidence', coalesce((select jsonb_agg(to_jsonb(n) order by needs_reprint_at desc nulls last) from needs_reprint_evidence n), '[]'::jsonb),
+    'reservation_inconsistencies', coalesce((select jsonb_agg(to_jsonb(r) order by production_job_id) from reservation_inconsistencies r), '[]'::jsonb),
+    'negative_or_impossible_balances', coalesce((select jsonb_agg(to_jsonb(n) order by table_name, id) from negative_impossible_balances n), '[]'::jsonb),
+    'roll_lot_linkage_gaps', coalesce((select jsonb_agg(to_jsonb(r) order by production_job_id) from roll_lot_linkage_gaps r), '[]'::jsonb)
+  ) as value
+)
+select jsonb_build_object(
+  'generated_at', now(),
+  'scope', 'ERP Inventory authority deployed read-only verification',
+  'read_only_statement', true,
+  'relevant_tables_columns_constraints_rls_policies_privileges', coalesce((select value from schema_report), '[]'::jsonb),
+  'inventory_related_functions_rpcs_triggers_and_definitions', jsonb_build_object(
+    'functions_and_rpcs', coalesce((select value from relevant_functions), '[]'::jsonb),
+    'triggers', coalesce((select value from relevant_triggers), '[]'::jsonb)
+  ),
+  'browser_accessible_direct_mutation_authority', coalesce((select value from direct_browser_mutation_authority), '[]'::jsonb),
+  'raw_material_spool_pool_non_filament_finished_goods_authority', jsonb_build_object(
+    'raw_material_inventory', (select jsonb_build_object('row_count', count(*)) from public.raw_material_inventory),
+    'inventory_spool_pool', (select jsonb_build_object('row_count', count(*)) from public.inventory_spool_pool),
+    'non_filament_materials', (select jsonb_build_object('row_count', count(*)) from public.non_filament_materials),
+    'finished_goods_inventory', (select jsonb_build_object('row_count', count(*)) from public.finished_goods_inventory)
+  ),
+  'finance_inventory_cross_domain_write_evidence', (select value from finance_inventory_cross_domain_write_evidence),
+  'counts_of_unresolved_or_suspicious_records', (select value from authority_counts),
+  'deployed_verification_checks', (select value from detail_samples)
+) as inventory_authority_verification;
+```
+
+## Consolidated query result capture
+
+| Date run | Environment | Runner | Single JSONB result location or summary | Follow-up individual query needed | Contract classification after result |
+| --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |
+
 ## Read-only Supabase verification queries
 
 > Run these in the deployed/staging Supabase SQL editor as read-only checks. Replace no data, create nothing, and do not execute mutations.
