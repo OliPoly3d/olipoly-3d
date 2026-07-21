@@ -444,6 +444,7 @@ img{max-width:100%}
 </div>
 <div class="info-grid compact">
 <div class="mini"><span>Total</span><strong id="viewTotal">—</strong></div>
+<div class="mini"><span>Balance due</span><strong id="viewBalance">—</strong></div>
 <div class="mini"><span>Next milestone</span><strong id="viewMilestone">—</strong></div>
 </div>
 <div class="customer-confidence-grid">
@@ -493,6 +494,7 @@ img{max-width:100%}
 <span id="cashMessage">Cash payment can be accepted for pickup or approved local delivery. Please contact OliPoly 3D to arrange payment.</span>
 </div>
 <div class="payment-buttons" id="paymentButtons">
+<a class="payment-btn hidden" href="#" id="paymentBtnOrder">View Exact Balance & Pay</a>
 <a class="payment-btn hidden" href="#" id="paymentBtnStripe" rel="noopener" target="_blank">Pay with Card / Apple Pay</a>
 <a class="payment-btn paypal-btn hidden" href="#" id="paymentBtnPaypal" rel="noopener" target="_blank">Pay with PayPal</a>
 <a class="payment-btn venmo-btn hidden" href="#" id="paymentBtnVenmo" rel="noopener" target="_blank">Pay with Venmo</a>
@@ -535,7 +537,7 @@ img{max-width:100%}
     const $ = id => document.getElementById(id);
     const els = {
       orderLookup:$('orderLookup'), lookupBtn:$('lookupBtn'), lookupMessage:$('lookupMessage'), resultCard:$('resultCard'),
-      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'), viewTotal:$('viewTotal'), viewMilestone:$('viewMilestone'),
+      viewOrderNumber:$('viewOrderNumber'), viewProject:$('viewProject'), viewStatus:$('viewStatus'), viewPayment:$('viewPayment'), viewTotal:$('viewTotal'), viewBalance:$('viewBalance'), viewMilestone:$('viewMilestone'),
       viewPublicStatus:$('viewPublicStatus'), viewNextStep:$('viewNextStep'), viewFulfillment:$('viewFulfillment'), nextStepWrap:$('nextStepWrap'), fulfillmentWrap:$('fulfillmentWrap'),
       viewTracking:$('viewTracking'), trackingWrap:$('trackingWrap'), paidDateWrap:$('paidDateWrap'), viewPaidDate:$('viewPaidDate'), paymentWrap:$('paymentWrap'),
       timelineFill:$('timelineFill'),
@@ -543,6 +545,7 @@ img{max-width:100%}
       paymentMessage:$('paymentMessage'),
       cashOption:$('cashOption'),
       cashMessage:$('cashMessage'),
+      paymentBtnOrder:$('paymentBtnOrder'),
       paymentBtnStripe:$('paymentBtnStripe'),
       paymentBtnPaypal:$('paymentBtnPaypal'),
       paymentBtnVenmo:$('paymentBtnVenmo'),
@@ -655,6 +658,7 @@ img{max-width:100%}
         els.paidDateWrap.classList.add('hidden');
       }
 
+      els.paymentBtnOrder.classList.add('hidden');
       els.paymentBtnStripe.classList.add('hidden');
       els.paymentBtnPaypal.classList.add('hidden');
       els.paymentBtnVenmo.classList.add('hidden');
@@ -689,6 +693,12 @@ img{max-width:100%}
       }
 
       const canShowPaymentButtons = status !== 'paid' && status !== 'refunded';
+
+      if(canShowPaymentButtons && o.order_number){
+        els.paymentBtnOrder.href = `pay.html?order=${encodeURIComponent(o.order_number)}`;
+        els.paymentBtnOrder.textContent = status === 'deposit_paid' ? 'View Exact Remaining Balance & Pay' : 'View Exact Balance & Pay';
+        els.paymentBtnOrder.classList.remove('hidden');
+      }
 
 if(stripe && canShowPaymentButtons){
   els.paymentBtnStripe.href = stripe;
@@ -734,9 +744,10 @@ if(venmo && canShowPaymentButtons){
       els.viewLastChecked.textContent = formatLastChecked();
       els.resultCard.classList.toggle('is-complete', ['completed','delivered'].includes(o.status));
 
-      els.viewTotal.textContent = o.order_total
-  ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(o.order_total)
-  : '—';
+      const currency = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(value)||0);
+      els.viewTotal.textContent = o.order_total != null ? currency(o.order_total) : '—';
+      const trackerBalance = o.payment_status === 'paid' ? 0 : Math.max(0, Number(o.balance_amount ?? ((Number(o.order_total)||0) - (Number(o.deposit_amount)||0))) || 0);
+      els.viewBalance.textContent = o.order_total != null ? currency(trackerBalance) : '—';
       els.viewPublicStatus.textContent=o.public_status_text||'No public update yet.';
       const nextText = (o.public_next_step || (isBusinessTermsOrder(o) ? businessTermsMessage(o) : '') || '').trim();
       const fulfillmentText = (o.shipping_or_pickup_note || '').trim();

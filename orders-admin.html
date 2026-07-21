@@ -965,10 +965,10 @@ body{font-family:Inter,Arial,sans-serif}
     .customer-360-chip:hover{background:rgba(126,123,255,.24);border-color:rgba(126,123,255,.42)}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
-  <script src="js/workflow-status.js?v=20260716-m2b1"></script>
-  <script src="js/erp-core.js?v=erp-1.0"></script>
+  <script defer src="js/workflow-status.js?v=20260716-m2b1"></script>
+  <script defer src="js/erp-core.js?v=erp-1.0"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
-  <script src="js/erp-reliability.js?v=20260608"></script>
+  <script defer src="js/erp-reliability.js?v=20260608"></script>
 <link rel="stylesheet" href="css/job-assets.css">
 </head>
 <body>
@@ -3468,6 +3468,8 @@ https://olipoly3d.com`;
         shipped: lifecycleFulfillmentLine('shipped', fulfillment, trackingNumber)
       };
 
+      const balanceDue = paymentStatus === 'paid' ? 0 : Math.max(0, num($('balanceAmount')?.value) || (num($('orderTotal')?.value) - num($('depositAmount')?.value)));
+      const payLink = `https://olipoly3d.com/pay.html?order=${encodeURIComponent(orderNumber)}`;
       return `Hi — ${titles[kind] || 'Here is an update on your OliPoly 3D order.'}
 
 Order #: ${orderNumber}
@@ -3475,7 +3477,10 @@ ${orderTitle ? `Project: ${orderTitle}\n` : ''}${fulfillment ? `Fulfillment: ${f
 ${next[kind] || ''}
 
 ${lifecyclePaymentLine(paymentStatus)}
-
+${paymentStatus !== 'paid' && balanceDue > 0 ? `
+Balance due: ${money(balanceDue)}
+Pay securely: ${payLink}
+` : ''}
 Track your order:
 ${trackLink}
 
@@ -3520,9 +3525,11 @@ https://olipoly3d.com`;
       }[kind] || ['Check the tracker for the latest order update'];
 
       const paid = paymentStatus === 'paid';
+      const balanceDue = paid ? 0 : Math.max(0, num($('balanceAmount')?.value) || (num($('orderTotal')?.value) - num($('depositAmount')?.value)));
+      const payLink = `https://olipoly3d.com/pay.html?order=${encodeURIComponent(orderNumber)}`;
       const paymentBox = paid
         ? `<div style="background:#effaf4;border:1px solid #bcebd0;border-radius:18px;padding:14px 16px;color:#166534;font-size:14px;line-height:1.55;"><strong>Payment:</strong> Paid in full.</div>`
-        : `<div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;color:#604d68;font-size:14px;line-height:1.55;"><strong style="color:#2f2336;">Payment:</strong> Payment options are available from the tracker.</div>`;
+        : `<div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;color:#604d68;font-size:14px;line-height:1.55;"><strong style="color:#2f2336;">Balance due:</strong> ${money(balanceDue)}<br><span>Use the secure order payment page below.</span></div>`;
 
       return `<div style="margin:0;background:#fff7fb;padding:26px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
   <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:28px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
@@ -3562,6 +3569,8 @@ https://olipoly3d.com`;
       </div>
 
       ${paymentBox}
+
+      ${!paid && balanceDue > 0 ? `<div style="margin:20px 0;"><a href="${payLink}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Pay ${money(balanceDue)} Securely</a></div>` : ''}
 
       <div style="margin:20px 0;">
         <a href="${trackLink}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Track Order</a>
@@ -7225,7 +7234,7 @@ function generateTravelerPdf(){
     bind('financeNotRequiredBtn', requireOrder('Finance Not Required', function(){ return toggleClosureFlag('finance_not_required'); }), 'Finance Not Required');
     bind('completionEmailNotRequiredBtn', requireOrder('Completion Email Not Required', function(){ return toggleClosureFlag('completion_email_not_required'); }), 'Completion Email Not Required');
     bind('generateProfessionalInvoicePdfBtn', requireOrder('Generate Invoice PDF', generateProfessionalInvoicePdf), 'Generate Invoice PDF');
-    bind('generatePackingSlipBtn', requireOrder('Packing Slip PDF', generatePackingSlip), 'Packing Slip PDF');
+    bind('generatePackingSlipBtn', requireOrder('Packing Slip PDF', typeof generatePackingSlipPdf === 'function' ? generatePackingSlipPdf : function(){ return generatePackingSlipPDF(snapshotForm()); }), 'Packing Slip PDF');
     bind('generateTravelerPdfBtn', requireOrder('Manufacturing Traveler PDF', generateTravelerPdf), 'Manufacturing Traveler PDF');
     bind('printShippingLabelBtn', requireOrder('Avery 5168 Shipping Label', printAvery5168Label), 'Avery 5168 Shipping Label');
     bind('printInnerPackLabelBtn', requireOrder('Avery 5366 Inner Pack Labels', printAvery5366InnerPackLabels), 'Avery 5366 Inner Pack Labels');

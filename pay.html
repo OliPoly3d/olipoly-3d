@@ -203,6 +203,9 @@
     .paypal .pay-icon{background:#0070ba}.venmo .pay-icon{background:#3d95ce}
     .pay-copy{min-width:0}.pay-copy strong{display:block;color:#3f3146;font-size:1.08rem;line-height:1.16}.pay-copy span{display:block;margin-top:4px;color:var(--muted);font-size:.9rem;line-height:1.3}.pay-copy em{display:block;margin-top:3px;color:#5b4a63;font-style:normal;font-size:.8rem;font-weight:900}.arrow{color:#9d6df3;font-weight:950;font-size:1.35rem;flex:0 0 auto}
 
+    .order-pay-card{display:none;grid-column:1/-1;padding:22px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,244,251,.96));border:1px solid rgba(214,73,186,.22);box-shadow:0 18px 50px rgba(95,36,112,.12)}
+    .order-pay-card.active{display:block}.order-pay-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.order-pay-head h2{margin:4px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:1.75rem;color:#3f3146}.order-pill{padding:7px 11px;border-radius:999px;background:#fff0f8;border:1px solid rgba(214,73,186,.2);font-size:.75rem;font-weight:950;color:#8f4f7b}.order-money{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.order-money div{padding:14px;border-radius:18px;background:rgba(255,255,255,.8);border:1px solid rgba(104,59,123,.12)}.order-money span{display:block;color:#826889;font-size:.75rem;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.order-money strong{display:block;margin-top:5px;color:#2f2336;font-size:1.2rem}.order-money .due{background:linear-gradient(135deg,rgba(232,79,183,.1),rgba(157,109,243,.1));border-color:rgba(214,73,186,.24)}.order-money .due strong{font-size:1.5rem}.order-guidance{padding:12px 14px;border-radius:18px;background:#fbf6ff;border:1px solid #dfcff5;color:#604d68;line-height:1.5}.order-error{display:none;margin-top:12px;padding:12px 14px;border-radius:16px;background:#fff1f4;border:1px solid #f2bdc8;color:#9b3550}.order-error.active{display:block}
+
     .event-note{
       margin-top:12px;
       padding:12px 14px;
@@ -271,7 +274,10 @@
       .pay-grid{gap:8px}.pay-btn,.pay-btn.primary{min-height:70px;padding:12px 13px;border-radius:20px}.pay-icon{width:42px;height:42px;border-radius:14px;font-size:.95rem}.pay-copy strong{font-size:1rem}.pay-copy span{font-size:.8rem}.pay-copy em{font-size:.74rem}.arrow{font-size:1.15rem}
       .intro-card{padding:16px;border-radius:28px;gap:11px}.eyebrow{display:none}h1{font-size:2.08rem;margin-bottom:7px}.sub{font-size:.9rem;line-height:1.48}
       .notice{padding:11px 12px;border-radius:18px;font-size:.83rem}.trust-row{grid-template-columns:1fr;gap:6px}.trust-row span{min-height:32px}
-      .event-note{margin-top:9px;padding:10px 12px;border-radius:18px;font-size:.8rem}.mini-footer{font-size:.76rem;border-radius:20px;padding:13px;margin-top:12px}
+      .order-pay-card{display:none;grid-column:1/-1;padding:22px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,244,251,.96));border:1px solid rgba(214,73,186,.22);box-shadow:0 18px 50px rgba(95,36,112,.12)}
+    .order-pay-card.active{display:block}.order-pay-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.order-pay-head h2{margin:4px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:1.75rem;color:#3f3146}.order-pill{padding:7px 11px;border-radius:999px;background:#fff0f8;border:1px solid rgba(214,73,186,.2);font-size:.75rem;font-weight:950;color:#8f4f7b}.order-money{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.order-money div{padding:14px;border-radius:18px;background:rgba(255,255,255,.8);border:1px solid rgba(104,59,123,.12)}.order-money span{display:block;color:#826889;font-size:.75rem;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.order-money strong{display:block;margin-top:5px;color:#2f2336;font-size:1.2rem}.order-money .due{background:linear-gradient(135deg,rgba(232,79,183,.1),rgba(157,109,243,.1));border-color:rgba(214,73,186,.24)}.order-money .due strong{font-size:1.5rem}.order-guidance{padding:12px 14px;border-radius:18px;background:#fbf6ff;border:1px solid #dfcff5;color:#604d68;line-height:1.5}.order-error{display:none;margin-top:12px;padding:12px 14px;border-radius:16px;background:#fff1f4;border:1px solid #f2bdc8;color:#9b3550}.order-error.active{display:block}
+
+    .event-note{margin-top:9px;padding:10px 12px;border-radius:18px;font-size:.8rem}.mini-footer{font-size:.76rem;border-radius:20px;padding:13px;margin-top:12px}
       .sticky-pay{display:flex}
     }
 
@@ -326,14 +332,20 @@
 </div>
 </div>
 </section>
+<section class="order-pay-card" id="orderPayCard" aria-live="polite">
+<div class="order-pay-head"><div><div class="eyebrow">Order payment</div><h2 id="orderPayTitle">Loading your order…</h2></div><span class="order-pill" id="orderPayStatus">Checking</span></div>
+<div class="order-money"><div><span>Order total</span><strong id="orderTotalDisplay">—</strong></div><div><span>Received</span><strong id="orderDepositDisplay">—</strong></div><div class="due"><span>Balance due</span><strong id="orderBalanceDisplay">—</strong></div></div>
+<div class="order-guidance" id="orderPayGuidance">Please wait while we load the customer-safe payment details for this order.</div>
+<div class="order-error" id="orderPayError"></div>
+</section>
 <section aria-labelledby="quick-pay-title" class="card pay-card">
 <div class="pay-heading">
 <h2 id="quick-pay-title">Quick Pay</h2>
 <span>Tap to open</span>
 </div>
 <div class="amount-helper">
-<span><strong>At an event?</strong> Tap a payment option, enter the agreed total, then show your confirmation before leaving the table.</span>
-<span class="amount-pill">Notes: OP/Q # if you have one</span>
+<span id="quickPayInstruction"><strong>At an event?</strong> Tap a payment option, enter the agreed total, then show your confirmation before leaving the table.</span>
+<span class="amount-pill" id="paymentNoteHint">Notes: OP/Q # if you have one</span>
 </div>
 <div class="pay-grid">
 <a class="pay-btn cardpay primary" href="https://buy.stripe.com/7sYdR2bGL39Y1oLg4h1oI00" rel="noopener" target="_blank">
@@ -385,6 +397,65 @@
 <a class="paypal-mini" href="https://www.paypal.com/ncp/payment/4X5YJL3X5NVL8" rel="noopener" target="_blank">PayPal</a>
 <a class="venmo-mini" href="https://www.venmo.com/u/OliPoly3D" rel="noopener" target="_blank">Venmo</a>
 </nav>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const rawOrder = params.get('order') || params.get('q');
+  if(!rawOrder) return; // Generic event/in-person mode remains unchanged.
+
+  const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const card = document.getElementById('orderPayCard');
+  const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(value)||0);
+  const normalize = value => {
+    const v=String(value||'').trim().toUpperCase();
+    const m=v.match(/^(?:OP-|Q-)?(\d{1,6})$/);
+    return m ? `OP-${m[1].padStart(6,'0')}` : v;
+  };
+  const orderNumber=normalize(rawOrder);
+  card.classList.add('active');
+  document.getElementById('quickPayInstruction').innerHTML='<strong>Order payment:</strong> choose a payment option and enter the exact balance shown above. Show or save the confirmation for your records.';
+  document.getElementById('paymentNoteHint').textContent=`Payment note: ${orderNumber}`;
+
+  fetch(`${SUPABASE_URL}/rest/v1/rpc/public_order_tracking_lookup`,{
+    method:'POST',
+    headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({tracking_identifier:orderNumber})
+  }).then(async response=>{
+    const body=await response.json().catch(()=>null);
+    if(!response.ok) throw new Error(body?.message||'Could not load this order.');
+    if(!Array.isArray(body)||!body.length) throw new Error('We could not find an active customer payment record for this order.');
+    return body[0];
+  }).then(order=>{
+    const status=order.payment_status||'unpaid';
+    const total=Number(order.order_total)||0;
+    const deposit=Number(order.deposit_amount)||0;
+    const balance=status==='paid'?0:Math.max(0,Number(order.balance_amount ?? (total-deposit))||0);
+    document.getElementById('orderPayTitle').textContent=`${order.order_number}${order.order_title ? ` — ${order.order_title}` : ''}`;
+    document.getElementById('orderTotalDisplay').textContent=money(total);
+    document.getElementById('orderDepositDisplay').textContent=money(deposit);
+    document.getElementById('orderBalanceDisplay').textContent=money(balance);
+    document.getElementById('orderPayStatus').textContent=status==='paid'?'Paid':'Payment Due';
+    document.getElementById('orderPayGuidance').innerHTML=status==='paid'
+      ? '<strong>This order is paid in full.</strong> No additional payment is currently due.'
+      : `<strong>Exact amount to enter: ${money(balance)}.</strong> Choose Card, PayPal, or Venmo below and include ${order.order_number} in the payment note when the processor allows it.`;
+    if(status==='paid') document.querySelector('.pay-card')?.setAttribute('hidden','');
+    const links={
+      card:order.payment_link_stripe||order.payment_link||'',
+      paypal:order.payment_link_paypal||'',
+      venmo:order.payment_link_venmo||''
+    };
+    if(links.card) document.querySelector('a.cardpay')?.setAttribute('href',links.card);
+    if(links.paypal) document.querySelector('a.paypal')?.setAttribute('href',links.paypal);
+    if(links.venmo) document.querySelector('a.venmo')?.setAttribute('href',links.venmo);
+  }).catch(error=>{
+    document.getElementById('orderPayTitle').textContent=`Order ${orderNumber}`;
+    document.getElementById('orderPayStatus').textContent='Unavailable';
+    const box=document.getElementById('orderPayError'); box.textContent=error.message; box.classList.add('active');
+    document.getElementById('orderPayGuidance').textContent='You may still use the generic payment options below after confirming the amount directly with OliPoly 3D.';
+  });
+})();
+</script>
 <script defer="" src="assets/erp-upgrade.js"></script>
   <script src="assets/public-mobile.js" defer></script>
 </body>
