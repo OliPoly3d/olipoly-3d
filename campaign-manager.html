@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Campaign Manager | OliPoly ERP</title>
+  <style>
+    body{margin:0;font-family:Inter,system-ui,sans-serif;background:#160f1d;color:#f8f4ff}a{color:inherit}.wrap{width:min(1180px,94vw);margin:auto;padding:28px 0 80px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center}.ghost,button{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;border-radius:14px;padding:10px 14px;font-weight:800;text-decoration:none;cursor:pointer}button.primary{background:linear-gradient(135deg,#ec4899,#8b5cf6);border:0}.grid{display:grid;grid-template-columns:330px 1fr;gap:18px;margin-top:22px}.card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:18px;box-shadow:0 18px 52px rgba(0,0,0,.25)}label{display:grid;gap:6px;font-size:.84rem;color:#d9ccec;margin:10px 0}input,select,textarea{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.24);color:#fff;padding:10px}textarea{min-height:78px}.list{display:grid;gap:10px}.row{display:grid;gap:6px;padding:12px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10)}.row.active{outline:2px solid #ec4899}.muted{color:#bdaecd}.products{display:grid;gap:12px}.product-grid{display:grid;grid-template-columns:1fr 1fr 90px 90px;gap:10px}.notice{min-height:24px;color:#f9a8d4;font-weight:700}@media(max-width:850px){.grid,.product-grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top"><div><h1>Campaign Manager</h1><p class="muted">Phase 1 admin foundation: campaign setup, product assignments, payment mode, delivery mode, and personalization rules.</p></div><a class="ghost" href="hub.html">← Hub</a></header>
+    <p class="notice" id="notice"></p>
+    <main class="grid">
+      <section class="card"><h2>Campaigns</h2><button class="primary" id="newCampaign" type="button">Create draft campaign</button><div class="list" id="campaignList"></div></section>
+      <section class="card">
+        <h2>Campaign basics</h2>
+        <form id="campaignForm">
+          <input type="hidden" name="id" />
+          <label>Slug <input name="campaign_slug" placeholder="niles-hsa-2026" required /></label>
+          <label>Code <input name="campaign_code" placeholder="NILES-HSA-2026" required /></label>
+          <label>Name <input name="name" required /></label>
+          <label>Organization <input name="organization_name" required /></label>
+          <label>Public copy <textarea name="public_description"></textarea></label>
+          <div class="product-grid">
+            <label>Status <select name="status"><option>draft</option><option>scheduled</option><option>active</option><option>closed</option><option>archived</option></select></label>
+            <label>Payment mode <select name="payment_mode"><option>external_org_collects</option><option>olipoly_collects</option></select></label>
+            <label>Starts <input name="starts_at" type="datetime-local" /></label>
+            <label>Ends <input name="ends_at" type="datetime-local" /></label>
+          </div>
+          <label>Delivery mode <select name="delivery_mode"><option>organization_pickup</option><option>event_pickup</option><option>customer_pickup</option><option>shipping</option><option>mixed</option></select></label>
+          <label>Branding config JSON <textarea name="branding_config">{}</textarea></label>
+          <label>Public config JSON (safe links/instructions only) <textarea name="public_config">{}</textarea></label>
+          <label>Internal notes <textarea name="internal_notes"></textarea></label>
+          <button class="primary" type="submit">Save campaign</button>
+        </form>
+        <hr />
+        <h2>Campaign products</h2>
+        <p class="muted">OliPoly share fields are internal and excluded from the public lookup RPC.</p>
+        <div class="products" id="products"></div>
+        <button type="button" id="addProduct">Add product</button>
+      </section>
+    </main>
+  </div>
+  <script src="js/olipoly-auth.js"></script>
+  <script src="js/campaign-manager.js"></script>
+  <script>
+  (function(){
+    const $=s=>document.querySelector(s), notice=$('#notice'), form=$('#campaignForm'), list=$('#campaignList'), products=$('#products');
+    let campaigns=[], selected=null, productRows=[];
+    const show=(m)=>{notice.textContent=m||'';};
+    const values=(f)=>Object.fromEntries(new FormData(f).entries());
+    const localTime=v=>v?String(v).slice(0,16):'';
+    async function load(){ try{ campaigns=await OliPolyCampaignManager.api.listCampaigns(); renderList(); show('Campaigns loaded from Supabase.'); }catch(e){ show(e.message); } }
+    function renderList(){ list.innerHTML=campaigns.map(c=>`<button type="button" class="row ${selected&&selected.id===c.id?'active':''}" data-id="${c.id}"><strong>${c.name}</strong><span>${c.organization_name} · ${c.status} · ${c.payment_mode}</span></button>`).join('') || '<p class="muted">No campaigns yet.</p>'; }
+    async function selectCampaign(id){ selected=campaigns.find(c=>c.id===id)||null; if(!selected)return; for(const [k,v] of Object.entries(selected)){ if(form.elements[k]) form.elements[k].value = k.endsWith('_at') ? localTime(v) : (typeof v==='object' ? JSON.stringify(v,null,2) : (v ?? '')); } form.elements.id.value=selected.id; renderList(); try{ productRows=await OliPolyCampaignManager.api.listProducts(selected.id); renderProducts(); }catch(e){ show(e.message); } }
+    function renderProducts(){ products.innerHTML=productRows.map((p,i)=>productForm(p,i)).join('') || '<p class="muted">No products assigned yet.</p>'; }
+    function productForm(p,i){ return `<form class="row product" data-id="${p.id||''}"><div class="product-grid"><label>SKU <input name="campaign_sku" value="${p.campaign_sku||''}" required></label><label>Name <input name="display_name" value="${p.display_name||''}" required></label><label>Order <input name="display_order" type="number" min="0" value="${p.display_order||0}"></label><label>Enabled <select name="enabled"><option value="true" ${p.enabled!==false?'selected':''}>true</option><option value="false" ${p.enabled===false?'selected':''}>false</option></select></label></div><label>Public description <textarea name="public_description">${p.public_description||''}</textarea></label><div class="product-grid"><label>Standard price <input name="standard_customer_price" type="number" step="0.01" min="0" value="${p.standard_customer_price||0}"></label><label>Personalized price <input name="personalized_customer_price" type="number" step="0.01" min="0" value="${p.personalized_customer_price??''}"></label><label>OliPoly std share <input name="olipoly_standard_share" type="number" step="0.01" min="0" value="${p.olipoly_standard_share||0}"></label><label>OliPoly pers share <input name="olipoly_personalized_share" type="number" step="0.01" min="0" value="${p.olipoly_personalized_share??''}"></label></div><label>Personalization enabled <select name="personalization_enabled"><option value="false" ${!p.personalization_enabled?'selected':''}>false</option><option value="true" ${p.personalization_enabled?'selected':''}>true</option></select></label><label>Personalization instructions <textarea name="personalization_instructions">${p.personalization_instructions||''}</textarea></label><button type="submit">Save product ${i+1}</button></form>`; }
+    $('#newCampaign').onclick=()=>{ selected=null; productRows=[]; form.reset(); form.elements.status.value='draft'; form.elements.payment_mode.value='external_org_collects'; form.elements.delivery_mode.value='organization_pickup'; form.elements.branding_config.value='{}'; form.elements.public_config.value='{}'; renderProducts(); show('Draft form ready. Save to create the campaign in Supabase.'); };
+    list.onclick=e=>{ const b=e.target.closest('button[data-id]'); if(b) selectCampaign(b.dataset.id); };
+    form.onsubmit=async e=>{ e.preventDefault(); try{ const row=values(form); const saved=row.id?await OliPolyCampaignManager.api.updateCampaign(row.id,row):await OliPolyCampaignManager.api.createCampaign(row); selected=saved; await load(); await selectCampaign(saved.id); show('Campaign saved durably in Supabase.'); }catch(err){ show(`Save failed; no durable success was recorded. ${err.message}`); } };
+    $('#addProduct').onclick=()=>{ if(!selected){show('Save or select a campaign before adding products.');return;} productRows.push({campaign_id:selected.id,enabled:true,display_order:productRows.length,standard_customer_price:10,olipoly_standard_share:6}); renderProducts(); };
+    products.addEventListener('submit',async e=>{ e.preventDefault(); try{ const row=values(e.target); row.id=e.target.dataset.id; row.campaign_id=selected.id; row.enabled=row.enabled==='true'; row.personalization_enabled=row.personalization_enabled==='true'; await OliPolyCampaignManager.api.upsertProduct(row); productRows=await OliPolyCampaignManager.api.listProducts(selected.id); renderProducts(); show('Product saved durably in Supabase.'); }catch(err){ show(`Product save failed; no durable success was recorded. ${err.message}`); } });
+    document.addEventListener('DOMContentLoaded',load);
+  })();
+  </script>
+</body>
+</html>
