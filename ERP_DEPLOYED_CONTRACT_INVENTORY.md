@@ -1699,3 +1699,159 @@ Record row counts before and after recovery/export/local-clear tests. The counts
 ### Explicit non-actions
 
 Codex did not deploy SQL, execute SQL against Supabase, alter Supabase state, create a migration, broaden RLS/grants/security, modify Finance, modify Quote acceptance, modify public tracking, modify `pay.html`, modify `track.html`, modify Fundraiser behavior, modify OP-000010, mutate recovery evidence, clean historical Inventory data, or delete historical recovery records. OP-000010 was not modified.
+
+## Production-to-Inventory live workflow wiring verification — 2026-07-21 repository pass
+
+### Exact deployed command contract identified
+
+- `public.production_workflow_command(p_order_number text, p_command text, p_expected_updated_at timestamptz, p_payload jsonb default '{}'::jsonb, p_correlation_id text default null, p_causation_id text default null)` owns Start Print (`start_print`), Complete Print (`complete_print`), Pass QC (`pass_qc`), and Needs Reprint (`needs_reprint`). It validates status transitions, writes linked `orders`/`production_jobs`, records Production actuals for Complete Print, appends attempt evidence, and inserts `project_events` for `order.printing_started`, `order.print_completed`, `order.qc_passed`, and `order.needs_reprint`.
+- `public.fulfillment_workflow_command(p_order_number text, p_command text, p_expected_updated_at timestamptz, p_payload jsonb default '{}'::jsonb, p_correlation_id text default null, p_causation_id text default null)` owns the post-Production boundary command `close_order` only.
+- `public.reserve_production_material(p_production_job_id uuid, p_expected_updated_at timestamptz, p_reservation_command_id text, p_roll_reservations jsonb)` owns ready-to-print material reservation and updates `raw_material_inventory.reserved_grams` through durable reservation rows.
+- `public.release_production_material_reservation(p_production_job_id uuid, p_expected_updated_at timestamptz, p_release_command_id text, p_reason text default null)` owns reservation release/return-to-available behavior.
+- `public.consume_production_attempt(p_production_job_id uuid, p_attempt_id text, p_correlation_id text, p_expected_updated_at timestamptz, p_roll_usages jsonb, p_workflow_command text)` owns good-material attempt consumption at `pass_qc` or `needs_reprint` boundaries. It requires existing completed attempt evidence, active reservations, and stable attempt/correlation identity, then updates `raw_material_inventory.remaining_grams`, closes reservation rows, and inserts authoritative `inventory_transactions` with `transaction_type = 'production_attempt_consumption'` and `type = 'raw_usage'`.
+- The currently deployed repository contract records scrap as distinct Production attempt evidence (`scrap_grams`) in `production_workflow_command`. The audited Inventory consumption RPC consumes explicit `roll_usages[].grams_used`; it does not create a separate `production_supply_consumption` or scrap-only ledger row in the checked-in deployed function body. Live verification must therefore document whether the deployed database now has an additional later scrap/supply RPC or trigger not represented in this repository.
+
+### Browser write-path classification
+
+| Browser path | Classification | Repository result |
+|---|---|---|
+| Production Control Start Print | Approved command/RPC | Uses `productionWorkflowRpcRequest(..., 'start_print', job.updated_at, ...)`; direct status PATCH remains absent. Duplicate clicks are guarded and success refreshes authoritative Production/Inventory state. |
+| Production Control Complete Print | Approved command/RPC | Uses `productionWorkflowRpcRequest(..., 'complete_print', job.updated_at, actuals)` with actual printer, accepted quantity, print hours, good grams, scrap grams, roll usage, and attempt evidence. The browser does not insert `inventory_transactions` or directly mutate workflow status. |
+| Production Control Pass QC | Approved split command sequence | Calls `consume_production_attempt(...)` first with the persisted `j.updated_at`, then `production_workflow_command(..., 'pass_qc', j.updated_at, ...)`. Browser success is reported only after all required RPCs succeed. Remaining limitation: Inventory consumption and workflow transition are separate RPC transactions, so a consumption-success/workflow-failure partial state requires the preserved local recovery retry path and operator review. |
+| Production Control Needs Reprint | Approved split command sequence | Calls `consume_production_attempt(...)` with `workflowCommand:'needs_reprint'`, preserves prior attempt evidence, then calls `production_workflow_command(..., 'needs_reprint', ...)` and reserves the next attempt. It does not delete or reverse prior consumption evidence. The same non-atomic split-RPC limitation applies. |
+| Production Control reservation creation | Approved Inventory command/RPC | Uses `reserve_production_material(...)`; no direct linked reservation quantity overwrite is used for accepted work. |
+| Production Control reservation release/return | Approved Inventory command/RPC | Uses `release_production_material_reservation(...)` for linked accepted work. |
+| Production Control `logProjectEvent(...)` | Local/non-command event path for pre-acceptance and unlinked Production only | Linked command-owned lifecycle evidence is emitted by deployed workflow RPCs; Complete Print for linked work does not call the browser event insert. |
+| Inventory Control ordinary raw/supply/finished/spool saves | Approved narrow Inventory owner operations | Preserved from prior browser-authority pass; full rebuild and browser-to-cloud replacement remain blocked. |
+| Inventory Control recovery/export/local clear | Local non-authoritative recovery | Preserved as separate recovery/cache behavior. |
+| Orders Admin close | Approved fulfillment command/RPC | Uses `fulfillmentWorkflowRpcRequest(..., 'close_order', ...)`; Production manufacturing statuses remain out of Orders Admin. |
+| Public tracking, Quote acceptance, Finance, `pay.html`, `track.html`, Fundraiser | Out of scope / not modified | No changes were made in this pass. |
+
+### Root causes corrected in this pass
+
+- Linked Pass QC and Needs Reprint Inventory consumption used a locally fabricated `updated_at` from the pending UI row as `p_expected_updated_at`. The deployed `consume_production_attempt(...)` contract expects the persisted Production row timestamp, so the browser now passes `j.updated_at` for command-owned consumption.
+- Linked workflow actions did not have a shared duplicate in-flight guard. Start Print, Pass QC, Needs Reprint, and Complete Print now block rapid duplicate submissions while the authoritative command is pending.
+- Failure logging was visible to the operator through alerts/toasts but not sufficiently actionable in the console. Workflow and Complete Print failures now log command context.
+- Successful linked commands now explicitly refresh authoritative Production and raw Inventory state after the RPC sequence rather than relying only on the optimistic local row.
+
+### Static regression added
+
+- `tests/production-inventory-live-workflow-wiring.test.js` verifies deployed RPC signatures, command routing, stable same-command correlation identity, duplicate/in-flight guards, visible failure messaging, distinct good/scrap grams, no direct browser `orders.status` or `production_jobs.status` PATCH, no browser insert into command-owned `inventory_transactions`, and no OP-000010 touch.
+
+### Live operator verification checklist
+
+Use a disposable accepted test order only. Do not use OP-000010.
+
+1. Confirm the disposable Order, linked Production job, and public tracking row all begin at `ready_to_print`.
+2. Click Start Print once. Confirm Production Control calls `production_workflow_command` with `p_command = 'start_print'` and the row changes to `printing`.
+3. Rapidly double-click Start Print or retry the same command. Confirm the UI blocks duplicates or the RPC returns idempotently with the same correlation identity; no duplicate lifecycle event appears.
+4. Refresh the page and open a second browser/device. Confirm the authoritative `printing` state persists.
+5. Complete Print with actual printer, accepted units, print duration, good material grams, scrap grams, and explicit roll usage/source selection.
+6. Confirm the browser calls `production_workflow_command` with `p_command = 'complete_print'`, records actuals, and moves to `qc`. Confirm it does not directly mutate Inventory tables.
+7. Confirm Production attempt evidence has distinct `good_grams` and `scrap_grams`, persisted printer, accepted quantity, duration, and roll usage.
+8. Click Pass QC. Confirm the browser first calls `consume_production_attempt` with `p_workflow_command = 'pass_qc'`, then calls `production_workflow_command` with `p_command = 'pass_qc'`.
+9. Confirm a good-material Inventory transaction exists for the consumed attempt, with the expected negative grams, `production_job_id`, `attempt_id`, `correlation_id`, `order_number`, and `quote_number`.
+10. Confirm scrap remains distinct in Production attempt evidence. If the deployed database has a separate scrap/supply ledger command beyond the repository contract, record that additional transaction; otherwise document that scrap is Production evidence only in this repository contract.
+11. Confirm active reservations were consumed/released/reconciled and `raw_material_inventory.reserved_grams` no longer includes the completed attempt reservation.
+12. Confirm the Order, Production job, and public tracking row are `ready_for_fulfillment` after Pass QC.
+13. Refresh and verify persistence on a second device.
+14. Simulate failed RPC/network behavior for Start Print, Complete Print, Pass QC, and Needs Reprint. Confirm errors are visible and no durable-success message is shown after partial failure.
+15. Run a separate disposable reprint test: start at `qc`, click Needs Reprint, confirm `consume_production_attempt` uses `p_workflow_command = 'needs_reprint'`, then `production_workflow_command` returns the workflow to `ready_to_print`.
+16. Confirm the prior completed attempt evidence and Inventory ledger rows remain intact and are not reversed, deleted, or overwritten.
+17. Start a new attempt after Needs Reprint. Confirm it has a distinguishable attempt id/correlation identity and does not duplicate the prior attempt consumption.
+18. Confirm no protected direct writes occurred from the browser: no direct status PATCH to `orders`/`production_jobs`, no browser insert into `inventory_transactions`, and no browser quantity overwrite replacing ledger-driven Inventory changes.
+
+Safe read-only SQL verification script for the disposable order; replace the two values in `params` before manual execution. Do not run this from Codex.
+
+```sql
+with params as (
+  select 'OP-TEST-DISPOSABLE'::text as order_number, 'Q-TEST-DISPOSABLE'::text as quote_number
+), linked as (
+  select
+    o.id as order_id,
+    o.order_number,
+    o.status as order_status,
+    o.updated_at as order_updated_at,
+    pj.id as production_job_id,
+    pj.production_status,
+    pj.updated_at as production_updated_at,
+    pj.actual_machine,
+    pj.actual_quantity,
+    pj.actual_print_hours,
+    pj.actual_grams_used,
+    pj.scrap_grams,
+    pj.roll_usages,
+    pj.job_payload,
+    otp.status as tracking_status,
+    otp.public_status_text,
+    otp.public_next_step
+  from params p
+  left join public.orders o on o.order_number = p.order_number
+  left join public.production_jobs pj on pj.order_number = p.order_number or pj.quote_number = p.quote_number
+  left join public.order_tracking_public otp on otp.order_number = p.order_number
+), attempts as (
+  select l.production_job_id, attempt
+  from linked l
+  cross join lateral jsonb_array_elements(coalesce(l.job_payload->'production_attempts','[]'::jsonb)) attempt
+), tx as (
+  select t.*
+  from public.inventory_transactions t
+  join linked l on l.production_job_id = t.production_job_id
+), reservations as (
+  select r.*
+  from public.production_material_reservations r
+  join linked l on l.production_job_id = r.production_job_id
+), events as (
+  select e.*
+  from public.project_events e
+  join params p on e.order_number = p.order_number
+  where e.event_type in ('order.printing_started','order.print_completed','order.qc_passed','order.needs_reprint','order.ready_to_print','order.closed')
+)
+select jsonb_build_object(
+  'linked_state', (select to_jsonb(l) from linked l limit 1),
+  'attempts', coalesce((select jsonb_agg(attempt order by attempt->>'captured_at') from attempts), '[]'::jsonb),
+  'inventory_transactions', coalesce((select jsonb_agg(jsonb_build_object(
+    'id', id,
+    'transaction_type', transaction_type,
+    'type', type,
+    'raw_material_id', raw_material_id,
+    'quantity_grams', quantity_grams,
+    'attempt_id', attempt_id,
+    'correlation_id', correlation_id,
+    'order_number', order_number,
+    'quote_number', quote_number,
+    'occurred_at', occurred_at
+  ) order by occurred_at, id) from tx), '[]'::jsonb),
+  'reservations', coalesce((select jsonb_agg(jsonb_build_object(
+    'id', id,
+    'raw_material_roll_id', raw_material_roll_id,
+    'reserved_grams', reserved_grams,
+    'status', status,
+    'reservation_command_id', reservation_command_id,
+    'consume_command_id', consume_command_id,
+    'release_command_id', release_command_id,
+    'attempt_id', attempt_id,
+    'updated_at', updated_at
+  ) order by updated_at, id) from reservations), '[]'::jsonb),
+  'events', coalesce((select jsonb_agg(jsonb_build_object(
+    'event_type', event_type,
+    'correlation_id', correlation_id,
+    'aggregate_type', aggregate_type,
+    'aggregate_id', aggregate_id,
+    'payload', payload,
+    'occurred_at', occurred_at
+  ) order by occurred_at, event_type) from events), '[]'::jsonb),
+  'protected_direct_write_check', jsonb_build_object(
+    'browser_should_not_patch_orders_status', true,
+    'browser_should_not_patch_production_jobs_status', true,
+    'browser_should_not_insert_inventory_transactions', true,
+    'op_000010_not_used', (select order_number <> 'OP-000010' from params)
+  )
+) as disposable_production_inventory_workflow_verification;
+```
+
+### Known limitations and non-actions
+
+- Atomicity limitation: Pass QC and Needs Reprint are currently browser-orchestrated split RPC sequences (`consume_production_attempt` plus `production_workflow_command`, and for reprint a follow-up reservation). The browser blocks durable success until all required calls succeed and preserves local recovery metadata for retry, but a mid-sequence remote failure can still require operator review.
+- Documentation/deployed mismatch to verify live: the Blueprint target asks for good-material Inventory consumption and scrap Inventory recording. The repository-deployed consumption RPC records good/roll material consumption in `inventory_transactions`; scrap is persisted as Production attempt evidence. If the live database has additional deployed scrap/supply transaction behavior, it must be captured as live evidence rather than inferred from this repository.
+- Codex did not deploy SQL, execute SQL, alter Supabase state, create a migration, broaden RLS/grants/security, modify Finance, modify Quote acceptance, modify public tracking, modify `pay.html`, modify `track.html`, modify Fundraiser behavior, modify OP-000010, mutate historical Production/Inventory data, clean historical data, or reinterpret recovery records.

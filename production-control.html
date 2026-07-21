@@ -2781,6 +2781,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return Array.isArray(result) ? result[0] : result;
   }
 
+  const linkedWorkflowInFlight = new Set();
+
+  async function refreshAuthoritativeProductionState(){
+    if(!state.user?.id) return;
+    const cloudJobs = await loadCloudJobs();
+    state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudJobs, state.jobs || [], normalizeJob);
+    localWrite(LS_JOBS,state.jobs);
+    await refreshRawInventoryFromCloud();
+  }
+
   async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
     const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
@@ -2877,10 +2887,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function setStatus(id,status){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
+    const inFlightKey = `${id}:${status}`;
+    if(linkedWorkflowInFlight.has(inFlightKey)) return toast('Workflow command already in progress. Please wait for the authoritative response.');
     if(j.order_number){
       if(status === 'qc') return toast('Use Complete Print to capture actuals before moving to QC.');
       if(!({ready_to_print:1, printing:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
       if(status === 'printing' && !hasProductionActualPlan(j)) return toast('Add/confirm slicer grams and print hours before starting production.');
+      linkedWorkflowInFlight.add(inFlightKey);
       const now = new Date();
       const recovery = pendingLinkedWorkflowRecovery(j, status);
       const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
@@ -2894,7 +2907,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         }
         lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
         if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc'});
+          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc', expectedUpdatedAt:j.updated_at});
         }
         const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
           ? {...updated, material_reservations:[]}
@@ -2924,11 +2937,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         state.jobs = state.jobs.map(x=>x.id===id ? updated : x);
         localWrite(LS_JOBS,state.jobs);
         clearLinkedWorkflowRecovery(id);
+        await refreshAuthoritativeProductionState();
         render();
         toast(`Moved to ${STATUS[status] || status}.`);
-      }catch(err){ toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
+      }catch(err){ console.error('Production workflow command failed', {job_id:id, order_number:j.order_number, status, error:err}); toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
 
 ${err.message || err}`); }
+      finally{ linkedWorkflowInFlight.delete(inFlightKey); }
       return;
     }
     const now = new Date();
@@ -2948,7 +2963,7 @@ ${err.message || err}`); }
     }
     const lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
     if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-      await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc'});
+      await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc', expectedUpdatedAt:j.updated_at});
     }
     const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
       ? {...updated, material_reservations:[]}
@@ -2975,6 +2990,7 @@ ${err.message || err}`); }
       if(j.order_number && window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(status)){
         const authoritative = await syncProductionStatusToOrder(j, status);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
+        await refreshAuthoritativeProductionState();
       } else {
         await cloudSaveJob(updated);
         window.OliPolyERP?.logEvent?.('production_status_changed', {job_id:id, from:j.production_status, to:status, reserved_grams:(updated.material_reservations||[]).reduce((sum,r)=>sum+num(r.grams_reserved),0)});
@@ -2984,7 +3000,7 @@ ${err.message || err}`); }
       localWrite(LS_JOBS,state.jobs);
       render();
       toast(`Moved to ${STATUS[status] || status}.`);
-    }catch(err){ alert(`Could not update status:\n\n${err.message || err}`); }
+    }catch(err){ console.error('Production status update failed', {job_id:id, status, error:err}); alert(`Could not update status:\n\n${err.message || err}`); }
   }
 
 
@@ -3478,7 +3494,8 @@ ${err.message || err}`); }
         throw new Error('Linked Production attempts require explicit roll usage before Inventory can consume material.');
       }
       const workflowCommand = options.workflowCommand || (options.lifecycleAction === 'consume_and_reserve_reprint' ? 'needs_reprint' : 'pass_qc');
-      const request = window.OliPolyWorkflow.inventoryConsumptionRpcRequest(job, workflowCommand, job.updated_at, usages, attempt);
+      const expectedUpdatedAt = options.expectedUpdatedAt || job.updated_at;
+      const request = window.OliPolyWorkflow.inventoryConsumptionRpcRequest(job, workflowCommand, expectedUpdatedAt, usages, attempt);
       await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
       if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
     }else if(options.addFinished){
@@ -3546,11 +3563,15 @@ ${err.message || err}`); }
     updated.production_attempts = [...(j.production_attempts || []).filter(row=>row.id !== attemptId), capturedAttempt];
     updated.current_attempt_id = attemptId;
     updated.production_closeout_snapshot = productionCloseoutSnapshot(updated);
+    const closeInFlightKey = `${j.id}:complete_print`;
+    if(linkedWorkflowInFlight.has(closeInFlightKey)) return toast('Complete Print is already in progress. Please wait for the authoritative response.');
     try{
+      if(j.order_number) linkedWorkflowInFlight.add(closeInFlightKey);
       updated.material_reservations = j.material_reservations || [];
       if(j.order_number){
         const authoritative = await syncProductionStatusToOrder(j, 'qc', updated);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
+        await refreshAuthoritativeProductionState();
       } else {
         if(state.user?.id) await cloudSaveJob(updated);
         await logProjectEvent('production_actuals_captured', updated, {snapshot: updated.production_closeout_snapshot});
@@ -3563,7 +3584,11 @@ ${err.message || err}`); }
       render();
       toast('Print actuals and scrap saved. Moved to QC / Finishing; inventory will be consumed on QC Pass.');
     }catch(err){
+      console.error('Complete Print command failed', {job_id:j.id, order_number:j.order_number, error:err});
+      toast('Complete Print failed; no durable success was recorded by the browser.');
       alert(`Could not close job:\n\n${err.message || err}`);
+    }finally{
+      linkedWorkflowInFlight.delete(closeInFlightKey);
     }
   }
 
