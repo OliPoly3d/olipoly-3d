@@ -1440,3 +1440,38 @@ Operator-supplied deployed Finance findings for this milestone:
 - Historical cleanup and duplicate reinterpretation are prohibited.
 
 Repository migration `supabase/migrations/202607210005_authoritative_finance_posting_corrections.sql` is the forward-only planned correction for authoritative, idempotent Finance posting and append-only Finance correction/reversal commands. Codex did not deploy it, run SQL, backfill historical Orders, reinterpret craft-show candidates, alter historical rows, merge, or clean deployed data.
+
+## Deployment reconciliation — Finance column privileges (2026-07-21)
+
+This section records operator-supplied deployed evidence for the manually corrected Finance column privileges and the matching repository reconciliation. The operator already applied equivalent SQL manually in the deployed Supabase environment and should not rerun `supabase/migrations/202607210006_reconcile_finance_column_privileges.sql` solely for deployment.
+
+### Operator-supplied deployed evidence
+
+- Migration `202607210005_authoritative_finance_posting_corrections.sql` deployed successfully after correcting the parenthesized `CASE` expression in `append_finance_correction`.
+- The deployed Finance RPCs and indexes verified successfully.
+- A privilege defect was found after deployment: authenticated users could update all Finance command-owned columns because table-level `UPDATE` was granted after column revocation.
+- The operator manually corrected privileges successfully.
+- Final deployed verification showed `anon` direct `INSERT`, `UPDATE`, and `DELETE` are `false`.
+- Final deployed verification showed authenticated table-level `INSERT` and `UPDATE` are `false`, while authenticated `DELETE` is `true`.
+- Final deployed verification showed authenticated manual-column `INSERT` and `UPDATE` for `title` and `amount` are `true`.
+- Final deployed verification showed authenticated `INSERT` and `UPDATE` for `order_id` and `finance_command_id` are `false`.
+- Final deployed verification showed authenticated `UPDATE` for `correction_of_entry_id` and `reversal_of_entry_id` are `false`.
+- There are currently zero authoritative Order postings, corrections, or reversals.
+
+### Repository reconciliation
+
+Migration `supabase/migrations/202607210006_reconcile_finance_column_privileges.sql` is the forward-only repository reconciliation for the already repaired deployed Finance privilege contract. It revokes table-level `INSERT` and `UPDATE` from `PUBLIC`, `anon`, and `authenticated`; preserves authenticated `SELECT` and `DELETE`; grants authenticated `INSERT` and `UPDATE` only on reviewed manual Finance Pro columns; excludes command-owned columns from browser `INSERT` and `UPDATE`; preserves RPC and service-role command authority; and includes one consolidated read-only JSONB verification query.
+
+This reconciliation does not change historical Finance rows, post historical Orders, reinterpret duplicate candidates, alter the known shipping inconsistency, deploy SQL, execute SQL, backfill data, merge, or perform cleanup.
+
+### Verification status
+
+| Verification area | Status | Contract interpretation |
+| --- | --- | --- |
+| Database privilege verification | Passed | Operator reports the manually repaired deployed privileges match the repository reconciliation contract. |
+| Live posting workflow | Pending | No deployed browser live posting test was performed. |
+| Same-command retry workflow | Pending | No deployed browser retry/idempotency test was performed. |
+| Correction workflow | Pending | No deployed correction test was performed. |
+| Reversal workflow | Pending | No deployed reversal test was performed. |
+| Concurrency workflow | Pending | No deployed concurrency test was performed. |
+| Runtime browser tests | Pending | Runtime browser behavior remains pending, not passed. |

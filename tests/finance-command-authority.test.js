@@ -3,7 +3,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const migrationPath = 'supabase/migrations/202607210005_authoritative_finance_posting_corrections.sql';
+const reconciliationMigrationPath = 'supabase/migrations/202607210006_reconcile_finance_column_privileges.sql';
 const migration = fs.readFileSync(migrationPath, 'utf8');
+const reconciliationMigration = fs.readFileSync(reconciliationMigrationPath, 'utf8');
 const orders = fs.readFileSync('orders-admin.html', 'utf8');
 const workflowSource = fs.readFileSync('js/workflow-status.js', 'utf8');
 const financeDoc = fs.readFileSync('ERP_FINANCE_AUTHORITY_VERIFICATION.md', 'utf8');
@@ -31,8 +33,24 @@ assert.match(migration, /Finance entry has already been reversed/, 'double rever
 assert.doesNotMatch(migration, /\n\s*update\s+public\.financial_entries\b/i, 'corrections must not update original Finance entries');
 assert.doesNotMatch(migration, /\n\s*delete\s+from\s+public\.financial_entries\b/i, 'corrections must not delete Finance entries');
 assert.match(migration, /revoke insert, update, delete on table public\.financial_entries from anon/i, 'anon mutations must be revoked');
-assert.match(migration, /grant select, insert, update, delete on table public\.financial_entries to authenticated/i, 'manual Finance entry creation remains available temporarily');
-assert.match(migration, /revoke update\(order_id, order_number, finance_command_id, finance_command, finance_command_owned, correction_of_entry_id, reversal_of_entry_id, posted_by, posted_at, correction_reason, accepted_commercial_snapshot\)/i, 'browser-direct mutation of command-owned columns must be blocked');
+assert.match(migration, /grant select, insert, update, delete on table public\.financial_entries to authenticated/i, 'the original merged migration preserves manual Finance access before reconciliation');
+assert.match(migration, /revoke update\(order_id, order_number, finance_command_id, finance_command, finance_command_owned, correction_of_entry_id, reversal_of_entry_id, posted_by, posted_at, correction_reason, accepted_commercial_snapshot\)/i, 'the original merged migration attempted command-owned column protection');
+assert.match(reconciliationMigration, /The operator already applied equivalent SQL manually/i, 'reconciliation migration must warn not to rerun solely for deployment');
+assert.match(reconciliationMigration, /revoke insert, update on table public\.financial_entries from public, anon, authenticated/i, 'table-level browser INSERT and UPDATE must be revoked');
+assert.match(reconciliationMigration, /grant select, delete on table public\.financial_entries to authenticated/i, 'authenticated SELECT and DELETE must be preserved');
+assert.match(reconciliationMigration, /grant insert\([\s\S]*title[\s\S]*amount[\s\S]*other_direct_cost[\s\S]*\) on public\.financial_entries to authenticated/i, 'manual entry creation columns must remain insertable');
+assert.match(reconciliationMigration, /grant update\([\s\S]*title[\s\S]*amount[\s\S]*other_direct_cost[\s\S]*\) on public\.financial_entries to authenticated/i, 'manual entry editing columns must remain updatable');
+for (const protectedColumn of ['order_id', 'order_number', 'finance_command_id', 'finance_command', 'finance_command_owned', 'correction_of_entry_id', 'reversal_of_entry_id', 'posted_by', 'posted_at', 'correction_reason', 'accepted_commercial_snapshot']) {
+  const insertGrant = reconciliationMigration.match(/grant insert\(([\s\S]*?)\) on public\.financial_entries to authenticated/i)?.[1] || '';
+  const updateGrant = reconciliationMigration.match(/grant update\(([\s\S]*?)\) on public\.financial_entries to authenticated/i)?.[1] || '';
+  assert.doesNotMatch(insertGrant, new RegExp(`\\b${protectedColumn}\\b`, 'i'), `${protectedColumn} must not be browser-insertable`);
+  assert.doesNotMatch(updateGrant, new RegExp(`\\b${protectedColumn}\\b`, 'i'), `${protectedColumn} must not be browser-updatable`);
+}
+assert.match(reconciliationMigration, /grant execute on function public\.post_order_finance_income\(uuid,text,timestamptz,text\) to authenticated, service_role/i, 'posting RPC authority must be preserved');
+assert.match(reconciliationMigration, /grant execute on function public\.append_finance_correction\(uuid,text,numeric,text,text\) to authenticated, service_role/i, 'correction RPC authority must be preserved');
+assert.match(reconciliationMigration, /Consolidated read-only JSONB verification query/i, 'privilege reconciliation verification query must be included');
+assert.match(reconciliationMigration, /authenticated_insert_order_id[\s\S]*has_column_privilege\('authenticated','public\.financial_entries','order_id','insert'\)/i, 'verification must prove command-owned insert protection');
+assert.match(reconciliationMigration, /authenticated_update_reversal_of_entry_id[\s\S]*has_column_privilege\('authenticated','public\.financial_entries','reversal_of_entry_id','update'\)/i, 'verification must prove command-owned update protection');
 assert.match(migration, /update public\.orders[\s\S]*finance_pushed = true/, 'command atomically owns order finance_pushed mutation');
 assert.match(migration, /Consolidated read-only JSONB verification query/, 'consolidated verification query must be included');
 
@@ -60,5 +78,8 @@ assert.match(financeDoc, /Five craft-show income rows are duplicate candidates b
 assert.match(financeDoc, /unresolved, not duplicates/i);
 assert.match(deployedDoc, /`financial_entries` has 74 rows/);
 assert.match(deployedDoc, /202607210005_authoritative_finance_posting_corrections\.sql/);
+assert.match(deployedDoc, /202607210006_reconcile_finance_column_privileges\.sql/);
+assert.match(deployedDoc, /Database privilege verification \| Passed/);
+assert.match(deployedDoc, /Live posting workflow \| Pending/);
 
 console.log('Finance command authority assertions passed.');

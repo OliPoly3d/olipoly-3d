@@ -410,3 +410,35 @@ Manual browser tests required after deployment:
 3. Simulate a failed/retried push and verify the same correlation identity returns the original Finance entry without a duplicate.
 4. Attempt to post the same Order with a different command identity and verify the duplicate Order income posting is rejected.
 5. Append one correction/reversal in a non-production environment and verify the original Finance row is unchanged and the correction row links to it.
+
+## Finance column privilege reconciliation — 2026-07-21
+
+Operator-supplied deployed evidence confirms migration `202607210005_authoritative_finance_posting_corrections.sql` deployed successfully after the parenthesized `CASE` expression in `append_finance_correction` was corrected manually. The deployed RPCs and indexes verified successfully.
+
+A privilege defect was then found: authenticated users could update all Finance command-owned columns because the migration granted table-level `UPDATE` after attempting column revocation. The operator manually corrected the Finance column privileges successfully. Equivalent reconciliation SQL is now captured in `supabase/migrations/202607210006_reconcile_finance_column_privileges.sql` as a forward-only repository migration. The operator already applied equivalent SQL manually and should not rerun it solely for deployment.
+
+Final operator-supplied deployed privilege verification:
+
+- `anon` direct `INSERT`, `UPDATE`, and `DELETE` on `financial_entries`: `false`.
+- `authenticated` table-level `INSERT` and `UPDATE` on `financial_entries`: `false`.
+- `authenticated` `DELETE` on `financial_entries`: `true`.
+- `authenticated` manual-column `INSERT` and `UPDATE` for `title` and `amount`: `true`.
+- `authenticated` `INSERT` and `UPDATE` for `order_id` and `finance_command_id`: `false`.
+- `authenticated` `UPDATE` for `correction_of_entry_id` and `reversal_of_entry_id`: `false`.
+- Authoritative Order postings, corrections, and reversals currently present: `0`.
+
+Command-owned fields excluded from browser `INSERT` and `UPDATE` are `order_id`, `order_number`, `finance_command_id`, `finance_command`, `finance_command_owned`, `correction_of_entry_id`, `reversal_of_entry_id`, `posted_by`, `posted_at`, `correction_reason`, and `accepted_commercial_snapshot`. Authenticated owner-scoped `SELECT` and `DELETE` are preserved, manual Finance Pro entry creation/editing remains available on reviewed manual-entry columns, and RPC/service-role command authority is preserved.
+
+### Current verification status
+
+| Verification area | Status |
+| --- | --- |
+| Database privilege verification | Passed |
+| Live posting workflow | Pending |
+| Same-command retry workflow | Pending |
+| Correction workflow | Pending |
+| Reversal workflow | Pending |
+| Concurrency workflow | Pending |
+| Runtime browser tests | Pending |
+
+Runtime browser tests remain pending, not passed. This repository reconciliation did not modify historical Finance rows, post historical Orders, reinterpret duplicate candidates, alter the known shipping inconsistency, deploy SQL, execute SQL, backfill data, merge, or clean up data.
