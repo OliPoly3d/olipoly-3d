@@ -1362,3 +1362,61 @@ The next deployed Inventory contract is represented by `supabase/migrations/2026
 - `consume_production_attempt` remains the authoritative attempt consumption command and now validates applicable active reservations, decrements `remaining_grams`, releases the active reserved amount, marks reservation rows consumed, and inserts immutable attempt-linked ledger evidence exactly once.
 
 This milestone does not merge, deploy, run SQL, backfill historical data, reinterpret unlinked transactions, re-enable retired Production completion RPCs, or broaden Inventory table privileges.
+
+## Deployment closeout — authoritative Inventory reservation, release, and Production-attempt consumption (2026-07-21)
+
+This documentation-only closeout records the operator-reported deployment result for the merged Inventory authority milestone. It does not modify application code, migrations, schema, RLS, grants, tests, data, UI, or deployed Supabase state.
+
+### Operator-reported deployed migration
+
+- Exact merged migration recorded as deployed: `supabase/migrations/202607210004_authoritative_production_material_reservations.sql`.
+- Operator-reported Supabase result: `Success. No rows returned.`
+- Database deployment classification: **successful SQL execution, operator-reported**.
+- Runtime classification: **manual/runtime workflow testing pending**.
+
+This contract inventory treats successful SQL execution as deployment evidence only. It is not evidence that live Production Control, reservation retry, consumption retry, Needs Reprint, insufficient-material, cross-owner, or recovery workflows passed in a browser or with deployed runtime credentials.
+
+### Deployed reservation → consume/release contract
+
+The deployed linked-workflow Inventory contract is:
+
+1. `reserve_production_material(...)` is the authoritative linked Production reservation command.
+2. `release_production_material_reservation(...)` is the authoritative linked Production reservation release command.
+3. `consume_production_attempt(...)` is the authoritative linked Production-attempt consumption command.
+4. `production_material_reservations` stores durable owner-scoped linked reservation state for active, released, and consumed reservation lines.
+5. `raw_material_inventory.remaining_grams` remains the raw on-hand quantity authority.
+6. Consumption is expected to validate the active reservation contract, decrement `remaining_grams`, release reserved grams, mark reservation rows consumed, and append attempt-linked `inventory_transactions` evidence.
+
+### Ordinary Inventory CRUD remains separate
+
+Browser-direct ordinary Inventory CRUD remains available for ordinary Inventory maintenance and has not been reclassified as a linked workflow authority. Linked Production reservation, release, and attempt consumption are command-authority operations and should not be treated as ordinary direct table edits.
+
+### Historical transactions
+
+Historical unlinked `inventory_transactions` remain historical evidence only. This milestone did not clean historical rows, reinterpret unlinked rows as authoritative linked consumption, delete records, or perform historical data repair. No historical cleanup or reinterpretation occurred.
+
+### Verification status
+
+| Verification area | Status | Contract interpretation |
+| --- | --- | --- |
+| Forward-only migration execution | Successful | Operator reports Supabase returned `Success. No rows returned.` |
+| Prior consumption structure/security verification | Passed | Operator reports the prior `consume_production_attempt` structure and security verification passed. |
+| Live Production workflow | Pending | No live Production workflow test was performed. |
+| Reservation retry | Pending | No runtime reservation retry test was performed. |
+| Consumption retry | Pending | No runtime consumption retry test was performed. |
+| Needs Reprint | Pending | No runtime Needs Reprint test was performed. |
+| Insufficient material | Pending | No runtime insufficient-material test was performed. |
+| Cross-owner rejection | Pending | No runtime cross-owner test was performed. |
+| Recovery | Pending | No runtime recovery test was performed. |
+
+### Remaining risk
+
+- SQL deployment success does not prove browser orchestration, deployed auth/RLS behavior, retry idempotency, Needs Reprint sequencing, insufficient-material rejection, cross-owner rejection, or recovery behavior.
+- Ordinary Inventory CRUD still exists separately and may require future ownership verification for direct writes.
+- The deployed contract is narrower than full ERP Blueprint compliance; full Blueprint compliance is **not** claimed.
+
+### Exactly one recommended next milestone
+
+**Finance ownership and cross-domain write verification.**
+
+Review Finance-owned writes and cross-domain writes between Finance, Inventory, and Production so each domain mutates only its own authoritative records or uses reviewed command boundaries.
