@@ -121,6 +121,43 @@
     };
   }
 
+  function financeOrderPostingRpcRequest(order, expectedUpdatedAt){
+    const orderId = order?.id;
+    const orderNumber = String(order?.order_number || '').trim();
+    if(!orderId) throw new Error('An Order UUID is required for Finance posting.');
+    if(!orderNumber) throw new Error('An Order number is required for Finance posting.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before posting Finance; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/post_order_finance_income',
+      body:{
+        p_order_id:String(orderId),
+        p_order_number:orderNumber,
+        p_expected_updated_at:expectedUpdatedAt,
+        p_correlation_id:commandIdentity('finance-order-posting', orderNumber, String(orderId), expectedUpdatedAt)
+      }
+    };
+  }
+
+  function financeCorrectionRpcRequest(entry, command, amount, reason){
+    const entryId = entry?.id || entry;
+    if(!entryId) throw new Error('A Finance entry UUID is required for correction.');
+    const normalizedCommand = String(command || '').trim().toLowerCase();
+    if(!['reverse','correct'].includes(normalizedCommand)) throw new Error('Finance correction command must be reverse or correct.');
+    const cents = Math.round(Number(amount || 0) * 100);
+    if(!Number.isFinite(cents) || cents <= 0) throw new Error('Finance correction amount must be greater than zero.');
+    const identityBasis = `${entryId}:${normalizedCommand}:${cents}:${String(reason || '').trim()}`;
+    return {
+      path:'/rest/v1/rpc/append_finance_correction',
+      body:{
+        p_original_entry_id:String(entryId),
+        p_command:normalizedCommand,
+        p_amount:Number((cents / 100).toFixed(2)),
+        p_reason:String(reason || '').trim(),
+        p_correlation_id:commandIdentity('finance-correction', String(entryId), normalizedCommand, identityBasis)
+      }
+    };
+  }
+
   function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
     if(!orderNumber) throw new Error('A linked Order number is required.');
     if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
@@ -170,6 +207,6 @@
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    productionWorkflowRpcRequest, inventoryReservationRpcRequest, inventoryReservationReleaseRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
+    financeOrderPostingRpcRequest, financeCorrectionRpcRequest, productionWorkflowRpcRequest, inventoryReservationRpcRequest, inventoryReservationReleaseRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });
