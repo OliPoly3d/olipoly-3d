@@ -59,6 +59,22 @@ assert.match(workflowSource, /\/rest\/v1\/rpc\/post_order_finance_income/);
 assert.doesNotMatch(orders, /method: 'POST',[\s\S]{0,180}\/rest\/v1\/financial_entries/, 'Orders Admin must not directly POST Order-derived Finance entries');
 assert.doesNotMatch(orders, /finance_pushed:\s*true/, 'Orders Admin must not directly mutate finance_pushed');
 assert.match(orders, /await postOrderToFinanceCommand\(currentOrder\)[\s\S]*await fetchOrders\(\)/, 'client waits for authoritative response before local refresh');
+assert.match(orders, /const financePostRequestsInFlight = new Set\(\)/, 'Orders Admin must guard duplicate Finance post clicks in browser runtime');
+assert.match(orders, /financePostRequestsInFlight\.has\(requestKey\)/, 'Orders Admin must block duplicate in-flight Finance requests');
+assert.doesNotMatch(orders, /await financeEntryExists\(order\.order_number\)/, 'authoritative retries must not be blocked by a browser title/notes existence scan');
+assert.match(orders, /console\.error\('Finance command RPC failed:', err\)/, 'Finance command failures must produce actionable console errors');
+assert.doesNotMatch(orders, /\.from\('financial_entries'\)\.insert|\.from\("financial_entries"\)\.insert/, 'Orders Admin must not use Supabase direct financial_entries insert');
+assert.doesNotMatch(orders, /\/rest\/v1\/orders[\s\S]{0,500}finance_pushed_at|finance_pushed_at[\s\S]{0,500}\/rest\/v1\/orders/, 'Orders Admin browser writes must not directly set finance_pushed_at');
+
+const financePro = fs.readFileSync('finance-pro.js', 'utf8');
+const payloadBlock = financePro.match(/const payload = \{[\s\S]*?other_direct_cost: isIncome \? num\(els\.otherDirectCost\.value\) : 0\n    \};/)?.[0] || '';
+for (const protectedColumn of ['order_id', 'order_number', 'finance_command_id', 'finance_command', 'finance_command_owned', 'correction_of_entry_id', 'reversal_of_entry_id', 'posted_by', 'posted_at', 'correction_reason', 'accepted_commercial_snapshot']) {
+  assert.doesNotMatch(payloadBlock, new RegExp(`\\b${protectedColumn}\\b`), `Finance Pro manual payload must not include ${protectedColumn}`);
+}
+assert.match(payloadBlock, /title/);
+assert.match(payloadBlock, /amount/);
+assert.match(payloadBlock, /other_direct_cost/);
+
 
 const memory = new Map();
 const sandbox = { module: { exports: {} }, globalThis: { crypto: { randomUUID: () => 'stable-finance-id' }, localStorage: { getItem: k => memory.get(k) || null, setItem: (k, v) => memory.set(k, v), removeItem: k => memory.delete(k) } } };

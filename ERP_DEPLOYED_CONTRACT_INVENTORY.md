@@ -1506,3 +1506,111 @@ Permission reconciliation:
 - Codex did not deploy SQL, execute migrations, modify deployed Supabase state, backfill data, repair historical rows, or alter OP-000010.
 
 Post-merge operator deployment note: deploy `supabase/migrations/202607210007_reconcile_orders_admin_action_column_privileges.sql` only after review. Then perform manual browser testing for Save Order, completion-email marking, catalog linking, document pop-up handling, and Finance push RPC behavior with deployed credentials.
+
+## Finance runtime authority browser wiring verification (2026-07-21)
+
+Status: **Repository-verified statically; live browser/runtime verification still required.**
+
+### Exact deployed Finance command contract used
+
+The deployed Finance authority contract already exists; no replacement RPC was invented in this milestone.
+
+| Finance action | Deployed function/RPC signature | Runtime authority behavior |
+| --- | --- | --- |
+| Post an accepted/paid Order to Finance | `public.post_order_finance_income(p_order_id uuid, p_order_number text, p_expected_updated_at timestamptz, p_correlation_id text)` | `SECURITY DEFINER`; uses `auth.uid()`; locks by command identity and Order; inserts the authoritative `financial_entries` row; atomically owns `orders.finance_pushed` and `orders.finance_pushed_at`; returns the existing row on valid retry. |
+| Same-command retry / idempotency | Same `post_order_finance_income(...)` RPC with the same `p_correlation_id` | `financial_entries_finance_command_identity_once` and `financial_entries_order_income_once` prevent duplicate authoritative Order income entries; valid retries return `idempotent = true`. |
+| Correction | `public.append_finance_correction(p_original_entry_id uuid, p_command text, p_amount numeric, p_reason text, p_correlation_id text)` with `p_command = 'correct'` | Append-only; inserts a compensating/correction entry with `correction_of_entry_id`; original entry is locked/read but not updated or deleted. |
+| Reversal | `public.append_finance_correction(p_original_entry_id uuid, p_command text, p_amount numeric, p_reason text, p_correlation_id text)` with `p_command = 'reverse'` | Append-only; inserts a reversing entry with `reversal_of_entry_id`; unique reversal protection prevents double reversal; original entry is not destructively overwritten. |
+| Payment-in-full / invoice-issued Finance entries | No separate deployed browser Finance-entry command found in this repository audit. | Blueprint events `payment.paid_in_full` and `finance.invoice_issued` are documented, but this repository audit found no additional deployed browser RPC that creates `financial_entries` for those events. Orders Admin invoice-sent marking remains an Orders Admin action marker, not a Finance entry command. |
+
+### Audited browser Finance write paths
+
+| Path | Classification | Evidence and result |
+| --- | --- | --- |
+| Orders Admin Push to Finance (`orders-admin.html`) | Approved command/RPC | Uses `OliPolyWorkflow.financeOrderPostingRpcRequest(...)` and `/rest/v1/rpc/post_order_finance_income`; direct Order-originated `financial_entries` insert is absent. This milestone removed the browser-side title/notes existence gate so retries rely on the deployed idempotency contract instead of a fragile read heuristic. |
+| Orders Admin `finance_pushed` / `finance_pushed_at` | Approved command-owned projection only | Browser displays and filters these fields but does not directly set them. The deployed `post_order_finance_income(...)` RPC owns mutation of those columns. |
+| Orders Admin Finance post button binding | Approved command/RPC after wiring correction | A focused in-flight request guard prevents duplicate same-order requests from stacked/double-click browser events, and the duplicate direct `addEventListener` binding was removed so the reviewed action binder remains the single visible action binding. |
+| Finance Pro manual entry create/edit (`finance-pro.js`) | Approved manual Finance Pro edit | Retains only reviewed editable/manual columns in the browser payload (`title`, `category`, `type`, `entry_date`, `amount`, cost/tax/receipt/manual reporting fields). Static tests assert command-owned fields such as `order_id`, `finance_command_id`, `correction_of_entry_id`, `reversal_of_entry_id`, and `accepted_commercial_snapshot` are absent from this payload. |
+| Finance Pro delete (`finance-pro.js`) | Approved manual Finance Pro edit under deployed privilege contract | Deployed reconciliation preserves authenticated `DELETE` with existing RLS. This milestone did not redesign Finance Pro delete behavior. |
+| Quote tax-rate lookup (`js/quote.js`) | Read-only | Reads recent `financial_entries` tax-rate/county fields for selector options; does not mutate Finance. |
+| Correction/reversal helper (`js/workflow-status.js`) | Approved command/RPC helper | Constructs `/rest/v1/rpc/append_finance_correction` requests with stable command identity. No visible correction/reversal UI path was found in the audited browser files, so live correction/reversal remains an operator checklist item if invoked through an approved action surface or API client. |
+| Legacy Orders Admin split-entry builders | Dead code | Legacy split-entry construction remains present but is not used by the current Finance push path and static regression asserts Orders Admin does not directly insert into `financial_entries`. Future cleanup may delete it in a separate focused PR. |
+| `pay.html` / `track.html` | Out of scope / preserved | Not modified in this milestone. Public tracking/payment RPCs were not altered. |
+
+### Root causes found and fixed
+
+- Orders Admin still had a browser-side Finance entry existence check based on `financial_entries.title`/`notes`. That check could block an otherwise valid authoritative retry before the deployed `post_order_finance_income(...)` idempotency logic ran.
+- Orders Admin had more than one visible Push-to-Finance click binding path. A focused runtime guard now prevents duplicate same-order requests, and the extra direct binding was removed.
+- Finance command failures already surfaced in the form message area; this milestone added an explicit actionable `console.error` for RPC failures.
+
+### Files changed in this milestone
+
+- `orders-admin.html` — removed the pre-RPC Finance entry existence gate from Order Finance posting, added a same-order in-flight guard for the current-order Finance action, removed a duplicate direct Push-to-Finance event binding, and logged Finance RPC failures.
+- `tests/finance-command-authority.test.js` — expanded static regression coverage for browser Finance command wiring, stable idempotency, duplicate-request guards, absence of protected command-owned browser payload fields, manual Finance Pro editable fields, and visible/API failure surfacing.
+- `ERP_DEPLOYED_CONTRACT_INVENTORY.md` — added this runtime authority verification record and live checklist.
+
+### Live verification checklist (read-only SQL; do not deploy or mutate from SQL)
+
+Use one eligible non-historical test Order that is safe to post. Do not use OP-000010 and do not clean historical Finance rows.
+
+1. In Orders Admin, select exactly one paid/deposit-paid eligible test Order with `finance_pushed = false` and a positive `order_total`.
+2. Click **Push to Finance** once. Verify the action area reports success and includes the Finance entry UUID returned by the RPC.
+3. Refresh Orders Admin and verify the Order persists with `finance_pushed = true` and a non-null `finance_pushed_at`.
+4. Attempt the same post action again through the same deployed command identity or controlled retry path. Verify no second authoritative Order income entry is created.
+5. Double-click / rapid-click the Push-to-Finance button for a fresh eligible test Order. Verify the UI allows only one in-flight same-order request and no duplicate authoritative entry appears.
+6. Temporarily force an RPC/API failure in a safe test session (for example invalid/stale `expected_updated_at` on a controlled request). Verify the action area shows the failure and the browser console logs `Finance command RPC failed:` with the underlying error.
+7. Invoke one approved correction command against the test Finance entry. Verify a new append-only row exists with `finance_command = 'correct_entry'`, `correction_of_entry_id` pointing at the original entry, and the original row unchanged.
+8. Invoke one approved reversal command against a separate test Finance entry. Verify a new append-only row exists with `finance_command = 'reverse_entry'`, `reversal_of_entry_id` pointing at the original entry, and the original row unchanged.
+9. Refresh Finance Pro and Orders Admin. Verify posted/corrected/reversed state persists from Supabase, not browser-only storage.
+10. Verify no protected direct browser writes occurred to command-owned Finance columns or `orders.finance_pushed` / `orders.finance_pushed_at`.
+
+Consolidated read-only verification query for the chosen test Order number and entry IDs:
+
+```sql
+with target_order as (
+  select id, order_number, order_total, deposit_amount, balance_amount, payment_status,
+         finance_pushed, finance_pushed_at, updated_at
+    from public.orders
+   where order_number = 'OP-REPLACE-ME'
+), finance_rows as (
+  select id, user_id, order_id, order_number, type, amount, title,
+         finance_command_id, finance_command, finance_command_owned,
+         correction_of_entry_id, reversal_of_entry_id, posted_by, posted_at,
+         correction_reason, accepted_commercial_snapshot, created_at, updated_at
+    from public.financial_entries
+   where order_number = 'OP-REPLACE-ME'
+      or order_id in (select id from target_order)
+      or id in ('REPLACE-ORIGINAL-ENTRY-UUID'::uuid, 'REPLACE-CORRECTION-ENTRY-UUID'::uuid, 'REPLACE-REVERSAL-ENTRY-UUID'::uuid)
+      or correction_of_entry_id = 'REPLACE-ORIGINAL-ENTRY-UUID'::uuid
+      or reversal_of_entry_id = 'REPLACE-ORIGINAL-ENTRY-UUID'::uuid
+), privilege_check as (
+  select jsonb_build_object(
+    'authenticated_table_insert', has_table_privilege('authenticated','public.financial_entries','insert'),
+    'authenticated_table_update', has_table_privilege('authenticated','public.financial_entries','update'),
+    'authenticated_insert_order_id', has_column_privilege('authenticated','public.financial_entries','order_id','insert'),
+    'authenticated_update_order_id', has_column_privilege('authenticated','public.financial_entries','order_id','update'),
+    'authenticated_update_finance_command_id', has_column_privilege('authenticated','public.financial_entries','finance_command_id','update'),
+    'authenticated_update_correction_of_entry_id', has_column_privilege('authenticated','public.financial_entries','correction_of_entry_id','update'),
+    'authenticated_update_reversal_of_entry_id', has_column_privilege('authenticated','public.financial_entries','reversal_of_entry_id','update'),
+    'authenticated_update_order_finance_pushed', has_column_privilege('authenticated','public.orders','finance_pushed','update'),
+    'authenticated_update_order_finance_pushed_at', has_column_privilege('authenticated','public.orders','finance_pushed_at','update')
+  ) checks
+)
+select jsonb_build_object(
+  'target_order', (select jsonb_agg(to_jsonb(target_order)) from target_order),
+  'finance_rows', (select jsonb_agg(to_jsonb(finance_rows) order by created_at, id) from finance_rows),
+  'authoritative_order_post_count', (select count(*) from finance_rows where finance_command = 'post_order_income' and finance_command_owned is true and correction_of_entry_id is null and reversal_of_entry_id is null),
+  'correction_rows', (select count(*) from finance_rows where finance_command = 'correct_entry' and correction_of_entry_id is not null),
+  'reversal_rows', (select count(*) from finance_rows where finance_command = 'reverse_entry' and reversal_of_entry_id is not null),
+  'command_identity_collisions', (select count(*) from (select finance_command_id from finance_rows where finance_command_id is not null group by finance_command_id having count(*) > 1) collisions),
+  'privileges', (select checks from privilege_check)
+) as finance_runtime_authority_verification;
+```
+
+### Live verification still required
+
+Static repository tests prove the browser source is wired to the deployed command RPCs and does not include the audited direct-write patterns. They do not prove deployed browser credentials, RLS, network behavior, concurrent clicks in an actual browser, or live Supabase row results. The checklist above remains required after deployment.
+
+### Explicit non-actions
+
+Codex did not deploy SQL, execute SQL against Supabase, alter Supabase state, modify `pay.html`, modify `track.html`, alter public tracking RPCs, modify Inventory behavior, add payment processor integration, modify OP-000010, modify recovery evidence, clean historical Finance data, reinterpret craft-show duplicate candidates, or create a migration in this milestone.

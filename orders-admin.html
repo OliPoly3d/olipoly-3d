@@ -2444,16 +2444,12 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       return Array.isArray(data) ? data[0] : data;
     }
 
-    async function pushOrderObjectToFinance(order, {skipExistingCheck=false} = {}){
+    async function pushOrderObjectToFinance(order){
       if (!currentUser?.id) throw new Error('Log in before pushing orders to Finance Pro.');
       if (!order?.id) throw new Error('Order UUID is required before pushing to Finance Pro.');
       if (!order?.order_number) throw new Error('Order number is required before pushing to Finance Pro.');
       if (!order?.updated_at) throw new Error('Refresh the order before pushing to Finance Pro.');
       if (!isFinanceReadyOrder(order)) throw new Error(`${order.order_number || 'Order'} is not ready for Finance Pro.`);
-      if (!skipExistingCheck) {
-        const exists = await financeEntryExists(order.order_number);
-        if (exists) throw new Error(`Finance Pro already appears to have entries for ${order.order_number}.`);
-      }
       const result = await postOrderToFinanceCommand(order);
       return {orderNumber: result?.order_number || order.order_number, entries: result?.entry_id ? 1 : 0, split: result?.snapshot || {}};
     }
@@ -2500,6 +2496,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('orderList')?.scrollIntoView({behavior:'smooth', block:'start'});
     }
 
+    const financePostRequestsInFlight = new Set();
+
     async function pushCurrentOrderToFinance() {
       clearMsg($('formMessage'));
       if (!currentUser?.id) {
@@ -2516,7 +2514,14 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         setMsg($('formMessage'), `${currentOrder.order_number || 'Order'} is not ready for Finance Pro.`, true);
         return;
       }
+      const requestKey = currentOrder.id || currentOrder.order_number;
+      if (financePostRequestsInFlight.has(requestKey)) {
+        setMsg($('formMessage'), `Finance post already in progress for ${currentOrder.order_number}.`);
+        return;
+      }
       if (!confirm(`Push ${currentOrder.order_number} to Finance Pro through the authoritative Finance command?`)) return;
+      financePostRequestsInFlight.add(requestKey);
+      if ($('pushFinanceBtn')) $('pushFinanceBtn').disabled = true;
       try {
         const result = await postOrderToFinanceCommand(currentOrder);
         setMsg($('formMessage'), `Pushed ${result?.order_number || currentOrder.order_number} to Finance Pro. Finance entry: ${result?.entry_id || 'created'}.`);
@@ -2527,7 +2532,11 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
           updateFinanceStatusNote(saved);
         }
       } catch (err) {
+        console.error('Finance command RPC failed:', err);
         setMsg($('formMessage'), `Could not push to Finance Pro: ${err.message || err}`, true);
+      } finally {
+        financePostRequestsInFlight.delete(requestKey);
+        updateFinanceStatusNote(orders.find(o => o.id === currentOrder.id) || currentOrder);
       }
     }
 
@@ -3961,7 +3970,6 @@ if ($('openVenmoBtn')) {
   alert('Order loaded from Hub. Review it, then click Save Order.');
 });
     
-        $('pushFinanceBtn')?.addEventListener('click', pushCurrentOrderToFinance);
         $('saveCatalogPartBtn')?.addEventListener('click', saveCurrentOrderAsCatalogPart);
   
 /* Orders Admin login safety patch
