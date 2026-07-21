@@ -1349,3 +1349,16 @@ This section records operator-supplied deployed evidence for the authoritative I
 ### Repository reconciliation
 
 Migration `supabase/migrations/202607210003_reconcile_authoritative_inventory_consumption_repair.sql` is the forward-only repository reconciliation for the manually repaired deployed contract. It is idempotent for the already repaired deployment and for future repository-sequential environments, preserves historical rows except the required `occurred_at` null backfill, avoids the rejected correlation-only index, and includes a consolidated read-only JSONB verification query based on ACL inspection rather than `has_function_privilege('PUBLIC', ...)`.
+
+## Durable Production raw-material reservation contract (2026-07-21 forward-only milestone)
+
+The next deployed Inventory contract is represented by `supabase/migrations/202607210004_authoritative_production_material_reservations.sql`.
+
+- `public.production_material_reservations` is the durable technical state for linked Production raw-material reservations. It is owner-scoped and records reservation identity, Production job UUID, accepted Order linkage, roll UUID, reserved grams, status, command/correlation identities, and lifecycle timestamps.
+- Inventory remains the only authority that mutates raw-material `remaining_grams` and linked `reserved_grams`. Available material is `remaining_grams - active reserved_grams`.
+- Browser clients may select their own reservation rows for visibility, but normal authenticated clients are not granted direct insert, update, or delete. Mutations go through `reserve_production_material`, `release_production_material_reservation`, and `consume_production_attempt`.
+- The reviewed RPCs are authenticated owner-only, `SECURITY DEFINER`, pinned to `search_path = public, pg_temp`, and granted only to `authenticated` and `service_role` after revoking `PUBLIC` and `anon` execution.
+- Linked Ready to Print reservation and linked reservation release orchestration in Production Control must use these RPCs. Browser-direct linked `reserved_grams` writes are retired; ordinary Inventory Control CRUD is unchanged.
+- `consume_production_attempt` remains the authoritative attempt consumption command and now validates applicable active reservations, decrements `remaining_grams`, releases the active reserved amount, marks reservation rows consumed, and inserts immutable attempt-linked ledger evidence exactly once.
+
+This milestone does not merge, deploy, run SQL, backfill historical data, reinterpret unlinked transactions, re-enable retired Production completion RPCs, or broaden Inventory table privileges.

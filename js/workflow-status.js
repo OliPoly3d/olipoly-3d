@@ -73,6 +73,34 @@
     if(!globalThis.localStorage) return;
     globalThis.localStorage.removeItem(`olipoly_workflow_command:${scope}:${orderNumber}:${command}:${expectedUpdatedAt}`);
   }
+
+  function inventoryReservationRpcRequest(job, expectedUpdatedAt, reservations){
+    if(!job?.id) throw new Error('A Production job id is required for Inventory reservation.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before reserving Inventory; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/reserve_production_material',
+      body:{
+        p_production_job_id:String(job.id),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_reservation_command_id:commandIdentity('inventory-reservation', String(job.id), 'reserve', expectedUpdatedAt),
+        p_roll_reservations:(Array.isArray(reservations) ? reservations : []).filter(row=>row && row.raw_material_roll_id && Number(row.grams_reserved) > 0).map(row=>({raw_material_roll_id:String(row.raw_material_roll_id), grams_reserved:Number(row.grams_reserved)}))
+      }
+    };
+  }
+  function inventoryReservationReleaseRpcRequest(job, expectedUpdatedAt, reason){
+    if(!job?.id) throw new Error('A Production job id is required for Inventory reservation release.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before releasing Inventory; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/release_production_material_reservation',
+      body:{
+        p_production_job_id:String(job.id),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_release_command_id:commandIdentity('inventory-reservation-release', String(job.id), String(reason || 'release'), expectedUpdatedAt),
+        p_reason:String(reason || 'workflow_release')
+      }
+    };
+  }
+
   function inventoryConsumptionRpcRequest(job, command, expectedUpdatedAt, rollUsages, attempt){
     if(!job?.id) throw new Error('A Production job id is required for Inventory consumption.');
     if(!expectedUpdatedAt) throw new Error('Refresh before consuming Inventory; expected_updated_at is required.');
@@ -142,6 +170,6 @@
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    productionWorkflowRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
+    productionWorkflowRpcRequest, inventoryReservationRpcRequest, inventoryReservationReleaseRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });

@@ -2618,7 +2618,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return true;
     }catch(err){ console.warn('Reservation raw cloud save failed', err); return false; }
   }
+  async function reserveLinkedProductionMaterial(job, reservations){
+    const request = window.OliPolyWorkflow.inventoryReservationRpcRequest(job, job.updated_at, reservations);
+    return sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+  }
+  async function releaseLinkedProductionMaterial(job, reason='workflow_release'){
+    const request = window.OliPolyWorkflow.inventoryReservationReleaseRpcRequest(job, job.updated_at, reason);
+    return sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+  }
   async function applyReservationDelta(previousJob, nextJob){
+    if(previousJob?.order_number || nextJob?.order_number) return;
     const rows = rawRowsForProduction();
     if(!rows.length) return;
     const delta = new Map();
@@ -2890,13 +2899,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
           ? {...updated, material_reservations:[]}
           : j;
-        if(lifecycleAction === 'consume_and_reserve_reprint') await applyReservationDelta(j, reservationBase);
         updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
           ? []
           : shouldReserveInventory(updated, status)
             ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
             : [];
-        await applyReservationDelta(reservationBase, updated);
         if(lifecycleAction === 'consume_and_reserve_reprint'){
           updated.actual_grams_used = null;
           updated.scrap_grams = null;
@@ -2912,6 +2919,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       try{
         const authoritative = await syncProductionStatusToOrder(j, status);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
+        if((lifecycleAction === 'release' || lifecycleAction === 'preserve_consumed_no_reserve') && !['consume_and_release','consume_and_reserve_reprint'].includes(lifecycleAction)) await releaseLinkedProductionMaterial(updated, lifecycleAction);
+        if(shouldReserveInventory(updated, status) && lifecycleAction !== 'keep') await reserveLinkedProductionMaterial(updated, updated.material_reservations);
         state.jobs = state.jobs.map(x=>x.id===id ? updated : x);
         localWrite(LS_JOBS,state.jobs);
         clearLinkedWorkflowRecovery(id);
