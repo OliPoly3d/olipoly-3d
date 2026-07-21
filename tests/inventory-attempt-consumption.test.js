@@ -1,27 +1,41 @@
 const assert = require('assert');
 const fs = require('fs');
 
-const migration = fs.readFileSync('supabase/migrations/202607210002_consume_production_attempt_inventory.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/202607210003_reconcile_authoritative_inventory_consumption_repair.sql', 'utf8');
+const brokenMigration = fs.readFileSync('supabase/migrations/202607210002_consume_production_attempt_inventory.sql', 'utf8');
 const production = fs.readFileSync('production-control.html', 'utf8');
 const workflow = fs.readFileSync('js/workflow-status.js', 'utf8');
 
+assert.match(migration, /add column if not exists occurred_at timestamptz/i, 'Reconciliation must add occurred_at idempotently');
+assert.match(migration, /add column if not exists attempt_id text/i, 'Reconciliation must add attempt_id idempotently');
+assert.match(migration, /add column if not exists correlation_id text/i, 'Reconciliation must add correlation_id idempotently');
+assert.match(migration, /add column if not exists quantity_grams numeric/i, 'Reconciliation must add quantity_grams idempotently');
+assert.match(migration, /set occurred_at = created_at[\s\S]*where occurred_at is null/i, 'Reconciliation must only backfill missing occurred_at values');
+assert.match(migration, /alter column occurred_at set default now\(\)/i, 'Reconciliation must default occurred_at to now()');
 assert.match(migration, /create or replace function public\.consume_production_attempt/i, 'Inventory command RPC must be created');
 assert.match(migration, /security definer\s*set search_path = public, pg_temp/i, 'RPC must be SECURITY DEFINER with fixed search_path');
 assert.match(migration, /auth\.uid\(\)/, 'RPC must verify authenticated owner');
 assert.match(migration, /for update/g, 'RPC must lock Production, Order, and raw-material rows');
 assert.match(migration, /v_job\.updated_at is distinct from p_expected_updated_at/i, 'RPC must enforce optimistic concurrency');
+assert.ok(migration.indexOf('if v_existing is not null') < migration.indexOf('v_job.updated_at is distinct from p_expected_updated_at'), 'Same-command retry recognition must happen before optimistic concurrency rejection');
 assert.match(migration, /v_command not in \('pass_qc','needs_reprint'\)/i, 'RPC must reject arbitrary browser workflow states');
 assert.match(migration, /jsonb_array_length\(p_roll_usages\) = 0/i, 'RPC must reject missing roll evidence');
 assert.match(migration, /raw_material_roll_id/i, 'RPC must require roll ids');
 assert.match(migration, /remaining_grams = remaining_grams - v_grams/i, 'RPC must update the verified raw quantity authority');
 assert.doesNotMatch(migration, /current_grams\s*=/i, 'RPC must not update current_grams as a competing quantity authority');
 assert.match(migration, /inventory_transactions_production_attempt_roll_once/i, 'RPC must include uniqueness by attempt and roll');
+assert.match(migration, /inventory_transactions_production_command_roll_once[\s\S]*user_id, correlation_id, raw_material_id/i, 'Command idempotency must permit multi-roll commands while deduping each roll');
+assert.doesNotMatch(migration, /create unique index[^;]*inventory_transactions_production_command_once/i, 'Rejected correlation-only unique index must not be recreated');
 assert.match(migration, /idempotent', true/i, 'Same-command retry must return original authoritative result');
 assert.match(migration, /correlation_id is distinct from p_correlation_id/i, 'Identity collisions must fail');
 assert.match(migration, /insufficient available material/i, 'Insufficient material must be denied');
 assert.match(migration, /revoke execute on function public\.consume_production_attempt.*from public, anon/is, 'PUBLIC and anon execute must be revoked');
 assert.match(migration, /grant execute on function public\.consume_production_attempt.*to authenticated, service_role/is, 'Only reviewed roles get execute');
-assert.match(migration, /Historical unlinked inventory_transactions rows remain untouched/i, 'Historical unlinked transactions must remain untouched');
+assert.match(migration, /Historical ledger rows are preserved/i, 'Historical unlinked transactions must remain untouched');
+assert.match(migration, /The operator already applied the equivalent repair manually/i, 'Migration must clearly warn operators not to manually rerun solely for deployment');
+assert.doesNotMatch(brokenMigration, /Repository reconciliation for the manually repaired/i, 'Previously merged broken migration must remain unmodified by the reconciliation');
+assert.match(migration, /aclexplode[\s\S]*acldefault\('f', p\.proowner\)/i, 'Verification query must inspect ACLs directly');
+assert.doesNotMatch(migration, /has_function_privilege\('PUBLIC'/i, 'Verification query must not call has_function_privilege with PUBLIC');
 
 assert.match(workflow, /inventoryConsumptionRpcRequest/, 'Client must build Inventory consumption RPC requests');
 assert.match(workflow, /\/rest\/v1\/rpc\/consume_production_attempt/, 'Client must call command RPC path');

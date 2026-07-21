@@ -1316,3 +1316,36 @@ Contract summary:
 - Production, Orders, tracking, Finance, finished goods, Quote acceptance, and historical unlinked transactions remain untouched by the Inventory command.
 
 The Production Control client now calls the command RPC for linked attempt consumption instead of directly decrementing raw inventory and writing raw-usage ledger rows in the browser. Existing Inventory Control CRUD remains unchanged for this milestone.
+
+## Deployment reconciliation — 2026-07-21 authoritative Inventory consumption repair
+
+This section records operator-supplied deployed evidence for the authoritative Inventory consumption repair and the matching repository reconciliation. The operator already applied the equivalent repair manually in the deployed Supabase environment and should not manually rerun the reconciliation SQL solely for deployment.
+
+### Confirmed deployed structure and RPC contract
+
+- The prior repository migration for authoritative consumption failed and rolled back because `inventory_transactions.attempt_id` did not exist.
+- The deployed repair added `inventory_transactions.occurred_at timestamptz`, `attempt_id text`, `correlation_id text`, `quantity_grams numeric`, `order_number text`, and `quote_number text`.
+- Existing rows were backfilled only with `occurred_at = created_at` where `occurred_at` was `NULL`, and `occurred_at` now defaults to `now()`.
+- The deployed ledger has `inventory_transactions_production_attempt_roll_once`, unique on `user_id`, `production_job_id`, `raw_material_id`, and `attempt_id` for authoritative `production_attempt_consumption` rows.
+- The deployed ledger has `inventory_transactions_production_command_roll_once`, unique on `user_id`, `correlation_id`, and `raw_material_id` for authoritative `production_attempt_consumption` rows.
+- The rejected correlation-only unique index is intentionally absent because one command may consume multiple rolls.
+- `public.consume_production_attempt(uuid,text,text,timestamptz,jsonb,text)` is deployed with `SECURITY DEFINER`, fixed `search_path = public, pg_temp`, `PUBLIC` execute revoked, `anon` execute revoked, `authenticated` execute granted, and `service_role` execute granted.
+- `remaining_grams` is the sole raw quantity authority for consumption; `current_grams` is not updated.
+- Completed retry recognition occurs before optimistic-concurrency rejection.
+- There are currently zero authoritative `production_attempt_consumption` rows.
+
+### Current verification status
+
+| Contract test area | Status |
+| --- | --- |
+| Database structure verification | Passed |
+| Live consumption workflow | Pending |
+| Same-command retry workflow | Pending |
+| Insufficient-material rejection | Pending |
+| Cross-owner rejection | Pending |
+| Needs Reprint workflow | Pending |
+| Workflow recovery after Inventory success | Pending |
+
+### Repository reconciliation
+
+Migration `supabase/migrations/202607210003_reconcile_authoritative_inventory_consumption_repair.sql` is the forward-only repository reconciliation for the manually repaired deployed contract. It is idempotent for the already repaired deployment and for future repository-sequential environments, preserves historical rows except the required `occurred_at` null backfill, avoids the rejected correlation-only index, and includes a consolidated read-only JSONB verification query based on ACL inspection rather than `has_function_privilege('PUBLIC', ...)`.
