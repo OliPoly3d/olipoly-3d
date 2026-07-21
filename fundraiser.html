@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Fundraiser | OliPoly 3D</title><style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#fbf7ef;color:#172033}.wrap{width:min(1050px,92vw);margin:auto;padding:34px 0}.hero,.card{background:#fff;border:1px solid rgba(0,0,0,.10);border-radius:24px;padding:24px;box-shadow:0 14px 40px rgba(0,0,0,.08)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:18px}.price{font-weight:900;color:#d94f8c}.muted{color:#667085}.notice{padding:14px;border-radius:16px;background:#eef2ff;margin-top:14px}a.button{display:inline-block;margin-top:14px;background:#172033;color:#fff;border-radius:999px;padding:12px 16px;text-decoration:none;font-weight:800}</style></head>
+<body><main class="wrap"><section class="hero" id="campaign"><h1>Loading fundraiser…</h1><p class="muted">Use a link like <code>fundraiser.html?campaign=campaign-slug</code>.</p></section><section class="grid" id="products"></section></main>
+<script src="js/olipoly-auth.js"></script>
+<script>
+(function(){
+  const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co', SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(n)||0);
+  const slug=(new URLSearchParams(location.search).get('campaign')||'').trim().toLowerCase();
+  async function lookup(){
+    if(!slug) throw new Error('Missing campaign slug.');
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_campaign`,{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_campaign_slug:slug})});
+    const data=await res.json().catch(()=>null); if(!res.ok) throw new Error(data?.message||'Campaign lookup failed.'); if(!data) throw new Error('Campaign is not active or scheduled.'); return data;
+  }
+  function render(c){
+    const intake=c.public_config?.intake_url; const external=c.payment_mode==='external_org_collects';
+    document.getElementById('campaign').innerHTML=`<h1>${esc(c.name)}</h1><h2>${esc(c.organization_name)}</h2><p>${esc(c.public_description||'')}</p><div class="notice"><strong>Payment:</strong> ${external?'The organization collects customer payment externally. OliPoly does not collect payment on this page.':'OliPoly collection is configured; use the campaign instructions or existing payment flow when provided.'}<br><strong>Delivery:</strong> ${esc(c.delivery_mode)}</div>${intake?`<a class="button" href="${esc(intake)}" rel="noopener" target="_blank">Open campaign intake</a>`:''}`;
+    document.getElementById('products').innerHTML=(c.products||[]).map(p=>`<article class="card"><h3>${esc(p.campaign_sku)} · ${esc(p.display_name)}</h3><p>${esc(p.public_description||'')}</p><p class="price">Standard ${money(p.standard_customer_price)}${p.personalization_enabled&&p.personalized_customer_price!=null?` · Personalized ${money(p.personalized_customer_price)}`:''}</p>${p.personalization_enabled?`<p class="muted">${esc(p.personalization_instructions||'Personalization available.')}</p>`:''}</article>`).join('')||'<p>No enabled products are posted for this campaign.</p>';
+  }
+  lookup().then(render).catch(e=>{document.getElementById('campaign').innerHTML=`<h1>Campaign unavailable</h1><p class="muted">${esc(e.message)}</p>`;});
+})();
+</script></body></html>
