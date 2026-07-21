@@ -1237,3 +1237,38 @@ No corrective migration is created in this milestone.
 Planned changes: authenticated browser clients lose direct workflow table write privileges; `production_workflow_command` and `fulfillment_workflow_command` become the narrow mutation authorities; `orders_sync_workflow_to_production`/`sync_order_workflow_to_production` and `set_linked_workflow_status` are retired from client/trigger use; public tracking becomes server-side projection-only; workflow events use the Blueprint envelope without modifying existing legacy rows; and pre-acceptance Production commands use RLS-protected technical command receipts for retry identity rather than a new business-event vocabulary. The planned client contract treats linked Production plus Inventory side effects as a recoverable browser saga with pending recovery records for post-Inventory/pre-RPC failures; it does not claim cross-domain transactional atomicity.
 
 Classification: **Repository-planned, not deployed until operator verification is provided**.
+
+## Deployment closeout — 2026-07-20 Workflow Command Authority Parameter Default Compatibility
+
+This closeout is documentation-only and records operator-supplied deployment evidence for `supabase/migrations/202607200008_workflow_command_authority_parameter_default_compatibility.sql`. This repository update did not change application code, SQL migrations, tests, schema, RLS, grants, data, deployed Supabase state, or UI.
+
+### Operator-reported deployment inventory
+
+| Artifact | Inventory status | Deployment evidence |
+|---|---|---|
+| `supabase/migrations/202607200006_workflow_command_authority.sql` | Failed, fully rolled back, superseded. Must not be executed. | Operator reports migration 006 failed and rolled back because legacy function parameter names were not preserved. |
+| `supabase/migrations/202607200007_workflow_command_authority_parameter_compatibility.sql` | Failed, fully rolled back, superseded. Must not be executed. | Operator reports migration 007 failed and rolled back because the existing third-parameter default was removed. |
+| `supabase/migrations/202607200008_workflow_command_authority_parameter_default_compatibility.sql` | Operator-reported deployed. | Operator reports migration 008 executed successfully in Supabase and returned “Success. No rows returned.” |
+
+### Contract interpretation
+
+Migration 008 is inventoried as the deployed workflow command authority compatibility artifact. The deployment result confirms successful migration execution as reported by the operator; it does not confirm verified runtime behavior. This inventory therefore distinguishes **deployed migration application** from **post-deployment contract verification**.
+
+Classification: **Operator-reported deployed; runtime verification pending; not full Blueprint compliance**.
+
+### Deferred verification inventory
+
+| Verification area | Inventory status |
+|---|---|
+| Post-deployment SQL verification | Pending; intentionally deferred by operator. |
+| Manual Production workflow testing | Pending. |
+| Manual QC workflow testing | Pending. |
+| Manual Needs Reprint testing | Pending. |
+| Manual Fulfillment closure testing | Pending. |
+| Manual Inventory retry/recovery testing | Pending. |
+| Manual concurrency testing | Pending. |
+| Manual cross-owner testing | Pending. |
+
+### Remaining risk
+
+Proceeding after migration 008 without SQL and manual browser verification leaves material runtime risk. The deployed system may still have incompatible RPC signatures/defaults, grants or RLS mismatches, direct table mutation paths, cross-domain status overwrites, missing command-event envelopes, stale optimistic-concurrency acceptance, Inventory retry/recovery gaps, public tracking projection errors, cross-owner exposure, or UI paths that fail only under deployed browser credentials. These risks remain open until verified by read-only SQL checks and manual browser workflow tests.
