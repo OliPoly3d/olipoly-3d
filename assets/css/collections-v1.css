@@ -1,0 +1,433 @@
+.collections-page { background: var(--surface); }
+.site-header--solid { position: relative; background: var(--surface); border-bottom: 1px solid var(--line); }
+
+.collections-hero {
+  display: grid;
+  background: var(--surface);
+}
+.collections-hero__copy {
+  padding: clamp(4rem, 8vw, 7rem) var(--page-pad) clamp(3rem, 6vw, 5rem);
+  align-self: center;
+}
+.collections-hero h1 {
+  max-width: 12ch;
+  font-size: clamp(3.25rem, 8vw, 6.5rem);
+  line-height: .94;
+}
+.collections-hero__copy > p:not(.section-kicker) {
+  max-width: 39rem;
+  margin: 1.6rem 0 2rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.5vw, 1.18rem);
+  line-height: 1.7;
+}
+.text-action {
+  display: inline-flex;
+  gap: 1rem;
+  padding-bottom: .35rem;
+  border-bottom: 1px solid currentColor;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.collections-hero__media {
+  margin: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 34rem;
+  background: #171419;
+  color: white;
+  overflow: hidden;
+}
+.collections-hero__media img {
+  width: 100%;
+  height: 100%;
+  min-height: 34rem;
+  object-fit: cover;
+  object-position: center;
+}
+.collections-hero__media figcaption {
+  padding: .85rem var(--page-pad);
+  color: rgba(255,255,255,.68);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.collection-note {
+  padding: 1.4rem var(--page-pad);
+  border-block: 1px solid var(--line);
+  background: var(--paper);
+}
+.collection-note p {
+  max-width: 68rem;
+  margin: auto;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.collection-note strong { color: var(--ink); }
+
+.exhibition {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(5rem, 9vw, 8rem) var(--page-pad);
+}
+.exhibition__intro {
+  max-width: 54rem;
+  margin-bottom: clamp(3.5rem, 6vw, 5.5rem);
+}
+.exhibition__intro h2,
+.originals h2,
+.collection-bridge h2 {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2.8rem, 6vw, 5.4rem);
+  font-weight: 500;
+  line-height: .98;
+  letter-spacing: -.05em;
+}
+.exhibition__intro > p:last-child {
+  max-width: 39rem;
+  margin: 1.2rem 0 0;
+  color: var(--muted);
+  font-size: 1.06rem;
+  line-height: 1.7;
+}
+
+.collection-grid {
+  display: grid;
+  gap: clamp(3.5rem, 6vw, 6rem) clamp(2rem, 4vw, 4rem);
+}
+.collection-card {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+.collection-card__media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #ece7df;
+}
+.collection-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform .55s ease;
+}
+.collection-card:hover img { transform: scale(1.015); }
+.collection-card__index {
+  margin: 0 0 .7rem;
+  color: var(--bronze);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.collection-card h3 {
+  max-width: 15ch;
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2.15rem, 4vw, 3.9rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+.collection-card__copy > p:not(.collection-card__index) {
+  max-width: 34rem;
+  margin: 1rem 0 1.2rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.collection-card__copy a {
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.collection-card__copy a span {
+  margin-left: .35rem;
+  color: var(--accent);
+}
+
+/* Product-specific focal points keep subjects visible without the over-zoomed look. */
+.collection-card:nth-child(1) .collection-card__media img { object-position: 50% 48%; }
+.collection-card:nth-child(2) .collection-card__media img { object-position: 50% 52%; }
+.collection-card:nth-child(3) .collection-card__media img { object-position: 50% 46%; }
+.collection-card:nth-child(4) .collection-card__media img { object-position: 50% 46%; }
+.collection-card:nth-child(5) .collection-card__media img { object-position: 50% 50%; }
+
+.originals {
+  padding: clamp(5rem, 10vw, 8rem) var(--page-pad);
+  background: var(--paper);
+}
+.originals__inner { max-width: 70rem; margin: auto; }
+.originals__inner > p:not(.section-kicker) {
+  max-width: 42rem;
+  margin: 1.4rem 0 2rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.originals__status {
+  display: grid;
+  gap: .6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+.originals__status span {
+  width: max-content;
+  padding: .5rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: .67rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.originals__status p { margin: 0; color: var(--muted); }
+
+.collection-bridge {
+  padding: clamp(5rem, 10vw, 8rem) var(--page-pad);
+  background: #1b181d;
+  color: white;
+}
+.collection-bridge__inner { max-width: 70rem; margin: auto; }
+.collection-bridge h2 { max-width: 13ch; }
+.collection-bridge__inner > p:not(.section-kicker) {
+  max-width: 38rem;
+  margin: 1.3rem 0 2rem;
+  color: rgba(255,255,255,.68);
+  line-height: 1.7;
+}
+
+@media (min-width: 800px) {
+  .collections-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(420px, .9fr);
+    min-height: min(780px, calc(100svh - var(--header-h)));
+  }
+  .collections-hero__copy {
+    padding-left: max(var(--page-pad), calc((100vw - 1440px)/2 + 2rem));
+  }
+  .collections-hero__media,
+  .collections-hero__media img {
+    min-height: min(780px, calc(100svh - var(--header-h)));
+  }
+  .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .collection-card--lead,
+  .collection-card--wide {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1.45fr) minmax(18rem, .75fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 5rem);
+  }
+  .collection-card--lead .collection-card__media,
+  .collection-card--wide .collection-card__media {
+    aspect-ratio: 16 / 9;
+  }
+  .collection-card--wide .collection-card__copy { order: -1; }
+
+  /* A restrained editorial stagger keeps the paired cards from feeling mechanically aligned. */
+  .collection-card:nth-child(3) {
+    margin-top: 160px;
+  }
+  .originals__status {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 1.2rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .collection-card:nth-child(3) {
+    margin-top: 248px;
+  }
+
+  .collection-card:not(.collection-card--lead):not(.collection-card--wide) .collection-card__media {
+    aspect-ratio: 5 / 4;
+  }
+}
+
+/* Selected Collections photography */
+.collection-card:nth-child(4) .collection-card__media img { object-position: 50% 50%; }
+
+/* The supplied Hydro Flask composition is already finished artwork; show it in full. */
+.collection-card:nth-child(5) .collection-card__media {
+  aspect-ratio: auto;
+  background: #ffffff;
+}
+.collection-card:nth-child(5) .collection-card__media img {
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 799px) {
+  .collection-card:nth-child(3) { margin-top: 0; }
+}
+
+/* MILESTONE CLARITY REDUCTION PASS */
+.collections-hero--clarity{min-height:auto}.collections-hero--clarity .collections-hero__copy{padding-block:clamp(3rem,6vw,5rem)}.collections-hero--clarity h1{font-size:clamp(3rem,6.5vw,6rem)}.collections-hero--clarity .collections-hero__media,.collections-hero--clarity .collections-hero__media img{min-height:0;max-height:620px}.exhibition--clarity{padding-top:clamp(4rem,7vw,6rem);padding-bottom:clamp(4rem,7vw,6rem)}.exhibition--clarity .exhibition__intro{margin-bottom:clamp(2rem,4vw,3.5rem)}.collection-grid--compact{gap:clamp(3rem,5vw,5rem) clamp(2rem,4vw,4rem)}.collection-grid--compact .collection-card{margin-top:0}.collection-grid--compact .collection-card:nth-child(3){margin-top:90px}.collection-grid--compact .collection-card__copy{padding-top:1rem}.collection-grid--compact .collection-card__copy h3{font-size:clamp(2rem,3.6vw,3.5rem)}.collection-bridge--compact{padding-block:clamp(4rem,7vw,6rem)}@media(max-width:799px){.collection-grid--compact .collection-card:nth-child(3){margin-top:0}.collections-hero--clarity .collections-hero__media img{max-height:none}}
+
+/* MILESTONE 2 — COLLECTIONS RHYTHM */
+.collections-hero--clarity .collections-hero__copy{padding-block:clamp(3rem,5vw,4.5rem)}
+.collections-hero--clarity h1{max-width:11ch;font-size:clamp(3rem,5.8vw,5.8rem)}
+.collections-hero--clarity .collections-hero__copy>p:not(.section-kicker){margin:1.25rem 0 1.6rem}
+.exhibition--clarity{padding-block:clamp(3.75rem,6vw,5.5rem)}
+.collection-grid--compact{gap:clamp(2.75rem,4.5vw,4.5rem) clamp(2rem,4vw,4rem)}
+.collection-bridge--compact{padding-block:clamp(3.75rem,6vw,5.5rem)}
+@media(min-width:800px){.collections-hero--clarity{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}.collections-hero--clarity .collections-hero__media,.collections-hero--clarity .collections-hero__media img{max-height:560px}.collection-grid--compact .collection-card:nth-child(3){margin-top:140px}}
+
+
+/* MILESTONE 3 — COLLECTIONS SEQUENCING */
+@media(min-width:800px){
+  .collection-grid--compact{grid-template-columns:repeat(12,minmax(0,1fr));row-gap:clamp(3rem,5vw,5rem);align-items:start}
+  .collection-grid--compact .collection-card--lead{grid-column:1/-1;grid-row:1}
+  .collection-grid--compact .collection-card--carry{grid-column:1/7;grid-row:2}
+  .collection-grid--compact .collection-card--organization{grid-column:7/13;grid-row:2;position:relative;top:clamp(5rem,9vw,8rem);margin-top:0!important}
+  .collection-grid--compact .collection-card--keepsake{grid-column:1/7;grid-row:3;position:relative;top:clamp(1rem,3vw,2.5rem)}
+  .collection-grid--compact .collection-card--useful{grid-column:7/13;grid-row:3;position:relative;top:0}
+  .collection-grid--compact .collection-card--carry .collection-card__media,
+  .collection-grid--compact .collection-card--organization .collection-card__media,
+  .collection-grid--compact .collection-card--keepsake .collection-card__media{aspect-ratio:5/4}
+  .collection-grid--compact .collection-card--useful .collection-card__media{aspect-ratio:auto}
+  .collection-grid--compact .collection-card--useful .collection-card__media img{height:auto;object-fit:contain}
+}
+@media(max-width:799px){.collection-grid--compact .collection-card{position:static!important;top:auto!important}}
+
+/* MILESTONE 4 — IMAGE FRAMING + CONNECTED JOURNEY */
+.collection-bridge__actions{display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.25rem}
+.secondary-action{display:inline-flex;align-items:center;justify-content:center;min-height:3.25rem;padding:.85rem 1rem;border:1px solid currentColor;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-decoration:none}
+.secondary-action--light{color:#fff}
+
+@media(min-width:800px){
+  /* Use real flow spacing so the next row cannot slide underneath the staggered card. */
+  .collection-grid--compact .collection-card--organization{position:static;top:auto;margin-top:clamp(5rem,8vw,8rem)!important}
+  .collection-grid--compact .collection-card--keepsake{position:static;top:auto}
+
+  /* Portrait source images should be shown as complete compositions, not forced into landscape crops. */
+  .collection-grid--compact .collection-card--keepsake .collection-card__media,
+  .collection-grid--compact .collection-card--useful .collection-card__media{aspect-ratio:auto;background:#f3efe8}
+  .collection-grid--compact .collection-card--keepsake .collection-card__media img,
+  .collection-grid--compact .collection-card--useful .collection-card__media img{width:100%;height:auto;object-fit:contain;object-position:center;transform:none}
+}
+
+@media(max-width:799px){
+  .collection-grid--compact .collection-card--keepsake .collection-card__media,
+  .collection-grid--compact .collection-card--useful .collection-card__media{aspect-ratio:auto}
+  .collection-grid--compact .collection-card--keepsake .collection-card__media img,
+  .collection-grid--compact .collection-card--useful .collection-card__media img{height:auto;object-fit:contain;transform:none}
+  .collection-bridge__actions{align-items:stretch}
+  .collection-bridge__actions a{width:100%}
+}
+
+/* MILESTONE 5 — NATURAL IMAGE HEIGHTS */
+.collection-grid--compact{
+  grid-auto-rows:max-content;
+}
+.collection-grid--compact .collection-card{
+  align-self:start;
+  align-content:start;
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__media,
+.collection-grid--compact .collection-card--useful .collection-card__media{
+  display:block;
+  height:auto;
+  min-height:0;
+  overflow:visible;
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__media img,
+.collection-grid--compact .collection-card--useful .collection-card__media img{
+  display:block;
+  width:100%;
+  max-width:100%;
+  height:auto!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:none!important;
+}
+
+
+/* MILESTONE 6 — TRUE CONTENT FLOW + MOBILE INTERACTION POLISH */
+.collection-grid--compact .collection-card--keepsake,
+.collection-grid--compact .collection-card--useful{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  min-height:0;
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__media,
+.collection-grid--compact .collection-card--useful .collection-card__media{
+  position:relative;
+  flex:0 0 auto;
+  width:100%;
+  margin:0;
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__copy,
+.collection-grid--compact .collection-card--useful .collection-card__copy{
+  position:relative;
+  z-index:1;
+  flex:0 0 auto;
+  width:100%;
+  margin:0;
+  padding-top:clamp(1.35rem,2.4vw,2rem);
+  background:var(--surface);
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__media + .collection-card__copy,
+.collection-grid--compact .collection-card--useful .collection-card__media + .collection-card__copy{
+  clear:both;
+}
+
+/* Keep links comfortable to tap without changing the desktop editorial character. */
+.collection-card__copy a,
+.collection-bridge__actions a{
+  min-height:2.75rem;
+  align-items:center;
+}
+.collection-card__copy a{display:inline-flex}
+
+@media(max-width:799px){
+  .exhibition--clarity{padding-block:3.25rem}
+  .collection-grid--compact{gap:3.25rem}
+  .collection-grid--compact .collection-card__copy{padding-top:1.15rem}
+  .collection-grid--compact .collection-card--keepsake .collection-card__copy,
+  .collection-grid--compact .collection-card--useful .collection-card__copy{padding-top:1.25rem}
+  .collection-card h3{font-size:clamp(2rem,11vw,3rem);line-height:1.03}
+  .collection-card__copy > p:not(.collection-card__index){margin:.85rem 0 1rem}
+}
+
+/* MILESTONE 7 — FINAL COLLECTIONS CONTENT FLOW */
+.collection-grid--compact .collection-card--keepsake .collection-card__media,
+.collection-grid--compact .collection-card--useful .collection-card__media{
+  position:static!important;
+  display:block!important;
+  width:100%!important;
+  height:max-content!important;
+  min-height:0!important;
+  aspect-ratio:unset!important;
+  overflow:visible!important;
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__media img,
+.collection-grid--compact .collection-card--useful .collection-card__media img{
+  position:static!important;
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  object-fit:contain!important;
+}
+.collection-grid--compact .collection-card--keepsake .collection-card__copy,
+.collection-grid--compact .collection-card--useful .collection-card__copy{
+  position:static!important;
+  transform:none!important;
+  margin-top:0!important;
+  padding-top:clamp(1.35rem,2.4vw,2rem)!important;
+  background:var(--surface)!important;
+}

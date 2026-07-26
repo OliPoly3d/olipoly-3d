@@ -1,0 +1,61 @@
+.collaboration-page{background:var(--surface)}
+.site-header--solid{position:relative;background:var(--surface);border-bottom:1px solid var(--line)}
+.collaboration-hero{display:grid;background:var(--surface)}
+.collaboration-hero__copy{padding:clamp(3.5rem,6vw,5.5rem) var(--page-pad);align-self:center}
+.collaboration-hero h1{max-width:11ch;margin:0;font-family:"Playfair Display",serif;font-size:clamp(3.1rem,6.4vw,6rem);font-weight:500;line-height:.96;letter-spacing:-.055em}
+.collaboration-hero__copy>p:not(.section-kicker){max-width:40rem;margin:1.35rem 0 1.8rem;color:var(--muted);font-size:clamp(1rem,1.35vw,1.16rem);line-height:1.65}
+.collaboration-hero__media{margin:0;display:grid;grid-template-rows:1fr auto;min-height:30rem;background:#171419;color:#fff;overflow:hidden}
+.collaboration-hero__media img{width:100%;height:100%;min-height:30rem;object-fit:cover;object-position:center}
+.collaboration-hero__media figcaption{padding:.85rem var(--page-pad);color:rgba(255,255,255,.68);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}
+.collaboration-cases{max-width:1380px;margin:auto;padding:clamp(4rem,7vw,6rem) var(--page-pad)}
+.collaboration-cases__intro{max-width:54rem;margin-bottom:clamp(2.5rem,4vw,4rem)}
+.collaboration-cases h2,.collaboration-capabilities h2,.collaboration-cta h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.8rem,5.5vw,5.2rem);font-weight:500;line-height:.98;letter-spacing:-.05em}
+.collaboration-case-list{display:grid;gap:clamp(3.5rem,6vw,6rem)}
+.collaboration-case{display:grid;gap:1.5rem;align-items:center;border-top:1px solid var(--line);padding-top:clamp(2rem,3.5vw,3rem)}
+.collaboration-case figure{margin:0;min-width:0;background:#ece7df;overflow:hidden}
+.collaboration-case figure img{display:block;width:100%;height:auto;max-height:620px;object-fit:contain;object-position:center}
+.collaboration-case__index{margin:0 0 .75rem;color:var(--bronze);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.collaboration-case h3{max-width:14ch;margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.35rem,4.3vw,4.2rem);font-weight:500;line-height:1;letter-spacing:-.045em}
+.collaboration-case__copy>p:last-child{max-width:38rem;margin:1rem 0 0;color:var(--muted);line-height:1.65}
+.collaboration-capabilities{padding:clamp(4rem,7vw,6rem) var(--page-pad);background:var(--paper);border-block:1px solid var(--line)}
+.collaboration-capabilities__inner{max-width:1380px;margin:auto}
+.collaboration-capabilities__heading{max-width:55rem;margin-bottom:clamp(2rem,4vw,3rem)}
+.capability-grid{display:grid;border-top:1px solid var(--line)}
+.capability-grid article{padding:1.5rem 0;border-bottom:1px solid var(--line)}
+.capability-grid span{color:var(--bronze);font-size:.7rem;font-weight:700;letter-spacing:.1em}
+.capability-grid h3{margin:.55rem 0 .45rem;font-family:"Playfair Display",serif;font-size:clamp(1.65rem,2.6vw,2.4rem);font-weight:500}
+.capability-grid p{max-width:25rem;margin:0;color:var(--muted);line-height:1.55}
+.business-strip{padding:clamp(2.75rem,5vw,4rem) var(--page-pad);background:var(--surface)}
+.business-strip__inner{max-width:1380px;margin:auto}
+.business-strip ul{display:flex;flex-wrap:wrap;gap:.75rem 1rem;margin:1.2rem 0 0;padding:0;list-style:none}
+.business-strip li{padding:.65rem .9rem;border:1px solid var(--line);border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.035em}
+.collaboration-cta{padding:clamp(4.5rem,8vw,7rem) var(--page-pad);background:#1b181d;color:#fff}
+.collaboration-cta__inner{max-width:72rem;margin:auto;display:flex;flex-direction:column;align-items:flex-start}
+.collaboration-cta h2{max-width:12ch}
+.collaboration-cta p:not(.section-kicker){max-width:40rem;margin:1.25rem 0 2rem;color:rgba(255,255,255,.7);line-height:1.65}
+@media(min-width:800px){
+.collaboration-hero{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
+.collaboration-hero__media,.collaboration-hero__media img{max-height:590px}
+.collaboration-case{grid-template-columns:minmax(18rem,.68fr) minmax(0,1.32fr);gap:clamp(2.5rem,5vw,5rem)}
+.collaboration-case--reverse{grid-template-columns:minmax(0,1.32fr) minmax(18rem,.68fr)}
+.collaboration-case--reverse .collaboration-case__copy{order:2}
+.collaboration-case--reverse figure{order:1}
+.capability-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.capability-grid article{padding:1.8rem 1.5rem;border-right:1px solid var(--line)}
+.capability-grid article:first-child{padding-left:0}.capability-grid article:last-child{padding-right:0;border-right:0}
+}
+@media(max-width:799px){
+.collaboration-hero__media{min-height:0}.collaboration-hero__media img{min-height:0;height:auto;max-height:none;object-fit:contain}
+.collaboration-case-list{gap:3.5rem}.collaboration-case{gap:1.25rem}.collaboration-case__copy{order:2}.collaboration-case figure{order:1}
+.collaboration-cases,.collaboration-capabilities{padding-block:3.25rem}.collaboration-cta{padding-block:3.75rem}
+.collaboration-cta h2{font-size:clamp(3rem,15vw,5rem)}
+.collaboration-cta .primary-action{width:100%;max-width:21rem;justify-content:space-between}
+}
+
+.collaboration-proof{max-width:1380px;margin:auto;padding:clamp(4rem,7vw,6rem) var(--page-pad);border-top:1px solid var(--line)}
+.collaboration-proof__intro{max-width:58rem;margin-bottom:clamp(2rem,4vw,3.5rem)}
+.collaboration-proof h2{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.8rem,5vw,4.8rem);font-weight:500;line-height:1;letter-spacing:-.05em}
+.collaboration-proof__intro>p:last-child{max-width:42rem;color:var(--muted);line-height:1.65}
+.collaboration-proof__grid{display:grid;gap:1.25rem}.collaboration-proof figure{margin:0;background:#161418;overflow:hidden}.collaboration-proof img{display:block;width:100%;height:auto}.collaboration-proof figcaption{padding:.8rem 1rem;color:#fff;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.collaboration-case__portrait img{max-height:720px!important}
+@media(min-width:800px){.collaboration-proof__grid{grid-template-columns:1fr 1fr;align-items:start}.collaboration-proof__grid figure:first-child{margin-top:3rem}}

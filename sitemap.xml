@@ -7,38 +7,38 @@
   </url>
 
   <url>
-    <loc>https://olipoly3d.com/showcase.html</loc>
+    <loc>https://olipoly3d.com/collections.html</loc>
     <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/studio.html</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/creations.html</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/collaboration.html</loc>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/community.html</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://olipoly3d.com/about.html</loc>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://olipoly3d.com/start-project.html</loc>
     <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://olipoly3d.com/branded-details.html</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://olipoly3d.com/eye-catching-work.html</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://olipoly3d.com/finished-pieces.html</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://olipoly3d.com/designed-before-printing.html</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://olipoly3d.com/from-imagination.html</loc>
-    <priority>0.8</priority>
   </url>
 
   <url>
