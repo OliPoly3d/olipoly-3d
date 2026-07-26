@@ -3335,7 +3335,7 @@ Please include invoice number ${d.invoice_number}${d.po_number ? ` and PO ${d.po
 Thank you,
 
 OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
+Thoughtful Design for Real Life
 OliPoly3D@gmail.com
 https://olipoly3d.com`;
     }
@@ -3351,13 +3351,13 @@ https://olipoly3d.com`;
 
       const statusPill = isPaid
         ? `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#eafaf1;border:1px solid #bcebd0;color:#147a3f;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Paid in Full</span>`
-        : `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff3fb;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Invoice Ready</span>`;
+        : `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#f7f4ee;border:1px solid #d9d3cb;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Invoice Ready</span>`;
 
       const primaryCta = isPaid
-        ? `<a href="${esc(trackLink)}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Track Order</a>`
+        ? `<a href="${esc(trackLink)}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;background:#f7f4ee;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Track Order</a>`
         : invoiceUrl
-          ? `<a href="${esc(invoiceUrl)}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">View / Pay Invoice</a>`
-          : `<div style="padding:14px 16px;border-radius:18px;background:#fff8fc;border:1px solid #f2c4df;color:#604d68;font-size:14px;line-height:1.5;"><strong style="color:#2f2336;">Payment note</strong><br>Please process payment according to the approved purchasing terms.</div>`;
+          ? `<a href="${esc(invoiceUrl)}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;background:#f7f4ee;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">View / Pay Invoice</a>`
+          : `<div style="padding:14px 16px;border-radius:2px;background:#fffdfa;border:1px solid #d9d3cb;color:#69635f;font-size:14px;line-height:1.5;"><strong style="color:#312d2b;">Payment note</strong><br>Please process payment according to the approved purchasing terms.</div>`;
 
       const secondaryPayments = (!isPaid && (paypalUrl || venmoUrl))
         ? `<div style="margin-top:10px;display:block;">
@@ -3367,8 +3367,8 @@ https://olipoly3d.com`;
         : '';
 
       const trackingBlock = d.tracking_number
-        ? `<div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:14px;line-height:1.55;">
-            <strong style="color:#2f2336;">Shipment / Tracking</strong><br>
+        ? `<div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:14px;line-height:1.55;">
+            <strong style="color:#312d2b;">Shipment / Tracking</strong><br>
             Tracking: ${esc(d.tracking_number)}
           </div>`
         : '';
@@ -3379,45 +3379,45 @@ https://olipoly3d.com`;
           ? `Attached is invoice <strong>${esc(d.invoice_number)}</strong>${d.po_number ? ` associated with PO <strong>${esc(d.po_number)}</strong>` : ''}.`
           : `Your OliPoly 3D invoice <strong>${esc(d.invoice_number)}</strong> is ready.`;
 
-      return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
-  <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:28px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
-    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
-    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+      return `<div style="margin:0;background:#f7f4ee;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #d9d3cb;border-radius:2px;overflow:hidden;">
+    <div style="height:12px;background:#f7f4ee;"></div>
+    <div style="padding:26px 28px 18px;background:#f7f4ee;border-bottom:1px solid #ebe6df;">
       <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
-        <td style="vertical-align:middle;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div><div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">Custom 3D Printing • Creative Builds • Prototypes</div></td>
+        <td style="vertical-align:middle;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#231f20;">Oli<span style="color:#c94f83;">Poly</span> 3D</div><div style="margin-top:7px;color:#69635f;font-size:13px;letter-spacing:.01em;">Thoughtful Design for Real Life</div></td>
         <td style="text-align:right;vertical-align:middle;">${statusPill}</td>
       </tr></table>
     </div>
 
     <div style="padding:28px;">
-      <div style="display:inline-block;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:#f9ecf5;border:1px solid #f2c4df;color:#7c4a82;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Invoice</div>
-      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#241b2b;font-weight:700;">${isPaid ? 'Payment received' : 'Invoice ready'}</h1>
-      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">${intro}</p>
+      <div style="display:inline-block;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:#f7f4ee;border:1px solid #d9d3cb;color:#9b3d66;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Invoice</div>
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#231f20;font-weight:700;">${isPaid ? 'Payment received' : 'Invoice ready'}</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4e4945;">${intro}</p>
 
-      <div style="background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));border:1px solid #f2c4df;border-radius:22px;padding:20px;margin:20px 0;">
+      <div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:20px;margin:20px 0;">
         <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
-          <td style="vertical-align:top;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#826889;margin-bottom:6px;">${isPaid ? 'Status' : 'Amount Due'}</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:800;line-height:1;color:#241b2b;">${isPaid ? 'Paid in Full' : money(amountDue)}</div><div style="margin-top:7px;color:#604d68;font-size:13px;">${d.invoice_due_date ? `Due ${esc(d.invoice_due_date)}` : esc(d.invoice_terms_label || 'Customer terms')}</div></td>
-          <td style="vertical-align:top;text-align:right;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#826889;margin-bottom:6px;">Invoice</div><div style="font-size:17px;font-weight:900;color:#241b2b;">${esc(d.invoice_number)}</div><div style="margin-top:7px;color:#604d68;font-size:13px;">Order ${esc(d.order_number || '—')}</div></td>
+          <td style="vertical-align:top;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#69635f;margin-bottom:6px;">${isPaid ? 'Status' : 'Amount Due'}</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:800;line-height:1;color:#231f20;">${isPaid ? 'Paid in Full' : money(amountDue)}</div><div style="margin-top:7px;color:#69635f;font-size:13px;">${d.invoice_due_date ? `Due ${esc(d.invoice_due_date)}` : esc(d.invoice_terms_label || 'Customer terms')}</div></td>
+          <td style="vertical-align:top;text-align:right;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#69635f;margin-bottom:6px;">Invoice</div><div style="font-size:17px;font-weight:900;color:#231f20;">${esc(d.invoice_number)}</div><div style="margin-top:7px;color:#69635f;font-size:13px;">Order ${esc(d.order_number || '—')}</div></td>
         </tr></table>
       </div>
 
-      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">Invoice Summary</div>
+      <div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:18px 20px;margin:20px 0;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#312d2b;margin-bottom:10px;">Invoice Summary</div>
         <table role="presentation" style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">Project</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.order_title || 'Custom 3D printed items')}</td></tr>
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">PO / Part</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.po_number || '—')} / ${esc(d.po_part_number || d.olipoly_part_number || '—')}</td></tr>
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Terms</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(d.invoice_terms_label || 'Customer Terms')}</td></tr>
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;">Total</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:900;">${money(d.total)}</td></tr>
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #ebe6df;">Project</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(d.order_title || 'Custom 3D printed items')}</td></tr>
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;border-bottom:1px solid #ebe6df;">PO / Part</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(d.po_number || '—')} / ${esc(d.po_part_number || d.olipoly_part_number || '—')}</td></tr>
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;border-bottom:1px solid #ebe6df;">Terms</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(d.invoice_terms_label || 'Customer Terms')}</td></tr>
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;">Total</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:900;">${money(d.total)}</td></tr>
         </table>
       </div>
 
-      <div style="margin:20px 0;">${primaryCta}${secondaryPayments}<a href="${esc(trackLink)}" style="display:block;text-align:center;margin-top:10px;background:#ffffff;color:#7c4a82;text-decoration:none;font-weight:900;border:1px solid #dfcff5;border-radius:999px;padding:12px 16px;">Track Order</a></div>
+      <div style="margin:20px 0;">${primaryCta}${secondaryPayments}<a href="${esc(trackLink)}" style="display:block;text-align:center;margin-top:10px;background:#ffffff;color:#9b3d66;text-decoration:none;font-weight:900;border:1px solid #d9d3cb;border-radius:999px;padding:12px 16px;">Track Order</a></div>
       ${trackingBlock}
-      <div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;">Please include invoice number <strong style="color:#2f2336;">${esc(d.invoice_number)}</strong>${d.po_number ? ` and PO <strong style="color:#2f2336;">${esc(d.po_number)}</strong>` : ''} with payment or remittance details.</div>
-      <p style="margin:22px 0 0;color:#4f4057;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
+      <div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;">Please include invoice number <strong style="color:#312d2b;">${esc(d.invoice_number)}</strong>${d.po_number ? ` and PO <strong style="color:#312d2b;">${esc(d.po_number)}</strong>` : ''} with payment or remittance details.</div>
+      <p style="margin:22px 0 0;color:#4e4945;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
     </div>
 
-    <div style="padding:18px 28px;background:#fff7fb;border-top:1px solid #f6ddec;text-align:center;color:#826889;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
+    <div style="padding:18px 28px;background:#f7f4ee;border-top:1px solid #ebe6df;text-align:center;color:#69635f;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#9b3d66;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#9b3d66;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
   </div>
 </div>`;
     }
@@ -3498,7 +3498,7 @@ ${trackLink}
 
 Thank you,
 OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
+Thoughtful Design for Real Life
 OliPoly3D@gmail.com
 https://olipoly3d.com`;
     }
@@ -3540,58 +3540,58 @@ https://olipoly3d.com`;
       const balanceDue = paid ? 0 : Math.max(0, num($('balanceAmount')?.value) || (num($('orderTotal')?.value) - num($('depositAmount')?.value)));
       const payLink = `https://olipoly3d.com/pay.html?order=${encodeURIComponent(orderNumber)}`;
       const paymentBox = paid
-        ? `<div style="background:#effaf4;border:1px solid #bcebd0;border-radius:18px;padding:14px 16px;color:#166534;font-size:14px;line-height:1.55;"><strong>Payment:</strong> Paid in full.</div>`
-        : `<div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;color:#604d68;font-size:14px;line-height:1.55;"><strong style="color:#2f2336;">Balance due:</strong> ${money(balanceDue)}<br><span>Use the secure order payment page below.</span></div>`;
+        ? `<div style="background:#effaf4;border:1px solid #bcebd0;border-radius:2px;padding:14px 16px;color:#166534;font-size:14px;line-height:1.55;"><strong>Payment:</strong> Paid in full.</div>`
+        : `<div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;color:#69635f;font-size:14px;line-height:1.55;"><strong style="color:#312d2b;">Balance due:</strong> ${money(balanceDue)}<br><span>Use the secure order payment page below.</span></div>`;
 
-      return `<div style="margin:0;background:#fff7fb;padding:26px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
-  <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:28px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
-    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+      return `<div style="margin:0;background:#f7f4ee;padding:26px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #d9d3cb;border-radius:2px;overflow:hidden;">
+    <div style="height:12px;background:#f7f4ee;"></div>
 
-    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+    <div style="padding:26px 28px 18px;background:#f7f4ee;border-bottom:1px solid #ebe6df;">
       <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
         <td style="vertical-align:middle;">
-          <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
-          <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">Custom 3D Printing • Creative Builds • Prototypes</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#231f20;">Oli<span style="color:#c94f83;">Poly</span> 3D</div>
+          <div style="margin-top:7px;color:#69635f;font-size:13px;letter-spacing:.01em;">Thoughtful Design for Real Life</div>
         </td>
         <td style="text-align:right;vertical-align:middle;">
-          <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff3fb;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">${esc(badge[kind] || 'Order Update')}</span>
+          <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#f7f4ee;border:1px solid #d9d3cb;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">${esc(badge[kind] || 'Order Update')}</span>
         </td>
       </tr></table>
     </div>
 
     <div style="padding:28px;">
-      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#241b2b;font-weight:700;">${esc(titles[kind] || 'Order update')}</h1>
-      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">${esc(messages[kind] || 'Here is an update on your OliPoly 3D order.')}</p>
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#231f20;font-weight:700;">${esc(titles[kind] || 'Order update')}</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4e4945;">${esc(messages[kind] || 'Here is an update on your OliPoly 3D order.')}</p>
 
-      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">Order Summary</div>
+      <div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:18px 20px;margin:20px 0;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#312d2b;margin-bottom:10px;">Order Summary</div>
         <table role="presentation" style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">Order #</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:900;border-bottom:1px solid #f5dcea;">${esc(orderNumber)}</td></tr>
-          ${orderTitle ? `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Project</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(orderTitle)}</td></tr>` : ''}
-          ${fulfillment ? `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;border-bottom:1px solid #f5dcea;">Fulfillment</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(fulfillment)}</td></tr>` : ''}
-          ${trackingNumber ? `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;">Tracking</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;">${esc(trackingNumber)}</td></tr>` : ''}
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #ebe6df;">Order #</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:900;border-bottom:1px solid #ebe6df;">${esc(orderNumber)}</td></tr>
+          ${orderTitle ? `<tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;border-bottom:1px solid #ebe6df;">Project</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(orderTitle)}</td></tr>` : ''}
+          ${fulfillment ? `<tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;border-bottom:1px solid #ebe6df;">Fulfillment</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(fulfillment)}</td></tr>` : ''}
+          ${trackingNumber ? `<tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;">Tracking</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;">${esc(trackingNumber)}</td></tr>` : ''}
         </table>
       </div>
 
-      <div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:20px;padding:16px 18px;margin:20px 0;">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:8px;">What happens next?</div>
-        <ul style="margin:0;padding-left:20px;color:#604d68;font-size:14px;line-height:1.65;">
+      <div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:16px 18px;margin:20px 0;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#312d2b;margin-bottom:8px;">What happens next?</div>
+        <ul style="margin:0;padding-left:20px;color:#69635f;font-size:14px;line-height:1.65;">
           ${stepRows.map(s => `<li>${esc(s)}</li>`).join('')}
         </ul>
       </div>
 
       ${paymentBox}
 
-      ${!paid && balanceDue > 0 ? `<div style="margin:20px 0;"><a href="${payLink}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Pay ${money(balanceDue)} Securely</a></div>` : ''}
+      ${!paid && balanceDue > 0 ? `<div style="margin:20px 0;"><a href="${payLink}" style="display:block;text-align:center;background:#f7f4ee;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Pay ${money(balanceDue)} Securely</a></div>` : ''}
 
       <div style="margin:20px 0;">
-        <a href="${trackLink}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Track Order</a>
+        <a href="${trackLink}" style="display:block;text-align:center;background:#f7f4ee;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Track Order</a>
       </div>
 
-      <p style="margin:22px 0 0;color:#4f4057;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
+      <p style="margin:22px 0 0;color:#4e4945;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
     </div>
 
-    <div style="padding:18px 28px;background:#fff7fb;border-top:1px solid #f6ddec;text-align:center;color:#826889;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
+    <div style="padding:18px 28px;background:#f7f4ee;border-top:1px solid #ebe6df;text-align:center;color:#69635f;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#9b3d66;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#9b3d66;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
   </div>
 </div>`;
     }
@@ -4085,7 +4085,7 @@ if ($('openVenmoBtn')) {
           <div class="invoice-header">
             <div>
               <div class="invoice-brand">Oli<span>Poly</span> 3D</div>
-              <div class="invoice-tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
+              <div class="invoice-tagline">Thoughtful Design for Real Life</div>
             </div>
             <div>
               <div class="invoice-title">INVOICE</div>
@@ -4282,7 +4282,7 @@ if ($('openVenmoBtn')) {
               <div class="label-brand-row">
                 <div class="brand-copy">
                   <div class="label-brand">Oli<span>Poly</span> 3D</div>
-                  <div class="label-tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
+                  <div class="label-tagline">Thoughtful Design for Real Life</div>
                 </div>
                 <div class="label-badge">BUSINESS<br>SHIPMENT</div>
               </div>
@@ -5678,7 +5678,7 @@ function generateTravelerPdf(){
     <div class="invoice-sheet">
       <div class="invoice-topbar"></div>
       <div class="invoice-header">
-        <div><div class="invoice-brand">Oli<span>Poly</span> 3D</div><div class="invoice-tagline">Custom 3D Printing • Creative Builds • Prototypes</div></div>
+        <div><div class="invoice-brand">Oli<span>Poly</span> 3D</div><div class="invoice-tagline">Thoughtful Design for Real Life</div></div>
         <div><div class="invoice-title">INVOICE</div><div class="invoice-number" id="invPdfInvoiceNumber">INV-000000</div></div>
       </div>
       <div class="invoice-meta-grid">
@@ -5917,7 +5917,7 @@ function generateTravelerPdf(){
     const addr = d.address.length ? d.address.map(x => `<div class="addr-line">${opEsc(x)}</div>`).join("") : `<div class="addr-line muted">No shipping address entered.</div>`;
     const cards = [opCard("Project", d.project), opCard("Qty", d.qty), opCard("PO", d.po), opCard("Customer Part #", d.customerPart), opCard("OliPoly Part #", d.oliPart)].join("");
     const returnBlock = `<div class="return-block"><div class="return-rule"></div><div class="return-kicker">From / return address</div>${RETURN_ADDRESS.map(x=>`<div>${opEsc(x)}</div>`).join("")}</div>`;
-    return `<section class="ship-label ${outline ? "test-outline" : ""}"><header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Custom 3D Printing • Creative Builds • Prototypes</div></div><div class="ship-top-right"><div class="order-no">${opEsc(d.orderNumber)}</div><div class="ship-badge">${opEsc(d.fulfillment)}</div></div></header><main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">${opEsc(d.shipName)}</div>${d.shipCompany ? `<div class="addr-company">${opEsc(d.shipCompany)}</div>` : ""}<div class="addr-body">${addr}</div></div><div class="ship-info">${cards}</div></main>${returnBlock}</section>`;
+    return `<section class="ship-label ${outline ? "test-outline" : ""}"><header class="ship-head"><div><div class="brand-word">OliPoly<span>3D</span></div><div class="brand-sub">Thoughtful Design for Real Life</div></div><div class="ship-top-right"><div class="order-no">${opEsc(d.orderNumber)}</div><div class="ship-badge">${opEsc(d.fulfillment)}</div></div></header><main class="ship-main"><div class="ship-to"><div class="section-kicker">Ship / deliver to</div><div class="addr-name">${opEsc(d.shipName)}</div>${d.shipCompany ? `<div class="addr-company">${opEsc(d.shipCompany)}</div>` : ""}<div class="addr-body">${addr}</div></div><div class="ship-info">${cards}</div></main>${returnBlock}</section>`;
   }
 
   function opPrint5168(){

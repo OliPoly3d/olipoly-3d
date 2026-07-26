@@ -2330,7 +2330,7 @@ Please let me know if any revisions or additional documentation are needed.
 Thank you,
 
 OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
+Thoughtful Design for Real Life
 OliPoly3D@gmail.com
 https://olipoly3d.com`;
   }
@@ -2359,7 +2359,7 @@ https://olipoly3d.com`;
               Oli<span style="color:#b86be8;">Poly</span> 3D
             </div>
             <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">
-              Custom 3D Printing • Creative Builds • Prototypes
+              Thoughtful Design for Real Life
             </div>
           </td>
           <td style="width:74px;text-align:right;vertical-align:middle;">
@@ -2440,7 +2440,7 @@ https://olipoly3d.com`;
 
       <p style="font-size:15px;line-height:1.6;margin:8px 0 0;color:#4f4057;">
         <strong>OliPoly 3D LLC</strong><br>
-        Custom 3D Printing • Creative Builds • Prototypes
+        Thoughtful Design for Real Life
       </p>
     </div>
 
@@ -2836,7 +2836,7 @@ https://olipoly3d.com`;
         <div class="header">
           <div>
             <div class="brand">Oli<span>Poly</span> 3D</div>
-            <div class="tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
+            <div class="tagline">Thoughtful Design for Real Life</div>
           </div>
           <div>
             <div class="title">QUOTE</div>
@@ -3095,7 +3095,7 @@ You can also reply directly with any questions or revisions before moving forwar
 Thank you,
 
 OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
+Thoughtful Design for Real Life
 OliPoly3D@gmail.com
 https://olipoly3d.com`;
   }
@@ -3133,7 +3133,7 @@ https://olipoly3d.com`;
         Oli<span style="color:#b86be8;">Poly</span> 3D
       </div>
       <div style="margin-top:5px;color:#866a86;font-size:14px;">
-        Custom 3D Printing • Creative Builds • Prototypes
+        Thoughtful Design for Real Life
       </div>
     </div>
 
@@ -3188,7 +3188,7 @@ https://olipoly3d.com`;
       <p style="font-size:15px;line-height:1.6;margin:20px 0 0;color:#4f4057;">
         Thank you,<br>
         <strong>OliPoly 3D LLC</strong><br>
-        Custom 3D Printing • Creative Builds • Prototypes
+        Thoughtful Design for Real Life
       </p>
     </div>
 
@@ -3704,7 +3704,7 @@ Open Orders Admin now?`);
         <div class="header">
           <div>
             <div class="brand">Oli<span>Poly</span> 3D</div>
-            <div class="tagline">Custom 3D Printing • Creative Builds • Prototypes</div>
+            <div class="tagline">Thoughtful Design for Real Life</div>
           </div>
           <div>
             <div class="title">QUOTE</div>
@@ -4270,7 +4270,7 @@ After approval, your quote becomes an OP- order and tracking/payment details wil
 Thank you,
 
 OliPoly 3D LLC
-Custom 3D Printing • Creative Builds • Prototypes
+Thoughtful Design for Real Life
 OliPoly3D@gmail.com
 https://olipoly3d.com`;
   }
@@ -4297,64 +4297,64 @@ https://olipoly3d.com`;
       custPart ? ["Customer Part #", custPart] : null,
       partRevision ? ["Revision", partRevision] : null
     ].filter(Boolean).map(([label,value]) =>
-      `<tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">${esc(label)}</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(value)}</td></tr>`
+      `<tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #ebe6df;">${esc(label)}</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(value)}</td></tr>`
     ).join("");
 
-    return `<div style="margin:0;background:#fff7fb;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
-  <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #f0c8df;border-radius:28px;overflow:hidden;box-shadow:0 14px 36px rgba(222,111,184,.16);">
-    <div style="height:12px;background:linear-gradient(135deg,#de6fb8,#9d7cff,#65d6c4);"></div>
+    return `<div style="margin:0;background:#f7f4ee;padding:28px 18px;font-family:Arial,Helvetica,sans-serif;color:#3f3146;">
+  <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #d9d3cb;border-radius:2px;overflow:hidden;">
+    <div style="height:12px;background:#f7f4ee;"></div>
 
-    <div style="padding:26px 28px 18px;background:linear-gradient(180deg,#fff7fb 0%,#ffffff 100%);border-bottom:1px solid #f6ddec;">
+    <div style="padding:26px 28px 18px;background:#f7f4ee;border-bottom:1px solid #ebe6df;">
       <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
         <td style="vertical-align:middle;">
-          <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#241b2b;">Oli<span style="color:#b86be8;">Poly</span> 3D</div>
-          <div style="margin-top:7px;color:#826889;font-size:13px;letter-spacing:.01em;">Custom 3D Printing • Creative Builds • Prototypes</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#231f20;">Oli<span style="color:#c94f83;">Poly</span> 3D</div>
+          <div style="margin-top:7px;color:#69635f;font-size:13px;letter-spacing:.01em;">Thoughtful Design for Real Life</div>
         </td>
         <td style="text-align:right;vertical-align:middle;">
-          <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#fff3fb;border:1px solid #f2c4df;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Quote Ready</span>
+          <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#f7f4ee;border:1px solid #d9d3cb;color:#8f4f7b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Quote Ready</span>
         </td>
       </tr></table>
     </div>
 
     <div style="padding:28px;">
-      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#241b2b;font-weight:700;">Your quote is ready</h1>
-      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4f4057;">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;margin:0 0 12px;color:#231f20;font-weight:700;">Your quote is ready</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 20px;color:#4e4945;">
         ${customer ? `Hello ${esc(customer)}, ` : ""}your OliPoly 3D quote has been prepared and is ready to review${pro ? " for purchasing approval" : ""}.
       </p>
 
-      <div style="background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));border:1px solid #f2c4df;border-radius:22px;padding:20px;margin:20px 0;">
+      <div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:20px;margin:20px 0;">
         <table role="presentation" style="width:100%;border-collapse:collapse;"><tr>
-          <td style="vertical-align:top;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#826889;margin-bottom:6px;">Estimated Total</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:800;line-height:1;color:#241b2b;">${esc(total)}</div><div style="margin-top:7px;color:#604d68;font-size:13px;">${esc(termsLabel())} • ${esc(turnaround)}</div></td>
-          <td style="vertical-align:top;text-align:right;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#826889;margin-bottom:6px;">Quote</div><div style="font-size:17px;font-weight:900;color:#241b2b;">${esc(quoteNumber)}</div><div style="margin-top:7px;color:#604d68;font-size:13px;">${esc(quoteTypeLabel())}</div></td>
+          <td style="vertical-align:top;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#69635f;margin-bottom:6px;">Estimated Total</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:800;line-height:1;color:#231f20;">${esc(total)}</div><div style="margin-top:7px;color:#69635f;font-size:13px;">${esc(termsLabel())} • ${esc(turnaround)}</div></td>
+          <td style="vertical-align:top;text-align:right;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#69635f;margin-bottom:6px;">Quote</div><div style="font-size:17px;font-weight:900;color:#231f20;">${esc(quoteNumber)}</div><div style="margin-top:7px;color:#69635f;font-size:13px;">${esc(quoteTypeLabel())}</div></td>
         </tr></table>
       </div>
 
-      <div style="background:linear-gradient(180deg,#fff8fc,#ffffff);border:1px solid #f2c4df;border-radius:20px;padding:18px 20px;margin:20px 0;box-shadow:0 8px 22px rgba(222,111,184,.08);">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#2f2336;margin-bottom:10px;">Quote Summary</div>
+      <div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:18px 20px;margin:20px 0;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#312d2b;margin-bottom:10px;">Quote Summary</div>
         <table role="presentation" style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #f5dcea;">Project</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;border-bottom:1px solid #f5dcea;">${esc(project)}</td></tr>
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;width:38%;border-bottom:1px solid #ebe6df;">Project</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;border-bottom:1px solid #ebe6df;">${esc(project)}</td></tr>
           ${referenceRows}
-          <tr><td style="padding:8px 0;color:#826889;font-size:13px;font-weight:700;">Timing</td><td style="padding:8px 0;color:#2f2336;font-size:13px;font-weight:800;">${esc(turnaround)}</td></tr>
+          <tr><td style="padding:8px 0;color:#69635f;font-size:13px;font-weight:700;">Timing</td><td style="padding:8px 0;color:#312d2b;font-size:13px;font-weight:800;">${esc(turnaround)}</td></tr>
         </table>
       </div>
 
-      ${notes ? `<div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;"><strong style="color:#2f2336;">Notes</strong><br>${esc(notes)}</div>` : ""}
-      ${assumptions ? `<div style="background:#fbf6ff;border:1px solid #dfcff5;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;"><strong style="color:#2f2336;">Assumptions</strong><br>${esc(assumptions)}</div>` : ""}
+      ${notes ? `<div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Notes</strong><br>${esc(notes)}</div>` : ""}
+      ${assumptions ? `<div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Assumptions</strong><br>${esc(assumptions)}</div>` : ""}
 
-      <div style="background:#fff8fc;border:1px solid #f2c4df;border-radius:18px;padding:14px 16px;margin:18px 0;color:#604d68;font-size:13px;line-height:1.55;">
-        <strong style="color:#2f2336;">After approval</strong><br>
+      <div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;">
+        <strong style="color:#312d2b;">After approval</strong><br>
         Your quote becomes an OP- order, and tracking/payment details will be available through the OliPoly tracker.
       </div>
 
       <div style="margin:22px 0;">
-        <a href="${esc(responseLink)}" style="display:block;text-align:center;background:linear-gradient(135deg,#de6fb8,#9d7cff);color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Review & Approve Quote</a>
+        <a href="${esc(responseLink)}" style="display:block;text-align:center;background:#f7f4ee;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Review & Approve Quote</a>
       </div>
 
-      <p style="font-size:13px;line-height:1.55;color:#816c88;margin:0;">If the button does not work, copy and paste this link:<br>${esc(responseLink)}</p>
-      <p style="margin:22px 0 0;color:#4f4057;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
+      <p style="font-size:13px;line-height:1.55;color:#69635f;margin:0;">If the button does not work, copy and paste this link:<br>${esc(responseLink)}</p>
+      <p style="margin:22px 0 0;color:#4e4945;font-size:15px;line-height:1.65;">Thank you,<br><strong>OliPoly 3D LLC</strong></p>
     </div>
 
-    <div style="padding:18px 28px;background:#fff7fb;border-top:1px solid #f6ddec;text-align:center;color:#826889;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#7c4a82;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
+    <div style="padding:18px 28px;background:#f7f4ee;border-top:1px solid #ebe6df;text-align:center;color:#69635f;font-size:12px;line-height:1.5;">OliPoly 3D LLC • <a href="mailto:OliPoly3D@gmail.com" style="color:#9b3d66;font-weight:800;text-decoration:none;">OliPoly3D@gmail.com</a> • <a href="https://olipoly3d.com" style="color:#9b3d66;font-weight:800;text-decoration:none;">olipoly3d.com</a></div>
   </div>
 </div>`;
   }

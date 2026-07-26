@@ -1,3 +1,4 @@
+/* INACTIVE LEGACY COPY: quote.html loads ../quote.js; retain this file until all external references are proven absent. */
 
 /* PASS 1A.1 — Quote render-loop stabilization
    Repeating startup intervals and the totals MutationObserver were removed.
