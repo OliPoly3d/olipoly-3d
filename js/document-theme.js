@@ -1,31 +1,30 @@
 /* OliPoly 3D Shared Document Theme
-   Step 1 of the Professional PDF Ecosystem.
+   RC5 customer-document visual system.
 
    Purpose:
-   - Provides one shared visual language for invoices, packing slips,
-     manufacturing travelers, reorder sheets, quote PDFs, and branded emails.
+   - Provides one shared visual language for customer quotes, invoices, PDFs, and lifecycle emails.
    - Safe to load on existing pages. It does not auto-run, mutate forms,
      attach event listeners, or change current PDF behavior by itself.
 */
 
 (function () {
   const THEME = {
-    brandName: "OliPoly 3D",
-    tagline: "Custom 3D Printing • Creative Builds • Prototypes",
+    brandName: "OliPoly",
+    tagline: "Thoughtful Design for Real Life",
     email: "OliPoly3D@gmail.com",
     website: "olipoly3d.com",
     colors: {
-      ink: "#241b2b",
-      text: "#2f2336",
-      muted: "#826889",
-      softMuted: "#a0839c",
-      pink: "#de6fb8",
-      violet: "#9d7cff",
-      teal: "#65d6c4",
-      border: "#f0c8df",
-      softBorder: "#f6ddec",
-      wash: "#fff7fb",
-      panel: "#fffafd",
+      ink: "#231f20",
+      text: "#312d2b",
+      muted: "#69635f",
+      softMuted: "#8b847e",
+      pink: "#c94f83",
+      violet: "#c94f83",
+      teal: "#c94f83",
+      border: "#d9d3cb",
+      softBorder: "#ebe6df",
+      wash: "#f7f4ee",
+      panel: "#fffdfa",
       success: "#16a34a",
       warning: "#b45309",
       danger: "#be123c"
@@ -69,7 +68,7 @@
 
     return `
       *{box-sizing:border-box}
-      html,body{margin:0;padding:0;background:#fff;color:${THEME.colors.text};font-family:Arial,Helvetica,sans-serif}
+      html,body{margin:0;padding:0;background:#fff;color:${THEME.colors.text};font-family:"DM Sans",Arial,Helvetica,sans-serif}
       body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .op-doc{
         width:8.5in;
@@ -80,22 +79,14 @@
         color:${THEME.colors.text};
         position:relative;
         overflow:hidden;
-        font-family:Arial,Helvetica,sans-serif;
+        font-family:"DM Sans",Arial,Helvetica,sans-serif;
       }
-      .op-doc::before{
-        content:"";
-        position:absolute;
-        inset:0;
-        background:
-          radial-gradient(circle at top left,rgba(222,111,184,.08),transparent 32%),
-          radial-gradient(circle at top right,rgba(157,124,255,.07),transparent 28%);
-        pointer-events:none;
-      }
+      .op-doc::before{display:none}
       .op-doc>*{position:relative;z-index:1}
       .op-topbar{
         height:14px;
         margin:${compact ? "-.34in -.34in .24in" : "-.42in -.42in .28in"};
-        background:linear-gradient(135deg,${THEME.colors.pink},${THEME.colors.violet},${THEME.colors.teal});
+        background:${THEME.colors.ink};
       }
       .op-header{
         display:flex;
@@ -107,7 +98,7 @@
         margin-bottom:14px;
       }
       .op-brand{
-        font-family:Georgia,'Times New Roman',serif;
+        font-family:"Playfair Display",Georgia,serif;
         font-size:34px;
         font-weight:800;
         letter-spacing:-.045em;
@@ -145,7 +136,7 @@
         margin-bottom:8px;
         padding:5px 9px;
         border-radius:999px;
-        background:linear-gradient(135deg,${THEME.colors.pink},${THEME.colors.violet});
+        background:${THEME.colors.pink};
         color:#fff;
         font-size:9.5px;
         font-weight:900;
@@ -157,8 +148,8 @@
       .op-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
       .op-card,.op-panel,.op-total-card,.op-note{
         border:1px solid ${THEME.colors.border};
-        background:linear-gradient(180deg,${THEME.colors.panel},#fff);
-        border-radius:14px;
+        background:#fff;
+        border-radius:2px;
         padding:11px 12px;
       }
       .op-card small{
@@ -186,7 +177,7 @@
         width:100%;
         border-collapse:collapse;
         border:1px solid ${THEME.colors.border};
-        border-radius:14px;
+        border-radius:2px;
         overflow:hidden;
         margin-top:10px;
       }
@@ -246,9 +237,9 @@
       }
       .op-muted{color:${THEME.colors.muted}}
       .op-amount-due{
-        border-radius:16px;
+        border-radius:2px;
         padding:14px;
-        background:linear-gradient(135deg,rgba(222,111,184,.12),rgba(157,124,255,.10));
+        background:${THEME.colors.wash};
         border:1px solid ${THEME.colors.border};
       }
       .op-amount-due small{
@@ -279,7 +270,7 @@
       <div class="op-topbar"></div>
       <div class="op-header">
         <div>
-          <div class="op-brand">Oli<span>Poly</span> 3D</div>
+          <div class="op-brand">Oli<span>Poly</span></div>
           <div class="op-tagline">${esc(THEME.tagline)}</div>
         </div>
         <div>

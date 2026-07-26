@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Fundraiser | OliPoly 3D</title><style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#fbf7ef;color:#172033}.wrap{width:min(1050px,92vw);margin:auto;padding:34px 0}.hero,.card{background:#fff;border:1px solid rgba(0,0,0,.10);border-radius:24px;padding:24px;box-shadow:0 14px 40px rgba(0,0,0,.08)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:18px}.price{font-weight:900;color:#d94f8c}.muted{color:#667085}.notice{padding:14px;border-radius:16px;background:#eef2ff;margin-top:14px}a.button{display:inline-block;margin-top:14px;background:#172033;color:#fff;border-radius:999px;padding:12px 16px;text-decoration:none;font-weight:800}</style></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Fundraiser | OliPoly 3D</title><style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#fbf7ef;color:#172033}.wrap{width:min(1050px,92vw);margin:auto;padding:34px 0}.hero,.card{background:#fff;border:1px solid rgba(0,0,0,.10);border-radius:24px;padding:24px;box-shadow:0 14px 40px rgba(0,0,0,.08)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:18px}.price{font-weight:900;color:#d94f8c}.muted{color:#667085}.notice{padding:14px;border-radius:16px;background:#eef2ff;margin-top:14px}a.button{display:inline-block;margin-top:14px;background:#172033;color:#fff;border-radius:999px;padding:12px 16px;text-decoration:none;font-weight:800}</style><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet"><link href="assets/css/rc5-legacy-frame.css" rel="stylesheet"></head>
 <body><main class="wrap"><section class="hero" id="campaign"><h1>Loading fundraiser…</h1><p class="muted">Use a link like <code>fundraiser.html?campaign=campaign-slug</code>.</p></section><section class="grid" id="products"></section></main>
 <script src="js/olipoly-auth.js"></script>
 <script>
@@ -21,4 +21,4 @@
   }
   lookup().then(render).catch(e=>{document.getElementById('campaign').innerHTML=`<h1>Campaign unavailable</h1><p class="muted">${esc(e.message)}</p>`;});
 })();
-</script></body></html>
+</script><script src="assets/js/rc5-legacy-frame.js"></script></body></html>
