@@ -6,8 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Events &amp; Pop-Ups | OliPoly 3D</title>
 <meta content="Find OliPoly 3D at local Ohio markets, craft shows, pop-ups, and community events." name="description"/><link href="https://olipoly3d.com/events.html" rel="canonical"/>
-  
-<meta content="#fff7fb" name="theme-color"/>
+<meta content="#f7f4ee" name="theme-color"/>
 <meta content="Events &amp; Pop-Ups | OliPoly 3D" property="og:title"/>
 <meta content="See where OliPoly 3D will be popping up next with custom 3D printed gifts, creative builds, and local maker pieces." property="og:description"/>
 <meta content="https://olipoly3d.com/images/logo-preview.png" property="og:image"/>
@@ -19,331 +18,22 @@
 <meta content="https://olipoly3d.com/images/logo-preview.png" name="twitter:image"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Playfair+Display:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
-<style>
-    :root{
-      --ink:#25182d;
-      --muted:#74617d;
-      --pink:#e84fb7;
-      --purple:#9d6df3;
-      --line:rgba(101,60,120,.15);
-      --shadow:0 28px 80px rgba(95,36,112,.18);
-      --max:1120px;
-    }
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600&amp;display=swap" rel="stylesheet"/>
 
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth;scroll-padding-top:90px}
-    body{
-      margin:0;
-      color:var(--ink);
-      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:
-        radial-gradient(circle at 14% -4%,rgba(255,142,213,.34),transparent 32rem),
-        radial-gradient(circle at 93% 3%,rgba(162,113,255,.24),transparent 31rem),
-        linear-gradient(180deg,#fff5fc 0%,#fff 46%,#fff8fd 100%);
-      overflow-x:hidden;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      z-index:-2;
-      pointer-events:none;
-      background-image:
-        linear-gradient(rgba(232,79,183,.035) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(157,109,243,.032) 1px,transparent 1px);
-      background-size:56px 56px;
-      mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 78%);
-    }
-
-    img{max-width:100%;display:block}
-    a{color:inherit;text-decoration:none}
-    button{font-family:inherit}
-
-    .site-header{
-      position:sticky;
-      top:0;
-      z-index:50;
-      background:rgba(255,250,254,.84);
-      backdrop-filter:blur(18px);
-      border-bottom:1px solid var(--line);
-    }
-
-    .nav{
-      width:min(var(--max),calc(100% - 32px));
-      margin:0 auto;
-      min-height:74px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:22px;
-      position:relative;
-    }
-
-    .brand{display:flex;align-items:center;gap:12px;min-width:0}
-    .brand-text{min-width:0;display:block}
-    .brand-mark{
-      width:48px;height:48px;border-radius:16px;
-      background:linear-gradient(135deg,#fff,#ffe1f6);
-      box-shadow:0 10px 30px rgba(219,74,176,.22);
-      display:grid;place-items:center;overflow:hidden;flex:0 0 auto;
-    }
-    .brand-mark img{width:46px;height:46px;object-fit:contain;transform:translateY(3px)}
-    .brand-name{
-      display:block;
-      font-family:"Playfair Display",serif;
-      font-size:clamp(1.5rem,3.6vw,2.15rem);
-      line-height:.9;
-      letter-spacing:-.04em;
-      white-space:nowrap;
-    }
-    .brand-name span{color:var(--pink)}
-    .brand-sub{
-      display:block;margin-top:5px;color:var(--muted);
-      font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
-    }
-    .mobile-short-sub{display:none}
-
-    .nav-links{
-      display:flex;align-items:center;gap:18px;color:#604966;
-      font-family:"Playfair Display",serif;font-weight:700;font-size:1rem;
-    }
-    .nav-links a{opacity:.88;transition:opacity .2s ease,transform .2s ease}
-    .nav-links a:hover{opacity:1;transform:translateY(-1px)}
-
-    .nav-cta,.button-primary,.button-secondary{
-      border:0;border-radius:999px;cursor:pointer;font-weight:900;letter-spacing:-.01em;
-      display:inline-flex;align-items:center;justify-content:center;gap:9px;
-      transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
-    }
-    .nav-cta,.button-primary{color:white;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 16px 40px rgba(214,73,186,.28)}
-    .nav-cta{padding:13px 18px;white-space:nowrap}
-    .button-primary,.button-secondary{padding:15px 22px}
-    .button-secondary{background:rgba(255,255,255,.78);color:#5f456a;border:1px solid rgba(104,59,123,.15);box-shadow:0 14px 34px rgba(54,24,66,.08)}
-    .nav-cta:hover,.button-primary:hover,.button-secondary:hover{transform:translateY(-2px)}
-    .mobile-menu-button{display:none;border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:14px;padding:10px 12px;color:var(--ink);font-weight:900;cursor:pointer}
-
-    .hero{
-      width:min(1220px,calc(100% - 32px));
-      margin:28px auto 0;
-      display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(280px,.78fr);
-      gap:clamp(26px,5vw,62px);
-      align-items:center;
-      padding:clamp(28px,5vw,58px);
-      border:1px solid rgba(255,255,255,.75);
-      border-radius:clamp(30px,4vw,54px);
-      background:
-        radial-gradient(circle at 88% 10%,rgba(255,118,206,.22),transparent 22rem),
-        radial-gradient(circle at 50% 85%,rgba(161,111,255,.16),transparent 30rem),
-        linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,253,.72));
-      box-shadow:var(--shadow);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .eyebrow{display:inline-flex;align-items:center;gap:8px;width:fit-content;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(214,73,186,.18);color:#a93f8a;font-weight:900;font-size:.77rem;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(142,69,150,.1)}
-    h1{margin:22px 0 18px;font-family:"Playfair Display",serif;font-size:clamp(3rem,8vw,6.1rem);line-height:.88;letter-spacing:-.075em;max-width:760px}
-    .gradient-word{background:linear-gradient(100deg,#e84fb7,#a46eff 48%,#ff72b8);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .hero-copy{max-width:620px;color:#6f5c78;font-size:clamp(1.02rem,1.7vw,1.16rem);line-height:1.64;margin:0 0 26px}
-    .hero-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-
-    .hero-card{border-radius:38px;overflow:hidden;background:#fff;box-shadow:0 30px 90px rgba(83,41,97,.18);border:8px solid rgba(255,255,255,.8)}
-    .hero-card img{width:100%;aspect-ratio:4/4.6;object-fit:cover;object-position:center}
-
-    .section{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:70px 0}
-    .section-kicker{color:#a03c87;font-weight:900;letter-spacing:.1em;text-transform:uppercase;font-size:.77rem;margin-bottom:12px}
-    .section-title{margin:0;font-family:"Playfair Display",serif;font-size:clamp(2.25rem,5vw,4.4rem);line-height:.95;letter-spacing:-.055em}
-    .section-intro{margin:16px 0 0;color:var(--muted);font-size:1.08rem;line-height:1.65;max-width:720px}
-
-    .event-feature{
-      margin-top:34px;
-      display:grid;
-      grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);
-      gap:24px;
-      align-items:stretch;
-    }
-
-    .event-main,.event-side,.info-card{
-      border-radius:34px;
-      background:rgba(255,255,255,.78);
-      border:1px solid rgba(255,255,255,.82);
-      box-shadow:0 24px 70px rgba(84,38,94,.14);
-    }
-
-    .event-main{padding:clamp(24px,4vw,38px)}
-    .event-main h3,.event-side h3,.info-card h3{margin:0 0 10px;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.6vw,2.65rem);line-height:1;letter-spacing:-.045em}
-    .event-main p,.event-side p,.info-card p{margin:0;color:#6f5c78;line-height:1.6}
-    .event-note{margin-top:20px;padding:16px 18px;border-radius:22px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.12);font-weight:650;color:#604966;line-height:1.58;font-size:.96rem}
-    .event-side{overflow:hidden;display:grid;grid-template-rows:1fr auto}
-    .event-side img{width:100%;height:100%;min-height:260px;object-fit:cover}
-    .event-side div{padding:22px}
-    .event-meta{margin:24px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .event-meta span{display:block;padding:14px 15px;border-radius:20px;background:linear-gradient(180deg,rgba(255,244,250,.96),rgba(255,255,255,.94));border:1px solid rgba(232,79,183,.12);color:#604966;font-weight:650;line-height:1.45;font-size:.96rem}
-    .event-meta strong{display:block;color:#a03c87;font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;margin-bottom:5px;font-weight:800}
-    .event-card-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
-    .no-events{display:none;margin-top:34px;padding:clamp(24px,4vw,38px);border-radius:34px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.82);box-shadow:0 24px 70px rgba(84,38,94,.14)}
-    .no-events h3{margin:0 0 10px;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.6vw,2.65rem);line-height:1;letter-spacing:-.045em}
-    .no-events p{margin:0;color:#6f5c78;line-height:1.6}
-    body.no-upcoming-events .no-events{display:block}
-    body.no-upcoming-events .js-event{display:none}
-    .table-collage{min-height:520px;padding:14px;background:radial-gradient(circle at 82% 10%,rgba(255,127,207,.22),transparent 16rem),linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,244,253,.86));display:grid;grid-template-columns:1.15fr .85fr;grid-template-rows:1fr 1fr;gap:12px}
-    .table-shot{border-radius:24px;overflow:hidden;box-shadow:0 16px 34px rgba(54,24,66,.12);background:white;position:relative;border:6px solid rgba(255,255,255,.72)}
-    .table-shot img{width:100%;height:100%;min-height:0;object-fit:cover}
-    .table-shot.large{grid-row:1 / span 2}
-    .table-shot.poly-shot{grid-column:2;grid-row:1}
-    .table-shot.dragon-shot{grid-column:2;grid-row:2}
-    .table-shot.wide-shot{grid-column:1 / -1;min-height:230px}
-    .table-shot .shot-label{position:absolute;left:12px;right:12px;bottom:12px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.9);border:1px solid rgba(232,79,183,.14);font-size:.72rem;font-weight:750;color:#6a4a75;text-align:center;backdrop-filter:blur(10px)}
-    .event-side .table-preview-copy{padding:24px 26px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,247,253,.86));border-top:1px solid rgba(232,79,183,.1)}
-
-    .info-grid{margin-top:26px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-    .info-card{padding:24px}
-    .info-card h3{font-size:1.65rem}
-    .tag-row{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
-    .tag-row span{display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border-radius:999px;background:rgba(244,220,255,.64);color:#6f4b7e;font-size:.78rem;font-weight:900}
-
-    .cta-band{width:min(var(--max),calc(100% - 32px));margin:18px auto 78px;padding:clamp(34px,6vw,66px);border-radius:44px;background:radial-gradient(circle at 90% 15%,rgba(99,215,255,.32),transparent 24rem),linear-gradient(135deg,#2d1837,#6c2b82 52%,#e84fb7);color:white;box-shadow:0 32px 90px rgba(90,36,112,.28);display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,260px);gap:clamp(28px,5vw,58px);align-items:center}
-    .cta-band h2{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:clamp(2.35rem,5.2vw,4.7rem);line-height:.92;letter-spacing:-.06em;max-width:760px}
-    .cta-band p{margin:0;color:rgba(255,255,255,.84);font-size:1.06rem;line-height:1.62;max-width:680px}
-    .cta-band .button-secondary{background:white;color:#5d2670;min-height:54px;width:100%;text-align:center}
-
-    footer{border-top:1px solid var(--line);background:rgba(255,255,255,.58)}
-    .footer-inner{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:36px 0;display:grid;grid-template-columns:1.15fr .85fr;gap:26px;color:#765f80;font-size:.92rem}
-    .footer-brand h3{margin:0 0 8px;font-family:"Playfair Display",serif;font-size:2rem;line-height:1;color:#25182d}
-    .footer-brand p{margin:0;color:#765f80;line-height:1.6;max-width:520px}
-    .footer-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .footer-links h4{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:#9b7ca6}
-    .footer-links a{display:block;margin-bottom:8px;font-weight:900;color:#6e4a80}
-    .copyright{grid-column:1/-1;border-top:1px solid rgba(101,60,120,.11);padding-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-
-    @media(max-width:920px){
-      .nav-links{display:none}
-      .mobile-menu-button{display:inline-flex}
-      .nav.open .nav-links{display:flex;position:absolute;left:0;right:0;top:82px;padding:18px;border-radius:22px;background:rgba(255,255,255,.98);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;gap:12px;z-index:80}
-      .nav.open .nav-links a{padding:11px 12px;border-radius:14px;background:#fff6fb}
-      .hero,.event-feature,.cta-band{grid-template-columns:1fr}
-      .info-grid{grid-template-columns:1fr}
-      .footer-inner{grid-template-columns:1fr}
-    }
-
-    @media(max-width:720px){
-      .nav{width:min(100% - 20px,var(--max));min-height:64px;gap:8px}
-      .brand{gap:8px;min-width:0;flex:1}
-      .brand-mark{width:42px;height:42px;border-radius:14px}
-      .brand-mark img{width:40px;height:40px}
-      .brand-name{font-size:1.68rem}
-      .brand-sub-full{display:none}
-      .mobile-short-sub{display:block;max-width:calc(100vw - 150px);overflow:hidden;text-overflow:ellipsis;font-size:.58rem;letter-spacing:.065em;margin-top:4px}
-      .nav-cta{display:none}
-      .mobile-menu-button{padding:9px 13px;font-size:.86rem}
-      .hero{width:min(100% - 20px,1220px);margin:16px auto 0;padding:25px 18px 22px;border-radius:32px;gap:20px}
-      h1{font-size:clamp(3rem,18vw,4.65rem);line-height:.88;margin:18px 0 14px;letter-spacing:-.07em}
-      .hero-copy,.section-intro{font-size:.96rem;line-height:1.55}
-      .section{width:min(100% - 24px,var(--max));padding:48px 0}
-      .section-title{font-size:clamp(2.1rem,13vw,3.25rem)}
-      .hero-card{max-width:320px;margin:0 auto;width:100%;border-radius:28px;border-width:6px}
-      .hero-card img{aspect-ratio:4/3.45;object-position:center 42%}
-      .hero-actions{display:grid;grid-template-columns:1fr;gap:10px}
-      .hero-actions .button-primary,.hero-actions .button-secondary{width:100%;min-height:50px;text-align:center}
-      .event-feature{margin-top:24px;gap:18px}
-      .event-main,.event-side,.info-card{border-radius:28px}
-      .event-main,.info-card{padding:19px}
-      .event-main h3,.event-side h3,.info-card h3,.no-events h3{font-size:clamp(1.72rem,9vw,2.35rem)}
-      .event-main p,.event-side p,.info-card p,.no-events p{font-size:.95rem;line-height:1.55}
-      .event-note{margin-top:14px;padding:13px 14px;border-radius:18px;font-size:.95rem;font-weight:650;line-height:1.52}
-      .event-side div{padding:18px}
-      .event-meta{grid-template-columns:1fr;gap:9px;margin-top:18px}
-      .event-meta span{padding:12px 13px;border-radius:18px;font-size:.93rem;line-height:1.4}
-      .event-meta strong{font-size:.66rem;margin-bottom:4px}
-      .tag-row{margin-top:14px;gap:7px}
-      .tag-row span{font-size:.72rem;padding:8px 10px}
-      .event-card-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
-      .event-card-actions .button-primary,.event-card-actions .button-secondary{width:100%;min-height:50px;text-align:center}
-      .table-collage{min-height:0;grid-template-columns:1fr 1fr;grid-template-rows:168px 168px;gap:8px;padding:10px;border-radius:28px}
-      .table-shot{border-radius:18px;border-width:4px;min-height:0}
-      .table-shot.large{grid-column:1;grid-row:1 / span 2}
-      .table-shot.poly-shot{grid-column:2;grid-row:1}
-      .table-shot.dragon-shot{grid-column:2;grid-row:2}
-      .table-shot.wide-shot{display:none}
-      .table-shot img{height:100%;object-fit:cover}
-      .table-shot.large img{object-position:center center}
-      .table-shot.poly-shot img{object-position:center 42%}
-      .table-shot.dragon-shot img{object-position:center center}
-      .table-shot .shot-label{left:8px;right:8px;bottom:8px;font-size:.62rem;line-height:1.05;padding:7px 8px}
-      .event-side .table-preview-copy{padding:18px 18px 20px}
-      .event-side .table-preview-copy h3{margin-bottom:8px}
-      .info-grid{gap:14px;margin-top:22px}
-      .cta-band{width:min(100% - 24px,var(--max));margin:8px auto 52px;padding:28px 20px;border-radius:32px;gap:20px}
-      .cta-band h2{font-size:clamp(2.1rem,12vw,3rem)}
-      .cta-band p{font-size:.96rem;line-height:1.5}
-      .footer-inner{width:min(100% - 24px,var(--max));padding:28px 0;gap:20px}
-      .footer-links{grid-template-columns:1fr 1fr;gap:12px}
-      .copyright{font-size:.78rem}
-    }
-
-    @media(max-width:430px){
-      .table-collage{grid-template-rows:154px 154px}
-      .table-shot .shot-label{font-size:.58rem;padding:6px 7px}
-      .tag-row span{font-size:.69rem;padding:7px 9px}
-    }
-
-  
-/* === Global ecosystem polish pass === */
-html,body{overflow-x:hidden}
-*{-webkit-tap-highlight-color:transparent}
-.btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{min-height:48px}
-img{max-width:100%}
-@media (max-width:720px){
-  body{overflow-x:hidden}
-  .wrap,.container{width:min(100% - 18px,1200px)!important}
-  h1{line-height:1.02!important}
-  p{line-height:1.68!important}
-  .hero-actions,.actions{gap:12px!important}
-  .card,.hero-card,.shell,.cta-band{box-shadow:0 10px 28px rgba(216,107,179,.10)!important}
-  .quicknav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px!important;-ms-overflow-style:none;scrollbar-width:none}
-  .quicknav::-webkit-scrollbar{display:none}
-  .quicknav a{white-space:nowrap}
-}
-@media (max-width:560px){
-  .brand img{width:42px!important;height:42px!important}
-  .wordmark{font-size:1.6rem!important}
-  .btn,.btn-ghost,.btn-secondary,.track-link,.pay-link,.ghost{width:100%;justify-content:center}
-}
-
-</style>
 <link href="assets/erp-upgrade.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="assets/public-mobile.css">
+<link href="assets/public-mobile.css" rel="stylesheet"/>
+<link href="assets/css/rc2-customer-v1.css" rel="stylesheet"/>
+<link href="assets/css/home-v1.css" rel="stylesheet"/>
+<link href="assets/css/rc3-editorial.css" rel="stylesheet"/>
+<link href="assets/css/events-v2.css" rel="stylesheet"/>
 </head>
-<body>
-<header class="site-header">
-<nav class="nav" id="nav">
-<a aria-label="OliPoly 3D home" class="brand" href="index.html">
-<span class="brand-mark"><img alt="Poly mascot" decoding="async" loading="lazy" src="images/poly-head.png"/></span>
-<span class="brand-text">
-<span class="brand-name">Oli<span>Poly</span> 3D</span>
-<span class="brand-sub brand-sub-full">Custom printing • Creative builds • Prototypes</span>
-<span class="brand-sub mobile-short-sub">Custom printing • Creative builds</span>
-</span>
-</a>
-<div class="nav-links" id="navLinks">
-<a href="index.html#work">Work</a>
-<a href="index.html#capabilities">Capabilities</a>
-<a href="designed-before-printing.html">Design Process</a>
-<a href="index.html#studio">Studio</a>
-<a href="faq.html">FAQ</a>
-<a href="track.html">Track Order</a>
-</div>
-<a class="nav-cta" href="start-project.html">Start Your Project</a>
-<button aria-label="Open menu" class="mobile-menu-button" onclick="toggleMenu()" type="button">Menu</button>
-</nav>
-</header>
-<main>
+<body class="events-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header" data-header=""><a aria-label="OliPoly home" class="brand" href="index.html"><span class="brand__name">Oli<span>Poly</span></span><span class="brand__line">Thoughtful design for real life.</span></a><button aria-controls="site-menu" aria-expanded="false" aria-label="Open navigation" class="menu-word" data-menu-toggle="" type="button"><span data-menu-label="">Menu</span><i aria-hidden="true">+</i></button></header><div aria-hidden="true" class="menu-layer" data-menu="" id="site-menu"><div class="menu-layer__backdrop" data-menu-dismiss=""></div><div aria-label="Site navigation" aria-modal="true" class="menu-layer__panel" role="dialog"><div class="menu-layer__top"><span>Menu</span><button aria-label="Close navigation" class="menu-layer__close" data-menu-close="" type="button">Close <i aria-hidden="true">×</i></button></div><nav aria-label="Main navigation" class="menu-layer__nav"><a href="index.html"><span>01</span>Home</a><a href="collections.html"><span>02</span>Collections</a><a href="studio.html"><span>03</span>Studio</a><a href="creations.html"><span>04</span>Create</a><a href="collaboration.html"><span>05</span>Collaborate</a><a href="community.html"><span>06</span>Community</a><a href="about.html"><span>07</span>About</a><a href="faq.html"><span>08</span>FAQ</a></nav><div class="menu-layer__footer"><p>Have an idea in mind?</p><a href="start-project.html">Start a project <span aria-hidden="true">→</span></a></div></div></div>
+<main id="main-content">
 <section aria-labelledby="events-title" class="hero">
 <div>
 <div class="eyebrow">Events &amp; local pop-ups</div>
-<h1 id="events-title">Catch the creative <span class="gradient-word">buzz</span> in person.</h1>
+<h1 id="events-title">See OliPoly in person.</h1>
 <p class="hero-copy">OliPoly occasionally pops up at local markets, craft shows, and community events with finished pieces, gift ideas, small-batch prints, and a peek at what custom 3D printing can become.</p>
 <div class="hero-actions">
 <a class="button-primary" href="start-project.html">Request a Custom Project</a>
@@ -351,7 +41,7 @@ img{max-width:100%}
 </div>
 </div>
 <div class="hero-card">
-<img alt="Poly the bee 3D print in a flower display" decoding="async" loading="lazy" src="images/poly_livingroom.png"/>
+<img alt="Poly the bee 3D print in a flower display" decoding="async" loading="lazy" src="assets/images/studio-poly-bee.png"/>
 </div>
 </section>
 <section class="section">
@@ -382,10 +72,10 @@ img{max-width:100%}
 </div>
 <div class="event-side">
 <div aria-label="Sample OliPoly table preview collage" class="table-collage">
-<div class="table-shot large"><img alt="OliPoly market table with keychains, small gifts, and colorful printed pieces" decoding="async" loading="lazy" src="images/event-booth-1.png"/><span class="shot-label">Giftable table favorites</span></div>
-<div class="table-shot poly-shot"><img alt="Poly mascot display piece for the OliPoly table" decoding="async" loading="lazy" src="images/poly_livingroom.png"/><span class="shot-label">Meet Poly</span></div>
-<div class="table-shot dragon-shot"><img alt="Colorful articulated dragon prints on a market display table" decoding="async" loading="lazy" src="images/event-booth-3.png"/><span class="shot-label">Dragons &amp; display pieces</span></div>
-<div class="table-shot wide-shot"><img alt="OliPoly tabletop display with bold red and gray printed pieces and coasters" decoding="async" loading="lazy" src="images/event-booth-2.png"/><span class="shot-label">Bold custom pieces</span></div>
+<div class="table-shot large"><img alt="OliPoly market table with keychains, small gifts, and colorful printed pieces" decoding="async" loading="lazy" src="assets/images/event-booth-1.png"/><span class="shot-label">Giftable table favorites</span></div>
+<div class="table-shot poly-shot"><img alt="Poly mascot display piece for the OliPoly table" decoding="async" loading="lazy" src="assets/images/studio-poly-bee.png"/><span class="shot-label">Meet Poly</span></div>
+<div class="table-shot dragon-shot"><img alt="Colorful articulated dragon prints on a market display table" decoding="async" loading="lazy" src="assets/images/event-booth-3.png"/><span class="shot-label">Dragons &amp; display pieces</span></div>
+<div class="table-shot wide-shot"><img alt="OliPoly tabletop display with bold red and gray printed pieces and coasters" decoding="async" loading="lazy" src="assets/images/event-booth-2.png"/><span class="shot-label">Bold custom pieces</span></div>
 </div>
 <div class="table-preview-copy">
 <h3>Table preview</h3>
@@ -429,42 +119,8 @@ img{max-width:100%}
 <a class="button-secondary" href="mailto:OliPoly3D@gmail.com">Email OliPoly</a>
 </section>
 </main>
-<footer>
-<div class="footer-inner">
-<div class="footer-brand">
-<h3>OliPoly 3D</h3>
-<p>Custom 3D printing, creative builds, prototypes, branded pieces, personalized gifts, and small-batch parts made in Ohio.</p>
-</div>
-<div class="footer-links">
-<div>
-<h4>Explore</h4>
-<a href="index.html#work">Featured Work</a>
-<a href="index.html#capabilities">Capabilities</a>
-<a href="designed-before-printing.html">Design Process</a>
-<a href="index.html#studio">Inside the Studio</a>
-</div>
-<div>
-<h4>Support</h4>
-<a href="start-project.html">Start Project</a>
-<a href="track.html">Track Order</a>
-<a href="faq.html">FAQ</a>
-<a href="legal.html">Legal &amp; Policies</a>
-<a href="mailto:OliPoly3D@gmail.com">Email OliPoly</a>
-</div>
-</div>
-<div class="copyright">
-<span>© <span id="year"></span> OliPoly 3D LLC • Ohio</span>
-<span>Custom printing • Creative builds • Prototypes</span>
-</div>
-</div>
-</footer>
+<footer class="support-footer"><div class="support-footer__lead"><p class="support-footer__eyebrow">Support</p><h2>Here for the next step.</h2><p>Track an order, make a payment, find an answer, or begin something new.</p></div><div class="support-footer__groups"><div class="support-footer__group"><h3>Orders</h3><a href="track.html">Track an order</a><a href="pay.html">Pay an invoice</a></div><div class="support-footer__group"><h3>Projects</h3><a href="start-project.html">Start a project</a><a href="faq.html">Frequently asked questions</a><a href="events.html">Events</a><a href="community.html">Community</a></div><div class="support-footer__group"><h3>OliPoly</h3><a href="about.html">About the studio</a><a href="legal.html">Policies &amp; accessibility</a><a href="mailto:OliPoly3D@gmail.com">Email OliPoly</a></div></div><div class="support-footer__base"><span>© 2026 OliPoly 3D LLC</span><span>Aurora, Ohio</span></div></footer>
 <script>
-    function toggleMenu(){
-      document.getElementById('nav').classList.toggle('open');
-    }
-
-    document.getElementById('year').textContent = new Date().getFullYear();
-
     function updateEventVisibility(){
       const today = new Date();
       today.setHours(0,0,0,0);
@@ -488,11 +144,8 @@ img{max-width:100%}
 
     updateEventVisibility();
 
-    document.querySelectorAll('.nav-links a').forEach((link)=>{
-      link.addEventListener('click',()=>document.getElementById('nav').classList.remove('open'));
-    });
   </script>
 <script defer="" src="assets/erp-upgrade.js"></script>
-  <script src="assets/public-mobile.js" defer></script>
-</body>
+<script defer="" src="assets/public-mobile.js"></script>
+<script src="assets/js/home-v1.js"></script></body>
 </html>
