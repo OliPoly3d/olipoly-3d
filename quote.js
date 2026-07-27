@@ -3816,6 +3816,8 @@ Open Orders Admin now?`);
   const $ = (id) => document.getElementById(id);
 
   const field = (id, fallback = "") => ($(id)?.value || "").trim() || fallback;
+  const escapedMultiline = (value) =>
+    window.OliPolyDocumentTheme.esc(value).replace(/\r?\n/g, "<br>");
   const quotePlaceholderImage = "images/quote-placeholder.png";
 
   function absoluteAssetUrl(url) {
@@ -4143,6 +4145,8 @@ Open Orders Admin now?`);
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   }[ch]));
+  const escapedMultiline = (value) =>
+    esc(value).replace(/\r?\n/g, "<br>");
 
   function toast(message, ms = 2800){
     let el = $("liteStatusToast");
@@ -4351,7 +4355,7 @@ https://olipoly3d.com`;
       </div>
 
       <div style="margin:22px 0;">
-        <a href="${esc(responseLink)}" style="display:block;text-align:center;background:#f7f4ee;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Review & Approve Quote</a>
+        <a href="${esc(responseLink)}" style="display:block;text-align:center;background:#312d2b;color:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:14px 18px;">Review & Approve Quote</a>
       </div>
 
       <p style="font-size:13px;line-height:1.55;color:#69635f;margin:0;">If the button does not work, copy and paste this link:<br>${esc(responseLink)}</p>
