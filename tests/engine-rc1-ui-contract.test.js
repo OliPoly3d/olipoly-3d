@@ -143,7 +143,7 @@ test('core component rules use specificity above legacy generic selectors', () =
 
 const internalPages = Object.keys(baseline.pages);
 
-test('RC1.2 internal shells use text identity without mascot or decorative emoji', () => {
+test('internal shells use text identity without mascot or decorative emoji', () => {
   const decorativeEmoji = /[\u{1F000}-\u{1FAFF}]/u;
   for (const page of internalPages) {
     const source = fs.readFileSync(page, 'utf8');
@@ -154,14 +154,70 @@ test('RC1.2 internal shells use text identity without mascot or decorative emoji
   }
 });
 
-test('RC1.2 Engine layer explicitly restrains legacy decoration and card motion', () => {
+test('Engine layer explicitly restrains legacy decoration and card motion', () => {
   const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
-  assert.match(css, /RC1\.2 editorial restraint/);
+  assert.match(css, /RC1\.3 — dark editorial presentation/);
   assert.match(css, /body\.op-engine \.brand-mark[\s\S]*?display:\s*none/);
   assert.match(css, /body\.op-engine \.quick-card[\s\S]*?border-radius:\s*0/);
   assert.match(css, /body\.op-engine \.summary-grid[\s\S]*?border-block:\s*1px solid/);
   assert.match(css, /body\.op-engine \.card:hover[\s\S]*?transform:\s*none/);
   assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/i);
+});
+
+test('RC1.3 defines a compact dark palette and explicit readable component states', () => {
+  const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
+  const requiredTokens = {
+    canvas: '#11100f',
+    surface: '#191817',
+    'surface-raised': '#22201f',
+    'surface-muted': '#292725',
+    ink: '#f5f2ed',
+    'ink-strong': '#ffffff',
+    muted: '#c4bdb5',
+    'muted-quiet': '#aaa29b',
+    border: '#3b3835',
+    'border-strong': '#716a64',
+    accent: '#df6b9d',
+    success: '#84c9a6',
+    warning: '#e5bd70',
+    danger: '#e28b8b',
+    info: '#94b8db'
+  };
+  for (const [token, value] of Object.entries(requiredTokens)) {
+    assert.match(css, new RegExp(`--op-${token}:\\s*${value}`, 'i'), `missing dark token --op-${token}`);
+  }
+  for (const selector of [
+    'input::placeholder', 'input:read-only', 'input:disabled', 'button:disabled',
+    'button:active', 'tbody tr.selected', '[aria-selected="true"]', '[role="menu"]',
+    '[role="tooltip"]', '.modal-dialog', '.notice', '.status-success'
+  ]) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('button:active', 'button:active[^,{]*');
+    assert.match(css, new RegExp(`body\\.op-engine[^,{]*${escaped}`), `missing explicit dark treatment for ${selector}`);
+  }
+  assert.match(css, /color-scheme:\s*dark/);
+  assert.doesNotMatch(css, /filter:\s*invert\s*\(/i);
+});
+
+test('RC1.3 representative foreground and control-boundary pairs meet WCAG targets', () => {
+  const luminance = hex => {
+    const channels = hex.match(/[a-f\d]{2}/gi).map(channel => parseInt(channel, 16) / 255)
+      .map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+    return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
+  };
+  const contrast = (foreground, background) => {
+    const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+    return (values[0] + .05) / (values[1] + .05);
+  };
+  const textPairs = [
+    ['#f5f2ed', '#11100f'], ['#c4bdb5', '#11100f'], ['#aaa29b', '#11100f'],
+    ['#ffffff', '#22201f'], ['#aaa29b', '#22201f'], ['#df6b9d', '#3a202c'],
+    ['#84c9a6', '#183126'], ['#e5bd70', '#352b18'], ['#e28b8b', '#3a2020'],
+    ['#94b8db', '#1d2a37']
+  ];
+  for (const [foreground, background] of textPairs) {
+    assert.ok(contrast(foreground, background) >= 4.5, `${foreground} on ${background} falls below 4.5:1`);
+  }
+  assert.ok(contrast('#716a64', '#22201f') >= 3, 'control border falls below 3:1 against its field surface');
 });
 
 test('in-scope pages have unique static IDs and resolvable local presentation/runtime references', () => {
