@@ -19,6 +19,7 @@
     @media(max-width:980px){.layout,.flow-shell{grid-template-columns:1fr}.toc,.detail{position:relative;top:auto}.grid{grid-template-columns:1fr}.search{grid-template-columns:1fr}.topbar{position:relative;top:auto;flex-direction:column;align-items:flex-start}.actions,.actions a{width:100%}.actions{display:grid;grid-template-columns:1fr 1fr}.hero,.panel{border-radius:22px;padding:15px}.flow-row,.branch{min-width:760px}.detail{margin-top:12px}}
   </style>
   <link rel="stylesheet" href="assets/css/engine-rc1.css?v=rc1">
+  <script defer src="js/engine-shell.js?v=rc2"></script>
 </head>
 <body class="op-engine">
 <div class="wrap">
@@ -36,8 +37,24 @@
   </section>
 
   <div class="layout">
-    <aside class="panel toc"><h3>Handbook Sections</h3><a href="#workflow">Interactive Workflow</a><a href="#ownership">Ownership Map</a><a href="#daily">Daily Operations</a><a href="#customer">Customer Workflow</a><a href="#production">Production Workflow</a><a href="#inventory">Inventory Workflow</a><a href="#finance">Finance Workflow</a><a href="#rollback">Rollback Rules</a><a href="#quality">Quality Gate</a><a href="#versions">Version History</a></aside>
+    <aside class="panel toc"><h3>Handbook Sections</h3><a href="#operating-path">Operating Path</a><a href="#workflow">Interactive Workflow</a><a href="#ownership">Ownership Map</a><a href="#daily">Daily Operations</a><a href="#customer">Customer Workflow</a><a href="#production">Production Workflow</a><a href="#inventory">Inventory Workflow</a><a href="#finance">Finance Workflow</a><a href="#rollback">Rollback Rules</a><a href="#quality">Quality Gate</a><a href="#versions">Version History</a></aside>
     <main id="content">
+      <section class="panel section" id="operating-path" data-search="operating path customer quote order production inventory recipe fulfillment invoice payment campaign files recovery ownership">
+        <span class="eyebrow">Verified operating path</span><h3>Move the record to its owning page</h3>
+        <ol class="steps">
+          <li class="step"><div><strong>Find the customer.</strong> Use <a href="customer-360.html">Customer 360</a> for an exact identity and its history. Open an existing quote or order there; do not edit adjacent workflow values in the history view.</div></li>
+          <li class="step"><div><strong>Create and save the quote.</strong> Use <a href="quote.html">Quote</a> for customer pricing, terms, tax exemption, deposit, totals, and the saved quote number. Save before preparing the preview, email package, PDF, or approval link.</div></li>
+          <li class="step"><div><strong>Handle approval in Quote.</strong> Use only the existing acceptance path. Acceptance preserves the commercial snapshot and creates/links the order; do not create an order manually to imitate acceptance.</div></li>
+          <li class="step"><div><strong>Service the accepted order.</strong> Use <a href="orders-admin.html">Orders Admin</a> for the accepted summary, customer communication, production handoff, fulfillment, invoice actions, payment display, and completion.</div></li>
+          <li class="step"><div><strong>Plan and execute production.</strong> Use <a href="production-control.html">Production Control</a> for quantity, material plan, recipe, machine, actual usage, scrap, QC, and existing status transitions. Complete Print is not order closure; return to Orders for fulfillment after QC readiness.</div></li>
+          <li class="step"><div><strong>Keep stock and recipes with their owners.</strong> Use <a href="inventory-control.html">Inventory Control</a> for stock and authorized adjustments. Use <a href="product-recipes.html">Product Recipes</a> for reusable specifications. Production references both without replacing either authority.</div></li>
+          <li class="step"><div><strong>Fulfill, invoice, and post finance.</strong> Finish shipment/pickup and existing customer documents in Orders. Use <a href="finance-pro.html">Finance Pro</a> for posting, payment records, expenses, tax reporting, and profitability.</div></li>
+          <li class="step"><div><strong>Run campaigns through existing owners.</strong> Configure the campaign and its products in <a href="campaign-manager.html">Campaign Manager</a>. Public campaign behavior is separate; accepted campaign orders continue through Orders, Production, fulfillment, and Finance.</div></li>
+          <li class="step"><div><strong>Attach files to the correct record.</strong> Use the existing Job Assets controls on Orders, Production, Customer 360, or Product Recipes. Recipe assets are reusable; production-job assets and instructions belong to the job. Revise rather than deleting the prior asset.</div></li>
+          <li class="step"><div><strong>Recover without inventing data.</strong> Read the page error, preserve/export recovery data where offered, retry authentication or loading, and verify the owning record before saving. For contract or authority problems, stop that action and consult the <a href="erp-knowledge-library.html">Knowledge Library</a>.</div></li>
+        </ol>
+      </section>
+
       <section class="panel section" id="workflow" data-search="interactive workflow flowchart visio lifecycle decision estimate quote accepted declined void production inventory finance">
         <span class="eyebrow">Click-through Map</span><h3>ERP lifecycle flow</h3>
         <p>Click any box to see ownership, expected behavior, watch-outs, and the next action.</p>
