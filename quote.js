@@ -1839,6 +1839,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function escapedMultiline(value) {
+    return escapeHtml(value).replace(/\r?\n/g, "<br>");
+  }
+
   function quoteType() {
     return $("liteQuoteType")?.value || document.body.dataset.liteQuoteType || "retail";
   }
@@ -3940,7 +3944,7 @@ Open Orders Admin now?`);
           <strong>${T.esc(data.companyName || data.customerName)}</strong><br>
           ${data.contactName ? `${T.esc(data.contactName)}<br>` : ""}
           ${data.customerEmail ? `${T.esc(data.customerEmail)}<br>` : ""}
-          ${(data.billingAddress || data.shippingAddress || "").replace(/\n/g, "<br>") || "Customer details on file."}
+          ${escapedMultiline(data.billingAddress || data.shippingAddress) || "Customer details on file."}
         `)}
       `
       : `
@@ -4338,8 +4342,8 @@ https://olipoly3d.com`;
         </table>
       </div>
 
-      ${notes ? `<div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Notes</strong><br>${esc(notes)}</div>` : ""}
-      ${assumptions ? `<div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Assumptions</strong><br>${esc(assumptions)}</div>` : ""}
+      ${notes ? `<div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Notes</strong><br>${escapedMultiline(notes)}</div>` : ""}
+      ${assumptions ? `<div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Assumptions</strong><br>${escapedMultiline(assumptions)}</div>` : ""}
 
       <div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;">
         <strong style="color:#312d2b;">After approval</strong><br>
