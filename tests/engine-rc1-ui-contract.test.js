@@ -140,3 +140,40 @@ test('core component rules use specificity above legacy generic selectors', () =
   }
   assert.doesNotMatch(css, /\.op-engine\s+:where\(/, 'zero-specificity :where() must not drive Engine presentation');
 });
+
+const internalPages = Object.keys(baseline.pages);
+
+test('RC1.2 internal shells use text identity without mascot or decorative emoji', () => {
+  const decorativeEmoji = /[\u{1F000}-\u{1FAFF}]/u;
+  for (const page of internalPages) {
+    const source = fs.readFileSync(page, 'utf8');
+    const shell = (source.match(/<(?:header\b[^>]*|div\b[^>]*class=["'][^"']*topbar[^"']*["'][^>]*)>[\s\S]*?<\/(?:header|div)>/i) || [''])[0];
+    assert.doesNotMatch(source, decorativeEmoji, `${page}: static interface contains decorative emoji`);
+    assert.doesNotMatch(source, /\b(?:bee|mascot)\b/i, `${page}: mascot reference remains`);
+    assert.doesNotMatch(shell, /OliPoly\s+3D|OliPoly\s+OS/i, `${page}: promotional branding remains in application shell`);
+  }
+});
+
+test('RC1.2 Engine layer explicitly restrains legacy decoration and card motion', () => {
+  const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
+  assert.match(css, /RC1\.2 editorial restraint/);
+  assert.match(css, /body\.op-engine \.brand-mark[\s\S]*?display:\s*none/);
+  assert.match(css, /body\.op-engine \.quick-card[\s\S]*?border-radius:\s*0/);
+  assert.match(css, /body\.op-engine \.summary-grid[\s\S]*?border-block:\s*1px solid/);
+  assert.match(css, /body\.op-engine \.card:hover[\s\S]*?transform:\s*none/);
+  assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/i);
+});
+
+test('in-scope pages have unique static IDs and resolvable local presentation/runtime references', () => {
+  for (const page of internalPages) {
+    const source = fs.readFileSync(page, 'utf8');
+    const staticIds = [...source.matchAll(/\bid\s*=\s*["']([^"'${}]+)["']/gi)].map(match => match[1]);
+    const duplicates = uniq(staticIds.filter((id, index) => staticIds.indexOf(id) !== index));
+    const legacyGeneratedDocumentIds = page === 'quote.html' ? ['pdfBalance', 'pdfDeposit', 'pdfSubtotal', 'pdfTax', 'pdfTotal'] : [];
+    assert.deepEqual(duplicates, legacyGeneratedDocumentIds, `${page}: duplicate static ID introduced`);
+    const references = [
+      ...source.matchAll(/<(?:script|link)\b[^>]*(?:src|href)\s*=\s*["']([^"']+)["']/gi),
+    ].map(match => match[1].replace(/[?#].*$/, '')).filter(reference => reference && !/^(?:https?:|data:|#|mailto:)/.test(reference));
+    for (const reference of references) assert.ok(fs.existsSync(reference), `${page}: unresolved local reference ${reference}`);
+  }
+});

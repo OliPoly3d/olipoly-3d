@@ -975,7 +975,7 @@ body{font-family:Inter,Arial,sans-serif}
 <body class="op-engine">
   <div class="wrap">
     <div class="topbar">
-      <div class="brand"><div class="icon">📦</div><div><h1>OliPoly 3D Orders Admin</h1><p><span class="mini-badge">OliPoly OS</span> Quotes • OP orders • tracking • payment • fulfillment.</p></div></div>
+      <div class="brand"><div class="icon"></div><div><h1>OliPoly Engine</h1><p>Private Operations · Orders Admin</p></div></div>
       <div class="btn-row">
         <a class="btn-ghost private-home-link" href="hub.html">← Hub</a>
         <a class="btn-ghost" href="ERP_1_0_HANDBOOK.md#orders-admin-and-fulfillment">Help</a>
@@ -2852,7 +2852,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
             ${orderIsClosed(o) ? `<span class="payment-pill p-closed-ready">Closed</span>` : ''}
           </div>
           <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
-          ${o.customer_name ? `<a class="customer-360-chip" href="customer-360.html?search=${encodeURIComponent(o.customer_name)}" onclick="event.stopPropagation()">👤 Customer 360</a>` : ''}
+          ${o.customer_name ? `<a class="customer-360-chip" href="customer-360.html?search=${encodeURIComponent(o.customer_name)}" onclick="event.stopPropagation()"> Customer 360</a>` : ''}
         </div>
       `).join('');
       [...document.querySelectorAll('.order-row')].forEach(row => {

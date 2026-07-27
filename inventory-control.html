@@ -548,8 +548,8 @@
       <a class="brand" href="hub.html">
         <div class="logo">OP</div>
         <div>
-          <h1>Inventory Control</h1>
-          <p>Raw filament, reorder alerts, finished goods, and usage history.</p>
+          <h1>OliPoly Engine</h1>
+          <p>Private Operations · Inventory Control</p>
         </div>
       </a>
       <div class="top-actions">
@@ -617,7 +617,7 @@
         <div class="snapshot-feature">
           <div class="snapshot-hero-stat">
             <div>
-              <div class="label">🧵 Raw material on hand</div>
+              <div class="label"> Raw material on hand</div>
               <div class="big" id="mRawMaterialHero">0g</div>
               <div class="sub">known filament across active rolls/refills</div>
             </div>
@@ -629,17 +629,17 @@
 
           <div class="snapshot-side-stack">
             <div class="snapshot-pill-card">
-              <div class="snapshot-pill-icon">♻️</div>
+              <div class="snapshot-pill-icon">♻</div>
               <div><span>Free reusable spools</span><strong id="mFreeSpools">0</strong></div>
               <span class="chip ok">available</span>
             </div>
             <div class="snapshot-pill-card">
-              <div class="snapshot-pill-icon">🧷</div>
+              <div class="snapshot-pill-icon"></div>
               <div><span>Mounted / in use</span><strong id="mMounted">0</strong></div>
               <span class="chip">loaded</span>
             </div>
             <div class="snapshot-pill-card">
-              <div class="snapshot-pill-icon">🔄</div>
+              <div class="snapshot-pill-icon"></div>
               <div><span>Refills waiting</span><strong id="mRefills">0</strong></div>
               <span class="chip">inventory</span>
             </div>
@@ -681,10 +681,10 @@
 
     <section class="card">
       <div class="tabs">
-        <button class="tab active" data-tab="raw" type="button">🧵 Raw Materials</button>
-        <button class="tab" data-tab="finished" type="button">📦 Finished Goods</button>
-        <button class="tab" data-tab="supplies" type="button">🧰 Non-Filament Supplies</button>
-        <button class="tab" data-tab="ledger" type="button">🔁 Movement Log</button>
+        <button class="tab active" data-tab="raw" type="button"> Raw Materials</button>
+        <button class="tab" data-tab="finished" type="button"> Finished Goods</button>
+        <button class="tab" data-tab="supplies" type="button"> Non-Filament Supplies</button>
+        <button class="tab" data-tab="ledger" type="button"> Movement Log</button>
       </div>
       <div id="tabHelp" class="muted">Manage filament and spool inventory.</div>
     </section>
@@ -997,8 +997,8 @@
   function updateCloudStatus(){
     const el=$('cloudStatus'); if(!el) return;
     el.innerHTML = state.cloud
-      ? `<span class="decision-pill ok">☁️ Cloud sync active</span><span class="decision-pill">${esc(state.user?.email||'signed in')}</span>`
-      : `<span class="decision-pill warn">💻 Browser fallback</span><span class="decision-pill">Log in from Production/Orders to sync inventory across devices</span>`;
+      ? `<span class="decision-pill ok">☁ Cloud sync active</span><span class="decision-pill">${esc(state.user?.email||'signed in')}</span>`
+      : `<span class="decision-pill warn"> Browser fallback</span><span class="decision-pill">Log in from Production/Orders to sync inventory across devices</span>`;
   }
 
   function looksLikeRawMaterial(x){
@@ -1640,7 +1640,7 @@
     if($('mSupplyCategories')) $('mSupplyCategories').textContent=cats.size;
     const el=$('supplyCards'); if(!el) return;
     el.innerHTML=rows.length ? rows.map(s=>`<article class="supply-card">
-      <div class="card-head"><div class="snapshot-pill-icon">🧰</div><div><h3>${esc(s.item_name)}</h3><div class="supply-unit">${esc(s.category||'Uncategorized')} · ${esc(s.unit_type)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${supplyChip(s)}${policyChip(supplyPolicy(s), s.snooze_until)}</div></div>
+      <div class="card-head"><div class="snapshot-pill-icon"></div><div><h3>${esc(s.item_name)}</h3><div class="supply-unit">${esc(s.category||'Uncategorized')} · ${esc(s.unit_type)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${supplyChip(s)}${policyChip(supplyPolicy(s), s.snooze_until)}</div></div>
       <div class="chips"><span class="chip">${esc(s.quantity_on_hand)} ${esc(s.unit_type)} on hand</span><span class="chip">${money(s.cost_per_unit)} / ${esc(s.unit_type)}</span>${s.reorder_threshold?`<span class="chip">Threshold ${esc(s.reorder_threshold)}</span>`:''}</div>
       <div class="stat-grid"><div class="stat"><span>Qty</span><strong>${esc(s.quantity_on_hand)}</strong></div><div class="stat"><span>Unit</span><strong>${esc(s.unit_type)}</strong></div><div class="stat"><span>Value</span><strong>${money(supplyValue(s))}</strong></div></div>
       ${s.supplier||s.reorder_link?`<div class="chips">${s.supplier?`<span class="chip">${esc(s.supplier)}</span>`:''}${s.reorder_link?`<a class="reorder-link" href="${esc(s.reorder_link)}" target="_blank" rel="noopener">Reorder</a>`:''}</div>`:''}
@@ -1908,14 +1908,14 @@
     if($('mRawValue')) $('mRawValue').textContent=money(rawVal);
     $('mMoves').textContent=l.length;
     const pills=[
-      `<span class="decision-pill ${low.length?'danger':'ok'}">⚠️ ${low.length} reorder needed</span>`,
-      `<span class="decision-pill ${watchedLow.length?'warn':'ok'}">👀 ${watchedLow.length} watched/specialty low</span>`,
-      `<span class="decision-pill">🧵 ${grams(r.reduce((s,x)=>s+num(x.remaining_grams),0))} filament</span>`,
-      `<span class="decision-pill">🧷 ${mounted} mounted</span>`,
-      `<span class="decision-pill">♻️ ${freeSpools} free spools</span>`,
-      `<span class="decision-pill">🔄 ${refills} refills</span>`,
-      `<span class="decision-pill">📦 ${f.reduce((s,x)=>s+num(x.quantity_on_hand),0)} finished units</span>`,
-      `<span class="decision-pill">💵 ${money(value)} retail value</span>`
+      `<span class="decision-pill ${low.length?'danger':'ok'}">⚠ ${low.length} reorder needed</span>`,
+      `<span class="decision-pill ${watchedLow.length?'warn':'ok'}"> ${watchedLow.length} watched/specialty low</span>`,
+      `<span class="decision-pill"> ${grams(r.reduce((s,x)=>s+num(x.remaining_grams),0))} filament</span>`,
+      `<span class="decision-pill"> ${mounted} mounted</span>`,
+      `<span class="decision-pill">♻ ${freeSpools} free spools</span>`,
+      `<span class="decision-pill"> ${refills} refills</span>`,
+      `<span class="decision-pill"> ${f.reduce((s,x)=>s+num(x.quantity_on_hand),0)} finished units</span>`,
+      `<span class="decision-pill"> ${money(value)} retail value</span>`
     ];
     $('decisionPills').innerHTML=pills.join('');
   }
@@ -1929,21 +1929,21 @@
       .slice(0,8)
       .forEach(g=>{
         items.push({
-          icon:groupStatus(g)==='out'?'🚫':'⚠️',
+          icon:groupStatus(g)==='out'?'':'⚠',
           title:`${g.material_type} ${g.color}`,
           meta:`${groupStatus(g)==='out'?'Out':'Low'} · ${grams(g.grams)} total · ${grams(g.available)} available · threshold ${grams(groupThreshold(g))} · ${policyLabel(groupPolicy(g))}`,
           cls:groupStatus(g)==='out'?'danger':'warn'
         });
       });
     supplies().filter(shouldPromptSupply).slice(0,6).forEach(s=>{
-        items.push({icon:supplyStatus(s)==='out'?'🚫':'⚠️',title:s.item_name,meta:`${supplyStatus(s)==='out'?'Out':'Low'} · ${s.quantity_on_hand} ${s.unit_type} on hand · threshold ${s.reorder_threshold} · ${policyLabel(supplyPolicy(s))}`,cls:supplyStatus(s)==='out'?'danger':'warn'});
+        items.push({icon:supplyStatus(s)==='out'?'':'⚠',title:s.item_name,meta:`${supplyStatus(s)==='out'?'Out':'Low'} · ${s.quantity_on_hand} ${s.unit_type} on hand · threshold ${s.reorder_threshold} · ${policyLabel(supplyPolicy(s))}`,cls:supplyStatus(s)==='out'?'danger':'warn'});
       });
     finished()
       .filter(f=>['low','sold_out'].includes(fgNeed(f)))
       .slice(0,6)
       .forEach(f=>{
         items.push({
-          icon:fgNeed(f)==='sold_out'?'🛑':'📦',
+          icon:fgNeed(f)==='sold_out'?'':'',
           title:f.product_name,
           meta:`${fgNeed(f)==='sold_out'?'Sold out':'Below target'} · ${f.quantity_on_hand}/${f.target_quantity||'—'} on hand`,
           cls:fgNeed(f)==='sold_out'?'danger':'warn'
