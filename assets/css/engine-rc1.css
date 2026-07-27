@@ -57,6 +57,8 @@ body.op-engine {
 }
 body.op-engine *, body.op-engine *::before, body.op-engine *::after { box-sizing: border-box; }
 body.op-engine img, body.op-engine svg, body.op-engine video, body.op-engine canvas { max-width: 100%; }
+/* Retire page-level ornamental layers without affecting document/media content. */
+body.op-engine::before, body.op-engine::after { content: none; background: none; filter: none; }
 body.op-engine a { color: var(--op-accent-hover); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 body.op-engine a:hover { color: var(--op-ink-strong); }
 body.op-engine h1, body.op-engine h2, body.op-engine h3, body.op-engine h4, body.op-engine p { overflow-wrap: anywhere; }
@@ -224,6 +226,31 @@ body.op-engine .tooltip, body.op-engine [role="tooltip"] {
   border: 1px solid var(--op-border-strong); border-radius: var(--op-radius-sm); background: var(--op-surface-raised); color: var(--op-ink); box-shadow: 0 10px 30px rgb(0 0 0 / 28%);
 }
 
+/* A few legacy overlays are assembled with inline presentation. These narrow
+   overrides keep their application chrome in the Engine system; generated
+   email, PDF, label, and print documents remain untouched. */
+body.op-engine #responsesList > div[style*="color"] { color: var(--op-muted) !important; }
+body.op-engine label[for="projectImageUrl"] > span[style*="color"] { color: var(--op-muted) !important; }
+body.op-engine #opLabelOptionsModal { background: rgb(0 0 0 / 68%) !important; color: var(--op-ink) !important; }
+body.op-engine #opLabelOptionsModal > div {
+  border: 1px solid var(--op-border) !important;
+  border-radius: var(--op-radius) !important;
+  background: var(--op-surface-raised) !important;
+  box-shadow: 0 18px 55px rgb(0 0 0 / 35%) !important;
+}
+body.op-engine #opLabelOptionsModal [style*="color:#a8b5db"] { color: var(--op-muted) !important; }
+body.op-engine .email-preview-actions .btn-ghost {
+  border-color: var(--op-border-strong) !important;
+  background: var(--op-surface) !important;
+  color: var(--op-ink) !important;
+}
+body.op-engine .email-preview-actions button:disabled {
+  border-color: var(--op-border) !important;
+  background: var(--op-surface-muted) !important;
+  color: var(--op-muted-quiet) !important;
+  opacity: 1 !important;
+}
+
 /* Documentation and page-specific presentation components. */
 body.op-engine .toc, body.op-engine .links, body.op-engine .filters, body.op-engine .search,
 body.op-engine .flow-row, body.op-engine .branch, body.op-engine .step, body.op-engine .mark,
@@ -348,6 +375,9 @@ body.op-engine .toc { border-radius: 0; border-width: 0 1px 0 0; background: tra
 body.op-engine .article { min-height: 0; }
 body.op-engine pre { background: var(--op-surface-muted); color: var(--op-ink); }
 body.op-engine .glow, body.op-engine [class*="glow"] { display: none; }
+body.op-engine .finance-summary-card::before, body.op-engine .capacity-card::before { content: none; background: none; }
+body.op-engine .compact-metrics .metric:nth-child(6), body.op-engine .attention-muted,
+body.op-engine .inactive { opacity: 1; }
 
 @media (max-width: 768px) {
   body.op-engine header.topbar, body.op-engine div.topbar { align-items: flex-start; }
