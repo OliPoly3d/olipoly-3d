@@ -1345,6 +1345,7 @@ Aurora, OH 44202</textarea></div>
   <div class="print-template-hidden" id="packingPrintArea"></div>
 
   <script src="js/document-theme.js"></script>
+  <script src="js/invoice-authority.js"></script>
   <script src="olipoly-auth.js"></script>
   <script src="js/job-asset-model.js"></script>
   <script src="js/job-assets-ui.js"></script>
@@ -1652,7 +1653,7 @@ Aurora, OH 44202</textarea></div>
                 <strong>${T.esc(order.customer_name || 'Customer')}</strong><br>
                 ${order.shipping_company ? `${T.esc(order.shipping_company)}<br>` : ''}
                 ${order.shipping_contact_name ? `${T.esc(order.shipping_contact_name)}<br>` : ''}
-                ${(order.shipping_address || '').replace(/\n/g,'<br>') || 'No shipping address provided.'}
+                ${window.OliPolyInvoiceAuthority.escapedMultiline(order.shipping_address) || 'No shipping address provided.'}
               `
             )}
 
@@ -1682,7 +1683,7 @@ Aurora, OH 44202</textarea></div>
                     ${T.esc(order.production_notes || 'No production notes provided.')}
                   </div>
                 </td>
-                <td style="text-align:center;">${T.esc(order.quantity || 1)}</td>
+                <td style="text-align:center;">${T.esc(order.accepted?.quantity ?? '—')}</td>
                 <td>${T.esc([order.material, order.color].filter(Boolean).join(' / ') || '—')}</td>
                 <td>${T.esc(order.part_revision || 'Rev A')}</td>
               </tr>
@@ -3302,7 +3303,7 @@ const payload = snapshotForm();
     }
     function generateInvoicePdf(){fillInvoicePdf();window.print();}
     function buildInvoicePlainEmail(d){
-      const amountDue = d.payment_status === 'paid' ? 0 : (num(d.balance_amount) || d.total || 0);
+      const amountDue = d.payment_status === 'paid' ? 0 : (d.balance_amount ?? d.total ?? 0);
       const invoiceUrl = d.business_invoice ? '' : (d.payment_link_stripe || d.payment_link || '');
       const trackLink = d.order_number ? `https://olipoly3d.com/track.html?order=${encodeURIComponent(d.order_number)}` : 'https://olipoly3d.com/track.html';
       const isPaid = d.payment_status === 'paid';
@@ -3342,7 +3343,7 @@ https://olipoly3d.com`;
 
     function buildInvoiceHtmlEmail(d){
       const isPaid = d.payment_status === 'paid';
-      const amountDue = isPaid ? 0 : (num(d.balance_amount) || d.total || 0);
+      const amountDue = isPaid ? 0 : (d.balance_amount ?? d.total ?? 0);
       const businessMode = !!(d.business_invoice || d.po_number || d.ap_email || d.billing_address || d.shipping_company);
       const invoiceUrl = businessMode ? '' : (d.payment_link_stripe || d.payment_link || '');
       const paypalUrl = businessMode ? '' : (d.payment_link_paypal || '');
@@ -3427,7 +3428,7 @@ https://olipoly3d.com`;
 
 
 </body></html>`);d.close();}
-    function openInvoiceEmailModal(){const d=buildInvoiceData(),html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`${d.payment_status === 'paid' ? 'Payment Received' : 'Invoice Ready'}: ${d.invoice_number} - OliPoly 3D (${d.order_number||'Order'})`,to:d.ap_email||d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+    async function openInvoiceEmailModal(){try{const selected=activeId?orders.find(o=>o.id===activeId):null;const d=await loadInvoiceAuthority(selected);d.total=d.order_total;d.invoice_terms_label=invoiceTermsLabel(selected?.invoice_terms);d.business_invoice=isPoBusinessInvoice(selected||{});d.payment_link_stripe=selected?.payment_link_stripe;d.payment_link=selected?.payment_link;const html=buildInvoiceHtmlEmail(d),plain=buildInvoicePlainEmail(d);lastInvoiceEmail={html,plain,subject:`${d.payment_status === 'paid' ? 'Payment Received' : 'Invoice Ready'}: ${d.invoice_number} - OliPoly (${d.order_number||'Order'})`,to:d.customer_email||''};writeInvoiceEmailPreview(html);$('invoiceEmailModal').classList.remove('hidden');$('invoiceEmailModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}catch(error){setMsg($('formMessage'),error.message,true);}}
     function closeInvoiceEmailModal(){$('invoiceEmailModal')?.classList.add('hidden');$('invoiceEmailModal')?.setAttribute('aria-hidden','true');document.body.style.overflow='';}
     async function copyInvoiceRichEmail(){try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([lastInvoiceEmail.html],{type:'text/html'}),'text/plain':new Blob([lastInvoiceEmail.plain],{type:'text/plain'})})]);}else await navigator.clipboard.writeText(lastInvoiceEmail.html);$('invoiceEmailModalMessage').innerHTML='Copied. In Gmail, select the plain draft text and paste to replace it with the branded version.';}catch(err){$('invoiceEmailModalMessage').textContent='Could not copy rich email automatically. Try Download HTML.';}}
     function openInvoiceGmailDraft(){window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lastInvoiceEmail.to)}&su=${encodeURIComponent(lastInvoiceEmail.subject)}&body=${encodeURIComponent(lastInvoiceEmail.plain)}`,'_blank','noopener,noreferrer');}
@@ -5421,9 +5422,9 @@ function generateTravelerPdf(){
       const T = window.OliPolyDocumentTheme;
       if(!T) return '';
 
-      const subtotal = num(order.order_total);
-      const deposit = num(order.deposit_amount);
-      const balance = order.payment_status === 'paid' ? 0 : Math.max(0, num(order.balance_amount) || (subtotal - deposit));
+      const subtotal = order.status === 'verified' ? Number(order.accepted.subtotal) : order.order_total;
+      const deposit = order.deposit_amount;
+      const balance = order.balance_amount;
       const isPaid = order.payment_status === 'paid';
 
       const invoiceNumber = order.invoice_number || `INV-${(order.order_number || 'ORDER').replace(/^OP-/,'')}`;
@@ -5468,7 +5469,7 @@ function generateTravelerPdf(){
                 <strong>${T.esc(order.customer_name || 'Customer')}</strong><br>
                 ${order.customer_email ? `${T.esc(order.customer_email)}<br>` : ''}
                 ${order.ap_email ? `<strong>AP:</strong> ${T.esc(order.ap_email)}<br>` : ''}
-                ${(order.billing_address || '').replace(/\n/g,'<br>') || 'No billing address provided.'}
+                ${window.OliPolyInvoiceAuthority.escapedMultiline(order.billing_address) || 'No billing address provided.'}
               `
             )}
 
@@ -5477,7 +5478,7 @@ function generateTravelerPdf(){
               `
                 ${order.shipping_company ? `<strong>${T.esc(order.shipping_company)}</strong><br>` : ''}
                 ${order.shipping_contact_name ? `${T.esc(order.shipping_contact_name)}<br>` : ''}
-                ${(order.shipping_address || '').replace(/\n/g,'<br>') || T.esc(order.shipping_or_pickup_note || 'Pickup / shipping details to be confirmed.')}<br><br>
+                ${window.OliPolyInvoiceAuthority.escapedMultiline(order.shipping_address) || T.esc(order.shipping_or_pickup_note || 'Pickup / shipping details to be confirmed.')}<br><br>
                 <strong>Tracking:</strong> ${T.esc(order.tracking_number || 'Pending / N/A')}
               `
             )}
@@ -5531,9 +5532,7 @@ function generateTravelerPdf(){
             </div>
 
             <div class="invoice-v2-totals">
-              <div><span>Subtotal</span><strong>${T.money(subtotal)}</strong></div>
-              <div><span>Deposit / Paid</span><strong>${T.money(isPaid ? subtotal : deposit)}</strong></div>
-              <div class="invoice-v2-total"><span>${isPaid ? 'Balance' : 'Amount Due'}</span><strong>${T.money(balance)}</strong></div>
+              ${window.OliPolyInvoiceAuthority.totalsRows(order).map(([label, amount], index, rows) => `<div class="${index === rows.length - 1 ? 'invoice-v2-total' : ''}"><span>${T.esc(label)}</span><strong>${T.money(amount)}</strong></div>`).join('')}
             </div>
           </div>
 
@@ -5648,13 +5647,26 @@ function generateTravelerPdf(){
       );
     }
 
-    function openInvoiceV2FromCurrentOrder(){
-      const order = activeId ? orders.find(o => o.id === activeId) : snapshotForm();
-      if(!order || !order.order_number){
-        alert('Select or save an order first.');
-        return;
-      }
-      generateInvoicePdfV2(order);
+    async function loadInvoiceAuthority(order){
+      if (!order?.id) throw new Error('Save and select the Order before generating a customer invoice.');
+      setMsg($('formMessage'), 'Loading authoritative invoice snapshot…');
+      const response = await api('/rest/v1/rpc/get_order_invoice_snapshot', {
+        method:'POST', body:JSON.stringify({p_order_id:order.id})
+      });
+      if (response.error) throw new Error(response.error.message || 'Invoice authority RPC failed.');
+      const invoice = window.OliPolyInvoiceAuthority.normalize(response.data);
+      if (invoice.blocked) throw new Error(`Invoice blocked (${invoice.status}): the accepted financial snapshot must be reviewed.`);
+      setMsg($('formMessage'), invoice.status === 'verified'
+        ? 'Verified accepted commercial breakdown loaded.'
+        : 'Legacy aggregate invoice: component breakdown is unavailable.');
+      return invoice;
+    }
+
+    async function openInvoiceV2FromCurrentOrder(){
+      const order = activeId ? orders.find(o => o.id === activeId) : null;
+      if(!order || !order.order_number){ alert('Select or save an order first.'); return; }
+      try { generateInvoicePdfV2(await loadInvoiceAuthority(order)); }
+      catch (error) { console.error('Invoice authority failed:', error); setMsg($('formMessage'), error.message, true); }
     }
 
 

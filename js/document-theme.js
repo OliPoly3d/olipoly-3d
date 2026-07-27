@@ -10,6 +10,7 @@
 (function () {
   const THEME = {
     brandName: "OliPoly",
+    legalName: "OliPoly 3D LLC",
     tagline: "Thoughtful Design for Real Life",
     email: "OliPoly3D@gmail.com",
     website: "olipoly3d.com",
@@ -105,7 +106,7 @@
         line-height:.95;
         color:${THEME.colors.ink};
       }
-      .op-brand span{color:#b86be8}
+      .op-brand span{color:${THEME.colors.pink}}
       .op-tagline{
         margin-top:7px;
         color:${THEME.colors.muted};
@@ -128,7 +129,7 @@
         border:1px solid ${THEME.colors.border};
         display:inline-block;
         font-size:12px;
-        color:#7c4a82;
+        color:${THEME.colors.pink};
         font-weight:900;
       }
       .op-chip{

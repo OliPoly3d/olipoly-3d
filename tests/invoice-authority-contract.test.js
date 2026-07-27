@@ -1,0 +1,28 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const A = require('../js/invoice-authority.js');
+const sql = fs.readFileSync('supabase/migrations/202607210009_invoice_authority_contract.sql','utf8');
+const orders = fs.readFileSync('orders-admin.html','utf8');
+const quote = fs.readFileSync('quote.js','utf8');
+
+const verified = A.normalize({reconciliation_status:'verified',breakdown_source:'versioned_accepted_snapshot',identity:{order_number:'OP-1',customer_email:'test@example.invalid'},accepted_commercial_breakdown:{quantity:2,subtotal:100,discount:10,taxable_subtotal:90,tax_rate:.08,tax:7.2,deposit:20,balance:77.2,final_total:97.2},current_payment_state:{order_total:97.2,deposit_amount:20,balance_amount:0,payment_status:'paid',amount_paid:97.2,amount_paid_source:'derived_from_order_total_and_balance'}});
+assert.equal(verified.balance_amount, 0, 'zero balance remains zero');
+assert.equal(verified.accepted.tax, 7.2, 'tax passes through without recalculation');
+assert.deepEqual(A.totalsRows(verified).find(r=>r[0]==='Sales tax'), ['Sales tax',7.2]);
+const legacy=A.normalize({reconciliation_status:'aggregate_only',identity:{},current_payment_state:{order_total:50,deposit_amount:0,balance_amount:50,payment_status:'unpaid'}});
+assert.deepEqual(A.totalsRows(legacy).map(r=>r[0]),['Accepted order total','Deposit / prior payment','Current amount due']);
+assert.throws(()=>A.normalize({reconciliation_status:'verified',identity:{},accepted_commercial_breakdown:{},current_payment_state:{order_total:50,balance_amount:null}}),/balance is unavailable/i);
+assert.throws(()=>A.totalsRows(A.normalize({reconciliation_status:'totals_mismatch',identity:{},current_payment_state:{order_total:50,balance_amount:50}})),/blocked/i);
+assert.equal(A.escapedMultiline('Example <Customer> & Company\nSuite "2"'),'Example &lt;Customer&gt; &amp; Company<br>Suite &quot;2&quot;');
+assert.match(sql,/security definer set search_path = public, pg_temp/i);
+assert.match(sql,/revoke all on function public\.get_order_invoice_snapshot\(uuid\) from public, anon/i);
+assert.match(sql,/grant execute on function public\.get_order_invoice_snapshot\(uuid\) to authenticated, service_role/i);
+assert.match(sql,/where id=p_order_id and user_id=v_actor/i);
+assert.match(sql,/new\.sales_tax_collected := \(v_totals->>'tax'\)::numeric/i);
+assert.match(sql,/new\.sales_tax_collected := null/i);
+assert.doesNotMatch(sql,/update\s+public\.financial_entries/i);
+assert.match(orders,/rpc\/get_order_invoice_snapshot/);
+assert.match(orders,/async function openInvoiceEmailModal\(\).*loadInvoiceAuthority/s);
+assert.match(quote,/function escapedMultiline\(value\)/);
+assert.match(quote,/escapedMultiline\(data\.billingAddress \|\| data\.shippingAddress\)/);
+console.log('invoice authority contract assertions passed');
