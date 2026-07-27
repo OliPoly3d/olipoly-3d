@@ -5,7 +5,7 @@ const sql = fs.readFileSync('supabase/migrations/202607210009_invoice_authority_
 const orders = fs.readFileSync('orders-admin.html','utf8');
 const quote = fs.readFileSync('quote.js','utf8');
 
-const verified = A.normalize({reconciliation_status:'verified',breakdown_source:'versioned_accepted_snapshot',identity:{order_number:'OP-1',customer_email:'test@example.invalid'},accepted_commercial_breakdown:{quantity:2,subtotal:100,discount:10,taxable_subtotal:90,tax_rate:.08,tax:7.2,deposit:20,balance:77.2,final_total:97.2},current_payment_state:{order_total:97.2,deposit_amount:20,balance_amount:0,payment_status:'paid',amount_paid:97.2,amount_paid_source:'derived_from_order_total_and_balance'}});
+const verified = A.normalize({reconciliation_status:'verified',component_breakdown_available:true,breakdown_source:'versioned_accepted_snapshot',identity:{order_number:'OP-1',customer_email:'test@example.invalid'},accepted_commercial_breakdown:{quantity:2,piece_price:50,subtotal:100,discount:10,taxable_subtotal:90,tax_rate:.08,tax:7.2,deposit:20,balance:77.2,final_total:97.2},current_payment_state:{order_total:97.2,deposit_amount:20,balance_amount:0,payment_status:'paid',amount_paid:97.2,amount_paid_source:'derived_from_order_total_and_balance'}});
 assert.equal(verified.balance_amount, 0, 'zero balance remains zero');
 assert.equal(verified.accepted.tax, 7.2, 'tax passes through without recalculation');
 assert.deepEqual(A.totalsRows(verified).find(r=>r[0]==='Sales tax'), ['Sales tax',7.2]);
