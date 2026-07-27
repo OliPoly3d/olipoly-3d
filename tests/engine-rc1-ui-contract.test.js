@@ -162,6 +162,25 @@ test('Engine layer explicitly restrains legacy decoration and card motion', () =
   assert.match(css, /body\.op-engine \.summary-grid[\s\S]*?border-block:\s*1px solid/);
   assert.match(css, /body\.op-engine \.card:hover[\s\S]*?transform:\s*none/);
   assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/i);
+  assert.match(css, /body\.op-engine::before[\s\S]*?content:\s*none[\s\S]*?filter:\s*none/);
+  assert.match(css, /body\.op-engine \.finance-summary-card::before[\s\S]*?content:\s*none/);
+});
+
+test('RC1.3 overrides high-risk inline application chrome without styling generated documents', () => {
+  const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
+  for (const selector of [
+    '#responsesList > div[style*="color"]',
+    '#opLabelOptionsModal > div',
+    '#opLabelOptionsModal [style*="color:#a8b5db"]',
+    '.email-preview-actions .btn-ghost',
+    '.email-preview-actions button:disabled'
+  ]) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(css, new RegExp(`body\\.op-engine ${escaped}`), `missing scoped inline override for ${selector}`);
+  }
+  assert.match(css, /body\.op-engine \.compact-metrics \.metric:nth-child\(6\)[\s\S]*?opacity:\s*1/);
+  assert.doesNotMatch(css, /(?:\.pdf-sheet|\.op-print-toolbar|\.pdf-|\.invoice-document)[^{]*\{/i,
+    'Engine must not target generated customer or print document selectors');
 });
 
 test('RC1.3 defines a compact dark palette and explicit readable component states', () => {
