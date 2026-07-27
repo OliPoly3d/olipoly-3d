@@ -1,0 +1,150 @@
+/* OliPoly Engine RC1 — internal application presentation only. */
+@media screen {
+.op-engine {
+  --op-canvas: #f7f4ee;
+  --op-surface: #fffdf9;
+  --op-surface-muted: #f1ede6;
+  --op-ink: #292624;
+  --op-muted: #6d6660;
+  --op-border: #d9d3ca;
+  --op-border-strong: #bdb5ab;
+  --op-accent: #b64273;
+  --op-accent-dark: #8f315b;
+  --op-accent-soft: #f8e8ef;
+  --op-success: #267451;
+  --op-success-soft: #e8f4ed;
+  --op-warning: #95620b;
+  --op-warning-soft: #fff3d7;
+  --op-danger: #a43c3c;
+  --op-danger-soft: #fbeaea;
+  --op-info: #315f8f;
+  --op-info-soft: #eaf1f8;
+  --op-space-1: .25rem;
+  --op-space-2: .5rem;
+  --op-space-3: .75rem;
+  --op-space-4: 1rem;
+  --op-space-5: 1.5rem;
+  --op-space-6: 2rem;
+  --op-font-xs: .75rem;
+  --op-font-sm: .875rem;
+  --op-font-md: 1rem;
+  --op-font-lg: 1.25rem;
+  --op-font-xl: clamp(1.65rem, 3vw, 2.35rem);
+  --op-leading: 1.5;
+  --op-border-width: 1px;
+  --op-radius-sm: 4px;
+  --op-radius: 7px;
+  --op-radius-pill: 999px;
+  --op-shadow: 0 1px 2px rgb(41 38 36 / 7%), 0 8px 24px rgb(41 38 36 / 4%);
+  --op-control-height: 42px;
+  --op-container: 1440px;
+  --op-nav-height: 64px;
+  --op-layer-nav: 20;
+  --op-layer-modal: 100;
+  --op-motion: 150ms ease;
+  margin: 0;
+  background: var(--op-canvas);
+  color: var(--op-ink);
+  font-family: "DM Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: var(--op-font-md);
+  line-height: var(--op-leading);
+  accent-color: var(--op-accent);
+}
+
+.op-engine *, .op-engine *::before, .op-engine *::after { box-sizing: border-box; }
+.op-engine :where(img, svg, video, canvas) { max-width: 100%; }
+.op-engine :where(a) { color: var(--op-accent-dark); text-underline-offset: 2px; }
+.op-engine :where(a:hover) { color: var(--op-accent); }
+.op-engine :where(h1, h2, h3, h4, p) { overflow-wrap: anywhere; }
+.op-engine :where(h1) { color: var(--op-ink); font-family: "Playfair Display", Georgia, serif; font-size: var(--op-font-xl); line-height: 1.15; letter-spacing: -.02em; }
+.op-engine :where(h2) { color: var(--op-ink); font-size: var(--op-font-lg); line-height: 1.3; }
+.op-engine :where(h3, h4, label, th, button) { font-family: inherit; }
+.op-engine :where(.wrap, .container, main) { max-width: var(--op-container); }
+
+/* Existing shells retain their markup and behavior; only their visual language is normalized. */
+.op-engine :where(header, .topbar, .app-header, .erp-header, .nav) {
+  border-color: var(--op-border);
+  box-shadow: none;
+}
+.op-engine :where(.topbar, .app-header, .erp-header) { background: rgb(255 253 249 / 96%); }
+.op-engine :where(nav a, .nav a, .tabs button, .tab) { transition: color var(--op-motion), background-color var(--op-motion), border-color var(--op-motion); }
+.op-engine :where(nav a[aria-current="page"], .nav a.active, .tab.active, .tabs button.active) { color: var(--op-accent-dark); border-color: var(--op-accent); background: var(--op-accent-soft); }
+
+/* Operational surfaces */
+.op-engine :where(.card, .panel, .section, .box, .widget, fieldset, .modal-content, .dialog) {
+  border-color: var(--op-border);
+  border-radius: var(--op-radius);
+  background-color: var(--op-surface);
+  box-shadow: var(--op-shadow);
+}
+.op-engine :where(.card, .panel, .section, .box, .widget):hover { border-color: var(--op-border-strong); }
+.op-engine :where(hr) { border: 0; border-top: var(--op-border-width) solid var(--op-border); }
+
+/* Controls */
+.op-engine :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button, .btn) { font: inherit; }
+.op-engine :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select) { min-height: var(--op-control-height); }
+.op-engine :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border: var(--op-border-width) solid var(--op-border-strong);
+  border-radius: var(--op-radius-sm);
+  background: #fff;
+  color: var(--op-ink);
+  padding: .55rem .7rem;
+  box-shadow: none;
+  transition: border-color var(--op-motion), box-shadow var(--op-motion), background-color var(--op-motion);
+}
+.op-engine :where(input, select, textarea)::placeholder { color: #8a827b; }
+.op-engine :where(input, select, textarea):read-only { background: var(--op-surface-muted); border-color: var(--op-border); }
+.op-engine :where(input, select, textarea, button):disabled, .op-engine :where(.btn.disabled, .btn[aria-disabled="true"]) { cursor: not-allowed; opacity: .58; }
+.op-engine :where(button, .btn, [role="button"]) {
+  min-height: var(--op-control-height);
+  border-radius: var(--op-radius-sm);
+  box-shadow: none;
+  font-weight: 700;
+  transition: color var(--op-motion), background-color var(--op-motion), border-color var(--op-motion), transform var(--op-motion);
+}
+.op-engine :where(button, .btn):hover:not(:disabled) { transform: translateY(-1px); box-shadow: none; }
+.op-engine :where(button, .btn):active:not(:disabled), .op-engine :where(button[aria-pressed="true"]) { transform: translateY(0); }
+.op-engine :where(.btn-primary, button.primary, .primary) { border-color: var(--op-accent-dark); background: var(--op-accent-dark); color: #fff; }
+.op-engine :where(.btn-secondary, button.secondary, .secondary) { border-color: var(--op-border-strong); background: var(--op-surface); color: var(--op-ink); }
+.op-engine :where(.btn-danger, button.danger, .danger) { border-color: var(--op-danger); background: var(--op-danger); color: #fff; }
+.op-engine :where(button.loading, .btn.loading, [aria-busy="true"]) { cursor: progress; }
+.op-engine :where(:focus-visible) { outline: 3px solid rgb(49 95 143 / 38%); outline-offset: 2px; }
+
+/* Dense, accurate operational tables remain tables at every viewport. */
+.op-engine :where(.table-wrap, .table-container, .table-responsive) { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.op-engine :where(table) { border-color: var(--op-border); background: var(--op-surface); }
+.op-engine :where(th) { background: var(--op-surface-muted); color: var(--op-muted); font-size: var(--op-font-xs); letter-spacing: .045em; text-transform: uppercase; }
+.op-engine :where(th, td) { border-color: var(--op-border); padding: .65rem .75rem; vertical-align: middle; }
+.op-engine :where(tbody tr) { transition: background-color var(--op-motion); }
+.op-engine :where(tbody tr:hover) { background: #faf7f2; }
+.op-engine :where(td.numeric, th.numeric, [data-type="number"]) { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Statuses and notices preserve their text and stored values. */
+.op-engine :where(.badge, .chip, .status, .pill, [class*="status-"]) { border-radius: var(--op-radius-pill); font-size: var(--op-font-xs); font-weight: 700; box-shadow: none; }
+.op-engine :where(.success, .status-success, .status-paid, .status-complete) { background-color: var(--op-success-soft); color: var(--op-success); }
+.op-engine :where(.warning, .status-warning, .status-unpaid, .status-pending) { background-color: var(--op-warning-soft); color: var(--op-warning); }
+.op-engine :where(.error, .status-error, .status-blocked) { background-color: var(--op-danger-soft); color: var(--op-danger); }
+.op-engine :where(.info, .status-info, .status-active, .status-printing) { background-color: var(--op-info-soft); color: var(--op-info); }
+.op-engine :where(.alert, .notice, .message, .error-box, .warning-box) { border-radius: var(--op-radius-sm); border-color: var(--op-border-strong); box-shadow: none; }
+
+/* Dialog selectors are scoped so document renderers and print windows never inherit them. */
+.op-engine :where(.modal, [role="dialog"]) { z-index: var(--op-layer-modal); }
+.op-engine :where(.modal-content, .dialog) { max-height: min(88vh, 900px); overflow: auto; }
+.op-engine :where(.modal-overlay, .overlay) { background: rgb(41 38 36 / 52%); backdrop-filter: none; }
+.op-engine :where(code, pre, .mono, .id, [class*="-id"]) { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.op-engine :where(pre) { max-width: 100%; overflow: auto; border: 1px solid var(--op-border); border-radius: var(--op-radius-sm); background: #2f2b29; color: #f8f4ee; padding: var(--op-space-4); }
+.op-engine :where(.sr-only, .visually-hidden, .skip-link:not(:focus)) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 768px) {
+  .op-engine { --op-space-6: 1.5rem; }
+  .op-engine :where(.wrap, .container, main) { width: 100%; }
+  .op-engine :where(.grid, .form-grid, .two-col, .columns) { min-width: 0; }
+  .op-engine :where(.modal-content, .dialog) { width: calc(100vw - 1.5rem); max-width: none; max-height: calc(100dvh - 1.5rem); margin: .75rem; }
+  .op-engine :where(button, .btn, [role="button"]) { min-height: 44px; }
+  .op-engine :where(input, select, textarea, td, th, a) { overflow-wrap: anywhere; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op-engine *, .op-engine *::before, .op-engine *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+}
