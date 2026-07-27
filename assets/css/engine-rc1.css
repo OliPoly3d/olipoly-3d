@@ -1,150 +1,229 @@
-/* OliPoly Engine RC1 — internal application presentation only. */
+/* OliPoly Engine RC1.1 — authoritative screen presentation for internal applications. */
 @media screen {
-.op-engine {
-  --op-canvas: #f7f4ee;
+body.op-engine {
+  --op-canvas: #f6f2eb;
   --op-surface: #fffdf9;
-  --op-surface-muted: #f1ede6;
-  --op-ink: #292624;
-  --op-muted: #6d6660;
-  --op-border: #d9d3ca;
-  --op-border-strong: #bdb5ab;
+  --op-surface-muted: #f0ebe3;
+  --op-ink: #2d2926;
+  --op-muted: #716a64;
+  --op-border: #d8d0c5;
+  --op-border-strong: #bdb3a7;
   --op-accent: #b64273;
   --op-accent-dark: #8f315b;
-  --op-accent-soft: #f8e8ef;
+  --op-accent-soft: #f7e7ee;
   --op-success: #267451;
-  --op-success-soft: #e8f4ed;
-  --op-warning: #95620b;
-  --op-warning-soft: #fff3d7;
-  --op-danger: #a43c3c;
-  --op-danger-soft: #fbeaea;
-  --op-info: #315f8f;
-  --op-info-soft: #eaf1f8;
-  --op-space-1: .25rem;
-  --op-space-2: .5rem;
-  --op-space-3: .75rem;
-  --op-space-4: 1rem;
-  --op-space-5: 1.5rem;
-  --op-space-6: 2rem;
-  --op-font-xs: .75rem;
-  --op-font-sm: .875rem;
-  --op-font-md: 1rem;
-  --op-font-lg: 1.25rem;
-  --op-font-xl: clamp(1.65rem, 3vw, 2.35rem);
-  --op-leading: 1.5;
-  --op-border-width: 1px;
+  --op-success-soft: #e7f2eb;
+  --op-warning: #8a5c0a;
+  --op-warning-soft: #fff2d5;
+  --op-danger: #9c3b3b;
+  --op-danger-soft: #f9e8e7;
+  --op-info: #315f7d;
+  --op-info-soft: #e8f0f5;
   --op-radius-sm: 4px;
   --op-radius: 7px;
   --op-radius-pill: 999px;
-  --op-shadow: 0 1px 2px rgb(41 38 36 / 7%), 0 8px 24px rgb(41 38 36 / 4%);
+  --op-shadow: 0 1px 2px rgb(45 41 38 / 8%), 0 6px 18px rgb(45 41 38 / 4%);
   --op-control-height: 42px;
   --op-container: 1440px;
-  --op-nav-height: 64px;
-  --op-layer-nav: 20;
-  --op-layer-modal: 100;
   --op-motion: 150ms ease;
+  --op-layer-modal: 100;
+
+  /* Legacy page CSS consumes these names. Keep it on the Engine palette. */
+  --bg: var(--op-canvas);
+  --bg2: #eee8df;
+  --panel: var(--op-surface);
+  --panel2: var(--op-surface-muted);
+  --text: var(--op-ink);
+  --muted: var(--op-muted);
+  --line: var(--op-border);
+  --line2: var(--op-border-strong);
+  --accent: var(--op-accent);
+  --accent2: var(--op-accent-dark);
+  --shadow: var(--op-shadow);
+
   margin: 0;
   background: var(--op-canvas);
+  background-image: none;
   color: var(--op-ink);
   font-family: "DM Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: var(--op-font-md);
-  line-height: var(--op-leading);
+  font-size: 16px;
+  line-height: 1.5;
   accent-color: var(--op-accent);
 }
-
-.op-engine *, .op-engine *::before, .op-engine *::after { box-sizing: border-box; }
-.op-engine :where(img, svg, video, canvas) { max-width: 100%; }
-.op-engine :where(a) { color: var(--op-accent-dark); text-underline-offset: 2px; }
-.op-engine :where(a:hover) { color: var(--op-accent); }
-.op-engine :where(h1, h2, h3, h4, p) { overflow-wrap: anywhere; }
-.op-engine :where(h1) { color: var(--op-ink); font-family: "Playfair Display", Georgia, serif; font-size: var(--op-font-xl); line-height: 1.15; letter-spacing: -.02em; }
-.op-engine :where(h2) { color: var(--op-ink); font-size: var(--op-font-lg); line-height: 1.3; }
-.op-engine :where(h3, h4, label, th, button) { font-family: inherit; }
-.op-engine :where(.wrap, .container, main) { max-width: var(--op-container); }
-
-/* Existing shells retain their markup and behavior; only their visual language is normalized. */
-.op-engine :where(header, .topbar, .app-header, .erp-header, .nav) {
-  border-color: var(--op-border);
-  box-shadow: none;
+body.op-engine *, body.op-engine *::before, body.op-engine *::after { box-sizing: border-box; }
+body.op-engine img, body.op-engine svg, body.op-engine video, body.op-engine canvas { max-width: 100%; }
+body.op-engine a { color: var(--op-accent-dark); text-underline-offset: 2px; }
+body.op-engine a:hover { color: var(--op-accent); }
+body.op-engine h1, body.op-engine h2, body.op-engine h3, body.op-engine h4, body.op-engine p { overflow-wrap: anywhere; }
+body.op-engine h1, body.op-engine .hero h1, body.op-engine .hero h2 {
+  color: var(--op-ink);
+  font-family: "Playfair Display", Georgia, serif;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  text-shadow: none;
 }
-.op-engine :where(.topbar, .app-header, .erp-header) { background: rgb(255 253 249 / 96%); }
-.op-engine :where(nav a, .nav a, .tabs button, .tab) { transition: color var(--op-motion), background-color var(--op-motion), border-color var(--op-motion); }
-.op-engine :where(nav a[aria-current="page"], .nav a.active, .tab.active, .tabs button.active) { color: var(--op-accent-dark); border-color: var(--op-accent); background: var(--op-accent-soft); }
+body.op-engine h1, body.op-engine .hero h2 { font-size: clamp(1.65rem, 3vw, 2.35rem); }
+body.op-engine h2 { color: var(--op-ink); line-height: 1.3; }
+body.op-engine h3, body.op-engine h4, body.op-engine label, body.op-engine th, body.op-engine button { font-family: inherit; }
+body.op-engine .wrap, body.op-engine .container, body.op-engine main { max-width: var(--op-container); }
+body.op-engine .muted, body.op-engine .sub, body.op-engine .hint, body.op-engine .meta,
+body.op-engine .card-sub, body.op-engine .tiny-note, body.op-engine .entry-hint { color: var(--op-muted); }
 
-/* Operational surfaces */
-.op-engine :where(.card, .panel, .section, .box, .widget, fieldset, .modal-content, .dialog) {
+/* Shell, headers, navigation, and mobile docks. */
+body.op-engine header, body.op-engine .topbar, body.op-engine .app-header, body.op-engine .erp-header,
+body.op-engine .nav, body.op-engine .mobile-nav, body.op-engine .pc-mobile-dock {
+  border-color: var(--op-border);
+  background: rgb(255 253 249 / 97%);
+  background-image: none;
+  color: var(--op-ink);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+body.op-engine .brand, body.op-engine .logo, body.op-engine .brand-copy, body.op-engine .brand-word { color: var(--op-ink); text-shadow: none; }
+body.op-engine nav a, body.op-engine .nav a, body.op-engine .mobile-nav a,
+body.op-engine .tabs button, body.op-engine .tab, body.op-engine .oa-view-tab {
+  transition: color var(--op-motion), background-color var(--op-motion), border-color var(--op-motion);
+}
+body.op-engine nav a[aria-current="page"], body.op-engine .nav a.active, body.op-engine .mobile-nav a.active,
+body.op-engine .tab.active, body.op-engine .tabs button.active, body.op-engine .oa-view-tab.active {
+  color: var(--op-accent-dark); border-color: var(--op-accent); background: var(--op-accent-soft); background-image: none;
+}
+body.op-engine .hero, body.op-engine .hero-card, body.op-engine .hero-strip, body.op-engine .form-intro-strip,
+body.op-engine .finance-strip, body.op-engine .closeout-audit-strip, body.op-engine .workspace-bar {
+  border-color: var(--op-border); background: var(--op-surface); background-image: none; color: var(--op-ink); box-shadow: var(--op-shadow);
+}
+
+/* Real operational surfaces across the eleven internal pages. */
+body.op-engine .card, body.op-engine .panel, body.op-engine .section, body.op-engine .box,
+body.op-engine .widget, body.op-engine fieldset, body.op-engine .quick-card, body.op-engine .mini-panel,
+body.op-engine .tool-card, body.op-engine .pulse-tile, body.op-engine .attention-card,
+body.op-engine .activity-card, body.op-engine .order-row, body.op-engine .side-panel,
+body.op-engine .catalog-panel, body.op-engine .catalog-browser, body.op-engine .invoice-panel,
+body.op-engine .send-package-card, body.op-engine .production-snapshot-card, body.op-engine .advanced-panel,
+body.op-engine .section-card, body.op-engine .ops-panel, body.op-engine .job-card,
+body.op-engine .capacity-card, body.op-engine .machine-card, body.op-engine .analytics-card,
+body.op-engine .audit-card, body.op-engine .detail-card, body.op-engine .finance-summary-card,
+body.op-engine .supply-help-card, body.op-engine .variance-card, body.op-engine .day-card,
+body.op-engine .inventory-card, body.op-engine .snapshot-card, body.op-engine .cloud-card,
+body.op-engine .forecast-card, body.op-engine .supply-card, body.op-engine .material-balance-card,
+body.op-engine .material-summary-card, body.op-engine .material-command-panel,
+body.op-engine .spool-hero-card, body.op-engine .supply-hero-card, body.op-engine .summary-card,
+body.op-engine .table-card, body.op-engine .settings-card, body.op-engine .setup-box,
+body.op-engine .login-card, body.op-engine .business, body.op-engine .overview-head,
+body.op-engine .item, body.op-engine .article, body.op-engine .flow-shell, body.op-engine .detail {
   border-color: var(--op-border);
   border-radius: var(--op-radius);
-  background-color: var(--op-surface);
-  box-shadow: var(--op-shadow);
-}
-.op-engine :where(.card, .panel, .section, .box, .widget):hover { border-color: var(--op-border-strong); }
-.op-engine :where(hr) { border: 0; border-top: var(--op-border-width) solid var(--op-border); }
-
-/* Controls */
-.op-engine :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button, .btn) { font: inherit; }
-.op-engine :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select) { min-height: var(--op-control-height); }
-.op-engine :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
-  border: var(--op-border-width) solid var(--op-border-strong);
-  border-radius: var(--op-radius-sm);
-  background: #fff;
+  background: var(--op-surface);
+  background-image: none;
   color: var(--op-ink);
-  padding: .55rem .7rem;
-  box-shadow: none;
-  transition: border-color var(--op-motion), box-shadow var(--op-motion), background-color var(--op-motion);
+  box-shadow: var(--op-shadow);
+  backdrop-filter: none;
 }
-.op-engine :where(input, select, textarea)::placeholder { color: #8a827b; }
-.op-engine :where(input, select, textarea):read-only { background: var(--op-surface-muted); border-color: var(--op-border); }
-.op-engine :where(input, select, textarea, button):disabled, .op-engine :where(.btn.disabled, .btn[aria-disabled="true"]) { cursor: not-allowed; opacity: .58; }
-.op-engine :where(button, .btn, [role="button"]) {
-  min-height: var(--op-control-height);
-  border-radius: var(--op-radius-sm);
-  box-shadow: none;
-  font-weight: 700;
-  transition: color var(--op-motion), background-color var(--op-motion), border-color var(--op-motion), transform var(--op-motion);
+body.op-engine .card:hover, body.op-engine .panel:hover, body.op-engine .tool-card:hover,
+body.op-engine .order-row:hover, body.op-engine .article:hover { border-color: var(--op-border-strong); box-shadow: var(--op-shadow); }
+body.op-engine hr { border: 0; border-top: 1px solid var(--op-border); }
+
+/* Forms and buttons: selectors intentionally outrank embedded input/.btn rules. */
+body.op-engine input:not([type="checkbox"]):not([type="radio"]), body.op-engine select,
+body.op-engine textarea, body.op-engine button, body.op-engine .btn { font: inherit; }
+body.op-engine input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), body.op-engine select { min-height: var(--op-control-height); }
+body.op-engine input:not([type="checkbox"]):not([type="radio"]), body.op-engine select, body.op-engine textarea {
+  border: 1px solid var(--op-border-strong); border-radius: var(--op-radius-sm); background: #fff; background-image: none;
+  color: var(--op-ink); padding: .55rem .7rem; box-shadow: none; caret-color: var(--op-accent-dark);
 }
-.op-engine :where(button, .btn):hover:not(:disabled) { transform: translateY(-1px); box-shadow: none; }
-.op-engine :where(button, .btn):active:not(:disabled), .op-engine :where(button[aria-pressed="true"]) { transform: translateY(0); }
-.op-engine :where(.btn-primary, button.primary, .primary) { border-color: var(--op-accent-dark); background: var(--op-accent-dark); color: #fff; }
-.op-engine :where(.btn-secondary, button.secondary, .secondary) { border-color: var(--op-border-strong); background: var(--op-surface); color: var(--op-ink); }
-.op-engine :where(.btn-danger, button.danger, .danger) { border-color: var(--op-danger); background: var(--op-danger); color: #fff; }
-.op-engine :where(button.loading, .btn.loading, [aria-busy="true"]) { cursor: progress; }
-.op-engine :where(:focus-visible) { outline: 3px solid rgb(49 95 143 / 38%); outline-offset: 2px; }
+body.op-engine input::placeholder, body.op-engine select::placeholder, body.op-engine textarea::placeholder { color: #8a827b; }
+body.op-engine input:read-only, body.op-engine textarea:read-only { background: var(--op-surface-muted); border-color: var(--op-border); }
+body.op-engine input:disabled, body.op-engine select:disabled, body.op-engine textarea:disabled,
+body.op-engine button:disabled, body.op-engine .btn.disabled, body.op-engine .btn[aria-disabled="true"] { cursor: not-allowed; opacity: .58; }
+body.op-engine button, body.op-engine .btn, body.op-engine [role="button"], body.op-engine .mini-btn,
+body.op-engine .danger-btn, body.op-engine .activity-filter, body.op-engine .filter {
+  min-height: var(--op-control-height); border: 1px solid var(--op-border-strong); border-radius: var(--op-radius-sm);
+  background: var(--op-surface); background-image: none; color: var(--op-ink); box-shadow: none; font-weight: 700;
+  text-shadow: none; transition: color var(--op-motion), background-color var(--op-motion), border-color var(--op-motion), transform var(--op-motion);
+}
+body.op-engine button:hover:not(:disabled), body.op-engine .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: none; }
+body.op-engine .primary, body.op-engine .btn-primary, body.op-engine button.primary,
+body.op-engine .btn:not(.ghost):not(.btn-ghost):not(.btn-danger):not(.danger):not(.secondary) {
+  border-color: var(--op-accent-dark); background: var(--op-accent-dark); background-image: none; color: #fff;
+}
+body.op-engine .ghost, body.op-engine .btn-ghost, body.op-engine .secondary, body.op-engine .btn-secondary,
+body.op-engine button.secondary { border-color: var(--op-border-strong); background: var(--op-surface); background-image: none; color: var(--op-ink); }
+body.op-engine .danger, body.op-engine .danger-btn, body.op-engine .btn-danger, body.op-engine button.danger {
+  border-color: var(--op-danger); background: var(--op-danger); background-image: none; color: #fff;
+}
+body.op-engine :focus-visible { outline: 3px solid rgb(49 95 125 / 35%); outline-offset: 2px; }
 
-/* Dense, accurate operational tables remain tables at every viewport. */
-.op-engine :where(.table-wrap, .table-container, .table-responsive) { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
-.op-engine :where(table) { border-color: var(--op-border); background: var(--op-surface); }
-.op-engine :where(th) { background: var(--op-surface-muted); color: var(--op-muted); font-size: var(--op-font-xs); letter-spacing: .045em; text-transform: uppercase; }
-.op-engine :where(th, td) { border-color: var(--op-border); padding: .65rem .75rem; vertical-align: middle; }
-.op-engine :where(tbody tr) { transition: background-color var(--op-motion); }
-.op-engine :where(tbody tr:hover) { background: #faf7f2; }
-.op-engine :where(td.numeric, th.numeric, [data-type="number"]) { font-variant-numeric: tabular-nums; text-align: right; }
+/* Tables, rows, lists, and workflow boards. */
+body.op-engine .table-wrap, body.op-engine .table-container, body.op-engine .table-responsive { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+body.op-engine table, body.op-engine .op-table { border-color: var(--op-border); background: var(--op-surface); background-image: none; color: var(--op-ink); }
+body.op-engine th { background: var(--op-surface-muted); background-image: none; color: var(--op-muted); font-size: .75rem; letter-spacing: .045em; text-transform: uppercase; }
+body.op-engine th, body.op-engine td { border-color: var(--op-border); padding: .65rem .75rem; vertical-align: middle; }
+body.op-engine tbody tr:hover, body.op-engine .list > *:hover { background: #faf7f2; background-image: none; }
+body.op-engine .lane, body.op-engine .pm-card, body.op-engine .today-item, body.op-engine .attention-item,
+body.op-engine .activity-item, body.op-engine .erp-planner-row, body.op-engine .close-roll-row,
+body.op-engine .recipe-row, body.op-engine .timeline .item, body.op-engine .node {
+  border-color: var(--op-border); background: var(--op-surface); background-image: none; color: var(--op-ink); box-shadow: none;
+}
+body.op-engine .lane-head, body.op-engine .board-header, body.op-engine .card-head,
+body.op-engine .section-head, body.op-engine .table-card thead { background: var(--op-surface-muted); background-image: none; color: var(--op-ink); }
 
-/* Statuses and notices preserve their text and stored values. */
-.op-engine :where(.badge, .chip, .status, .pill, [class*="status-"]) { border-radius: var(--op-radius-pill); font-size: var(--op-font-xs); font-weight: 700; box-shadow: none; }
-.op-engine :where(.success, .status-success, .status-paid, .status-complete) { background-color: var(--op-success-soft); color: var(--op-success); }
-.op-engine :where(.warning, .status-warning, .status-unpaid, .status-pending) { background-color: var(--op-warning-soft); color: var(--op-warning); }
-.op-engine :where(.error, .status-error, .status-blocked) { background-color: var(--op-danger-soft); color: var(--op-danger); }
-.op-engine :where(.info, .status-info, .status-active, .status-printing) { background-color: var(--op-info-soft); color: var(--op-info); }
-.op-engine :where(.alert, .notice, .message, .error-box, .warning-box) { border-radius: var(--op-radius-sm); border-color: var(--op-border-strong); box-shadow: none; }
+/* Semantic status colors remain distinct without neon glow. */
+body.op-engine .badge, body.op-engine .chip, body.op-engine .status, body.op-engine .pill,
+body.op-engine .status-pill, body.op-engine .decision-pill, body.op-engine .finance-pill,
+body.op-engine .payment-pill, body.op-engine .catalog-status-pill, body.op-engine .policy-chip,
+body.op-engine .need-badge, body.op-engine [class*="status-"] {
+  border-radius: var(--op-radius-pill); border-color: currentColor; background-image: none; font-size: .75rem; font-weight: 700; box-shadow: none; text-shadow: none;
+}
+body.op-engine .good, body.op-engine .ok, body.op-engine .success, body.op-engine .status-success,
+body.op-engine .status-paid, body.op-engine .status-complete { background-color: var(--op-success-soft); color: var(--op-success); }
+body.op-engine .warn, body.op-engine .warning, body.op-engine .status-warning,
+body.op-engine .status-unpaid, body.op-engine .status-pending { background-color: var(--op-warning-soft); color: var(--op-warning); }
+body.op-engine .danger, body.op-engine .error, body.op-engine .status-error,
+body.op-engine .status-blocked { background-color: var(--op-danger-soft); color: var(--op-danger); }
+body.op-engine .info, body.op-engine .status-info, body.op-engine .status-active,
+body.op-engine .status-printing { background-color: var(--op-info-soft); color: var(--op-info); }
 
-/* Dialog selectors are scoped so document renderers and print windows never inherit them. */
-.op-engine :where(.modal, [role="dialog"]) { z-index: var(--op-layer-modal); }
-.op-engine :where(.modal-content, .dialog) { max-height: min(88vh, 900px); overflow: auto; }
-.op-engine :where(.modal-overlay, .overlay) { background: rgb(41 38 36 / 52%); backdrop-filter: none; }
-.op-engine :where(code, pre, .mono, .id, [class*="-id"]) { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
-.op-engine :where(pre) { max-width: 100%; overflow: auto; border: 1px solid var(--op-border); border-radius: var(--op-radius-sm); background: #2f2b29; color: #f8f4ee; padding: var(--op-space-4); }
-.op-engine :where(.sr-only, .visually-hidden, .skip-link:not(:focus)) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+/* Notices, validation, empty states, dialogs, and overlays. */
+body.op-engine .notice, body.op-engine .message, body.op-engine .alert, body.op-engine .note,
+body.op-engine .empty, body.op-engine .warning-box, body.op-engine .error-box,
+body.op-engine .board-note, body.op-engine .closeout-warning, body.op-engine .finance-ready-note {
+  border-color: var(--op-border-strong); border-radius: var(--op-radius-sm); background: var(--op-surface-muted); background-image: none; color: var(--op-ink); box-shadow: none;
+}
+body.op-engine .modal, body.op-engine [role="dialog"], body.op-engine dialog { z-index: var(--op-layer-modal); }
+body.op-engine .modal-dialog, body.op-engine .modal-body, body.op-engine .modal-content,
+body.op-engine .dialog, body.op-engine .email-preview-dialog, body.op-engine dialog {
+  border: 1px solid var(--op-border); border-radius: var(--op-radius); background: var(--op-surface); background-image: none;
+  color: var(--op-ink); box-shadow: 0 18px 55px rgb(45 41 38 / 18%); backdrop-filter: none;
+}
+body.op-engine .modal-dialog, body.op-engine .modal-content, body.op-engine .dialog,
+body.op-engine .email-preview-dialog { max-height: min(88vh, 900px); overflow: auto; }
+body.op-engine .modal, body.op-engine .modal-overlay, body.op-engine .overlay,
+body.op-engine .email-preview-backdrop { background-color: rgb(45 41 38 / 52%); background-image: none; backdrop-filter: none; }
+
+/* Documentation and page-specific presentation components. */
+body.op-engine .toc, body.op-engine .links, body.op-engine .filters, body.op-engine .search,
+body.op-engine .flow-row, body.op-engine .branch, body.op-engine .step, body.op-engine .mark,
+body.op-engine .product, body.op-engine .campaign-list, body.op-engine .products {
+  border-color: var(--op-border); background-image: none; box-shadow: none;
+}
+body.op-engine .metric, body.op-engine .stat, body.op-engine .summary-grid > *, body.op-engine .metric-grid > * {
+  border-color: var(--op-border); background-color: var(--op-surface); background-image: none; color: var(--op-ink); box-shadow: none;
+}
+body.op-engine .glow, body.op-engine [class*="glow"] { box-shadow: none; text-shadow: none; }
+body.op-engine code, body.op-engine pre, body.op-engine .mono, body.op-engine .id, body.op-engine [class*="-id"] { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+body.op-engine pre { max-width: 100%; overflow: auto; border: 1px solid var(--op-border); border-radius: var(--op-radius-sm); background: #302c29; color: #f8f4ee; padding: 1rem; }
+body.op-engine .sr-only, body.op-engine .visually-hidden, body.op-engine .skip-link:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 @media (max-width: 768px) {
-  .op-engine { --op-space-6: 1.5rem; }
-  .op-engine :where(.wrap, .container, main) { width: 100%; }
-  .op-engine :where(.grid, .form-grid, .two-col, .columns) { min-width: 0; }
-  .op-engine :where(.modal-content, .dialog) { width: calc(100vw - 1.5rem); max-width: none; max-height: calc(100dvh - 1.5rem); margin: .75rem; }
-  .op-engine :where(button, .btn, [role="button"]) { min-height: 44px; }
-  .op-engine :where(input, select, textarea, td, th, a) { overflow-wrap: anywhere; }
+  body.op-engine .wrap, body.op-engine .container, body.op-engine main { width: 100%; }
+  body.op-engine .grid, body.op-engine .form-grid, body.op-engine .two-col, body.op-engine .columns,
+  body.op-engine .tool-grid, body.op-engine .pulse-grid, body.op-engine .summary-grid { min-width: 0; }
+  body.op-engine .modal-dialog, body.op-engine .modal-content, body.op-engine .dialog,
+  body.op-engine .email-preview-dialog { width: calc(100vw - 1.5rem); max-width: none; max-height: calc(100dvh - 1.5rem); margin: .75rem; }
+  body.op-engine button, body.op-engine .btn, body.op-engine [role="button"] { min-height: 44px; }
+  body.op-engine input, body.op-engine select, body.op-engine textarea, body.op-engine td, body.op-engine th, body.op-engine a { overflow-wrap: anywhere; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .op-engine *, .op-engine *::before, .op-engine *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  body.op-engine *, body.op-engine *::before, body.op-engine *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 }

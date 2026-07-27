@@ -83,3 +83,60 @@ test('high-risk workflow implementation references remain available', () => {
     for (const expression of expressions) assert.match(runtimeSource, expression, `${page}: missing ${expression}`);
   }
 });
+
+test('Engine stylesheet follows every legacy presentation source', () => {
+  for (const page of Object.keys(baseline.pages)) {
+    const source = fs.readFileSync(page, 'utf8').split(/<\/head>/i)[0];
+    const engineIndex = source.search(/<link\b[^>]*href=["']assets\/css\/engine-rc1\.css\?v=rc1["']/i);
+    assert.notEqual(engineIndex, -1, `${page}: missing Engine stylesheet`);
+    for (const match of source.matchAll(/<(?:style\b|link\b[^>]*rel=["']stylesheet["'])[^>]*>/gi)) {
+      if (!/engine-rc1\.css/i.test(match[0])) {
+        assert.ok(match.index < engineIndex, `${page}: legacy style appears after Engine stylesheet: ${match[0]}`);
+      }
+    }
+  }
+});
+
+test('Engine bridges legacy variables and removes legacy visual effects authoritatively', () => {
+  const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
+  for (const variable of ['bg', 'bg2', 'panel', 'panel2', 'text', 'muted', 'line', 'line2', 'accent', 'accent2', 'shadow']) {
+    assert.match(css, new RegExp(`body\\.op-engine[\\s\\S]*?--${variable}\\s*:`), `missing legacy --${variable} bridge`);
+  }
+  assert.match(css, /body\.op-engine\s*\{[\s\S]*?background-image:\s*none/);
+  assert.match(css, /body\.op-engine \.glow[\s\S]*?box-shadow:\s*none/);
+  assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient\s*\(/i, 'Engine layer must not introduce application gradients');
+});
+
+test('real page selectors receive authoritative Engine coverage', () => {
+  const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
+  const selectorMap = {
+    'hub.html': ['.mobile-nav', '.tool-card', '.pulse-tile', '.activity-item'],
+    'orders-admin.html': ['.order-row', '.catalog-panel', '.status-pill', '.email-preview-dialog'],
+    'quote.html': ['.production-snapshot-card', '.advanced-panel', '.send-package-card', '.email-preview-backdrop'],
+    'production-control.html': ['.lane', '.job-card', '.capacity-card', '.modal-dialog'],
+    'inventory-control.html': ['.inventory-card', '.forecast-card', '.material-balance-card', '.decision-pill'],
+    'finance-pro.html': ['.summary-card', '.table-card', '.settings-card', '.login-card'],
+    'customer-360.html': ['.overview-head', '.timeline .item', '.pill', '.business'],
+    'product-recipes.html': ['.table-wrap', '.panel', '.modal-body', '.notice'],
+    'campaign-manager.html': ['.product', '.list', '.products', '.notice'],
+    'erp-handbook.html': ['.toc', '.flow-row', '.branch', '.step'],
+    'erp-knowledge-library.html': ['.article', '.filters', '.search', '.chip']
+  };
+  for (const [page, selectors] of Object.entries(selectorMap)) {
+    const source = fs.readFileSync(page, 'utf8');
+    for (const selector of selectors) {
+      const classNames = [...selector.matchAll(/\.([\w-]+)/g)].map(match => match[1]);
+      assert.ok(classNames.every(className => new RegExp(`class=["'][^"']*\\b${className}\\b`, 'i').test(source)), `${page}: mapped selector ${selector} does not match page markup`);
+      assert.match(css, new RegExp(`body\\.op-engine[^,{]*${selector.replaceAll('.', '\\.')}[^,{]*[,{]`), `${page}: ${selector} lacks scoped Engine coverage`);
+    }
+  }
+});
+
+test('core component rules use specificity above legacy generic selectors', () => {
+  const css = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
+  for (const selector of ['.topbar', '.card', '.panel', '.btn', '.hero h2', 'input', 'select', 'textarea', 'table', 'th', '.modal-dialog']) {
+    const escaped = selector.replaceAll('.', '\\.').replaceAll(' ', '\\s+');
+    assert.match(css, new RegExp(`body\\.op-engine\\s+${escaped}`), `missing authoritative selector body.op-engine ${selector}`);
+  }
+  assert.doesNotMatch(css, /\.op-engine\s+:where\(/, 'zero-specificity :where() must not drive Engine presentation');
+});
