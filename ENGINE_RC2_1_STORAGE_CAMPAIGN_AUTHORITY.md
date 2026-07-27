@@ -1,5 +1,7 @@
 # OliPoly Engine RC2.1 — Storage and Campaign Authority Investigation
 
+> **RC2.2 continuation:** [`ENGINE_RC2_2_DEPLOYED_STORAGE_VERIFICATION.md`](ENGINE_RC2_2_DEPLOYED_STORAGE_VERIFICATION.md) records that deployed verification is blocked because this environment has no authorized live metadata or authenticated policy-test access. Repository expectations below are not deployed evidence; RC2.3 must not begin until the RC2.2 gate is satisfied.
+
 Status: repository-evidence investigation only. No live Supabase, Storage, customer, payment, or production record was queried or changed. “Verified” below means verified in version-controlled runtime, migration, or test evidence; deployment of a migration is not assumed.
 
 ## 1. Executive summary
