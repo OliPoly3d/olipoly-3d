@@ -227,3 +227,108 @@ body.op-engine .sr-only, body.op-engine .visually-hidden, body.op-engine .skip-l
   body.op-engine *, body.op-engine *::before, body.op-engine *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 }
+
+/* RC1.2 editorial restraint: presentation-only overrides for legacy internal markup. */
+@media screen {
+body.op-engine {
+  --op-shadow: none;
+  --op-section-space: clamp(1.25rem, 2.5vw, 2rem);
+  --op-page-gutter: clamp(1rem, 3vw, 2rem);
+}
+
+/* A compact, text-led application shell replaces legacy floating dashboard chrome. */
+body.op-engine .wrap { width: min(100%, var(--op-container)); padding-inline: var(--op-page-gutter); }
+body.op-engine header.topbar, body.op-engine div.topbar, body.op-engine header.top, body.op-engine .app-header, body.op-engine .erp-header {
+  min-height: 64px;
+  margin: 0;
+  padding: .75rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--op-border);
+  border-radius: 0;
+  background: var(--op-surface);
+  box-shadow: none;
+}
+body.op-engine .brand { gap: .65rem; }
+body.op-engine .brand h1, body.op-engine .brand-copy h1 { font-family: inherit; font-size: 1rem; font-weight: 750; letter-spacing: -.01em; }
+body.op-engine .brand p, body.op-engine .brand small, body.op-engine .brand > span > span,
+body.op-engine .topbar small, body.op-engine header.top small { display: block; color: var(--op-muted); font-size: .68rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+body.op-engine .brand-copy p { margin-top: .1rem; font-size: .68rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--op-muted); }
+body.op-engine .brand-mark, body.op-engine .brand-icon, body.op-engine .brand .icon,
+body.op-engine .brand .logo, body.op-engine .brand .mark, body.op-engine .quick-icon,
+body.op-engine .tool-icon, body.op-engine .metric-icon, body.op-engine .snapshot-pill-icon { display: none; }
+body.op-engine .top-actions, body.op-engine .topbar-actions, body.op-engine .topbar .actions,
+body.op-engine .topbar .btn-row { gap: .35rem; }
+body.op-engine nav a, body.op-engine .topbar a, body.op-engine .topbar button { border-radius: var(--op-radius-sm); }
+body.op-engine nav a[aria-current="page"], body.op-engine .nav a.active, body.op-engine .mobile-nav a.active,
+body.op-engine .tab.active, body.op-engine .tabs button.active, body.op-engine .oa-view-tab.active {
+  color: var(--op-ink); border-color: var(--op-border-strong); background: var(--op-surface-muted); box-shadow: inset 0 -2px var(--op-accent-dark);
+}
+
+/* Page openings use type, spacing, and a divider instead of ornamental containers. */
+body.op-engine .hero { margin-top: var(--op-section-space); padding-bottom: var(--op-section-space); border-bottom: 1px solid var(--op-border); }
+body.op-engine .hero > .card, body.op-engine .hero-card, body.op-engine .hero-strip,
+body.op-engine .form-intro-strip, body.op-engine .finance-strip, body.op-engine .closeout-audit-strip {
+  padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+body.op-engine .hero h2 { margin-block: .35rem .5rem; font-size: clamp(1.8rem, 4vw, 2.8rem); line-height: 1.08; }
+body.op-engine .eyebrow, body.op-engine .kicker, body.op-engine .workspace-kicker {
+  padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--op-muted);
+  font-size: .68rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase;
+}
+body.op-engine .section { margin-top: var(--op-section-space); }
+body.op-engine .section-head { padding-bottom: .55rem; border-bottom: 1px solid var(--op-border); }
+
+/* Cards are reserved for meaningful groups; nested and summary surfaces become sections/rows. */
+body.op-engine .card, body.op-engine .panel, body.op-engine .section-card, body.op-engine .quick-card,
+body.op-engine .tool-card, body.op-engine .attention-card, body.op-engine .activity-card,
+body.op-engine .summary-card, body.op-engine .table-card, body.op-engine .overview-head,
+body.op-engine .article, body.op-engine .flow-shell {
+  border-radius: var(--op-radius-sm); box-shadow: none; backdrop-filter: none;
+}
+body.op-engine .card:hover, body.op-engine .panel:hover, body.op-engine .tool-card:hover,
+body.op-engine .order-row:hover, body.op-engine .article:hover { transform: none; box-shadow: none; }
+body.op-engine .quick-stack { gap: 0; border-top: 1px solid var(--op-border); }
+body.op-engine .quick-card { min-height: auto; padding: .8rem 0; border: 0; border-bottom: 1px solid var(--op-border); border-radius: 0; background: transparent; }
+body.op-engine .tool-grid { gap: 0; border-top: 1px solid var(--op-border); }
+body.op-engine .tool-card { min-height: auto; padding: 1rem .75rem; border: 0; border-bottom: 1px solid var(--op-border); border-radius: 0; background: transparent; }
+
+/* Operational summaries read as a single information band, not promotional tiles. */
+body.op-engine .summary-grid, body.op-engine .metric-grid, body.op-engine .metrics,
+body.op-engine .pulse-grid { gap: 0; border-block: 1px solid var(--op-border); background: transparent; }
+body.op-engine .summary, body.op-engine .metric, body.op-engine .summary-grid > *, body.op-engine .metric-grid > *,
+body.op-engine .pulse-tile {
+  min-height: 76px; padding: .85rem 1rem; border: 0; border-right: 1px solid var(--op-border);
+  border-radius: 0; background: transparent; box-shadow: none;
+}
+body.op-engine .summary:last-child, body.op-engine .metric:last-child,
+body.op-engine .summary-grid > *:last-child, body.op-engine .metric-grid > *:last-child { border-right: 0; }
+body.op-engine .summary span, body.op-engine .metric span, body.op-engine .pulse-tile span {
+  color: var(--op-muted); font-size: .68rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+}
+body.op-engine .summary strong, body.op-engine .metric strong, body.op-engine .pulse-tile strong { font-variant-numeric: tabular-nums; }
+
+/* Quiet controls, dense tables, restrained states, and publication-like documentation. */
+body.op-engine button:hover:not(:disabled), body.op-engine .btn:hover:not(:disabled) { transform: none; background-image: none; }
+body.op-engine .danger, body.op-engine .danger-btn, body.op-engine .btn-danger, body.op-engine button.danger {
+  border-color: var(--op-danger); background: var(--op-danger-soft); color: var(--op-danger);
+}
+body.op-engine table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+body.op-engine th, body.op-engine td { border-width: 0 0 1px; }
+body.op-engine tbody tr { background: transparent; }
+body.op-engine .badge, body.op-engine .chip, body.op-engine .status, body.op-engine .pill,
+body.op-engine .status-pill, body.op-engine .decision-pill, body.op-engine .finance-pill,
+body.op-engine .payment-pill, body.op-engine .catalog-status-pill, body.op-engine .policy-chip,
+body.op-engine .need-badge, body.op-engine [class*="status-"] { padding: .2rem .5rem; border-width: 1px; }
+body.op-engine .layout main, body.op-engine main#content { max-width: 78ch; }
+body.op-engine .toc { border-radius: 0; border-width: 0 1px 0 0; background: transparent; }
+body.op-engine .article { min-height: 0; }
+body.op-engine pre { background: var(--op-surface-muted); color: var(--op-ink); }
+body.op-engine .glow, body.op-engine [class*="glow"] { display: none; }
+
+@media (max-width: 768px) {
+  body.op-engine header.topbar, body.op-engine div.topbar { align-items: flex-start; }
+  body.op-engine .summary-grid, body.op-engine .metric-grid, body.op-engine .metrics { overflow-x: auto; }
+  body.op-engine .summary, body.op-engine .metric, body.op-engine .summary-grid > *, body.op-engine .metric-grid > * { min-width: 132px; }
+  body.op-engine .toc { border-right: 0; border-bottom: 1px solid var(--op-border); }
+}
+}
