@@ -2,6 +2,10 @@
 
 This inventory describes the active private application paths inspected for RC2. It is maintenance guidance, not a new data contract. Public pages and generated customer documents are outside this shell and remain frozen.
 
+## RC2.1 authority investigation
+
+See [`ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md`](ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md) for the repository-evidence storage and campaign lifecycle investigation. It confirms `asset_records` plus exact-revision `asset_links` as the defined Job Assets metadata authority, with `job-assets` as the only defined private object bucket, but finds no automatic Quote-to-Order asset handoff or recipe file manifest. It also confirms that campaign authority currently ends at `campaigns`, `campaign_products`, and the public allowlisted reader: no authoritative campaign Order, Production, Finance, or Customer 360 relationship is implemented. Deployment state and bucket-policy drift remain unverified; RC2.1 makes no runtime, SQL, Storage, or public-page change.
+
 ## Page inventory and ownership
 
 | Page | Purpose and owned entity | Display/edit authority | Primary and secondary actions | Entry, exit, context, and states | Runtime, files, auth, and documents |
