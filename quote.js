@@ -4879,6 +4879,7 @@ https://olipoly3d.com`;
       const rows = await api(`/rest/v1/quotes?select=*&quote_number=eq.${encoded}&limit=1`, { method:'GET' });
       const row = Array.isArray(rows) ? rows[0] : null;
       if (!row?.quote_data) throw new Error('Quote found, but quote_data was missing.');
+      if (row.id) window.dispatchEvent(new CustomEvent('olipoly:asset-context', { detail:{ record_type:'quote', record_key:row.id } }));
       const fields = mergeSavedQuoteRowIntoFields(row.quote_data.fields || {}, row);
       if (!fields || !Object.keys(fields).length) throw new Error('Quote found, but saved fields were missing.');
       applyFields(fields);
