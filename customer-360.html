@@ -28,6 +28,6 @@ $('timeline').innerHTML=bundle.timeline.length?bundle.timeline.map(i=>`<article 
 function renderSearch(){const q=$('search').value||new URLSearchParams(location.search).get('search')||'';if(q&&!$('search').value)$('search').value=q;const seed=findSeed(q);if(!seed){$('content').classList.add('hidden');$('message').classList.remove('hidden');$('message').textContent=q?'No exact customer identity or identifier match found. Similar names are not combined.':'Enter an exact customer identity or record identifier.';return}history.replaceState(null,'','?search='+encodeURIComponent(q));render(C.build(data,seed));}
 $('searchBtn').onclick=renderSearch;$('search').onkeydown=e=>{if(e.key==='Enter')renderSearch()};load();})();
 </script>
-<div data-job-assets></div>
+<section class="wrap engine-assets-container"><div data-job-assets></div></section>
 <script src="js/job-asset-model.js"></script><script src="js/job-assets-ui.js"></script>
 </body></html>
