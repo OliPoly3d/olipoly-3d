@@ -113,7 +113,7 @@ where a.backend_type = 'client backend'
 
 ## Migration application
 
-Migrations through `202607280008_distinguish_preacceptance_lock_failures.sql`
+Migrations through `202607280009_nowait_preacceptance_production_row.sql`
 must be reviewed and applied separately; the application does not assume they
 are deployed. The final migration replaces
 only the six-argument `public.preacceptance_production_command` definition.

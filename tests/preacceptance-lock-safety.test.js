@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-const migration = fs.readFileSync('supabase/migrations/202607280008_distinguish_preacceptance_lock_failures.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/202607280009_nowait_preacceptance_production_row.sql', 'utf8');
 const authority = fs.readFileSync('supabase/migrations/202607200008_workflow_command_authority_parameter_default_compatibility.sql', 'utf8');
 const functionBody = migration.slice(migration.indexOf('create or replace function'), migration.indexOf('revoke execute'));
 
@@ -13,6 +13,8 @@ assert.doesNotMatch(functionBody, /pg_advisory_lock\(/, 'session-scoped advisory
 assert.doesNotMatch(functionBody, /workflow_command_receipts where command_identity = v_command_id for update/, 'immutable receipt replay avoids unnecessary row locking');
 assert.match(functionBody, /workflow_command_receipts where command_identity = v_command_id/, 'command receipt idempotency remains');
 assert.match(functionBody, /production_jobs where id = p_job_id for update/, 'authoritative job row lock remains');
+assert.match(functionBody, /production_jobs where id = p_job_id for update nowait/, 'authoritative new-command row lock never queues');
+assert.match(functionBody, /production_jobs where id = v_receipt\.production_job_id[\s\S]*for update nowait/, 'idempotent replay row hydration never queues');
 assert.match(functionBody, /updated_at is distinct from p_expected_updated_at/, 'optimistic concurrency remains');
 assert.match(functionBody, /actual_grams_used is not null[\s\S]*completed_at is not null/, 'production evidence rejection remains');
 assert.match(migration, /revoke execute[\s\S]*from public, anon;[\s\S]*grant execute[\s\S]*authenticated, service_role;/, 'RPC grants remain least-privilege');

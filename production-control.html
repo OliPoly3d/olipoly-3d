@@ -1025,7 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </style>
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
-<script src="js/production-quote-handoff.js?v=20260728-lock-scope-v5"></script>
+<script src="js/production-quote-handoff.js?v=20260728-row-nowait-v6"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -2478,7 +2478,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     $('cancelEditBtn').classList.add('hidden');
   }
 
-  async function cloudSaveJob(j, options = {}){
+  async function cloudSaveJobUncoordinated(j, options = {}){
     if(!state.user?.id) return false;
 
     const full = jobPayload(j);
@@ -2599,6 +2599,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         }
       }
     }
+  }
+
+  async function cloudSaveJob(j, options = {}){
+    if(!j?.id) return cloudSaveJobUncoordinated(j, options);
+    return window.OliPolyProductionQuoteHandoff.operationCoordinator.trackSave(
+      String(j.id), () => cloudSaveJobUncoordinated(j, options)
+    );
   }
 
 
@@ -4973,14 +4980,16 @@ ${err.message || err}`); }
       // Important: update only the inventory flag so this button does not fail if older
       // production_jobs schemas are missing optional columns used by the full job editor.
       if(state.user?.id && !String(id).startsWith('local-')){
-        await sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(id)}`, {
-          method:'PATCH',
-          headers:{Prefer:'return=representation'},
-          body:JSON.stringify({
-            exclude_inventory_reduction: updated.exclude_inventory_reduction,
-            updated_at: updated.updated_at
+        await window.OliPolyProductionQuoteHandoff.operationCoordinator.trackSave(String(id), () =>
+          sbApi(`/rest/v1/production_jobs?id=eq.${encodeURIComponent(id)}`, {
+            method:'PATCH',
+            headers:{Prefer:'return=representation'},
+            body:JSON.stringify({
+              exclude_inventory_reduction: updated.exclude_inventory_reduction,
+              updated_at: updated.updated_at
+            })
           })
-        });
+        );
       }
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
@@ -5933,10 +5942,12 @@ ${err.message || err}`); }
     const status = Number(error?.status || message.match(/Supabase error (\d+)/)?.[1]);
     const code = String(error?.postgresCode || error?.code || '');
     const transportCode = String(error?.transportCode || '');
-    const lockScope = String(error?.details || '').match(/(?:^|\s)lockScope=(job|command|row_timeout)(?:\s|$)/)?.[1] || '';
+    const lockScope = String(error?.details || '').match(/(?:^|\s)lockScope=(job|command|row_timeout|row_nowait|database_lock_timeout)(?:\s|$)/)?.[1] || '';
     if(code === '55P03' && lockScope === 'job') error.handoffOutcome = 'job_lock';
     else if(code === '55P03' && lockScope === 'command') error.handoffOutcome = 'command_lock';
     else if(code === '55P03' && lockScope === 'row_timeout') error.handoffOutcome = 'row_lock_timeout';
+    else if(code === '55P03' && lockScope === 'row_nowait') error.handoffOutcome = 'production_row_busy';
+    else if(code === '55P03' && lockScope === 'database_lock_timeout') error.handoffOutcome = 'database_lock_timeout';
     else if(code === '55P03') error.handoffOutcome = 'in_progress';
     else if(code === '40001') error.handoffOutcome = 'stale';
     else if(code === '22023') error.handoffOutcome = 'eligibility';

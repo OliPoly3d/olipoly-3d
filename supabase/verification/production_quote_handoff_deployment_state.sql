@@ -34,12 +34,15 @@ select
   position('preacceptance-production-job:' in function_definition) > 0 as has_job_scoped_lock_key,
   position('pg_try_advisory_xact_lock(v_job_lock_key)' in function_definition) > 0 as has_job_scoped_try_lock,
   position('pg_try_advisory_xact_lock' in function_definition) > 0 as has_try_advisory_xact_lock,
-  position('pg_advisory_xact_lock' in function_definition) > 0 as has_blocking_advisory_xact_lock,
+  function_definition ~ '(^|[^_])pg_advisory_xact_lock\\s*\\(' as has_blocking_advisory_xact_lock,
   position('lock_timeout' in function_definition) > 0 as has_lock_timeout,
   position('55P03' in function_definition) > 0 as has_controlled_55p03
   ,position('lockScope=job' in function_definition) > 0 as distinguishes_job_lock
   ,position('lockScope=command' in function_definition) > 0 as distinguishes_command_lock
   ,position('lockScope=row_timeout' in function_definition) > 0 as distinguishes_row_timeout
+  ,position('for update nowait' in lower(function_definition)) > 0 as has_nonblocking_production_row_lock
+  ,position('lockScope=row_nowait' in function_definition) > 0 as distinguishes_row_nowait
+  ,position('lockScope=database_lock_timeout' in function_definition) > 0 as distinguishes_later_lock_timeout
 from definition;
 
 -- 4. Recent recorded migrations. to_jsonb avoids assuming optional metadata columns.

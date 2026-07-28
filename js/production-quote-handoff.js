@@ -14,6 +14,45 @@
   const installedContainers = new WeakMap();
   const pendingJobs = new Set();
   const ambiguousJobs = new Set();
+  const jobOperations = new Map();
+
+  function operationState(jobId){
+    if(!jobOperations.has(jobId)) jobOperations.set(jobId, {savePromise:null, handoff:false});
+    return jobOperations.get(jobId);
+  }
+  async function beginHandoff(jobId){
+    const operation = operationState(jobId);
+    if(operation.handoff) throw Object.assign(new Error('Quote handoff is already in progress.'), {code:'QUOTE_HANDOFF_IN_PROGRESS'});
+    operation.handoff = true;
+    try{
+      if(operation.savePromise) await operation.savePromise;
+    }catch(error){
+      operation.handoff = false;
+      throw error;
+    }
+    let released = false;
+    return () => {
+      if(released) return;
+      released = true;
+      operation.handoff = false;
+      if(!operation.savePromise) jobOperations.delete(jobId);
+    };
+  }
+  function trackSave(jobId, save){
+    const operation = operationState(jobId);
+    if(operation.handoff){
+      return Promise.reject(Object.assign(new Error('This Production job cannot be saved while Quote handoff is pending.'), {code:'QUOTE_HANDOFF_SAVE_BLOCKED'}));
+    }
+    const promise = operation.savePromise
+      ? operation.savePromise.catch(()=>{}).then(save)
+      : Promise.resolve().then(save);
+    operation.savePromise = promise;
+    return promise.finally(() => {
+      if(operation.savePromise === promise) operation.savePromise = null;
+      if(!operation.handoff && !operation.savePromise) jobOperations.delete(jobId);
+    });
+  }
+  const operationCoordinator = Object.freeze({beginHandoff, trackSave});
 
   function nonExecutableRecovery(value){
     if(Array.isArray(value)) return value.map(nonExecutableRecovery);
@@ -41,6 +80,8 @@
     if(error?.handoffOutcome === 'job_lock') return 'Another Quote handoff is already using this Production job. Refresh before retrying.';
     if(error?.handoffOutcome === 'command_lock') return 'This Quote handoff command is already being processed. Refresh before retrying.';
     if(error?.handoffOutcome === 'row_lock_timeout') return 'The Production record is busy in another operation. Refresh before retrying.';
+    if(error?.handoffOutcome === 'production_row_busy') return 'The estimate is currently being saved or changed elsewhere. Refresh before retrying.';
+    if(error?.handoffOutcome === 'database_lock_timeout') return 'The Production database operation is busy. Refresh before retrying.';
     if(error?.handoffOutcome === 'in_progress') return 'Another Quote handoff is already in progress. Refresh the estimate before retrying.';
     if(error?.handoffOutcome === 'stale') return 'This estimate changed since it was loaded. Refresh before retrying.';
     if(error?.handoffOutcome === 'eligibility') return 'The estimate is not eligible to move to Quote. Refresh and review its Production details.';
@@ -88,26 +129,27 @@
       if(pendingJobs.has(jobId)){ notify('Quote handoff is already in progress.'); return; }
       if(ambiguousJobs.has(jobId)){ notify('Quote handoff could not be confirmed. Refresh the record before retrying.'); return; }
       pendingJobs.add(jobId);
-      let correlationId;
-      try{
-        if(typeof root?.crypto?.randomUUID !== 'function') throw new Error('Secure command identity generation is unavailable.');
-        correlationId = `production-quote:${jobId}:${root.crypto.randomUUID()}`;
-      }catch(error){
-        pendingJobs.delete(jobId);
-        notify(error.message);
-        return;
-      }
       const originalLabel = button.textContent;
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
       button.textContent = 'Sending to Quote…';
       notify('Sending to Quote…');
+      let releaseHandoff = null;
+      let correlationId;
       try{
-        await push(jobId, {correlationId, causationId:`operator-click:${correlationId}`});
+        releaseHandoff = await operationCoordinator.beginHandoff(jobId);
+        if(typeof root?.crypto?.randomUUID !== 'function') throw new Error('Secure command identity generation is unavailable.');
+        correlationId = `production-quote:${jobId}:${root.crypto.randomUUID()}`;
       }catch(error){
-        if(['ambiguous','in_progress','job_lock','command_lock','row_lock_timeout','stale'].includes(error?.handoffOutcome)) ambiguousJobs.add(jobId);
+        notify(error.message);
+      }
+      try{
+        if(correlationId) await push(jobId, {correlationId, causationId:`operator-click:${correlationId}`});
+      }catch(error){
+        if(['ambiguous','in_progress','job_lock','command_lock','row_lock_timeout','production_row_busy','database_lock_timeout','stale'].includes(error?.handoffOutcome)) ambiguousJobs.add(jobId);
         notify(outcomeMessage(error));
       }finally{
+        releaseHandoff?.();
         pendingJobs.delete(jobId);
         button.disabled = false;
         button.removeAttribute('aria-busy');
@@ -121,5 +163,5 @@
     return controller;
   }
 
-  return Object.freeze({install, neutralizeLegacyRecovery, nonExecutableRecovery, outcomeMessage, transportError, LEGACY_RECOVERY_KEY});
+  return Object.freeze({install, neutralizeLegacyRecovery, nonExecutableRecovery, outcomeMessage, transportError, operationCoordinator, LEGACY_RECOVERY_KEY});
 });

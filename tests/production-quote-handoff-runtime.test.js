@@ -43,6 +43,7 @@ function fixture(push, jobId = 'job-1'){
   const one = fixture(async () => { calls += 1; return flight.promise; });
   const first = one.click();
   const second = one.click();
+  await Promise.resolve();
   assert.equal(first.event.prevented, true);
   assert.equal(first.event.stopped, true);
   assert.equal(first.event.immediate, true);
@@ -110,7 +111,7 @@ function fixture(push, jobId = 'job-1'){
   for(const [transportCode,outcome] of [['QUOTE_HANDOFF_CLIENT_TIMEOUT','client_timeout'],['NETWORK_ERROR','network'],['QUOTE_HANDOFF_EXPLICIT_ABORT','explicit_abort']]){
     assert.equal(classify({transportCode,message:'transport diagnostic'}).handoffOutcome, outcome, `${transportCode} remains distinguishable`);
   }
-  for(const [details,outcome] of [['lockScope=job jobId=x lockKey=1','job_lock'],['lockScope=command jobId=x lockKey=2','command_lock'],['lockScope=row_timeout jobId=x','row_lock_timeout']]){
+  for(const [details,outcome] of [['lockScope=job jobId=x lockKey=1','job_lock'],['lockScope=command jobId=x lockKey=2','command_lock'],['lockScope=row_timeout jobId=x','row_lock_timeout'],['lockScope=row_nowait stage=production_row jobId=x','production_row_busy'],['lockScope=database_lock_timeout stage=receipt_insert jobId=x','database_lock_timeout']]){
     assert.equal(classify({postgresCode:'55P03',details,message:'controlled'}).handoffOutcome, outcome, `${details} distinguishes the exact 55P03 boundary`);
   }
 
@@ -153,6 +154,8 @@ function fixture(push, jobId = 'job-1'){
   assert.equal(handoff.outcomeMessage({handoffOutcome:'job_lock'}), 'Another Quote handoff is already using this Production job. Refresh before retrying.');
   assert.equal(handoff.outcomeMessage({handoffOutcome:'command_lock'}), 'This Quote handoff command is already being processed. Refresh before retrying.');
   assert.equal(handoff.outcomeMessage({handoffOutcome:'row_lock_timeout'}), 'The Production record is busy in another operation. Refresh before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'production_row_busy'}), 'The estimate is currently being saved or changed elsewhere. Refresh before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'database_lock_timeout'}), 'The Production database operation is busy. Refresh before retrying.');
   assert.match(sync, /onResponseReceived:\(\) => \{ if\(timeout\)\{ clearTimeout\(timeout\); timeout = null; \} \}/, 'response headers disarm timeout before response body parsing completes');
 
   function actualSyncHarness({timerFires=false, sbApiImpl}){
@@ -178,6 +181,27 @@ function fixture(push, jobId = 'job-1'){
   assert.equal(authoritative.id, 'authoritative');
   assert.equal(responseObserved, true);
   assert.ok(successHarness.clears() >= 1, 'successful response clears transport timer');
+
+  const saveGate = deferred();
+  let saveStarted = false;
+  const existingSave = handoff.operationCoordinator.trackSave('coordinated-job', async()=>{saveStarted=true;await saveGate.promise;return true;});
+  await Promise.resolve();
+  assert.equal(saveStarted, true);
+  let handoffReady = false;
+  const releasePromise = handoff.operationCoordinator.beginHandoff('coordinated-job').then(release=>{handoffReady=true;return release;});
+  await Promise.resolve();
+  assert.equal(handoffReady, false, 'handoff waits for the already-started same-job save');
+  await assert.rejects(handoff.operationCoordinator.trackSave('coordinated-job', async()=>true), error => error.code === 'QUOTE_HANDOFF_SAVE_BLOCKED');
+  let differentJobSaved = false;
+  await handoff.operationCoordinator.trackSave('different-job', async()=>{differentJobSaved=true;return true;});
+  assert.equal(differentJobSaved, true, 'different jobs save independently');
+  saveGate.resolve();
+  await existingSave;
+  const releaseCoordinatedHandoff = await releasePromise;
+  assert.equal(handoffReady, true);
+  await assert.rejects(handoff.operationCoordinator.trackSave('coordinated-job', async()=>true), error => error.code === 'QUOTE_HANDOFF_SAVE_BLOCKED');
+  releaseCoordinatedHandoff();
+  assert.equal(await handoff.operationCoordinator.trackSave('coordinated-job', async()=>true), true, 'failure/success release permits later explicit saves');
 
   console.log('Production quote handoff runtime regression assertions passed.');
 })();

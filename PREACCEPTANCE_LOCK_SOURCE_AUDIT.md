@@ -117,7 +117,7 @@ PostgREST, `LISTEN pgrst`, `set_config`, or unrelated sessions.
 
 ## Live decision procedure
 
-1. Deploy migration `202607280008` and the cache-busted frontend.
+1. Deploy migrations through `202607280009` and the cache-busted frontend.
 2. Click once and record the exact correlation ID, response message, DETAIL,
    HINT, and SQLSTATE.
 3. Run the key computation and point-in-time owner capture during the request.
