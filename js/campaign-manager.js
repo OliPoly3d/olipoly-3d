@@ -6,6 +6,7 @@
   const STATUSES = ['draft','scheduled','active','closed','archived'];
   const PAYMENT_MODES = ['external_org_collects','olipoly_collects'];
   const DELIVERY_MODES = ['organization_pickup','event_pickup','customer_pickup','shipping','mixed'];
+  const REVIEW_STATUSES = ['new','under_review','needs_clarification','approved_for_conversion','rejected','duplicate','cancelled','converted'];
   const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
@@ -61,11 +62,16 @@
   }
   CampaignManager.cleanCampaignPayload = cleanCampaignPayload;
   CampaignManager.cleanProductPayload = cleanProductPayload;
-  CampaignManager.tables = Object.freeze({ campaigns:'campaigns', products:'campaign_products', publicRpc:'get_public_campaign' });
+  const safeText = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+  CampaignManager.safeText = safeText;
+  CampaignManager.tables = Object.freeze({ campaigns:'campaigns', products:'campaign_products', submissions:'campaign_submissions', submissionItems:'campaign_submission_items', publicRpc:'get_public_campaign' });
   CampaignManager.enums = Object.freeze({ STATUSES, PAYMENT_MODES, DELIVERY_MODES });
   CampaignManager.api = Object.freeze({
     listCampaigns: () => request('/rest/v1/campaigns?select=*&order=updated_at.desc'),
     listProducts: campaignId => request(`/rest/v1/campaign_products?select=*&campaign_id=eq.${encodeURIComponent(campaignId)}&order=display_order.asc,campaign_sku.asc`),
+    listSubmissions: () => request('/rest/v1/campaign_submissions?select=*&order=submitted_at.desc&limit=500'),
+    listSubmissionItems: submissionId => request(`/rest/v1/campaign_submission_items?select=*&campaign_submission_id=eq.${encodeURIComponent(submissionId)}&order=line_sequence.asc`),
+    reviewSubmission: (submissionId, nextStatus, notes) => request('/rest/v1/rpc/review_campaign_submission', { method:'POST', body:JSON.stringify({ p_submission_id:submissionId, p_next_status:nextStatus, p_internal_notes:notes || null }) }),
     createCampaign: async (input) => {
       const user = await root.OliPolyAuth.getUser();
       if (!user?.id) throw new Error('Sign in is required.');
@@ -80,6 +86,7 @@
       return request('/rest/v1/campaign_products', { method:'POST', headers:{ Prefer:'return=representation' }, body:JSON.stringify(row) }).then(rows => rows[0]);
     }
   });
+  CampaignManager.reviewStatuses = Object.freeze(REVIEW_STATUSES);
   root.OliPolyCampaignManager = Object.freeze(CampaignManager);
   if (typeof module !== 'undefined') module.exports = CampaignManager;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
