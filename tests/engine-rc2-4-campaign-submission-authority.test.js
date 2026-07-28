@@ -33,7 +33,8 @@ assert.doesNotMatch(migration, /insert into public\.(orders|production_jobs|inve
 assert.match(manager, /safeText/);
 assert.match(manager, /review_campaign_submission/);
 assert.match(page, /Not yet an Order/);
-assert.match(page, /Convert to Order \(RC2\.5\)/);
+assert.match(page, /review_status==='approved_for_conversion'/);
+assert.match(manager, /convert_campaign_submission_to_order/);
 assert.match(page, /data-review/);
 assert.match(page, /min-height:44px/);
 assert.match(page, /textContent='Loading line items/);

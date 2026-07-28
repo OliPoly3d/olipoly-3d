@@ -20,6 +20,8 @@
   }
   function match(a, b){
     const x=identity(a), y=identity(b);
+    if(clean(a.id) && clean(b.id) && clean(a.id) === clean(b.id)) return true;
+    if((a.source_type === 'campaign' && a.campaign_customer_link_status !== 'linked') || (b.source_type === 'campaign' && b.campaign_customer_link_status !== 'linked')) return !!(x.id && y.id && x.id === y.id);
     if(x.id && y.id) return x.id === y.id;
     if(x.email && y.email) return x.email === y.email;
     if(x.phone && y.phone) return x.phone === y.phone;
@@ -69,7 +71,7 @@
       if(q.customer_response) items.push({date:q.customer_responded_at||q.updated_at,type:'quote_response',title:`Quote ${q.customer_response}`,detail:q.customer_response_message||''});
     });
     dedupe(orders,'order').forEach(o=>{
-      items.push({date:dateOf(o),type:'order_created',title:`Order ${o.order_number||''} created`,detail:o.order_title||''});
+      items.push({date:dateOf(o),type:'order_created',title:`Order ${o.order_number||''} created`,detail:o.source_type==='campaign'?`Campaign ${o.campaign_code||''} · submission ${o.campaign_public_reference||''} · customer ${o.campaign_customer_link_status||'unresolved'}`:(o.order_title||'')});
       if(paidAmount(o)>0) items.push({date:o.paid_date||o.updated_at||dateOf(o),type:'payment',title:`Payment ${o.payment_status||'recorded'}`,detail:paidAmount(o)});
       if(o.invoice_number) items.push({date:o.invoice_sent_at||o.invoice_date||dateOf(o),type:'invoice',title:`Invoice ${o.invoice_number}${o.invoice_sent?' sent':''}`,detail:o.po_number||''});
       if(completed(o)) items.push({date:o.closed_at||o.fulfilled_at||o.updated_at,type:'closure',title:`Order ${o.order_number||''} closed`,detail:o.fulfillment||''});

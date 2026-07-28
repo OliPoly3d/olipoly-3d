@@ -72,6 +72,7 @@
     listSubmissions: () => request('/rest/v1/campaign_submissions?select=*&order=submitted_at.desc&limit=500'),
     listSubmissionItems: submissionId => request(`/rest/v1/campaign_submission_items?select=*&campaign_submission_id=eq.${encodeURIComponent(submissionId)}&order=line_sequence.asc`),
     reviewSubmission: (submissionId, nextStatus, notes) => request('/rest/v1/rpc/review_campaign_submission', { method:'POST', body:JSON.stringify({ p_submission_id:submissionId, p_next_status:nextStatus, p_internal_notes:notes || null }) }),
+    convertSubmission: submissionId => request('/rest/v1/rpc/convert_campaign_submission_to_order', { method:'POST', body:JSON.stringify({ p_submission_id:submissionId }) }),
     createCampaign: async (input) => {
       const user = await root.OliPolyAuth.getUser();
       if (!user?.id) throw new Error('Sign in is required.');
