@@ -1,5 +1,7 @@
 # OliPoly Engine RC2.4 — Campaign Submission Authority
 
+> **RC2.7 continuation:** `ENGINE_RC2_7_GENERIC_CAMPAIGN_INTAKE.md` activates the existing native fundraiser page against this authority. Migration `202607280004_generic_campaign_intake.sql` narrows the public catalog and strengthens intake validation without changing staging ownership, immutability, idempotency, or downstream isolation.
+
 ## Executive decision and baseline
 
 RC2.4 adds one immutable, idempotent staging authority for public campaign sale intent. A submission is **Not yet an Order** and cannot create Orders, Production, Inventory, Finance, invoices, payments, Customer 360 identities, or messages. Conversion remains RC2.5; Niles migration remains RC2.6. The baseline is merge `0cbb67d646de8a1d5febff9ec2b4e167ff5c9d7e`, the exact `main` recorded in `.git/FETCH_HEAD`, containing RC2–RC2.3 and `202607280001_authoritative_asset_lifecycle.sql`.

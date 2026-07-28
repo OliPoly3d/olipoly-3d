@@ -8,6 +8,7 @@ const migration = read('supabase/migrations/202607210008_campaign_manager_phase1
 const managerJs = read('js/campaign-manager.js');
 const managerHtml = read('campaign-manager.html');
 const publicHtml = read('fundraiser.html');
+const publicJs = read('js/fundraiser-intake.js');
 const hub = read('hub.html');
 const niles = read('niles.html');
 const campaignDocs = read('FUNDRAISER_CAMPAIGN_MANAGER_PHASE1.md');
@@ -45,10 +46,10 @@ assert.match(managerHtml, /Product save failed; no durable success was recorded/
 assert.match(hub, /Campaign Manager/);
 assert.match(hub, /campaign-manager\.html/);
 
-assert.match(publicHtml, /rpc\/get_public_campaign/);
-assert.doesNotMatch(publicHtml, /rest\/v1\/campaigns|rest\/v1\/campaign_products/);
-assert.match(publicHtml, /The organization collects customer payment externally/);
-assert.match(publicHtml, /fundraiser\.html\?campaign=/);
+assert.match(publicJs, /get_public_campaign/);
+assert.doesNotMatch(publicHtml + publicJs, /rest\/v1\/campaigns|rest\/v1\/campaign_products/);
+assert.match(publicHtml, /Payment is not verified|instructional/);
+assert.match(publicJs, /URLSearchParams\(location\.search\).*campaign/);
 
 assert.match(niles, /Niles Dragons Bag Tags/);
 assert.match(niles, /tally\.so/i);

@@ -1,5 +1,7 @@
 # OliPoly Engine RC2.5 — Campaign Order Conversion
 
+> **RC2.7 continuity:** Native generic campaign requests now enter the same RC2.4 tables with source `generic_public_campaign`. They remain review-gated, unverified, and Not yet an Order until this unchanged RC2.5 authority is explicitly invoked by an authenticated operator.
+
 ## Executive summary and authority map
 
 RC2.5 establishes one database-owned Order identity for future Quote and campaign Orders, plus one atomic owner-only transition from an immutable approved RC2.4 submission to an unpaid Order. Baseline was `ce77f0f`; implementation continued from authority-gate commit `385a9ad`. The owner confirmed the deployed RC2.4 tables, RLS, anonymous denial, RPC permissions/search paths, idempotency, immutability, and empty initial staging tables.
