@@ -188,7 +188,7 @@
       }
     };
   }
-  function preAcceptanceProductionRpcRequest(jobId, command, expectedUpdatedAt, payload){
+  function preAcceptanceProductionRpcRequest(jobId, command, expectedUpdatedAt, payload, commandContext = {}){
     if(!jobId) throw new Error('A Production job id is required.');
     if(!expectedUpdatedAt) throw new Error('Refresh before changing pre-acceptance Production state; expected_updated_at is required.');
     return {
@@ -198,8 +198,8 @@
         p_command:String(command).trim().toLowerCase(),
         p_expected_updated_at:expectedUpdatedAt,
         p_payload:payload || {},
-        p_correlation_id:commandIdentity('preacceptance-production', String(jobId), String(command).trim().toLowerCase(), expectedUpdatedAt),
-        p_causation_id:null
+        p_correlation_id:commandContext.correlationId || commandIdentity('preacceptance-production', String(jobId), String(command).trim().toLowerCase(), expectedUpdatedAt),
+        p_causation_id:commandContext.causationId || null
       }
     };
   }

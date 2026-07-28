@@ -1,8 +1,9 @@
 (function(root, factory){
-  const api = factory();
+  const moduleKey = typeof Symbol === 'function' ? Symbol.for('olipoly.productionQuoteHandoff') : '__olipolyProductionQuoteHandoffModule';
+  const api = root?.[moduleKey] || factory(root);
   if(typeof module === 'object' && module.exports) module.exports = api;
-  if(root) root.OliPolyProductionQuoteHandoff = api;
-})(typeof window !== 'undefined' ? window : globalThis, function(){
+  if(root){ root[moduleKey] = api; root.OliPolyProductionQuoteHandoff = api; }
+})(typeof window !== 'undefined' ? window : globalThis, function(root){
   'use strict';
 
   const LEGACY_RECOVERY_KEY = 'olipoly_production_to_quote_recovery_draft_v1';
@@ -10,6 +11,9 @@
     'pending', 'retry', 'retry_at', 'retry_count', 'next_retry_at', 'queued',
     'command_id', 'idempotency_key', 'quote_handoff_status'
   ]);
+  const installedContainers = new WeakMap();
+  const pendingJobs = new Set();
+  const ambiguousJobs = new Set();
 
   function nonExecutableRecovery(value){
     if(Array.isArray(value)) return value.map(nonExecutableRecovery);
@@ -43,26 +47,37 @@
   function install({container, push, notify}){
     if(!container || typeof container.addEventListener !== 'function') throw new Error('A stable Production container is required.');
     if(typeof push !== 'function') throw new Error('The Production quote handoff command is unavailable.');
-    if(container.__olipolyQuoteHandoffInstalled) return container.__olipolyQuoteHandoffInstalled;
-    const pendingJobs = new Set();
+    if(installedContainers.has(container)) return installedContainers.get(container);
 
     async function handleClick(event){
       const button = event.target?.closest?.('.quote-action[' + 'data-push-quote]');
       if(!button || !container.contains(button)) return;
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation?.();
       const jobId = String(button.dataset.pushQuote || '').trim();
       if(!jobId){ notify('Could not identify that production job.'); return; }
       if(pendingJobs.has(jobId)){ notify('Quote handoff is already in progress.'); return; }
+      if(ambiguousJobs.has(jobId)){ notify('Quote handoff could not be confirmed. Refresh the record before retrying.'); return; }
       pendingJobs.add(jobId);
+      let correlationId;
+      try{
+        if(typeof root?.crypto?.randomUUID !== 'function') throw new Error('Secure command identity generation is unavailable.');
+        correlationId = `production-quote:${jobId}:${root.crypto.randomUUID()}`;
+      }catch(error){
+        pendingJobs.delete(jobId);
+        notify(error.message);
+        return;
+      }
       const originalLabel = button.textContent;
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
-      button.textContent = 'Pushing to Quote…';
-      notify('Pushing quote handoff…');
+      button.textContent = 'Sending to Quote…';
+      notify('Sending to Quote…');
       try{
-        await push(jobId);
+        await push(jobId, {correlationId, causationId:`operator-click:${correlationId}`});
       }catch(error){
+        if(error?.handoffOutcome === 'ambiguous') ambiguousJobs.add(jobId);
         notify(outcomeMessage(error));
       }finally{
         pendingJobs.delete(jobId);
@@ -73,8 +88,8 @@
     }
 
     container.addEventListener('click', handleClick);
-    const controller = Object.freeze({pendingJobs, handleClick});
-    container.__olipolyQuoteHandoffInstalled = controller;
+    const controller = Object.freeze({pendingJobs, ambiguousJobs, handleClick});
+    installedContainers.set(container, controller);
     return controller;
   }
 

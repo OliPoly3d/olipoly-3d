@@ -1025,7 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </style>
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
-<script src="js/production-quote-handoff.js"></script>
+<script src="js/production-quote-handoff.js?v=20260728-single-dispatch-v2"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -2811,16 +2811,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
 
-  async function syncPreAcceptanceProductionStatus(job, targetStatus, payload = {}){
+  async function syncPreAcceptanceProductionStatus(job, targetStatus, payload = {}, commandContext = {}){
     if(!state.user?.id) throw Object.assign(new Error('A signed-in Production session is required.'), {status:401});
     if(!job?.id) throw Object.assign(new Error('A Production job id is required.'), {status:400});
     if(job.order_number) throw Object.assign(new Error('Accepted Orders cannot use the quote handoff command.'), {status:400});
     const command = targetStatus === 'waiting_customer' ? 'mark_waiting_customer' : targetStatus === 'estimate' ? 'return_to_estimate' : null;
     if(!command) throw new Error('Pre-acceptance Production can only move between estimate and waiting_customer.');
-    const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload);
-    // Keep the RPC's deterministic identity in this one request, but never
-    // persist it as executable retry state after dispatch.
-    window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
+    const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload, commandContext);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     try{
@@ -2828,7 +2825,6 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return Array.isArray(result) ? result[0] : result;
     }finally{
       clearTimeout(timeout);
-      window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
     }
   }
   function preAcceptanceErrorMessage(error){
@@ -5881,7 +5877,7 @@ ${err.message || err}`); }
     };
   }
 
-  async function patchProductionJobHandoff(job, draft){
+  async function patchProductionJobHandoff(job, draft, commandContext){
     const recoveryDraft = {...job,
       quote_number: draft.quote_number,
       production_quote_id: draft.quote_number,
@@ -5894,7 +5890,7 @@ ${err.message || err}`); }
     try{
       const syncStatus = window.OliPolyProductionCommands?.syncPreAcceptanceProductionStatus;
       if(typeof syncStatus !== 'function') throw new Error('Authoritative Production handoff command is unavailable.');
-      const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft});
+      const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft}, commandContext);
       if(!authoritative) throw new Error('Authoritative Production handoff confirmation was empty.');
       const jobs = readJson(LS_JOBS, []);
       writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j));
@@ -5904,7 +5900,7 @@ ${err.message || err}`); }
     }
   }
 
-  async function pushProductionJobToQuote(id){
+  async function pushProductionJobToQuote(id, commandContext){
     const jobs = readJson(LS_JOBS, []);
     const job = jobs.find((j) => j.id === id);
     if(!job) throw new Error('Could not find that production job.');
@@ -5912,7 +5908,7 @@ ${err.message || err}`); }
     if(!job.quote_number) throw new Error('Save this estimate first so Production Control can assign a Q-number.');
     const draft = buildQuoteDraft(job);
     writeJson(QUOTE_DRAFT_KEY, draft);
-    await patchProductionJobHandoff(job, draft);
+    await patchProductionJobHandoff(job, draft, commandContext);
     toast('Quote draft prepared from Production Control.');
     const url = `quote.html?fromProduction=1&production_job_id=${encodeURIComponent(job.id)}`;
     window.location.href = url;
@@ -5932,7 +5928,7 @@ ${err.message || err}`); }
   window.OliPolyProductionQuoteHandoff.install({
     container:document,
     notify:toast,
-    push:async id => { try{return await originalPush(id);}catch(error){throw classifyHandoffError(error);} }
+    push:async (id, commandContext) => { try{return await originalPush(id, commandContext);}catch(error){throw classifyHandoffError(error);} }
   });
 })();
 </script>

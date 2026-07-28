@@ -7,7 +7,7 @@ function storage(initial = {}){
   return {getItem:key => data.get(key) ?? null, setItem:(key,value) => data.set(key,value), removeItem:key => data.delete(key), data};
 }
 function deferred(){ let resolve, reject; const promise = new Promise((yes,no) => {resolve=yes; reject=no;}); return {promise,resolve,reject}; }
-function fixture(push){
+function fixture(push, jobId = 'job-1'){
   const listeners = [];
   const container = {
     contains:() => true,
@@ -15,14 +15,14 @@ function fixture(push){
   };
   const attributes = new Map();
   const button = {
-    dataset:{pushQuote:'job-1'}, textContent:'Push to Quote', disabled:false,
+    dataset:{pushQuote:jobId}, textContent:'Push to Quote', disabled:false,
     closest(selector){ return selector === '.quote-action[' + 'data-push-quote]' ? this : null; },
     setAttribute:(key,value) => attributes.set(key,value), removeAttribute:key => attributes.delete(key)
   };
   const notices = [];
   const controller = handoff.install({container, push, notify:message => notices.push(message)});
   const click = () => {
-    const event = {target:button, prevented:false, stopped:false, preventDefault(){this.prevented=true;}, stopPropagation(){this.stopped=true;}};
+      const event = {target:button, prevented:false, stopped:false, immediate:false, preventDefault(){this.prevented=true;}, stopPropagation(){this.stopped=true;}, stopImmediatePropagation(){this.immediate=true;}};
     const result = listeners[0](event);
     return {event,result};
   };
@@ -45,6 +45,7 @@ function fixture(push){
   const second = one.click();
   assert.equal(first.event.prevented, true);
   assert.equal(first.event.stopped, true);
+  assert.equal(first.event.immediate, true);
   assert.equal(calls, 1, 'button.click delegated path and double click produce one command');
   assert.equal(one.button.disabled, true);
   assert.equal(one.attributes.get('aria-busy'), 'true');
@@ -55,6 +56,7 @@ function fixture(push){
   assert.equal(one.button.disabled, false, 'success restores button');
   assert.equal(one.button.textContent, 'Push to Quote');
 
+  let outcomeIndex = 0;
   for(const outcome of [
     {name:'400 rejection', error:Object.assign(new Error('Rejected'), {handoffOutcome:'validation'})},
     {name:'403 rejection', error:Object.assign(new Error('Forbidden'), {handoffOutcome:'auth'})},
@@ -62,7 +64,7 @@ function fixture(push){
     {name:'network failure', error:new Error('Network unavailable')}
   ]){
     let attempts = 0;
-    const failed = fixture(async () => { attempts += 1; throw outcome.error; });
+    const failed = fixture(async () => { attempts += 1; throw outcome.error; }, `failed-${++outcomeIndex}`);
     await failed.click().result;
     await Promise.resolve();
     assert.equal(attempts, 1, `${outcome.name} is never retried`);
@@ -87,12 +89,37 @@ function fixture(push){
   const sync = html.slice(html.indexOf('async function syncPreAcceptanceProductionStatus'), html.indexOf('function preAcceptanceErrorMessage'));
   assert.match(sync, /retryAuth:false/, 'controlled lifecycle RPC opts out of auth replay');
   assert.match(sync, /clearTimeout\(timeout\)/, 'request timeout timer is always cleared');
-  assert.match(sync, /clearCommandIdentity[\s\S]*await sbApi[\s\S]*finally[\s\S]*clearCommandIdentity/, 'command identity is not retained as retry state');
+  assert.doesNotMatch(sync, /clearCommandIdentity|commandIdentity\(/, 'lower layers neither create nor persist another command identity');
   assert.doesNotMatch(sync, /while|setInterval|retry\(/, 'controlled lifecycle command has no retry loop');
   assert.match(html, /result\.res\.status === 401 && options\.retryAuth !== false/, 'generic auth recovery can be explicitly excluded and never retries 403');
   const patch = html.slice(html.indexOf('async function patchProductionJobHandoff'), html.indexOf('async function pushProductionJobToQuote'));
   assert.doesNotMatch(patch, /transition\(job, 'waiting_customer'/, 'recovery draft does not change local lifecycle');
   assert.doesNotMatch(patch, /quote_handoff_status/, 'recovery draft contains no pending handoff marker');
+
+  const scriptRefs = [...html.matchAll(/<script[^>]+src="([^"]*production-quote-handoff\.js[^"]*)"/g)];
+  assert.equal(scriptRefs.length, 1, 'final HTML loads the canonical handoff module once');
+  assert.match(scriptRefs[0][1], /\?v=/, 'canonical handoff asset is cache-busted');
+  assert.equal((html.match(/document\.addEventListener\('click',[\s\S]{0,180}pushProductionJobToQuote/g) || []).length, 0, 'obsolete inline quote dispatcher is absent');
+  assert.match(html, /class="mini-btn quote-action" data-push-quote="\$\{j\.id\}" type="button"/, 'rendered action has canonical class/data hook and non-submit type');
+
+  const layers = {handler:0,push:0,patch:0,sync:0,sbApi:0,fetch:0,rpc:0};
+  const identities = [];
+  const fullChain = fixture(async (_id, commandContext) => {
+    layers.push++; identities.push(commandContext.correlationId);
+    layers.patch++;
+    layers.sync++;
+    layers.sbApi++;
+    layers.fetch++;
+    layers.rpc++;
+  }, 'composed-job');
+  layers.handler++;
+  await fullChain.click().result;
+  assert.deepEqual(layers, {handler:1,push:1,patch:1,sync:1,sbApi:1,fetch:1,rpc:1}, 'final delegated composition is one-to-one at every dispatch layer');
+  assert.equal(identities.length, 1, 'one click creates one correlation identity');
+  assert.match(identities[0], /^production-quote:composed-job:[0-9a-f-]{36}$/i);
+  const otherIdentities = [];
+  await fixture(async (_id, context) => otherIdentities.push(context.correlationId), 'unrelated-job').click().result;
+  assert.notEqual(otherIdentities[0], identities[0], 'unrelated jobs receive distinct cryptographic identities');
 
   console.log('Production quote handoff runtime regression assertions passed.');
 })();
