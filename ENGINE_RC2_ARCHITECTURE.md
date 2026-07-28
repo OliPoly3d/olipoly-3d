@@ -1,9 +1,11 @@
 # OliPoly Engine RC2 verified architecture
 
 
-> **RC2.4 authority:** Campaign sale intent now uses the immutable staging contract in `ENGINE_RC2_4_CAMPAIGN_SUBMISSION_AUTHORITY.md`. It creates no downstream records; conversion and Niles migration remain RC2.5 and RC2.6.
+> **RC2.4 authority:** Campaign sale intent now uses the immutable staging contract in `ENGINE_RC2_4_CAMPAIGN_SUBMISSION_AUTHORITY.md`. It creates no downstream records; conversion is handled by RC2.5, and the Niles exclusion is resolved by RC2.6.
 
 > **RC2.5 authority:** `ENGINE_RC2_5_CAMPAIGN_ORDER_CONVERSION.md` defines the global future Order allocator, reviewed atomic campaign conversion, immutable attribution, conservative unpaid state, and explicit downstream Production handoff.
+
+> **RC2.6 decision:** `ENGINE_RC2_6_NILES_MIGRATION_DECISION.md` records the owner-approved exclusion of historical Niles data. Niles remains a one-off manual/CSV workflow outside generic campaign authority; no historical submission, payment, Order, or downstream record may be inferred or imported. Future fundraisers use RC2.4 and RC2.5 from inception.
 This inventory describes the active private application paths inspected for RC2. It is maintenance guidance, not a new data contract. Public pages and generated customer documents are outside this shell and remain frozen.
 
 ## RC2.1 authority investigation
