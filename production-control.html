@@ -1025,6 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </style>
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
+<script src="js/production-quote-handoff.js"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -1880,13 +1881,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return {res, txt, data};
     }
     let result = await run();
-    if(!result.res.ok && (result.res.status === 401 || result.res.status === 403) && window.OliPolyAuth?.refresh){
+    if(!result.res.ok && result.res.status === 401 && options.retryAuth !== false && window.OliPolyAuth?.refresh){
       await window.OliPolyAuth.refresh();
       result = await run();
     }
     if(!result.res.ok){
       const msg = result.data?.message || result.data?.error_description || result.data?.hint || result.txt || `Supabase error ${result.res.status}`;
-      throw new Error(msg);
+      const error = new Error(msg);
+      error.status = result.res.status;
+      throw error;
     }
     return result.data;
   }
@@ -2809,13 +2812,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
 
   async function syncPreAcceptanceProductionStatus(job, targetStatus, payload = {}){
-    if(!state.user?.id || !job?.id || job.order_number) return null;
+    if(!state.user?.id) throw Object.assign(new Error('A signed-in Production session is required.'), {status:401});
+    if(!job?.id) throw Object.assign(new Error('A Production job id is required.'), {status:400});
+    if(job.order_number) throw Object.assign(new Error('Accepted Orders cannot use the quote handoff command.'), {status:400});
     const command = targetStatus === 'waiting_customer' ? 'mark_waiting_customer' : targetStatus === 'estimate' ? 'return_to_estimate' : null;
     if(!command) throw new Error('Pre-acceptance Production can only move between estimate and waiting_customer.');
     const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload);
-    const result = await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+    // Keep the RPC's deterministic identity in this one request, but never
+    // persist it as executable retry state after dispatch.
     window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
-    return Array.isArray(result) ? result[0] : result;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try{
+      const result = await sbApi(request.path, {method:'POST', retryAuth:false, signal:controller.signal, headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+      return Array.isArray(result) ? result[0] : result;
+    }finally{
+      clearTimeout(timeout);
+      window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
+    }
   }
   function preAcceptanceErrorMessage(error){
     if(String(error?.message || '').includes('Pre-acceptance command rejects actual or completion evidence')){
@@ -5868,24 +5882,22 @@ ${err.message || err}`); }
   }
 
   async function patchProductionJobHandoff(job, draft){
-    const recoveryDraft = window.OliPolyProductionPersistence.transition(job, 'waiting_customer', {
+    const recoveryDraft = {...job,
       quote_number: draft.quote_number,
       production_quote_id: draft.quote_number,
-      quote_handoff_status: 'draft_sent_to_quote',
       quote_handoff_at: new Date().toISOString(),
       linked_quote_draft: draft,
       recovery_draft_only: true
-    });
+    };
     writeJson('olipoly_production_to_quote_recovery_draft_v1', recoveryDraft);
 
     try{
       const syncStatus = window.OliPolyProductionCommands?.syncPreAcceptanceProductionStatus;
       if(typeof syncStatus !== 'function') throw new Error('Authoritative Production handoff command is unavailable.');
       const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft});
-      if(authoritative){
-        state.jobs = state.jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j);
-        writeJson(LS_JOBS, state.jobs);
-      }
+      if(!authoritative) throw new Error('Authoritative Production handoff confirmation was empty.');
+      const jobs = readJson(LS_JOBS, []);
+      writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j));
     }catch(error){
       console.warn('Production handoff command failed; recovery quote draft retained without changing Production lifecycle state.', error);
       throw error;
@@ -5895,26 +5907,32 @@ ${err.message || err}`); }
   async function pushProductionJobToQuote(id){
     const jobs = readJson(LS_JOBS, []);
     const job = jobs.find((j) => j.id === id);
-    if(!job) return toast('Could not find that production job.');
+    if(!job) throw new Error('Could not find that production job.');
 
-    if(!job.quote_number) return toast('Save this estimate first so Production Control can assign a Q-number.');
+    if(!job.quote_number) throw new Error('Save this estimate first so Production Control can assign a Q-number.');
     const draft = buildQuoteDraft(job);
     writeJson(QUOTE_DRAFT_KEY, draft);
-    try{
-      await patchProductionJobHandoff(job, draft);
-    }catch(error){
-      return toast('Quote draft saved locally, but cloud status failed. Retry before handoff.');
-    }
+    await patchProductionJobHandoff(job, draft);
     toast('Quote draft prepared from Production Control.');
     const url = `quote.html?fromProduction=1&production_job_id=${encodeURIComponent(job.id)}`;
     window.location.href = url;
   }
 
-  document.addEventListener('click', (event) => {
-    const btn = event.target.closest('[data-push-quote]');
-    if(!btn) return;
-    event.preventDefault();
-    pushProductionJobToQuote(btn.dataset.pushQuote);
+  function classifyHandoffError(error){
+    const message = String(error?.message || '');
+    const status = Number(error?.status || message.match(/Supabase error (\d+)/)?.[1]);
+    if(error?.name === 'AbortError' || status === 504 || /timeout|gateway/i.test(message)) error.handoffOutcome = 'ambiguous';
+    else if(status === 401 || status === 403 || /session|authorized|jwt/i.test(message)) error.handoffOutcome = 'auth';
+    else if(status === 400 || /reject|invalid|evidence/i.test(message)) error.handoffOutcome = 'validation';
+    return error;
+  }
+  const originalPush = pushProductionJobToQuote;
+  // Stable delegated UI contract: [data-push-quote]
+  window.OliPolyProductionQuoteHandoff.neutralizeLegacyRecovery(localStorage);
+  window.OliPolyProductionQuoteHandoff.install({
+    container:document,
+    notify:toast,
+    push:async id => { try{return await originalPush(id);}catch(error){throw classifyHandoffError(error);} }
   });
 })();
 </script>
