@@ -5,7 +5,7 @@
 
 > **RC2.5 authority:** `ENGINE_RC2_5_CAMPAIGN_ORDER_CONVERSION.md` defines the global future Order allocator, reviewed atomic campaign conversion, immutable attribution, conservative unpaid state, and explicit downstream Production handoff.
 
-> **RC2.6 decision:** `ENGINE_RC2_6_NILES_MIGRATION_DECISION.md` records the owner-approved exclusion of historical Niles data. Niles remains a one-off manual/CSV workflow outside generic campaign authority; no historical submission, payment, Order, or downstream record may be inferred or imported. Future fundraisers use RC2.4 and RC2.5 from inception.
+> **RC2.7 intake:** `ENGINE_RC2_7_GENERIC_CAMPAIGN_INTAKE.md` activates the existing generic fundraiser URL as a browser data-entry client for RC2.4. Catalog and submission RPCs remain authoritative; intake creates no Order or downstream ERP effect. Niles and Tally remain excluded.
 This inventory describes the active private application paths inspected for RC2. It is maintenance guidance, not a new data contract. Public pages and generated customer documents are outside this shell and remain frozen.
 
 ## RC2.1 authority investigation
