@@ -40,10 +40,33 @@
   function outcomeMessage(error){
     if(error?.handoffOutcome === 'in_progress') return 'Another Quote handoff is already in progress. Refresh the estimate before retrying.';
     if(error?.handoffOutcome === 'stale') return 'This estimate changed since it was loaded. Refresh before retrying.';
+    if(error?.handoffOutcome === 'eligibility') return 'The estimate is not eligible to move to Quote. Refresh and review its Production details.';
+    if(error?.handoffOutcome === 'identity_conflict') return 'This Quote handoff command conflicts with an existing command. Refresh before retrying.';
+    if(error?.handoffOutcome === 'client_timeout') return 'The server did not confirm the Quote handoff in time. Refresh the record before retrying.';
+    if(error?.handoffOutcome === 'network') return 'The Quote handoff could not reach the server. Check your connection and refresh before retrying.';
+    if(error?.handoffOutcome === 'explicit_abort') return 'The Quote handoff was canceled. Refresh the record before retrying.';
+    if(error?.handoffOutcome === 'server_error') return 'The server rejected the Quote handoff. Refresh the estimate before retrying.';
     if(error?.handoffOutcome === 'ambiguous') return 'Quote handoff could not be confirmed. Refresh the record before retrying.';
-    if(error?.handoffOutcome === 'auth') return 'Quote handoff was not authorized. Refresh or sign in before retrying.';
+    if(error?.handoffOutcome === 'auth') return 'Your session is not authorized for this Production job. Sign in again and refresh.';
     if(error?.handoffOutcome === 'validation') return 'Quote handoff was rejected. Refresh the estimate and review the record.';
     return error?.message || 'Quote handoff failed. The recovery draft was retained.';
+  }
+
+  function transportError(error, {timedOut = false} = {}){
+    const aborted = error?.name === 'AbortError';
+    const transportCode = aborted
+      ? (timedOut ? 'QUOTE_HANDOFF_CLIENT_TIMEOUT' : 'QUOTE_HANDOFF_EXPLICIT_ABORT')
+      : 'NETWORK_ERROR';
+    const message = transportCode === 'QUOTE_HANDOFF_CLIENT_TIMEOUT'
+      ? 'The Quote handoff request exceeded its client transport timeout.'
+      : transportCode === 'NETWORK_ERROR'
+        ? 'The Quote handoff request could not reach the server.'
+        : 'The Quote handoff request was explicitly aborted.';
+    const classified = new Error(message, {cause:error});
+    classified.name = 'QuoteHandoffTransportError';
+    classified.transportCode = transportCode;
+    classified.stage = 'fetch';
+    return classified;
   }
 
   function install({container, push, notify}){
@@ -95,5 +118,5 @@
     return controller;
   }
 
-  return Object.freeze({install, neutralizeLegacyRecovery, nonExecutableRecovery, outcomeMessage, LEGACY_RECOVERY_KEY});
+  return Object.freeze({install, neutralizeLegacyRecovery, nonExecutableRecovery, outcomeMessage, transportError, LEGACY_RECOVERY_KEY});
 });

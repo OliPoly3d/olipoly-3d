@@ -95,10 +95,21 @@ function fixture(push, jobId = 'job-1'){
   assert.match(sync, /clearTimeout\(timeout\)/, 'request timeout timer is always cleared');
   assert.doesNotMatch(sync, /clearCommandIdentity|commandIdentity\(/, 'lower layers neither create nor persist another command identity');
   assert.doesNotMatch(sync, /while|setInterval|retry\(/, 'controlled lifecycle command has no retry loop');
-  assert.match(html, /result\.res\.status === 401 && options\.retryAuth !== false/, 'generic auth recovery can be explicitly excluded and never retries 403');
+  assert.equal((sync.match(/new AbortController\(\)/g) || []).length, 1, 'one controller owns the one controlled request signal');
+  assert.doesNotMatch(sync, /AbortSignal\.any|visibilitychange|beforeunload|submit/, 'no signal combination or page event aborts the request');
+  assert.ok(sync.indexOf('OliPolyAuth?.ensure') < sync.indexOf('new AbortController()'), 'auth preflight completes before the handoff timer starts');
+  assert.match(html, /result\.res\.status === 401 && retryAuth !== false/, 'generic auth recovery can be explicitly excluded and never retries 403');
   const patch = html.slice(html.indexOf('async function patchProductionJobHandoff'), html.indexOf('async function pushProductionJobToQuote'));
   assert.doesNotMatch(patch, /transition\(job, 'waiting_customer'/, 'recovery draft does not change local lifecycle');
   assert.doesNotMatch(patch, /quote_handoff_status/, 'recovery draft contains no pending handoff marker');
+  const classifierSource = html.slice(html.indexOf('function classifyHandoffError'), html.indexOf('const originalPush'));
+  const classify = new Function(`${classifierSource}; return classifyHandoffError;`)();
+  for(const [code,outcome] of [['55P03','in_progress'],['40001','stale'],['22023','eligibility'],['42501','auth'],['28000','auth'],['23505','identity_conflict']]){
+    assert.equal(classify({postgresCode:code,message:'server diagnostic'}).handoffOutcome, outcome, `${code} remains distinguishable in final page composition`);
+  }
+  for(const [transportCode,outcome] of [['QUOTE_HANDOFF_CLIENT_TIMEOUT','client_timeout'],['NETWORK_ERROR','network'],['QUOTE_HANDOFF_EXPLICIT_ABORT','explicit_abort']]){
+    assert.equal(classify({transportCode,message:'transport diagnostic'}).handoffOutcome, outcome, `${transportCode} remains distinguishable`);
+  }
 
   const scriptRefs = [...html.matchAll(/<script[^>]+src="([^"]*production-quote-handoff\.js[^"]*)"/g)];
   assert.equal(scriptRefs.length, 1, 'final HTML loads the canonical handoff module once');
@@ -124,6 +135,43 @@ function fixture(push, jobId = 'job-1'){
   const otherIdentities = [];
   await fixture(async (_id, context) => otherIdentities.push(context.correlationId), 'unrelated-job').click().result;
   assert.notEqual(otherIdentities[0], identities[0], 'unrelated jobs receive distinct cryptographic identities');
+
+  const timeoutError = handoff.transportError(Object.assign(new Error('signal aborted'), {name:'AbortError'}), {timedOut:true});
+  assert.equal(timeoutError.transportCode, 'QUOTE_HANDOFF_CLIENT_TIMEOUT');
+  assert.notEqual(timeoutError.name, 'AbortError', 'true timeout is an application transport error, not a generic DOMException');
+  const explicitAbort = handoff.transportError(Object.assign(new Error('navigation'), {name:'AbortError'}), {timedOut:false});
+  assert.equal(explicitAbort.transportCode, 'QUOTE_HANDOFF_EXPLICIT_ABORT');
+  const networkError = handoff.transportError(new TypeError('failed to fetch'));
+  assert.equal(networkError.transportCode, 'NETWORK_ERROR');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'eligibility'}), 'The estimate is not eligible to move to Quote. Refresh and review its Production details.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'identity_conflict'}), 'This Quote handoff command conflicts with an existing command. Refresh before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'client_timeout'}), 'The server did not confirm the Quote handoff in time. Refresh the record before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'network'}), 'The Quote handoff could not reach the server. Check your connection and refresh before retrying.');
+  assert.match(sync, /onResponseReceived:\(\) => \{ if\(timeout\)\{ clearTimeout\(timeout\); timeout = null; \} \}/, 'response headers disarm timeout before response body parsing completes');
+
+  function actualSyncHarness({timerFires=false, sbApiImpl}){
+    let clears = 0;
+    class FakeController { constructor(){this.signal={aborted:false};} abort(){this.signal.aborted=true;} }
+    const fakeWindow = {
+      OliPolyAuth:{ensure:async()=>({access_token:'test'})},
+      OliPolyWorkflow:{preAcceptanceProductionRpcRequest:()=>({path:'/rest/v1/rpc/preacceptance_production_command',body:{}})},
+      OliPolyProductionQuoteHandoff:handoff
+    };
+    const build = new Function('state','window','AbortController','setTimeout','clearTimeout','sbApi', `${sync}; return syncPreAcceptanceProductionStatus;`);
+    const actualSync = build({user:{id:'owner'}}, fakeWindow, FakeController, callback=>{if(timerFires)callback();return 1;}, ()=>{clears++;}, sbApiImpl);
+    return {actualSync, clears:()=>clears};
+  }
+  const timeoutHarness = actualSyncHarness({timerFires:true, sbApiImpl:async(_path, options)=>{if(options.signal.aborted)throw Object.assign(new Error('generic abort'),{name:'AbortError'});}});
+  await assert.rejects(timeoutHarness.actualSync({id:'job',updated_at:'t'},'waiting_customer'), error => error.transportCode === 'QUOTE_HANDOFF_CLIENT_TIMEOUT' && error.name === 'QuoteHandoffTransportError');
+  const serverError = Object.assign(new Error('controlled'), {postgresCode:'55P03',httpStatus:409});
+  const serverHarness = actualSyncHarness({sbApiImpl:async()=>{throw serverError;}});
+  await assert.rejects(serverHarness.actualSync({id:'job',updated_at:'t'},'waiting_customer'), error => error === serverError && error.name !== 'AbortError');
+  let responseObserved = false;
+  const successHarness = actualSyncHarness({sbApiImpl:async(_path, options)=>{options.onResponseReceived();responseObserved=true;return [{id:'authoritative'}];}});
+  const authoritative = await successHarness.actualSync({id:'job',updated_at:'t'},'waiting_customer');
+  assert.equal(authoritative.id, 'authoritative');
+  assert.equal(responseObserved, true);
+  assert.ok(successHarness.clears() >= 1, 'successful response clears transport timer');
 
   console.log('Production quote handoff runtime regression assertions passed.');
 })();

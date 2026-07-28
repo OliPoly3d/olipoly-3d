@@ -1025,7 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </style>
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
-<script src="js/production-quote-handoff.js?v=20260728-job-lock-v3"></script>
+<script src="js/production-quote-handoff.js?v=20260728-outcome-v4"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -1866,7 +1866,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
 
   async function sbApi(path, options = {}){
-    if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
+    const {retryAuth, onResponseReceived, requestKind, skipAuthEnsure, ...fetchOptions} = options;
+    if(!skipAuthEnsure && window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
+    const requestUrl = `${SUPABASE_URL}${path}`;
     const makeHeaders = () => ({
       apikey:SUPABASE_KEY,
       'Content-Type':'application/json',
@@ -1874,14 +1876,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       ...(options.headers || {})
     });
     async function run(){
-      const res = await fetch(`${SUPABASE_URL}${path}`, {...options, headers:makeHeaders()});
+      const res = await fetch(requestUrl, {...fetchOptions, headers:makeHeaders()});
+      if(typeof onResponseReceived === 'function') onResponseReceived(res);
       const txt = await res.text();
       let data = null;
       try{ data = txt ? JSON.parse(txt) : null; }catch{ data = txt; }
       return {res, txt, data};
     }
     let result = await run();
-    if(!result.res.ok && result.res.status === 401 && options.retryAuth !== false && window.OliPolyAuth?.refresh){
+    if(!result.res.ok && result.res.status === 401 && retryAuth !== false && window.OliPolyAuth?.refresh){
       await window.OliPolyAuth.refresh();
       result = await run();
     }
@@ -1889,7 +1892,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const msg = result.data?.message || result.data?.error_description || result.data?.hint || result.txt || `Supabase error ${result.res.status}`;
       const error = new Error(msg);
       error.status = result.res.status;
-      error.code = result.data?.code || null;
+      error.httpStatus = result.res.status;
+      error.postgresCode = result.data?.code || null;
+      error.code = error.postgresCode;
+      error.details = result.data?.details || null;
+      error.hint = result.data?.hint || null;
+      error.requestUrl = requestUrl;
+      error.stage = 'sbApi';
       throw error;
     }
     return result.data;
@@ -2819,13 +2828,22 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const command = targetStatus === 'waiting_customer' ? 'mark_waiting_customer' : targetStatus === 'estimate' ? 'return_to_estimate' : null;
     if(!command) throw new Error('Pre-acceptance Production can only move between estimate and waiting_customer.');
     const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload, commandContext);
+    if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    let timedOut = false;
+    let timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
     try{
-      const result = await sbApi(request.path, {method:'POST', retryAuth:false, signal:controller.signal, headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+      const result = await sbApi(request.path, {
+        method:'POST', retryAuth:false, skipAuthEnsure:true, requestKind:'quote-handoff', signal:controller.signal,
+        onResponseReceived:() => { if(timeout){ clearTimeout(timeout); timeout = null; } },
+        headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
+      });
       return Array.isArray(result) ? result[0] : result;
+    }catch(error){
+      if(error?.postgresCode || error?.httpStatus) throw error;
+      throw window.OliPolyProductionQuoteHandoff.transportError(error, {timedOut});
     }finally{
-      clearTimeout(timeout);
+      if(timeout) clearTimeout(timeout);
     }
   }
   function preAcceptanceErrorMessage(error){
@@ -5888,17 +5906,12 @@ ${err.message || err}`); }
     };
     writeJson('olipoly_production_to_quote_recovery_draft_v1', recoveryDraft);
 
-    try{
-      const syncStatus = window.OliPolyProductionCommands?.syncPreAcceptanceProductionStatus;
-      if(typeof syncStatus !== 'function') throw new Error('Authoritative Production handoff command is unavailable.');
-      const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft}, commandContext);
-      if(!authoritative) throw new Error('Authoritative Production handoff confirmation was empty.');
-      const jobs = readJson(LS_JOBS, []);
-      writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j));
-    }catch(error){
-      console.warn('Production handoff command failed; recovery quote draft retained without changing Production lifecycle state.', error);
-      throw error;
-    }
+    const syncStatus = window.OliPolyProductionCommands?.syncPreAcceptanceProductionStatus;
+    if(typeof syncStatus !== 'function') throw new Error('Authoritative Production handoff command is unavailable.');
+    const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft}, commandContext);
+    if(!authoritative) throw new Error('Authoritative Production handoff confirmation was empty.');
+    const jobs = readJson(LS_JOBS, []);
+    writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j));
   }
 
   async function pushProductionJobToQuote(id, commandContext){
@@ -5918,12 +5931,20 @@ ${err.message || err}`); }
   function classifyHandoffError(error){
     const message = String(error?.message || '');
     const status = Number(error?.status || message.match(/Supabase error (\d+)/)?.[1]);
-    const code = String(error?.code || '');
+    const code = String(error?.postgresCode || error?.code || '');
+    const transportCode = String(error?.transportCode || '');
     if(code === '55P03') error.handoffOutcome = 'in_progress';
     else if(code === '40001') error.handoffOutcome = 'stale';
+    else if(code === '22023') error.handoffOutcome = 'eligibility';
+    else if(['42501','28000'].includes(code)) error.handoffOutcome = 'auth';
+    else if(code === '23505') error.handoffOutcome = 'identity_conflict';
+    else if(transportCode === 'QUOTE_HANDOFF_CLIENT_TIMEOUT') error.handoffOutcome = 'client_timeout';
+    else if(transportCode === 'NETWORK_ERROR') error.handoffOutcome = 'network';
+    else if(transportCode === 'QUOTE_HANDOFF_EXPLICIT_ABORT') error.handoffOutcome = 'explicit_abort';
     else if(error?.name === 'AbortError' || status === 504 || /timeout|gateway/i.test(message)) error.handoffOutcome = 'ambiguous';
     else if(status === 401 || status === 403 || /session|authorized|jwt/i.test(message)) error.handoffOutcome = 'auth';
     else if(['22023','23505'].includes(code) || status === 400 || /reject|invalid|evidence/i.test(message)) error.handoffOutcome = 'validation';
+    else if(code || status) error.handoffOutcome = 'server_error';
     return error;
   }
   const originalPush = pushProductionJobToQuote;
@@ -5932,7 +5953,23 @@ ${err.message || err}`); }
   window.OliPolyProductionQuoteHandoff.install({
     container:document,
     notify:toast,
-    push:async (id, commandContext) => { try{return await originalPush(id, commandContext);}catch(error){throw classifyHandoffError(error);} }
+    push:async (id, commandContext) => {
+      const startedAt = performance.now();
+      try{return await originalPush(id, commandContext);}
+      catch(error){
+        const classified = classifyHandoffError(error);
+        console.error('Production Quote handoff failed.', {
+          stage:classified.stage || 'pushProductionJobToQuote', jobId:id,
+          correlationId:commandContext?.correlationId || null,
+          httpStatus:classified.httpStatus || classified.status || null,
+          postgresCode:classified.postgresCode || null, message:classified.message || null,
+          details:classified.details || null, hint:classified.hint || null,
+          errorName:classified.name || null, elapsedMs:Math.round(performance.now()-startedAt),
+          requestUrl:classified.requestUrl || `${SUPABASE_URL}/rest/v1/rpc/preacceptance_production_command`
+        });
+        throw classified;
+      }
+    }
   });
 })();
 </script>

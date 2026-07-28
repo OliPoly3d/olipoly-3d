@@ -45,7 +45,18 @@ const response = (status, body={}) => ({ok:status >= 200 && status < 300, status
   assert.equal((await success.call({retryAuth:false}))[0].id, 'job-1');
   assert.deepEqual(success.counts(), {fetches:1,refreshes:0}, 'confirmed success uses one fetch');
   const contention = harness(async()=>response(409,{code:'55P03',message:'database detail not for operator UI'}));
-  await assert.rejects(contention.call({retryAuth:false}), error => error.code === '55P03' && error.status === 409);
+  await assert.rejects(contention.call({retryAuth:false}), error => error.code === '55P03' && error.postgresCode === '55P03' && error.status === 409 && error.httpStatus === 409);
   assert.deepEqual(contention.counts(), {fetches:1,refreshes:0}, 'SQLSTATE is preserved for one-request operator classification');
+  for(const code of ['40001','22023','42501','23505']){
+    const structured = harness(async()=>response(409,{code,message:`server ${code}`,details:'diagnostic details',hint:'diagnostic hint'}));
+    await assert.rejects(structured.call({retryAuth:false}), error =>
+      error.name !== 'AbortError' && error.postgresCode === code && error.details === 'diagnostic details' && error.hint === 'diagnostic hint');
+    assert.deepEqual(structured.counts(), {fetches:1,refreshes:0}, `${code} remains structured and is not retried`);
+  }
+  const parseOrder = [];
+  const ordered = harness(async()=>({ok:true,status:200,text:async()=>{parseOrder.push('body-parsed');return JSON.stringify([{id:'ordered'}]);}}));
+  const orderedResult = await ordered.call({retryAuth:false,onResponseReceived:()=>parseOrder.push('response-received')});
+  assert.equal(orderedResult[0].id, 'ordered');
+  assert.deepEqual(parseOrder, ['response-received','body-parsed'], 'response arrival disarms timeout before body parsing and cleanup');
   console.log('Production controlled sbApi single-fetch assertions passed.');
 })();

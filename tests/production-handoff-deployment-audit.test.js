@@ -13,7 +13,7 @@ assert.doesNotMatch(verification, /\b(update|insert|delete|alter|drop|create|gra
 for(const marker of ['information_schema.columns','pg_get_functiondef','preacceptance-production-job:','pg_try_advisory_xact_lock(v_job_lock_key)','pg_advisory_xact_lock','lock_timeout','55P03','supabase_migrations.schema_migrations','pg_indexes','pg_constraint','pg_trigger']){
   assert.ok(verification.includes(marker), `verification includes ${marker}`);
 }
-for(const commit of ['be5116c','b0b84ed','f17529c','9b7c7b3','843fc3e','5522ceb','1fc3962']) assert.ok(audit.includes(commit), `audit inventories ${commit}`);
+for(const commit of ['be5116c','b0b84ed','731215f','f0675dd']) assert.ok(audit.includes(commit), `audit inventories ${commit}`);
 assert.match(audit, /runtime issue is \*\*not\s+reported fixed\*\*/);
 
 console.log('Production handoff deployment audit assertions passed.');
