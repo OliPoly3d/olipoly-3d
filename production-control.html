@@ -1025,7 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </style>
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
-<script src="js/production-quote-handoff.js?v=20260728-single-dispatch-v2"></script>
+<script src="js/production-quote-handoff.js?v=20260728-job-lock-v3"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -1889,6 +1889,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const msg = result.data?.message || result.data?.error_description || result.data?.hint || result.txt || `Supabase error ${result.res.status}`;
       const error = new Error(msg);
       error.status = result.res.status;
+      error.code = result.data?.code || null;
       throw error;
     }
     return result.data;
@@ -5917,9 +5918,12 @@ ${err.message || err}`); }
   function classifyHandoffError(error){
     const message = String(error?.message || '');
     const status = Number(error?.status || message.match(/Supabase error (\d+)/)?.[1]);
-    if(error?.name === 'AbortError' || status === 504 || /timeout|gateway/i.test(message)) error.handoffOutcome = 'ambiguous';
+    const code = String(error?.code || '');
+    if(code === '55P03') error.handoffOutcome = 'in_progress';
+    else if(code === '40001') error.handoffOutcome = 'stale';
+    else if(error?.name === 'AbortError' || status === 504 || /timeout|gateway/i.test(message)) error.handoffOutcome = 'ambiguous';
     else if(status === 401 || status === 403 || /session|authorized|jwt/i.test(message)) error.handoffOutcome = 'auth';
-    else if(status === 400 || /reject|invalid|evidence/i.test(message)) error.handoffOutcome = 'validation';
+    else if(['22023','23505'].includes(code) || status === 400 || /reject|invalid|evidence/i.test(message)) error.handoffOutcome = 'validation';
     return error;
   }
   const originalPush = pushProductionJobToQuote;

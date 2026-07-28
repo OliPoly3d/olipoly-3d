@@ -38,9 +38,11 @@
   }
 
   function outcomeMessage(error){
+    if(error?.handoffOutcome === 'in_progress') return 'Another Quote handoff is already in progress. Refresh the estimate before retrying.';
+    if(error?.handoffOutcome === 'stale') return 'This estimate changed since it was loaded. Refresh before retrying.';
     if(error?.handoffOutcome === 'ambiguous') return 'Quote handoff could not be confirmed. Refresh the record before retrying.';
     if(error?.handoffOutcome === 'auth') return 'Quote handoff was not authorized. Refresh or sign in before retrying.';
-    if(error?.handoffOutcome === 'validation') return error.message || 'Quote handoff was rejected. Refresh the record before retrying.';
+    if(error?.handoffOutcome === 'validation') return 'Quote handoff was rejected. Refresh the estimate and review the record.';
     return error?.message || 'Quote handoff failed. The recovery draft was retained.';
   }
 
@@ -77,7 +79,7 @@
       try{
         await push(jobId, {correlationId, causationId:`operator-click:${correlationId}`});
       }catch(error){
-        if(error?.handoffOutcome === 'ambiguous') ambiguousJobs.add(jobId);
+        if(['ambiguous','in_progress','stale'].includes(error?.handoffOutcome)) ambiguousJobs.add(jobId);
         notify(outcomeMessage(error));
       }finally{
         pendingJobs.delete(jobId);

@@ -58,6 +58,8 @@ function fixture(push, jobId = 'job-1'){
 
   let outcomeIndex = 0;
   for(const outcome of [
+    {name:'55P03 contention', error:Object.assign(new Error('lock'), {handoffOutcome:'in_progress'})},
+    {name:'40001 stale row', error:Object.assign(new Error('stale'), {handoffOutcome:'stale'})},
     {name:'400 rejection', error:Object.assign(new Error('Rejected'), {handoffOutcome:'validation'})},
     {name:'403 rejection', error:Object.assign(new Error('Forbidden'), {handoffOutcome:'auth'})},
     {name:'504 timeout', error:Object.assign(new Error('upstream request timeout'), {handoffOutcome:'ambiguous'})},
@@ -71,6 +73,8 @@ function fixture(push, jobId = 'job-1'){
     assert.equal(failed.controller.pendingJobs.size, 0, `${outcome.name} releases lock`);
     assert.equal(failed.button.disabled, false, `${outcome.name} restores button`);
     if(outcome.name === '504 timeout') assert.equal(failed.notices.at(-1), 'Quote handoff could not be confirmed. Refresh the record before retrying.');
+    if(outcome.name === '55P03 contention') assert.equal(failed.notices.at(-1), 'Another Quote handoff is already in progress. Refresh the estimate before retrying.');
+    if(outcome.name === '40001 stale row') assert.equal(failed.notices.at(-1), 'This estimate changed since it was loaded. Refresh before retrying.');
   }
 
   const legacy = storage({[handoff.LEGACY_RECOVERY_KEY]:JSON.stringify({id:'job-1', pending:true, retry_count:4, command_id:'execute-me', linked_quote_draft:{quote_number:'Q-1', queued:true}})});

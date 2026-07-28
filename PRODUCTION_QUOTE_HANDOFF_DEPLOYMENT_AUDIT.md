@@ -18,6 +18,7 @@ operator verifies them**.
 | `9b7c7b3` | Global guard, one cryptographic identity, cache-busted asset, single-fetch tests, and non-waiting advisory-lock migration | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `f17529c`; migration `202607280006` follows `202607280005` |
 | `843fc3e` | Clarifies non-persisted identity/deployment behavior | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `9b7c7b3` |
 | `5522ceb` | Codifies confirmed nullable actual columns and adds the deployment/SQL verification package | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `b0b84ed`, `9b7c7b3`; completes migration `202607280005` reconciliation |
+| `1fc3962` | Serializes pre-acceptance commands by Production job, preserves command receipts, maps controlled errors, and documents concurrency verification | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `9b7c7b3`; migration `202607280007` follows `202607280006` |
 
 The production schema nullability correction is codified in
 `202607280005_repair_preproduction_zero_actual_contamination.sql`. Dropping
@@ -27,7 +28,7 @@ rerun because repaired rows no longer match its all-zero predicate.
 ## Expected frontend markers
 
 - `production-control.html` loads exactly
-  `js/production-quote-handoff.js?v=20260728-single-dispatch-v2` once.
+  `js/production-quote-handoff.js?v=20260728-job-lock-v3` once.
 - The client timeout is `setTimeout(() => controller.abort(), 30000)`.
 - The controlled RPC options contain `retryAuth:false`.
 - Rendered actions use `.quote-action[data-push-quote]` and `type="button"`.
@@ -63,7 +64,7 @@ data.
     handoffScripts,
     oneVersionedHandoffScript:
       handoffScripts.length === 1 && handoffScripts[0] ===
-        'js/production-quote-handoff.js?v=20260728-single-dispatch-v2',
+        'js/production-quote-handoff.js?v=20260728-job-lock-v3',
     timeout30000: html.includes('setTimeout(() => controller.abort(), 30000)'),
     controlledNoAuthReplay: html.includes('retryAuth:false'),
     canonicalButtons:
@@ -112,10 +113,19 @@ Do not infer application from Git. Compare the verification report in
    - **Expected verification:** `pg_get_functiondef` contains
      `pg_try_advisory_xact_lock` and `55P03`, and does not contain the standalone
      blocking call `perform pg_advisory_xact_lock`.
+3. `202607280007_job_scoped_preacceptance_lock.sql`
+   - **Purpose:** serialize by Production job UUID before any row lock, retain a
+     distinct command-identity try-lock/receipt contract, and add transaction-local
+     `lock_timeout = 2s` as secondary protection.
+   - **Idempotency:** `CREATE OR REPLACE FUNCTION`, `REVOKE`, and `GRANT` are
+     repeatable and perform no data update.
+   - **Expected verification:** the definition derives `v_job_lock_key` from
+     `p_job_id`, acquires it before `production_jobs ... FOR UPDATE`, contains
+     both controlled `55P03` paths, and contains transaction-local `lock_timeout`.
 
 Earlier workflow migrations through
 `202607200008_workflow_command_authority_parameter_default_compatibility.sql`
-must already be recorded before these two forward migrations. Stop rather than
+must already be recorded before these three forward migrations. Stop rather than
 replaying the complete historical chain against an unknown live database.
 
 ## Deployment procedure
@@ -157,7 +167,7 @@ replaying the complete historical chain against an unknown live database.
   and response body inspection.
 - Shared JS assets commonly use version query parameters. The handoff asset was
   changed from an unversioned reference to
-  `?v=20260728-single-dispatch-v2` after the handoff fixes.
+  `?v=20260728-job-lock-v3` after the handoff fixes.
 - A browser tab that loaded old HTML keeps its already-registered listeners even
   after a new deployment. Close old tabs; a refresh is not equivalent to
   changing code inside an already-running document until navigation completes.

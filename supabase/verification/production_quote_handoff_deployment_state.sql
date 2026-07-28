@@ -31,6 +31,8 @@ with target as (
 select
   function_oid::text as function_identity,
   function_definition,
+  position('preacceptance-production-job:' in function_definition) > 0 as has_job_scoped_lock_key,
+  position('pg_try_advisory_xact_lock(v_job_lock_key)' in function_definition) > 0 as has_job_scoped_try_lock,
   position('pg_try_advisory_xact_lock' in function_definition) > 0 as has_try_advisory_xact_lock,
   position('pg_advisory_xact_lock' in function_definition) > 0 as has_blocking_advisory_xact_lock,
   position('lock_timeout' in function_definition) > 0 as has_lock_timeout,

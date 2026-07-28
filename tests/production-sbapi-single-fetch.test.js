@@ -44,5 +44,8 @@ const response = (status, body={}) => ({ok:status >= 200 && status < 300, status
   const success = harness(async()=>response(200,[{id:'job-1'}]));
   assert.equal((await success.call({retryAuth:false}))[0].id, 'job-1');
   assert.deepEqual(success.counts(), {fetches:1,refreshes:0}, 'confirmed success uses one fetch');
+  const contention = harness(async()=>response(409,{code:'55P03',message:'database detail not for operator UI'}));
+  await assert.rejects(contention.call({retryAuth:false}), error => error.code === '55P03' && error.status === 409);
+  assert.deepEqual(contention.counts(), {fetches:1,refreshes:0}, 'SQLSTATE is preserved for one-request operator classification');
   console.log('Production controlled sbApi single-fetch assertions passed.');
 })();
