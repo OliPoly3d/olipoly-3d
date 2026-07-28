@@ -6,6 +6,10 @@ This inventory describes the active private application paths inspected for RC2.
 
 See [`ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md`](ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md) for the repository-evidence storage and campaign lifecycle investigation. It confirms `asset_records` plus exact-revision `asset_links` as the defined Job Assets metadata authority, with `job-assets` as the only defined private object bucket, but finds no automatic Quote-to-Order asset handoff or recipe file manifest. It also confirms that campaign authority currently ends at `campaigns`, `campaign_products`, and the public allowlisted reader: no authoritative campaign Order, Production, Finance, or Customer 360 relationship is implemented. Deployment state and bucket-policy drift remain unverified; RC2.1 makes no runtime, SQL, Storage, or public-page change.
 
+## RC2.2 deployed storage verification
+
+See [`ENGINE_RC2_2_DEPLOYED_STORAGE_VERIFICATION.md`](ENGINE_RC2_2_DEPLOYED_STORAGE_VERIFICATION.md) for the deployed-authority gate. The repository contract remains internally consistent, but this execution environment had no authorized live metadata connection or authenticated synthetic policy facility, and its minimal anonymous probe received no HTTP response. Deployed bucket, schema, RLS, grants, policies, aggregate objects, owner isolation, and MIME coverage therefore remain unverified. RC2.3 is blocked until a sanitized authorized evidence package confirms the private `job-assets` contract and no material drift.
+
 ## Page inventory and ownership
 
 | Page | Purpose and owned entity | Display/edit authority | Primary and secondary actions | Entry, exit, context, and states | Runtime, files, auth, and documents |

@@ -89,34 +89,21 @@
   }
 
   async function getUser() {
-    let session = await ensure();
-    let token = getToken();
-    if (!token) return null;
+    const session = await recover();
+    return session?.user || null;
+  }
 
-    async function fetchUser(activeToken) {
+  async function fetchUser(activeToken) {
+    try {
       const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         method: 'GET',
         headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${activeToken}` }
       });
       const data = await res.json().catch(() => null);
       return { res, data };
+    } catch {
+      return { res: { ok: false, status: 0 }, data: null };
     }
-
-    let result = await fetchUser(token);
-    if (!result.res.ok && (result.res.status === 401 || result.res.status === 403) && readSession()?.refresh_token) {
-      session = await refresh();
-      token = getToken();
-      if (token) result = await fetchUser(token);
-    }
-    if (!result.res.ok) {
-      if (result.res.status === 401 || result.res.status === 403) clearSession();
-      return null;
-    }
-
-    localStorage.setItem(USER_KEY, JSON.stringify(result.data));
-    const existing = readSession();
-    if (existing?.access_token) writeSession({ ...existing, user: result.data });
-    return result.data;
   }
 
   async function login(email, password) {
@@ -146,24 +133,46 @@
         body: JSON.stringify({ refresh_token: refreshToken })
       });
       return writeSession(data);
-    } catch (err) {
-      console.warn('OliPoly auth refresh failed:', err);
-      return readSession();
+    } catch {
+      clearSession();
+      return null;
     }
   }
 
-  async function ensure() {
+  let recoveryPromise = null;
+  async function recoverSession() {
     const current = readSession();
     if (!current) return null;
 
-    if (tokenExpiresSoon(current)) return refresh();
-
-    if (current.access_token && !current.user) {
-      const user = await getUser();
-      if (user) return writeSession({ ...current, user });
+    let session = current;
+    let refreshed = false;
+    if (!session.access_token || tokenExpiresSoon(session)) {
+      refreshed = true;
+      session = await refresh();
+      if (!session?.access_token) return null;
     }
 
-    return current;
+    let result = await fetchUser(session.access_token);
+    if (!result.res.ok && (result.res.status === 401 || result.res.status === 403) && !refreshed && session.refresh_token) {
+      refreshed = true;
+      session = await refresh();
+      if (!session?.access_token) return null;
+      result = await fetchUser(session.access_token);
+    }
+    if (!result.res.ok) {
+      if (result.res.status === 401 || result.res.status === 403) clearSession();
+      return null;
+    }
+    return writeSession({ ...session, user: result.data });
+  }
+
+  function recover() {
+    if (!recoveryPromise) recoveryPromise = recoverSession().finally(() => { recoveryPromise = null; });
+    return recoveryPromise;
+  }
+
+  async function ensure() {
+    return recover();
   }
 
   window.OliPolyAuth = {
@@ -180,6 +189,7 @@
     readSession,
     writeSession,
     refresh,
+    recover,
     ensure,
     getToken,
     getUser,

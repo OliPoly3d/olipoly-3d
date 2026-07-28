@@ -52,6 +52,75 @@
     intro.insertAdjacentElement('afterend', bar);
   }
 
+  mountAuthentication(intro);
+
+  async function mountAuthentication(anchor) {
+    const auth = await requireAuthenticationBridge();
+    if (!auth) return;
+    const gate = document.createElement('section');
+    gate.className = 'engine-auth-gate';
+    gate.setAttribute('aria-live', 'polite');
+    anchor.insertAdjacentElement('afterend', gate);
+
+    const showSignIn = (message = 'Sign in to load authoritative OliPoly Engine data.') => {
+      document.body.classList.add('engine-auth-required');
+      gate.dataset.state = 'signed-out';
+      gate.innerHTML = `<form class="engine-auth-form"><div><strong>Private Engine sign in</strong><p>${escapeText(message)}</p></div><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="btn" type="submit">Sign in</button></form>`;
+      gate.querySelector('form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const button = form.querySelector('button');
+        const email = form.elements.email.value.trim();
+        const password = form.elements.password.value;
+        button.disabled = true;
+        gate.querySelector('p').textContent = 'Signing in…';
+        try {
+          await auth.login(email, password);
+          const user = await auth.getUser();
+          if (!user) throw new Error('The session could not be verified.');
+          location.reload();
+        } catch (error) {
+          form.elements.password.value = '';
+          gate.querySelector('p').textContent = error?.message || 'Sign in failed. Try again.';
+          button.disabled = false;
+        }
+      });
+    };
+
+    gate.innerHTML = '<p>Checking private session…</p>';
+    try {
+      const session = await auth.recover();
+      if (!session?.user) return showSignIn();
+      document.body.classList.remove('engine-auth-required');
+      gate.dataset.state = 'signed-in';
+      gate.innerHTML = '<span><strong>Private session active</strong><small>Authoritative data access is available.</small></span><button class="ghost" type="button">Sign out</button>';
+      gate.querySelector('button').addEventListener('click', () => {
+        auth.logout();
+        showSignIn('Signed out. Sign in again to load private data.');
+      });
+    } catch {
+      showSignIn('Your session could not be recovered. Sign in again.');
+    }
+  }
+
+  function requireAuthenticationBridge() {
+    if (window.OliPolyAuth?.recover) return Promise.resolve(window.OliPolyAuth);
+    return new Promise(resolve => {
+      const existing = document.querySelector('script[data-engine-auth-bridge]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(window.OliPolyAuth || null), { once: true });
+        existing.addEventListener('error', () => resolve(null), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'js/olipoly-auth.js';
+      script.dataset.engineAuthBridge = 'true';
+      script.onload = () => resolve(window.OliPolyAuth || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    });
+  }
+
   function escapeText(value) {
     const node = document.createElement('span');
     node.textContent = value;
