@@ -4,6 +4,8 @@
 
 -- Optional evidence columns must not manufacture evidence when omitted on INSERT.
 alter table if exists public.production_jobs
+  alter column actual_print_hours drop not null,
+  alter column actual_filaments drop not null,
   alter column actual_grams_used drop default,
   alter column scrap_grams drop default,
   alter column actual_print_hours drop default,
