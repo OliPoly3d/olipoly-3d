@@ -171,3 +171,7 @@ No migration was added or applied. No SQL mutation was executed. No Storage, dat
 - [Repository Job Assets migration](supabase/migrations/202607160007_job_asset_management.sql)
 - [Job Assets model test](tests/job-asset-model.test.js)
 - [RC2.2 verification test](tests/engine-rc2-2-deployed-storage-verification.test.js)
+
+## RC2.3 forward deployment note
+
+The verified RC2.2 private bucket and owner-RLS baseline remains unchanged. RC2.3 depends on reviewed deployment of `202607280001_authoritative_asset_lifecycle.sql` for `asset_links.link_type` and the acceptance-time link trigger. Runtime UI deployment must follow or accompany that migration. RC2.3 performs no production migration or data mutation itself; repeat the two-user denial checks after deployment.

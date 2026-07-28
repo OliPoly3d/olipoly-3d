@@ -357,3 +357,7 @@ All paths below existed at investigation time.
 - Git-diff boundary assertions verify that only this report, RC2 architecture, Knowledge Library, and the focused test changed; public/runtime/SQL paths remain unchanged.
 - Credential/PII/payment-link guards scan this report. Publishable client configuration present in runtime was neither reproduced nor treated as a secret in this report.
 - Node test suite, JavaScript syntax, inline-script parsing, local references, duplicate IDs, whitespace, and Git state were validated as reported in the delivery summary. No manual browser or live Supabase behavior is claimed.
+
+## RC2.3 implementation update
+
+RC2.3 closes the investigated operational asset gaps without entering Campaign authority. One entity-filtered shared browser now covers Quote, Order, Production Job, Recipe, and supported Customer contexts. Upload/retry behavior distinguishes Storage, metadata, link, and cleanup outcomes. The RC2.3 migration adds recipe manifest semantics and exact customer-supplied Quote-to-Order link handoff; it does not change campaign submission/conversion behavior. See `ENGINE_RC2_3_AUTHORITATIVE_ASSET_LIFECYCLE.md`.

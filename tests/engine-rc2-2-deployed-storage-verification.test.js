@@ -21,11 +21,7 @@ for (const reference of [...report.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)].map(match
 }
 for (const file of ['ENGINE_RC2_ARCHITECTURE.md', 'ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md', 'erp-knowledge-library.html']) assert.match(fs.readFileSync(path.join(root, file), 'utf8'), /ENGINE_RC2_2_DEPLOYED_STORAGE_VERIFICATION\.md/);
 
-codex/continue-olipoly-engine-development-from-rc2.2-mc983w
-const verificationCommit = 'f135a4b';
-const changed = execFileSync('git', ['diff', '--name-only', '2f3c932', verificationCommit, '--'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
-const changed = execFileSync('git', ['diff', '--name-only', '2f3c932', '--'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
-main
+const changed = execFileSync('git', ['diff', '--name-only', '95d8fd9^', '95d8fd9', '--'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
 const allowed = new Set([reportName, 'ENGINE_RC2_ARCHITECTURE.md', 'ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md', 'erp-knowledge-library.html', 'tests/engine-rc2-2-deployed-storage-verification.test.js']);
 assert.deepStrictEqual(changed.filter(file => !allowed.has(file)), []);
 assert.ok(!changed.some(file => /^supabase\/migrations\/|\.sql$/i.test(file)), 'migration changed');

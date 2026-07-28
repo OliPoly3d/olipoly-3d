@@ -24,3 +24,10 @@ assert.match(migration,/unique\(asset_revision_id,record_type,record_key\)/,'dup
 for(const page of ['product-recipes.html','production-control.html','orders-admin.html','customer-360.html'])assert.match(fs.readFileSync(require.resolve(`../${page}`),'utf8'),/data-job-assets/);
 assert.doesNotMatch(fs.readFileSync(require.resolve('../js/job-assets-ui.js'),'utf8'),/localStorage/,'Supabase remains remote-authoritative');
 console.log('job asset model and access-policy assertions passed');
+assert.equal(A.normalizeLinks([{record_type:'recipe',record_key:'r1',link_type:'manifest:source_design:current'}])[0].link_type,'manifest:source_design:current');
+assert.equal(A.normalizeLinks([{record_type:'recipe',record_key:'r1',link_type:'manifest:unknown:current'}])[0].link_type,'attachment');
+assert.equal(A.manifestState([{record_type:'recipe',link_type:'manifest:source_design:current',asset:{status:'active'}}],['source_design']),'complete');
+assert.equal(A.manifestState([],['source_design']),'incomplete');
+assert.equal(A.manifestState([{record_type:'recipe',link_type:'manifest:source_design:current',asset:{status:'archived'}}],['source_design']),'contains archived reference');
+assert.deepEqual(A.filterAssets([{filename:'Exact Part.stl',description:null,status:'active',category:'stl',designation:'internal',asset_links:[{record_type:'order',record_key:'order-uuid'}]}],{record_type:'order',record_key:'order-uuid',search:'exact'}).length,1);
+assert.throws(()=>A.validateFile({name:'part.stl',size:1,type:'text/html'}),/MIME/);

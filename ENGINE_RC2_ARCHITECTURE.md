@@ -83,3 +83,7 @@ Production remains: Estimate, Waiting for Customer, Ready to Print, Printing, QC
 3. Run the complete Node test suite, JavaScript syntax checks, inline-script parsing, local-reference and duplicate-ID validation, and `git diff --check`.
 4. Inspect mobile widths 375, 430, and 768 pixels and operational widths 1280, 1440, and 1920 pixels with safe authenticated fixtures.
 5. Never mutate live quotes, payments, production, inventory, campaigns, or files merely to validate presentation.
+
+## RC2.3 authoritative asset lifecycle
+
+RC2.3 establishes the shared private asset runtime and lifecycle documented in `ENGINE_RC2_3_AUTHORITATIVE_ASSET_LIFECYCLE.md`. Storage owns bytes, `asset_records` owns revisions, and `asset_links` owns exact-ID relationships. Entity pages use one metadata-driven browser; Quote acceptance reuses exact eligible revisions through an idempotent database trigger; recipe manifests pin exact revisions through `link_type`. No public URL, bucket scan, browser-only durable authority, or ordinary permanent-delete path is introduced.

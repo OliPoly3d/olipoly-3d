@@ -35,7 +35,7 @@ for (const privatePage of ['orders-admin.html', 'production-control.html', 'prod
   assert.ok(fs.existsSync(path.join(root, privatePage)), `referenced private page is missing: ${privatePage}`);
 }
 
-const changed = execFileSync('git', ['diff', '--name-only', 'HEAD', '--'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
+const changed = execFileSync('git', ['diff', '--name-only', '749c560^', '749c560', '--'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
 const allowed = new Set([
   'ENGINE_RC2_1_STORAGE_CAMPAIGN_AUTHORITY.md',
   'ENGINE_RC2_ARCHITECTURE.md',
