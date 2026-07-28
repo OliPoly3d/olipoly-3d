@@ -2,7 +2,7 @@
 
 ## Executive decision and baseline
 
-RC2.4 adds one immutable, idempotent staging authority for public campaign sale intent. A submission is **Not yet an Order** and cannot create Orders, Production, Inventory, Finance, invoices, payments, Customer 360 identities, or messages. Conversion remains RC2.5; Niles migration remains RC2.6. The baseline is merge `0cbb67d646de8a1d5febff9ec2b4e167ff5c9d7e`, the exact `main` recorded in `.git/FETCH_HEAD`, containing RC2–RC2.3 and `202607280001_authoritative_asset_lifecycle.sql`.
+RC2.4 adds one immutable, idempotent staging authority for public campaign sale intent. A submission is **Not yet an Order** and cannot create Orders, Production, Inventory, Finance, invoices, payments, Customer 360 identities, or messages. Conversion is owned by RC2.5. RC2.6 records that historical Niles data is intentionally excluded, not queued for migration. The baseline is merge `0cbb67d646de8a1d5febff9ec2b4e167ff5c9d7e`, the exact `main` recorded in `.git/FETCH_HEAD`, containing RC2–RC2.3 and `202607280001_authoritative_asset_lifecycle.sql`.
 
 ## Current-source map
 
@@ -54,7 +54,7 @@ Owner RLS supplies an authenticated review queue with campaign, status, date, ev
 
 No public listing, public review, payment credentials, real fixtures, or payload logging is introduced. Customer text is escaped and multiline notes wrap safely. RC2.4 adds no destructive retention job; retention, legal holds, export, and verified deletion require owner decisions.
 
-No Niles records are imported or altered. Potential mappings include name/contact, SKU choice, quantity, personalization, fulfillment, and a proven stable Tally ID. Historical offer version, exact disclosure/consent, trusted payment evidence, product UUID, and later edits cannot safely be reconstructed from labels/HTML. Risks include duplicates, label mismatch, stale pricing, unverifiable payment, missing consent, and PII excess. RC2.6 owns the decision.
+No Niles records are imported or altered. Potential mappings include name/contact, SKU choice, quantity, personalization, fulfillment, and a proven stable Tally ID. Historical offer version, exact disclosure/consent, trusted payment evidence, product UUID, and later edits cannot safely be reconstructed from labels/HTML. Risks include duplicates, label mismatch, stale pricing, unverifiable payment, missing consent, and PII excess. RC2.6 records the owner decision: Niles remains a one-off historical/manual workflow, and none of these records may be imported or reconstructed.
 
 ## Deployment, verification, rollback
 

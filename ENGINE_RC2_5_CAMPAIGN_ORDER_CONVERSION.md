@@ -60,4 +60,4 @@ Use only synthetic campaigns/customers: submit plus exact/conflicting retry; rev
 
 ## RC2.6 boundary
 
-No Niles page, Tally form, Square link, CSV, or historical record is changed/imported. A later reviewed import must supply stable source key, campaign/product UUID mappings, immutable customer/order snapshots, payment evidence, approval, duplicate detection, and personalization; it may not infer these from names, labels, clicks, or approximate matches.
+No Niles page, Tally form, Square link, CSV, or historical record is changed or imported. RC2.6 records the owner-approved decision that Niles remains a one-off historical/manual workflow outside RC2.4 staging and RC2.5 conversion. Historical Niles data must not create submissions, Orders, Customer 360, Production, Inventory, or Finance records, and payment must not be inferred from names, labels, selections, links, clicks, or approximate matches. Future fundraisers use the generic reviewed authorities from inception.
