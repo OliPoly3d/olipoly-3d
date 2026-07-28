@@ -1856,7 +1856,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     historySearch:'',
     selectedIds:new Set(),
     draggingId:null
-    ,repeatRecipeSnapshot:null
+    ,repeatRecipeSnapshot:null,
+    cloudJobIds:new Set(),
+    migrationHandledIds:new Set()
   };
 
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
@@ -1985,6 +1987,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     try{
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
       const normalized = Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
+      state.cloudJobIds = new Set(normalized.map(job=>job.id).filter(Boolean));
       const directOrderNums = [...new Set(normalized.flatMap(j=>orderVariantsFromAny(j.order_number)).filter(Boolean))];
       const quoteNums = [...new Set(normalized.flatMap(j=>quoteVariantsFromAny(j.quote_number || j.order_number)).filter(Boolean))];
       if(!directOrderNums.length && !quoteNums.length) return normalized;
@@ -2023,15 +2026,32 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
   }
 
-  async function migrateVisibleJobsToCloud(){
-    if(!state.user?.id) return;
-    for(const j of state.jobs){
+  async function migrateVisibleJobsToCloud(candidates = state.jobs){
+    if(!state.user?.id) return {inserted:0, updated:0, skipped:0, failed:0};
+    const result = {inserted:0, updated:0, skipped:0, failed:0};
+    for(const j of candidates){
+      if(state.migrationHandledIds.has(j.id)) continue;
+      const decision = window.OliPolyProductionPersistence.migrationDecision(j, state.cloudJobIds, state.user.id);
+      state.migrationHandledIds.add(j.id);
+      if(decision.action === 'skip'){
+        result.skipped += 1;
+        console.warn('Production recovery migration skipped:', decision.reason, jobRef(j));
+        continue;
+      }
       try{
-        await cloudSaveJob({...j, user_id:state.user.id});
+        const outcome = await cloudSaveJob(j, {migrationAction:decision.action, silent:true});
+        if(outcome) result[decision.action === 'insert' ? 'inserted' : 'updated'] += 1;
+        else result.failed += 1;
       }catch(err){
+        result.failed += 1;
         console.warn('Could not migrate job to production_jobs', j.job_title, err);
       }
     }
+    if(result.inserted || result.updated || result.failed){
+      const saved = result.inserted + result.updated;
+      toast(result.failed ? `${saved} recovery job(s) saved; ${result.failed} retained locally after cloud failure.` : `${saved} recovery job(s) saved to cloud.`);
+    }
+    return result;
   }
 
   function addDays(date, days){
@@ -2450,12 +2470,18 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     $('cancelEditBtn').classList.add('hidden');
   }
 
-  async function cloudSaveJob(j){
+  async function cloudSaveJob(j, options = {}){
     if(!state.user?.id) return false;
 
     const full = jobPayload(j);
-    const isExisting = !!state.jobs.find(existing => existing.id === full.id);
-    const isPreAcceptanceCreate = !isExisting && ['estimate','waiting_customer'].includes(full.production_status) && !full.order_number;
+    const decision = options.migrationAction
+      ? {action:options.migrationAction}
+      : window.OliPolyProductionPersistence.migrationDecision(full, state.cloudJobIds, state.user.id);
+    if(decision.action === 'skip'){
+      if(!options.silent) console.warn('Production cloud save skipped:', decision.reason, jobRef(full));
+      return false;
+    }
+    const isPreAcceptanceCreate = decision.action === 'insert';
     const ordinaryJobPayload = {...full};
     ['production_status','order_number','actual_machine','actual_quantity','actual_print_hours','actual_filaments','actual_filament_usage','actual_filament_breakdown','actual_grams_used','scrap_grams','print_started_at','completed_at','closed_at','actuals_captured_at','roll_usages'].forEach(key => delete ordinaryJobPayload[key]);
     const payload = {
@@ -2499,12 +2525,21 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       job_payload: ordinaryJobPayload,
       updated_at: new Date().toISOString()
     };
-    if(isPreAcceptanceCreate) payload.production_status = full.production_status;
+    if(isPreAcceptanceCreate){
+      payload.production_status = full.production_status;
+      // A recovered draft may carry stale server-owned fields inside its legacy
+      // payload. Initial INSERTs contain only the reviewed editable estimate
+      // columns above; advanced values remain solely in browser recovery.
+      payload.job_payload = Object.fromEntries(Object.entries(payload).filter(([key])=>key !== 'job_payload'));
+    }
 
     try{
-      const saved = await sbApi('/rest/v1/production_jobs?on_conflict=id',{
-        method:'POST',
-        headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+      const path = decision.action === 'update'
+        ? `/rest/v1/production_jobs?id=eq.${encodeURIComponent(full.id)}&user_id=eq.${encodeURIComponent(state.user.id)}`
+        : '/rest/v1/production_jobs';
+      const saved = await sbApi(path,{
+        method:decision.action === 'update' ? 'PATCH' : 'POST',
+        headers:{Prefer:'return=representation'},
         body:JSON.stringify(payload)
       });
 
@@ -2512,8 +2547,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       if(returned && returned.job_payload == null){
         throw new Error('Cloud save did not return job_payload. Supabase schema cache may need refresh.');
       }
+      state.cloudJobIds.add(full.id);
       return true;
     }catch(err){
+      if(decision.action === 'insert'){
+        console.warn('Initial Production draft cloud insert failed; local recovery retained.', err);
+        return false;
+      }
       console.warn('Full production cloud save failed; trying minimal status patch.', err);
 
       // Some older Supabase production_jobs tables are missing newer optional columns.
@@ -2546,7 +2586,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           return true;
         }catch(lastErr){
           console.warn('Minimal production cloud save failed', lastErr);
-          toast('Saved locally only — cloud row could not be updated.');
+          if(!options.silent) toast('Cloud save failed. The local recovery copy was retained.');
           return false;
         }
       }
@@ -2782,6 +2822,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
     return Array.isArray(result) ? result[0] : result;
   }
+  window.OliPolyProductionCommands = Object.freeze({syncPreAcceptanceProductionStatus});
 
   const linkedWorkflowInFlight = new Set();
 
@@ -3857,7 +3898,7 @@ ${err.message || err}`); }
         localWrite(LS_JOBS,state.jobs);
         await refreshRawInventoryFromCloud();
         await refreshNonFilamentSuppliesFromCloud();
-        if(state.jobs.length) migrateVisibleJobsToCloud();
+        if(localMigrated.length) await migrateVisibleJobsToCloud(localMigrated);
         if(localMigrated.length || cloudMigrated.length) toast(`Loaded ${state.jobs.length} production/project jobs.`);
       }catch(err){
         console.warn(err);
@@ -5842,7 +5883,9 @@ ${err.message || err}`); }
     writeJson('olipoly_production_to_quote_recovery_draft_v1', recoveryDraft);
 
     try{
-      const authoritative = await syncPreAcceptanceProductionStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft});
+      const syncStatus = window.OliPolyProductionCommands?.syncPreAcceptanceProductionStatus;
+      if(typeof syncStatus !== 'function') throw new Error('Authoritative Production handoff command is unavailable.');
+      const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft});
       if(authoritative){
         state.jobs = state.jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j);
         writeJson(LS_JOBS, state.jobs);

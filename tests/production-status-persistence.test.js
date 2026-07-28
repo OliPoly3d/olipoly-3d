@@ -26,9 +26,26 @@ reloaded = persistence.mergeJobs([waiting], [duplicateId]);
 assert.equal(reloaded.length, 1, 'quote linkage deterministically collapses duplicate job IDs');
 assert.equal(reloaded[0].id, 'job-1');
 
+const cloudIds = new Set(['job-1']);
+assert.deepEqual(persistence.migrationDecision(estimate, cloudIds, 'user-1'), {action:'update', reason:'owned-cloud-row'});
+assert.deepEqual(persistence.migrationDecision({...estimate, id:'local-estimate'}, cloudIds, 'user-1'), {action:'insert', reason:'eligible-local-draft'});
+assert.deepEqual(persistence.migrationDecision({...estimate, id:'local-waiting', production_status:'waiting_customer'}, cloudIds, 'user-1'), {action:'insert', reason:'eligible-local-draft'});
+assert.equal(persistence.migrationDecision({...estimate, id:'advanced', production_status:'ready_to_print'}, cloudIds, 'user-1').action, 'skip');
+assert.equal(persistence.migrationDecision({...estimate, id:'quote', production_status:'quote'}, cloudIds, 'user-1').action, 'skip');
+assert.equal(persistence.migrationDecision({...estimate, id:'foreign', user_id:'user-2'}, cloudIds, 'user-1').reason, 'ownership-mismatch');
+assert.equal(persistence.migrationDecision(estimate, cloudIds, null).reason, 'authentication-unavailable');
+
 const production = fs.readFileSync(require.resolve('../production-control.html'), 'utf8');
 assert.match(production, /syncPreAcceptanceProductionStatus[\s\S]*mark_waiting_customer/);
 assert.match(production, /OliPolyProductionPersistence\.mergeJobs\(cloudMigrated, localMigrated/);
+assert.doesNotMatch(production, /production_jobs\?on_conflict=id/, 'Production saves must not use upsert against restrictive INSERT RLS');
+assert.match(production, /method:decision\.action === 'update' \? 'PATCH' : 'POST'/, 'owned rows update while eligible drafts insert');
+assert.match(production, /OliPolyProductionCommands = Object\.freeze\(\{syncPreAcceptanceProductionStatus\}\)/, 'handoff command crosses script scope explicitly');
+assert.match(production, /typeof syncStatus !== 'function'/, 'handoff fails closed if authoritative command wiring is unavailable');
+
+const reliability = fs.readFileSync(require.resolve('../js/erp-reliability.js'), 'utf8');
+assert.doesNotMatch(reliability, /toast\('Saved to cloud\.'/i, 'generic fetch observer cannot claim workflow success');
+assert.match(reliability, /dedupedToast\('cloud-write-failed'/, 'generic failures are deduplicated');
 
 const quote = fs.readFileSync(require.resolve('../quote.js'), 'utf8');
 const quoteSave = quote.slice(quote.indexOf('async function saveCloudQuote'), quote.indexOf('async function deleteCloudQuote'));
