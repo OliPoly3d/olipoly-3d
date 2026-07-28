@@ -16,6 +16,7 @@ operator verifies them**.
 | `b0b84ed` | NULL-versus-zero evidence semantics and safe zero-contamination repair | Yes | Yes, merged by `66d8fd0` | Unknown: no remote configured | Baseline, not introduced by current PR | Must precede handoff testing; migration `202607280005` |
 | `731215f` | Consolidated single-dispatch handoff, nullable evidence reconciliation, deployment audit, and job-scoped pre-acceptance locking through migration `202607280007` | Yes | No local merge commit contains it | Unknown: no remote configured | Current PR baseline | `be5116c`, `b0b84ed` |
 | `f0675dd` | Preserves structured PostgREST outcomes, classifies transport failures, adds one safe diagnostic, and cache-busts outcome handling | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `731215f` |
+| `99538ce` | Distinguishes job, command, and later database lock 55P03 sources and adds exact key/owner capture tooling | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `f0675dd`; migration `202607280008` follows `202607280007` |
 
 The production schema nullability correction is codified in
 `202607280005_repair_preproduction_zero_actual_contamination.sql`. Dropping
@@ -25,7 +26,7 @@ rerun because repaired rows no longer match its all-zero predicate.
 ## Expected frontend markers
 
 - `production-control.html` loads exactly
-  `js/production-quote-handoff.js?v=20260728-outcome-v4` once.
+  `js/production-quote-handoff.js?v=20260728-lock-scope-v5` once.
 - The client timeout is `setTimeout(() => controller.abort(), 30000)`.
 - The controlled RPC options contain `retryAuth:false`.
 - Rendered actions use `.quote-action[data-push-quote]` and `type="button"`.
@@ -61,7 +62,7 @@ data.
     handoffScripts,
     oneVersionedHandoffScript:
       handoffScripts.length === 1 && handoffScripts[0] ===
-        'js/production-quote-handoff.js?v=20260728-outcome-v4',
+        'js/production-quote-handoff.js?v=20260728-lock-scope-v5',
     timeout30000: html.includes('setTimeout(() => controller.abort(), 30000)'),
     controlledNoAuthReplay: html.includes('retryAuth:false'),
     canonicalButtons:
@@ -119,10 +120,19 @@ Do not infer application from Git. Compare the verification report in
    - **Expected verification:** the definition derives `v_job_lock_key` from
      `p_job_id`, acquires it before `production_jobs ... FOR UPDATE`, contains
      both controlled `55P03` paths, and contains transaction-local `lock_timeout`.
+4. `202607280008_distinguish_preacceptance_lock_failures.sql`
+   - **Purpose:** retain the same job/command locks and authority while assigning
+     distinct PostgREST message/DETAIL/HINT fields to job-lock, command-lock,
+     and later database lock-timeout outcomes.
+   - **Idempotency:** `CREATE OR REPLACE FUNCTION`, `REVOKE`, and `GRANT` remain
+     repeatable and perform no data update.
+   - **Expected verification:** the definition contains `lockScope=job`,
+     `lockScope=command`, and `lockScope=row_timeout`; the next 55P03 response
+     deterministically names its source.
 
 Earlier workflow migrations through
 `202607200008_workflow_command_authority_parameter_default_compatibility.sql`
-must already be recorded before these three forward migrations. Stop rather than
+must already be recorded before these four forward migrations. Stop rather than
 replaying the complete historical chain against an unknown live database.
 
 ## Deployment procedure
@@ -164,7 +174,7 @@ replaying the complete historical chain against an unknown live database.
   and response body inspection.
 - Shared JS assets commonly use version query parameters. The handoff asset was
   changed from an unversioned reference to
-  `?v=20260728-outcome-v4` after the handoff fixes.
+  `?v=20260728-lock-scope-v5` after the handoff fixes.
 - A browser tab that loaded old HTML keeps its already-registered listeners even
   after a new deployment. Close old tabs; a refresh is not equivalent to
   changing code inside an already-running document until navigation completes.

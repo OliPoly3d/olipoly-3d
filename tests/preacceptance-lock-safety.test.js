@@ -1,13 +1,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-const migration = fs.readFileSync('supabase/migrations/202607280007_job_scoped_preacceptance_lock.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/202607280008_distinguish_preacceptance_lock_failures.sql', 'utf8');
 const authority = fs.readFileSync('supabase/migrations/202607200008_workflow_command_authority_parameter_default_compatibility.sql', 'utf8');
 const functionBody = migration.slice(migration.indexOf('create or replace function'), migration.indexOf('revoke execute'));
 
 assert.match(functionBody, /v_job_lock_key bigint := hashtextextended\('preacceptance-production-job:' \|\| p_job_id::text, 0\)/, 'job concurrency uses a domain-separated 64-bit key');
 assert.match(functionBody, /pg_try_advisory_xact_lock\(v_job_lock_key\)/, 'same-job commands use a transaction-scoped non-waiting advisory lock');
-assert.match(functionBody, /Another Quote handoff is already operating on this Production job[\s\S]*errcode='55P03'/, 'same-job contention returns controlled 55P03');
+assert.match(functionBody, /Pre-acceptance Production job lock is already held[\s\S]*errcode='55P03'[\s\S]*lockScope=job/, 'same-job contention returns distinct controlled 55P03');
 assert.match(functionBody, /set_config\('lock_timeout', '2s', true\)/, 'transaction-local lock timeout is a secondary defense');
 assert.doesNotMatch(functionBody, /pg_advisory_lock\(/, 'session-scoped advisory locks are forbidden');
 assert.doesNotMatch(functionBody, /workflow_command_receipts where command_identity = v_command_id for update/, 'immutable receipt replay avoids unnecessary row locking');

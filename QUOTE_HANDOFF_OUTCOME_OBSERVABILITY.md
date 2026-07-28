@@ -65,9 +65,9 @@ details.
 
 ## Live verification
 
-1. Apply migrations through `202607280007_job_scoped_preacceptance_lock.sql`.
+1. Apply migrations through `202607280008_distinguish_preacceptance_lock_failures.sql`.
 2. Deploy the frontend containing
-   `js/production-quote-handoff.js?v=20260728-outcome-v4`.
+   `js/production-quote-handoff.js?v=20260728-lock-scope-v5`.
 3. Close old Production tabs and hard-refresh with cache bypass.
 4. Clear Console and Network.
 5. Click **Push to Quote** once.

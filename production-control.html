@@ -1025,7 +1025,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 </style>
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
-<script src="js/production-quote-handoff.js?v=20260728-outcome-v4"></script>
+<script src="js/production-quote-handoff.js?v=20260728-lock-scope-v5"></script>
 <script>
 /* === OliPoly Inline Shared Auth Bridge for Production Control === */
 (function(){
@@ -5933,7 +5933,11 @@ ${err.message || err}`); }
     const status = Number(error?.status || message.match(/Supabase error (\d+)/)?.[1]);
     const code = String(error?.postgresCode || error?.code || '');
     const transportCode = String(error?.transportCode || '');
-    if(code === '55P03') error.handoffOutcome = 'in_progress';
+    const lockScope = String(error?.details || '').match(/(?:^|\s)lockScope=(job|command|row_timeout)(?:\s|$)/)?.[1] || '';
+    if(code === '55P03' && lockScope === 'job') error.handoffOutcome = 'job_lock';
+    else if(code === '55P03' && lockScope === 'command') error.handoffOutcome = 'command_lock';
+    else if(code === '55P03' && lockScope === 'row_timeout') error.handoffOutcome = 'row_lock_timeout';
+    else if(code === '55P03') error.handoffOutcome = 'in_progress';
     else if(code === '40001') error.handoffOutcome = 'stale';
     else if(code === '22023') error.handoffOutcome = 'eligibility';
     else if(['42501','28000'].includes(code)) error.handoffOutcome = 'auth';

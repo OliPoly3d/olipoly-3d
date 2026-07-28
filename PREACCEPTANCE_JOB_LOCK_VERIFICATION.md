@@ -47,7 +47,9 @@ index would duplicate a lookup already narrowed to one receipt.
 
 | SQLSTATE | Operator message | Retry |
 |---|---|---|
-| `55P03` | Another Quote handoff is already in progress. Refresh the estimate before retrying. | Never automatic |
+| `55P03`, job scope | Another Quote handoff is already using this Production job. Refresh before retrying. | Never automatic |
+| `55P03`, command scope | This Quote handoff command is already being processed. Refresh before retrying. | Never automatic |
+| `55P03`, row timeout | The Production record is busy in another operation. Refresh before retrying. | Never automatic |
 | `40001` | This estimate changed since it was loaded. Refresh before retrying. | Never automatic |
 | `22023` / `23505` | Quote handoff was rejected. Refresh the estimate and review the record. | Never automatic |
 | `42501` | Quote handoff was not authorized. Refresh or sign in before retrying. | Never automatic |

@@ -113,8 +113,9 @@ where a.backend_type = 'client backend'
 
 ## Migration application
 
-`202607280006_bound_preacceptance_advisory_lock.sql` must be reviewed and
-applied separately; the application does not assume it is deployed. It replaces
+Migrations through `202607280008_distinguish_preacceptance_lock_failures.sql`
+must be reviewed and applied separately; the application does not assume they
+are deployed. The final migration replaces
 only the six-argument `public.preacceptance_production_command` definition.
 Affected tables remain `production_jobs` (authoritative row update) and
 `workflow_command_receipts` (idempotency receipt); neither table's schema,

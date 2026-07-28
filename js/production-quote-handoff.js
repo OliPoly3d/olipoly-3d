@@ -38,6 +38,9 @@
   }
 
   function outcomeMessage(error){
+    if(error?.handoffOutcome === 'job_lock') return 'Another Quote handoff is already using this Production job. Refresh before retrying.';
+    if(error?.handoffOutcome === 'command_lock') return 'This Quote handoff command is already being processed. Refresh before retrying.';
+    if(error?.handoffOutcome === 'row_lock_timeout') return 'The Production record is busy in another operation. Refresh before retrying.';
     if(error?.handoffOutcome === 'in_progress') return 'Another Quote handoff is already in progress. Refresh the estimate before retrying.';
     if(error?.handoffOutcome === 'stale') return 'This estimate changed since it was loaded. Refresh before retrying.';
     if(error?.handoffOutcome === 'eligibility') return 'The estimate is not eligible to move to Quote. Refresh and review its Production details.';
@@ -102,7 +105,7 @@
       try{
         await push(jobId, {correlationId, causationId:`operator-click:${correlationId}`});
       }catch(error){
-        if(['ambiguous','in_progress','stale'].includes(error?.handoffOutcome)) ambiguousJobs.add(jobId);
+        if(['ambiguous','in_progress','job_lock','command_lock','row_lock_timeout','stale'].includes(error?.handoffOutcome)) ambiguousJobs.add(jobId);
         notify(outcomeMessage(error));
       }finally{
         pendingJobs.delete(jobId);

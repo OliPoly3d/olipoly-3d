@@ -37,6 +37,9 @@ select
   position('pg_advisory_xact_lock' in function_definition) > 0 as has_blocking_advisory_xact_lock,
   position('lock_timeout' in function_definition) > 0 as has_lock_timeout,
   position('55P03' in function_definition) > 0 as has_controlled_55p03
+  ,position('lockScope=job' in function_definition) > 0 as distinguishes_job_lock
+  ,position('lockScope=command' in function_definition) > 0 as distinguishes_command_lock
+  ,position('lockScope=row_timeout' in function_definition) > 0 as distinguishes_row_timeout
 from definition;
 
 -- 4. Recent recorded migrations. to_jsonb avoids assuming optional metadata columns.

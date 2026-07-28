@@ -110,6 +110,9 @@ function fixture(push, jobId = 'job-1'){
   for(const [transportCode,outcome] of [['QUOTE_HANDOFF_CLIENT_TIMEOUT','client_timeout'],['NETWORK_ERROR','network'],['QUOTE_HANDOFF_EXPLICIT_ABORT','explicit_abort']]){
     assert.equal(classify({transportCode,message:'transport diagnostic'}).handoffOutcome, outcome, `${transportCode} remains distinguishable`);
   }
+  for(const [details,outcome] of [['lockScope=job jobId=x lockKey=1','job_lock'],['lockScope=command jobId=x lockKey=2','command_lock'],['lockScope=row_timeout jobId=x','row_lock_timeout']]){
+    assert.equal(classify({postgresCode:'55P03',details,message:'controlled'}).handoffOutcome, outcome, `${details} distinguishes the exact 55P03 boundary`);
+  }
 
   const scriptRefs = [...html.matchAll(/<script[^>]+src="([^"]*production-quote-handoff\.js[^"]*)"/g)];
   assert.equal(scriptRefs.length, 1, 'final HTML loads the canonical handoff module once');
@@ -147,6 +150,9 @@ function fixture(push, jobId = 'job-1'){
   assert.equal(handoff.outcomeMessage({handoffOutcome:'identity_conflict'}), 'This Quote handoff command conflicts with an existing command. Refresh before retrying.');
   assert.equal(handoff.outcomeMessage({handoffOutcome:'client_timeout'}), 'The server did not confirm the Quote handoff in time. Refresh the record before retrying.');
   assert.equal(handoff.outcomeMessage({handoffOutcome:'network'}), 'The Quote handoff could not reach the server. Check your connection and refresh before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'job_lock'}), 'Another Quote handoff is already using this Production job. Refresh before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'command_lock'}), 'This Quote handoff command is already being processed. Refresh before retrying.');
+  assert.equal(handoff.outcomeMessage({handoffOutcome:'row_lock_timeout'}), 'The Production record is busy in another operation. Refresh before retrying.');
   assert.match(sync, /onResponseReceived:\(\) => \{ if\(timeout\)\{ clearTimeout\(timeout\); timeout = null; \} \}/, 'response headers disarm timeout before response body parsing completes');
 
   function actualSyncHarness({timerFires=false, sbApiImpl}){
