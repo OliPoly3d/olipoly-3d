@@ -119,6 +119,13 @@
     var item=document.createElement('div'); item.className='erp-reliability-toast '+(tone||''); item.textContent=msg; box.appendChild(item);
     setTimeout(function(){ item.classList.add('hide'); setTimeout(function(){ item.remove(); }, 250); }, 4200);
   }
+  var recentNotices = Object.create(null);
+  function dedupedToast(key, msg, tone){
+    var now = Date.now();
+    if(recentNotices[key] && now - recentNotices[key] < 5000) return;
+    recentNotices[key] = now;
+    toast(msg, tone);
+  }
   function classifyFetch(url, ok, method, error){
     var text = String(url || '');
     if(text.indexOf('/rest/v1/') < 0 && text.indexOf('/auth/v1/') < 0) return;
@@ -127,11 +134,13 @@
       lastGoodSync = Date.now(); lastFailure = '';
       pendingChanges = false;
       writeHealth({ connected:true, lastGoodSync:nowIso(), lastFailure:'', pendingChanges:false, recordEstimate:pageRecordEstimate() });
-      if(isWrite) { clearSnapshot(); toast('Saved to cloud.', 'ok'); }
+      // Fetch success alone cannot prove the owning workflow completed. The
+      // caller that understands the response is responsible for success UI.
+      if(isWrite) clearSnapshot();
     }else{
       lastFailure = error || 'Cloud request failed';
       writeHealth({ connected:false, lastFailure:lastFailure, lastFailureAt:nowIso(), pendingChanges:pendingChanges, recordEstimate:pageRecordEstimate() });
-      if(isWrite) toast('Cloud save may have failed. A local recovery snapshot was kept.', 'bad');
+      if(isWrite) dedupedToast('cloud-write-failed', 'Cloud save failed. A local recovery snapshot was kept.', 'bad');
     }
     renderStatus();
   }

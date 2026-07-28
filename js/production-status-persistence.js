@@ -48,5 +48,18 @@
     return {...row, ...details, production_status:status, updated_at:now};
   }
 
-  return Object.freeze({identity, timestamp, mergeJobs, transition});
+  const MIGRATABLE_INITIAL_STATUSES = Object.freeze(['estimate', 'waiting_customer']);
+
+  function migrationDecision(row, cloudIds, userId){
+    if(!userId) return {action:'skip', reason:'authentication-unavailable'};
+    if(!row?.id) return {action:'skip', reason:'missing-id'};
+    if(cloudIds?.has?.(row.id)) return {action:'update', reason:'owned-cloud-row'};
+    if(row.user_id && row.user_id !== userId) return {action:'skip', reason:'ownership-mismatch'};
+    if(!MIGRATABLE_INITIAL_STATUSES.includes(row.production_status) || row.order_number){
+      return {action:'skip', reason:'ineligible-lifecycle'};
+    }
+    return {action:'insert', reason:'eligible-local-draft'};
+  }
+
+  return Object.freeze({identity, timestamp, mergeJobs, transition, migrationDecision, MIGRATABLE_INITIAL_STATUSES});
 });
