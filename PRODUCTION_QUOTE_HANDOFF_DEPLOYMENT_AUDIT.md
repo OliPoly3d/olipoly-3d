@@ -18,6 +18,7 @@ operator verifies them**.
 | `f0675dd` | Preserves structured PostgREST outcomes, classifies transport failures, adds one safe diagnostic, and cache-busts outcome handling | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `731215f` |
 | `99538ce` | Distinguishes job, command, and later database lock 55P03 sources and adds exact key/owner capture tooling | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `f0675dd`; migration `202607280008` follows `202607280007` |
 | `9621c95` | Makes Production row acquisition nonblocking, coordinates same-job browser saves, and adds live row-holder capture | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | `99538ce`; migration `202607280009` follows `202607280008` |
+| `1d47c0a` | Adds opt-in authenticated transport-stage tracing and correlated Postgres/HTTP capture tooling | Yes | No local merge commit contains it | Unknown: no remote configured | Yes | Current consolidated baseline `cf63b27`; migration `202607280010` follows `202607280009` |
 
 The production schema nullability correction is codified in
 `202607280005_repair_preproduction_zero_actual_contamination.sql`. Dropping
@@ -139,10 +140,19 @@ Do not infer application from Git. Compare the verification report in
      repeatable and perform no data update.
    - **Expected verification:** the definition contains two `FOR UPDATE NOWAIT`
      clauses, `lockScope=row_nowait`, and `lockScope=database_lock_timeout`.
+6. `202607280010_trace_preacceptance_transport_boundary.sql`
+   - **Purpose:** add opt-in, transaction-local `pg_stat_activity` stage markers
+     for authenticated diagnostic correlations without changing command logic,
+     return shape, authorization, locks, receipts, or grants.
+   - **Idempotency:** `CREATE OR REPLACE FUNCTION`, `REVOKE`, and `GRANT` are
+     repeatable and perform no data update.
+   - **Expected verification:** normal correlations emit no marker; a fresh
+     `diagnostic:` correlation exposes only stage/job-prefix/fingerprint data in
+     `application_name` for the life of that transaction.
 
 Earlier workflow migrations through
 `202607200008_workflow_command_authority_parameter_default_compatibility.sql`
-must already be recorded before these five forward migrations. Stop rather than
+must already be recorded before these six forward migrations. Stop rather than
 replaying the complete historical chain against an unknown live database.
 
 ## Deployment procedure

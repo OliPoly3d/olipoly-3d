@@ -27,7 +27,8 @@ for(const namespace of ['preacceptance-production-job:','preacceptance-productio
   assert.deepEqual(files.map(file=>file.split('/').pop()).sort(), [
     '202607280007_job_scoped_preacceptance_lock.sql',
     '202607280008_distinguish_preacceptance_lock_failures.sql',
-    '202607280009_nowait_preacceptance_production_row.sql'
+    '202607280009_nowait_preacceptance_production_row.sql',
+    '202607280010_trace_preacceptance_transport_boundary.sql'
   ], `${namespace} is isolated to the current/superseded preacceptance definitions`);
 }
 for(const marker of ['backend_start','xact_start','query_start','application_name','blocking_pids','classid','objid','objsubid','transactionid','tuple','relation','pg_get_functiondef','authenticated_can_execute']){

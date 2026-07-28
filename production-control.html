@@ -1866,7 +1866,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
 
   async function sbApi(path, options = {}){
-    const {retryAuth, onResponseReceived, requestKind, skipAuthEnsure, ...fetchOptions} = options;
+    const {retryAuth, onResponseReceived, onTransportMilestone, requestKind, skipAuthEnsure, ...fetchOptions} = options;
     if(!skipAuthEnsure && window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
     const requestUrl = `${SUPABASE_URL}${path}`;
     const makeHeaders = () => ({
@@ -1876,9 +1876,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       ...(options.headers || {})
     });
     async function run(){
+      onTransportMilestone?.('fetch_called', {requestUrl});
       const res = await fetch(requestUrl, {...fetchOptions, headers:makeHeaders()});
+      onTransportMilestone?.('response_promise_resolved', {requestUrl, httpStatus:res.status});
       if(typeof onResponseReceived === 'function') onResponseReceived(res);
+      onTransportMilestone?.('response_body_read_started', {requestUrl, httpStatus:res.status});
       const txt = await res.text();
+      onTransportMilestone?.('response_body_read_completed', {requestUrl, httpStatus:res.status, responseBytes:new TextEncoder().encode(txt).length});
       let data = null;
       try{ data = txt ? JSON.parse(txt) : null; }catch{ data = txt; }
       return {res, txt, data};
@@ -2837,18 +2841,25 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const request = window.OliPolyWorkflow.preAcceptanceProductionRpcRequest(job.id, command, job.updated_at, payload, commandContext);
     if(window.OliPolyAuth?.ensure) await window.OliPolyAuth.ensure();
     const controller = new AbortController();
+    const transportStartedAt = performance.now();
+    const transportTimeline = [];
+    const recordTransport = (stage, fields = {}) => transportTimeline.push({stage, elapsedMs:Math.round(performance.now()-transportStartedAt), ...fields});
     let timedOut = false;
-    let timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
+    let timeout = setTimeout(() => { timedOut = true; recordTransport('timeout_fired'); controller.abort(); }, 30000);
     try{
       const result = await sbApi(request.path, {
         method:'POST', retryAuth:false, skipAuthEnsure:true, requestKind:'quote-handoff', signal:controller.signal,
+        onTransportMilestone:recordTransport,
         onResponseReceived:() => { if(timeout){ clearTimeout(timeout); timeout = null; } },
         headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
       });
       return Array.isArray(result) ? result[0] : result;
     }catch(error){
+      error.transportTimeline = transportTimeline;
       if(error?.postgresCode || error?.httpStatus) throw error;
-      throw window.OliPolyProductionQuoteHandoff.transportError(error, {timedOut});
+      const transport = window.OliPolyProductionQuoteHandoff.transportError(error, {timedOut});
+      transport.transportTimeline = transportTimeline;
+      throw transport;
     }finally{
       if(timeout) clearTimeout(timeout);
     }
@@ -5980,6 +5991,7 @@ ${err.message || err}`); }
           postgresCode:classified.postgresCode || null, message:classified.message || null,
           details:classified.details || null, hint:classified.hint || null,
           errorName:classified.name || null, elapsedMs:Math.round(performance.now()-startedAt),
+          transportTimeline:classified.transportTimeline || [],
           requestUrl:classified.requestUrl || `${SUPABASE_URL}/rest/v1/rpc/preacceptance_production_command`
         });
         throw classified;
