@@ -1752,6 +1752,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
 <script src="olipoly-auth.js"></script>
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
+<script src="js/production-evidence.js?v=20260728-null-semantics"></script>
 <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
 <script src="js/estimate-actual-analytics.js?v=20260716-m3c"></script>
 <script src="js/product-recipe-model.js?v=20260716-m4a"></script>
@@ -2385,15 +2386,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       recipe_id:existing?.recipe_id || state.repeatRecipeSnapshot?.recipe_id || null,
       recipe_revision:existing?.recipe_revision || state.repeatRecipeSnapshot?.recipe_revision || null,
       recipe_snapshot:existing?.recipe_snapshot || state.repeatRecipeSnapshot?.recipe_snapshot || null,
-      actual_machine: existing?.actual_machine || null,
-      actual_quantity: existing?.actual_quantity || null,
-      actual_print_hours: existing?.actual_print_hours || null,
-      actual_grams_used: existing?.actual_grams_used || null,
-      actual_filament_breakdown: existing?.actual_filament_breakdown || null,
+      ...window.OliPolyProductionEvidence.normalizeActuals(existing),
       close_note: existing?.close_note || null,
-      print_started_at: existing?.print_started_at || null,
       estimated_finish_at: existing?.estimated_finish_at || null,
-      scrap_grams: existing?.scrap_grams || null,
       failure_reason: existing?.failure_reason || null,
       exclude_inventory_reduction:$('excludeInventoryReduction')?.value === 'yes',
       inventory_deducted: existing?.inventory_deducted || false,
@@ -2482,8 +2477,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return false;
     }
     const isPreAcceptanceCreate = decision.action === 'insert';
-    const ordinaryJobPayload = {...full};
-    ['production_status','order_number','actual_machine','actual_quantity','actual_print_hours','actual_filaments','actual_filament_usage','actual_filament_breakdown','actual_grams_used','scrap_grams','print_started_at','completed_at','closed_at','actuals_captured_at','roll_usages'].forEach(key => delete ordinaryJobPayload[key]);
+    const ordinaryJobPayload = window.OliPolyProductionEvidence.omitActualEvidence(full);
+    ['production_status','order_number','closed_at','actuals_captured_at','roll_usages'].forEach(key => delete ordinaryJobPayload[key]);
     const payload = {
       id: full.id,
       user_id: state.user.id,
@@ -2822,6 +2817,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     window.OliPolyWorkflow.clearCommandIdentity('preacceptance-production', job.id, command, job.updated_at);
     return Array.isArray(result) ? result[0] : result;
   }
+  function preAcceptanceErrorMessage(error){
+    if(String(error?.message || '').includes('Pre-acceptance command rejects actual or completion evidence')){
+      console.error('Pre-acceptance promotion blocked by authoritative production evidence.', {error});
+      return 'This estimate contains legacy production evidence and cannot be promoted until an administrator reviews and safely repairs it.';
+    }
+    return error?.message || 'Could not save job.';
+  }
   window.OliPolyProductionCommands = Object.freeze({syncPreAcceptanceProductionStatus});
 
   const linkedWorkflowInFlight = new Set();
@@ -2923,7 +2925,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       toast(cloudOk ? 'Saved production job to browser + cloud.' : 'Saved production job locally only.');
     }catch(err){
       console.warn(err);
-      toast(err.message || 'Could not save job.');
+      toast(preAcceptanceErrorMessage(err));
     }
   }
 
@@ -3991,15 +3993,9 @@ ${err.message || err}`); }
       filament_breakdown:j.filament_breakdown || null,
       notes:j.notes || null,
       filament_recipe:j.filament_recipe || null,
-      actual_machine:j.actual_machine || null,
-      actual_quantity:j.actual_quantity || null,
-      actual_print_hours:j.actual_print_hours || null,
-      actual_grams_used:j.actual_grams_used || null,
-      actual_filament_breakdown:j.actual_filament_breakdown || null,
+      ...window.OliPolyProductionEvidence.normalizeActuals(j),
       close_note:j.close_note || null,
-      print_started_at:j.print_started_at || null,
       estimated_finish_at:j.estimated_finish_at || null,
-      scrap_grams:j.scrap_grams || null,
       failure_reason:j.failure_reason || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
       inventory_deducted:!!j.inventory_deducted,
