@@ -5777,6 +5777,25 @@ ${err.message || err}`); }
     toast('Recipe loaded as a new editable estimate. No Order or inventory reservation was created.');
   }
   applyRecipeRepeatPreload();
+  // Quote handoff resolves from the same state that rendered the card first,
+  // then refreshes that one owner-scoped row when cloud access is available.
+  window.OliPolyProductionQuoteResolver = Object.freeze({
+    async resolve(jobId){
+      const id = String(jobId || '');
+      const rendered = state.jobs.find(job => String(job.id) === id) || null;
+      if(state.user?.id){
+        try{
+          const rows = await sbApi(`/rest/v1/production_jobs?select=*&id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(state.user.id)}&limit=1`, {method:'GET'});
+          if(Array.isArray(rows) && rows[0]) return {job:normalizeCloudJob(rows[0]), source:'cloud', offline:false};
+        }catch(error){
+          if(rendered) return {job:rendered, source:'rendered-recovery', offline:true, error};
+        }
+      }
+      if(rendered) return {job:rendered, source:'rendered', offline:!state.user?.id};
+      const recovered = migrateLocalJobs().find(job => String(job.id) === id) || null;
+      return recovered ? {job:recovered, source:'local-recovery', offline:true} : null;
+    }
+  });
   loadAll();
 })();
 </script>
@@ -5790,6 +5809,7 @@ ${err.message || err}`); }
 (() => {
   const LS_JOBS = 'olipoly_production_jobs_v3';
   const QUOTE_DRAFT_KEY = 'olipoly_production_to_quote_draft_v1';
+  const QUOTE_INTENT_KEY = 'olipoly_production_quote_intent_v2';
   const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
 
@@ -5878,6 +5898,7 @@ ${err.message || err}`); }
       version: 'production-to-quote-v1',
       created_at: new Date().toISOString(),
       production_job_id: job.id,
+      source_updated_at: job.updated_at || null,
       production_job_title: job.job_title || '',
       quote_number: job.quote_number || '',
       order_number: job.order_number || orderNumberFromQuoteNumberLocal(job.quote_number) || '',
@@ -5916,34 +5937,24 @@ ${err.message || err}`); }
     };
   }
 
-  async function patchProductionJobHandoff(job, draft, commandContext){
-    const recoveryDraft = {...job,
-      quote_number: draft.quote_number,
-      production_quote_id: draft.quote_number,
-      quote_handoff_at: new Date().toISOString(),
-      linked_quote_draft: draft,
-      recovery_draft_only: true
-    };
-    writeJson('olipoly_production_to_quote_recovery_draft_v1', recoveryDraft);
-
-    const syncStatus = window.OliPolyProductionCommands?.syncPreAcceptanceProductionStatus;
-    if(typeof syncStatus !== 'function') throw new Error('Authoritative Production handoff command is unavailable.');
-    const authoritative = await syncStatus(job, 'waiting_customer', {quote_number:draft.quote_number, linked_quote_draft:draft}, commandContext);
-    if(!authoritative) throw new Error('Authoritative Production handoff confirmation was empty.');
-    const jobs = readJson(LS_JOBS, []);
-    writeJson(LS_JOBS, jobs.map((j) => j.id === job.id ? {...j, ...authoritative} : j));
-  }
-
-  async function pushProductionJobToQuote(id, commandContext){
-    const jobs = readJson(LS_JOBS, []);
-    const job = jobs.find((j) => j.id === id);
+  async function pushProductionJobToQuote(id){
+    const resolved = await window.OliPolyProductionQuoteResolver?.resolve(id);
+    const job = resolved?.job;
     if(!job) throw new Error('Could not find that production job.');
-
+    const status = String(job.production_status || 'estimate');
+    if(job.order_number || !['estimate','waiting_customer'].includes(status)) throw new Error('Only estimate or Waiting for Customer jobs can open a Quote draft.');
     if(!job.quote_number) throw new Error('Save this estimate first so Production Control can assign a Q-number.');
     const draft = buildQuoteDraft(job);
+    if(resolved.offline) draft.recovery_warning = 'Production cloud data could not be confirmed. Reconcile the Production link after reconnecting.';
     writeJson(QUOTE_DRAFT_KEY, draft);
-    await patchProductionJobHandoff(job, draft, commandContext);
-    toast('Quote draft prepared from Production Control.');
+    writeJson(QUOTE_INTENT_KEY, {
+      version:2, created_at:new Date().toISOString(), production_job_id:String(job.id),
+      quote_number:draft.quote_number, source_updated_at:job.updated_at || null,
+      source:'production-control', intended_transition:'waiting_customer', status:'draft_opened',
+      quote_saved_at:null, handoff_confirmed_at:null, durable_quote_id:null,
+      recovery_warning:draft.recovery_warning || null
+    });
+    toast('Opening Quote draft…');
     const url = `quote.html?fromProduction=1&production_job_id=${encodeURIComponent(job.id)}`;
     window.location.href = url;
   }
@@ -5979,9 +5990,9 @@ ${err.message || err}`); }
   window.OliPolyProductionQuoteHandoff.install({
     container:document,
     notify:toast,
-    push:async (id, commandContext) => {
+    push:async (id) => {
       const startedAt = performance.now();
-      try{return await originalPush(id, commandContext);}
+      try{return await originalPush(id);}
       catch(error){
         const classified = classifyHandoffError(error);
         console.error('Production Quote handoff failed.', {

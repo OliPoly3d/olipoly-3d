@@ -790,7 +790,7 @@
         "js/erp-polish.js?v=20260608",
         "js/quote-pricing.js?v=20260716-1A",
         "olipoly-auth.js",
-        "quote.js?v=20260716-1A"
+        "quote.js?v=20260730-production-save-handoff-v1"
       ],
       "stylesheets": [
         "css/erp-core.css?v=erp-1.0",

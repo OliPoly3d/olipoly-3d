@@ -760,6 +760,61 @@ ${err.message || err}`);
     });
   }
 
+  function productionLinkContext(durableRows) {
+    const jobId = $("productionJobId")?.value?.trim();
+    const source = $("productionQuoteSource")?.value?.trim();
+    const quoteNumber = $("quoteNumber")?.value?.trim();
+    const durableQuote = Array.isArray(durableRows) ? durableRows[0] : durableRows;
+    const intent = window.OliPolyQuoteProductionHandoff?.matchingIntent(jobId, quoteNumber);
+    return source === "production-control" && jobId && quoteNumber && durableQuote?.id && intent
+      ? {jobId, quoteNumber, durableQuote, intent}
+      : null;
+  }
+
+  function showProductionLinkStatus(message, kind = "info", retryContext = null) {
+    const note = $("productionQuoteSourceNote");
+    if(!note) return;
+    note.classList.remove("hidden");
+    note.dataset.linkStatus = kind;
+    note.innerHTML = `<strong>${message}</strong>`;
+    if(retryContext){
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn";
+      button.id = "retryProductionStatusLinkBtn";
+      button.textContent = "Retry Production Status Link";
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try{
+          await window.OliPolyQuoteProductionHandoff.confirm({...retryContext, expectedUpdatedAt:retryContext.intent.source_updated_at});
+          showProductionLinkStatus("Quote saved. Production is Waiting for Customer.", "success");
+          toast("Quote saved and Production moved to Waiting for Customer.");
+        }catch(error){
+          console.warn("Explicit Production status reconciliation failed:", error);
+          showProductionLinkStatus("Quote saved, but Production status needs reconciliation.", "warning", retryContext);
+          toast("Quote saved, but Production status was not updated. Refresh Production Control and reconcile the handoff.");
+        }
+      }, {once:true});
+      note.append(document.createElement("br"), button);
+    }
+  }
+
+  async function handoffSavedProductionQuote(durableRows) {
+    const context = productionLinkContext(durableRows);
+    if(!context) return false;
+    try{
+      await window.OliPolyQuoteProductionHandoff.confirm({...context, expectedUpdatedAt:context.intent.source_updated_at});
+      showProductionLinkStatus("Quote saved. Production is Waiting for Customer.", "success");
+      toast("Quote saved and Production moved to Waiting for Customer.");
+    }catch(error){
+      window.OliPolyQuoteProductionHandoff.markUnconfirmed(context.durableQuote);
+      console.warn("Quote saved but Production status link was not confirmed:", error);
+      showProductionLinkStatus("Quote saved, but Production status needs reconciliation.", "warning", context);
+      toast("Quote saved, but Production status was not updated. Refresh Production Control and reconcile the handoff.");
+    }
+    return true;
+  }
+
   function patchButtons() {
     const save = $("saveQuoteBtn");
     const load = $("loadQuoteBtn");
@@ -770,10 +825,11 @@ ${err.message || err}`);
       save.onclick = async (e) => {
         e.preventDefault();
         try {
-          await saveCloudQuote();
+          const durableRows = await saveCloudQuote();
           await refreshSavedQuotes();
           const q = $("quoteNumber")?.value || "Quote";
-          toast(`${q} saved to cloud.`);
+          const linked = await handoffSavedProductionQuote(durableRows);
+          if(!linked) toast(`${q} saved to cloud.`);
         } catch (err) {
           console.warn("Cloud save failed; saving browser fallback:", err);
           localSaveFallback();
@@ -4996,7 +5052,7 @@ https://olipoly3d.com`;
     const card = document.createElement('div');
     card.id = 'productionSourceCard';
     card.className = 'production-source-card';
-    card.innerHTML = `<strong>Production estimate linked</strong>This quote draft came from Production Control. Customer-facing pricing can be rounded or adjusted here; internal cost/margin stays in Production.`;
+    card.innerHTML = `<strong>Production estimate loaded as an editable Quote draft.</strong>Production status will update only after this Quote is saved.${draft.recovery_warning ? `<br><span>${draft.recovery_warning}</span>` : ''}`;
     customerCard.insertBefore(card, customerCard.querySelector('.quote-type-panel') || customerCard.firstChild);
   }
 
@@ -5098,8 +5154,7 @@ https://olipoly3d.com`;
     // contain a numeric Supabase/local id. Compare as strings so the Production
     // Control draft actually loads instead of letting Quote Tool generate its own
     // standalone Q/INV numbers.
-    if(!cameFromProduction && (!urlJobId || urlJobId !== draftJobId)) return;
-    if(urlJobId && draftJobId && urlJobId !== draftJobId) {
+    if(!cameFromProduction || !urlJobId || !draftJobId || urlJobId !== draftJobId) {
       console.warn('Production quote draft ignored because the URL job id did not match the saved draft.', { urlJobId, draftJobId });
       return;
     }
@@ -5113,6 +5168,7 @@ https://olipoly3d.com`;
     ensureHidden('productionQuoteSource').value = 'production-control';
     ensureHidden('productionSuggestedTotal').value = draft.suggested_total || '';
     ensureHidden('productionSuggestedPiecePrice').value = draft.suggested_piece_price || '';
+    ensureHidden('productionSourceUpdatedAt').value = draft.source_updated_at || '';
 
     applyProductionIdentity(draft);
     applyProductionCostInputs(draft);
@@ -5137,7 +5193,7 @@ https://olipoly3d.com`;
     const note = $('productionQuoteSourceNote');
     if(note){
       note.classList.remove('hidden');
-      note.innerHTML = `<strong>Linked Production Job:</strong> ${draft.production_job_title || draft.production_job_id}<br><span>Suggested total: ${Number(draft.suggested_total) ? '$' + Number(draft.suggested_total).toFixed(2) : 'not set'} · Adjust/round as needed before sending.</span>`;
+      note.innerHTML = `<strong>Production estimate loaded. Save this Quote to update Production status.</strong><br><span>Linked job: ${draft.production_job_title || draft.production_job_id} · Suggested total: ${Number(draft.suggested_total) ? '$' + Number(draft.suggested_total).toFixed(2) : 'not set'}.</span>`;
     }
 
     // Some legacy quote initializers run after DOMContentLoaded and may generate
