@@ -132,8 +132,8 @@
       const originalLabel = button.textContent;
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
-      button.textContent = 'Sending to Quote…';
-      notify('Sending to Quote…');
+      button.textContent = 'Opening Quote draft…';
+      notify('Opening Quote draft…');
       let releaseHandoff = null;
       let correlationId;
       try{

@@ -74,7 +74,8 @@ assert(production.includes('Linked accepted work cannot be moved back directly')
 assert(production.includes('Linked accepted Production evidence cannot be directly deleted'), 'linked Production evidence direct delete must be blocked');
 assert(production.includes('ordinaryJobPayload') && production.includes("delete ordinaryJobPayload[key]"), 'Production ordinary saves must omit command-owned fields');
 assert(production.includes('ordinarySaveJob = isPreAcceptanceStatusChange ? {...j, production_status:previousJob.production_status} : j'), 'pre-acceptance editor status changes must not shadow-write local lifecycle state before command success');
-assert(production.includes('recovery_draft_only: true') && !/writeJson\(LS_JOBS,[\s\S]{0,120}waiting_customer[\s\S]{0,120}syncPreAcceptanceProductionStatus/.test(production), 'Push to Quote must retain only a recovery draft before the pre-acceptance command succeeds');
+const quoteOpen = production.slice(production.indexOf('async function pushProductionJobToQuote'), production.indexOf('function classifyHandoffError'));
+assert(quoteOpen.includes('writeJson(QUOTE_DRAFT_KEY, draft)') && quoteOpen.includes('writeJson(QUOTE_INTENT_KEY') && !quoteOpen.includes('syncPreAcceptanceProductionStatus'), 'Push to Quote must write non-authoritative recovery records and navigate without a lifecycle command');
 assert(production.includes("syncProductionStatusToOrder(j, 'qc', updated)"), 'confirmClose must call complete_print with persisted old job row and captured evidence');
 assert(!/if\(state\.user\?\.id\) await cloudSaveJob\(updated\);[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not cloudSaveJob before linked complete_print');
 assert(!/logProjectEvent\('production_actuals_captured'[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not emit legacy event before linked complete_print');
