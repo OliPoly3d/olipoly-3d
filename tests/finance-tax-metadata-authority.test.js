@@ -19,7 +19,7 @@ assert.match(sql,/apply_order_tax_metadata_to_finance_post[\s\S]*new\.destinatio
 assert.match(sql,/FINANCE_TAX_METADATA_UNRESOLVED: taxable Order has tax but no rate/,'posting rejects collected tax without rate');
 assert.match(financeHtml,/id="correctionDestinationCounty"[\s\S]*id="correctionSalesTaxRate"[\s\S]*id="correctionCalculatedTax" type="number" readonly/,'correction UI exposes county/rate but not editable tax');
 assert.match(finance,/const calculated = exempt \? 0 : \+\(\(taxable \* rate\) \/ 100\)\.toFixed\(2\)/,'correction preview calculates tax canonically');
-assert.match(finance,/append_finance_tax_metadata_correction/,'metadata uses controlled RPC');
+assert.match(finance,/correct_financial_entry/,'metadata uses the unified controlled RPC');
 assert.match(sql,/v_tax:=case when coalesce\(p_tax_exempt,false\) then 0 else round\(v_taxable\*p_sales_tax_rate\/100,2\) end/,'database calculates tax and never trusts browser tax');
 assert.match(sql,/v_delta:=v_tax-coalesce\(v_original\.sales_tax_collected,0\)/,'rate correction records only tax delta');
 assert.match(sql,/values\(v_actor,v_original\.type,p_correction_date[\s\S]*,0,0,100,0,0,v_delta/,'metadata correction creates no sales delta');

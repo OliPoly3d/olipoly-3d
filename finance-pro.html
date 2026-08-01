@@ -458,8 +458,8 @@
           <strong>This posted entry is immutable. Corrections are recorded as new entries.</strong>
           <div class="form-grid" style="margin-top:12px;">
             <div>
-              <label for="correctionType">Correction Type</label>
-              <select id="correctionType"><option value="correct">Adjustment</option><option value="reverse">Full Reversal</option></select>
+              <label>Correction Accounting Path</label>
+              <div class="stat-note" id="correctionClassification">Metadata-only correction</div>
             </div>
             <div>
               <label for="correctionReason">Correction Reason</label>
@@ -583,12 +583,24 @@
               <label for="correctionTaxDelta">Sales-Tax Delta</label>
               <input id="correctionTaxDelta" type="number" readonly>
             </div>
+            <div>
+              <label style="display:flex;align-items:center;gap:8px;"><input id="correctionTaxOverrideEnabled" type="checkbox" style="width:auto;"> Override calculated tax</label>
+              <input id="correctionTaxOverrideAmount" type="number" min="0" step="0.01" readonly placeholder="Actual tax collected">
+            </div>
+            <div>
+              <label for="correctionTaxOverrideReason">Tax Override Explanation</label>
+              <input id="correctionTaxOverrideReason" type="text" maxlength="500" readonly>
+            </div>
+            <div class="full">
+              <label>Correction Review</label>
+              <div class="stat-note" id="correctionReview"></div>
+            </div>
             <div class="full">
               <label>Original Tax Context</label>
               <div class="stat-note" id="correctionOriginalTaxContext"></div>
             </div>
           </div>
-          <p class="note">For an adjustment, enter signed deltas in the amount, shipping, tax, or cost fields. A reversal ignores those deltas and offsets the complete original entry.</p>
+          <p class="note">Edit the full effective entry above. Metadata-only changes create one zero-money audit row; financial changes atomically reverse the effective entry and create a corrected replacement.</p>
         </div>
 
         <div class="button-row" style="margin-top:16px;justify-content:flex-start;">

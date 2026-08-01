@@ -10,7 +10,7 @@ assert.match(js, /isAuthoritativeEntry\(e\) \? 'Create Correction' : 'Edit'/, 'p
 assert.match(js, /This Finance entry is posted and cannot be edited\. Create an append-only correction instead\./, 'immutable explanation is explicit');
 assert.doesNotMatch(js, /from\('financial_entries'\)\.update/, 'Finance Pro never directly PATCHes financial_entries');
 assert.doesNotMatch(js, /from\('financial_entries'\)\.delete/, 'Finance Pro never directly DELETEs financial_entries');
-assert.match(js, /rpcName = taxMetadataChanged \? 'append_finance_tax_metadata_correction' : 'append_finance_entry_correction'[\s\S]*supabase\.rpc\(rpcName, rpcPayload\)/, 'authoritative edits use the appropriate correction RPC');
+assert.match(js, /rpcName = 'correct_financial_entry'[\s\S]*supabase\.rpc\(rpcName, rpcPayload\)/, 'authoritative edits use the full-record correction RPC');
 assert.match(js, /rpc\('update_manual_financial_entry'/, 'manual drafts use controlled update RPC');
 assert.match(html, /id="correctionReason"[\s\S]*id="correctionDestinationCounty"[\s\S]*id="correctionCalculatedTax"[^>]*readonly/, 'correction form captures metadata while calculated tax stays read-only');
 assert.match(sql, /revoke update, delete on table public\.financial_entries from public, anon, authenticated/i, 'browser UPDATE and DELETE are revoked');
