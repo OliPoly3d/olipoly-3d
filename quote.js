@@ -444,6 +444,7 @@
       taxable_subtotal: totals.beforeTax,
       tax_rate: totals.taxRate,
       tax: totals.tax,
+      destination_county: document.getElementById('salesTax')?.dataset.taxCounty || null,
       deposit: totals.deposit,
       balance: totals.balance,
       final_total: totals.total
