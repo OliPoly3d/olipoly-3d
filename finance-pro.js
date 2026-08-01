@@ -37,6 +37,7 @@ const ids = [
   'businessUsePercent','vendorName','paymentMethod','receiptLink','mileageWrap','milesDriven','mileageRate',
   'tripPurpose','tripFrom','tripTo','roundTripToggle',
   'defaultMileageRate','officeSqft','homeSqft','homeOfficePercent','saveSettingsBtn','settingsMessage'
+  ,'correctionControls','correctionType','correctionReason','correctionTaxAdjustment'
 ];
 const els = Object.fromEntries(ids.map(id => [id, $(id)]));
 
@@ -52,6 +53,7 @@ let supabase;
 let currentUser = null;
 let entries = [];
 let editingId = null;
+let correctionOriginal = null;
 let customCategoryValue = '';
 let authBusy = false;
 
@@ -360,6 +362,7 @@ function setUI(on) {
 
 function resetForm() {
   editingId = null;
+  correctionOriginal = null;
   customCategoryValue = '';
   els.entryForm.reset();
   delete els.entryForm.dataset.saving;
@@ -387,8 +390,31 @@ function resetForm() {
   els.saveBtn.textContent = 'Save Entry';
   els.saveBtn.disabled = false;
   els.cancelEditBtn.classList.add('hidden');
+  hide(els.correctionControls);
+  if (els.correctionReason) els.correctionReason.value = '';
+  if (els.correctionTaxAdjustment) els.correctionTaxAdjustment.value = '0.00';
+  ['entryAmount','shippingCharged','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost'].forEach(id => els[id]?.setAttribute('min', '0'));
+  setOriginalFieldsReadOnly(false);
   hide(els.formMessage);
   updateEntryTypeHint();
+}
+
+const isAuthoritativeEntry = entry => !!(entry?.finance_command_owned || entry?.finance_command_id || entry?.order_id || entry?.correction_of_entry_id || entry?.reversal_of_entry_id);
+const isCorrectionEntry = entry => !!(entry?.correction_of_entry_id || entry?.reversal_of_entry_id || ['correct_entry','reverse_entry'].includes(entry?.finance_command));
+
+function setOriginalFieldsReadOnly(readOnly) {
+  ['entryType','entryCategory','taxCategory','entryTitle','vendorName','paymentMethod','receiptLink','businessUsePercent','destinationCounty','salesTaxRate','taxExemptSale']
+    .forEach(id => { if (els[id]) els[id].disabled = readOnly; });
+}
+
+function correctionIdentity(originalId) {
+  const key = `finance-correction:${originalId}`;
+  let value = sessionStorage.getItem(key);
+  if (!value) {
+    value = `${originalId}:${Date.now()}:${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, value);
+  }
+  return value;
 }
 
 function filteredEntries() {
@@ -511,8 +537,8 @@ function renderTable(list) {
           <td>${money(directCost(e))}</td>
           <td>
             <div class="mini-actions">
-              <button class="btn-ghost" type="button" data-edit="${e.id}">Edit</button>
-              <button class="btn-danger" type="button" data-delete="${e.id}">Delete</button>
+              ${isCorrectionEntry(e) ? '<span class="type-pill">Posted correction</span>' : `<button class="btn-ghost" type="button" data-edit="${e.id}">${isAuthoritativeEntry(e) ? 'Create Correction' : 'Edit'}</button>`}
+              ${isAuthoritativeEntry(e) ? '' : `<button class="btn-danger" type="button" data-delete="${e.id}">Delete</button>`}
             </div>
           </td>
         </tr>
@@ -886,6 +912,7 @@ function exportCSV() {
       'Destination County','Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost',
       'Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Vendor','Payment Method',
       'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Trip Purpose','Trip From','Trip To','Round Trip','Title','Notes'
+      ,'Entry ID','Order Number','Finance Command','Original Entry ID','Correction Reason'
     ],
     ...entries.map(e => [
       e.entry_date,
@@ -915,7 +942,12 @@ function exportCSV() {
       e.trip_to || '',
       e.round_trip ? 'yes' : 'no',
       e.title,
-      e.notes || ''
+      e.notes || '',
+      e.id,
+      e.order_number || '',
+      e.finance_command || '',
+      e.correction_of_entry_id || e.reversal_of_entry_id || '',
+      e.correction_reason || ''
     ])
   ]);
 }
@@ -930,6 +962,7 @@ function exportSalesTaxFilingCSV() {
     ['Totals',period.label,period.start,period.end,period.due,'',r.entries.length,r.grossSales.toFixed(2),r.taxableSales.toFixed(2),r.exemptSales.toFixed(2),'',r.taxCollected.toFixed(2)],
     ...r.countyRows.map(row => ['County Summary',period.label,period.start,period.end,period.due,row.county,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'',row.rates.map(rate => `${rate}%`).join(' | '),row.taxCollected.toFixed(2)]),
     ...r.monthlyRows.map(row => ['Monthly Breakdown',period.label,period.start,period.end,period.due,row.month,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'','',row.taxCollected.toFixed(2)])
+    ,...r.entries.map(entry => ['Entry Trace',period.label,entry.entry_date,entry.id,entry.order_number || '',entry.destination_county || '',1,(incomeSaleAmount(entry)+num(entry.shipping_charged)).toFixed(2),entry.tax_exempt_sale ? '0.00' : (incomeSaleAmount(entry)+num(entry.shipping_charged)).toFixed(2),entry.tax_exempt_sale ? (incomeSaleAmount(entry)+num(entry.shipping_charged)).toFixed(2) : '0.00',entry.finance_command || '',computedSalesTax(entry).toFixed(2)])
   ];
   downloadCSV(`olipoly-ohio-sales-tax-${period.value}.csv`, rows);
 }
@@ -1071,14 +1104,15 @@ function startEdit(id) {
   if (!e) return;
 
   editingId = id;
+  correctionOriginal = isAuthoritativeEntry(e) ? e : null;
   customCategoryValue = '';
   delete els.entryForm.dataset.saving;
 
   const isCapex = e.category === 'Equipment (CapEx)';
   customCategoryValue = BASE_CATEGORIES.includes(e.category) || isCapex ? '' : (e.category || '');
 
-  els.formHeading.textContent = 'Edit Financial Entry';
-  els.saveBtn.textContent = 'Update Entry';
+  els.formHeading.textContent = correctionOriginal ? 'Create Append-Only Finance Correction' : 'Edit Manual Financial Entry';
+  els.saveBtn.textContent = correctionOriginal ? 'Create Correction' : 'Update Entry';
   els.saveBtn.disabled = false;
   els.cancelEditBtn.classList.remove('hidden');
 
@@ -1122,6 +1156,15 @@ function startEdit(id) {
 
   updateEntryTypeHint();
   updateTaxPreview();
+  if (correctionOriginal) {
+    show(els.correctionControls);
+    setOriginalFieldsReadOnly(true);
+    ['entryAmount','shippingCharged','salesTaxCollected','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost'].forEach(id => { if (els[id]) els[id].value = '0.00'; });
+    ['entryAmount','shippingCharged','shippingCost','materialCost','packagingCost','laborCost','otherDirectCost'].forEach(id => els[id]?.removeAttribute('min'));
+    els.entryDate.value = todayISO();
+    els.entryNotes.value = '';
+    setPanel(els.entryTypeHint, 'This Finance entry is posted and cannot be edited. Create an append-only correction instead.', false, 'amber');
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1130,7 +1173,7 @@ async function deleteEntry(id) {
 
   try {
     const { error } = await withTimeout(
-      supabase.from('financial_entries').delete().eq('id', id).eq('user_id', currentUser.id),
+      supabase.rpc('delete_manual_financial_entry', { p_entry_id: id }),
       12000,
       'Deleting entry'
     );
@@ -1151,6 +1194,8 @@ async function saveEntry(e) {
 
   hide(els.formMessage);
   updateEntryTypeHint();
+
+  if (correctionOriginal) return saveCorrection();
 
   if (!els.entryDate.value) return setMsg('Date is required.', true);
   if (!els.entryCategory.value) return setMsg('Category is required.', true);
@@ -1305,7 +1350,7 @@ async function saveEntry(e) {
 
     const result = await withTimeout(
       wasEditing
-        ? supabase.from('financial_entries').update(payload).eq('id', editingId).eq('user_id', currentUser.id)
+        ? supabase.rpc('update_manual_financial_entry', { p_entry_id: editingId, p_entry: payload })
         : supabase.from('financial_entries').insert(payload),
       12000,
       wasEditing ? 'Updating entry' : 'Saving entry'
@@ -1317,12 +1362,58 @@ async function saveEntry(e) {
     resetForm();
     await fetchEntries();
   } catch (err) {
-    console.error('Finance entry save failed:', err);
-    setMsg(`Save failed: ${err?.message || err}`, true);
+    console.error('Finance entry save failed:', { stage: wasEditing ? 'manual-draft-rpc' : 'manual-insert', status: err?.status, code: err?.code, entryId: editingId });
+    setMsg('The Finance entry could not be saved. Review the entry and your authorization.', true);
   } finally {
     delete els.entryForm.dataset.saving;
     els.saveBtn.disabled = false;
     els.saveBtn.textContent = editingId ? 'Update Entry' : 'Save Entry';
+  }
+}
+
+async function saveCorrection() {
+  const original = correctionOriginal;
+  const reason = els.correctionReason.value.trim();
+  if (!reason) return setMsg('The correction could not be recorded. Review the amounts and reason.', true);
+  const command = els.correctionType.value;
+  const adjustments = {
+    amount: Number(els.entryAmount.value),
+    shipping_charged: Number(els.shippingCharged.value),
+    sales_tax_collected: Number(els.correctionTaxAdjustment.value),
+    shipping_cost: Number(els.shippingCost.value),
+    material_cost: Number(els.materialCost.value),
+    packaging_cost: Number(els.packagingCost.value),
+    labor_cost: Number(els.laborCost.value),
+    other_direct_cost: Number(els.otherDirectCost.value)
+  };
+  if (Object.values(adjustments).some(value => !Number.isFinite(value))) return setMsg('The correction could not be recorded. Review the amounts and reason.', true);
+  els.entryForm.dataset.saving = '1';
+  els.saveBtn.disabled = true;
+  els.saveBtn.textContent = 'Recording...';
+  const correlationId = correctionIdentity(original.id);
+  try {
+    const { data, error } = await withTimeout(supabase.rpc('append_finance_entry_correction', {
+      p_original_entry_id: original.id,
+      p_correction_type: command,
+      p_reason: reason,
+      p_adjustments: adjustments,
+      p_correction_date: els.entryDate.value,
+      p_notes: els.entryNotes.value.trim(),
+      p_correlation_id: correlationId
+    }), 12000, 'Recording Finance correction');
+    if (error) throw error;
+    setMsg(data?.idempotent ? 'This correction has already been recorded.' : 'Finance correction recorded.');
+    sessionStorage.removeItem(`finance-correction:${original.id}`);
+    resetForm();
+    await fetchEntries();
+  } catch (err) {
+    console.error('Finance correction failed:', { originalEntryId: original.id, orderNumber: original.order_number || null, commandIdentity: correlationId, correctionType: command, status: err?.status, code: err?.code, rpcStage: 'append_finance_entry_correction' });
+    if (err?.code === '42501' || err?.status === 401 || err?.status === 403) setMsg('You are not authorized to correct this Finance entry.', true);
+    else setMsg('The correction could not be recorded. Review the amounts and reason.', true);
+  } finally {
+    delete els.entryForm.dataset.saving;
+    els.saveBtn.disabled = false;
+    els.saveBtn.textContent = correctionOriginal ? 'Create Correction' : (editingId ? 'Update Entry' : 'Save Entry');
   }
 }
 
