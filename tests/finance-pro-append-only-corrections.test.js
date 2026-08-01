@@ -10,9 +10,9 @@ assert.match(js, /isAuthoritativeEntry\(e\) \? 'Create Correction' : 'Edit'/, 'p
 assert.match(js, /This Finance entry is posted and cannot be edited\. Create an append-only correction instead\./, 'immutable explanation is explicit');
 assert.doesNotMatch(js, /from\('financial_entries'\)\.update/, 'Finance Pro never directly PATCHes financial_entries');
 assert.doesNotMatch(js, /from\('financial_entries'\)\.delete/, 'Finance Pro never directly DELETEs financial_entries');
-assert.match(js, /rpc\('append_finance_entry_correction'/, 'authoritative edits use the correction RPC');
+assert.match(js, /rpcName = taxMetadataChanged \? 'append_finance_tax_metadata_correction' : 'append_finance_entry_correction'[\s\S]*supabase\.rpc\(rpcName, rpcPayload\)/, 'authoritative edits use the appropriate correction RPC');
 assert.match(js, /rpc\('update_manual_financial_entry'/, 'manual drafts use controlled update RPC');
-assert.match(html, /id="correctionReason"[\s\S]*id="correctionTaxAdjustment"/, 'correction form captures reason and explicit tax delta');
+assert.match(html, /id="correctionReason"[\s\S]*id="correctionDestinationCounty"[\s\S]*id="correctionCalculatedTax"[^>]*readonly/, 'correction form captures metadata while calculated tax stays read-only');
 assert.match(sql, /revoke update, delete on table public\.financial_entries from public, anon, authenticated/i, 'browser UPDATE and DELETE are revoked');
 assert.doesNotMatch(sql, /grant update[^;]*financial_entries to authenticated/i, 'no authenticated table UPDATE is granted');
 assert.match(sql, /security definer set search_path = public, pg_temp/i, 'correction RPC has a fixed search path');
@@ -27,5 +27,5 @@ assert.match(sql, /correlation_id[\s\S]*statement_timestamp/, 'audit metadata re
 const correctionFunction = sql.split('create or replace function public.update_manual_financial_entry')[0];
 assert.doesNotMatch(correctionFunction, /update public\.financial_entries/i, 'correction authority never updates the original row');
 assert.match(js, /Entry Trace[\s\S]*entry\.order_number[\s\S]*entry\.finance_command/, 'tax export retains entry and source traceability');
-assert.match(js, /originalEntryId: original\.id[\s\S]*rpcStage: 'append_finance_entry_correction'/, 'structured diagnostics identify correction stage without credentials');
+assert.match(js, /originalEntryId: original\.id[\s\S]*rpcStage: rpcName/, 'structured diagnostics identify correction stage without credentials');
 console.log('Finance Pro append-only correction contract passed.');

@@ -1167,6 +1167,100 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="paidDate">Paid Date</label><input id="paidDate" type="date" /></div>
           <div><label for="poNumber">PO Number</label><input id="poNumber" placeholder="Customer PO #" /></div>
           <div><label for="taxExempt">Tax Exempt?</label><select id="taxExempt"><option value="no">No</option><option value="yes">Yes — Tax Exempt</option></select></div>
+          <div><label for="orderDestinationCounty">Destination County for Sales Tax</label><select id="orderDestinationCounty">
+              <option value="">Select county</option>
+              <option value="Adams">Adams</option>
+              <option value="Allen">Allen</option>
+              <option value="Ashland">Ashland</option>
+              <option value="Ashtabula">Ashtabula</option>
+              <option value="Athens">Athens</option>
+              <option value="Auglaize">Auglaize</option>
+              <option value="Belmont">Belmont</option>
+              <option value="Brown">Brown</option>
+              <option value="Butler">Butler</option>
+              <option value="Carroll">Carroll</option>
+              <option value="Champaign">Champaign</option>
+              <option value="Clark">Clark</option>
+              <option value="Clermont">Clermont</option>
+              <option value="Clinton">Clinton</option>
+              <option value="Columbiana">Columbiana</option>
+              <option value="Coshocton">Coshocton</option>
+              <option value="Crawford">Crawford</option>
+              <option value="Cuyahoga">Cuyahoga</option>
+              <option value="Darke">Darke</option>
+              <option value="Defiance">Defiance</option>
+              <option value="Delaware">Delaware</option>
+              <option value="Erie">Erie</option>
+              <option value="Fairfield">Fairfield</option>
+              <option value="Fayette">Fayette</option>
+              <option value="Franklin">Franklin</option>
+              <option value="Fulton">Fulton</option>
+              <option value="Gallia">Gallia</option>
+              <option value="Geauga">Geauga</option>
+              <option value="Greene">Greene</option>
+              <option value="Guernsey">Guernsey</option>
+              <option value="Hamilton">Hamilton</option>
+              <option value="Hancock">Hancock</option>
+              <option value="Hardin">Hardin</option>
+              <option value="Harrison">Harrison</option>
+              <option value="Henry">Henry</option>
+              <option value="Highland">Highland</option>
+              <option value="Hocking">Hocking</option>
+              <option value="Holmes">Holmes</option>
+              <option value="Huron">Huron</option>
+              <option value="Jackson">Jackson</option>
+              <option value="Jefferson">Jefferson</option>
+              <option value="Knox">Knox</option>
+              <option value="Lake">Lake</option>
+              <option value="Lawrence">Lawrence</option>
+              <option value="Licking">Licking</option>
+              <option value="Logan">Logan</option>
+              <option value="Lorain">Lorain</option>
+              <option value="Lucas">Lucas</option>
+              <option value="Madison">Madison</option>
+              <option value="Mahoning">Mahoning</option>
+              <option value="Marion">Marion</option>
+              <option value="Medina">Medina</option>
+              <option value="Meigs">Meigs</option>
+              <option value="Mercer">Mercer</option>
+              <option value="Miami">Miami</option>
+              <option value="Monroe">Monroe</option>
+              <option value="Montgomery">Montgomery</option>
+              <option value="Morgan">Morgan</option>
+              <option value="Morrow">Morrow</option>
+              <option value="Muskingum">Muskingum</option>
+              <option value="Noble">Noble</option>
+              <option value="Ottawa">Ottawa</option>
+              <option value="Paulding">Paulding</option>
+              <option value="Perry">Perry</option>
+              <option value="Pickaway">Pickaway</option>
+              <option value="Pike">Pike</option>
+              <option value="Portage">Portage</option>
+              <option value="Preble">Preble</option>
+              <option value="Putnam">Putnam</option>
+              <option value="Richland">Richland</option>
+              <option value="Ross">Ross</option>
+              <option value="Sandusky">Sandusky</option>
+              <option value="Scioto">Scioto</option>
+              <option value="Seneca">Seneca</option>
+              <option value="Shelby">Shelby</option>
+              <option value="Stark">Stark</option>
+              <option value="Summit">Summit</option>
+              <option value="Trumbull">Trumbull</option>
+              <option value="Tuscarawas">Tuscarawas</option>
+              <option value="Union">Union</option>
+              <option value="Van Wert">Van Wert</option>
+              <option value="Vinton">Vinton</option>
+              <option value="Warren">Warren</option>
+              <option value="Washington">Washington</option>
+              <option value="Wayne">Wayne</option>
+              <option value="Williams">Williams</option>
+              <option value="Wood">Wood</option>
+              <option value="Wyandot">Wyandot</option>
+            </select></div>
+          <div><label for="orderSalesTaxRate">Authoritative Sales-Tax Rate %</label><input id="orderSalesTaxRate" type="number" min="0" max="20" step="0.01" value="0" /></div>
+          <div><label for="orderTaxableSubtotal">Taxable Subtotal</label><input id="orderTaxableSubtotal" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="orderCalculatedTax">Calculated Sales Tax</label><input id="orderCalculatedTax" type="number" step="0.01" readonly /></div>
           <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
           <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
           <div><label for="poFileOnFile">PO File Stored?</label><select id="poFileOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
@@ -1972,6 +2066,10 @@ paid_date: $('paidDate').value || null,
 po_number: $('poNumber')?.value.trim() || null,
 tax_exempt: ($('taxExempt')?.value || 'no') === 'yes',
 tax_exempt_reason: $('taxExemptReason')?.value.trim() || null,
+destination_county: $('orderDestinationCounty')?.value || null,
+sales_tax_rate: $('orderSalesTaxRate')?.value === '' ? null : Number($('orderSalesTaxRate').value),
+taxable_subtotal: $('orderTaxableSubtotal')?.value === '' ? null : Number($('orderTaxableSubtotal').value),
+sales_tax_amount: $('orderCalculatedTax')?.value === '' ? null : Number($('orderCalculatedTax').value),
 exemption_certificate_on_file: ($('certificateOnFile')?.value || 'no') === 'yes',
 po_file_on_file: ($('poFileOnFile')?.value || 'no') === 'yes',
 po_part_number: $('poPartNumber')?.value.trim() || null,
@@ -2000,6 +2098,32 @@ public_status_text: $('publicStatusText').value.trim() || null,
 public_next_step: $('publicNextStep').value.trim() || null,
 shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
       };
+    }
+
+    function updateOrderTaxPreview(){
+      const subtotal = Number($('orderTaxableSubtotal')?.value);
+      const rate = Number($('orderSalesTaxRate')?.value);
+      const exempt = $('taxExempt')?.value === 'yes';
+      const tax = exempt ? 0 : Math.round((subtotal * rate + Number.EPSILON) * 100) / 100;
+      if ($('orderCalculatedTax')) $('orderCalculatedTax').value = Number.isFinite(tax) ? tax.toFixed(2) : '';
+    }
+
+    function validateOrderTaxMetadata(payload){
+      const rate = payload.sales_tax_rate;
+      const subtotal = payload.taxable_subtotal;
+      if (!Number.isFinite(rate) || rate < 0 || rate > 20) {
+        setMsg($('formMessage'),'Enter a valid authoritative sales-tax rate from 0% through 20%.',true); return false;
+      }
+      if (!Number.isFinite(subtotal) || subtotal < 0) {
+        setMsg($('formMessage'),'Enter a valid taxable subtotal.',true); return false;
+      }
+      if (!payload.tax_exempt && subtotal > 0 && !payload.destination_county) {
+        setMsg($('formMessage'),'Select the destination county used for sales-tax reporting.',true); return false;
+      }
+      if (payload.tax_exempt && (rate !== 0 || payload.sales_tax_amount !== 0 || !payload.tax_exempt_reason)) {
+        setMsg($('formMessage'),'The tax metadata conflicts with the taxable amount or exemption status.',true); return false;
+      }
+      return true;
     }
 
 function isBusinessTermsOrder(payload = {}) {
@@ -2078,7 +2202,7 @@ function publicTrackingPayload(payload) {
     const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object.freeze([
       'order_number','order_date','customer_name','customer_email','order_title','quantity','order_total','deposit_amount','balance_amount',
       'payment_status','fulfillment','tracking_number','payment_link','payment_link_stripe','payment_link_paypal','payment_link_venmo',
-      'stripe_invoice_id','paid_date','po_number','tax_exempt','tax_exempt_reason','exemption_certificate_on_file','po_file_on_file',
+      'stripe_invoice_id','paid_date','po_number','tax_exempt','tax_exempt_reason','destination_county','sales_tax_rate','taxable_subtotal','sales_tax_amount','exemption_certificate_on_file','po_file_on_file',
       'po_part_number','olipoly_part_number','part_revision','shipping_contact_name','shipping_company','material','color','printer_profile',
       'layer_height','nozzle_size','estimated_print_time','estimated_piece_price','production_notes','post_processing_notes','invoice_number',
       'invoice_date','invoice_due_date','invoice_terms','ap_email','billing_address','shipping_address','internal_notes','updated_at'
@@ -2107,7 +2231,7 @@ function publicTrackingPayload(payload) {
   'paymentLinkPaypal',
   'paymentLinkVenmo',
   'stripeInvoiceId',
-  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','proProductSubtotal','proShippingAmount','proShippingDescription','apEmail','billingAddress','shippingAddress',
+  'poNumber','poPartNumber','olipolyPartNumber','partRevision','shippingContactName','shippingCompany','catalogMaterial','catalogColor','catalogPrinterProfile','catalogLayerHeight','catalogNozzleSize','catalogEstimatedPrintTime','catalogEstimatedPiecePrice','catalogProductionNotes','catalogPostProcessingNotes','invoiceNumber','invoiceDate','invoiceDueDate','proProductSubtotal','proShippingAmount','proShippingDescription','apEmail','billingAddress','shippingAddress','orderDestinationCounty','orderSalesTaxRate','orderTaxableSubtotal','orderCalculatedTax',
   'internalNotes',
   'publicStatusText',
   'publicNextStep',
@@ -2129,6 +2253,9 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('paidDate').value = '';
       if ($('invoiceTerms')) $('invoiceTerms').value = 'customer_terms';
       if ($('taxExempt')) $('taxExempt').value = 'no';
+      if ($('orderSalesTaxRate')) $('orderSalesTaxRate').value = '0';
+      if ($('orderTaxableSubtotal')) $('orderTaxableSubtotal').value = '0';
+      updateOrderTaxPreview();
       if ($('certificateOnFile')) $('certificateOnFile').value = 'no';
       if ($('poFileOnFile')) $('poFileOnFile').value = 'no';
       $('publicPreview').textContent = 'No public preview yet.';
@@ -2164,6 +2291,10 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('poNumber')) $('poNumber').value = o.po_number || '';
       if ($('taxExempt')) $('taxExempt').value = o.tax_exempt ? 'yes' : 'no';
       if ($('taxExemptReason')) $('taxExemptReason').value = o.tax_exempt_reason || '';
+      if ($('orderDestinationCounty')) $('orderDestinationCounty').value = o.destination_county || '';
+      if ($('orderSalesTaxRate')) $('orderSalesTaxRate').value = o.sales_tax_rate ?? 0;
+      if ($('orderTaxableSubtotal')) $('orderTaxableSubtotal').value = o.taxable_subtotal ?? 0;
+      updateOrderTaxPreview();
       if ($('certificateOnFile')) $('certificateOnFile').value = o.exemption_certificate_on_file ? 'yes' : 'no';
       if ($('poFileOnFile')) $('poFileOnFile').value = o.po_file_on_file ? 'yes' : 'no';
       if ($('poPartNumber')) $('poPartNumber').value = o.po_part_number || '';
@@ -2197,6 +2328,22 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       updateFinancePushButton(o);
       updateClosureButtons(o);
       updatePreview();
+      hydrateOrderTaxMetadata(o);
+    }
+
+    async function hydrateOrderTaxMetadata(order){
+      if (!order?.id || order.id !== activeId) return;
+      try {
+        const response = await api('/rest/v1/rpc/get_order_invoice_snapshot',{method:'POST',body:JSON.stringify({p_order_id:order.id})});
+        if (response.error || order.id !== activeId) return;
+        const tax = response.data?.tax_metadata || {};
+        if (!$('orderDestinationCounty').value && tax.destination_county) $('orderDestinationCounty').value = tax.destination_county;
+        if (order.sales_tax_rate == null && tax.tax_rate != null) $('orderSalesTaxRate').value = Number(tax.tax_rate);
+        if (order.taxable_subtotal == null && tax.taxable_subtotal != null) $('orderTaxableSubtotal').value = Number(tax.taxable_subtotal).toFixed(2);
+        updateOrderTaxPreview();
+      } catch (error) {
+        console.warn('Order tax metadata snapshot unavailable:', {orderId:order.id,status:error?.status,code:error?.code});
+      }
     }
 
     function updateCompletionEmailButton(order = null) {
@@ -3104,6 +3251,7 @@ if ($('paymentLinkVenmo') && !$('paymentLinkVenmo').value.trim()) {
 
 const payload = snapshotForm();
       if(!payload.order_title) return setMsg($('formMessage'),'Project / item is required.',true);
+      if (!validateOrderTaxMetadata(payload)) return;
 
       const currentRow = activeId ? orders.find(o => o.id === activeId) : null;
       const oldOrderNumber = currentRow?.order_number || null;
@@ -5367,6 +5515,11 @@ function generateTravelerPdf(){
 
 
     window.addEventListener('load', () => {
+      ['orderSalesTaxRate','orderTaxableSubtotal','taxExempt'].forEach(id => {
+        const field = document.getElementById(id);
+        field?.addEventListener('input', updateOrderTaxPreview);
+        field?.addEventListener('change', updateOrderTaxPreview);
+      });
       const invoiceBtn = document.getElementById('generateInvoicePdfBtn');
       if (!invoiceBtn) return;
 
