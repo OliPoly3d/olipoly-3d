@@ -62,7 +62,7 @@ assert.match(orders, /await postOrderToFinanceCommand\(currentOrder\)[\s\S]*awai
 assert.match(orders, /const financePostRequestsInFlight = new Set\(\)/, 'Orders Admin must guard duplicate Finance post clicks in browser runtime');
 assert.match(orders, /financePostRequestsInFlight\.has\(requestKey\)/, 'Orders Admin must block duplicate in-flight Finance requests');
 assert.doesNotMatch(orders, /await financeEntryExists\(order\.order_number\)/, 'authoritative retries must not be blocked by a browser title/notes existence scan');
-assert.match(orders, /console\.error\('Finance command RPC failed:', err\)/, 'Finance command failures must produce actionable console errors');
+assert.match(orders, /console\.error\('Finance command RPC failed:', \{[\s\S]*?orderNumber:[\s\S]*?correlationId:[\s\S]*?postgresCode:[\s\S]*?shippingSource:/, 'Finance command failures must produce structured actionable console diagnostics');
 assert.doesNotMatch(orders, /\.from\('financial_entries'\)\.insert|\.from\("financial_entries"\)\.insert/, 'Orders Admin must not use Supabase direct financial_entries insert');
 assert.doesNotMatch(orders, /\/rest\/v1\/orders[\s\S]{0,500}finance_pushed_at|finance_pushed_at[\s\S]{0,500}\/rest\/v1\/orders/, 'Orders Admin browser writes must not directly set finance_pushed_at');
 

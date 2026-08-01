@@ -2441,13 +2441,35 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
     async function postOrderToFinanceCommand(order){
       const req = financeOrderPostingRequest(order);
-      const { ok, data, error } = await api(req.path, {
+      const { ok, status, data, error } = await api(req.path, {
         method: 'POST',
         headers: { Prefer: 'return=representation' },
         body: JSON.stringify(req.body)
       });
-      if (!ok) throw new Error(error?.message || JSON.stringify(error) || `Could not push ${order.order_number}.`);
+      if (!ok) {
+        const failure = new Error(error?.message || JSON.stringify(error) || `Could not push ${order.order_number}.`);
+        Object.assign(failure, {
+          financePosting: true,
+          orderNumber: order.order_number,
+          correlationId: req.body.p_correlation_id,
+          rpcName: 'post_order_finance_income',
+          httpStatus: status || null,
+          postgresCode: error?.code || null,
+          postingStage: 'authoritative_rpc',
+          shippingValue: null,
+          shippingSource: 'server_unresolved'
+        });
+        throw failure;
+      }
       return Array.isArray(data) ? data[0] : data;
+    }
+
+    function financePostingMessage(error){
+      const detail = String(error?.message || error || '');
+      if (/already been posted/i.test(detail)) return 'Order is already posted to Finance.';
+      if (/FINANCE_SHIPPING_UNRESOLVED/i.test(detail)) return 'Finance could not determine the customer shipping charge. Review the order’s authoritative totals before retrying.';
+      if (/null value|not-null constraint|undefined function|schema cache|configuration|FINANCE_INVOICE_TOTALS_UNRESOLVED/i.test(detail)) return 'Finance posting configuration is incomplete. The order was not posted.';
+      return `Could not post the order to Finance: ${detail}`;
     }
 
     async function pushOrderObjectToFinance(order){
@@ -2516,6 +2538,10 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         setMsg($('formMessage'), 'Save and refresh the Order before pushing it to Finance Pro.', true);
         return;
       }
+      if (currentOrder.finance_pushed) {
+        setMsg($('formMessage'), 'Order is already posted to Finance.');
+        return;
+      }
       if (!isFinanceReadyOrder(currentOrder)) {
         setMsg($('formMessage'), `${currentOrder.order_number || 'Order'} is not ready for Finance Pro.`, true);
         return;
@@ -2530,7 +2556,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('pushFinanceBtn')) $('pushFinanceBtn').disabled = true;
       try {
         const result = await postOrderToFinanceCommand(currentOrder);
-        setMsg($('formMessage'), `Pushed ${result?.order_number || currentOrder.order_number} to Finance Pro. Finance entry: ${result?.entry_id || 'created'}.`);
+        setMsg($('formMessage'), result?.idempotent ? 'Order is already posted to Finance.' : 'Order posted to Finance.');
         await fetchOrders();
         const saved = orders.find(o => o.id === currentOrder.id || o.order_number === currentOrder.order_number);
         if (saved) {
@@ -2538,8 +2564,18 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
           updateFinanceStatusNote(saved);
         }
       } catch (err) {
-        console.error('Finance command RPC failed:', err);
-        setMsg($('formMessage'), `Could not push to Finance Pro: ${err.message || err}`, true);
+        console.error('Finance command RPC failed:', {
+          orderNumber: err.orderNumber || currentOrder.order_number,
+          correlationId: err.correlationId || null,
+          rpcName: err.rpcName || 'post_order_finance_income',
+          httpStatus: err.httpStatus || null,
+          postgresCode: err.postgresCode || null,
+          postingStage: err.postingStage || 'authoritative_rpc',
+          shippingValue: err.shippingValue ?? null,
+          shippingSource: err.shippingSource || 'server_unresolved',
+          message: err.message || String(err)
+        });
+        setMsg($('formMessage'), financePostingMessage(err), true);
       } finally {
         financePostRequestsInFlight.delete(requestKey);
         updateFinanceStatusNote(orders.find(o => o.id === currentOrder.id) || currentOrder);
