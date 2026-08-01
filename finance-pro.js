@@ -94,6 +94,7 @@ const setPanel = (el, text, isError = false, palette = 'green') => {
 const setMsg = (t, e = false) => setPanel(els.formMessage, t, e, 'green');
 const setAuthMsg = (t, e = false) => setPanel(els.authMessage, t, e, 'amber');
 const setSettingsMsg = (t, e = false) => setPanel(els.settingsMessage, t, e, e ? 'red' : 'green');
+const isMissingRpc = err => err?.status === 404 || err?.code === 'PGRST202';
 
 const defaultTax = (type, cat) => type === 'income'
   ? (cat === 'Shipping' ? 'income_shipping' : 'income_sales')
@@ -1490,7 +1491,8 @@ async function saveCorrection() {
     await fetchEntries();
   } catch (err) {
     console.error('Finance correction failed:', { originalEntryId: original.id, orderNumber: original.order_number || null, county: els.correctionDestinationCounty.value, rate: correctionRate, calculatedTax: Number(els.correctionCalculatedTax.value), monetaryDelta: Number(els.correctionTaxDelta.value), commandIdentity: correlationId, status: err?.status, code: err?.code, rpcStage: rpcName });
-    if (err?.code === '42501' || err?.status === 401 || err?.status === 403) setMsg('You are not authorized to correct this Finance entry.', true);
+    if (isMissingRpc(err)) setMsg('Finance corrections are unavailable because the correction service has not been deployed. Apply the pending Supabase migrations before retrying.', true);
+    else if (err?.code === '42501' || err?.status === 401 || err?.status === 403) setMsg('You are not authorized to correct this Finance entry.', true);
     else setMsg('The correction could not be recorded. Review the amounts and reason.', true);
   } finally {
     delete els.entryForm.dataset.saving;
