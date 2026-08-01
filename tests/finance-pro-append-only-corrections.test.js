@@ -1,0 +1,31 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const js = fs.readFileSync('finance-pro.js', 'utf8');
+const html = fs.readFileSync('finance-pro.html', 'utf8');
+const sql = fs.readFileSync('supabase/migrations/202608010002_finance_append_only_correction_authority.sql', 'utf8');
+
+assert.match(js, /const isAuthoritativeEntry = entry => !!\(entry\?\.finance_command_owned \|\| entry\?\.finance_command_id \|\| entry\?\.order_id/, 'classification uses command/source fields, not title text');
+assert.match(js, /isAuthoritativeEntry\(e\) \? 'Create Correction' : 'Edit'/, 'posted rows offer correction');
+assert.match(js, /This Finance entry is posted and cannot be edited\. Create an append-only correction instead\./, 'immutable explanation is explicit');
+assert.doesNotMatch(js, /from\('financial_entries'\)\.update/, 'Finance Pro never directly PATCHes financial_entries');
+assert.doesNotMatch(js, /from\('financial_entries'\)\.delete/, 'Finance Pro never directly DELETEs financial_entries');
+assert.match(js, /rpc\('append_finance_entry_correction'/, 'authoritative edits use the correction RPC');
+assert.match(js, /rpc\('update_manual_financial_entry'/, 'manual drafts use controlled update RPC');
+assert.match(html, /id="correctionReason"[\s\S]*id="correctionTaxAdjustment"/, 'correction form captures reason and explicit tax delta');
+assert.match(sql, /revoke update, delete on table public\.financial_entries from public, anon, authenticated/i, 'browser UPDATE and DELETE are revoked');
+assert.doesNotMatch(sql, /grant update[^;]*financial_entries to authenticated/i, 'no authenticated table UPDATE is granted');
+assert.match(sql, /security definer set search_path = public, pg_temp/i, 'correction RPC has a fixed search path');
+assert.match(sql, /v_entry\.user_id is distinct from v_actor[\s\S]*idempotent',true/i, 'same command retries are owner checked and idempotent');
+assert.match(sql, /where id=p_original_entry_id and user_id=v_actor for update/i, 'original lookup is owner scoped and locked');
+assert.match(sql, /At least one non-zero correction adjustment is required/, 'empty correction rejects');
+assert.match(sql, /jsonb_typeof\(p_adjustments -> p_key\) <> 'number'[\s\S]*NaN','Infinity','-Infinity'/, 'malformed and non-finite money rejects');
+assert.match(sql, /v_shipping_charged := public\.finance_adjustment_value/, 'explicit shipping zero/delta is read without truthiness fallback');
+assert.match(sql, /v_amount := -coalesce\(v_original\.amount,0\)[\s\S]*v_tax := -coalesce/, 'reversal offsets original revenue and tax');
+assert.match(sql, /correction_of_entry_id[\s\S]*p_original_entry_id/, 'new correction links to original');
+assert.match(sql, /correlation_id[\s\S]*statement_timestamp/, 'audit metadata records command and timestamp');
+const correctionFunction = sql.split('create or replace function public.update_manual_financial_entry')[0];
+assert.doesNotMatch(correctionFunction, /update public\.financial_entries/i, 'correction authority never updates the original row');
+assert.match(js, /Entry Trace[\s\S]*entry\.order_number[\s\S]*entry\.finance_command/, 'tax export retains entry and source traceability');
+assert.match(js, /originalEntryId: original\.id[\s\S]*rpcStage: 'append_finance_entry_correction'/, 'structured diagnostics identify correction stage without credentials');
+console.log('Finance Pro append-only correction contract passed.');

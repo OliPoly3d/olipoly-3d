@@ -454,6 +454,25 @@
 
         <div class="message" id="entryTypeHint" style="margin-top:16px;"></div>
 
+        <div class="settings-card hidden" id="correctionControls" style="margin-top:16px;">
+          <strong>This posted entry is immutable. Corrections are recorded as new entries.</strong>
+          <div class="form-grid" style="margin-top:12px;">
+            <div>
+              <label for="correctionType">Correction Type</label>
+              <select id="correctionType"><option value="correct">Adjustment</option><option value="reverse">Full Reversal</option></select>
+            </div>
+            <div>
+              <label for="correctionReason">Correction Reason</label>
+              <input id="correctionReason" type="text" maxlength="500" placeholder="Required audit reason">
+            </div>
+            <div>
+              <label for="correctionTaxAdjustment">Sales Tax Adjustment</label>
+              <input id="correctionTaxAdjustment" type="number" step="0.01" value="0.00">
+            </div>
+          </div>
+          <p class="note">For an adjustment, enter signed deltas in the amount, shipping, tax, or cost fields. A reversal ignores those deltas and offsets the complete original entry.</p>
+        </div>
+
         <div class="button-row" style="margin-top:16px;justify-content:flex-start;">
           <button class="btn" id="saveBtn" type="submit">Save Entry</button>
           <button class="btn-ghost hidden" id="cancelEditBtn" type="button">Cancel Edit</button>
