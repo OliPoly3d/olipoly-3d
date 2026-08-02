@@ -2,17 +2,17 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const js = fs.readFileSync('finance-pro.js', 'utf8');
-const sql = fs.readFileSync('supabase/migrations/202608010004_full_finance_correction_authority.sql', 'utf8');
+const sql = fs.readFileSync('supabase/migrations/202608020002_repair_finance_correction_live_schema.sql', 'utf8');
 
 assert.match(js, /correctionDirtyFields = new Set/);
 assert.match(js, /p_changed_fields: changedFields/);
 assert.match(js, /actualCorrectionChanges\(corrected\)/);
 assert.match(js, /Change at least one field before creating a correction/);
-assert.match(js, /changedFields\.includes\('destination_county'\)/);
+assert.match(js, /changedFields\.includes\('sales_county'\)/);
 assert.doesNotMatch(js, /if \(!taxExempt && !els\.correctionDestinationCounty\.value\)/);
 assert.match(js, /overrideEnabled && \(!Number\.isFinite\(overrideAmount\)[\s\S]*!overrideReason\)/);
 assert.match(js, /if \(els\.correctionTaxOverrideEnabled\.checked\) formRecord\.tax_override_reason/);
-assert.match(js, /correctionDirtyFields\.has\('taxable_sales'\)[\s\S]*proposed\.sales_tax_collected = tax/);
+assert.match(js, /correctionDirtyFields\.has\('amount'\)[\s\S]*proposed\.sales_tax_collected = tax/);
 assert.match(js, /correctionDirtyFields\.has\('sales_tax_rate'\)[\s\S]*proposed\.sales_tax_collected = tax/);
 assert.match(js, /Customer\/order total:[\s\S]*Taxable subtotal:[\s\S]*Calculated tax:[\s\S]*Stored tax:/);
 assert.match(js, /Taxable subtotal equals the full customer total while tax is also stored/);
