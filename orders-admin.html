@@ -1130,6 +1130,7 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="orderDate">Order Date</label><input id="orderDate" type="date" /></div>
           <div><label for="customerName">Customer Name</label><input id="customerName" /></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" type="email" /></div>
+          <div><label for="customerPhone">Customer Phone</label><input id="customerPhone" type="tel" placeholder="Not provided" /></div>
           <div class="full"><label for="orderTitle">Project / Item</label><input id="orderTitle" /></div>
           <div><label for="quantity">Quantity</label><input id="quantity" type="number" min="1" step="1" value="1" /></div>
           <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
@@ -2044,12 +2045,15 @@ Aurora, OH 44202</textarea></div>
 }
 
     function snapshotForm(){
+      const rawCustomerPhone = $('customerPhone')?.value.trim() || '';
+      const customerPhone = /^(?:n\/?a|none|not\s+(?:available|provided)|unknown|-|—)$/i.test(rawCustomerPhone) ? null : (rawCustomerPhone || null);
       return {
         user_id: currentUser?.id,
         order_number: $('orderNumber').value.trim(),
         order_date: $('orderDate').value || today(),
         customer_name: $('customerName').value.trim() || null,
         customer_email: $('customerEmail').value.trim() || null,
+        customer_phone: customerPhone,
         order_title: $('orderTitle').value.trim(),
         quantity: num($('quantity').value) || 1,
         order_total: num($('orderTotal').value),
@@ -2201,7 +2205,7 @@ function publicTrackingPayload(payload) {
 
 
     const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object.freeze([
-      'order_number','order_date','customer_name','customer_email','order_title','quantity','order_total','deposit_amount','balance_amount',
+      'order_number','order_date','customer_name','customer_email','customer_phone','order_title','quantity','order_total','deposit_amount','balance_amount',
       'payment_status','fulfillment','tracking_number','payment_link','payment_link_stripe','payment_link_paypal','payment_link_venmo',
       'stripe_invoice_id','paid_date','po_number','tax_exempt','tax_exempt_reason','destination_county','sales_tax_rate','taxable_subtotal','sales_tax_amount','exemption_certificate_on_file','po_file_on_file',
       'po_part_number','olipoly_part_number','part_revision','shipping_contact_name','shipping_company','material','color','printer_profile',
@@ -2295,6 +2299,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       $('orderDate').value = o.order_date || today();
       $('customerName').value = o.customer_name || '';
       $('customerEmail').value = o.customer_email || '';
+      if ($('customerPhone')) $('customerPhone').value = o.customer_phone || '';
       $('orderTitle').value = o.order_title || '';
       $('quantity').value = o.quantity ?? 1;
       $('orderTotal').value = o.order_total ?? 0;
@@ -3057,7 +3062,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
             ${o.status === 'completed' ? `<span class="payment-pill ${completionEmailIsClosed(o) ? 'p-not-required' : 'p-needs-action'}">${orderClosureFlags(o).completion_email_not_required ? 'Completion Email Not Required' : (o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email')}</span>` : ''}
             ${orderIsClosed(o) ? `<span class="payment-pill p-closed-ready">Closed</span>` : ''}
           </div>
-          <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}</p>
+          <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}${o.customer_phone ? ` • ${T.esc(o.customer_phone)}` : ''}</p>
           ${o.source_type==='campaign'?`<p><strong>Source: Campaign</strong> · ${T.esc(o.campaign_code||'Campaign')} · submission ${T.esc(o.campaign_public_reference||'—')}<br>Customer link: ${T.esc(o.campaign_customer_link_status||'unresolved_review_required')} · payment evidence: ${T.esc(o.campaign_source_snapshot?.payment_evidence?.state||'unverified')}<br><a href="campaign-manager.html">Open Campaign Manager</a></p><details><summary>Immutable submitted items</summary>${(o.campaign_source_snapshot?.items||[]).map(item=>`<div><strong>${T.esc(item.product_public_code||'Item')} · qty ${T.esc(item.quantity)}</strong><br>${T.esc(item.offer_snapshot?.title||'')} · ${T.esc(item.authoritative_line_subtotal)}${item.personalization_requested?`<br>Personalization: ${T.esc(JSON.stringify(item.personalization_selection||{}))}`:''}</div>`).join('')}</details>`:''}
           ${o.customer_name ? `<a class="customer-360-chip" href="customer-360.html?search=${encodeURIComponent(o.customer_name)}" onclick="event.stopPropagation()"> Customer 360</a>` : ''}
         </div>
