@@ -25,7 +25,7 @@ assert.match(sql,/v_delta:=v_tax-coalesce\(v_original\.sales_tax_collected,0\)/,
 assert.match(sql,/values\(v_actor,v_original\.type,p_correction_date[\s\S]*,0,0,100,0,0,v_delta/,'metadata correction creates no sales delta');
 assert.match(sql,/public\.is_ohio_county\(p_destination_county\)/,'invalid county rejects');
 assert.match(sql,/p_tax_exempt,false\) and \(p_sales_tax_rate<>0[\s\S]*p_tax_exempt_reason/,'contradictory exemption rejects');
-assert.match(finance,/function reportingEntries[\s\S]*latestMetadata[\s\S]*destination_county: metadata\.destination_county[\s\S]*isMetadataCorrection && !hasFinancialEffect \? \[\]/,'reporting overlays metadata and excludes zero-effect correction rows');
+assert.match(finance,/function reportingEntries[\s\S]*report_transaction_count/,'reporting consumes the authoritative effective projection and excludes correction transactions');
 assert.match(sql,/revoke all on function public\.append_finance_tax_metadata_correction[\s\S]*grant execute[\s\S]*to authenticated,service_role/,'RPC grants are narrow');
 assert.doesNotMatch(finance,/from\('financial_entries'\)\.update/,'no direct Finance PATCH returns');
 assert.doesNotMatch(sql,/grant update[^;]*financial_entries to authenticated/i,'no Finance table UPDATE grant');
