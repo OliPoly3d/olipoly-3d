@@ -33,6 +33,11 @@ create table public.finance_correction_receipts (
 );
 
 \ir ../../supabase/migrations/202608020003_repair_finance_adjustment_helper_resolution.sql
+\ir ../../supabase/migrations/202608020004_restore_ohio_county_validator.sql
+
+select public.is_ohio_county('Portage') as portage_is_valid;
+select public.is_ohio_county('Summit') as summit_is_valid;
+select public.is_ohio_county('FakeCounty') as fake_county_is_valid;
 
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000010',false);
 insert into public.financial_entries(
