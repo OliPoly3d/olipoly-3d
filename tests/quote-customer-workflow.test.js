@@ -7,6 +7,7 @@ const vm = require("node:vm");
 const html = fs.readFileSync("quote.html", "utf8");
 const quoteSource = fs.readFileSync("quote.js", "utf8");
 const pricingSource = fs.readFileSync("js/quote-pricing.js", "utf8");
+const taxSource = fs.readFileSync("js/tax-rate.js", "utf8");
 
 const customerTypeOptions = [...html.matchAll(/<select id="liteQuoteType">([\s\S]*?)<\/select>/g)][0][1]
   .match(/<option value="[^"]+">/g);
@@ -36,6 +37,7 @@ assert.match(quoteSource, /applyQuoteType\(liteType, \{ allowAutofill: false \}\
 
 const pricingContext = {};
 vm.createContext(pricingContext);
+vm.runInContext(taxSource, pricingContext);
 vm.runInContext(pricingSource, pricingContext);
 for (const customerType of ["retail", "business"]) {
   const totals = pricingContext.calculateQuoteTotals({

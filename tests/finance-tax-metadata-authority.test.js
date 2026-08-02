@@ -11,14 +11,14 @@ assert.match(orders,/id="orderDestinationCounty"[\s\S]*<option value="Portage">P
 assert.match(orders,/id="orderSalesTaxRate" type="number" min="0" max="20"/,'Orders Admin captures bounded rate');
 assert.match(orders,/destination_county: \$\('orderDestinationCounty'\)[\s\S]*sales_tax_rate: \$\('orderSalesTaxRate'\)\?\.value === '' \? null : Number/,'save payload retains county and explicit zero rate');
 assert.match(orders,/validateOrderTaxMetadata\(payload\)/,'Order saves validate tax metadata');
-assert.match(orders,/Math\.round\(\(subtotal \* rate \+ Number\.EPSILON\) \* 100\) \/ 100/,'Order preview uses cent rounding');
+assert.match(orders,/calculateSalesTax\(subtotal, rate\)/,'Order preview uses shared percentage-point calculation');
 assert.match(quote,/destination_county: document\.getElementById\('salesTax'\)\?\.dataset\.taxCounty \|\| null/,'Quote accepted totals retain controlled county');
 assert.match(sql,/capture_accepted_order_tax_metadata[\s\S]*new\.destination_county:=coalesce\(new\.destination_county,v_county\)[\s\S]*new\.sales_tax_rate:=coalesce/,'accepted Quote metadata reaches new Order');
 assert.match(sql,/get_order_invoice_snapshot\(p_order_id uuid\)[\s\S]*'tax_metadata'[\s\S]*'destination_county'[\s\S]*'tax_rate'[\s\S]*'taxable_subtotal'[\s\S]*'tax_amount'/,'invoice snapshot exposes tax metadata');
 assert.match(sql,/apply_order_tax_metadata_to_finance_post[\s\S]*new\.destination_county:=v_county; new\.sales_tax_rate:=v_rate; new\.taxable_sales:=v_taxable; new\.sales_tax_collected:=v_tax/,'server-owned posting carries metadata');
 assert.match(sql,/FINANCE_TAX_METADATA_UNRESOLVED: taxable Order has tax but no rate/,'posting rejects collected tax without rate');
 assert.match(financeHtml,/id="correctionDestinationCounty"[\s\S]*id="correctionSalesTaxRate"[\s\S]*id="correctionCalculatedTax" type="number" readonly/,'correction UI exposes county/rate but not editable tax');
-assert.match(finance,/const calculated = exempt \? 0 : \+\(\(taxable \* rate\) \/ 100\)\.toFixed\(2\)/,'correction preview calculates tax canonically');
+assert.match(finance,/const calculated = exempt \? 0 : calculateSalesTax\(taxable, rate\)/,'correction preview calculates tax canonically');
 assert.match(finance,/correct_financial_entry/,'metadata uses the unified controlled RPC');
 assert.match(sql,/v_tax:=case when coalesce\(p_tax_exempt,false\) then 0 else round\(v_taxable\*p_sales_tax_rate\/100,2\) end/,'database calculates tax and never trusts browser tax');
 assert.match(sql,/v_delta:=v_tax-coalesce\(v_original\.sales_tax_collected,0\)/,'rate correction records only tax delta');

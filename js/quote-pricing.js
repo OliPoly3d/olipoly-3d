@@ -44,8 +44,8 @@
     const preDiscount = sellingSubtotal + marketplaceFee;
     const discount = Math.max(0, finiteNumber(input.discount));
     const subtotal = roundCurrency(Math.max(0, preDiscount - discount));
-    const taxRate = input.taxExempt ? 0 : Math.max(0, finiteNumber(input.taxRate));
-    const tax = roundCurrency(subtotal * (taxRate / 100));
+    const taxRate = input.taxExempt ? 0 : root.normalizeTaxRatePercent(input.taxRate ?? 0);
+    const tax = root.calculateSalesTax(subtotal, taxRate);
     const unroundedTotal = subtotal + tax;
     const roundingIncrement = Math.max(0, finiteNumber(input.roundingIncrement));
     const total = roundCurrency(Math.max(0, roundingIncrement

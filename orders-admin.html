@@ -966,6 +966,7 @@ body{font-family:Inter,Arial,sans-serif}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
   <script src="js/workflow-status.js?v=20260716-m2b1"></script>
+  <script src="js/tax-rate.js?v=20260802-percent-contract"></script>
   <script src="js/erp-core.js?v=erp-1.0"></script>
   <link rel="stylesheet" href="css/erp-reliability.css?v=20260608">
   <script src="js/erp-reliability.js?v=20260608"></script>
@@ -1260,7 +1261,7 @@ body{font-family:Inter,Arial,sans-serif}
               <option value="Wood">Wood</option>
               <option value="Wyandot">Wyandot</option>
             </select></div>
-          <div><label for="orderSalesTaxRate">Authoritative Sales-Tax Rate %</label><input id="orderSalesTaxRate" type="number" min="0" max="20" step="0.01" value="0" /></div>
+          <div><label for="orderSalesTaxRate">Authoritative Sales-Tax Rate %</label><input id="orderSalesTaxRate" type="number" min="0" max="20" step="0.01" value="0" /><small>Enter 7 for 7%.</small></div>
           <div><label for="orderTaxableSubtotal">Taxable Subtotal</label><input id="orderTaxableSubtotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="orderCalculatedTax">Calculated Sales Tax</label><input id="orderCalculatedTax" type="number" step="0.01" readonly /></div>
           <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
@@ -2110,10 +2111,14 @@ shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
 
     function updateOrderTaxPreview(){
       const subtotal = Number($('orderTaxableSubtotal')?.value);
-      const rate = Number($('orderSalesTaxRate')?.value);
       const exempt = $('taxExempt')?.value === 'yes';
-      const tax = exempt ? 0 : Math.round((subtotal * rate + Number.EPSILON) * 100) / 100;
-      if ($('orderCalculatedTax')) $('orderCalculatedTax').value = Number.isFinite(tax) ? tax.toFixed(2) : '';
+      try {
+        const rate = normalizeTaxRatePercent($('orderSalesTaxRate')?.value);
+        const tax = exempt ? 0 : calculateSalesTax(subtotal, rate);
+        if ($('orderCalculatedTax')) $('orderCalculatedTax').value = tax.toFixed(2);
+      } catch (_error) {
+        if ($('orderCalculatedTax')) $('orderCalculatedTax').value = '';
+      }
     }
 
     function validateOrderTaxMetadata(payload){

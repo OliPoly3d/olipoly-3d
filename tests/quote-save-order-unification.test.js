@@ -5,10 +5,12 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const pricingSource = fs.readFileSync("js/quote-pricing.js", "utf8");
+const taxSource = fs.readFileSync("js/tax-rate.js", "utf8");
 const quoteSource = fs.readFileSync("quote.js", "utf8");
 const responseSource = fs.readFileSync("quote-response.html", "utf8");
 const context = {};
 vm.createContext(context);
+vm.runInContext(taxSource, context);
 vm.runInContext(pricingSource, context);
 
 function acceptanceTotals(manualPiecePrice) {

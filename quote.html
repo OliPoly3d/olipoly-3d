@@ -1452,6 +1452,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 .read-only-price{display:flex;align-items:center;min-height:44px;padding:10px 12px;border:1px solid rgba(151,179,255,.24);border-radius:14px;background:rgba(255,255,255,.045);font-weight:900}
 </style>
   <link rel="stylesheet" href="css/erp-polish.css?v=20260608" />
+  <script src="js/tax-rate.js?v=20260802-percent-contract"></script>
   <script defer src="js/erp-core.js?v=erp-1.0"></script>
 <style id="rc5-customer-document-overrides">
 /* Presentation-only RC5 document overrides; IDs and print behavior remain unchanged. */
@@ -1691,7 +1692,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
             <div><label for="manualPiecePriceReason">Custom Price Reason / Notes</label><input id="manualPiecePriceReason" placeholder="Optional: bulk price, strategic quote, matched price..." /></div>
             <div><label for="discount">Discount</label><input id="discount" type="number" min="0" step="0.01" value="0" /></div>
             <div><label for="taxPreset">Tax County / Jurisdiction</label><select id="taxPreset"><option value="custom">Custom / Manual Rate</option><option value="out_of_state">Out of State / No Tax</option><option value="tax_exempt">Tax Exempt</option></select><small id="taxJurisdictionHint">Loads county rates from Finance Pro income entries when available.</small></div>
-            <div><label for="salesTax">Sales Tax %</label><input id="salesTax" type="number" min="0" step="0.01" value="0" /><small id="salesTaxRateHint">Select a county to auto-fill the rate, or choose Custom to type one manually.</small></div>
+            <div><label for="salesTax">Sales-Tax Rate %</label><input id="salesTax" type="number" min="0" max="20" step="0.01" value="0" /><small id="salesTaxRateHint">Select a county to auto-fill the rate, or choose Custom. Enter 7 for 7%.</small></div>
             <div><label for="roundingMode">Final Total Rounding</label><select id="roundingMode"><option value="0">No Rounding</option><option value="1">Nearest $1</option><option value="5">Nearest $5</option><option value="10">Nearest $10</option></select></div>
           </div>
         </section>
