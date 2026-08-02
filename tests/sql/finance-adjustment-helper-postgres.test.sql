@@ -6,6 +6,9 @@ do $$ begin create role service_role; exception when duplicate_object then null;
 create schema auth;
 create function auth.uid() returns uuid language sql stable as
 $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+create function public.is_ohio_county(p_county text) returns boolean
+language sql immutable as $$ select p_county = any(array['Portage','Summit']) $$;
+
 create table public.financial_entries (
   id uuid primary key default gen_random_uuid(), user_id uuid not null,
   type text, entry_date date, category text, tax_category text, title text, notes text,
