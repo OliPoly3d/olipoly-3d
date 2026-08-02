@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'); const fs=require('node:fs');
 const js=fs.readFileSync('finance-pro.js','utf8'); const html=fs.readFileSync('finance-pro.html','utf8'); const sql=fs.readFileSync('supabase/migrations/202608010004_full_finance_correction_authority.sql','utf8'); const matrix=fs.readFileSync('FINANCE_CORRECTION_FIELD_MATRIX.md','utf8');
-assert.match(js,/effectiveEntryFor\(entry\)[\s\S]*replacements[\s\S]*corrected_record/,'correction starts from latest replacement plus metadata overlay');
+assert.match(js,/effectiveEntryFor\(entry\)[\s\S]*effective_version_at/,'correction starts from the authoritative server-resolved effective entry');
 assert.match(js,/setOriginalFieldsReadOnly\(false\)/,'full business form is editable');
 assert.doesNotMatch(js,/\['entryAmount','shippingCharged','salesTaxCollected'[\s\S]*value = '0\.00'/,'correction no longer clears full financial form');
 assert.match(html,/correctionDestinationCounty[\s\S]*correctionSalesTaxRate[\s\S]*correctionTaxOverrideEnabled[\s\S]*correctionTaxOverrideReason[\s\S]*correctionReview/,'county, rate, override, explanation and review are exposed');
@@ -17,7 +17,7 @@ assert.match(sql,/where command_identity=p_correlation_id[\s\S]*'idempotent',tru
 assert.match(sql,/v_tax:=v_calculated_tax/,'tax defaults to server calculation');
 assert.match(sql,/p_tax_override_enabled[\s\S]*p_tax_override_reason[\s\S]*finance_adjustment_value\(p_corrected_record,'sales_tax_collected'\)/,'tax override is controlled and audited');
 assert.match(sql,/-v_effective_taxable[\s\S]*-coalesce\(v_effective\.sales_tax_collected/,'reversal offsets taxable sales and tax');
-assert.match(js,/correctedRecord = entry\.accepted_commercial_snapshot\?\.corrected_record[\s\S]*entry\.finance_command === 'correct_entry_metadata'[\s\S]*isMetadataCorrection && !hasFinancialEffect \? \[\]/,'reporting applies metadata once and excludes zero-money row');
+assert.match(js,/function reportingEntries[\s\S]*report_transaction_count/,'reporting consumes one server-resolved row per original');
 assert.match(js,/Correction audit[\s\S]*Changed:[\s\S]*Group:[\s\S]*Original:/,'audit trail is visible');
 assert.match(sql,/revoke insert on table public\.financial_entries from public,anon,authenticated/,'browser table INSERT is revoked');
 assert.match(js,/create_manual_financial_entry/,'manual creation uses controlled RPC');

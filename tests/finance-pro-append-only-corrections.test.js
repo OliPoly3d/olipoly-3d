@@ -26,7 +26,7 @@ assert.match(sql, /correction_of_entry_id[\s\S]*p_original_entry_id/, 'new corre
 assert.match(sql, /correlation_id[\s\S]*statement_timestamp/, 'audit metadata records command and timestamp');
 const correctionFunction = sql.split('create or replace function public.update_manual_financial_entry')[0];
 assert.doesNotMatch(correctionFunction, /update public\.financial_entries/i, 'correction authority never updates the original row');
-assert.match(js, /Entry Trace[\s\S]*entry\.order_number[\s\S]*entry\.finance_command/, 'tax export retains entry and source traceability');
+assert.match(js, /Entry Trace[\s\S]*entry\.original_entry_id[\s\S]*entry\.effective_entry_id[\s\S]*entry\.correction_group_id/, 'tax export retains effective and correction traceability');
 assert.match(js, /originalEntryId: original\.id[\s\S]*rpcStage: rpcName/, 'structured diagnostics identify correction stage without credentials');
 assert.match(js, /isMissingRpc = err => err\?\.status === 404 \|\| err\?\.code === 'PGRST202'/, 'PostgREST missing-function responses are identified explicitly');
 assert.match(js, /Finance corrections are unavailable because the correction service has not been deployed\. Apply the pending Supabase migrations before retrying\./, 'a missing correction RPC reports the deployment mismatch instead of a validation error');

@@ -198,22 +198,9 @@ const taxableSubtotalOf = entry => {
 };
 
 function reportingEntries(source = entries) {
-  const latestMetadata = new Map();
-  source.forEach(entry => {
-    const correctedRecord = entry.accepted_commercial_snapshot?.corrected_record;
-    const legacyTaxMetadata = entry.accepted_commercial_snapshot?.tax_metadata_correction === true;
-    if (!entry.correction_of_entry_id || (!correctedRecord && !legacyTaxMetadata)) return;
-    const targetId = entry.accepted_commercial_snapshot?.effective_entry_id || entry.correction_of_entry_id;
-    const previous = latestMetadata.get(targetId);
-    if (!previous || String(entry.posted_at || entry.created_at || '').localeCompare(String(previous.posted_at || previous.created_at || '')) > 0) latestMetadata.set(targetId, entry);
-  });
-  return source.flatMap(entry => {
-    const metadata = latestMetadata.get(entry.id);
-    if (metadata) entry = { ...entry, ...(metadata.accepted_commercial_snapshot?.corrected_record || {}), destination_county: metadata.destination_county || metadata.accepted_commercial_snapshot?.corrected_record?.destination_county, sales_tax_rate: metadata.sales_tax_rate ?? metadata.accepted_commercial_snapshot?.corrected_record?.sales_tax_rate, tax_exempt_sale: metadata.tax_exempt_sale ?? metadata.accepted_commercial_snapshot?.corrected_record?.tax_exempt_sale };
-    const isMetadataCorrection = entry.accepted_commercial_snapshot?.tax_metadata_correction === true || entry.finance_command === 'correct_entry_metadata';
-    const hasFinancialEffect = ['amount','shipping_charged','sales_tax_collected','shipping_cost','material_cost','packaging_cost','labor_cost','other_direct_cost'].some(key => num(entry[key]) !== 0);
-    return isMetadataCorrection && !hasFinancialEffect ? [] : [entry];
-  });
+  // The server projection already resolves replacement precedence and cumulative
+  // metadata overlays. Never reconstruct that authority independently here.
+  return source.filter(entry => num(entry.report_transaction_count ?? 1) === 1);
 }
 
 function computeTaxExclusive(total, rate) {
@@ -454,13 +441,8 @@ function correctionRoot(entry) {
 }
 
 function effectiveEntryFor(entry) {
-  const root = correctionRoot(entry);
-  const group = entries.filter(candidate => candidate.id === root.id || candidate.accepted_commercial_snapshot?.correction_root_entry_id === root.id);
-  const replacements = group.filter(isReplacementEntry).sort((a,b) => String(b.posted_at || b.created_at || '').localeCompare(String(a.posted_at || a.created_at || '')));
-  let effective = replacements[0] || root;
-  const overlays = group.filter(candidate => candidate.finance_command === 'correct_entry_metadata' && candidate.accepted_commercial_snapshot?.corrected_record)
-    .sort((a,b) => String(b.posted_at || b.created_at || '').localeCompare(String(a.posted_at || a.created_at || '')));
-  if (overlays[0]) effective = { ...effective, ...overlays[0].accepted_commercial_snapshot.corrected_record, _effective_at: overlays[0].posted_at || overlays[0].created_at };
+  const root = entry;
+  let effective = { ...entry, _effective_at: entry.effective_version_at || entry.posted_at || entry.created_at };
   const breakdown = acceptedBreakdown(effective);
   if (effective.sales_tax_rate === null || effective.sales_tax_rate === undefined || num(effective.sales_tax_rate) === 0 && num(effective.sales_tax_collected) > 0) effective = { ...effective, sales_tax_rate: Number(breakdown.tax_rate) || 0 };
   if (effective.taxable_sales === null || effective.taxable_sales === undefined) effective = { ...effective, taxable_sales: Number(breakdown.taxable_subtotal) || incomeSaleAmount(effective) };
@@ -485,7 +467,7 @@ function correctionIdentity(originalId) {
 
 function filteredEntries() {
   const search = els.searchFilter.value.trim().toLowerCase();
-  return [...entries]
+  return [...reportingEntries()]
     .filter(e => {
       if (els.typeFilter.value !== 'all' && e.type !== els.typeFilter.value) return false;
       if (els.monthFilter.value && !e.entry_date.startsWith(els.monthFilter.value)) return false;
@@ -606,7 +588,8 @@ function renderTable(list) {
               ${isCorrectionEntry(e) && !isReplacementEntry(e) ? '<span class="type-pill">Posted correction</span>' : `<button class="btn-ghost" type="button" data-edit="${e.id}">${isAuthoritativeEntry(e) ? 'Create Correction' : 'Edit'}</button>`}
               ${isAuthoritativeEntry(e) ? '' : `<button class="btn-danger" type="button" data-delete="${e.id}">Delete</button>`}
             </div>
-            ${e.correction_reason ? `<details style="margin-top:8px"><summary>Correction audit</summary><div style="margin-top:6px;color:var(--muted)">${escapeHtml(e.correction_reason)}${e.accepted_commercial_snapshot?.changed_fields ? `<br>Changed: ${escapeHtml(Object.entries(e.accepted_commercial_snapshot.changed_fields).map(([key,change]) => `${key}: ${JSON.stringify(change.old)} → ${JSON.stringify(change.new)}`).join('; '))}` : ''}<br>Group: ${escapeHtml(e.correction_group_id || e.accepted_commercial_snapshot?.correction_group_id || '—')}<br>Original: ${escapeHtml(e.accepted_commercial_snapshot?.correction_root_entry_id || e.correction_of_entry_id || e.reversal_of_entry_id || '—')}<br>Corrected by: ${escapeHtml(e.accepted_commercial_snapshot?.corrected_by || e.posted_by || '—')}<br>Corrected at: ${escapeHtml(e.posted_at || e.created_at || '')}${e.accepted_commercial_snapshot?.tax_override_enabled ? `<br>Tax override: ${escapeHtml(e.accepted_commercial_snapshot.tax_override_reason || 'Explanation missing')}` : ''}</div></details>` : ''}
+            ${e.is_corrected ? '<span class="type-pill">Corrected</span>' : ''}
+            ${e.correction_reason ? `<details style="margin-top:8px"><summary>Correction audit (${e.correction_history?.length || 1})</summary><div style="margin-top:6px;color:var(--muted)">${escapeHtml(e.correction_reason)}${e.changed_fields ? `<br>Changed: ${escapeHtml(Object.entries(e.changed_fields).map(([key,change]) => `${key}: ${JSON.stringify(change.old)} → ${JSON.stringify(change.new)}`).join('; '))}` : ''}<br>Group: ${escapeHtml(e.correction_group_id || '—')}<br>Original: ${escapeHtml(e.original_entry_id || e.id)}<br>Effective: ${escapeHtml(e.effective_entry_id || e.id)}<br>Metadata correction: ${escapeHtml(e.metadata_correction_entry_id || '—')}<br>Replacement: ${escapeHtml(e.replacement_entry_id || '—')}<br>Corrected at: ${escapeHtml(e.effective_version_at || '')}${e.correction_history?.length > 1 ? `<br>History:<br>${e.correction_history.map(item => `${escapeHtml(item.created_at || '')} · ${escapeHtml(item.correction_kind || '')} · ${escapeHtml(item.reason || '')}`).join('<br>')}` : ''}</div></details>` : ''}
           </td>
         </tr>
       `).join('')}
@@ -720,11 +703,12 @@ function salesTaxFilingSummary(period) {
 
   included.forEach(e => {
     const county = normalizeCounty(e.destination_county);
-    const gross = incomeSaleAmount(e) + num(e.shipping_charged);
+    const taxableSubtotal = e.tax_exempt_sale ? 0 : taxableSubtotalOf(e);
     const tax = computedSalesTax(e);
+    const gross = taxableSubtotalOf(e) + num(e.shipping_charged) + tax;
     const rate = num(e.sales_tax_rate);
     const exempt = !!e.tax_exempt_sale;
-    const taxable = exempt ? 0 : gross;
+    const taxable = exempt ? 0 : taxableSubtotal;
 
     summary.grossSales += gross;
     summary.exemptSales += exempt ? gross : 0;
@@ -971,7 +955,8 @@ function downloadCSV(name, rows) {
 }
 
 function exportCSV() {
-  if (!entries.length) return alert('There are no entries to export yet.');
+  const effective = reportingEntries();
+  if (!effective.length) return alert('There are no entries to export yet.');
 
   downloadCSV(`olipoly-financial-export-${todayISO()}.csv`, [
     [
@@ -979,9 +964,9 @@ function exportCSV() {
       'Destination County','Sales Tax Collected','Shipping Charged','Tax Included','Sales Tax Rate','Shipping Cost',
       'Material Cost','Packaging Cost','Labor Cost','Other Direct Cost','Vendor','Payment Method',
       'Receipt Link','Business Use %','Miles Driven','Mileage Rate','Trip Purpose','Trip From','Trip To','Round Trip','Title','Notes'
-      ,'Entry ID','Order Number','Finance Command','Original Entry ID','Reversal Of ID','Replacement For ID','Correction Group ID','Correction Kind','Correction Reason','Tax Override Explanation'
+      ,'Entry ID','Order Number','Finance Command','Original Entry ID','Effective Entry ID','Metadata Correction ID','Reversal Of ID','Replacement For ID','Correction Group ID','Correction Kind','Correction Status','Corrected','Correction Reason','Changed Fields','Tax Override Explanation'
     ],
-    ...entries.map(e => [
+    ...effective.map(e => [
       e.entry_date,
       e.type,
       e.category,
@@ -1013,9 +998,9 @@ function exportCSV() {
       e.id,
       e.order_number || '',
       e.finance_command || '',
-      e.correction_of_entry_id || '', e.reversal_of_entry_id || '', e.replacement_for_entry_id || '',
+      e.original_entry_id || e.id, e.effective_entry_id || e.id, e.metadata_correction_entry_id || '', e.reversal_entry_id || e.reversal_of_entry_id || '', e.replacement_entry_id || e.replacement_for_entry_id || '',
       e.correction_group_id || e.accepted_commercial_snapshot?.correction_group_id || '', e.correction_kind || '',
-      e.correction_reason || '', e.accepted_commercial_snapshot?.tax_override_reason || ''
+      e.correction_status || 'original', e.is_corrected ? 'yes' : 'no', e.correction_reason || '', JSON.stringify(e.changed_fields || {}), e.accepted_commercial_snapshot?.tax_override_reason || ''
     ])
   ]);
 }
@@ -1026,11 +1011,16 @@ function exportSalesTaxFilingCSV() {
   if (!period) return alert('Select a filing period first.');
   const r = salesTaxFilingSummary(period);
   const rows = [
-    ['Section','Filing Period','Start Date','End Date','Due Date','County','Sales Count','Gross Sales','Taxable Sales','Exempt Sales','Tax Rate(s)','Tax Collected'],
-    ['Totals',period.label,period.start,period.end,period.due,'',r.entries.length,r.grossSales.toFixed(2),r.taxableSales.toFixed(2),r.exemptSales.toFixed(2),'',r.taxCollected.toFixed(2)],
-    ...r.countyRows.map(row => ['County Summary',period.label,period.start,period.end,period.due,row.county,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'',row.rates.map(rate => `${rate}%`).join(' | '),row.taxCollected.toFixed(2)]),
-    ...r.monthlyRows.map(row => ['Monthly Breakdown',period.label,period.start,period.end,period.due,row.month,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'','',row.taxCollected.toFixed(2)])
-    ,...r.entries.map(entry => ['Entry Trace',period.label,entry.entry_date,entry.id,entry.order_number || '',entry.destination_county || '',1,(incomeSaleAmount(entry)+num(entry.shipping_charged)).toFixed(2),entry.tax_exempt_sale ? '0.00' : (incomeSaleAmount(entry)+num(entry.shipping_charged)).toFixed(2),entry.tax_exempt_sale ? (incomeSaleAmount(entry)+num(entry.shipping_charged)).toFixed(2) : '0.00',entry.finance_command || '',computedSalesTax(entry).toFixed(2)])
+    ['Section','Filing Period','Start Date','End Date','Due Date','County','Sales Count','Gross / Customer Total','Taxable Sales','Exempt Sales','Tax Rate(s)','Tax Collected','Original Entry ID','Effective Entry ID','Correction Group ID','Corrected'],
+    ['Totals',period.label,period.start,period.end,period.due,'',r.entries.length,r.grossSales.toFixed(2),r.taxableSales.toFixed(2),r.exemptSales.toFixed(2),'',r.taxCollected.toFixed(2),'','','',''],
+    ...r.countyRows.map(row => ['County Summary',period.label,period.start,period.end,period.due,row.county,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'',row.rates.map(rate => `${rate}%`).join(' | '),row.taxCollected.toFixed(2),'','','','']),
+    ...r.monthlyRows.map(row => ['Monthly Breakdown',period.label,period.start,period.end,period.due,row.month,row.count,row.grossSales.toFixed(2),row.taxableSales.toFixed(2),'','',row.taxCollected.toFixed(2),'','','','']),
+    ...r.entries.map(entry => {
+      const tax = computedSalesTax(entry);
+      const taxable = entry.tax_exempt_sale ? 0 : taxableSubtotalOf(entry);
+      const gross = taxableSubtotalOf(entry) + num(entry.shipping_charged) + tax;
+      return ['Entry Trace',period.label,entry.entry_date,entry.entry_date,'',entry.destination_county || '',1,gross.toFixed(2),taxable.toFixed(2),entry.tax_exempt_sale ? gross.toFixed(2) : '0.00',`${num(entry.sales_tax_rate).toFixed(2)}%`,tax.toFixed(2),entry.original_entry_id || entry.id,entry.effective_entry_id || entry.id,entry.correction_group_id || '',entry.is_corrected ? 'yes' : 'no'];
+    })
   ];
   downloadCSV(`olipoly-ohio-sales-tax-${period.value}.csv`, rows);
 }
@@ -1139,12 +1129,7 @@ async function fetchEntries() {
   entriesFetchPromise = (async () => {
     try {
       const { data, error } = await withTimeout(
-        supabase
-          .from('financial_entries')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .order('entry_date', { ascending: false })
-          .order('created_at', { ascending: false }),
+        supabase.rpc('get_effective_financial_entries'),
         12000,
         'Loading financial entries'
       );
@@ -1155,7 +1140,7 @@ async function fetchEntries() {
       }
 
       hide(els.authMessage);
-      entries = data || [];
+      entries = (data || []).map(row => typeof row === 'string' ? JSON.parse(row) : row);
       renderAll();
     } catch (err) {
       setAuthMsg(`Could not load entries: ${err?.message || err}`, true);
