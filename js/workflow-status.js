@@ -32,7 +32,7 @@
     ready_for_fulfillment:'ready_for_fulfillment', ready:'ready_for_fulfillment',
     ready_for_pickup:'ready_for_fulfillment', awaiting_pickup:'ready_for_fulfillment',
     delivery_scheduled:'ready_for_fulfillment', shipped:'ready_for_fulfillment', delivered:'ready_for_fulfillment',
-    closed:'closed', completed:'closed', production_closed:'closed',
+    closed:'closed', completed:'closed', fulfilled:'closed', production_closed:'closed',
     canceled:'closed', cancelled:'closed', archived:'closed', void:'closed', failed_scrap:'ready_to_print',
     on_hold:'ready_to_print', issue_review:'qc'
   });

@@ -1017,7 +1017,7 @@ body{font-family:Inter,Arial,sans-serif}
     </div>
 <div class="workspace-bar" id="workspaceBar">
       <div class="workspace-id">
-        <span class="workspace-kicker">Active Order</span>
+        <span class="workspace-kicker" id="workspaceOrderKind">Active Order</span>
         <strong id="workspaceOrderNumber">No order selected</strong>
         <small id="workspaceMeta">Select an order or start a new one.</small>
       </div>
@@ -1113,8 +1113,9 @@ body{font-family:Inter,Arial,sans-serif}
         <div class="list" id="orderList"></div>
       </section>
 
-      <section class="card">
+      <section class="card" id="orderDetailCard">
         <h3 id="detailTitle">Order Details</h3>
+        <p class="oa-closed-note hidden" id="closedOrderNotice">This order is closed.</p>
 
         <div class="order-timeline" id="orderTimeline" aria-label="Order production timeline">
           <div class="timeline-step" data-step="ready_to_print"><span>1</span><strong>Ready</strong><small>Ready to print</small></div>
@@ -1538,18 +1539,21 @@ Aurora, OH 44202</textarea></div>
       return f.completion_email_not_required || !!order?.completion_email_sent;
     }
 
+    function orderLifecycleClass(order){
+      return normalizeOrderStatusForDb(order?.status) === 'closed' ? 'closed' : 'active';
+    }
+
     function orderNeedsAction(order){
-      if(!order) return false;
-      if(order.status !== 'closed') return true;
-      return !(paymentIsClosed(order) && financeIsClosed(order) && completionEmailIsClosed(order));
+      if(!order || orderLifecycleClass(order) === 'closed') return false;
+      return true;
     }
 
     function orderIsClosed(order){
-      return !!order && order.status === 'closed' && !orderNeedsAction(order);
+      return !!order && orderLifecycleClass(order) === 'closed';
     }
 
     function activeOrders(){
-      return orders.filter(o => !orderIsClosed(o));
+      return orders.filter(o => orderLifecycleClass(o) === 'active');
     }
 
     function needsActionOrders(){
@@ -2117,9 +2121,6 @@ shipping_or_pickup_note: $('shippingOrPickupNote').value.trim() || null,
       if (!Number.isFinite(subtotal) || subtotal < 0) {
         setMsg($('formMessage'),'Enter a valid taxable subtotal.',true); return false;
       }
-      if (!payload.tax_exempt && subtotal > 0 && !payload.destination_county) {
-        setMsg($('formMessage'),'Select the destination county used for sales-tax reporting.',true); return false;
-      }
       if (payload.tax_exempt && (rate !== 0 || payload.sales_tax_amount !== 0 || !payload.tax_exempt_reason)) {
         setMsg($('formMessage'),'The tax metadata conflicts with the taxable amount or exemption status.',true); return false;
       }
@@ -2220,6 +2221,10 @@ function publicTrackingPayload(payload) {
     function resetForm(){
       activeId = null;
       $('detailTitle').textContent = 'Order Details';
+      if ($('workspaceOrderKind')) $('workspaceOrderKind').textContent = 'Active Order';
+      if ($('closedOrderNotice')) $('closedOrderNotice').classList.add('hidden');
+      document.querySelectorAll('#orderDetailCard .form-grid input, #orderDetailCard .form-grid select, #orderDetailCard .form-grid textarea').forEach(control => { control.disabled = false; });
+      ['saveBtn','quickSaveBtn'].forEach(id => { if ($(id)) { $(id).disabled = false; $(id).title = ''; } });
       [
   'orderNumber',
   'customerName',
@@ -2267,9 +2272,25 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       clearMsg($('formMessage'));
     }
 
+    function applyOrderEditState(order){
+      const closed = orderIsClosed(order);
+      $('detailTitle').textContent = `${closed ? 'Closed Order' : 'Order Details'} — ${order.order_number}`;
+      if ($('workspaceOrderKind')) $('workspaceOrderKind').textContent = closed ? 'Closed Order' : 'Active Order';
+      if ($('closedOrderNotice')) $('closedOrderNotice').classList.toggle('hidden', !closed);
+      document.querySelectorAll('#orderDetailCard .form-grid input, #orderDetailCard .form-grid select, #orderDetailCard .form-grid textarea').forEach(control => {
+        control.disabled = closed;
+      });
+      ['saveBtn','quickSaveBtn'].forEach(id => {
+        const button = $(id);
+        if (!button) return;
+        button.disabled = closed;
+        button.title = closed ? 'This order is closed.' : '';
+      });
+    }
+
     function loadIntoForm(o){
       activeId = o.id;
-      $('detailTitle').textContent = `Order Details — ${o.order_number}`;
+      applyOrderEditState(o);
       $('orderNumber').value = o.order_number || '';
       $('orderDate').value = o.order_date || today();
       $('customerName').value = o.customer_name || '';
@@ -2338,7 +2359,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         if (response.error || order.id !== activeId) return;
         const tax = response.data?.tax_metadata || {};
         if (!$('orderDestinationCounty').value && tax.destination_county) $('orderDestinationCounty').value = tax.destination_county;
-        if (order.sales_tax_rate == null && tax.tax_rate != null) $('orderSalesTaxRate').value = Number(tax.tax_rate);
+        if (order.sales_tax_rate == null && (tax.sales_tax_rate ?? tax.tax_rate) != null) $('orderSalesTaxRate').value = Number(tax.sales_tax_rate ?? tax.tax_rate);
         if (order.taxable_subtotal == null && tax.taxable_subtotal != null) $('orderTaxableSubtotal').value = Number(tax.taxable_subtotal).toFixed(2);
         updateOrderTaxPreview();
       } catch (error) {
@@ -2614,6 +2635,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
     function financePostingMessage(error){
       const detail = String(error?.message || error || '');
       if (/already been posted/i.test(detail)) return 'Order is already posted to Finance.';
+      if (/FINANCE_TAX_COUNTY_REQUIRED/i.test(detail)) return 'Select the destination county before posting this taxable order to Finance.';
       if (/FINANCE_SHIPPING_UNRESOLVED/i.test(detail)) return 'Finance could not determine the customer shipping charge. Review the order’s authoritative totals before retrying.';
       if (/null value|not-null constraint|undefined function|schema cache|configuration|FINANCE_INVOICE_TOTALS_UNRESOLVED/i.test(detail)) return 'Finance posting configuration is incomplete. The order was not posted.';
       return `Could not post the order to Finance: ${detail}`;
@@ -3238,6 +3260,8 @@ resetForm();
     async function saveOrder(){
       await getCurrentUser();
       if(!currentUser) return setMsg($('formMessage'),'Login first',true);
+      const selectedOrder = activeId ? orders.find(order => order.id === activeId) : null;
+      if (orderIsClosed(selectedOrder)) return setMsg($('formMessage'),'This order is closed and cannot be edited through normal Save.',true);
 
       autoBalance();
       normalizePaymentStatus();
@@ -3270,7 +3294,12 @@ const payload = snapshotForm();
         return setMsg($('formMessage'),'Orders are created through approved Quote acceptance; direct Orders Admin creation is disabled by workflow authority.',true);
       }
 
-      if(res.error) { console.error('Orders Admin save failed:', { error: res.error, payload: ordinaryPayload }); return setMsg($('formMessage'), res.error.message || JSON.stringify(res.error) || 'Save failed', true); }
+      if(res.error) {
+        const schemaContractFailure = res.error.code === 'PGRST204' || /schema cache|column.*orders/i.test(res.error.message || '');
+        const failingField = String(res.error.message || '').match(/'([^']+)' column/)?.[1] || null;
+        console.error('Orders Admin save failed:', {orderNumber:payload.order_number,httpStatus:res.status || null,code:res.error.code || null,failingField,saveStage:'orders_patch'});
+        return setMsg($('formMessage'), schemaContractFailure ? 'Orders Admin is using an unavailable order field. The order was not saved.' : (res.error.message || JSON.stringify(res.error) || 'Save failed'), true);
+      }
       const patchedOrder = (Array.isArray(res.data) ? res.data[0] : res.data) || {...currentRow, ...ordinaryPayload};
 
       if(oldOrderNumber && oldOrderNumber !== payload.order_number){
@@ -3281,7 +3310,7 @@ const payload = snapshotForm();
         await syncOrderStatusToProduction({...payload, updated_at:patchedOrder.updated_at, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, patchedOrder, false);
       }
 
-      setMsg($('formMessage'),'Saved');
+      setMsg($('formMessage'),'Order saved.');
       await fetchOrders();
       const saved = orders.find(o => o.order_number === payload.order_number) || (res.data && res.data[0]);
       if(saved) loadIntoForm(saved);
