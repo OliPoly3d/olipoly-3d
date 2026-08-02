@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const migration = fs.readFileSync("supabase/migrations/202608020006_repair_quote_order_optional_phone.sql", "utf8");
+const ordersPhoneMigration = fs.readFileSync("supabase/migrations/202608020007_orders_optional_customer_phone.sql", "utf8");
 const quoteSchemaFields = new Set([
   "id", "user_id", "quote_number", "quote_title", "quote_total", "quote_data",
   "customer_name", "customer_email", "customer_response", "converted_to_order",
@@ -29,6 +30,8 @@ for (const missing of [undefined, null, "", "   ", "n/a", "N/A", "none", "Not pr
   assert.equal(normalizePhone(missing), null, `${String(missing)} must normalize to SQL null`);
 }
 assert.equal(normalizePhone("  330-555-0123  "), "330-555-0123", "valid phone transfers without invention");
+assert.match(ordersPhoneMigration, /add column if not exists customer_phone text/);
+assert.match(ordersPhoneMigration, /new\.customer_phone := nullif\(btrim\(new\.customer_phone\), ''\)/);
 
 for (const contract of [
   /security definer[\s\S]*set search_path = public, pg_temp/,
