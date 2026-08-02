@@ -1,0 +1,324 @@
+/* Production Control visual system.
+   Presentation only: workflow, persistence, and production authority remain unchanged. */
+
+.op-engine {
+  --pc-bg: #070c18;
+  --pc-surface: #0d1527;
+  --pc-surface-raised: #121d32;
+  --pc-surface-soft: #17233a;
+  --pc-border: #2a3852;
+  --pc-border-strong: #3b4d6d;
+  --pc-text: #f8fafc;
+  --pc-text-secondary: #cbd5e1;
+  --pc-text-muted: #94a3b8;
+  --pc-pink: #f472b6;
+  --pc-purple: #9b87f5;
+  --pc-cyan: #67e8f9;
+  --pc-green: #6ee7b7;
+  --pc-amber: #fbbf24;
+  --pc-danger: #fb7185;
+  color: var(--pc-text);
+  background:
+    radial-gradient(circle at 12% 0, rgba(155, 135, 245, .13), transparent 30rem),
+    radial-gradient(circle at 92% 4%, rgba(103, 232, 249, .08), transparent 28rem),
+    linear-gradient(180deg, #070c18, #091222 52%, #070e1c) !important;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.op-engine .wrap { width: min(1440px, calc(100% - 40px)); padding-top: 20px; }
+
+.op-engine :is(.topbar, .card, .section-card, .ops-collapse, .ops-panel, .modal-dialog) {
+  color: var(--pc-text) !important;
+  background: rgba(13, 21, 39, .94) !important;
+  border: 1px solid var(--pc-border) !important;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .22) !important;
+  backdrop-filter: blur(16px);
+}
+
+.op-engine .topbar {
+  padding: 12px 16px !important;
+  border-radius: 20px !important;
+  background: rgba(7, 12, 24, .92) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, .28) !important;
+}
+
+.op-engine .brand h1 {
+  color: var(--pc-text) !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 1.35rem !important;
+  font-weight: 800;
+  letter-spacing: -.035em !important;
+}
+.op-engine .brand p { color: var(--pc-text-muted) !important; }
+.op-engine .logo { border-radius: 14px; box-shadow: 0 8px 24px rgba(155, 135, 245, .22) !important; }
+.op-engine .top-actions { gap: 8px; }
+
+.op-engine :is(.btn, .ghost, .mini-btn, button) {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  transition: transform .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease !important;
+}
+.op-engine .btn {
+  background: linear-gradient(135deg, #8b7cf6, #d85fae) !important;
+  box-shadow: 0 8px 22px rgba(155, 135, 245, .24) !important;
+}
+.op-engine #jumpAddBtn,
+.op-engine #jumpAddBtnHero { padding-inline: 19px; }
+.op-engine :is(.ghost, .mini-btn) {
+  color: var(--pc-text-secondary) !important;
+  background: #111b2e !important;
+  border-color: var(--pc-border) !important;
+}
+.op-engine :is(.btn, .ghost, .mini-btn):hover {
+  transform: translateY(-1px);
+  border-color: var(--pc-border-strong) !important;
+  filter: brightness(1.08);
+}
+.op-engine :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--pc-cyan) !important;
+  outline-offset: 3px;
+}
+.op-engine :is(.btn, .ghost, .mini-btn):active { transform: translateY(0) scale(.98); }
+
+.op-engine .section-title h2 {
+  color: var(--pc-text) !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: clamp(2rem, 4vw, 3.35rem) !important;
+  font-weight: 800;
+  line-height: 1.04 !important;
+  letter-spacing: -.055em !important;
+}
+.op-engine :is(.section-title p, .muted, .sub, small, .tiny-note, .board-note) {
+  color: var(--pc-text-muted) !important;
+  line-height: 1.55;
+}
+.op-engine .kicker {
+  margin-bottom: 10px;
+  padding: 5px 9px;
+  color: #d8d5ff !important;
+  background: rgba(155, 135, 245, .12) !important;
+  border-color: rgba(155, 135, 245, .28) !important;
+  font-size: .68rem;
+  letter-spacing: .12em;
+}
+
+.op-engine .hero { gap: 18px; margin-bottom: 18px; }
+.op-engine .card { padding: 22px !important; border-radius: 20px !important; }
+.op-engine .metrics { gap: 10px; margin-top: 20px; }
+.op-engine .metric {
+  min-height: 82px;
+  padding: 13px !important;
+  background: var(--pc-surface-raised) !important;
+  border-color: var(--pc-border) !important;
+  box-shadow: none !important;
+}
+.op-engine .metric span { color: var(--pc-text-muted) !important; font-size: .66rem; letter-spacing: .09em; }
+.op-engine .metric strong { color: var(--pc-text) !important; font-size: 1.55rem; }
+.op-engine .next-box { background: linear-gradient(135deg, rgba(155,135,245,.13), rgba(103,232,249,.06)) !important; border-color: #354364 !important; }
+
+.op-engine details.ops-collapse {
+  margin-bottom: 14px;
+  border-radius: 16px !important;
+  overflow: clip;
+}
+.op-engine details.ops-collapse > summary {
+  min-height: 70px;
+  padding: 14px 18px !important;
+  background: var(--pc-surface) !important;
+  border: 0 !important;
+  transition: background-color .18s ease;
+}
+.op-engine details.ops-collapse > summary:hover { background: var(--pc-surface-raised) !important; }
+.op-engine #detailsSection > summary,
+.op-engine #historySection > summary,
+.op-engine #pmSection > summary,
+.op-engine #addJobSection > summary,
+.op-engine #closeoutAuditSection > summary {
+  color: var(--pc-text) !important;
+  background: var(--pc-surface) !important;
+  border-color: var(--pc-border) !important;
+}
+.op-engine #detailsSection > summary:hover,
+.op-engine #historySection > summary:hover,
+.op-engine #pmSection > summary:hover,
+.op-engine #addJobSection > summary:hover,
+.op-engine #closeoutAuditSection > summary:hover { background: var(--pc-surface-raised) !important; }
+.op-engine details.ops-collapse > summary .summary-title { gap: 1px; }
+.op-engine details.ops-collapse > summary .summary-title .kicker { margin: 0 0 3px; padding: 0; background: none !important; border: 0 !important; color: var(--pc-text-muted) !important; }
+.op-engine details.ops-collapse > summary .summary-title strong { color: var(--pc-text) !important; font-size: 1rem; letter-spacing: -.015em; }
+.op-engine details.ops-collapse > summary::after {
+  content: "›" !important;
+  width: 34px !important;
+  height: 34px !important;
+  color: var(--pc-text) !important;
+  background: var(--pc-surface-soft) !important;
+  border: 1px solid var(--pc-border-strong);
+  font-size: 1.45rem;
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform .2s ease, background-color .2s ease;
+}
+.op-engine details.ops-collapse[open] > summary::after { content: "›" !important; transform: rotate(-90deg); }
+.op-engine details.ops-collapse > .collapse-body { padding: 4px 18px 20px; animation: pc-reveal .18s ease-out; }
+@keyframes pc-reveal { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .op-engine *, .op-engine *::before, .op-engine *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+.op-engine :is(label, .mini-label) {
+  color: var(--pc-text-secondary) !important;
+  font-size: .75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .045em;
+}
+.op-engine :is(input, select, textarea) {
+  min-height: 46px;
+  color: var(--pc-text) !important;
+  background: #0a1325 !important;
+  border: 1px solid #344563 !important;
+  border-radius: 10px !important;
+  padding: 11px 12px;
+}
+.op-engine :is(input, textarea)::placeholder { color: #8493aa !important; opacity: 1; }
+.op-engine :is(input, select, textarea):hover { border-color: #506582 !important; }
+.op-engine :is(input, select, textarea):focus { border-color: var(--pc-purple) !important; box-shadow: 0 0 0 3px rgba(155,135,245,.18) !important; }
+.op-engine .form-grid { gap: 16px 14px; }
+.op-engine .form-section { background: #0b1426 !important; border-color: var(--pc-border) !important; border-radius: 14px !important; }
+.op-engine .form-section summary { padding: 14px !important; color: var(--pc-text) !important; }
+
+.op-engine .lanes { gap: 18px !important; align-items: stretch; }
+.op-engine #queueSection .board-header,
+.op-engine #queueSection .queue-header,
+.op-engine #queueSection .board-title {
+  color: var(--pc-text) !important;
+  background: transparent !important;
+  border-color: var(--pc-border) !important;
+}
+.op-engine #queueSection :is(.board-header, .queue-header, .board-title) h2 {
+  color: var(--pc-text) !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-weight: 800;
+  letter-spacing: -.045em;
+}
+.op-engine .lane {
+  min-height: 360px;
+  padding: 12px !important;
+  border: 1px solid var(--pc-border) !important;
+  border-top-width: 3px !important;
+  border-radius: 16px !important;
+  background: rgba(11, 19, 35, .96) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.18) !important;
+}
+.op-engine .lane.ready { border-top-color: var(--pc-purple) !important; }
+.op-engine .lane.printing { border-top-color: var(--pc-cyan) !important; }
+.op-engine .lane.post { border-top-color: var(--pc-pink) !important; }
+.op-engine .lane.delivery { border-top-color: var(--pc-amber) !important; }
+.op-engine .lane-head {
+  position: static;
+  min-height: 48px;
+  margin: -2px -2px 12px !important;
+  padding: 7px 8px 11px !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--pc-border);
+  backdrop-filter: none;
+}
+.op-engine .lane h3 { color: var(--pc-text) !important; font-size: .8rem !important; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.op-engine .lane-count { min-width: 29px; color: var(--pc-text-secondary) !important; background: var(--pc-surface-soft) !important; border-color: var(--pc-border-strong) !important; text-align: center; }
+
+.op-engine .lanes .job-card {
+  padding: 14px 14px 14px 17px !important;
+  margin-bottom: 10px !important;
+  color: var(--pc-text) !important;
+  background: var(--pc-surface-raised) !important;
+  border: 1px solid var(--pc-border) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18) !important;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.op-engine .lanes .job-card:hover { transform: translateY(-2px); border-color: var(--pc-border-strong) !important; box-shadow: 0 12px 24px rgba(0,0,0,.25) !important; }
+.op-engine .lanes .job-card :is(h4, strong) { color: var(--pc-text) !important; }
+.op-engine .lanes .job-card :is(.muted, small, .job-meta, .tiny-note, .stat span) { color: var(--pc-text-muted) !important; }
+.op-engine .lanes .job-card .stat,
+.op-engine .lanes .job-card .material-row,
+.op-engine .lanes .job-card .finance-mini span,
+.op-engine .lanes .job-card .supply-usage-mini span {
+  color: var(--pc-text) !important;
+  background: #0c1628 !important;
+  border-color: var(--pc-border) !important;
+}
+.op-engine .lanes .job-card .job-actions :is(.mini-btn, .ghost, button) { color: var(--pc-text-secondary) !important; background: #17243a !important; border-color: #3a4c69 !important; }
+.op-engine .lanes .job-card :is(.chip, .decision-pill, .reservation-chip, .scrap-chip, .start-chip, .integration-chip, .quote-link-chip) {
+  color: #e4e7ff !important;
+  background: rgba(155,135,245,.14) !important;
+  border-color: rgba(155,135,245,.3) !important;
+  font-weight: 700 !important;
+}
+
+.op-engine .empty {
+  color: var(--pc-text-muted) !important;
+  background: rgba(18, 29, 50, .55) !important;
+  border: 1px dashed #3c4d68 !important;
+  box-shadow: none !important;
+}
+.op-engine .lane-empty {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 24px 18px !important;
+  text-align: center;
+}
+.op-engine .lane-empty .empty-icon { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 7px; color: var(--pc-cyan); background: rgba(103,232,249,.08); border: 1px solid rgba(103,232,249,.2); border-radius: 12px; font-size: 1.3rem; }
+.op-engine .lane-empty strong { color: var(--pc-text) !important; font-size: .9rem; }
+.op-engine .lane-empty > span:last-child { max-width: 210px; font-size: .78rem; line-height: 1.45; }
+
+.op-engine .pm-card,
+.op-engine .machine-card,
+.op-engine .capacity-card,
+.op-engine .detail-card {
+  color: var(--pc-text) !important;
+  background: var(--pc-surface-raised) !important;
+  border-color: var(--pc-border) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15) !important;
+}
+.op-engine :is(.pm-card, .machine-card, .detail-card) :is(h3, strong) { color: var(--pc-text) !important; }
+.op-engine :is(.pm-card, .machine-card, .detail-card) :is(span, small, .pm-small) { color: var(--pc-text-muted) !important; }
+.op-engine #machineBoard .machine-card,
+.op-engine #utilizationBoard .printer-load-card,
+.op-engine #capacityMachineGrid .capacity-card {
+  color: var(--pc-text) !important;
+  background: var(--pc-surface-raised) !important;
+  border-color: var(--pc-border) !important;
+}
+.op-engine #machineBoard .machine-slot,
+.op-engine #utilizationBoard .printer-load-card > div {
+  color: var(--pc-text-secondary) !important;
+  background: #0c1628 !important;
+  border-color: var(--pc-border) !important;
+}
+.op-engine :is(.board-header, .finance-board-head) h2 {
+  color: var(--pc-text) !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+.op-engine .history-wrap { background: #0a1324 !important; border-color: var(--pc-border) !important; border-radius: 12px; }
+.op-engine th { position: sticky; top: 0; padding: 12px 13px; color: var(--pc-text-secondary) !important; background: #111c30 !important; font-size: .68rem; letter-spacing: .1em; }
+.op-engine td { padding: 13px; color: var(--pc-text-secondary) !important; border-color: #23314a !important; }
+.op-engine tbody tr:nth-child(4n+1), .op-engine tbody tr:nth-child(4n+2) { background: rgba(255,255,255,.018); }
+.op-engine tbody tr:hover { background: rgba(103,232,249,.045); }
+
+@media (max-width: 1100px) {
+  .op-engine .wrap { width: min(100% - 24px, 1440px); }
+  .op-engine .topbar { align-items: flex-start; }
+}
+@media (max-width: 760px) {
+  .op-engine .wrap { width: min(100% - 16px, 1440px); }
+  .op-engine .card { padding: 17px !important; }
+  .op-engine details.ops-collapse > summary { min-height: 62px; }
+  .op-engine details.ops-collapse > .collapse-body { padding: 2px 13px 15px; }
+  .op-engine .lane { min-height: auto; }
+  .op-engine .lane-empty { min-height: 170px; }
+}

@@ -1284,6 +1284,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   </style>
 <link rel="stylesheet" href="css/job-assets.css">
   <link rel="stylesheet" href="assets/css/engine-rc1.css?v=rc1">
+  <link rel="stylesheet" href="css/production-control-modern.css?v=20260802">
   <script defer src="js/engine-shell.js?v=rc2"></script>
 </head>
 <body class="op-engine">
@@ -5116,7 +5117,7 @@ ${err.message || err}`); }
       return `<section class="lane ${l.cls}">
         <div class="lane-head"><h3>${l.icon} ${l.title}</h3><span class="lane-count">${jobs.length}</span></div>
         <div class="lane-drop-hint">Drag cards here to set manual priority for this lane.</div>
-        ${jobs.length ? jobs.map(jobCard).join('') : `<div class="empty">No jobs in this lane.</div>`}
+        ${jobs.length ? jobs.map(jobCard).join('') : `<div class="empty lane-empty"><span class="empty-icon" aria-hidden="true">&#9633;</span><strong>No production jobs</strong><span>Create a job or send a quote to Production.</span></div>`}
       </section>`;
     }).join('');
   }
