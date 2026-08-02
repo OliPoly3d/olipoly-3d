@@ -5,9 +5,11 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const pricingSource = fs.readFileSync("js/quote-pricing.js", "utf8");
+const taxSource = fs.readFileSync("js/tax-rate.js", "utf8");
 const quoteSource = fs.readFileSync("quote.js", "utf8");
 const context = {};
 vm.createContext(context);
+vm.runInContext(taxSource, context, { filename: "js/tax-rate.js" });
 vm.runInContext(pricingSource, context, { filename: "js/quote-pricing.js" });
 
 const totals = context.calculateQuoteTotals({

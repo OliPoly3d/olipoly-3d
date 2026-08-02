@@ -184,7 +184,7 @@ const computedSalesTax = e => {
   if (!e || e.type !== 'income' || e.tax_exempt_sale) return 0;
   const taxable = incomeSaleAmount(e);
   const rate = num(e.sales_tax_rate);
-  if (taxable > 0 && rate > 0) return +((taxable * rate) / 100).toFixed(2);
+  if (taxable > 0 && rate > 0) return calculateSalesTax(taxable, rate);
   return num(e.sales_tax_collected);
 };
 const acceptedBreakdown = entry => entry?.accepted_commercial_snapshot?.accepted_commercial_breakdown
@@ -242,7 +242,9 @@ function populateFilingPeriodSelect() {
 }
 
 function formatRate(rate) {
-  return num(rate) ? `${num(rate).toFixed(2)}%` : '—';
+  if (rate === null || rate === undefined || rate === '') return '—';
+  try { return `${normalizeTaxRatePercent(rate).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`; }
+  catch (_error) { return 'Invalid'; }
 }
 
 function calculateHomeOfficePercent() {
@@ -306,7 +308,7 @@ function updateTaxPreview() {
     els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
     return;
   }
-  const tax = saleAmount && rate ? +((saleAmount * rate) / 100).toFixed(2) : 0;
+  const tax = calculateSalesTax(saleAmount, rate);
   els.salesTaxCollected.value = tax ? tax.toFixed(2) : '';
   els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
 }
@@ -1244,7 +1246,7 @@ function startEdit(id) {
     els.correctionTaxOverrideAmount.value = '';
     els.correctionTaxOverrideReason.value = '';
     const customerTotal = num(breakdown.customer_total ?? breakdown.total ?? e.accepted_commercial_snapshot?.total ?? e.amount) + num(e.sales_tax_collected);
-    const calculatedTax = +((taxableSubtotal * authoritativeRate) / 100).toFixed(2);
+    const calculatedTax = calculateSalesTax(taxableSubtotal, authoritativeRate);
     const splitWarnings = [
       taxableSubtotal === customerTotal && num(e.sales_tax_collected) > 0 ? 'Taxable subtotal equals the full customer total while tax is also stored.' : '',
       Math.abs(taxableSubtotal + num(e.sales_tax_collected) + num(e.shipping_charged) - customerTotal) > .01 ? 'Taxable subtotal, tax, and shipping do not reconcile to the customer total.' : '',
@@ -1364,7 +1366,7 @@ async function saveEntry(e) {
       amount = originalAmount;
       if (!notes.toLowerCase().includes('tax exempt')) notes = `[Tax Exempt Sale] ${notes}`.trim();
     } else if (isIncome) {
-      salesTaxCollected = +((amount * num(els.salesTaxRate.value)) / 100).toFixed(2);
+      salesTaxCollected = calculateSalesTax(amount, els.salesTaxRate.value);
     }
 
     if (!isIncome) {
@@ -1583,7 +1585,7 @@ function updateCorrectionTaxPreview() {
   const taxable = correctionDirtyFields.has('amount') ? Number(els.entryAmount.value) : taxableSubtotalOf(correctionEffective);
   const exempt = els.correctionTaxExempt.value === 'yes';
   const rate = Number(els.correctionSalesTaxRate.value);
-  const calculated = exempt ? 0 : +((taxable * rate) / 100).toFixed(2);
+  const calculated = exempt ? 0 : calculateSalesTax(taxable, rate);
   els.correctionCalculatedTax.value = Number.isFinite(calculated) ? calculated.toFixed(2) : '';
   els.correctionTaxDelta.value = Number.isFinite(calculated) ? (calculated - num(correctionEffective?.sales_tax_collected)).toFixed(2) : '';
   updateCorrectionReview();
