@@ -28,4 +28,6 @@ const correctionFunction = sql.split('create or replace function public.update_m
 assert.doesNotMatch(correctionFunction, /update public\.financial_entries/i, 'correction authority never updates the original row');
 assert.match(js, /Entry Trace[\s\S]*entry\.order_number[\s\S]*entry\.finance_command/, 'tax export retains entry and source traceability');
 assert.match(js, /originalEntryId: original\.id[\s\S]*rpcStage: rpcName/, 'structured diagnostics identify correction stage without credentials');
+assert.match(js, /isMissingRpc = err => err\?\.status === 404 \|\| err\?\.code === 'PGRST202'/, 'PostgREST missing-function responses are identified explicitly');
+assert.match(js, /Finance corrections are unavailable because the correction service has not been deployed\. Apply the pending Supabase migrations before retrying\./, 'a missing correction RPC reports the deployment mismatch instead of a validation error');
 console.log('Finance Pro append-only correction contract passed.');

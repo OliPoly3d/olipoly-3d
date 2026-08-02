@@ -2,6 +2,8 @@
 
 Finance corrections always start from the current effective record. Audit IDs, owner IDs, command IDs, Order linkage, correction linkage, actor, and timestamps are never editable.
 
+Validation is change-dependent. The browser tracks the fields the operator actually changes and sends that list with the complete proposed effective record. The RPC independently compares the proposal with the effective server record; it never trusts the browser list for accounting classification. Unchanged legacy values remain context and do not become required merely because another field is corrected. Override amount and explanation are omitted and ignored unless **Override calculated tax** is explicitly enabled.
+
 | Field group | Income | Expense | Correction behavior | Validation / reporting |
 |---|---:|---:|---|---|
 | Date, category, tax category, title, notes | Yes | Yes | Metadata-only unless another financial field changes | Valid date; title/category required; latest metadata controls display/buckets |
@@ -26,3 +28,17 @@ Finance corrections always start from the current effective record. Audit IDs, o
 3. Apply the newest metadata-only `corrected_record` overlay targeting that effective row.
 4. A financial correction reverses only the current effective financial row and creates one replacement atomically.
 5. Reports retain original + reversal + replacement ledger effects and exclude zero-money metadata rows after applying their overlay exactly once.
+
+## Manual acceptance
+
+### County only
+
+1. Open OP-000010 and choose **Create Correction**.
+2. Change only destination county, enter a reason, and leave tax override disabled.
+3. Submit and confirm the audit classification is metadata-only, no reversal/replacement exists, and county reporting uses the new county.
+
+### Taxable-subtotal and rate split
+
+1. Open the effective Finance entry and review the side-by-side customer total, taxable subtotal, rate, calculated/stored tax, shipping, exemption, and county context.
+2. Correct taxable subtotal and/or rate, leave override disabled, and confirm tax is calculated with canonical cent rounding.
+3. Submit and confirm exactly one correction command creates the established reversal/replacement, the ledger nets to the appropriate customer total, and reporting no longer treats tax as taxable sales.

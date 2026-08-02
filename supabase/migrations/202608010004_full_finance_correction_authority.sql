@@ -33,6 +33,7 @@ create index if not exists finance_correction_receipts_effective on public.finan
 create or replace function public.correct_financial_entry(
   p_original_entry_id uuid,
   p_corrected_record jsonb,
+  p_changed_fields text[],
   p_reason text,
   p_expected_effective_posted_at timestamptz,
   p_tax_override_enabled boolean,
@@ -44,7 +45,7 @@ declare
   v_actor uuid:=auth.uid(); v_root public.financial_entries%rowtype; v_effective public.financial_entries%rowtype;
   v_effective_version timestamptz;
   v_receipt public.finance_correction_receipts%rowtype; v_group uuid:=gen_random_uuid(); v_now timestamptz:=statement_timestamp();
-  v_current jsonb; v_corrected jsonb; v_changed jsonb:='{}'::jsonb; v_key text; v_kind text;
+  v_current jsonb; v_proposed jsonb; v_corrected jsonb; v_changed jsonb:='{}'::jsonb; v_key text; v_kind text;
   v_type text; v_date date; v_amount numeric; v_taxable numeric; v_rate numeric; v_calculated_tax numeric; v_tax numeric;
   v_effective_taxable numeric; v_effective_rate numeric;
   v_shipping_charged numeric; v_shipping_cost numeric; v_material numeric; v_packaging numeric; v_labor numeric; v_other numeric;
@@ -79,11 +80,18 @@ begin
   v_type:=lower(btrim(coalesce(p_corrected_record->>'type','')));
   if v_type not in ('income','expense') then raise exception 'Entry type must be income or expense' using errcode='22023'; end if;
   begin v_date:=(p_corrected_record->>'entry_date')::date; exception when others then raise exception 'Correction date is invalid' using errcode='22007'; end;
-  v_amount:=public.finance_adjustment_value(p_corrected_record,'amount'); v_taxable:=public.finance_adjustment_value(p_corrected_record,'taxable_sales');
-  v_rate:=public.finance_adjustment_value(p_corrected_record,'sales_tax_rate'); v_shipping_charged:=public.finance_adjustment_value(p_corrected_record,'shipping_charged');
-  v_shipping_cost:=public.finance_adjustment_value(p_corrected_record,'shipping_cost'); v_material:=public.finance_adjustment_value(p_corrected_record,'material_cost');
-  v_packaging:=public.finance_adjustment_value(p_corrected_record,'packaging_cost'); v_labor:=public.finance_adjustment_value(p_corrected_record,'labor_cost'); v_other:=public.finance_adjustment_value(p_corrected_record,'other_direct_cost');
-  v_business:=public.finance_adjustment_value(p_corrected_record,'business_use_percent'); v_miles:=public.finance_adjustment_value(p_corrected_record,'miles_driven'); v_mileage_rate:=public.finance_adjustment_value(p_corrected_record,'mileage_rate');
+  v_amount:=case when jsonb_typeof(p_corrected_record->'amount')='number' then public.finance_adjustment_value(p_corrected_record,'amount') else coalesce(v_effective.amount,0) end;
+  v_taxable:=case when jsonb_typeof(p_corrected_record->'taxable_sales')='number' then public.finance_adjustment_value(p_corrected_record,'taxable_sales') else v_effective_taxable end;
+  v_rate:=case when jsonb_typeof(p_corrected_record->'sales_tax_rate')='number' then public.finance_adjustment_value(p_corrected_record,'sales_tax_rate') else v_effective_rate end;
+  v_shipping_charged:=case when jsonb_typeof(p_corrected_record->'shipping_charged')='number' then public.finance_adjustment_value(p_corrected_record,'shipping_charged') else coalesce(v_effective.shipping_charged,0) end;
+  v_shipping_cost:=case when jsonb_typeof(p_corrected_record->'shipping_cost')='number' then public.finance_adjustment_value(p_corrected_record,'shipping_cost') else coalesce(v_effective.shipping_cost,0) end;
+  v_material:=case when jsonb_typeof(p_corrected_record->'material_cost')='number' then public.finance_adjustment_value(p_corrected_record,'material_cost') else coalesce(v_effective.material_cost,0) end;
+  v_packaging:=case when jsonb_typeof(p_corrected_record->'packaging_cost')='number' then public.finance_adjustment_value(p_corrected_record,'packaging_cost') else coalesce(v_effective.packaging_cost,0) end;
+  v_labor:=case when jsonb_typeof(p_corrected_record->'labor_cost')='number' then public.finance_adjustment_value(p_corrected_record,'labor_cost') else coalesce(v_effective.labor_cost,0) end;
+  v_other:=case when jsonb_typeof(p_corrected_record->'other_direct_cost')='number' then public.finance_adjustment_value(p_corrected_record,'other_direct_cost') else coalesce(v_effective.other_direct_cost,0) end;
+  v_business:=case when jsonb_typeof(p_corrected_record->'business_use_percent')='number' then public.finance_adjustment_value(p_corrected_record,'business_use_percent') else coalesce(v_effective.business_use_percent,100) end;
+  v_miles:=case when jsonb_typeof(p_corrected_record->'miles_driven')='number' then public.finance_adjustment_value(p_corrected_record,'miles_driven') else coalesce(v_effective.miles_driven,0) end;
+  v_mileage_rate:=case when jsonb_typeof(p_corrected_record->'mileage_rate')='number' then public.finance_adjustment_value(p_corrected_record,'mileage_rate') else coalesce(v_effective.mileage_rate,0) end;
   if v_amount<0 or v_taxable<0 or v_rate<0 or v_rate>20 or v_shipping_charged<0 or v_shipping_cost<0 or v_material<0 or v_packaging<0 or v_labor<0 or v_other<0 or v_business<0 or v_business>100 or v_miles<0 or v_mileage_rate<0 then raise exception 'Corrected monetary values are invalid' using errcode='22023'; end if;
   if nullif(btrim(p_corrected_record->>'title'),'') is null or nullif(btrim(p_corrected_record->>'category'),'') is null then raise exception 'Title and category are required' using errcode='22023'; end if;
   if v_type='expense' and (v_taxable<>0 or v_shipping_charged<>0 or v_rate<>0 or coalesce((p_corrected_record->>'tax_exempt_sale')::boolean,false)) then raise exception 'Expense correction contains income-only fields' using errcode='22023'; end if;
@@ -97,12 +105,16 @@ begin
   end if;
 
   v_corrected:=jsonb_build_object('type',v_type,'entry_date',v_date,'category',p_corrected_record->>'category','tax_category',coalesce(p_corrected_record->>'tax_category','auto'),'title',p_corrected_record->>'title','notes',coalesce(p_corrected_record->>'notes',''),'vendor_name',coalesce(p_corrected_record->>'vendor_name',''),'payment_method',coalesce(p_corrected_record->>'payment_method',''),'receipt_link',coalesce(p_corrected_record->>'receipt_link',''),'business_use_percent',v_business,'amount',v_amount,'original_amount',v_amount,'taxable_sales',case when v_type='income' then v_taxable else 0 end,'destination_county',case when v_type='income' then coalesce(p_corrected_record->>'destination_county','') else '' end,'sales_tax_rate',case when v_type='income' then v_rate else 0 end,'sales_tax_collected',case when v_type='income' then v_tax else 0 end,'tax_exempt_sale',v_type='income' and coalesce((p_corrected_record->>'tax_exempt_sale')::boolean,false),'shipping_charged',case when v_type='income' then v_shipping_charged else 0 end,'shipping_cost',v_shipping_cost,'material_cost',case when v_type='income' then v_material else 0 end,'packaging_cost',case when v_type='income' then v_packaging else 0 end,'labor_cost',case when v_type='income' then v_labor else 0 end,'other_direct_cost',case when v_type='income' then v_other else 0 end,'miles_driven',case when v_type='expense' then v_miles else 0 end,'mileage_rate',case when v_type='expense' then v_mileage_rate else 0 end,'trip_purpose',case when v_type='expense' then coalesce(p_corrected_record->>'trip_purpose','') else '' end,'trip_from',case when v_type='expense' then coalesce(p_corrected_record->>'trip_from','') else '' end,'trip_to',case when v_type='expense' then coalesce(p_corrected_record->>'trip_to','') else '' end,'round_trip',v_type='expense' and coalesce((p_corrected_record->>'round_trip')::boolean,false),'tax_exempt_reason',coalesce(p_corrected_record->>'tax_exempt_reason',''),'exemption_certificate_on_file',coalesce((p_corrected_record->>'exemption_certificate_on_file')::boolean,false),'calculated_sales_tax',v_calculated_tax,'tax_override_enabled',coalesce(p_tax_override_enabled,false),'tax_override_reason',coalesce(p_tax_override_reason,''));
+  if not coalesce(p_tax_override_enabled,false) then v_corrected:=v_corrected-'tax_override_enabled'-'tax_override_reason'; end if;
+  if not coalesce(p_tax_override_enabled,false) and v_taxable=v_effective_taxable and v_rate=v_effective_rate and coalesce((p_corrected_record->>'tax_exempt_sale')::boolean,false)=coalesce(v_effective.tax_exempt_sale,false) then v_corrected:=v_corrected-'calculated_sales_tax'; end if;
   v_current:=to_jsonb(v_effective)||jsonb_build_object('taxable_sales',v_effective_taxable,'sales_tax_rate',v_effective_rate,'amount',case when v_effective.type='income' then v_effective_taxable else v_effective.amount end,'original_amount',case when v_effective.type='income' then v_effective_taxable else coalesce(v_effective.original_amount,v_effective.amount) end)||coalesce((select effective_record from public.finance_correction_receipts where owner_id=v_actor and original_entry_id=v_root.id order by created_at desc limit 1),'{}'::jsonb);
-  for v_key in select jsonb_object_keys(v_corrected) loop if v_current->v_key is distinct from v_corrected->v_key then v_changed:=v_changed||jsonb_build_object(v_key,jsonb_build_object('old',v_current->v_key,'new',v_corrected->v_key)); end if; end loop;
+  v_proposed:=p_corrected_record;
+  for v_key in select jsonb_object_keys(v_proposed) loop if v_current->v_key is distinct from v_proposed->v_key then v_changed:=v_changed||jsonb_build_object(v_key,jsonb_build_object('old',v_current->v_key,'new',v_proposed->v_key)); end if; end loop;
   if v_changed='{}'::jsonb then raise exception 'Corrected record does not change any field' using errcode='22023'; end if;
   v_kind:=case when exists(select 1 from jsonb_object_keys(v_changed) k where k=any(v_financial_keys)) then 'reversal_replacement' else 'metadata_only' end;
 
   if v_kind='metadata_only' then
+    v_corrected:=v_current||v_proposed;
     insert into public.financial_entries(user_id,type,entry_date,category,tax_category,title,notes,amount,original_amount,business_use_percent,taxable_sales,shipping_charged,sales_tax_collected,tax_exempt_sale,tax_included,sales_tax_rate,destination_county,shipping_cost,material_cost,packaging_cost,labor_cost,other_direct_cost,order_id,order_number,finance_command_id,finance_command,finance_command_owned,correction_of_entry_id,posted_by,posted_at,correction_reason,correction_group_id,correction_kind,accepted_commercial_snapshot)
     values(v_actor,v_effective.type,v_date,p_corrected_record->>'category',p_corrected_record->>'tax_category',p_corrected_record->>'title','Metadata-only correction: '||p_reason,0,0,100,0,0,0,false,'no',0,p_corrected_record->>'destination_county',0,0,0,0,0,v_root.order_id,v_root.order_number,p_correlation_id,'correct_entry_metadata',true,v_root.id,v_actor,v_now,p_reason,v_group,v_kind,coalesce(v_root.accepted_commercial_snapshot,'{}'::jsonb)||jsonb_build_object('correction_root_entry_id',v_root.id,'effective_entry_id',v_effective.id,'correction_group_id',v_group,'corrected_record',v_corrected,'changed_fields',v_changed,'corrected_by',v_actor,'corrected_at',v_now)) returning * into v_metadata;
   else
@@ -116,9 +128,9 @@ begin
   return jsonb_build_object('idempotent',false,'correction_kind',v_kind,'correction_group_id',v_group,'metadata_entry_id',v_metadata.id,'reversal_entry_id',v_reversal.id,'replacement_entry_id',v_replacement.id,'effective_entry_id',v_receipt.effective_entry_id,'changed_fields',v_changed,'effective_record',v_corrected);
 end $$;
 
-revoke all on function public.correct_financial_entry(uuid,jsonb,text,timestamptz,boolean,text,text) from public,anon;
-grant execute on function public.correct_financial_entry(uuid,jsonb,text,timestamptz,boolean,text,text) to authenticated,service_role;
-comment on function public.correct_financial_entry(uuid,jsonb,text,timestamptz,boolean,text,text) is 'Server-classified full-record correction: one zero-money metadata overlay or atomic reversal and replacement; original rows remain immutable.';
+revoke all on function public.correct_financial_entry(uuid,jsonb,text[],text,timestamptz,boolean,text,text) from public,anon;
+grant execute on function public.correct_financial_entry(uuid,jsonb,text[],text,timestamptz,boolean,text,text) to authenticated,service_role;
+comment on function public.correct_financial_entry(uuid,jsonb,text[],text,timestamptz,boolean,text,text) is 'Server-classified full-record correction. Browser changed_fields supports change-dependent UX; server recomputes the authoritative change set.';
 
 create or replace function public.create_manual_financial_entry(p_entry jsonb) returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
