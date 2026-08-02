@@ -81,17 +81,17 @@ assert(!/if\(state\.user\?\.id\) await cloudSaveJob\(updated\);[\s\S]{0,200}sync
 assert(!/logProjectEvent\('production_actuals_captured'[\s\S]{0,200}syncProductionStatusToOrder\(j, 'qc', updated\)/.test(production), 'confirmClose must not emit legacy event before linked complete_print');
 assert(!production.includes('actual_grams_used: num(full') && !production.includes('production_status: full.production_status'), 'Production REST payload must not directly send actuals/status updates');
 
-assert(orders.includes('const ordinaryPayload = buildOrdinaryOrderEditPayload(payload);'), 'Orders Admin ordinary saves must use the explicit editable-field allowlist builder');
+assert(orders.includes('const ordinaryPayload = buildOrdinaryOrderEditPayload(payload, currentRow);'), 'Orders Admin ordinary saves must use the changed-field editable allowlist builder');
 const ordinaryAllowlist = orders.match(/ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object\.freeze\(\[([\s\S]*?)\]\);/)?.[1] || '';
 assert(ordinaryAllowlist, 'Orders Admin ordinary save allowlist must be discoverable');
-for (const editableColumn of ['order_number','customer_name','order_title','payment_status','tracking_number','invoice_number','internal_notes','updated_at']) {
+for (const editableColumn of ['customer_name','order_title','tracking_number','destination_county','sales_tax_rate','internal_notes']) {
   assert(new RegExp(`'${editableColumn}'`).test(ordinaryAllowlist), `${editableColumn} must remain ordinary-editable`);
 }
 for (const protectedColumn of [
   'user_id','status','public_status_text','public_next_step','shipping_or_pickup_note',
   'source_quote_number','created_from_quote','accepted_date','accepted_commercial_snapshot',
   'accepted_quote_snapshot','quote_accepted_commercial_snapshot_id','finance_pushed','finance_pushed_at',
-  'completion_email_sent','completion_email_sent_at','catalog_part_id'
+  'payment_status','paid_date','invoice_number','updated_at','completion_email_sent','completion_email_sent_at','catalog_part_id'
 ]) {
   assert(!new RegExp(`'${protectedColumn}'`).test(ordinaryAllowlist), `${protectedColumn} must not be part of the ordinary save PATCH payload`);
 }

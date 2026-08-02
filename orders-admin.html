@@ -1987,7 +1987,9 @@ Aurora, OH 44202</textarea></div>
         return { ok: res.ok, status:res.status, data, error: !res.ok ? data : null };
       }
       let result = await run();
-      if (!result.ok && (result.status === 401 || result.status === 403) && window.OliPolyAuth?.refresh) {
+      // A 403 is an authoritative database denial, not an expired-session signal.
+      // Replaying it makes one operator action issue two identical writes.
+      if (!result.ok && result.status === 401 && window.OliPolyAuth?.refresh) {
         await window.OliPolyAuth.refresh();
         accessToken = window.OliPolyAuth.getToken() || accessToken;
         result = await run();
@@ -2209,21 +2211,23 @@ function publicTrackingPayload(payload) {
 }
 
 
+    // Normal Save owns descriptive/customer/tax/fulfillment metadata only. Workflow,
+    // payment, invoice, Finance, production estimates, totals and audit fields have
+    // their own commands and are deliberately absent.
     const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object.freeze([
-      'order_number','order_date','customer_name','customer_email','customer_phone','order_title','quantity','order_total','deposit_amount','balance_amount',
-      'payment_status','fulfillment','tracking_number','payment_link','payment_link_stripe','payment_link_paypal','payment_link_venmo',
-      'stripe_invoice_id','paid_date','po_number','tax_exempt','tax_exempt_reason','destination_county','sales_tax_rate','taxable_subtotal','sales_tax_amount','exemption_certificate_on_file','po_file_on_file',
-      'po_part_number','olipoly_part_number','part_revision','shipping_contact_name','shipping_company','material','color','printer_profile',
-      'layer_height','nozzle_size','estimated_print_time','estimated_piece_price','production_notes','post_processing_notes','invoice_number',
-      'invoice_date','invoice_due_date','invoice_terms','ap_email','billing_address','shipping_address','internal_notes','updated_at'
+      'order_date','customer_name','customer_email','customer_phone','order_title',
+      'fulfillment','tracking_number','po_number','tax_exempt','tax_exempt_reason',
+      'destination_county','sales_tax_rate','taxable_subtotal','sales_tax_amount',
+      'exemption_certificate_on_file','po_file_on_file','po_part_number',
+      'shipping_contact_name','shipping_company','ap_email','billing_address',
+      'shipping_address','internal_notes'
     ]);
 
-    function buildOrdinaryOrderEditPayload(formPayload){
+    function buildOrdinaryOrderEditPayload(formPayload, currentRow = {}){
       const next = {};
       ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS.forEach(column => {
-        if (Object.prototype.hasOwnProperty.call(formPayload, column)) next[column] = formPayload[column];
+        if (Object.prototype.hasOwnProperty.call(formPayload, column) && formPayload[column] !== currentRow[column]) next[column] = formPayload[column];
       });
-      next.updated_at = new Date().toISOString();
       return next;
     }
 
@@ -3267,7 +3271,31 @@ resetForm();
       return quoteNumberVariantsFromOrder(orderNumber)[0] || null;
     }
 
-    async function saveOrder(){
+    const pendingOrderSaves = new Map();
+
+    function setOrderSavePending(pending){
+      ['saveBtn','quickSaveBtn'].forEach(id => {
+        const button = $(id);
+        if(!button) return;
+        button.disabled = pending || orderIsClosed(activeId ? orders.find(order => order.id === activeId) : null);
+        if(pending) button.setAttribute('aria-busy','true');
+        else button.removeAttribute('aria-busy');
+      });
+    }
+
+    function saveOrder(){
+      const lockKey = activeId || 'unselected';
+      if(pendingOrderSaves.has(lockKey)) return pendingOrderSaves.get(lockKey);
+      setOrderSavePending(true);
+      const operation = saveOrderOnce().finally(() => {
+        pendingOrderSaves.delete(lockKey);
+        setOrderSavePending(false);
+      });
+      pendingOrderSaves.set(lockKey, operation);
+      return operation;
+    }
+
+    async function saveOrderOnce(){
       await getCurrentUser();
       if(!currentUser) return setMsg($('formMessage'),'Login first',true);
       const selectedOrder = activeId ? orders.find(order => order.id === activeId) : null;
@@ -3292,10 +3320,13 @@ const payload = snapshotForm();
       const backwardWarning = currentRow && window.OliPolyWorkflow.backwardMoveWarning(currentRow.status, payload.status);
       if(backwardWarning && !confirm(backwardWarning)) return setMsg($('formMessage'),'Backward workflow move canceled.');
 
-      const ordinaryPayload = buildOrdinaryOrderEditPayload(payload);
+      const ordinaryPayload = buildOrdinaryOrderEditPayload(payload, currentRow);
+      if(!Object.keys(ordinaryPayload).length) return setMsg($('formMessage'),'Order saved.');
       let res;
+      const startedAt = performance.now();
+      const requestPath = `/rest/v1/orders?id=eq.${encodeURIComponent(activeId)}&user_id=eq.${encodeURIComponent(currentUser.id)}&updated_at=eq.${encodeURIComponent(currentRow.updated_at)}`;
       if(activeId){
-        res = await api(`/rest/v1/orders?id=eq.${activeId}`,{
+        res = await api(requestPath,{
           method:'PATCH',
           headers:{Prefer:'return=representation'},
           body:JSON.stringify(ordinaryPayload)
@@ -3307,9 +3338,11 @@ const payload = snapshotForm();
       if(res.error) {
         const schemaContractFailure = res.error.code === 'PGRST204' || /schema cache|column.*orders/i.test(res.error.message || '');
         const failingField = String(res.error.message || '').match(/'([^']+)' column/)?.[1] || null;
-        console.error('Orders Admin save failed:', {orderNumber:payload.order_number,httpStatus:res.status || null,code:res.error.code || null,failingField,saveStage:'orders_patch'});
-        return setMsg($('formMessage'), schemaContractFailure ? 'Orders Admin is using an unavailable order field. The order was not saved.' : (res.error.message || JSON.stringify(res.error) || 'Save failed'), true);
+        console.error('Orders Admin save failed:', {orderNumber:payload.order_number,orderId:activeId,method:'PATCH',requestUrl:requestPath,payloadKeys:Object.keys(ordinaryPayload),stage:'orders_patch',httpStatus:res.status || null,code:res.error.code || null,message:res.error.message || null,details:res.error.details || null,hint:res.error.hint || null,failingField,elapsedMs:Math.round(performance.now()-startedAt)});
+        const authorityFailure = res.status === 403 || res.error.code === '42501';
+        return setMsg($('formMessage'), schemaContractFailure ? 'Orders Admin is using an unavailable order field. The order was not saved.' : authorityFailure ? 'This order could not be saved because the requested fields are not editable through normal Save.' : (res.error.message || JSON.stringify(res.error) || 'Save failed'), true);
       }
+      if(!Array.isArray(res.data) || res.data.length !== 1) return setMsg($('formMessage'),'This order changed after the page loaded. Refresh before retrying.',true);
       const patchedOrder = (Array.isArray(res.data) ? res.data[0] : res.data) || {...currentRow, ...ordinaryPayload};
 
       if(oldOrderNumber && oldOrderNumber !== payload.order_number){
@@ -6870,6 +6903,16 @@ function generateTravelerPdf(){
     bind('printInnerPackLabelBtn', requireOrder('Avery 5366 Inner Pack Labels', printAvery5366InnerPackLabels), 'Avery 5366 Inner Pack Labels');
     bind('pushFinanceBtn', requireOrder('Push to Finance', pushCurrentOrderToFinance), 'Push to Finance');
     bind('saveCatalogPartBtn', requireOrder('Save as Catalog Part', saveCurrentOrderAsCatalogPart), 'Save as Catalog Part');
+    var detail = document.getElementById('orderDetailCard');
+    if(detail && !detail.dataset.ordersAdminSubmitBound){
+      detail.dataset.ordersAdminSubmitBound = 'true';
+      detail.addEventListener('keydown', function(event){
+        if(event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
+        if(event.target && (event.target.tagName === 'TEXTAREA' || event.target.tagName === 'BUTTON')) return;
+        event.preventDefault();
+        saveOrder();
+      });
+    }
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once:true });
   else run();
