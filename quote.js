@@ -355,6 +355,11 @@
     if (typeof window.render === "function") window.render();
   }
 
+  function normalizeOptionalPhone(value) {
+    const phone = String(value ?? "").trim();
+    return /^(?:n\/?a|none|not\s+(?:available|provided)|unknown|-|—)$/i.test(phone) ? "" : phone;
+  }
+
   function collectFields() {
     const fields = {};
     document.querySelectorAll(fieldSelector).forEach((el) => {
@@ -362,7 +367,7 @@
       if (["savedQuotesSelect"].includes(el.id)) return;
       if (el.type === "button" || el.type === "submit") return;
       if (el.type === "checkbox") fields[el.id] = !!el.checked;
-      else fields[el.id] = el.value ?? "";
+      else fields[el.id] = el.id === "customerPhone" ? normalizeOptionalPhone(el.value) : (el.value ?? "");
     });
     return fields;
   }
@@ -405,7 +410,7 @@
     setIfMissing('projectTitle', source.production_job_title || source.project_title || source.quote_title || source.title);
     setIfMissing('customerName', source.customer_name || source.contact_name);
     setIfMissing('customerEmail', source.customer_email || source.email);
-    setIfMissing('customerPhone', source.customer_phone || source.phone);
+    setIfMissing('customerPhone', normalizeOptionalPhone(source.customer_phone || source.phone));
     setIfMissing('qty', source.quantity);
     setIfMissing('quantity', source.quantity);
     setIfMissing('customerNotes', source.customer_notes || source.description || source.notes);
@@ -419,7 +424,7 @@
       const el = $(id);
       if (!el) return;
       if (el.type === "checkbox") el.checked = !!value;
-      else el.value = value ?? "";
+      else el.value = id === "customerPhone" ? normalizeOptionalPhone(value) : (value ?? "");
       el.dispatchEvent(new Event("input", { bubbles: true }));
       el.dispatchEvent(new Event("change", { bubbles: true }));
     });
@@ -3499,6 +3504,8 @@ https://olipoly3d.com`;
 
   async function acceptAndCreateOrder() {
     const btn = $("acceptCreateBtn");
+    const previousError = $("quoteOrderError");
+    if (previousError) previousError.remove();
     if (btn) {
       btn.disabled = true;
       btn.textContent = "Creating Order...";
@@ -3533,7 +3540,13 @@ PO, part number, revision, shipping, and quote references were preserved for pro
 Open Orders Admin now?`);
       if (openOrders) window.open("orders-admin.html", "_blank", "noopener,noreferrer");
     } catch (err) {
-      alert(`Could not create order:\n\n${err.message || err}`);
+      console.error("Quote to Order conversion failed", { quoteNumber: quoteNumber(), error: err });
+      const errorPanel = document.createElement("div");
+      errorPanel.id = "quoteOrderError";
+      errorPanel.className = "quote-order-error";
+      errorPanel.setAttribute("role", "alert");
+      errorPanel.textContent = `Could not create the order. ${err?.message || "Please try again."}`;
+      btn?.closest(".primary-actions, .action-strip, .btn-row")?.insertAdjacentElement("afterend", errorPanel);
     } finally {
       if (btn) {
         btn.disabled = false;

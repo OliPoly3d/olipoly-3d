@@ -1464,6 +1464,8 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 .pdf-line{border-color:#ebe6df!important}.pdf-action-link{border-radius:999px!important;background:#231f20!important;color:#fff!important;border:0!important;box-shadow:none!important}
 @media print{.pdf-shell{background:#fff!important}.pdf-card{height:auto!important;min-height:10in;overflow:visible!important}.pdf-panel,.pdf-note,.pdf-total-card,.pdf-totals{break-inside:avoid}.pdf-line strong{overflow-wrap:anywhere;word-break:break-word}}
 </style>
+  <link rel="stylesheet" href="css/erp-contrast-tokens.css?v=20260802">
+  <link rel="stylesheet" href="css/quote-finance-contrast.css?v=20260802">
   <link rel="stylesheet" href="assets/css/engine-rc1.css?v=rc1">
   <script defer src="js/engine-shell.js?v=rc2"></script>
 </head>
@@ -1558,7 +1560,7 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
         <div class="form-grid">
           <div><label for="customerName">Customer Name</label><input id="customerName" placeholder="Customer name" /><a class="customer-360-inline" id="quoteCustomer360Btn" href="customer-360.html"> Customer 360</a></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" placeholder="email@example.com" /></div>
-          <div><label for="customerPhone">Customer Phone</label><input id="customerPhone" type="tel" placeholder="Phone number" /></div>
+          <div><label for="customerPhone">Customer Phone</label><input id="customerPhone" type="tel" placeholder="Not provided" /></div>
           <div class="full"><label for="quoteTitle">Project / Quote Title</label><input id="quoteTitle" placeholder="Example: Custom name sign, replacement clip, beach toy set" /></div>
           <div class="full"><label for="projectImageUrl">Project Image URL <span style="font-weight:600;color:#9b8b9a;">(optional)</span></label><input id="projectImageUrl" placeholder="Optional: paste a JPG/PNG/WebP URL, CAD screenshot URL, or leave blank for OliPoly placeholder" /><p class="hint" style="margin:6px 0 0;font-size:.82rem;line-height:1.4;">Leave blank to use the built-in OliPoly project preview placeholder in quote PDFs.</p></div>
           <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>

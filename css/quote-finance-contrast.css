@@ -1,0 +1,51 @@
+/* Finance-aligned presentation layer. Quote layout and behavior are unchanged. */
+body {
+  color: var(--erp-text) !important;
+  background: radial-gradient(circle at top left, rgba(126,123,255,.20), transparent 28%),
+    radial-gradient(circle at top right, rgba(46,230,196,.13), transparent 24%),
+    linear-gradient(180deg, #060b16, var(--erp-bg)) !important;
+}
+body::before { opacity: .24; }
+.topbar,.card,.summary,.line-item,.quick-card,.saved-quotes-pinned,.mode-card {
+  color: var(--erp-text) !important;
+  background: var(--erp-panel) !important;
+  border-color: var(--erp-border) !important;
+}
+.topbar,.saved-quotes-pinned { background: rgba(8,14,30,.94) !important; }
+.brand h1,.hero h2,.quick-card strong,.card h3,.summary strong,.mode-card strong,
+.saved-quotes-pinned h3,.line-head strong,.calc-row strong,.total { color: var(--erp-heading) !important; }
+.brand p,.hero p,.sub,.hint,.muted,.summary span,.saved-quotes-pinned .sub,
+.advanced-toggle small,.footer { color: var(--erp-text-muted) !important; }
+label { color: var(--erp-text-secondary) !important; }
+input,select,textarea,.read-only-price {
+  color: var(--erp-text) !important;
+  background: var(--erp-input) !important;
+  border-color: var(--erp-border) !important;
+}
+select option,select optgroup { color: var(--erp-text); background: #0d1730; }
+input::placeholder,textarea::placeholder { color: var(--erp-placeholder) !important; opacity: 1; }
+input:focus-visible,select:focus-visible,textarea:focus-visible,
+button:focus-visible,a:focus-visible,.advanced-toggle:focus-visible {
+  outline: none !important; border-color: var(--erp-focus) !important; box-shadow: var(--erp-focus-ring) !important;
+}
+input:read-only { color: var(--erp-text-secondary) !important; background: var(--erp-input-disabled) !important; }
+:is(input,select,textarea,button):disabled {
+  opacity: var(--erp-disabled-opacity) !important; color: var(--erp-text-secondary) !important;
+  background: var(--erp-input-disabled) !important; border-color: var(--erp-border) !important; cursor: not-allowed;
+}
+.btn:disabled { color: #eef4ff !important; background: #4d4a91 !important; }
+.btn-ghost { color: var(--erp-text) !important; background: rgba(255,255,255,.06) !important; border-color: var(--erp-border) !important; }
+.btn-ghost:hover { background: var(--erp-hover) !important; }
+.quote-type-panel,.note,.empty,.pill-panel,.advanced-toggle,.send-package-card,.send-package-note {
+  color: var(--erp-text-muted) !important; background: var(--erp-panel-raised) !important; border-color: var(--erp-border) !important;
+}
+.calc-row { color: var(--erp-text-secondary); border-color: var(--erp-border) !important; }
+.primary-total { background: linear-gradient(135deg,rgba(126,123,255,.18),rgba(46,230,196,.08)),var(--erp-panel-raised) !important; }
+.lite-format-chip,.send-package-pill,.saved-source-pill { color: #e4e7ff !important; background: rgba(126,123,255,.16) !important; border-color: var(--erp-border) !important; }
+.production-snapshot-card,.production-handoff-banner { color: var(--erp-text) !important; background: var(--erp-panel-raised) !important; border-color: var(--erp-border) !important; }
+.quote-order-error { margin-top: 12px; padding: 12px 14px; color: var(--erp-error-text); background: var(--erp-error-bg); border: 1px solid var(--erp-error-border); border-radius: 16px; font-weight: 700; }
+.email-preview-dialog { color: var(--erp-text) !important; background: var(--erp-panel-raised) !important; border-color: var(--erp-border) !important; }
+.email-preview-head { background: var(--erp-panel) !important; border-color: var(--erp-border) !important; }
+.email-preview-head h3 { color: var(--erp-heading) !important; }
+.lite-muted-section,.secondary-actions { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }

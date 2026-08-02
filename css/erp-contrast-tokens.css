@@ -1,0 +1,30 @@
+/* Shared high-contrast ERP tokens, extracted from Finance Pro's deployed palette. */
+:root {
+  --erp-bg: #08101f;
+  --erp-panel: rgba(12, 19, 40, .88);
+  --erp-panel-raised: rgba(17, 26, 52, .92);
+  --erp-input: rgba(255, 255, 255, .075);
+  --erp-input-disabled: #111a34;
+  --erp-border: rgba(151, 179, 255, .24);
+  --erp-border-strong: rgba(126, 144, 255, .42);
+  --erp-text: #eef4ff;
+  --erp-text-secondary: #c7d4f2;
+  --erp-text-muted: #a8b5db;
+  --erp-placeholder: rgba(218, 226, 255, .72);
+  --erp-heading: #eef4ff;
+  --erp-accent: #7e7bff;
+  --erp-accent-secondary: #2ee6c4;
+  --erp-warning-bg: rgba(255, 195, 100, .09);
+  --erp-warning-text: #ffe2af;
+  --erp-warning-border: rgba(255, 195, 100, .22);
+  --erp-error-bg: rgba(255, 110, 145, .12);
+  --erp-error-text: #ffd7e1;
+  --erp-error-border: rgba(255, 110, 145, .30);
+  --erp-success-bg: rgba(79, 224, 163, .10);
+  --erp-success-text: #cffff0;
+  --erp-success-border: rgba(79, 224, 163, .22);
+  --erp-focus: rgba(126, 123, 255, .62);
+  --erp-focus-ring: 0 0 0 4px rgba(126, 123, 255, .18);
+  --erp-hover: rgba(255, 255, 255, .09);
+  --erp-disabled-opacity: 1;
+}

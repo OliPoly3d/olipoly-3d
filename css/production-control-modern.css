@@ -2,15 +2,15 @@
    Presentation only: workflow, persistence, and production authority remain unchanged. */
 
 .op-engine {
-  --pc-bg: #070c18;
-  --pc-surface: #0d1527;
-  --pc-surface-raised: #121d32;
+  --pc-bg: var(--erp-bg);
+  --pc-surface: var(--erp-panel);
+  --pc-surface-raised: var(--erp-panel-raised);
   --pc-surface-soft: #17233a;
-  --pc-border: #2a3852;
-  --pc-border-strong: #3b4d6d;
-  --pc-text: #f8fafc;
-  --pc-text-secondary: #cbd5e1;
-  --pc-text-muted: #94a3b8;
+  --pc-border: var(--erp-border);
+  --pc-border-strong: var(--erp-border-strong);
+  --pc-text: var(--erp-text);
+  --pc-text-secondary: var(--erp-text-secondary);
+  --pc-text-muted: var(--erp-text-muted);
   --pc-pink: #f472b6;
   --pc-purple: #9b87f5;
   --pc-cyan: #67e8f9;
@@ -178,9 +178,11 @@
   border-radius: 10px !important;
   padding: 11px 12px;
 }
-.op-engine :is(input, textarea)::placeholder { color: #8493aa !important; opacity: 1; }
+.op-engine :is(input, textarea)::placeholder { color: var(--erp-placeholder) !important; opacity: 1; }
 .op-engine :is(input, select, textarea):hover { border-color: #506582 !important; }
 .op-engine :is(input, select, textarea):focus { border-color: var(--pc-purple) !important; box-shadow: 0 0 0 3px rgba(155,135,245,.18) !important; }
+.op-engine :is(input, select, textarea):read-only { color: var(--pc-text-secondary) !important; background: var(--erp-input-disabled) !important; }
+.op-engine :is(input, select, textarea, button):disabled { opacity: 1 !important; color: var(--pc-text-secondary) !important; background: var(--erp-input-disabled) !important; border-color: var(--pc-border) !important; cursor: not-allowed; }
 .op-engine .form-grid { gap: 16px 14px; }
 .op-engine .form-section { background: #0b1426 !important; border-color: var(--pc-border) !important; border-radius: 14px !important; }
 .op-engine .form-section summary { padding: 14px !important; color: var(--pc-text) !important; }
@@ -321,4 +323,7 @@
   .op-engine details.ops-collapse > .collapse-body { padding: 2px 13px 15px; }
   .op-engine .lane { min-height: auto; }
   .op-engine .lane-empty { min-height: 170px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .op-engine *, .op-engine *::before, .op-engine *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
