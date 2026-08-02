@@ -57,6 +57,8 @@ let entries = [];
 let editingId = null;
 let correctionOriginal = null;
 let correctionEffective = null;
+let correctionBaseline = null;
+let correctionDirtyFields = new Set();
 let customCategoryValue = '';
 let authBusy = false;
 
@@ -400,8 +402,11 @@ function resetForm() {
   editingId = null;
   correctionOriginal = null;
   correctionEffective = null;
+  correctionBaseline = null;
+  correctionDirtyFields = new Set();
   customCategoryValue = '';
   els.entryForm.reset();
+  els.entryForm.noValidate = false;
   delete els.entryForm.dataset.saving;
 
   els.entryType.value = 'income';
@@ -1171,6 +1176,8 @@ function startEdit(id) {
   editingId = id;
   correctionOriginal = isAuthoritativeEntry(selected) ? resolved.root : null;
   correctionEffective = correctionOriginal ? e : null;
+  correctionBaseline = correctionOriginal ? { ...e } : null;
+  correctionDirtyFields = new Set();
   customCategoryValue = '';
   delete els.entryForm.dataset.saving;
 
@@ -1223,11 +1230,22 @@ function startEdit(id) {
   updateEntryTypeHint();
   updateTaxPreview();
   if (correctionOriginal) {
+    els.entryForm.noValidate = true;
     show(els.correctionControls);
     setOriginalFieldsReadOnly(false);
     const breakdown = acceptedBreakdown(e);
     const taxableSubtotal = taxableSubtotalOf(e);
     const authoritativeRate = Number.isFinite(Number(e.sales_tax_rate)) && e.sales_tax_rate !== null ? Number(e.sales_tax_rate) : Number(breakdown.tax_rate) || 0;
+    correctionBaseline = {
+      ...e,
+      amount: e.type === 'income' ? taxableSubtotal : e.amount,
+      original_amount: e.type === 'income' ? taxableSubtotal : (e.original_amount ?? e.amount),
+      taxable_sales: e.type === 'income' ? taxableSubtotal : 0,
+      sales_tax_rate: e.type === 'income' ? authoritativeRate : 0,
+      tax_exempt_reason: e.accepted_commercial_snapshot?.tax_exempt_reason || '',
+      exemption_certificate_on_file: !!e.accepted_commercial_snapshot?.exemption_certificate_on_file
+    };
+    delete correctionBaseline._effective_at;
     els.correctionDestinationCounty.value = e.destination_county || '';
     els.correctionSalesTaxRate.value = authoritativeRate;
     els.correctionTaxExempt.value = e.tax_exempt_sale ? 'yes' : 'no';
@@ -1236,13 +1254,20 @@ function startEdit(id) {
     els.taxExemptSale.value = els.correctionTaxExempt.value;
     els.correctionTaxExemptReason.value = e.accepted_commercial_snapshot?.tax_exempt_reason || '';
     els.correctionCertificateOnFile.value = e.accepted_commercial_snapshot?.exemption_certificate_on_file ? 'yes' : 'no';
-    const previousOverride = !!e.accepted_commercial_snapshot?.tax_override_enabled;
-    els.correctionTaxOverrideEnabled.checked = previousOverride;
-    els.correctionTaxOverrideAmount.readOnly = !previousOverride;
-    els.correctionTaxOverrideReason.readOnly = !previousOverride;
-    els.correctionTaxOverrideAmount.value = previousOverride ? num(e.sales_tax_collected).toFixed(2) : '';
-    els.correctionTaxOverrideReason.value = previousOverride ? (e.accepted_commercial_snapshot?.tax_override_reason || '') : '';
-    els.correctionOriginalTaxContext.textContent = `Effective taxable subtotal: ${money(taxableSubtotal)} · Rate: ${authoritativeRate || 0}% · Tax collected: ${money(e.sales_tax_collected)} · County: ${e.destination_county || 'Missing'} · Financial amount: ${money(e.amount)}`;
+    els.correctionTaxOverrideEnabled.checked = false;
+    els.correctionTaxOverrideAmount.readOnly = true;
+    els.correctionTaxOverrideReason.readOnly = true;
+    els.correctionTaxOverrideAmount.value = '';
+    els.correctionTaxOverrideReason.value = '';
+    const customerTotal = num(breakdown.customer_total ?? breakdown.total ?? e.accepted_commercial_snapshot?.total ?? e.amount) + num(e.sales_tax_collected);
+    const calculatedTax = +((taxableSubtotal * authoritativeRate) / 100).toFixed(2);
+    const splitWarnings = [
+      taxableSubtotal === customerTotal && num(e.sales_tax_collected) > 0 ? 'Taxable subtotal equals the full customer total while tax is also stored.' : '',
+      Math.abs(taxableSubtotal + num(e.sales_tax_collected) + num(e.shipping_charged) - customerTotal) > .01 ? 'Taxable subtotal, tax, and shipping do not reconcile to the customer total.' : '',
+      calculatedTax !== num(e.sales_tax_collected) ? 'Stored tax does not match canonical rate calculation.' : '',
+      !e.destination_county && num(e.sales_tax_collected) > 0 ? 'County is missing while tax collected is positive.' : ''
+    ].filter(Boolean);
+    els.correctionOriginalTaxContext.textContent = `Customer/order total: ${money(customerTotal)} · Taxable subtotal: ${money(taxableSubtotal)} · Rate: ${authoritativeRate || 0}% · Calculated tax: ${money(calculatedTax)} · Stored tax: ${money(e.sales_tax_collected)} · Shipping charged: ${money(e.shipping_charged)} · Exempt sales: ${e.tax_exempt_sale ? 'Yes' : 'No'} · County: ${e.destination_county || 'Missing'}${splitWarnings.length ? ` · Review: ${splitWarnings.join(' ')}` : ''}`;
     updateCorrectionTaxPreview();
     setPanel(els.entryTypeHint, 'This Finance entry is posted and cannot be edited. Create an append-only correction instead.', false, 'amber');
   }
@@ -1456,18 +1481,23 @@ async function saveCorrection() {
   const original = correctionOriginal;
   const effective = correctionEffective;
   const reason = els.correctionReason.value.trim();
-  if (!reason) return setMsg('The correction could not be recorded. Review the amounts and reason.', true);
+  if (!reason) return setMsg('Correction reason is required.', true);
+  const corrected = correctedRecordFromForm();
+  const changedFields = actualCorrectionChanges(corrected);
+  if (!changedFields.length) return setMsg('Change at least one field before creating a correction.', true);
+  const emptyChangedText = changedFields.find(key => ['entry_date','category','title'].includes(key) && !String(corrected[key] || '').trim());
+  if (emptyChangedText) return setMsg(`${correctionFieldLabel(emptyChangedText)} is required because it was changed.`, true);
   const taxExempt = els.correctionTaxExempt.value === 'yes';
   const correctionRate = Number(els.correctionSalesTaxRate.value);
-  if (!taxExempt && !els.correctionDestinationCounty.value) return setMsg('Select the destination county used for sales-tax reporting.', true);
-  if (!Number.isFinite(correctionRate) || correctionRate < 0 || correctionRate > 20) return setMsg('Enter the authoritative sales-tax rate.', true);
-  if (taxExempt && (correctionRate !== 0 || Number(els.correctionCalculatedTax.value) !== 0 || !els.correctionTaxExemptReason.value.trim())) return setMsg('The tax metadata conflicts with the taxable amount or exemption status.', true);
+  if (changedFields.includes('destination_county') && !els.correctionDestinationCounty.value) return setMsg('Destination county is required because it was changed.', true);
+  if (changedFields.includes('sales_tax_rate') && (!Number.isFinite(correctionRate) || correctionRate < 0 || correctionRate > 20)) return setMsg('Sales-tax rate must be between 0 and 20 because it was changed.', true);
+  if (changedFields.includes('tax_exempt_sale') && taxExempt && !els.correctionTaxExemptReason.value.trim()) return setMsg('Exemption reason is required because exempt status was changed.', true);
   const overrideEnabled = !!els.correctionTaxOverrideEnabled.checked;
   const overrideAmount = Number(els.correctionTaxOverrideAmount.value);
   const overrideReason = els.correctionTaxOverrideReason.value.trim();
   if (overrideEnabled && (!Number.isFinite(overrideAmount) || overrideAmount < 0 || !overrideReason)) return setMsg('Explain the tax override and enter the actual tax collected.', true);
-  const corrected = correctedRecordFromForm();
-  if (Object.entries(corrected).some(([key,value]) => ['amount','original_amount','taxable_sales','shipping_charged','sales_tax_collected','sales_tax_rate','shipping_cost','material_cost','packaging_cost','labor_cost','other_direct_cost','business_use_percent','miles_driven','mileage_rate'].includes(key) && !Number.isFinite(value))) return setMsg('The correction could not be recorded. Review the amounts and reason.', true);
+  const invalidChangedNumber = changedFields.find(key => ['amount','original_amount','taxable_sales','shipping_charged','sales_tax_collected','sales_tax_rate','shipping_cost','material_cost','packaging_cost','labor_cost','other_direct_cost','business_use_percent','miles_driven','mileage_rate'].includes(key) && !Number.isFinite(corrected[key]));
+  if (invalidChangedNumber) return setMsg(`${correctionFieldLabel(invalidChangedNumber)} must be a valid number because it was changed.`, true);
   els.entryForm.dataset.saving = '1';
   els.saveBtn.disabled = true;
   els.saveBtn.textContent = 'Recording...';
@@ -1477,6 +1507,7 @@ async function saveCorrection() {
     const rpcPayload = {
       p_original_entry_id: original.id,
       p_corrected_record: corrected,
+      p_changed_fields: changedFields,
       p_reason: reason,
       p_expected_effective_posted_at: effective._effective_at || effective.posted_at || effective.created_at,
       p_tax_override_enabled: overrideEnabled,
@@ -1505,7 +1536,7 @@ function correctedRecordFromForm() {
   const isIncome = els.entryType.value === 'income';
   const calculatedTax = Number(els.correctionCalculatedTax.value);
   const tax = els.correctionTaxOverrideEnabled.checked ? Number(els.correctionTaxOverrideAmount.value) : calculatedTax;
-  return {
+  const formRecord = {
     type: els.entryType.value,
     entry_date: els.entryDate.value,
     category: els.entryCategory.value === 'Custom' ? customCategoryValue : els.entryCategory.value,
@@ -1527,23 +1558,46 @@ function correctedRecordFromForm() {
     trip_to: isIncome ? '' : els.tripTo.value.trim(), round_trip: !isIncome && !!els.roundTripToggle.checked,
     tax_exempt_reason: els.correctionTaxExemptReason.value.trim(), exemption_certificate_on_file: els.correctionCertificateOnFile.value === 'yes',
     tax_override_enabled: !!els.correctionTaxOverrideEnabled.checked,
-    tax_override_reason: els.correctionTaxOverrideReason.value.trim(), calculated_sales_tax: Number(els.correctionCalculatedTax.value)
+    calculated_sales_tax: Number(els.correctionCalculatedTax.value)
   };
+  if (els.correctionTaxOverrideEnabled.checked) formRecord.tax_override_reason = els.correctionTaxOverrideReason.value.trim();
+  const proposed = { ...correctionBaseline };
+  correctionDirtyFields.forEach(key => { proposed[key] = formRecord[key]; });
+  if (isIncome && correctionDirtyFields.has('taxable_sales')) {
+    proposed.amount = formRecord.taxable_sales;
+    proposed.original_amount = formRecord.taxable_sales;
+  }
+  if (correctionDirtyFields.has('taxable_sales') || correctionDirtyFields.has('sales_tax_rate') || correctionDirtyFields.has('tax_exempt_sale') || els.correctionTaxOverrideEnabled.checked) {
+    proposed.sales_tax_collected = tax;
+    proposed.calculated_sales_tax = calculatedTax;
+    correctionDirtyFields.add('sales_tax_collected');
+  }
+  if (els.correctionTaxOverrideEnabled.checked) {
+    proposed.tax_override_enabled = true;
+    proposed.tax_override_reason = formRecord.tax_override_reason;
+  }
+  return proposed;
+}
+
+const correctionFieldLabel = key => ({ destination_county:'Destination county', taxable_sales:'Taxable subtotal', sales_tax_rate:'Sales-tax rate', sales_tax_collected:'Tax collected', tax_override_reason:'Tax override explanation' }[key] || key.replaceAll('_',' '));
+const correctionValue = value => value === null || value === undefined ? '' : String(value);
+function actualCorrectionChanges(proposed) {
+  return Object.keys(proposed).filter(key => correctionValue(proposed[key]) !== correctionValue(correctionBaseline?.[key]));
 }
 
 function updateCorrectionReview() {
   if (!correctionEffective) return;
   const corrected = correctedRecordFromForm();
   const financial = ['type','amount','original_amount','taxable_sales','shipping_charged','sales_tax_rate','sales_tax_collected','tax_exempt_sale','shipping_cost','material_cost','packaging_cost','labor_cost','other_direct_cost','business_use_percent','miles_driven','mileage_rate'];
-  const changed = Object.keys(corrected).filter(key => String(corrected[key] ?? '') !== String(correctionEffective[key] ?? ''));
+  const changed = actualCorrectionChanges(corrected);
   const financialChange = changed.some(key => financial.includes(key));
   els.correctionClassification.textContent = financialChange ? 'Reversal and replacement' : 'Metadata-only correction';
-  els.correctionReview.textContent = changed.length ? `Changed fields: ${changed.join(', ')}. ${financialChange ? 'The effective entry will be reversed and replaced atomically.' : 'No financial amount will be duplicated.'}` : 'No changes detected.';
+  els.correctionReview.textContent = changed.length ? `Changed fields: ${changed.map(key => `${correctionFieldLabel(key)}: ${correctionValue(correctionBaseline?.[key]) || 'Missing'} → ${key === 'sales_tax_collected' && !els.correctionTaxOverrideEnabled.checked ? `${correctionValue(corrected[key])} (recalculated)` : correctionValue(corrected[key])}`).join('; ')}. ${financialChange ? 'The effective entry will be reversed and replaced atomically.' : 'No financial amount will be duplicated.'}` : 'No changes detected.';
 }
 
 function updateCorrectionTaxPreview() {
   if (!correctionOriginal) return;
-  const taxable = taxableSubtotalOf(correctionOriginal);
+  const taxable = correctionDirtyFields.has('taxable_sales') ? Number(els.entryAmount.value) : taxableSubtotalOf(correctionEffective);
   const exempt = els.correctionTaxExempt.value === 'yes';
   const rate = Number(els.correctionSalesTaxRate.value);
   const calculated = exempt ? 0 : +((taxable * rate) / 100).toFixed(2);
@@ -1822,8 +1876,23 @@ if (els.correctionTaxOverrideEnabled) els.correctionTaxOverrideEnabled.addEventL
   els.correctionTaxOverrideAmount.readOnly = !enabled;
   els.correctionTaxOverrideReason.readOnly = !enabled;
   if (!enabled) { els.correctionTaxOverrideAmount.value = ''; els.correctionTaxOverrideReason.value = ''; }
+  if (enabled) correctionDirtyFields.add('sales_tax_collected');
   updateCorrectionReview();
 });
+const correctionInputFields = {
+  entryType:'type', entryDate:'entry_date', entryCategory:'category', taxCategory:'tax_category', entryTitle:'title', entryNotes:'notes',
+  vendorName:'vendor_name', paymentMethod:'payment_method', receiptLink:'receipt_link', businessUsePercent:'business_use_percent',
+  entryAmount:'taxable_sales', shippingCharged:'shipping_charged', shippingCost:'shipping_cost', materialCost:'material_cost',
+  packagingCost:'packaging_cost', laborCost:'labor_cost', otherDirectCost:'other_direct_cost', milesDriven:'miles_driven', mileageRate:'mileage_rate',
+  tripPurpose:'trip_purpose', tripFrom:'trip_from', tripTo:'trip_to', roundTripToggle:'round_trip', correctionDestinationCounty:'destination_county',
+  correctionSalesTaxRate:'sales_tax_rate', correctionTaxExempt:'tax_exempt_sale', correctionTaxExemptReason:'tax_exempt_reason',
+  correctionCertificateOnFile:'exemption_certificate_on_file'
+};
+Object.entries(correctionInputFields).forEach(([id, field]) => els[id]?.addEventListener('input', () => {
+  if (!correctionOriginal) return;
+  correctionDirtyFields.add(els.entryType.value === 'expense' && field === 'taxable_sales' ? 'amount' : field);
+  if (field === 'taxable_sales' || field === 'sales_tax_rate' || field === 'tax_exempt_sale') updateCorrectionTaxPreview();
+}));
 if (els.entryForm) els.entryForm.addEventListener('input', () => { if (correctionOriginal) updateCorrectionReview(); });
 
 if (els.clearFiltersBtn) {
