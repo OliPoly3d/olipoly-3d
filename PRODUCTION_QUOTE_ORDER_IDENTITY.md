@@ -142,3 +142,13 @@ captured request, deploy migration `202608030003` to restore the non-logging
 definition. `production_workflow_execution_graph.sql` inventories the actual
 deployed triggers and function bodies so schema drift cannot be mistaken for
 repository intent.
+
+Migration `202608030004_temporary_production_workflow_execution_trace.sql` is
+the deployable temporary trace requested for the next live attempt. It changes
+no browser behavior, lock behavior, timeout, retry, lifecycle rule, or business
+projection. Every function stage, invoked workflow text helper, and known
+trigger entry/exit includes correlation ID, Order number, and Production job ID.
+After the single capture, run
+`supabase/verification/remove_production_workflow_stage_trace.sql` immediately
+to restore the non-logging authoritative functions. Do not execute another
+operator command while the temporary trace remains installed.
