@@ -95,7 +95,7 @@ for (const protectedColumn of [
 ]) {
   assert(!new RegExp(`'${protectedColumn}'`).test(ordinaryAllowlist), `${protectedColumn} must not be part of the ordinary save PATCH payload`);
 }
-assert(/if\(activeId\)\{[\s\S]*?body:JSON\.stringify\(ordinaryPayload\)[\s\S]*?\}\s*else\s*\{[\s\S]*?direct Orders Admin creation is disabled by workflow authority/.test(orders), 'ordinary Save must PATCH only the allowlisted payload and keep direct creation disabled');
+assert(/if\(activeId\)\{[\s\S]*?p_changes: ordinaryPayload[\s\S]*?\}\)[\s\S]*?\}\s*else\s*\{[\s\S]*?direct Orders Admin creation is disabled by workflow authority/.test(orders), 'ordinary Save must send only the allowlisted payload to its RPC and keep direct creation disabled');
 assert(orders.includes("Orders are created through approved Quote acceptance"), 'Orders Admin direct create must remain disabled');
 assert(orders.includes('Orders cannot be deleted from Orders Admin') && !/orders\?id=eq\.\$\{activeId\}[\s\S]{0,80}method:\s*['\"]DELETE/.test(orders), 'Orders Admin direct delete must be disabled');
 assert(orders.includes('const patchedOrder =') && orders.includes('updated_at:patchedOrder.updated_at'), 'Orders close must use updated_at returned by preceding PATCH');
