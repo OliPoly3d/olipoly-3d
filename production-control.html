@@ -1756,6 +1756,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <script src="olipoly-auth.js"></script>
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/production-evidence.js?v=20260728-null-semantics"></script>
+<script src="js/production-recovery-storage.js?v=20260803-runtime-repair"></script>
 <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
 <script src="js/estimate-actual-analytics.js?v=20260716-m3c"></script>
 <script src="js/product-recipe-model.js?v=20260716-m4a"></script>
@@ -2911,7 +2912,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   const LINKED_WORKFLOW_RECOVERY_KEY = 'olipoly_linked_workflow_recovery_v1';
   function linkedWorkflowRecovery(){
-    return readJson(LINKED_WORKFLOW_RECOVERY_KEY, {});
+    return window.OliPolyProductionRecoveryStorage.read(LINKED_WORKFLOW_RECOVERY_KEY, {});
   }
   function pendingLinkedWorkflowRecovery(job, status){
     const pending = linkedWorkflowRecovery()?.[job?.id];
@@ -2932,13 +2933,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       recorded_at:new Date().toISOString(),
       recovery_note:'Inventory side effects were prepared before the workflow RPC completed; retry this command to finish without duplicating consumed attempts or reservation deltas.'
     };
-    localWrite(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+    window.OliPolyProductionRecoveryStorage.write(LINKED_WORKFLOW_RECOVERY_KEY, pending);
   }
   function clearLinkedWorkflowRecovery(jobId){
     const pending = linkedWorkflowRecovery();
     if(pending[jobId]){
       delete pending[jobId];
-      localWrite(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+      window.OliPolyProductionRecoveryStorage.write(LINKED_WORKFLOW_RECOVERY_KEY, pending);
     }
   }
 
@@ -2988,42 +2989,44 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       if(!({ready_to_print:1, printing:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
       if(status === 'printing' && !hasProductionActualPlan(j)) return toast('Add/confirm slicer grams and print hours before starting production.');
       linkedWorkflowInFlight.add(inFlightKey);
-      const now = new Date();
-      const recovery = pendingLinkedWorkflowRecovery(j, status);
-      const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
-      let lifecycleAction = recovery?.lifecycle_action || null;
-      if(!recovery){
-        if(status === 'printing' && !updated.print_started_at){
-          updated.print_started_at = now.toISOString();
-          if(num(updated.estimated_total_hours)){
-            updated.estimated_finish_at = new Date(now.getTime() + num(updated.estimated_total_hours)*3600000).toISOString();
-          }
-        }
-        lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
-        if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-          await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc', expectedUpdatedAt:j.updated_at});
-        }
-        const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
-          ? {...updated, material_reservations:[]}
-          : j;
-        updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
-          ? []
-          : shouldReserveInventory(updated, status)
-            ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
-            : [];
-        if(lifecycleAction === 'consume_and_reserve_reprint'){
-          updated.actual_grams_used = null;
-          updated.scrap_grams = null;
-          updated.roll_usages = [];
-          updated.actual_filament_breakdown = null;
-          updated.current_attempt_id = null;
-          updated.actuals_captured_at = null;
-          updated.print_started_at = null;
-          updated.estimated_finish_at = null;
-        }
-        rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
-      }
+      const recoveryStartedAt = performance.now();
+      const action = ({printing:'start_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[status] || status;
       try{
+        const now = new Date();
+        const recovery = pendingLinkedWorkflowRecovery(j, status);
+        const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
+        let lifecycleAction = recovery?.lifecycle_action || null;
+        if(!recovery){
+          if(status === 'printing' && !updated.print_started_at){
+            updated.print_started_at = now.toISOString();
+            if(num(updated.estimated_total_hours)){
+              updated.estimated_finish_at = new Date(now.getTime() + num(updated.estimated_total_hours)*3600000).toISOString();
+            }
+          }
+          lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
+          if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
+            await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc', expectedUpdatedAt:j.updated_at});
+          }
+          const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
+            ? {...updated, material_reservations:[]}
+            : j;
+          updated.material_reservations = lifecycleAction === 'preserve_consumed_no_reserve'
+            ? []
+            : shouldReserveInventory(updated, status)
+              ? (lifecycleAction === 'keep' && j.material_reservations?.length ? j.material_reservations : buildMaterialReservations(updated))
+              : [];
+          if(lifecycleAction === 'consume_and_reserve_reprint'){
+            updated.actual_grams_used = null;
+            updated.scrap_grams = null;
+            updated.roll_usages = [];
+            updated.actual_filament_breakdown = null;
+            updated.current_attempt_id = null;
+            updated.actuals_captured_at = null;
+            updated.print_started_at = null;
+            updated.estimated_finish_at = null;
+          }
+          rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
+        }
         const authoritative = await syncProductionStatusToOrder(j, status);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         if((lifecycleAction === 'release' || lifecycleAction === 'preserve_consumed_no_reserve') && !['consume_and_release','consume_and_reserve_reprint'].includes(lifecycleAction)) await releaseLinkedProductionMaterial(updated, lifecycleAction);
@@ -3034,7 +3037,17 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         await refreshAuthoritativeProductionState();
         render();
         toast(`Moved to ${STATUS[status] || status}.`);
-      }catch(err){ console.error('Production workflow command failed', {job_id:id, order_number:j.order_number, status, error:err}); toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
+      }catch(err){
+        if(err?.name === 'ProductionRecoveryReadError'){
+          console.error('[OliPolyERP] Production recovery read failed', {
+            stage:'linked_workflow_recovery', jobId:id, orderNumber:j.order_number, action,
+            storageKey:err.storageKey, errorName:err.name, message:err.message,
+            elapsedMs:Math.round(performance.now()-recoveryStartedAt)
+          });
+          toast('Production recovery data could not be read. No lifecycle change was made.');
+          return;
+        }
+        console.error('Production workflow command failed', {job_id:id, order_number:j.order_number, status, error:err}); toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
 
 ${err.message || err}`); }
       finally{ linkedWorkflowInFlight.delete(inFlightKey); }
