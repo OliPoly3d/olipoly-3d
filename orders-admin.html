@@ -2217,7 +2217,7 @@ function publicTrackingPayload(payload) {
     const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object.freeze([
       'order_date','customer_name','customer_email','customer_phone','order_title',
       'fulfillment','tracking_number','po_number','tax_exempt','tax_exempt_reason',
-      'destination_county','sales_tax_rate','taxable_subtotal','sales_tax_amount',
+      'destination_county','sales_tax_rate',
       'exemption_certificate_on_file','po_file_on_file','po_part_number',
       'shipping_contact_name','shipping_company','ap_email','billing_address',
       'shipping_address','internal_notes'
@@ -3299,7 +3299,7 @@ resetForm();
       await getCurrentUser();
       if(!currentUser) return setMsg($('formMessage'),'Login first',true);
       const selectedOrder = activeId ? orders.find(order => order.id === activeId) : null;
-      if (orderIsClosed(selectedOrder)) return setMsg($('formMessage'),'This order is closed and cannot be edited through normal Save.',true);
+      if (orderIsClosed(selectedOrder)) return setMsg($('formMessage'),'This order is closed and cannot be edited.',true);
 
       autoBalance();
       normalizePaymentStatus();
@@ -3324,12 +3324,15 @@ const payload = snapshotForm();
       if(!Object.keys(ordinaryPayload).length) return setMsg($('formMessage'),'Order saved.');
       let res;
       const startedAt = performance.now();
-      const requestPath = `/rest/v1/orders?id=eq.${encodeURIComponent(activeId)}&user_id=eq.${encodeURIComponent(currentUser.id)}&updated_at=eq.${encodeURIComponent(currentRow.updated_at)}`;
+      const requestPath = '/rest/v1/rpc/update_order_metadata';
       if(activeId){
         res = await api(requestPath,{
-          method:'PATCH',
-          headers:{Prefer:'return=representation'},
-          body:JSON.stringify(ordinaryPayload)
+          method:'POST',
+          body:JSON.stringify({
+            p_order_id: activeId,
+            p_expected_updated_at: currentRow.updated_at,
+            p_changes: ordinaryPayload
+          })
         });
       } else {
         return setMsg($('formMessage'),'Orders are created through approved Quote acceptance; direct Orders Admin creation is disabled by workflow authority.',true);
@@ -3338,9 +3341,12 @@ const payload = snapshotForm();
       if(res.error) {
         const schemaContractFailure = res.error.code === 'PGRST204' || /schema cache|column.*orders/i.test(res.error.message || '');
         const failingField = String(res.error.message || '').match(/'([^']+)' column/)?.[1] || null;
-        console.error('Orders Admin save failed:', {orderNumber:payload.order_number,orderId:activeId,method:'PATCH',requestUrl:requestPath,payloadKeys:Object.keys(ordinaryPayload),stage:'orders_patch',httpStatus:res.status || null,code:res.error.code || null,message:res.error.message || null,details:res.error.details || null,hint:res.error.hint || null,failingField,elapsedMs:Math.round(performance.now()-startedAt)});
+        console.error('Orders Admin save failed:', {orderNumber:payload.order_number,orderId:activeId,method:'POST',requestUrl:requestPath,payloadKeys:Object.keys(ordinaryPayload),stage:'orders_metadata_rpc',httpStatus:res.status || null,code:res.error.code || null,message:res.error.message || null,details:res.error.details || null,hint:res.error.hint || null,failingField,elapsedMs:Math.round(performance.now()-startedAt)});
         const authorityFailure = res.status === 403 || res.error.code === '42501';
-        return setMsg($('formMessage'), schemaContractFailure ? 'Orders Admin is using an unavailable order field. The order was not saved.' : authorityFailure ? 'This order could not be saved because the requested fields are not editable through normal Save.' : (res.error.message || JSON.stringify(res.error) || 'Save failed'), true);
+        const closedFailure = res.error.code === '55000';
+        const concurrencyFailure = res.error.code === '40001';
+        const protectedFieldFailure = res.error.code === '22023';
+        return setMsg($('formMessage'), schemaContractFailure ? 'Orders Admin is using an unavailable order field. The order was not saved.' : closedFailure ? 'This order is closed and cannot be edited.' : concurrencyFailure ? 'This order changed after the page loaded. Refresh before retrying.' : (authorityFailure || protectedFieldFailure) ? 'This order includes fields that cannot be changed through normal Save.' : (res.error.message || JSON.stringify(res.error) || 'Save failed'), true);
       }
       if(!Array.isArray(res.data) || res.data.length !== 1) return setMsg($('formMessage'),'This order changed after the page loaded. Refresh before retrying.',true);
       const patchedOrder = (Array.isArray(res.data) ? res.data[0] : res.data) || {...currentRow, ...ordinaryPayload};
@@ -3962,7 +3968,6 @@ if ($('logoutBtn')) $('logoutBtn').onclick = logout;
 if ($('refreshBtn')) $('refreshBtn').onclick = fetchOrders;
 if ($('newBtn')) $('newBtn').onclick = resetForm;
 if ($('newBtnInline')) $('newBtnInline').onclick = resetForm;
-if ($('saveBtn')) $('saveBtn').onclick = saveOrder;
 if ($('deleteBtn')) $('deleteBtn').onclick = deleteOrder;
 if ($('sendCompleteEmailBtn')) $('sendCompleteEmailBtn').onclick = openCompletionEmailModal;
 if ($('unmarkCompleteEmailBtn')) $('unmarkCompleteEmailBtn').onclick = unmarkCompletionEmailSent;

@@ -14,12 +14,15 @@ function workflow() {
   return context.module.exports;
 }
 
-test('Orders PATCH schema contract is backed by the focused migration', () => {
+test('Orders metadata command keeps descriptive tax fields separate from accepted totals', () => {
   const contract = [...orders.matchAll(/const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object\.freeze\(\[([\s\S]*?)\]\);/g)][0][1];
   const columns = [...contract.matchAll(/'([^']+)'/g)].map(match => match[1]);
-  for (const column of ['destination_county','sales_tax_rate','taxable_subtotal','sales_tax_amount']) {
+  for (const column of ['destination_county','sales_tax_rate']) {
     assert.ok(columns.includes(column), `${column} must remain in the save contract`);
     assert.match(migration, new RegExp(`add column if not exists ${column}\\b`));
+  }
+  for (const protectedColumn of ['taxable_subtotal','sales_tax_amount']) {
+    assert.ok(!columns.includes(protectedColumn), `${protectedColumn} is an accepted financial value, not ordinary metadata`);
   }
   assert.match(migration, /orders_destination_county_valid[\s\S]*is_ohio_county\(destination_county\)/);
   assert.match(orders, /sales_tax_rate: \$\('orderSalesTaxRate'\)\?\.value === '' \? null : Number/, 'explicit zero is not replaced by null');
@@ -54,7 +57,7 @@ test('lifecycle aliases classify centrally and independently of Finance', () => 
 test('closed Orders are read-only and zero-value Orders are never Finance-ready', () => {
   assert.match(orders, /Closed Order[^]*This order is closed\./);
   assert.match(orders, /button\.disabled = closed/);
-  assert.match(orders, /This order is closed and cannot be edited through normal Save\./);
+  assert.match(orders, /This order is closed and cannot be edited\./);
   assert.match(orders, /num\(o\.order_total\) > 0 && !o\.finance_pushed/);
   assert.doesNotMatch(migration, /disable row level security|grant update on (table )?public\.orders/);
 });
