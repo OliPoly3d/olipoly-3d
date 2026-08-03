@@ -158,7 +158,7 @@
     };
   }
 
-  function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload){
+  function productionWorkflowRpcRequest(orderNumber, command, expectedUpdatedAt, payload, commandContext = {}){
     if(!orderNumber) throw new Error('A linked Order number is required.');
     if(!expectedUpdatedAt) throw new Error('Refresh before changing workflow status; expected_updated_at is required.');
     return {
@@ -168,8 +168,8 @@
         p_command:String(command).trim().toLowerCase(),
         p_expected_updated_at:expectedUpdatedAt,
         p_payload:payload || {},
-        p_correlation_id:commandIdentity('production', String(orderNumber).trim(), String(command).trim().toLowerCase(), expectedUpdatedAt),
-        p_causation_id:null
+        p_correlation_id:commandContext.correlationId || commandIdentity('production', String(orderNumber).trim(), String(command).trim().toLowerCase(), expectedUpdatedAt),
+        p_causation_id:commandContext.causationId || null
       }
     };
   }
