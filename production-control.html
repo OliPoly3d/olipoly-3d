@@ -1757,6 +1757,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/production-evidence.js?v=20260728-null-semantics"></script>
 <script src="js/production-recovery-storage.js?v=20260803-runtime-repair"></script>
+<script src="js/production-workflow-dispatcher.js?v=20260803-single-dispatch"></script>
 <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
 <script src="js/estimate-actual-analytics.js?v=20260716-m3c"></script>
 <script src="js/product-recipe-model.js?v=20260716-m4a"></script>
@@ -1891,7 +1892,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return {res, txt, data};
     }
     let result = await run();
-    if(!result.res.ok && result.res.status === 401 && retryAuth !== false && window.OliPolyAuth?.refresh){
+    const replaySafe = ['GET','HEAD'].includes(String(fetchOptions.method || 'GET').toUpperCase());
+    if(!result.res.ok && result.res.status === 401 && retryAuth !== false && replaySafe && window.OliPolyAuth?.refresh){
       await window.OliPolyAuth.refresh();
       result = await run();
     }
@@ -1972,36 +1974,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return merged;
   }
 
-  function productionDigits(value){
-    return String(value || '').match(/(\d+)/)?.[1] || '';
-  }
-  function quoteVariantsFromAny(value){
-    const d = productionDigits(value);
-    if(!d) return [];
-    return [...new Set([`Q-${d}`, `Q-${d.padStart(5,'0')}`, `Q-${d.padStart(6,'0')}`])];
-  }
-  function orderVariantsFromAny(value){
-    const d = productionDigits(value);
-    if(!d) return [];
-    return [...new Set([`OP-${d}`, `OP-${d.padStart(5,'0')}`, `OP-${d.padStart(6,'0')}`])];
-  }
-
-  const ORDER_TO_PRODUCTION_STATUS = {
-    ready_to_print:'ready_to_print', printing:'printing', qc:'qc',
-    ready_for_fulfillment:'ready_for_fulfillment', closed:'closed'
-  };
-
-  function applyLinkedOrderAuthority(job, orderRow){
-    if(!job || !orderRow?.status) return job;
+  function annotateLinkedOrder(job, orderRow){
+    if(!job || !orderRow) return job;
     const orderStatus = window.OliPolyWorkflow.normalizeOrderStatus(orderRow.status);
-    return {
-      ...job,
-      production_status: ORDER_TO_PRODUCTION_STATUS[orderStatus] || job.production_status,
-      linked_order_status: orderStatus,
-      order_number: job.order_number || orderRow.order_number || null,
-      customer_name: job.customer_name || orderRow.customer_name || null,
-      customer_email: job.customer_email || orderRow.customer_email || null
-    };
+    const payload = safeObject(job.job_payload) || {};
+    const linkageIncomplete = !job.order_number
+      || job.order_number !== orderRow.order_number
+      || payload.order_number !== orderRow.order_number
+      || payload.order_id !== orderRow.id
+      || orderRow.source_quote_number !== job.quote_number;
+    return {...job, linked_order_status:orderStatus, linkage_incomplete:linkageIncomplete};
   }
 
   async function loadCloudJobs(){
@@ -2009,32 +1991,25 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
       const normalized = Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
       state.cloudJobIds = new Set(normalized.map(job=>job.id).filter(Boolean));
-      const directOrderNums = [...new Set(normalized.flatMap(j=>orderVariantsFromAny(j.order_number)).filter(Boolean))];
-      const quoteNums = [...new Set(normalized.flatMap(j=>quoteVariantsFromAny(j.quote_number || j.order_number)).filter(Boolean))];
+      const directOrderNums = [...new Set(normalized.map(j=>j.order_number).filter(Boolean))];
+      const quoteNums = [...new Set(normalized.map(j=>j.quote_number).filter(Boolean))];
       if(!directOrderNums.length && !quoteNums.length) return normalized;
       try{
         const orderMap = new Map();
         const quoteMap = new Map();
         if(directOrderNums.length){
           const inList = directOrderNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
-          const rows = await sbApi(`/rest/v1/orders?select=order_number,source_quote_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
+          const rows = await sbApi(`/rest/v1/orders?select=id,order_number,source_quote_number,status&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
           (Array.isArray(rows) ? rows : []).forEach(r=>orderMap.set(r.order_number, r));
         }
         if(quoteNums.length){
           const inQ = quoteNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
-          const rowsByQuote = await sbApi(`/rest/v1/orders?select=order_number,source_quote_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&source_quote_number=in.(${encodeURIComponent(inQ)})`,{method:'GET'});
+          const rowsByQuote = await sbApi(`/rest/v1/orders?select=id,order_number,source_quote_number,status&user_id=eq.${encodeURIComponent(state.user.id)}&source_quote_number=in.(${encodeURIComponent(inQ)})`,{method:'GET'});
           (Array.isArray(rowsByQuote) ? rowsByQuote : []).forEach(r=>{ if(r.source_quote_number) quoteMap.set(r.source_quote_number, r); });
         }
         return normalized.map(j=>{
-          let row = null;
-          for(const op of orderVariantsFromAny(j.order_number)) { if(orderMap.has(op)){ row = orderMap.get(op); break; } }
-          if(!row){ for(const q of quoteVariantsFromAny(j.quote_number || j.order_number)) { if(quoteMap.has(q)){ row = quoteMap.get(q); break; } } }
-          if(!row && j.quote_number){
-            const d = productionDigits(j.quote_number);
-            const expectedOps = orderVariantsFromAny(d);
-            for(const op of expectedOps){ if(orderMap.has(op)){ row = orderMap.get(op); break; } }
-          }
-          return applyLinkedOrderAuthority(j, row);
+          const row = (j.order_number && orderMap.get(j.order_number)) || (j.quote_number && quoteMap.get(j.quote_number)) || null;
+          return annotateLinkedOrder(j, row);
         });
       }catch(orderErr){
         console.warn('Could not load linked order statuses for production lane routing.', orderErr);
@@ -2886,7 +2861,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     await refreshRawInventoryFromCloud();
   }
 
-  async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job){
+  async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job, commandContext = {}){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
     const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
     if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
@@ -2902,9 +2877,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       roll_usages:evidenceJob.roll_usages || [],
       production_attempt:currentProductionAttempt(evidenceJob) || null
     } : {};
-    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals);
+    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals, commandContext);
+    const fetchOrdinal = commandContext.claimFetchOrdinal?.() || 1;
+    console.info('[OliPolyERP] Production workflow fetch', {...(commandContext.trace || {}), fetchOrdinal, correlationId:request.body.p_correlation_id, causationId:request.body.p_causation_id});
     const result = await sbApi(request.path, {
-      method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
+      method:'POST', retryAuth:false, requestKind:'authoritative-mutation', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
     window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
     return Array.isArray(result) ? result[0] : result;
@@ -2979,7 +2956,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
   }
 
-  async function setStatus(id,status){
+  async function setStatus(id,status,commandContext = {}){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
     const inFlightKey = `${id}:${status}`;
@@ -3027,7 +3004,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           }
           rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
         }
-        const authoritative = await syncProductionStatusToOrder(j, status);
+        const authoritative = await syncProductionStatusToOrder(j, status, j, commandContext);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         if((lifecycleAction === 'release' || lifecycleAction === 'preserve_consumed_no_reserve') && !['consume_and_release','consume_and_reserve_reprint'].includes(lifecycleAction)) await releaseLinkedProductionMaterial(updated, lifecycleAction);
         if(shouldReserveInventory(updated, status) && lifecycleAction !== 'keep') await reserveLinkedProductionMaterial(updated, updated.material_reservations);
@@ -3047,7 +3024,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           toast('Production recovery data could not be read. No lifecycle change was made.');
           return;
         }
-        console.error('Production workflow command failed', {job_id:id, order_number:j.order_number, status, error:err}); toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
+        console.error('Production workflow command failed', {
+          stage:'optimistic_concurrency_or_workflow_rejection', job_id:id, order_number:j.order_number, status,
+          expected_production_updated_at:j.updated_at, expected_order_updated_at:null,
+          postgres_code:err?.postgresCode || err?.code || null, conflict_details:err?.details || null, error:err
+        }); toast('Workflow command did not complete; pending recovery was saved. Refresh before issuing another action.'); alert(`Could not update status:
 
 ${err.message || err}`); }
       finally{ linkedWorkflowInFlight.delete(inFlightKey); }
@@ -5069,13 +5050,13 @@ ${err.message || err}`); }
     const quoteHasBeenSent = !!j.quote_number && ['quote_sent','quote_declined','quote_accepted','awaiting_design','awaiting_approval','ready_to_print','queued','printing','post_processing','ready','production_closed','qc_complete','completed'].includes(j.production_status);
     if(j.production_status === 'waiting_customer' && !hasOrder) {
       actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
-    } else if(j.production_status === 'ready_to_print'){
-      actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
+    } else if(j.production_status === 'ready_to_print' && !j.linkage_incomplete){
+      actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="printing" data-workflow-command="start_print" type="button">Start Print</button>`;
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){
-      actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass QC</button>`;
-      actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Needs Reprint</button>`;
+      actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="ready_for_fulfillment" data-workflow-command="pass_qc" type="button">Pass QC</button>`;
+      actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="ready_to_print" data-workflow-command="needs_reprint" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
       actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
     }
@@ -5091,6 +5072,9 @@ ${err.message || err}`); }
     const linkedIdChip = (j.quote_number || j.order_number)
       ? `<span class="quote-link-chip">${esc([j.quote_number, j.order_number].filter(Boolean).join(' • '))}</span>`
       : '<span class="integration-chip">Internal estimate</span>';
+    const linkageChip = j.order_number
+      ? `<span class="integration-chip">${j.linkage_incomplete ? 'Linkage incomplete' : 'Linkage verified'}</span>`
+      : '';
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
         <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
@@ -5100,12 +5084,13 @@ ${err.message || err}`); }
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}"> ${esc(j.customer_name)}</a>` : ''}${linkedIdChip}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}"> ${esc(j.customer_name)}</a>` : ''}${linkedIdChip}${linkageChip}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
         </div>
         ${img}
       </div>
+      ${j.linkage_incomplete ? '<div class="needs-action"><strong>Order created, Production linkage incomplete.</strong><span>Start Print is blocked until the authoritative Production link is repaired.</span></div>' : ''}
       ${needsActionHtml(j)}
       ${readyToCloseHtml(j)}
       <div class="job-stats">
@@ -5651,6 +5636,13 @@ ${err.message || err}`); }
     state.draggingId = null;
   });
 
+  window.OliPolyProductionWorkflowDispatcher.install({
+    container:document,
+    dispatch:(jobId,status,commandContext)=>setStatus(jobId,status,commandContext),
+    notify:toast,
+    logger:console
+  });
+
   document.addEventListener('click', e=>{
     const preset = e.target.closest('[data-preset]')?.dataset.preset;
     if(preset) applyPreset(preset);
@@ -5667,11 +5659,9 @@ ${err.message || err}`); }
     if(del) deleteJob(del);
     if(close) openClose(close);
     if(completePrint) openClose(completePrint);
-    const startPrint = e.target.closest('[data-start-print]')?.dataset.startPrint;
     const failScrap = e.target.closest('[data-fail-scrap]')?.dataset.failScrap;
     const moveBack = e.target.closest('[data-move-back]')?.dataset.moveBack;
     const cancel = e.target.closest('[data-cancel-job]')?.dataset.cancelJob;
-    if(startPrint) setStatus(startPrint,'printing');
     if(failScrap) setStatus(failScrap, 'ready_to_print');
     if(moveBack) moveBackJob(moveBack);
     if(cancel) cancelJob(cancel);
