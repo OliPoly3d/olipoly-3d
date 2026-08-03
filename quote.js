@@ -621,11 +621,25 @@
       updated_at: new Date().toISOString()
     };
 
-    const saved = await api("/rest/v1/quotes?on_conflict=quote_number", {
-      method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates,return=representation" },
-      body: JSON.stringify(payload)
-    });
+    const productionJobId = $("productionJobId")?.value?.trim();
+    const productionSource = $("productionQuoteSource")?.value?.trim();
+    const expectedUpdatedAt = $("productionSourceUpdatedAt")?.value?.trim();
+    const saved = productionSource === "production-control" && productionJobId
+      ? await api("/rest/v1/rpc/save_production_quote", {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({
+            p_production_job_id: productionJobId,
+            p_expected_updated_at: expectedUpdatedAt,
+            p_command_identity: `production-quote-save:${productionJobId}:${quoteNumber}`,
+            p_quote: payload
+          })
+        })
+      : await api("/rest/v1/quotes?on_conflict=quote_number", {
+          method: "POST",
+          headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+          body: JSON.stringify(payload)
+        });
 
     writeLocalHistory(readLocalHistory().filter((q) => q.quoteNumber !== quoteNumber));
     return saved;

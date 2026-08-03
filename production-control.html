@@ -1972,36 +1972,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     return merged;
   }
 
-  function productionDigits(value){
-    return String(value || '').match(/(\d+)/)?.[1] || '';
-  }
-  function quoteVariantsFromAny(value){
-    const d = productionDigits(value);
-    if(!d) return [];
-    return [...new Set([`Q-${d}`, `Q-${d.padStart(5,'0')}`, `Q-${d.padStart(6,'0')}`])];
-  }
-  function orderVariantsFromAny(value){
-    const d = productionDigits(value);
-    if(!d) return [];
-    return [...new Set([`OP-${d}`, `OP-${d.padStart(5,'0')}`, `OP-${d.padStart(6,'0')}`])];
-  }
-
-  const ORDER_TO_PRODUCTION_STATUS = {
-    ready_to_print:'ready_to_print', printing:'printing', qc:'qc',
-    ready_for_fulfillment:'ready_for_fulfillment', closed:'closed'
-  };
-
-  function applyLinkedOrderAuthority(job, orderRow){
-    if(!job || !orderRow?.status) return job;
+  function annotateLinkedOrder(job, orderRow){
+    if(!job || !orderRow) return job;
     const orderStatus = window.OliPolyWorkflow.normalizeOrderStatus(orderRow.status);
-    return {
-      ...job,
-      production_status: ORDER_TO_PRODUCTION_STATUS[orderStatus] || job.production_status,
-      linked_order_status: orderStatus,
-      order_number: job.order_number || orderRow.order_number || null,
-      customer_name: job.customer_name || orderRow.customer_name || null,
-      customer_email: job.customer_email || orderRow.customer_email || null
-    };
+    const payload = safeObject(job.job_payload) || {};
+    const linkageIncomplete = !job.order_number
+      || job.order_number !== orderRow.order_number
+      || payload.order_number !== orderRow.order_number
+      || payload.order_id !== orderRow.id
+      || orderRow.source_quote_number !== job.quote_number;
+    return {...job, linked_order_status:orderStatus, linkage_incomplete:linkageIncomplete};
   }
 
   async function loadCloudJobs(){
@@ -2009,32 +1989,25 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
       const normalized = Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
       state.cloudJobIds = new Set(normalized.map(job=>job.id).filter(Boolean));
-      const directOrderNums = [...new Set(normalized.flatMap(j=>orderVariantsFromAny(j.order_number)).filter(Boolean))];
-      const quoteNums = [...new Set(normalized.flatMap(j=>quoteVariantsFromAny(j.quote_number || j.order_number)).filter(Boolean))];
+      const directOrderNums = [...new Set(normalized.map(j=>j.order_number).filter(Boolean))];
+      const quoteNums = [...new Set(normalized.map(j=>j.quote_number).filter(Boolean))];
       if(!directOrderNums.length && !quoteNums.length) return normalized;
       try{
         const orderMap = new Map();
         const quoteMap = new Map();
         if(directOrderNums.length){
           const inList = directOrderNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
-          const rows = await sbApi(`/rest/v1/orders?select=order_number,source_quote_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
+          const rows = await sbApi(`/rest/v1/orders?select=id,order_number,source_quote_number,status&user_id=eq.${encodeURIComponent(state.user.id)}&order_number=in.(${encodeURIComponent(inList)})`,{method:'GET'});
           (Array.isArray(rows) ? rows : []).forEach(r=>orderMap.set(r.order_number, r));
         }
         if(quoteNums.length){
           const inQ = quoteNums.map(n=>`"${String(n).replace(/"/g,'')}"`).join(',');
-          const rowsByQuote = await sbApi(`/rest/v1/orders?select=order_number,source_quote_number,status,customer_name,customer_email&user_id=eq.${encodeURIComponent(state.user.id)}&source_quote_number=in.(${encodeURIComponent(inQ)})`,{method:'GET'});
+          const rowsByQuote = await sbApi(`/rest/v1/orders?select=id,order_number,source_quote_number,status&user_id=eq.${encodeURIComponent(state.user.id)}&source_quote_number=in.(${encodeURIComponent(inQ)})`,{method:'GET'});
           (Array.isArray(rowsByQuote) ? rowsByQuote : []).forEach(r=>{ if(r.source_quote_number) quoteMap.set(r.source_quote_number, r); });
         }
         return normalized.map(j=>{
-          let row = null;
-          for(const op of orderVariantsFromAny(j.order_number)) { if(orderMap.has(op)){ row = orderMap.get(op); break; } }
-          if(!row){ for(const q of quoteVariantsFromAny(j.quote_number || j.order_number)) { if(quoteMap.has(q)){ row = quoteMap.get(q); break; } } }
-          if(!row && j.quote_number){
-            const d = productionDigits(j.quote_number);
-            const expectedOps = orderVariantsFromAny(d);
-            for(const op of expectedOps){ if(orderMap.has(op)){ row = orderMap.get(op); break; } }
-          }
-          return applyLinkedOrderAuthority(j, row);
+          const row = (j.order_number && orderMap.get(j.order_number)) || (j.quote_number && quoteMap.get(j.quote_number)) || null;
+          return annotateLinkedOrder(j, row);
         });
       }catch(orderErr){
         console.warn('Could not load linked order statuses for production lane routing.', orderErr);
@@ -5069,7 +5042,7 @@ ${err.message || err}`); }
     const quoteHasBeenSent = !!j.quote_number && ['quote_sent','quote_declined','quote_accepted','awaiting_design','awaiting_approval','ready_to_print','queued','printing','post_processing','ready','production_closed','qc_complete','completed'].includes(j.production_status);
     if(j.production_status === 'waiting_customer' && !hasOrder) {
       actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
-    } else if(j.production_status === 'ready_to_print'){
+    } else if(j.production_status === 'ready_to_print' && !j.linkage_incomplete){
       actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
@@ -5091,6 +5064,9 @@ ${err.message || err}`); }
     const linkedIdChip = (j.quote_number || j.order_number)
       ? `<span class="quote-link-chip">${esc([j.quote_number, j.order_number].filter(Boolean).join(' • '))}</span>`
       : '<span class="integration-chip">Internal estimate</span>';
+    const linkageChip = j.order_number
+      ? `<span class="integration-chip">${j.linkage_incomplete ? 'Linkage incomplete' : 'Linkage verified'}</span>`
+      : '';
     return `<article class="job-card priority-${esc(j.priority)}" draggable="${state.sortBy === 'manual' ? 'true' : 'false'}" data-job-card="${esc(j.id)}" style="--type-color:${t.color};--type-bg:${t.bg};--type-text:${t.text}">
       <div class="job-top">
         <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
@@ -5100,12 +5076,13 @@ ${err.message || err}`); }
           <div class="chips">
             <span class="chip type">${esc(typeShort(t.label))}</span>
             <span class="chip">${esc(STATUS[j.production_status] || j.production_status)}</span>
-            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}"> ${esc(j.customer_name)}</a>` : ''}${linkedIdChip}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
+            <span class="chip priority">${esc(j.priority || 'normal')}</span>${j.customer_name ? `<a class="chip c360-chip" href="customer-360.html?search=${encodeURIComponent(j.customer_name)}"> ${esc(j.customer_name)}</a>` : ''}${linkedIdChip}${linkageChip}${lifecycleChip}${j.material_reservations?.length ? reservationSummaryHtml(j) : ''}${j.exclude_inventory_reduction ? '<span class="chip muted">Inventory excluded</span>' : ''}
           </div>
           <div class="focus-row">${jobSignals(j)}</div>
         </div>
         ${img}
       </div>
+      ${j.linkage_incomplete ? '<div class="needs-action"><strong>Order created, Production linkage incomplete.</strong><span>Start Print is blocked until the authoritative Production link is repaired.</span></div>' : ''}
       ${needsActionHtml(j)}
       ${readyToCloseHtml(j)}
       <div class="job-stats">
