@@ -18,10 +18,14 @@
 
   function chooseFreshest(existing, candidate){
     if(!existing) return candidate;
+    // A local row is recovery evidence, never a row-version authority. Once the
+    // owner-scoped Production row was loaded, preserve its exact PostgREST
+    // updated_at string even when a browser copy has a newer synthetic clock.
+    if(existing.source === 'remote') return existing;
+    if(candidate.source === 'remote') return candidate;
     const timeDifference = timestamp(candidate.row) - timestamp(existing.row);
     if(timeDifference > 0) return candidate;
     if(timeDifference < 0) return existing;
-    if(candidate.source === 'remote' && existing.source !== 'remote') return candidate;
     return existing;
   }
 

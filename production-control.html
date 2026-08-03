@@ -3024,7 +3024,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           toast('Production recovery data could not be read. No lifecycle change was made.');
           return;
         }
-        console.error('Production workflow command failed', {job_id:id, order_number:j.order_number, status, error:err}); toast('Workflow command did not complete; pending recovery was saved. Retry this action after resolving the error.'); alert(`Could not update status:
+        console.error('Production workflow command failed', {
+          stage:'optimistic_concurrency_or_workflow_rejection', job_id:id, order_number:j.order_number, status,
+          expected_production_updated_at:j.updated_at, expected_order_updated_at:null,
+          postgres_code:err?.postgresCode || err?.code || null, conflict_details:err?.details || null, error:err
+        }); toast('Workflow command did not complete; pending recovery was saved. Refresh before issuing another action.'); alert(`Could not update status:
 
 ${err.message || err}`); }
       finally{ linkedWorkflowInFlight.delete(inFlightKey); }

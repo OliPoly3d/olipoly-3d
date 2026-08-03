@@ -1,0 +1,32 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const persistence=require('../js/production-status-persistence.js');
+const workflow=require('../js/workflow-status.js');
+
+const authoritativeTimestamp='2026-08-03T01:55:19.123456+00:00';
+const syntheticLocalTimestamp='2026-08-03T01:55:20.999Z';
+const remote={id:'job-1',quote_number:'Q-000013',order_number:'OP-000189',production_status:'ready_to_print',updated_at:authoritativeTimestamp};
+const local={...remote,updated_at:syntheticLocalTimestamp,job_payload:{updated_at:'2026-08-03T01:00:00Z'}};
+const merged=persistence.mergeJobs([remote],[local]);
+assert.equal(merged.length,1);
+assert.equal(merged[0],remote,'owner-scoped remote row wins over newer synthetic recovery time');
+const request=workflow.productionWorkflowRpcRequest(remote.order_number,'start_print',merged[0].updated_at,{}, {correlationId:'correlation-1',causationId:'action-1'});
+assert.equal(request.body.p_expected_updated_at,authoritativeTimestamp,'raw microsecond PostgREST timestamp is returned unchanged');
+assert.notEqual(request.body.p_expected_updated_at,syntheticLocalTimestamp,'local recovery timestamp is not authoritative');
+assert.notEqual(request.body.p_expected_updated_at,local.job_payload.updated_at,'payload timestamp is not authoritative');
+assert.throws(()=>workflow.productionWorkflowRpcRequest(remote.order_number,'start_print',null,{}),/expected_updated_at is required/);
+
+const html=fs.readFileSync('production-control.html','utf8');
+const requestSource=html.slice(html.indexOf('async function syncProductionStatusToOrder'),html.indexOf('const LINKED_WORKFLOW_RECOVERY_KEY'));
+const sql=fs.readFileSync('supabase/migrations/202608030005_fix_production_workflow_expected_version.sql','utf8');
+assert.match(html,/productionWorkflowRpcRequest\(job\.order_number, command, job\.updated_at/);
+assert.doesNotMatch(requestSource,/expected_order_updated_at|job_payload\.updated_at/);
+assert.match(sql,/v_job\.updated_at is distinct from p_expected_updated_at/);
+assert.doesNotMatch(sql,/v_order\.updated_at is distinct from p_expected_updated_at/);
+assert.match(sql,/conflictScope=production_row expected=%s authoritative=%s jobId=%s orderNumber=%s/);
+assert.match(sql,/errcode='40001'/);
+assert.doesNotMatch(sql,/OP_WORKFLOW/,'temporary high-volume trace is removed from final authority');
+assert.equal((sql.match(/update public\.production_jobs/g)||[]).length,1);
+assert.equal((sql.match(/update public\.orders set status/g)||[]).length,1);
+assert.equal((sql.match(/insert into public\.project_events/g)||[]).length,1);
+console.log('Production workflow version contract assertions passed');

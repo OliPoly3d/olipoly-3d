@@ -152,3 +152,42 @@ After the single capture, run
 `supabase/verification/remove_production_workflow_stage_trace.sql` immediately
 to restore the non-logging authoritative functions. Do not execute another
 operator command while the temporary trace remains installed.
+
+## Optimistic-concurrency correction
+
+The trace proves the exact rejection is the condition immediately after command
+validation: `v_job.updated_at IS DISTINCT FROM p_expected_updated_at`. The left
+value is the locked authoritative `production_jobs.updated_at`; the parameter is
+populated by `productionWorkflowRpcRequest(..., job.updated_at, ...)`. No Order
+timestamp or payload timestamp participates in the server comparison.
+
+The client defect was the page-load merge contract. Production rows loaded from
+PostgREST were merged with browser recovery rows by whichever parsed
+`updated_at` appeared newest. A browser row with a synthetic `new
+Date().toISOString()` value could therefore replace a freshly loaded cloud row,
+and Start Print returned that local timestamp as if it were the database row
+version. The server correctly rejected the unequal values. This was a wrong
+source/stale-browser version defect, not an Order/Production timestamp mix-up.
+
+The corrected contract is explicit: `p_expected_updated_at` versions only the
+locked Production row. The owner-scoped remote Production row always supersedes
+local recovery for the same identity, and its raw PostgREST timestamp string is
+passed unchanged—without `Date` conversion or millisecond reserialization.
+Orders remain locked, linkage-validated, and projected inside the same server
+transaction; they do not consume this Production version parameter. A genuine
+Production conflict still raises SQLSTATE 40001 with safe `production_row`,
+expected/current timestamp, job, and Order details.
+
+Migration `202608030005_fix_production_workflow_expected_version.sql` restores
+the final non-logging functions and triggers, so temporary `OP_WORKFLOW` tracing
+does not remain in the deployed authority. The exact literal timestamp pair for
+the captured request was not present in the supplied log excerpt; run
+`production_workflow_version_contract.sql` with the raw Network value to record
+the live values, microseconds, timezone equivalence, and any timestamp-writing
+triggers without inference.
+
+The repeated trace sequences cannot be classified from stage text and
+correlation ID alone. Backend PID, transaction ID, query ID, or un-deduplicated
+log metadata was not supplied, so claiming server reinvocation versus log-export
+duplication would be speculation. The concurrency fix does not add re-entry or
+retry; retain those metadata during final acceptance to make the distinction.
