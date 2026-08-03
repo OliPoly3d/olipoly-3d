@@ -73,3 +73,38 @@ for Q-000013 / OP-000189 and aborts deployment if any proven predicate changed.
    Production job.
 8. For an intentionally incomplete legacy fixture, confirm the warning “Order
    created, Production linkage incomplete.” appears and Start Print is absent.
+
+## Start Print single-dispatch repair
+
+The final page previously retained two overlapping delegated routes in the same
+document click listener: a legacy `[data-start-print]` branch and the generic
+`[data-status]` branch. A button composed with both markers invoked `setStatus`
+twice synchronously. The generic Supabase wrapper could also replay a POST after
+a 401. These are the duplicate-capable routes proven by the repository audit;
+the supplied activity capture does not expose enough client metadata to prove
+which route crossed the older deployed in-flight guard. Both mutation routes
+have now been removed: linked lifecycle controls
+now carry only `data-production-workflow-job`, and one globally guarded
+dispatcher owns click/submit activation. Non-GET auth responses never replay.
+
+The final call graph is:
+
+`button click or canonical submit → ProductionWorkflowDispatcher.handle →
+setStatus(job, status, action identity) → syncProductionStatusToOrder →
+productionWorkflowRpcRequest(same identity) → sbApi(retryAuth:false) → one fetch
+→ production_workflow_command → atomic Production + Order + tracking + event`.
+
+The dispatcher locks the job/command before generating one operator action ID,
+one correlation ID, and one causation ID. It logs the event/target, installation
+identity, job and Order, command, dispatcher, stack, timestamp, and fetch ordinal.
+It is guarded by a global Symbol, suppresses click-plus-submit and rapid double
+activation, and releases pending/button state in `finally`. Recovery storage is
+read only during dispatch and is never an automatic replay source.
+
+The supplied `pg_stat_activity` rows do not include RPC parameter values, so the
+historical requests' correlation IDs and commit outcome cannot be truthfully
+reconstructed from that capture alone. Run
+`supabase/verification/start_print_duplicate_outcome.sql` before another click;
+it reports authoritative Production/Order state and all Start Print event
+receipts/correlations. After deployment, the new console trace makes a future
+pair distinguishable as same-identity or independently-generated dispatches.

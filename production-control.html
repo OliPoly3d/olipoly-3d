@@ -1757,6 +1757,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/production-evidence.js?v=20260728-null-semantics"></script>
 <script src="js/production-recovery-storage.js?v=20260803-runtime-repair"></script>
+<script src="js/production-workflow-dispatcher.js?v=20260803-single-dispatch"></script>
 <script src="js/printer-dashboard.js?v=20260716-m2c"></script>
 <script src="js/estimate-actual-analytics.js?v=20260716-m3c"></script>
 <script src="js/product-recipe-model.js?v=20260716-m4a"></script>
@@ -1891,7 +1892,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       return {res, txt, data};
     }
     let result = await run();
-    if(!result.res.ok && result.res.status === 401 && retryAuth !== false && window.OliPolyAuth?.refresh){
+    const replaySafe = ['GET','HEAD'].includes(String(fetchOptions.method || 'GET').toUpperCase());
+    if(!result.res.ok && result.res.status === 401 && retryAuth !== false && replaySafe && window.OliPolyAuth?.refresh){
       await window.OliPolyAuth.refresh();
       result = await run();
     }
@@ -2859,7 +2861,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     await refreshRawInventoryFromCloud();
   }
 
-  async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job){
+  async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job, commandContext = {}){
     if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
     const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
     if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
@@ -2875,9 +2877,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       roll_usages:evidenceJob.roll_usages || [],
       production_attempt:currentProductionAttempt(evidenceJob) || null
     } : {};
-    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals);
+    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals, commandContext);
+    const fetchOrdinal = commandContext.claimFetchOrdinal?.() || 1;
+    console.info('[OliPolyERP] Production workflow fetch', {...(commandContext.trace || {}), fetchOrdinal, correlationId:request.body.p_correlation_id, causationId:request.body.p_causation_id});
     const result = await sbApi(request.path, {
-      method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
+      method:'POST', retryAuth:false, requestKind:'authoritative-mutation', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
     window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
     return Array.isArray(result) ? result[0] : result;
@@ -2952,7 +2956,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     }
   }
 
-  async function setStatus(id,status){
+  async function setStatus(id,status,commandContext = {}){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
     const inFlightKey = `${id}:${status}`;
@@ -3000,7 +3004,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           }
           rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
         }
-        const authoritative = await syncProductionStatusToOrder(j, status);
+        const authoritative = await syncProductionStatusToOrder(j, status, j, commandContext);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         if((lifecycleAction === 'release' || lifecycleAction === 'preserve_consumed_no_reserve') && !['consume_and_release','consume_and_reserve_reprint'].includes(lifecycleAction)) await releaseLinkedProductionMaterial(updated, lifecycleAction);
         if(shouldReserveInventory(updated, status) && lifecycleAction !== 'keep') await reserveLinkedProductionMaterial(updated, updated.material_reservations);
@@ -5043,12 +5047,13 @@ ${err.message || err}`); }
     if(j.production_status === 'waiting_customer' && !hasOrder) {
       actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
     } else if(j.production_status === 'ready_to_print' && !j.linkage_incomplete){
+      actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="printing" data-workflow-command="start_print" type="button">Start Print</button>`;
       actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){
-      actions += `<button class="mini-btn" data-status="${j.id}|ready_for_fulfillment" type="button">Pass QC</button>`;
-      actions += `<button class="mini-btn" data-status="${j.id}|ready_to_print" type="button">Needs Reprint</button>`;
+      actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="ready_for_fulfillment" data-workflow-command="pass_qc" type="button">Pass QC</button>`;
+      actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="ready_to_print" data-workflow-command="needs_reprint" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
       actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
     }
@@ -5628,6 +5633,13 @@ ${err.message || err}`); }
     state.draggingId = null;
   });
 
+  window.OliPolyProductionWorkflowDispatcher.install({
+    container:document,
+    dispatch:(jobId,status,commandContext)=>setStatus(jobId,status,commandContext),
+    notify:toast,
+    logger:console
+  });
+
   document.addEventListener('click', e=>{
     const preset = e.target.closest('[data-preset]')?.dataset.preset;
     if(preset) applyPreset(preset);
@@ -5644,11 +5656,9 @@ ${err.message || err}`); }
     if(del) deleteJob(del);
     if(close) openClose(close);
     if(completePrint) openClose(completePrint);
-    const startPrint = e.target.closest('[data-start-print]')?.dataset.startPrint;
     const failScrap = e.target.closest('[data-fail-scrap]')?.dataset.failScrap;
     const moveBack = e.target.closest('[data-move-back]')?.dataset.moveBack;
     const cancel = e.target.closest('[data-cancel-job]')?.dataset.cancelJob;
-    if(startPrint) setStatus(startPrint,'printing');
     if(failScrap) setStatus(failScrap, 'ready_to_print');
     if(moveBack) moveBackJob(moveBack);
     if(cancel) cancelJob(cancel);
