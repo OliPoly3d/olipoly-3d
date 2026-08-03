@@ -108,3 +108,37 @@ reconstructed from that capture alone. Run
 it reports authoritative Production/Order state and all Start Print event
 receipts/correlations. After deployment, the new console trace makes a future
 pair distinguishable as same-identity or independently-generated dispatches.
+
+## Server execution graph and recursion boundary
+
+The repository-defined Start Print graph is finite:
+
+1. `production_workflow_command` validates `auth.uid`, expected version, and
+   correlation identity.
+2. It loads the authoritative Order and Production job and validates linkage.
+3. It maps `start_print` to `printing` / `order.printing_started`.
+4. It checks `project_events` for an idempotent result or identity collision.
+5. It updates `production_jobs` once.
+6. It updates `orders` once. The allowed non-authority BEFORE triggers only
+   normalize status and `updated_at` and return `NEW`.
+7. It updates `order_tracking_public` once; its status-normalization trigger
+   returns `NEW` without another write.
+8. It inserts one `project_events` workflow receipt and returns the Production
+   row. No repository migration defines a receipt trigger.
+
+The historical `orders_sync_workflow_to_production` AFTER trigger is the only
+repository-defined table trigger that performs a second linked lifecycle write.
+It was retired by the workflow-command migrations, but a partially applied or
+drifted live schema can retain it. Migration `202608030003` drops that obsolete
+trigger/function again and aborts if any remaining live user trigger function
+contains a call back into `production_workflow_command`. It does not change the
+authoritative RPC's lifecycle, ownership, or atomic projections.
+
+The supplied activity capture proves entry but does not identify the last
+server stage. Therefore the exact live last stage and root cause are not claimed
+without server logs. `install_production_workflow_stage_trace.sql` is a temporary
+manual diagnostic definition with `RAISE LOG` at every boundary. After one
+captured request, deploy migration `202608030003` to restore the non-logging
+definition. `production_workflow_execution_graph.sql` inventories the actual
+deployed triggers and function bodies so schema drift cannot be mistaken for
+repository intent.
