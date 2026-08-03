@@ -5048,6 +5048,7 @@ ${err.message || err}`); }
       actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
     } else if(j.production_status === 'ready_to_print' && !j.linkage_incomplete){
       actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="printing" data-workflow-command="start_print" type="button">Start Print</button>`;
+      actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){
