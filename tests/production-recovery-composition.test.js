@@ -45,10 +45,10 @@ assert.throws(() => recovery.read('key', {}, storage({key:'{broken'})), error =>
 const setStatusSource = html.slice(html.indexOf('async function setStatus'), html.indexOf('async function moveBackJob'));
 const linkedSetStatus = setStatusSource.slice(0, setStatusSource.indexOf("    const now = new Date();", setStatusSource.indexOf('      return;')));
 assert(linkedSetStatus.indexOf('linkedWorkflowInFlight.add(inFlightKey)') < linkedSetStatus.indexOf('pendingLinkedWorkflowRecovery(j, status)'), 'operation lock is acquired before recovery');
-assert(linkedSetStatus.indexOf('pendingLinkedWorkflowRecovery(j, status)') < linkedSetStatus.indexOf('syncProductionStatusToOrder(j, status)'), 'recovery resolves before the authoritative request');
-assert.strictEqual((linkedSetStatus.match(/syncProductionStatusToOrder\(j, status\)/g) || []).length, 1, 'linked setStatus has one authoritative request site');
+assert(linkedSetStatus.indexOf('pendingLinkedWorkflowRecovery(j, status)') < linkedSetStatus.indexOf('syncProductionStatusToOrder(j, status, j, commandContext)'), 'recovery resolves before the authoritative request');
+assert.strictEqual((linkedSetStatus.match(/syncProductionStatusToOrder\(j, status, j, commandContext\)/g) || []).length, 1, 'linked setStatus has one authoritative request site');
 assert.match(linkedSetStatus, /finally\{ linkedWorkflowInFlight\.delete\(inFlightKey\); \}/, 'all outcomes release the pending lock');
-assert(linkedSetStatus.indexOf('const authoritative = await syncProductionStatusToOrder(j, status)') < linkedSetStatus.indexOf('state.jobs = state.jobs.map'), 'local state changes only after confirmed success');
+assert(linkedSetStatus.indexOf('const authoritative = await syncProductionStatusToOrder(j, status, j, commandContext)') < linkedSetStatus.indexOf('state.jobs = state.jobs.map'), 'local state changes only after confirmed success');
 assert.match(linkedSetStatus, /stage:'linked_workflow_recovery'/);
 assert.match(linkedSetStatus, /Production recovery data could not be read\. No lifecycle change was made\./);
 assert.doesNotMatch(linkedSetStatus, /(?:setStatus|syncProductionStatusToOrder)\([^)]*\)[^;]*setTimeout/, 'recovery never automatically replays lifecycle commands');
