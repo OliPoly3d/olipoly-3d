@@ -1973,13 +1973,16 @@ Aurora, OH 44202</textarea></div>
     async function api(path, options={}){
       if (window.OliPolyAuth?.ensure) {
         await window.OliPolyAuth.ensure();
-        accessToken = window.OliPolyAuth.getToken() || accessToken;
+        accessToken = window.OliPolyAuth.getToken();
+      }
+      if (path.startsWith('/rest/v1/') && !accessToken) {
+        return {ok:false,status:401,data:null,error:{message:'Your session has expired. Sign in again to continue.'}};
       }
       const makeHeaders = () => ({
         apikey: SUPABASE_KEY,
         'Content-Type':'application/json',
-        ...(accessToken ? {Authorization:`Bearer ${accessToken}`} : {}),
-        ...(options.headers || {})
+        ...(options.headers || {}),
+        ...(accessToken ? {Authorization:`Bearer ${accessToken}`} : {})
       });
       async function run(){
         const res = await fetch(`${SUPABASE_URL}${path}`,{...options,headers:makeHeaders()});
@@ -3105,11 +3108,13 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       const password = $('passwordInput').value;
       if(!email || !password) return setMsg($('authMessage'),'Enter email and password.',true);
       setMsg($('authMessage'),'Signing in...');
-      const {data,error} = await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
-      if(error) return setMsg($('authMessage'),error.error_description || error.message || 'Login failed',true);
-      accessToken = data.access_token;
-      localStorage.setItem('sb_token', accessToken);
-      if (window.OliPolyAuth) window.OliPolyAuth.writeSession({access_token:data.access_token, refresh_token:data.refresh_token, user:data.user, expires_at:data.expires_at, expires_in:data.expires_in});
+      let session;
+      try {
+        session = await window.OliPolyAuth.login(email, password);
+      } catch (error) {
+        return setMsg($('authMessage'), error.message || 'Login failed', true);
+      }
+      accessToken = session.access_token;
       await getCurrentUser();
       setMsg($('authMessage'),`Logged in as ${currentUser?.email || email}`);
       updateAuthVisibility();
@@ -4054,9 +4059,12 @@ if ($('openVenmoBtn')) {
     renderList();
     bindDailyCommandView();
     $('logoutBtn').classList.add('hidden');
-    if (accessToken) {
-  getCurrentUser().then(u => {
+    async function bootstrapOrdersAdminAuth(){
+      const session = await window.OliPolyAuth.getSession();
+      accessToken = session?.access_token || null;
+      const u = session?.user || null;
     if (u) {
+      currentUser = u;
       setMsg($('authMessage'), `Logged in as ${u.email}`);
       $('logoutBtn').classList.remove('hidden');
       $('loginBtn').classList.add('hidden');
@@ -4069,8 +4077,8 @@ if ($('openVenmoBtn')) {
       $('loginBtn').classList.remove('hidden');
       $('signupBtn').classList.remove('hidden');
     }
-  });
-}
+    }
+    bootstrapOrdersAdminAuth();
     window.addEventListener('DOMContentLoaded', () => {
   const raw = localStorage.getItem('olipoly_transfer');
   if (!raw) return;
