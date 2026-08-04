@@ -1902,9 +1902,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const error = new Error(msg);
       error.status = result.res.status;
       error.httpStatus = result.res.status;
-      error.postgresCode = result.data?.code || null;
-      error.code = error.postgresCode;
       error.details = result.data?.details || null;
+      const appCode = /(?:^|\s)appCode=([A-Z0-9]+)/.exec(String(error.details || ''))?.[1] || null;
+      error.postgresCode = appCode || result.data?.code || null;
+      error.code = error.postgresCode;
+      error.transportCode = result.data?.code || null;
       error.hint = result.data?.hint || null;
       error.requestUrl = requestUrl;
       error.stage = 'sbApi';
@@ -3573,6 +3575,49 @@ ${err.message || err}`); }
     for(const row of rows) await cloudSaveRawFromProduction(row);
   }
 
+  function isAmbiguousAttemptTransport(error){
+    const message = String(error?.message || error || '').toLowerCase();
+    return error?.status === 504 || error?.httpStatus === 504 || message.includes('upstream request timeout') || message.includes('gateway timeout');
+  }
+
+  async function reconcileAttemptConsumption(job, attempt, requestBody, startedAt){
+    console.warn('[OliPolyERP] Production attempt consumption response was ambiguous; checking authoritative result.', {
+      stage:'attempt_consumption_reconcile_start', jobId:job?.id, orderNumber:job?.order_number || null, attemptId:attempt?.id || null,
+      commandIdentity:requestBody?.p_correlation_id || null, elapsedMs:Math.round(performance.now()-startedAt)
+    });
+    toast('The print attempt may have been recorded. Checking the authoritative result…');
+    const [jobs, transactions] = await Promise.all([
+      sbApi(`/rest/v1/production_jobs?select=id,order_number,exclude_inventory_reduction,updated_at,job_payload&id=eq.${encodeURIComponent(job.id)}&limit=1`, {method:'GET'}),
+      sbApi(`/rest/v1/inventory_transactions?select=id,correlation_id,attempt_id,production_job_id,quantity_grams,raw_material_id,transaction_type&production_job_id=eq.${encodeURIComponent(job.id)}&attempt_id=eq.${encodeURIComponent(attempt.id)}&transaction_type=eq.production_attempt_consumption`, {method:'GET'})
+    ]);
+    const authoritativeJob = Array.isArray(jobs) ? jobs[0] : null;
+    const rows = Array.isArray(transactions) ? transactions : [];
+    const sameCommandRows = rows.filter(row=>row.correlation_id === requestBody?.p_correlation_id);
+    const conflictingRows = rows.filter(row=>row.correlation_id && row.correlation_id !== requestBody?.p_correlation_id);
+    if(conflictingRows.length){
+      const error = new Error('This Production attempt was already consumed by another command. Refresh before retrying.');
+      error.reconciliationOutcome = 'conflicting_consumption';
+      throw error;
+    }
+    if(sameCommandRows.length){
+      console.info('[OliPolyERP] Production attempt consumption committed before response completed.', {
+        stage:'attempt_consumption_reconcile_committed', jobId:job.id, orderNumber:job.order_number || null, attemptId:attempt.id,
+        commandIdentity:requestBody?.p_correlation_id || null, rowCount:sameCommandRows.length
+      });
+      return {committed:true, inventoryMode:'included', rows:sameCommandRows};
+    }
+    if(authoritativeJob?.exclude_inventory_reduction){
+      console.info('[OliPolyERP] Production attempt consumption reconciled as Inventory-excluded skip.', {
+        stage:'attempt_consumption_reconcile_excluded', jobId:job.id, orderNumber:job.order_number || null, attemptId:attempt.id,
+        commandIdentity:requestBody?.p_correlation_id || null
+      });
+      return {committed:true, inventoryMode:'excluded', rows:[]};
+    }
+    const error = new Error('The print attempt was not recorded. Your entered values were retained.');
+    error.reconciliationOutcome = 'not_committed';
+    throw error;
+  }
+
   async function consumeCapturedAttempt(job, options={}){
     const attempt = currentProductionAttempt(job);
     if(!attempt || attempt.consumed_at) return false;
@@ -3584,7 +3629,13 @@ ${err.message || err}`); }
       const workflowCommand = options.workflowCommand || (options.lifecycleAction === 'consume_and_reserve_reprint' ? 'needs_reprint' : 'pass_qc');
       const expectedUpdatedAt = options.expectedUpdatedAt || job.updated_at;
       const request = window.OliPolyWorkflow.inventoryConsumptionRpcRequest(job, workflowCommand, expectedUpdatedAt, usages, attempt);
-      await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+      const startedAt = performance.now();
+      try{
+        await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+      }catch(error){
+        if(!isAmbiguousAttemptTransport(error)) throw error;
+        await reconcileAttemptConsumption(job, attempt, request.body, startedAt);
+      }
       if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
     }else if(options.addFinished){
       applyInventoryLocal(job, [], true);

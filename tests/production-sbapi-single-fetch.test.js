@@ -47,6 +47,11 @@ const response = (status, body={}) => ({ok:status >= 200 && status < 300, status
   const contention = harness(async()=>response(409,{code:'55P03',message:'database detail not for operator UI'}));
   await assert.rejects(contention.call({retryAuth:false}), error => error.code === '55P03' && error.postgresCode === '55P03' && error.status === 409 && error.httpStatus === 409);
   assert.deepEqual(contention.counts(), {fetches:1,refreshes:0}, 'SQLSTATE is preserved for one-request operator classification');
+
+  const stale409 = harness(async()=>response(409,{code:'PT409',message:'Production workflow changed since this page loaded; refresh before retrying',details:'appCode=40001 conflictScope=production_row expected=old authoritative=new',hint:'Refresh Production Control before issuing another workflow command'}));
+  await assert.rejects(stale409.call({retryAuth:false}), error =>
+    error.code === '40001' && error.postgresCode === '40001' && error.transportCode === 'PT409' && error.status === 409 && /conflictScope=production_row/.test(error.details));
+  assert.deepEqual(stale409.counts(), {fetches:1,refreshes:0}, 'non-retry stale-row conflict remains structured as app code 40001 with one fetch');
   for(const code of ['40001','22023','42501','23505']){
     const structured = harness(async()=>response(409,{code,message:`server ${code}`,details:'diagnostic details',hint:'diagnostic hint'}));
     await assert.rejects(structured.call({retryAuth:false}), error =>
