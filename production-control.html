@@ -1902,9 +1902,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const error = new Error(msg);
       error.status = result.res.status;
       error.httpStatus = result.res.status;
-      error.postgresCode = result.data?.code || null;
-      error.code = error.postgresCode;
       error.details = result.data?.details || null;
+      const appCode = /(?:^|\s)appCode=([A-Z0-9]+)/.exec(String(error.details || ''))?.[1] || null;
+      error.postgresCode = appCode || result.data?.code || null;
+      error.code = error.postgresCode;
+      error.transportCode = result.data?.code || null;
       error.hint = result.data?.hint || null;
       error.requestUrl = requestUrl;
       error.stage = 'sbApi';
