@@ -18,13 +18,15 @@ assert.throws(()=>workflow.productionWorkflowRpcRequest(remote.order_number,'sta
 
 const html=fs.readFileSync('production-control.html','utf8');
 const requestSource=html.slice(html.indexOf('async function syncProductionStatusToOrder'),html.indexOf('const LINKED_WORKFLOW_RECOVERY_KEY'));
-const sql=fs.readFileSync('supabase/migrations/202608030005_fix_production_workflow_expected_version.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/202608040001_production_workflow_nonretry_stale_conflict.sql','utf8');
 assert.match(html,/productionWorkflowRpcRequest\(job\.order_number, command, job\.updated_at/);
 assert.doesNotMatch(requestSource,/expected_order_updated_at|job_payload\.updated_at/);
 assert.match(sql,/v_job\.updated_at is distinct from p_expected_updated_at/);
 assert.doesNotMatch(sql,/v_order\.updated_at is distinct from p_expected_updated_at/);
-assert.match(sql,/conflictScope=production_row expected=%s authoritative=%s jobId=%s orderNumber=%s/);
-assert.match(sql,/errcode='40001'/);
+assert.match(sql,/conflictScope=production_row expected=%s authoritative=%s expectedText=%s authoritativeText=%s expectedEpoch=%s authoritativeEpoch=%s jobId=%s orderNumber=%s/);
+assert.match(sql,/errcode='PT409'/);
+assert.match(sql,/appCode=40001/);
+assert.doesNotMatch(sql,/Production workflow changed since this page loaded; refresh before retrying'[\s\S]{0,200}errcode='40001'/,'stale business conflict must not use retry-prone serialization_failure SQLSTATE');
 assert.doesNotMatch(sql,/OP_WORKFLOW/,'temporary high-volume trace is removed from final authority');
 assert.equal((sql.match(/update public\.production_jobs/g)||[]).length,1);
 assert.equal((sql.match(/update public\.orders set status/g)||[]).length,1);
