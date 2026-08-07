@@ -9,6 +9,7 @@ point**. Some files intentionally scan `pg_proc`, call
 
 The launcher is a **Bash program, not a SQL query**. Run it in a terminal from
 the repository checkout:
+Run a verification only for a deliberate, one-off operator investigation:
 
 ```sh
 RUN_DB_INTROSPECTION=true \
@@ -39,3 +40,5 @@ hooks, or scheduled workflows. Record and review each production execution.
 
 Running a `.sql` file directly bypasses the terminal gate and is therefore an
 explicit operator action, not a supported automated entry point.
+Running a `.sql` file directly bypasses this repository gate and is therefore
+an explicit operator action, not a supported automated entry point.

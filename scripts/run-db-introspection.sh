@@ -6,6 +6,8 @@ set -euo pipefail
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+set -euo pipefail
+
 if [[ "${RUN_DB_INTROSPECTION:-}" != "true" ]]; then
   echo "Database introspection is disabled. Set RUN_DB_INTROSPECTION=true for an explicit operator run." >&2
   exit 64
@@ -23,6 +25,8 @@ fi
 
 verification="$repository_root/supabase/verification/$1.sql"
 if [[ ! -f "$verification" ]]; then
+verification="supabase/verification/$1.sql"
+if [[ ! -f "$verification" || "$verification" == *"/../"* ]]; then
   echo "Unknown verification: $1" >&2
   exit 66
 fi
