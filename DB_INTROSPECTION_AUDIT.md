@@ -39,6 +39,12 @@ No application or workflow imports the runner or verification SQL. The daily
 keep-alive makes one terminating data request and does not run Supabase CLI,
 type generation, `db pull`, migration diff/status, or schema generation.
 
+The runner is Bash and must be executed from a terminal; it is not valid input
+for the Supabase SQL editor. An SQL-editor operator must instead review and run
+only the contents of the intended `supabase/verification/*.sql` file. Because
+the SQL editor cannot consume the shell environment gate, that path is an
+explicit, manually reviewed operator action and must never be scheduled.
+
 Several historical migrations issue `NOTIFY pgrst, 'reload schema'` once while
 being applied. They are immutable deployment history rather than runtime entry
 points. Replaying the migration directory or repeatedly applying its SQL would

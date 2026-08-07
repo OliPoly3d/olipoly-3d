@@ -48,6 +48,7 @@ test('introspection runner is fail-closed and production has no enabling default
   const runner = fs.readFileSync(path.join(root, 'scripts/run-db-introspection.sh'), 'utf8');
   assert.match(runner, /RUN_DB_INTROSPECTION:-.*!= "true"/);
   assert.match(runner, /DATABASE_URL:\?/);
+  assert.match(runner, /\^\[a-z0-9_\]\+\$/);
 
   const enablingDefaults = files.filter((file) => {
     const relative = path.relative(root, file);
@@ -58,6 +59,13 @@ test('introspection runner is fail-closed and production has no enabling default
     return /RUN_DB_INTROSPECTION\s*[=:]\s*["']?true\b/i.test(fs.readFileSync(file, 'utf8'));
   });
   assert.deepEqual(enablingDefaults.map((file) => path.relative(root, file)), []);
+});
+
+test('operator documentation separates Bash execution from SQL editor execution', () => {
+  const documentation = fs.readFileSync(path.join(root, 'supabase/verification/README.md'), 'utf8');
+  assert.match(documentation, /launcher is a \*\*Bash program, not a SQL query\*\*/);
+  assert.match(documentation, /Do \*\*not\*\* paste `scripts\/run-db-introspection\.sh` into the Supabase SQL editor/);
+  assert.match(documentation, /paste \*\*only that SQL file's contents\*\*/);
 });
 
 test('no periodic application timer invokes metadata scans', () => {
