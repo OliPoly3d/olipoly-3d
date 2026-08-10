@@ -12,6 +12,7 @@
   var SNAP_KEY = LS_PREFIX + PAGE_KEY + '_snapshot_v1';
   var DISMISS_KEY = LS_PREFIX + PAGE_KEY + '_dismissed_snapshot_v1';
   var lastGoodSync = 0;
+  var authoritativeDataRefreshedAt = '';
   var lastFailure = '';
   var pendingChanges = false;
   var bootedAt = Date.now();
@@ -201,7 +202,9 @@
     var lastSync = h.lastGoodSync || (lastGoodSync ? new Date(lastGoodSync).toISOString() : '');
     var snap = safeJsonGet(SNAP_KEY, null);
     var hasSnap = snap && meaningfulSnapshot(snap) && localStorage.getItem(DISMISS_KEY) !== (snap.capturedAt || '');
-    var state = pendingChanges ? 'Unsaved local changes' : (connected ? 'Cloud ready' : 'Needs sign-in / cloud check');
+    var productionPage = PAGE_KEY === 'production_control';
+    var current = !productionPage || !!authoritativeDataRefreshedAt;
+    var state = pendingChanges ? 'Unsaved local changes' : (connected ? (current ? (productionPage ? 'Production data refreshed' : 'Connected') : 'Connected · data not refreshed') : 'Needs sign-in / cloud check');
     statusEl.className = 'erp-reliability-pill ' + (pendingChanges ? 'warn' : connected ? 'ok' : 'bad');
     statusEl.innerHTML = '<span></span><strong>'+state+'</strong><em>'+fmt(lastSync)+'</em>';
     if(detailEl){
@@ -209,6 +212,7 @@
         '<div><b>Module</b><span>'+moduleLabel()+'</span></div>'+
         '<div><b>Cloud</b><span>'+(tokenPresent() ? (h.connected === false ? 'Token present, last request failed' : 'Token present') : 'Not signed in')+'</span></div>'+
         '<div><b>Last sync</b><span>'+fmt(lastSync)+'</span></div>'+
+        (productionPage ? '<div><b>Production data</b><span>'+(authoritativeDataRefreshedAt ? ('Refreshed '+fmt(authoritativeDataRefreshedAt)) : 'Not refreshed this page load')+'</span></div>' : '')+
         '<div><b>Local data</b><span>'+(h.recordEstimate || pageRecordEstimate())+'</span></div>'+
         '<div><b>Last backup</b><span>'+fmt(h.lastBackupExportAt || localStorage.getItem('olipoly_last_recovery_export_at'))+'</span></div>'+
         '<div><b>Last issue</b><span>'+(h.lastFailure || 'None recorded')+'</span></div>';
@@ -221,6 +225,13 @@
       }
     }
   }
+  window.addEventListener('olipoly:authoritative-data-refreshed', function(event){
+    if(event.detail && event.detail.module === PAGE_KEY){
+      authoritativeDataRefreshedAt = event.detail.refreshedAt || nowIso();
+      writeHealth({authoritativeDataRefreshedAt:authoritativeDataRefreshedAt});
+      renderStatus();
+    }
+  });
   function buildPanel(){
     if(document.getElementById('erpReliabilityPanel')) return;
     var panel=document.createElement('section');

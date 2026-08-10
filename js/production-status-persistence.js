@@ -73,6 +73,14 @@
   }
 
   const MIGRATABLE_INITIAL_STATUSES = Object.freeze(['estimate', 'waiting_customer']);
+  const CANCELABLE_STATUSES = Object.freeze([
+    'estimate', 'waiting_customer', 'ready_to_print', 'printing', 'qc',
+    'ready_for_fulfillment'
+  ]);
+
+  function canCancel(row){
+    return CANCELABLE_STATUSES.includes(String(row?.production_status || '').trim().toLowerCase());
+  }
 
   function migrationDecision(row, cloudIds, userId){
     if(!userId) return {action:'skip', reason:'authentication-unavailable'};
@@ -85,5 +93,5 @@
     return {action:'insert', reason:'eligible-local-draft'};
   }
 
-  return Object.freeze({identity, timestamp, mergeJobs, lifecycleDiagnostics, transition, migrationDecision, MIGRATABLE_INITIAL_STATUSES});
+  return Object.freeze({identity, timestamp, mergeJobs, lifecycleDiagnostics, transition, migrationDecision, canCancel, CANCELABLE_STATUSES, MIGRATABLE_INITIAL_STATUSES});
 });
