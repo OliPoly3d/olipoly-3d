@@ -48,6 +48,26 @@
       .sort((a, b) => timestamp(b) - timestamp(a) || identity(a).localeCompare(identity(b)));
   }
 
+  function lifecycleDiagnostics(remoteRows, localRows, finalRows){
+    const localByIdentity = new Map((localRows || []).map(row => [identity(row), row]));
+    const finalByIdentity = new Map((finalRows || []).map(row => [identity(row), row]));
+    return (remoteRows || []).map(remote => {
+      const key = identity(remote);
+      const local = localByIdentity.get(key) || null;
+      const final = finalByIdentity.get(key) || remote;
+      return {
+        job_id:remote.id || null,
+        remote_production_status:remote.production_status || null,
+        recovery_production_status:local?.production_status || null,
+        final_production_status:final.production_status || null,
+        source_of_truth:'remote-production_jobs',
+        remote_updated_at:remote.updated_at || null,
+        recovery_updated_at:local?.updated_at || null,
+        final_updated_at:final.updated_at || null
+      };
+    });
+  }
+
   function transition(row, status, details = {}, now = new Date().toISOString()){
     return {...row, ...details, production_status:status, updated_at:now};
   }
@@ -65,5 +85,5 @@
     return {action:'insert', reason:'eligible-local-draft'};
   }
 
-  return Object.freeze({identity, timestamp, mergeJobs, transition, migrationDecision, MIGRATABLE_INITIAL_STATUSES});
+  return Object.freeze({identity, timestamp, mergeJobs, lifecycleDiagnostics, transition, migrationDecision, MIGRATABLE_INITIAL_STATUSES});
 });

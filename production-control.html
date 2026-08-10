@@ -2876,7 +2876,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function refreshAuthoritativeProductionState(){
     if(!state.user?.id) return;
     const cloudJobs = await loadCloudJobs();
-    state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudJobs, state.jobs || [], normalizeJob);
+    const recoveryJobs = state.jobs || [];
+    state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudJobs, recoveryJobs, normalizeJob);
+    window.OliPolyProductionPersistence.lifecycleDiagnostics(cloudJobs, recoveryJobs, state.jobs).forEach(detail=>{
+      console.info('[OliPolyERP] Production lifecycle hydration authority', detail);
+    });
     localWrite(LS_JOBS,state.jobs);
     await refreshRawInventoryFromCloud();
   }
@@ -2904,7 +2908,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       method:'POST', retryAuth:false, requestKind:'authoritative-mutation', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
     window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
-    return Array.isArray(result) ? result[0] : result;
+    const authoritative = Array.isArray(result) ? result[0] : result;
+    if(!authoritative || authoritative.production_status !== targetStatus){
+      throw new Error(`Production workflow did not return authoritative ${targetStatus} state.`);
+    }
+    return authoritative;
   }
 
   const LINKED_WORKFLOW_RECOVERY_KEY = 'olipoly_linked_workflow_recovery_v1';
@@ -3594,7 +3602,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   function currentProductionAttempt(job){
     const attempts = Array.isArray(job?.production_attempts) ? job.production_attempts : [];
-    return attempts.find(attempt=>attempt.id === job.current_attempt_id) || null;
+    const currentId = job?.current_attempt_id || job?.job_payload?.current_attempt_id || job?.job_payload?.last_completed_attempt?.id;
+    return attempts.find(attempt=>attempt.id === currentId)
+      || (job?.job_payload?.last_completed_attempt?.id ? job.job_payload.last_completed_attempt : null)
+      || attempts[attempts.length - 1]
+      || null;
   }
 
   let pendingQcUsage = null;
@@ -3828,7 +3840,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         await refreshAuthoritativeProductionState();
       } else {
-        if(state.user?.id) await cloudSaveJob(updated);
+        if(state.user?.id){
+          const persisted = await cloudSaveJob(updated);
+          if(!persisted) throw new Error('Production lifecycle state was not accepted by the cloud authority.');
+        }
         await logProjectEvent('production_actuals_captured', updated, {snapshot: updated.production_closeout_snapshot});
       }
       applyPmUsageForCloseout(j, updated);
@@ -4107,6 +4122,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         // Supabase and browser storage share IDs. Newest updated_at wins; an exact
         // timestamp tie belongs to Supabase so a local fallback cannot rewrite it.
         state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudMigrated, localMigrated, normalizeJob);
+        window.OliPolyProductionPersistence.lifecycleDiagnostics(cloudMigrated, localMigrated, state.jobs).forEach(detail=>{
+          console.info('[OliPolyERP] Production lifecycle hydration authority', detail);
+        });
         localWrite(LS_JOBS,state.jobs);
         await refreshRawInventoryFromCloud();
         await refreshNonFilamentSuppliesFromCloud();
