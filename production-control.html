@@ -4161,17 +4161,30 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       toast('Sync / repair started...');
       await loadAll();
       refreshInventoryMaterialOptions();
+      const repairResults = [];
       if(state.user?.id){
         await migrateVisibleJobsToCloud();
+        const candidates = state.jobs.filter(job => job.order_number && (job.linkage_incomplete || (job.linked_order_status && job.linked_order_status !== job.production_status)));
+        for(const job of candidates){
+          const result = await sbApi('/rest/v1/rpc/repair_production_quote_order_linkage', {
+            method:'POST', retryAuth:false, requestKind:'authoritative-mutation',
+            body:JSON.stringify({p_production_job_id:job.id})
+          });
+          repairResults.push(Array.isArray(result) ? result[0] : result);
+        }
         for(const pm of state.pm){
           try{ await cloudSavePm(pm); }catch(err){ console.warn('PM sync repair failed', err); }
         }
+        if(repairResults.length) await loadAll();
       }
       render();
-      toast('Sync / repair complete.');
+      const changed = repairResults.flatMap(result => result?.changed_fields || []);
+      toast(repairResults.length
+        ? `Sync / repair complete. Changed: ${changed.length ? [...new Set(changed)].join(', ') : 'nothing (already coherent)'}.`
+        : 'Sync / repair complete. No linked lifecycle mismatch found.');
     }catch(err){
       console.warn(err);
-      toast('Sync / repair finished with local fallback.');
+      toast(`Sync / repair stopped safely: ${err.message || err}`);
     }
   }
 

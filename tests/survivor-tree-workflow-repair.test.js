@@ -1,0 +1,25 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const sql = fs.readFileSync('supabase/migrations/202608100010_repair_survivor_tree_lifecycle.sql','utf8');
+const ui = fs.readFileSync('production-control.html','utf8');
+const diagnostic = fs.readFileSync('supabase/verification/survivor_tree_workflow.sql','utf8');
+
+assert.match(sql,/production_status,''\) in \('estimate','waiting_customer'/, 'acceptance includes Estimate in its atomic Production handoff');
+assert.match(sql,/get diagnostics v_production_count = row_count[\s\S]*v_quote\.production_job_id is not null and v_production_count <> 1[\s\S]*raise exception/, 'acceptance fails rather than committing a linked Estimate/Ready pair');
+assert.match(sql,/v_order\.status<>'ready_to_print' or v_job\.production_status not in \('estimate','ready_to_print'\)/, 'repair detects only the Survivor-shaped mismatch or idempotent result');
+assert.match(sql,/v_quote\.user_id is distinct from v_actor[\s\S]*v_order\.user_id is distinct from v_actor/, 'repair requires same-owner provenance');
+assert.match(sql,/Expected exactly one Order candidate/, 'repair rejects ambiguous Orders');
+assert.match(sql,/changed_fields[\s\S]*production_status[\s\S]*order_number/, 'repair reports exact changed fields');
+assert.match(sql,/already_coherent[\s\S]*idempotent/, 'repair is idempotent');
+assert.match(sql,/Survivor Production identity\/status changed; repair aborted/, 'exact repair fails closed when current state differs');
+assert.match(sql,/v_job\.production_status is distinct from v_order\.status[\s\S]*lifecycle is inconsistent/, 'cancel remains blocked before repair');
+assert.match(sql,/update public\.orders set status='canceled'/, 'linked Order receives canonical canceled outcome');
+assert.match(sql,/production_material_reservations[\s\S]*status='active'/, 'cancel reconciles only active reservations');
+assert.match(sql,/workflow_command_receipts[\s\S]*values\(v_key,v_actor,v_job.id,'cancel'/, 'cancel writes its idempotency/audit receipt');
+assert.doesNotMatch(sql,/delete\s+from|truncate/i, 'repair/cancel preserve Quote, Order, Production, and history');
+assert.match(sql,/where id=p_production_job_id and user_id=v_actor[\s\S]*for update nowait/, 'owner and row lock remain authoritative');
+assert.match(sql,/p_expected_updated_at[\s\S]*PT409/, 'optimistic concurrency remains enforced');
+assert.match(ui,/rpc\/repair_production_quote_order_linkage/, 'Sync / Repair uses the canonical repair RPC');
+assert.match(ui,/changed_fields/, 'operator receives an exact repair report');
+assert.match(diagnostic,/same_owner[\s\S]*quote_accepted[\s\S]*unique_order_for_quote[\s\S]*linkage_valid[\s\S]*lifecycle_only_inconsistent/, 'read-only live verification reports every required invariant');
+console.log('Survivor Tree workflow repair assertions passed.');
