@@ -1,0 +1,12 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const source = fs.readFileSync('production-control.html','utf8');
+const card = source.match(/function jobCard\(j\)\{[\s\S]*?\n  \}\n\n  function renderLanes/)[0];
+const readyBranch = card.match(/else if\(j\.production_status === 'ready_to_print'[\s\S]*?else if\(j\.production_status === 'printing'/)[0];
+assert.equal((readyBranch.match(/>Start Print<\/button>/g)||[]).length,1,'one Start Print render per eligible card');
+assert.equal((readyBranch.match(/data-production-workflow-job=/g)||[]).length,1,'Start Print uses one delegated workflow route');
+assert.equal((readyBranch.match(/data-workflow-command="start_print"/g)||[]).length,1,'Start Print declares one workflow command');
+assert.doesNotMatch(readyBranch,/data-status=/,'legacy status handler is absent from Start Print');
+const dispatcher = fs.readFileSync('js/production-workflow-dispatcher.js','utf8');
+assert.match(dispatcher,/data-production-workflow-job/);
+console.log('Production card runtime composition has exactly one canonical Start Print action.');
