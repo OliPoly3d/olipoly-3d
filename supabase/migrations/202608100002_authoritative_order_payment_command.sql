@@ -1,4 +1,7 @@
 -- Orders owns payment tracking through an authenticated, idempotent command.
+-- This migration deliberately uses version 202608100002. Version 202608100001
+-- is already occupied by the Production attempt-pointer repair; sharing that
+-- version prevented this function from being applied by migration tooling.
 -- This migration is declarative only; application deployment must not assume it
 -- has been applied until the verification query succeeds.
 begin;
@@ -48,6 +51,14 @@ begin
 
   select * into v_order from public.orders where id=p_order_id and user_id=v_actor for update;
   if not found then raise exception 'Order not found for authenticated owner' using errcode='42501'; end if;
+  -- A repeated semantic command is a no-op even when it has a fresh command ID.
+  -- Return the current authoritative row without changing its concurrency token.
+  if v_order.payment_status = 'paid' and coalesce(v_order.balance_amount,0) = 0 then
+    insert into public.order_payment_command_receipts(command_identity,owner_id,order_id,command,previous_payment_status,resulting_updated_at,result_snapshot,created_at)
+    values(p_correlation_id,v_actor,v_order.id,'mark_paid',v_order.payment_status,v_order.updated_at,to_jsonb(v_order),v_now);
+    return next v_order;
+    return;
+  end if;
   if v_order.updated_at is distinct from p_expected_updated_at then raise exception 'Order changed after it was loaded' using errcode='40001'; end if;
   if lower(coalesce(v_order.status,'')) in ('cancelled','canceled','void') then raise exception 'Cancelled Orders cannot accept payment commands' using errcode='55000'; end if;
   if coalesce(v_order.order_total,0) < 0 then raise exception 'Order total is invalid' using errcode='22023'; end if;
@@ -80,4 +91,5 @@ revoke all on function public.mark_order_paid(uuid,timestamptz,text), public.req
 grant execute on function public.mark_order_paid(uuid,timestamptz,text) to authenticated,service_role;
 grant execute on function public.require_finance_eligible_order() to service_role;
 
+notify pgrst, 'reload schema';
 commit;
