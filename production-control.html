@@ -3004,9 +3004,10 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         }
         if(inventoryBoundary && j.exclude_inventory_reduction) toast('Inventory is excluded for this job. No material will be consumed.');
         const now = new Date();
-        const recovery = pendingLinkedWorkflowRecovery(j, status);
+        const recovery = inventoryBoundary ? null : pendingLinkedWorkflowRecovery(j, status);
         const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
         let lifecycleAction = recovery?.lifecycle_action || null;
+        let atomicConsumption = null;
         if(!recovery){
           if(status === 'printing' && !updated.print_started_at){
             updated.print_started_at = now.toISOString();
@@ -3016,7 +3017,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           }
           lifecycleAction = window.OliPolyInventoryLifecycle?.reservationAction?.(j.production_status, status);
           if(lifecycleAction === 'consume_and_release' || lifecycleAction === 'consume_and_reserve_reprint'){
-            await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc', expectedUpdatedAt:j.updated_at});
+            atomicConsumption = await consumeCapturedAttempt(updated, {addFinished:lifecycleAction === 'consume_and_release', lifecycleAction, workflowCommand:status === 'ready_to_print' ? 'needs_reprint' : 'pass_qc', expectedUpdatedAt:j.updated_at});
           }
           const reservationBase = lifecycleAction === 'consume_and_reserve_reprint'
             ? {...updated, material_reservations:[]}
@@ -3036,9 +3037,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
             updated.print_started_at = null;
             updated.estimated_finish_at = null;
           }
-          rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
+          if(atomicConsumption?.production_job){
+            Object.assign(updated, atomicConsumption.production_job);
+          }else{
+            rememberLinkedWorkflowRecovery(j, status, updated, lifecycleAction);
+          }
         }
-        const authoritative = await syncProductionStatusToOrder(j, status, j, commandContext);
+        const authoritative = atomicConsumption?.production_job || await syncProductionStatusToOrder(j, status, j, commandContext);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         if((lifecycleAction === 'release' || lifecycleAction === 'preserve_consumed_no_reserve') && !['consume_and_release','consume_and_reserve_reprint'].includes(lifecycleAction)) await releaseLinkedProductionMaterial(updated, lifecycleAction);
         if(shouldReserveInventory(updated, status) && lifecycleAction !== 'keep') await reserveLinkedProductionMaterial(updated, updated.material_reservations);
@@ -3715,7 +3720,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     });
     toast('The print attempt may have been recorded. Checking the authoritative result…');
     const [jobs, transactions] = await Promise.all([
-      sbApi(`/rest/v1/production_jobs?select=id,order_number,exclude_inventory_reduction,updated_at,job_payload&id=eq.${encodeURIComponent(job.id)}&limit=1`, {method:'GET'}),
+      sbApi(`/rest/v1/production_jobs?select=id,order_number,exclude_inventory_reduction,updated_at,job_payload,production_status,print_started_at,completed_at,actual_machine,actual_quantity,actual_print_hours,actual_grams_used,scrap_grams,roll_usages&id=eq.${encodeURIComponent(job.id)}&limit=1`, {method:'GET'}),
       sbApi(`/rest/v1/inventory_transactions?select=id,correlation_id,attempt_id,production_job_id,quantity_grams,raw_material_id,transaction_type&production_job_id=eq.${encodeURIComponent(job.id)}&attempt_id=eq.${encodeURIComponent(attempt.id)}&transaction_type=eq.production_attempt_consumption`, {method:'GET'})
     ]);
     const authoritativeJob = Array.isArray(jobs) ? jobs[0] : null;
@@ -3732,14 +3737,20 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         stage:'attempt_consumption_reconcile_committed', jobId:job.id, orderNumber:job.order_number || null, attemptId:attempt.id,
         commandIdentity:requestBody?.p_correlation_id || null, rowCount:sameCommandRows.length
       });
-      return {committed:true, inventoryMode:'included', rows:sameCommandRows};
+      if(authoritativeJob?.production_status !== 'ready_for_fulfillment' && requestBody?.p_workflow_command === 'pass_qc'){
+        throw new Error('The print attempt receipt exists, but authoritative QC progression is incomplete. Refresh before retrying.');
+      }
+      return {committed:true, inventoryMode:'included', rows:sameCommandRows, production_job:authoritativeJob};
     }
     if(authoritativeJob?.exclude_inventory_reduction){
       console.info('[OliPolyERP] Production attempt consumption reconciled as Inventory-excluded skip.', {
         stage:'attempt_consumption_reconcile_excluded', jobId:job.id, orderNumber:job.order_number || null, attemptId:attempt.id,
         commandIdentity:requestBody?.p_correlation_id || null
       });
-      return {committed:true, inventoryMode:'excluded', rows:[]};
+      if(authoritativeJob.production_status !== 'ready_for_fulfillment' && requestBody?.p_workflow_command === 'pass_qc'){
+        throw new Error('Inventory exclusion was recorded, but authoritative QC progression is incomplete. Refresh before retrying.');
+      }
+      return {committed:true, inventoryMode:'excluded', rows:[], production_job:authoritativeJob};
     }
     const error = new Error('The print attempt was not recorded. Your entered values were retained.');
     error.reconciliationOutcome = 'not_committed';
@@ -3750,9 +3761,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const attempt = currentProductionAttempt(job);
     if(!attempt || attempt.consumed_at) return false;
     const usages = Array.isArray(attempt.roll_usages) ? attempt.roll_usages : [];
-    if(!job.exclude_inventory_reduction){
+    {
       if(!usages.length || usages.some(row=>!row.raw_material_roll_id)){
-        throw new Error('Linked Production attempts require explicit roll usage before Inventory can consume material.');
+        if(!job.exclude_inventory_reduction) throw new Error('Record actual material usage before passing QC.');
       }
       const workflowCommand = options.workflowCommand || (options.lifecycleAction === 'consume_and_reserve_reprint' ? 'needs_reprint' : 'pass_qc');
       const expectedUpdatedAt = options.expectedUpdatedAt || job.updated_at;
@@ -3760,20 +3771,19 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const startedAt = performance.now();
       toast('Recording material usage…');
       try{
-        await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+        const result = await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+        if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
+        return Array.isArray(result) ? result[0] : result;
       }catch(error){
         if((error?.postgresCode || error?.code) === '55P03'){
           throw Object.assign(new Error('Inventory is busy. No material or QC status was changed.'), {postgresCode:'55P03', cause:error});
         }
         if(!isAmbiguousAttemptTransport(error)) throw error;
-        toast('The server did not return in time. Checking whether the attempt was recorded…');
-        await reconcileAttemptConsumption(job, attempt, request.body, startedAt);
+        toast('The server did not return in time. Checking the authoritative result…');
+        const reconciled = await reconcileAttemptConsumption(job, attempt, request.body, startedAt);
+        return reconciled;
       }
-      if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
-    }else if(options.addFinished){
-      applyInventoryLocal(job, [], true);
     }
-    return true;
   }
 
   async function confirmClose(){
