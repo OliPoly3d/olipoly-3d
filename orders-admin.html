@@ -1137,7 +1137,7 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="status">Status</label><select id="status"><option value="ready_to_print">Ready to Print</option><option value="printing">Printing</option><option value="qc">QC / Finishing</option><option value="ready_for_fulfillment">Ready for Pickup / Shipment</option><option value="closed">Closed</option></select></div>
+          <div><label for="status">Status (command controlled)</label><select id="status" disabled aria-readonly="true" title="Production and Fulfillment commands control Order lifecycle."><option value="ready_to_print">Ready to Print</option><option value="printing">Printing</option><option value="qc">QC / Finishing</option><option value="ready_for_fulfillment">Ready for Pickup / Shipment</option><option value="closed">Closed</option></select></div>
           <div><label for="paymentStatus">Payment (command controlled)</label><select id="paymentStatus" disabled aria-readonly="true" title="Payment status is updated by an authoritative payment command."><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
@@ -1317,6 +1317,7 @@ Aurora, OH 44202</textarea></div>
             <h4>Core Order Actions</h4>
             <div class="btn-row">
               <button class="btn" id="saveBtn" type="button">Save Order</button>
+              <button class="btn-ghost" id="closeOrderBtn" type="button">Close Order</button>
               <button class="btn-ghost" id="newBtnInline" type="button">New Order</button>
               <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
             </div>
@@ -2304,6 +2305,11 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
         button.disabled = closed;
         button.title = closed ? 'This order is closed.' : '';
       });
+      if ($('closeOrderBtn')) {
+        const closeEligible = !closed && normalizeOrderStatusForDb(order.status) === 'ready_for_fulfillment';
+        $('closeOrderBtn').disabled = !closeEligible;
+        $('closeOrderBtn').title = closed ? 'This Order is already closed.' : closeEligible ? '' : 'Close Order is available only at Ready for Pickup / Shipment.';
+      }
     }
 
     function loadIntoForm(o){
@@ -2613,15 +2619,16 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
 
     function isFinanceReadyOrder(o){
-      return !!o && !orderClosureFlags(o).finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
+      return !!o && normalizeOrderStatusForDb(o.status) === 'ready_for_fulfillment' && !orderClosureFlags(o).finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
     }
 
     function financeIneligibilityReason(order){
       if (!order) return 'Cannot push to Finance: save and refresh the Order first.';
-      if (!['paid','deposit_paid'].includes(order.payment_status)) return 'Cannot push to Finance: this Order is still marked Unpaid.';
+      if (!['paid','deposit_paid'].includes(order.payment_status)) return 'Mark this Order paid before pushing it to Finance.';
       if (orderClosureFlags(order).finance_not_required) return 'Cannot push to Finance: this Order is marked Finance Not Required.';
       if (num(order.order_total) <= 0) return 'Cannot push to Finance: the authoritative Order total must be greater than zero.';
       if (order.finance_pushed) return 'Order is already posted to Finance.';
+      if (normalizeOrderStatusForDb(order.status) !== 'ready_for_fulfillment') return 'Cannot push to Finance: the Order must be Ready for Pickup / Shipment.';
       if (num(order.sales_tax_amount) > 0 && !order.destination_county) return 'Cannot push to Finance: select the destination county for this taxable Order.';
       return '';
     }
@@ -2665,7 +2672,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       const detail = String(error?.message || error || '');
       if (/already been posted/i.test(detail)) return 'Order is already posted to Finance.';
       if (/FINANCE_TAX_COUNTY_REQUIRED/i.test(detail)) return 'Select the destination county before posting this taxable order to Finance.';
-      if (/FINANCE_PAYMENT_INCOMPLETE/i.test(detail)) return 'Cannot push to Finance: this Order is still marked Unpaid.';
+      if (/FINANCE_PAYMENT_INCOMPLETE/i.test(detail)) return 'Mark this Order paid before pushing it to Finance.';
+      if (/FINANCE_ORDER_NOT_READY_TO_CLOSE/i.test(detail)) return 'Cannot push to Finance: the Order must be Ready for Pickup / Shipment.';
       if (/FINANCE_TOTAL_REQUIRED/i.test(detail)) return 'Cannot push to Finance: the authoritative Order total must be greater than zero.';
       if (/FINANCE_TAX_METADATA_(?:UNRESOLVED|CONTRADICTORY)/i.test(detail)) return 'Cannot push to Finance: authoritative Order tax data is incomplete or contradictory.';
       if (/FINANCE_INVOICE_TOTALS_UNRESOLVED/i.test(detail)) return 'Cannot push to Finance: authoritative invoice totals are incomplete.';
@@ -2715,7 +2723,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
       await fetchOrders();
 
-      const pushedText = pushed.length ? `Pushed ${pushed.length} order${pushed.length === 1 ? '' : 's'} to Finance Pro.` : 'No orders were pushed.';
+      const pushedText = pushed.length ? `Created Finance entries and closed ${pushed.length} Order${pushed.length === 1 ? '' : 's'}.` : 'No orders were pushed.';
       const skippedText = skipped.length ? ` Skipped ${skipped.length}: ${skipped.join(' | ')}` : '';
       setMsg($('formMessage'), pushedText + skippedText, !!skipped.length);
     }
@@ -2759,7 +2767,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('pushFinanceBtn')) $('pushFinanceBtn').disabled = true;
       try {
         const result = await postOrderToFinanceCommand(currentOrder);
-        setMsg($('formMessage'), result?.idempotent ? 'Order is already posted to Finance.' : 'Order posted to Finance.');
+        setMsg($('formMessage'), result?.idempotent ? 'Finance entry already exists and the Order is closed.' : 'Finance entry created and Order closed.');
         await fetchOrders();
         const saved = orders.find(o => o.id === currentOrder.id || o.order_number === currentOrder.order_number);
         if (saved) {
@@ -3288,6 +3296,40 @@ resetForm();
 
     // Backward-compatible name for older handlers.
     const syncOrderInterruptionToProduction = syncOrderStatusToProduction;
+
+    const closeOrderRequestsInFlight = new Set();
+    async function closeCurrentOrder(){
+      clearMsg($('formMessage'));
+      if(!currentUser?.id) return setMsg($('formMessage'),'Log in before closing an Order.',true);
+      const order = activeId ? orders.find(row => row.id === activeId) : null;
+      if(!order) return setMsg($('formMessage'),'Select and refresh an Order before closing it.',true);
+      if(orderIsClosed(order)) return setMsg($('formMessage'),'Order is already closed.');
+      if(normalizeOrderStatusForDb(order.status) !== 'ready_for_fulfillment') return setMsg($('formMessage'),'Cannot close this Order: it must be Ready for Pickup / Shipment.',true);
+      if(closeOrderRequestsInFlight.has(order.id)) return setMsg($('formMessage'),'Close Order is already in progress.');
+      if(!confirm(`Close ${order.order_number}?\n\nThis records fulfillment completion without changing payment or Finance history.`)) return;
+      const request = window.OliPolyWorkflow.fulfillmentWorkflowRpcRequest(order.order_number,'close_order',order.updated_at,{fulfillment_confirmed_at:new Date().toISOString(),fulfillment_method:order.fulfillment || 'confirmed'});
+      closeOrderRequestsInFlight.add(order.id);
+      $('closeOrderBtn').disabled = true;
+      try {
+        const result = await api(request.path,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(request.body)});
+        if(result.error) throw result.error;
+        const authoritative = Array.isArray(result.data) ? result.data[0] : result.data;
+        if(!authoritative || normalizeOrderStatusForDb(authoritative.status) !== 'closed') throw new Error('Close command did not return the authoritative Closed Order.');
+        orders = orders.map(row => row.id === authoritative.id ? {...row,...authoritative} : row);
+        loadIntoForm(orders.find(row => row.id === authoritative.id));
+        renderList();
+        window.OliPolyWorkflow.clearCommandIdentity('fulfillment',order.order_number,'close_order',order.updated_at);
+        const noFinanceRequired = num(order.order_total) <= 0 || orderClosureFlags(order).finance_not_required;
+        setMsg($('formMessage'),noFinanceRequired ? 'Order closed. No Finance entry was required.' : 'Order closed. Finance history was not changed.');
+      } catch(error) {
+        const detail = String(error?.message || error || 'Close Order failed.');
+        setMsg($('formMessage'),/ORDER_NOT_READY_TO_CLOSE/i.test(detail) ? 'Cannot close this Order: it must be Ready for Pickup / Shipment.' : detail,true);
+      } finally {
+        closeOrderRequestsInFlight.delete(order.id);
+        const current = orders.find(row => row.id === order.id);
+        if($('closeOrderBtn')) $('closeOrderBtn').disabled = !current || orderIsClosed(current) || normalizeOrderStatusForDb(current.status) !== 'ready_for_fulfillment';
+      }
+    }
 
     function sourceQuoteFromOrderNumber(orderNumber){
       return quoteNumberVariantsFromOrder(orderNumber)[0] || null;
@@ -6940,6 +6982,7 @@ function generateTravelerPdf(){
   }
   function run(){
     bind('saveBtn', saveOrder, 'Save Order');
+    bind('closeOrderBtn', requireOrder('Close Order', closeCurrentOrder), 'Close Order');
     bind('newBtn', resetForm, 'New Order');
     bind('newBtnInline', resetForm, 'New Order');
     bind('deleteBtn', requireOrder('Delete Order', deleteOrder), 'Delete Order');
