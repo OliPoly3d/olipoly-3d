@@ -1882,7 +1882,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     draggingId:null
     ,repeatRecipeSnapshot:null,
     cloudJobIds:new Set(),
-    migrationHandledIds:new Set()
+    migrationHandledIds:new Set(),
+    authorityMode:'booting'
   };
 
   function token(){ return (window.OliPolyAuth?.getToken?.() || localStorage.getItem('sb_token') || null); }
@@ -2007,7 +2008,6 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   async function loadCloudJobs(){
-    try{
       const jobs = await sbApi(`/rest/v1/production_jobs?select=*&user_id=eq.${encodeURIComponent(state.user.id)}&order=updated_at.desc`,{method:'GET'});
       const normalized = Array.isArray(jobs) ? jobs.map(normalizeCloudJob) : [];
       state.cloudJobIds = new Set(normalized.map(job=>job.id).filter(Boolean));
@@ -2035,11 +2035,29 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         console.warn('Could not load linked order statuses for production lane routing.', orderErr);
         return normalized;
       }
-    }catch(err){
-      console.warn('Could not load production_jobs table', err);
-      toast('Cloud load failed. Using local browser data.');
-      return [];
-    }
+  }
+
+  function applyAuthoritativeProductionJobs(cloudJobs, localJobs = state.jobs){
+    const hydration = window.OliPolyProductionPersistence.authoritativeHydration(cloudJobs, localJobs, normalizeJob);
+    hydration.ghosts.forEach(job => console.warn(
+      '[OliPolyERP] Removed stale Production cache record absent from authoritative dataset',
+      {job_id:job.id, title:job.job_title || null}
+    ));
+    hydration.ghosts.forEach(job => {
+      try{ clearLinkedWorkflowRecovery(job.id); }catch(error){
+        console.warn('[OliPolyERP] Could not quarantine stale linked Production recovery', {job_id:job.id, error});
+      }
+    });
+    state.jobs = hydration.jobs;
+    state.authorityMode = 'authoritative';
+    localWrite(LS_JOBS, state.jobs);
+    return hydration;
+  }
+
+  function useOfflineProductionRecovery(localJobs){
+    state.jobs = window.OliPolyProductionPersistence.offlineRecovery(localJobs, normalizeJob);
+    state.authorityMode = 'offline-recovery';
+    localWrite(LS_JOBS, state.jobs);
   }
 
   async function migrateVisibleJobsToCloud(candidates = state.jobs){
@@ -2125,7 +2143,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   function updateAuthUI(){
     const signed = !!state.user?.id;
     $('authStatus').textContent = signed
-      ? `Cloud sync active: ${state.user.email || 'signed in'}`
+      ? (state.authorityMode === 'offline-recovery'
+        ? `Offline recovery: showing browser Production data; cloud authority is unavailable.`
+        : `Cloud sync active: ${state.user.email || 'signed in'}`)
       : 'Not signed in. Browser fallback is active. Log in to sync across sessions/devices.';
     $('loginBtn').classList.toggle('hidden', signed);
     $('signupBtn').classList.toggle('hidden', signed);
@@ -2877,11 +2897,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!state.user?.id) return;
     const cloudJobs = await loadCloudJobs();
     const recoveryJobs = state.jobs || [];
-    state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudJobs, recoveryJobs, normalizeJob);
+    applyAuthoritativeProductionJobs(cloudJobs, recoveryJobs);
     window.OliPolyProductionPersistence.lifecycleDiagnostics(cloudJobs, recoveryJobs, state.jobs).forEach(detail=>{
       console.info('[OliPolyERP] Production lifecycle hydration authority', detail);
     });
-    localWrite(LS_JOBS,state.jobs);
+    updateAuthUI();
     await refreshRawInventoryFromCloud();
     window.dispatchEvent(new CustomEvent('olipoly:authoritative-data-refreshed', {detail:{module:'production_control', refreshedAt:new Date().toISOString()}}));
   }
@@ -2967,6 +2987,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(pending[jobId]){
       delete pending[jobId];
       window.OliPolyProductionRecoveryStorage.write(LINKED_WORKFLOW_RECOVERY_KEY, pending);
+    }
+  }
+
+  function removeProductionRecoveryRecord(jobId){
+    state.jobs = state.jobs.filter(row => row.id !== jobId);
+    localWrite(LS_JOBS, state.jobs);
+    try{ clearLinkedWorkflowRecovery(jobId); }catch(error){
+      console.warn('[OliPolyERP] Could not clear linked Production recovery for stale record', {job_id:jobId, error});
     }
   }
 
@@ -3265,7 +3293,22 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       logProjectEvent(updated.production_status === 'void' ? 'quote_voided' : 'production_job_canceled', updated, {from:current.production_status, reason:reasonText})
         .catch(error=>console.warn('Cancellation audit event could not be recorded after authoritative success.', error));
     }catch(err){
-      if(String(err?.postgresCode || err?.code) === '40001'){
+      const missingAuthoritativeJob = /Production job not found for authenticated owner/i.test(String(err?.message || err));
+      if(missingAuthoritativeJob){
+        try{
+          await refreshAuthoritativeProductionState();
+          if(!state.jobs.some(row=>row.id===id)){
+            removeProductionRecoveryRecord(id);
+            render();
+            alert('This Production job no longer exists and the stale local card was removed.');
+          }else{
+            alert(`Could not cancel job:\n\n${err.message || err}`);
+          }
+        }catch(refreshError){
+          console.warn('Could not confirm stale Production card because authoritative refresh failed.', refreshError);
+          alert('Could not cancel the job or confirm whether the local card is stale. Cloud Production data is unavailable.');
+        }
+      }else if(String(err?.postgresCode || err?.code) === '40001'){
         await fetchAuthoritativeProductionJob(id).catch(refreshError=>console.warn('Could not refresh Production after concurrency conflict.', refreshError));
         const retained = state.jobs.find(row=>row.id===id);
         if(retained){ retained.cancellation_reason = reasonText; localWrite(LS_JOBS,state.jobs); render(); }
@@ -4140,6 +4183,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
       if(state.user?.id){
         await migrateVisibleJobsToCloud();
+        await refreshAuthoritativeProductionState();
         for(const pm of state.pm){
           try{ await cloudSavePm(pm); }catch(err){ console.warn('PM backup cloud sync failed', err); }
         }
@@ -4195,22 +4239,22 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       try{
         const localMigrated = migrateLocalJobs();
         const cloudMigrated = await loadCloudJobs();
-        // Supabase and browser storage share IDs. Newest updated_at wins; an exact
-        // timestamp tie belongs to Supabase so a local fallback cannot rewrite it.
-        state.jobs = window.OliPolyProductionPersistence.mergeJobs(cloudMigrated, localMigrated, normalizeJob);
+        // A successful owner-scoped fetch, including [], owns existence and
+        // lifecycle status. Browser rows are recovery evidence only.
+        applyAuthoritativeProductionJobs(cloudMigrated, localMigrated);
         window.OliPolyProductionPersistence.lifecycleDiagnostics(cloudMigrated, localMigrated, state.jobs).forEach(detail=>{
           console.info('[OliPolyERP] Production lifecycle hydration authority', detail);
         });
-        localWrite(LS_JOBS,state.jobs);
+        updateAuthUI();
         await refreshRawInventoryFromCloud();
         await refreshNonFilamentSuppliesFromCloud();
         window.dispatchEvent(new CustomEvent('olipoly:authoritative-data-refreshed', {detail:{module:'production_control', refreshedAt:new Date().toISOString()}}));
-        if(localMigrated.length) await migrateVisibleJobsToCloud(localMigrated);
         if(localMigrated.length || cloudMigrated.length) toast(`Loaded ${state.jobs.length} production/project jobs.`);
       }catch(err){
         console.warn(err);
-        state.jobs = migrateLocalJobs();
-        toast('Cloud jobs unavailable. Using browser fallback/imported local jobs.');
+        useOfflineProductionRecovery(migrateLocalJobs());
+        updateAuthUI();
+        toast('Cloud jobs unavailable. Offline recovery data is being shown.');
       }
       try{
         const pm = await sbApi(`/rest/v1/printer_pm?select=*&user_id=eq.${encodeURIComponent(state.user.id)}`,{method:'GET'});

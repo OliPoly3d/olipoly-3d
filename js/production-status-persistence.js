@@ -48,6 +48,17 @@
       .sort((a, b) => timestamp(b) - timestamp(a) || identity(a).localeCompare(identity(b)));
   }
 
+  function authoritativeHydration(remoteRows, localRows, normalize = value => value){
+    const remote = (remoteRows || []).filter(Boolean).map(normalize);
+    const remoteIds = new Set(remote.map(row => row?.id).filter(Boolean));
+    const ghosts = (localRows || []).filter(row => row?.id && !remoteIds.has(row.id));
+    return {jobs:remote, ghosts};
+  }
+
+  function offlineRecovery(localRows, normalize = value => value){
+    return (localRows || []).filter(Boolean).map(normalize);
+  }
+
   function lifecycleDiagnostics(remoteRows, localRows, finalRows){
     const localByIdentity = new Map((localRows || []).map(row => [identity(row), row]));
     const finalByIdentity = new Map((finalRows || []).map(row => [identity(row), row]));
@@ -93,5 +104,5 @@
     return {action:'insert', reason:'eligible-local-draft'};
   }
 
-  return Object.freeze({identity, timestamp, mergeJobs, lifecycleDiagnostics, transition, migrationDecision, canCancel, CANCELABLE_STATUSES, MIGRATABLE_INITIAL_STATUSES});
+  return Object.freeze({identity, timestamp, mergeJobs, authoritativeHydration, offlineRecovery, lifecycleDiagnostics, transition, migrationDecision, canCancel, CANCELABLE_STATUSES, MIGRATABLE_INITIAL_STATUSES});
 });

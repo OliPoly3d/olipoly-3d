@@ -47,7 +47,7 @@ assert.equal(persistence.migrationDecision(estimate, cloudIds, null).reason, 'au
 
 const production = fs.readFileSync(require.resolve('../production-control.html'), 'utf8');
 assert.match(production, /syncPreAcceptanceProductionStatus[\s\S]*mark_waiting_customer/);
-assert.match(production, /OliPolyProductionPersistence\.mergeJobs\(cloudMigrated, localMigrated/);
+assert.match(production, /applyAuthoritativeProductionJobs\(cloudMigrated, localMigrated\)/);
 assert.doesNotMatch(production, /production_jobs\?on_conflict=id/, 'Production saves must not use upsert against restrictive INSERT RLS');
 assert.match(production, /method:decision\.action === 'update' \? 'PATCH' : 'POST'/, 'owned rows update while eligible drafts insert');
 assert.match(production, /OliPolyProductionCommands = Object\.freeze\(\{syncPreAcceptanceProductionStatus\}\)/, 'handoff command crosses script scope explicitly');
