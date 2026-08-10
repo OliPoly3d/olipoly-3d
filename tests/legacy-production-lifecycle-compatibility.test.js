@@ -3,6 +3,8 @@ const fs = require('node:fs');
 
 const migration = fs.readFileSync('supabase/migrations/202608100007_legacy_production_lifecycle_compatibility.sql','utf8');
 const report = fs.readFileSync('supabase/verification/legacy_production_classification_report.sql','utf8');
+const backlogMigration = fs.readFileSync('supabase/migrations/202608100008_classify_production_backlog_and_repair_linkage.sql','utf8');
+const backlogReport = fs.readFileSync('supabase/verification/production_backlog_classification.sql','utf8');
 const ui = fs.readFileSync('production-control.html','utf8');
 
 assert.match(migration,/production_source_type in \('legacy_repaired','legacy_standalone'\)/);
@@ -26,4 +28,31 @@ assert.match(ui,/standaloneLegacy = job\?\.production_source_type === 'legacy_st
 assert.match(ui,/p_production_job_id:job\.id/,'standalone transitions use authoritative RPC');
 assert.match(ui,/atomicConsumption\?\.production_job \|\| await syncProductionStatusToOrder/);
 assert.match(report,/where classification='AMBIGUOUS'/);
+
+for (const id of [
+  '633ae5d6-33b9-4c11-86ee-1026b94f9ca6',
+  '0b6c9fe4-1ed1-48ae-abe4-f27281e5b7c7',
+  '27be9786-47bb-4e20-a4b5-5ad05c407f08',
+  'db361c40-b958-42cf-86e5-94238d252499'
+]) assert.match(backlogMigration, new RegExp(id), `migration pins approved identity ${id}`);
+assert.match(backlogMigration,/production_source_type = 'legacy_standalone'/);
+assert.match(backlogMigration,/source_quote_number = 'Q-000007'/);
+assert.match(backlogMigration,/v_count <> 1/,'repair requires exactly one candidate');
+assert.match(backlogMigration,/v_order\.user_id is distinct from v_job\.user_id/,'repair requires same owner');
+assert.match(backlogMigration,/production_source_type = 'legacy_repaired'/,'repair uses the existing canonical repaired marker');
+assert.doesNotMatch(backlogMigration,/insert into public\.(orders|quotes)/,'focused migration never fabricates sales records');
+assert.doesNotMatch(backlogMigration,/production_status\s*=/,'focused migration does not rewrite lifecycle state');
+
+for (const field of [
+  'production_job_id','job_title','created_at','updated_at','job_type','production_source_type',
+  'production_status','quote_number','order_number','payload_quote_number','payload_order_number',
+  'payload_order_id','quote_handoff_status','quote_handoff_at','quote_accepted_at',
+  'matching_order_count','candidate_order_id','candidate_order_number','source_quote_number',
+  'same_owner_result','classification','classification_reason','safe_repair_eligibility','recommended_action'
+]) assert.match(backlogReport, new RegExp(field), `read-only report includes ${field}`);
+for (const classification of ['MODERN_LINKED','LEGACY_REPAIRABLE','LEGACY_STANDALONE','QUOTE_WITHOUT_ORDER_REVIEW','LINKAGE_BROKEN_HISTORY','AMBIGUOUS_REVIEW']) {
+  assert.match(backlogReport, new RegExp(classification));
+}
+assert.doesNotMatch(backlogReport,/\b(update|insert|delete)\s+(public\.)?/i,'verification query is read-only');
+assert.doesNotMatch(backlogReport,/created_at\s*[<>]/,'classification never relies on an arbitrary date cutoff');
 console.log('Legacy Production lifecycle compatibility assertions passed.');
