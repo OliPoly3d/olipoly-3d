@@ -9,9 +9,11 @@ assert.match(production, /if\(inventoryBoundary && !j\.exclude_inventory_reducti
 assert.match(production, /estimates are pre-filled only as a convenience and are not actual consumption until you confirm/, 'reservation/estimate must remain distinct from confirmed actuals');
 assert.match(production, /raw_material_roll_id:.*[\s\S]*good_grams:good[\s\S]*scrap_grams:scrap[\s\S]*grams_used:good \+ scrap/, 'canonical roll usage captures good and scrap grams');
 assert.match(production, /capturedAttempt = \{\.\.\.attempt, good_grams:goodTotal, scrap_grams:scrapTotal, roll_usages:usages, usage_confirmed_at:/);
+assert.match(production, /job\?\.job_payload\?\.last_completed_attempt\?\.id[\s\S]*attempts\[attempts\.length - 1\]/, 'deployed Complete Print evidence remains discoverable when an older payload omitted current_attempt_id');
 assert.match(production, /await setStatus\(job\.id, pending\.status, pending\.commandContext\)/, 'confirmation must resume the single authoritative lifecycle command');
 assert.match(production, /inventoryBoundary && j\.exclude_inventory_reduction[\s\S]*Inventory is excluded for this job\. No material will be consumed\./);
 assert.match(production, /status === 'ready_for_fulfillment' \? 'QC passed\. Job is ready for pickup\/shipment\.'/);
+assert.match(production, /authoritative\.production_status !== targetStatus[\s\S]*Production workflow did not return authoritative/, 'cards cannot move unless the RPC returns the requested Production row state');
 assert.match(production, /status === 'ready_to_print'[\s\S]*Confirm & Start Reprint/, 'Needs Reprint must share usage capture without passing QC');
 assert.match(production, /linkedWorkflowInFlight\.has\(inFlightKey\)/, 'double clicks remain guarded');
 assert.match(production, /reconcileAttemptConsumption\(job, attempt, request\.body, startedAt\)/, 'ambiguous transport must reconcile before retry');

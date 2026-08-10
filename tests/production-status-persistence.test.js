@@ -19,6 +19,16 @@ const tiedLocalEstimate = {...estimate, updated_at:waiting.updated_at};
 reloaded = persistence.mergeJobs([waiting], [tiedLocalEstimate]);
 assert.equal(reloaded[0].production_status, 'waiting_customer', 'remote wins deterministic timestamp ties');
 
+const localQc = {...ready, production_status:'qc', updated_at:'2026-07-16T10:09:00.000Z'};
+reloaded = persistence.mergeJobs([ready], [localQc]);
+assert.equal(reloaded[0].production_status, 'ready_to_print', 'remote lifecycle wins even when recovery has a newer synthetic timestamp');
+assert.deepEqual(persistence.lifecycleDiagnostics([ready], [localQc], reloaded), [{
+  job_id:'job-1', remote_production_status:'ready_to_print', recovery_production_status:'qc',
+  final_production_status:'ready_to_print', source_of_truth:'remote-production_jobs',
+  remote_updated_at:'2026-07-16T10:02:00.000Z', recovery_updated_at:'2026-07-16T10:09:00.000Z',
+  final_updated_at:'2026-07-16T10:02:00.000Z'
+}]);
+
 const duplicateWithoutId = {...waiting, id:null};
 assert.equal(persistence.identity(duplicateWithoutId), 'quote:Q-000123');
 const duplicateId = {...estimate, id:'legacy-copy', updated_at:'2026-07-16T09:59:00.000Z'};
