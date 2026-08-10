@@ -3066,7 +3066,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
           expected_production_updated_at:j.updated_at, expected_order_updated_at:null,
           postgres_code:err?.postgresCode || err?.code || null, conflict_details:err?.details || null, error:err
         });
-        if(inventoryBoundary) toast('Inventory could not be updated. QC status was not changed.');
+        if(inventoryBoundary) toast((err?.postgresCode || err?.code) === '55P03' ? err.message : 'Inventory could not be updated. QC status was not changed.');
         else toast('Workflow command did not complete; pending recovery was saved. Refresh before issuing another action.');
       }
       finally{ linkedWorkflowInFlight.delete(inFlightKey); }
@@ -3758,10 +3758,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const expectedUpdatedAt = options.expectedUpdatedAt || job.updated_at;
       const request = window.OliPolyWorkflow.inventoryConsumptionRpcRequest(job, workflowCommand, expectedUpdatedAt, usages, attempt);
       const startedAt = performance.now();
+      toast('Recording material usage…');
       try{
         await sbApi(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
       }catch(error){
+        if((error?.postgresCode || error?.code) === '55P03'){
+          throw Object.assign(new Error('Inventory is busy. No material or QC status was changed.'), {postgresCode:'55P03', cause:error});
+        }
         if(!isAmbiguousAttemptTransport(error)) throw error;
+        toast('The server did not return in time. Checking whether the attempt was recorded…');
         await reconcileAttemptConsumption(job, attempt, request.body, startedAt);
       }
       if(options.addFinished && attempt.add_finished_good) applyInventoryLocal(job, [], true);
@@ -5240,7 +5245,6 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Revise / Resend Quote</button>`;
     } else if(j.production_status === 'ready_to_print' && !j.linkage_incomplete){
       actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="printing" data-workflow-command="start_print" type="button">Start Print</button>`;
-      actions += `<button class="mini-btn" data-status="${j.id}|printing" type="button">Start Print</button>`;
     } else if(j.production_status === 'printing'){
       actions += `<button class="mini-btn" data-complete-print="${j.id}" type="button">Complete Print</button>`;
     } else if(j.production_status === 'qc'){

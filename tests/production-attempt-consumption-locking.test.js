@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const sql = fs.readFileSync('supabase/migrations/202608100003_repair_production_attempt_consumption_locking.sql','utf8');
+assert.match(sql,/production_attempt_consumption_receipts/);
+assert.match(sql,/unique \(owner_id, production_job_id, attempt_id\)/);
+assert.match(sql,/pg_try_advisory_xact_lock/);
+assert.match(sql,/for update nowait/);
+assert.match(sql,/order by 1 loop/,'roll locks use canonical UUID order');
+assert.doesNotMatch(sql,/from public\.orders[^;]*for update/is,'Inventory command must not lock the Order row');
+assert.match(sql,/errcode='55P03'/);
+assert.match(sql,/insert into public\.inventory_transactions/);
+assert.match(sql,/insert into public\.production_attempt_consumption_receipts/);
+assert.ok(sql.indexOf('insert into public.inventory_transactions') < sql.indexOf('insert into public.production_attempt_consumption_receipts'),'receipt is written only after Inventory writes');
+assert.match(sql,/enable row level security/);
+assert.match(sql,/revoke all on public\.production_attempt_consumption_receipts from public, anon, authenticated/);
+assert.match(sql,/coalesce\(v_job\.exclude_inventory_reduction,false\)[\s\S]*inventory_skipped/);
+console.log('Production attempt consumption lock, receipt, idempotency, and authority assertions passed.');
