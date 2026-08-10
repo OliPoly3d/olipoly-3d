@@ -2886,9 +2886,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job, commandContext = {}){
-    if(!state.user?.id || !job?.order_number || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
-    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[targetStatus];
-    if(!command || targetStatus === 'closed') throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
+    if(!state.user?.id || !window.OliPolyWorkflow.POST_ACCEPTANCE_STATUSES.includes(targetStatus)) return;
+    const standaloneLegacy = job?.production_source_type === 'legacy_standalone' && !job?.order_number;
+    if(!job?.order_number && !standaloneLegacy) throw new Error('Order linkage is required unless this job has explicit legacy standalone approval.');
+    const command = ({printing:'start_print', qc:'complete_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint', closed:'close'})[targetStatus];
+    if(!command || (targetStatus === 'closed' && !standaloneLegacy)) throw new Error('Production Control cannot close Orders; use Orders/Fulfillment.');
     const actuals = targetStatus === 'qc' ? {
       actual_machine:evidenceJob.actual_machine,
       actual_quantity:evidenceJob.actual_quantity,
@@ -2901,13 +2903,15 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       roll_usages:evidenceJob.roll_usages || [],
       production_attempt:currentProductionAttempt(evidenceJob) || null
     } : {};
-    const request = window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals, commandContext);
+    const request = standaloneLegacy
+      ? {path:'/rest/v1/rpc/production_workflow_command', body:{p_production_job_id:job.id,p_command:command,p_expected_updated_at:job.updated_at,p_payload:actuals,p_correlation_id:commandContext.correlationId || window.crypto.randomUUID(),p_causation_id:commandContext.causationId || null}}
+      : window.OliPolyWorkflow.productionWorkflowRpcRequest(job.order_number, command, job.updated_at, actuals, commandContext);
     const fetchOrdinal = commandContext.claimFetchOrdinal?.() || 1;
     console.info('[OliPolyERP] Production workflow fetch', {...(commandContext.trace || {}), fetchOrdinal, correlationId:request.body.p_correlation_id, causationId:request.body.p_causation_id});
     const result = await sbApi(request.path, {
       method:'POST', retryAuth:false, requestKind:'authoritative-mutation', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)
     });
-    window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
+    if(!standaloneLegacy) window.OliPolyWorkflow.clearCommandIdentity('production', job.order_number, command, job.updated_at);
     const authoritative = Array.isArray(result) ? result[0] : result;
     if(!authoritative || authoritative.production_status !== targetStatus){
       throw new Error(`Production workflow did not return authoritative ${targetStatus} state.`);
@@ -2990,7 +2994,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const inventoryBoundary = j.production_status === 'qc' && ['ready_for_fulfillment','ready_to_print'].includes(status);
     const inFlightKey = `${id}:${status}`;
     if(linkedWorkflowInFlight.has(inFlightKey)) return toast('Workflow command already in progress. Please wait for the authoritative response.');
-    if(j.order_number){
+    if(j.order_number || j.production_source_type === 'legacy_standalone'){
       if(status === 'qc') return toast('Use Complete Print to capture actuals before moving to QC.');
       if(!({ready_to_print:1, printing:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
       if(status === 'printing' && !hasProductionActualPlan(j)) return toast('Add/confirm slicer grams and print hours before starting production.');
@@ -3848,9 +3852,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const closeInFlightKey = `${j.id}:complete_print`;
     if(linkedWorkflowInFlight.has(closeInFlightKey)) return toast('Complete Print is already in progress. Please wait for the authoritative response.');
     try{
-      if(j.order_number) linkedWorkflowInFlight.add(closeInFlightKey);
+      if(j.order_number || j.production_source_type === 'legacy_standalone') linkedWorkflowInFlight.add(closeInFlightKey);
       updated.material_reservations = j.material_reservations || [];
-      if(j.order_number){
+      if(j.order_number || j.production_source_type === 'legacy_standalone'){
         const authoritative = await syncProductionStatusToOrder(j, 'qc', updated);
         Object.assign(updated, authoritative || {}, {job_payload:{...(updated.job_payload || {}), ...((authoritative && authoritative.job_payload) || {})}});
         await refreshAuthoritativeProductionState();
