@@ -3081,6 +3081,12 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       finally{ linkedWorkflowInFlight.delete(inFlightKey); }
       return;
     }
+    // Accepted Production lifecycle commands are server-owned. An unlinked row
+    // cannot be promoted through print lanes by a browser PATCH: it must first
+    // be linked by Quote acceptance or explicitly approved as legacy standalone.
+    if(['ready_to_print','printing','qc','ready_for_fulfillment','closed'].includes(status)){
+      return toast('This Production job is not authoritatively linked. Refresh and complete the Quote/Order handoff before changing its lifecycle.');
+    }
     const now = new Date();
     if(j.order_number && !({ready_to_print:1, printing:1, qc:1, ready_for_fulfillment:1}[status])) return toast('Unsupported linked workflow transition.');
     const warning = j.order_number && window.OliPolyWorkflow.backwardMoveWarning(j.production_status, status);
@@ -3206,34 +3212,36 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     if(!j) return;
     if(j.order_number) return toast('Linked accepted work cannot be canceled from Production Control.');
     if(CLOSED.includes(j.production_status)) return toast('This job is already closed/canceled.');
-    const reason = prompt(`Cancel "${j.job_title}"?\n\nReason (optional):`, j.cancellation_reason || '');
+    const reason = prompt(`Cancel "${j.job_title}"?\n\nReason (required):`, j.cancellation_reason || '');
     if(reason === null) return;
-    const now = new Date();
     const reasonText = String(reason || '').trim();
-    const updated = {
-      ...j,
-      production_status: (['estimate','quote_sent','quote_declined','void'].includes(j.production_status) && !j.order_number) ? 'void' : 'canceled',
-      cancellation_reason:reasonText || null,
-      canceled_at:now.toISOString(),
-      updated_at:now.toISOString(),
-      print_started_at:j.print_started_at || null,
-      estimated_finish_at:null,
-      material_reservations:[]
-    };
-    if(reasonText && !String(updated.close_note || '').toLowerCase().includes('canceled')){
-      updated.close_note = `[Canceled] ${reasonText}`;
-    }
+    if(!reasonText) return toast('A cancellation reason is required. The job was not changed.');
+    const commandIdentity = `production-cancel:${window.crypto.randomUUID()}`;
     try{
-      await applyReservationDelta(j, updated);
-      await cloudSaveJob(updated);
-      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:updated.production_status, reason:reasonText});
-      await logProjectEvent(updated.production_status === 'void' ? 'quote_voided' : 'production_job_canceled', updated, {from:j.production_status, reason:reasonText});
-      await syncProductionStatusToOrder(updated, updated.production_status);
+      const result = await sbApi('/rest/v1/rpc/cancel_production_job', {
+        method:'POST', retryAuth:false, requestKind:'authoritative-mutation',
+        headers:{Prefer:'return=representation'},
+        body:JSON.stringify({
+          p_production_job_id:j.id,
+          p_expected_updated_at:j.updated_at,
+          p_reason:reasonText,
+          p_command_identity:commandIdentity
+        })
+      });
+      const authoritative = Array.isArray(result) ? result[0] : result;
+      if(!authoritative || !CLOSED.includes(authoritative.production_status)){
+        throw new Error('Cancel did not return an authoritative closed Production row.');
+      }
+      const updated = normalizeCloudJob(authoritative);
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       state.selectedIds.delete(id);
       localWrite(LS_JOBS,state.jobs);
+      await refreshAuthoritativeProductionState();
       render();
       toast('Job canceled. Record kept and reserved material released.');
+      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:updated.production_status, reason:reasonText});
+      logProjectEvent(updated.production_status === 'void' ? 'quote_voided' : 'production_job_canceled', updated, {from:j.production_status, reason:reasonText})
+        .catch(error=>console.warn('Cancellation audit event could not be recorded after authoritative success.', error));
     }catch(err){
       alert(`Could not cancel job:\n\n${err.message || err}`);
     }
