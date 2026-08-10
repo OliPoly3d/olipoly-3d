@@ -1829,7 +1829,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     ready_to_print:'Ready to Print', printing:'Printing', qc:'QC / Finishing',
     ready_for_fulfillment:'Ready for Pickup / Shipment', closed:'Closed'
   };
-  const CLOSED = ['closed'];
+  const CLOSED = ['closed','canceled','void'];
   const DELIVERY = ['ready_for_fulfillment'];
   const PRINT_WORK_STATUSES = ['ready_to_print','printing'];
   const RECOMMENDABLE_STATUSES = ['ready_to_print'];
@@ -2883,6 +2883,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     });
     localWrite(LS_JOBS,state.jobs);
     await refreshRawInventoryFromCloud();
+    window.dispatchEvent(new CustomEvent('olipoly:authoritative-data-refreshed', {detail:{module:'production_control', refreshedAt:new Date().toISOString()}}));
+  }
+
+  async function fetchAuthoritativeProductionJob(id){
+    if(!state.user?.id) throw new Error('Sign in before changing authoritative Production.');
+    const rows = await sbApi(`/rest/v1/production_jobs?select=*&id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(state.user.id)}&limit=1`, {method:'GET'});
+    const raw = Array.isArray(rows) ? rows[0] : null;
+    if(!raw || raw.user_id !== state.user.id) throw Object.assign(new Error('Production job not found for authenticated owner.'), {postgresCode:'42501'});
+    if(!raw.updated_at) throw new Error('Authoritative Production row has no updated_at version.');
+    const authoritative = normalizeCloudJob(raw);
+    // Never permit normalization, job_payload, or recovery data to replace the
+    // exact PostgREST row version used by an authoritative command.
+    authoritative.updated_at = raw.updated_at;
+    state.jobs = state.jobs.map(row=>row.id===id ? authoritative : row);
+    localWrite(LS_JOBS,state.jobs);
+    render();
+    window.dispatchEvent(new CustomEvent('olipoly:authoritative-data-refreshed', {detail:{module:'production_control', refreshedAt:new Date().toISOString()}}));
+    return authoritative;
   }
 
   async function syncProductionStatusToOrder(job, targetStatus, evidenceJob = job, commandContext = {}){
@@ -3210,20 +3228,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function cancelJob(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
-    if(j.order_number) return toast('Linked accepted work cannot be canceled from Production Control.');
-    if(CLOSED.includes(j.production_status)) return toast('This job is already closed/canceled.');
+    if(!window.OliPolyProductionPersistence.canCancel(j)) return toast('This Production lifecycle does not permit cancellation.');
     const reason = prompt(`Cancel "${j.job_title}"?\n\nReason (required):`, j.cancellation_reason || '');
     if(reason === null) return;
     const reasonText = String(reason || '').trim();
     if(!reasonText) return toast('A cancellation reason is required. The job was not changed.');
+    if(state.cancelInFlight?.has(id)) return;
+    state.cancelInFlight ||= new Set();
+    state.cancelInFlight.add(id);
     const commandIdentity = `production-cancel:${window.crypto.randomUUID()}`;
     try{
+      const current = await fetchAuthoritativeProductionJob(id);
+      if(!window.OliPolyProductionPersistence.canCancel(current)) throw new Error('The refreshed Production lifecycle no longer permits cancellation.');
       const result = await sbApi('/rest/v1/rpc/cancel_production_job', {
         method:'POST', retryAuth:false, requestKind:'authoritative-mutation',
         headers:{Prefer:'return=representation'},
         body:JSON.stringify({
-          p_production_job_id:j.id,
-          p_expected_updated_at:j.updated_at,
+          p_production_job_id:current.id,
+          p_expected_updated_at:current.updated_at,
           p_reason:reasonText,
           p_command_identity:commandIdentity
         })
@@ -3239,11 +3261,25 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       await refreshAuthoritativeProductionState();
       render();
       toast('Job canceled. Record kept and reserved material released.');
-      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:j.production_status, to:updated.production_status, reason:reasonText});
-      logProjectEvent(updated.production_status === 'void' ? 'quote_voided' : 'production_job_canceled', updated, {from:j.production_status, reason:reasonText})
+      window.OliPolyERP?.logEvent?.('production_job_canceled', {job_id:id, from:current.production_status, to:updated.production_status, reason:reasonText});
+      logProjectEvent(updated.production_status === 'void' ? 'quote_voided' : 'production_job_canceled', updated, {from:current.production_status, reason:reasonText})
         .catch(error=>console.warn('Cancellation audit event could not be recorded after authoritative success.', error));
     }catch(err){
-      alert(`Could not cancel job:\n\n${err.message || err}`);
+      if(String(err?.postgresCode || err?.code) === '40001'){
+        await fetchAuthoritativeProductionJob(id).catch(refreshError=>console.warn('Could not refresh Production after concurrency conflict.', refreshError));
+        const retained = state.jobs.find(row=>row.id===id);
+        if(retained){ retained.cancellation_reason = reasonText; localWrite(LS_JOBS,state.jobs); render(); }
+        alert('Production changed since this page loaded. The latest state has been refreshed. Review it and try Cancel again.');
+      }else{
+        const retained = state.jobs.find(row=>row.id===id);
+        if(retained){ retained.cancellation_reason = reasonText; localWrite(LS_JOBS,state.jobs); render(); }
+        const mismatch = String(err?.postgresCode || err?.code) === '23514' && state.jobs.find(row=>row.id===id)?.order_number;
+        alert(mismatch
+          ? 'Production and Order are out of sync. Repair linkage/status before canceling. Use Sync / Repair, then review the authoritative records.'
+          : `Could not cancel job:\n\n${err.message || err}`);
+      }
+    }finally{
+      state.cancelInFlight.delete(id);
     }
   }
 
@@ -4155,6 +4191,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         localWrite(LS_JOBS,state.jobs);
         await refreshRawInventoryFromCloud();
         await refreshNonFilamentSuppliesFromCloud();
+        window.dispatchEvent(new CustomEvent('olipoly:authoritative-data-refreshed', {detail:{module:'production_control', refreshedAt:new Date().toISOString()}}));
         if(localMigrated.length) await migrateVisibleJobsToCloud(localMigrated);
         if(localMigrated.length || cloudMigrated.length) toast(`Loaded ${state.jobs.length} production/project jobs.`);
       }catch(err){
@@ -4252,6 +4289,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       close_note:j.close_note || null,
       estimated_finish_at:j.estimated_finish_at || null,
       failure_reason:j.failure_reason || null,
+      cancellation_reason:j.cancellation_reason || null,
+      canceled_at:j.canceled_at || null,
       exclude_inventory_reduction:!!j.exclude_inventory_reduction,
       inventory_deducted:!!j.inventory_deducted,
       inventory_deducted_at:j.inventory_deducted_at || null,
@@ -5275,7 +5314,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     } else if(j.production_status === 'ready_for_fulfillment'){
       actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
     }
-    if(!isClosed){
+    if(window.OliPolyProductionPersistence.canCancel(j)){
       if(!hasOrder && j.production_status === 'estimate') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
       actions += `<button class="mini-btn danger-btn" data-cancel-job="${j.id}" type="button">Cancel</button>`;
     }
@@ -5305,7 +5344,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         </div>
         ${img}
       </div>
-      ${j.linkage_incomplete ? '<div class="needs-action"><strong>Order created, Production linkage incomplete.</strong><span>Start Print is blocked until the authoritative Production link is repaired.</span></div>' : ''}
+      ${j.linkage_incomplete || (j.order_number && j.linked_order_status && j.linked_order_status !== j.production_status) ? '<div class="needs-action"><strong>Production and Order are out of sync.</strong><span>Cancel remains available from the Production lifecycle. If the authoritative command blocks linked cancellation, use Sync / Repair and review both records.</span></div>' : ''}
       ${needsActionHtml(j)}
       ${readyToCloseHtml(j)}
       <div class="job-stats">
