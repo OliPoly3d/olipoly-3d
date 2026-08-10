@@ -1138,7 +1138,7 @@ body{font-family:Inter,Arial,sans-serif}
           <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="status">Status</label><select id="status"><option value="ready_to_print">Ready to Print</option><option value="printing">Printing</option><option value="qc">QC / Finishing</option><option value="ready_for_fulfillment">Ready for Pickup / Shipment</option><option value="closed">Closed</option></select></div>
-          <div><label for="paymentStatus">Payment</label><select id="paymentStatus"><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
+          <div><label for="paymentStatus">Payment (command controlled)</label><select id="paymentStatus" disabled aria-readonly="true" title="Payment status is updated by an authoritative payment command."><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
           <div><label for="trackingNumber">Tracking #</label><input id="trackingNumber" /></div>
           <div class="full">
@@ -2240,6 +2240,7 @@ function publicTrackingPayload(payload) {
       if ($('workspaceOrderKind')) $('workspaceOrderKind').textContent = 'Active Order';
       if ($('closedOrderNotice')) $('closedOrderNotice').classList.add('hidden');
       document.querySelectorAll('#orderDetailCard .form-grid input, #orderDetailCard .form-grid select, #orderDetailCard .form-grid textarea').forEach(control => { control.disabled = false; });
+      if ($('paymentStatus')) $('paymentStatus').disabled = true;
       ['saveBtn','quickSaveBtn'].forEach(id => { if ($(id)) { $(id).disabled = false; $(id).title = ''; } });
       [
   'orderNumber',
@@ -2296,6 +2297,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       document.querySelectorAll('#orderDetailCard .form-grid input, #orderDetailCard .form-grid select, #orderDetailCard .form-grid textarea').forEach(control => {
         control.disabled = closed;
       });
+      if ($('paymentStatus')) $('paymentStatus').disabled = true;
       ['saveBtn','quickSaveBtn'].forEach(id => {
         const button = $(id);
         if (!button) return;
@@ -2614,6 +2616,16 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       return !!o && !orderClosureFlags(o).finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
     }
 
+    function financeIneligibilityReason(order){
+      if (!order) return 'Cannot push to Finance: save and refresh the Order first.';
+      if (!['paid','deposit_paid'].includes(order.payment_status)) return 'Cannot push to Finance: this Order is still marked Unpaid.';
+      if (orderClosureFlags(order).finance_not_required) return 'Cannot push to Finance: this Order is marked Finance Not Required.';
+      if (num(order.order_total) <= 0) return 'Cannot push to Finance: the authoritative Order total must be greater than zero.';
+      if (order.finance_pushed) return 'Order is already posted to Finance.';
+      if (num(order.sales_tax_amount) > 0 && !order.destination_county) return 'Cannot push to Finance: select the destination county for this taxable Order.';
+      return '';
+    }
+
     function readyFinanceOrders(){
       return orders.filter(isFinanceReadyOrder);
     }
@@ -2653,8 +2665,12 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       const detail = String(error?.message || error || '');
       if (/already been posted/i.test(detail)) return 'Order is already posted to Finance.';
       if (/FINANCE_TAX_COUNTY_REQUIRED/i.test(detail)) return 'Select the destination county before posting this taxable order to Finance.';
+      if (/FINANCE_PAYMENT_INCOMPLETE/i.test(detail)) return 'Cannot push to Finance: this Order is still marked Unpaid.';
+      if (/FINANCE_TOTAL_REQUIRED/i.test(detail)) return 'Cannot push to Finance: the authoritative Order total must be greater than zero.';
+      if (/FINANCE_TAX_METADATA_(?:UNRESOLVED|CONTRADICTORY)/i.test(detail)) return 'Cannot push to Finance: authoritative Order tax data is incomplete or contradictory.';
+      if (/FINANCE_INVOICE_TOTALS_UNRESOLVED/i.test(detail)) return 'Cannot push to Finance: authoritative invoice totals are incomplete.';
       if (/FINANCE_SHIPPING_UNRESOLVED/i.test(detail)) return 'Finance could not determine the customer shipping charge. Review the order’s authoritative totals before retrying.';
-      if (/null value|not-null constraint|undefined function|schema cache|configuration|FINANCE_INVOICE_TOTALS_UNRESOLVED/i.test(detail)) return 'Finance posting configuration is incomplete. The order was not posted.';
+      if (/null value|not-null constraint|undefined function|schema cache|configuration/i.test(detail)) return 'Finance posting configuration is incomplete. The order was not posted.';
       return `Could not post the order to Finance: ${detail}`;
     }
 
@@ -2728,8 +2744,9 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         setMsg($('formMessage'), 'Order is already posted to Finance.');
         return;
       }
-      if (!isFinanceReadyOrder(currentOrder)) {
-        setMsg($('formMessage'), `${currentOrder.order_number || 'Order'} is not ready for Finance Pro.`, true);
+      const ineligibilityReason = financeIneligibilityReason(currentOrder);
+      if (ineligibilityReason) {
+        setMsg($('formMessage'), ineligibilityReason, true);
         return;
       }
       const requestKey = currentOrder.id || currentOrder.order_number;
@@ -5286,12 +5303,39 @@ function generateTravelerPdf(){
       }
     }
 
-    function ordersAdminV2MarkPaid(){
-      if ($('paymentStatus')) $('paymentStatus').value = 'paid';
-      if ($('balanceAmount')) $('balanceAmount').value = '0.00';
-      if ($('paidDate') && !$('paidDate').value) $('paidDate').value = today();
-      ordersAdminV2RefreshWorkspace();
-      setMsg($('formMessage'), 'Marked this order paid in the form. Click Save to store it.');
+    const paymentRequestsInFlight = new Set();
+
+    async function ordersAdminV2MarkPaid(){
+      clearMsg($('formMessage'));
+      await getCurrentUser();
+      if (!currentUser?.id) return setMsg($('formMessage'), 'Log in before recording payment.', true);
+      const order = activeId ? orders.find(row => row.id === activeId) : null;
+      if (!order?.id || !order?.updated_at) return setMsg($('formMessage'), 'Save and refresh the Order before recording payment.', true);
+      if (order.payment_status === 'paid') return setMsg($('formMessage'), 'This Order is already marked Paid in Full.');
+      if (paymentRequestsInFlight.has(order.id)) return setMsg($('formMessage'), `Payment command already in progress for ${order.order_number}.`);
+
+      const request = window.OliPolyWorkflow.markOrderPaidRpcRequest(order, order.updated_at);
+      paymentRequestsInFlight.add(order.id);
+      if ($('quickPaidBtn')) $('quickPaidBtn').disabled = true;
+      try {
+        const result = await api(request.path, {method:'POST', headers:{Prefer:'return=representation'}, body:JSON.stringify(request.body)});
+        if (!result.ok) {
+          const detail = result.error || {};
+          console.error('Payment command RPC failed:', {requestUrl:request.path,method:'POST',payload:request.body,httpStatus:result.status || null,postgresCode:detail.code || null,message:detail.message || null,details:detail.details || null,hint:detail.hint || null});
+          const message = detail.code === '40001' ? 'This Order changed after it was loaded. Refresh before recording payment.' : (detail.message || 'The payment command failed.');
+          return setMsg($('formMessage'), `Could not mark this Order paid: ${message}`, true);
+        }
+        const authoritative = Array.isArray(result.data) ? result.data[0] : result.data;
+        if (!authoritative?.id || authoritative.payment_status !== 'paid') return setMsg($('formMessage'), 'The payment command did not return an authoritative paid Order. Refresh before retrying.', true);
+        orders = orders.map(row => row.id === authoritative.id ? {...row, ...authoritative} : row);
+        loadIntoForm(orders.find(row => row.id === authoritative.id));
+        renderList();
+        window.OliPolyWorkflow.clearCommandIdentity('order-payment', order.order_number, 'mark-paid', order.updated_at);
+        setMsg($('formMessage'), `${order.order_number} is authoritatively Paid in Full.`);
+      } finally {
+        paymentRequestsInFlight.delete(order.id);
+        if ($('quickPaidBtn')) $('quickPaidBtn').disabled = false;
+      }
     }
 
     function ordersAdminV2Wire(){
