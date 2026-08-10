@@ -138,6 +138,22 @@
     };
   }
 
+  function markOrderPaidRpcRequest(order, expectedUpdatedAt){
+    const orderId = order?.id;
+    const orderNumber = String(order?.order_number || '').trim();
+    if(!orderId) throw new Error('An Order UUID is required to record payment.');
+    if(!orderNumber) throw new Error('An Order number is required to record payment.');
+    if(!expectedUpdatedAt) throw new Error('Refresh before recording payment; expected_updated_at is required.');
+    return {
+      path:'/rest/v1/rpc/mark_order_paid',
+      body:{
+        p_order_id:String(orderId),
+        p_expected_updated_at:expectedUpdatedAt,
+        p_correlation_id:commandIdentity('order-payment', orderNumber, 'mark-paid', expectedUpdatedAt)
+      }
+    };
+  }
+
   function financeCorrectionRpcRequest(entry, command, amount, reason){
     const entryId = entry?.id || entry;
     if(!entryId) throw new Error('A Finance entry UUID is required for correction.');
@@ -207,6 +223,6 @@
     POST_ACCEPTANCE_STATUSES, PRODUCTION_PRE_ORDER_STATUSES, ORDER_STATUS_LABELS,
     LEGACY_ORDER_STATUS_MAP, normalizeOrderStatus, isPreAcceptanceStatus,
     isPostAcceptanceStatus, transitionDirection, backwardMoveWarning,
-    financeOrderPostingRpcRequest, financeCorrectionRpcRequest, productionWorkflowRpcRequest, inventoryReservationRpcRequest, inventoryReservationReleaseRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
+    financeOrderPostingRpcRequest, markOrderPaidRpcRequest, financeCorrectionRpcRequest, productionWorkflowRpcRequest, inventoryReservationRpcRequest, inventoryReservationReleaseRpcRequest, inventoryConsumptionRpcRequest, fulfillmentWorkflowRpcRequest, preAcceptanceProductionRpcRequest, clearCommandIdentity, orderStatusLabel
   });
 });
