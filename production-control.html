@@ -1730,6 +1730,24 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   </div>
 </div>
 
+<div class="modal hidden" id="qcUsageModal" aria-hidden="true">
+  <div class="modal-dialog">
+    <h2 id="qcUsageTitle">Record Material Usage</h2>
+    <p class="muted" id="qcUsageMessage">Record actual material usage before passing QC.</p>
+    <div class="next-box" id="qcUsageJobName"><strong>Job</strong><span>Confirm the physical Inventory roll and actual grams for this attempt.</span></div>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="full">
+        <div class="tiny-note"><strong>Operator confirmation required:</strong> estimates are pre-filled only as a convenience and are not actual consumption until you confirm.</div>
+        <div class="close-roll-grid" id="qcUsageAllocations"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="cancelQcUsageBtn" type="button">Cancel</button>
+      <button class="btn" id="confirmQcUsageBtn" type="button">Confirm &amp; Pass QC</button>
+    </div>
+  </div>
+</div>
+
 
     <section class="card" id="productionAnalyticsPanel">
       <div class="finance-board-head">
@@ -2961,6 +2979,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   async function setStatus(id,status,commandContext = {}){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
+    const inventoryBoundary = j.production_status === 'qc' && ['ready_for_fulfillment','ready_to_print'].includes(status);
     const inFlightKey = `${id}:${status}`;
     if(linkedWorkflowInFlight.has(inFlightKey)) return toast('Workflow command already in progress. Please wait for the authoritative response.');
     if(j.order_number){
@@ -2971,6 +2990,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       const recoveryStartedAt = performance.now();
       const action = ({printing:'start_print', ready_for_fulfillment:'pass_qc', ready_to_print:'needs_reprint'})[status] || status;
       try{
+        if(inventoryBoundary && !j.exclude_inventory_reduction && !attemptHasExplicitRollUsage(j)){
+          openQcUsage(j, status, commandContext);
+          throw Object.assign(new Error('Material usage confirmation required.'), {name:'ProductionUsagePromptOpened'});
+        }
+        if(inventoryBoundary && j.exclude_inventory_reduction) toast('Inventory is excluded for this job. No material will be consumed.');
         const now = new Date();
         const recovery = pendingLinkedWorkflowRecovery(j, status);
         const updated = recovery?.pending_job ? {...recovery.pending_job} : {...j, production_status:status, updated_at:now.toISOString()};
@@ -3015,8 +3039,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         clearLinkedWorkflowRecovery(id);
         await refreshAuthoritativeProductionState();
         render();
-        toast(`Moved to ${STATUS[status] || status}.`);
+        toast(status === 'ready_for_fulfillment' ? 'QC passed. Job is ready for pickup/shipment.' : `Moved to ${STATUS[status] || status}.`);
       }catch(err){
+        if(err?.name === 'ProductionUsagePromptOpened') return;
         if(err?.name === 'ProductionRecoveryReadError'){
           console.error('[OliPolyERP] Production recovery read failed', {
             stage:'linked_workflow_recovery', jobId:id, orderNumber:j.order_number, action,
@@ -3028,11 +3053,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
         }
         console.error('Production workflow command failed', {
           stage:'optimistic_concurrency_or_workflow_rejection', job_id:id, order_number:j.order_number, status,
+          attempt_id:currentProductionAttempt(j)?.id || null, inventory_mode:j.exclude_inventory_reduction ? 'excluded' : 'tracked',
+          required_usage_fields:['raw_material_roll_id','grams_used'], recorded_usage:currentProductionAttempt(j)?.roll_usages || [], lifecycle_stage:j.production_status,
           expected_production_updated_at:j.updated_at, expected_order_updated_at:null,
           postgres_code:err?.postgresCode || err?.code || null, conflict_details:err?.details || null, error:err
-        }); toast('Workflow command did not complete; pending recovery was saved. Refresh before issuing another action.'); alert(`Could not update status:
-
-${err.message || err}`); }
+        });
+        if(inventoryBoundary) toast('Inventory could not be updated. QC status was not changed.');
+        else toast('Workflow command did not complete; pending recovery was saved. Refresh before issuing another action.');
+      }
       finally{ linkedWorkflowInFlight.delete(inFlightKey); }
       return;
     }
@@ -3089,7 +3117,7 @@ ${err.message || err}`); }
       state.jobs = state.jobs.map(x=>x.id===id?updated:x);
       localWrite(LS_JOBS,state.jobs);
       render();
-      toast(`Moved to ${STATUS[status] || status}.`);
+        toast(status === 'ready_for_fulfillment' ? 'QC passed. Job is ready for pickup/shipment.' : `Moved to ${STATUS[status] || status}.`);
     }catch(err){ console.error('Production status update failed', {job_id:id, status, error:err}); alert(`Could not update status:\n\n${err.message || err}`); }
   }
 
@@ -3567,6 +3595,94 @@ ${err.message || err}`); }
   function currentProductionAttempt(job){
     const attempts = Array.isArray(job?.production_attempts) ? job.production_attempts : [];
     return attempts.find(attempt=>attempt.id === job.current_attempt_id) || null;
+  }
+
+  let pendingQcUsage = null;
+  function attemptHasExplicitRollUsage(job){
+    const attempt = currentProductionAttempt(job);
+    const usages = Array.isArray(attempt?.roll_usages) ? attempt.roll_usages : [];
+    return !!attempt && usages.length > 0 && usages.every(row=>row.raw_material_roll_id && num(row.grams_used) > 0);
+  }
+  function closeQcUsage(){
+    pendingQcUsage = null;
+    $('qcUsageModal')?.classList.add('hidden');
+    $('qcUsageModal')?.setAttribute('aria-hidden','true');
+  }
+  function qcUsageRows(){
+    return [...document.querySelectorAll('[data-qc-usage-row]')].map(row=>{
+      const i = row.dataset.qcUsageRow;
+      const good = num($(`qcUsageGoodGrams_${i}`)?.value);
+      const scrap = num($(`qcUsageScrapGrams_${i}`)?.value);
+      return {
+        label:$(`qcUsageLabel_${i}`)?.value || '',
+        raw_material_roll_id:$(`qcUsageRollId_${i}`)?.value || null,
+        good_grams:good,
+        scrap_grams:scrap,
+        grams_used:good + scrap
+      };
+    });
+  }
+  function openQcUsage(job, status, commandContext={}){
+    const attempt = currentProductionAttempt(job);
+    if(!attempt){
+      toast('Complete Print and record actuals before completing QC.');
+      return false;
+    }
+    pendingQcUsage = {jobId:job.id, status, commandContext};
+    const isReprint = status === 'ready_to_print';
+    $('qcUsageTitle').textContent = isReprint ? 'Record Failed Attempt Usage' : 'Record Material Usage';
+    $('qcUsageMessage').textContent = isReprint
+      ? 'Record actual material usage for this failed attempt before starting the reprint.'
+      : 'Record actual material usage before passing QC.';
+    $('confirmQcUsageBtn').textContent = isReprint ? 'Confirm & Start Reprint' : 'Confirm & Pass QC';
+    $('qcUsageJobName').innerHTML = `<strong>${esc(job.job_title || 'Production job')}</strong><span>${esc(jobRef(job))} · Attempt ${esc(attempt.id)}</span>`;
+    const recipe = jobRecipeRows(job);
+    const existing = Array.isArray(attempt.roll_usages) ? attempt.roll_usages : [];
+    $('qcUsageAllocations').innerHTML = recipe.map((row,i)=>{
+      const prior = existing[i] || {};
+      const reserved = (job.material_reservations || []).filter(r=>num(r.recipe_index) === i).reduce((sum,r)=>sum+num(r.grams_reserved),0);
+      const estimate = num(row.grams_each) * Math.max(1, num(job.actual_quantity || job.quantity) || 1);
+      const good = prior.good_grams ?? (recipe.length === 1 && job.actual_grams_used != null ? job.actual_grams_used : reserved || estimate);
+      const scrap = prior.scrap_grams ?? (recipe.length === 1 ? job.scrap_grams : 0);
+      const rolls = matchingRollsForRecipeRow(row);
+      const selectedRoll = prior.raw_material_roll_id || (job.material_reservations || []).find(r=>num(r.recipe_index) === i && r.raw_material_roll_id)?.raw_material_roll_id || '';
+      const options = rollOptionHtml(rolls).replace(`value="${esc(selectedRoll)}"`, `value="${esc(selectedRoll)}" selected`);
+      const label = [row.material,row.filament,row.color].filter(Boolean).join(' ') || `Filament ${i+1}`;
+      return `<div class="close-roll-row" data-qc-usage-row="${i}">
+        <label>Material / color<input id="qcUsageLabel_${i}" value="${esc(label)}" readonly></label>
+        <label>Inventory roll/spool used<select id="qcUsageRollId_${i}">${options}</select></label>
+        <label>Actual grams used<input id="qcUsageGoodGrams_${i}" type="number" min="0" step="0.1" value="${esc(good ?? '')}" required></label>
+        <label>Scrap grams (optional)<input id="qcUsageScrapGrams_${i}" type="number" min="0" step="0.1" value="${esc(scrap || '')}"></label>
+      </div>`;
+    }).join('');
+    $('qcUsageModal').classList.remove('hidden');
+    $('qcUsageModal').setAttribute('aria-hidden','false');
+    toast(isReprint ? 'Record actual material usage before starting the reprint.' : 'Record actual material usage before passing QC.');
+    return true;
+  }
+  async function confirmQcUsage(){
+    if(!pendingQcUsage) return;
+    const pending = pendingQcUsage;
+    const job = state.jobs.find(row=>row.id === pending.jobId);
+    const attempt = currentProductionAttempt(job);
+    const usages = qcUsageRows();
+    if(!job || !attempt) return closeQcUsage();
+    if(!usages.length || usages.some(row=>!row.raw_material_roll_id || row.grams_used <= 0)){
+      return toast('Select an Inventory roll/spool and confirm actual grams greater than zero for every material.');
+    }
+    const rollIds = usages.map(row=>row.raw_material_roll_id);
+    if(new Set(rollIds).size !== rollIds.length) return toast('Combine usage for the same roll into one material line.');
+    const availableIds = new Set(rawInventoryRows().map(row=>row.id));
+    if(usages.some(row=>!availableIds.has(row.raw_material_roll_id))) return toast('The selected Inventory roll is no longer available. Refresh and select another roll.');
+    const goodTotal = usages.reduce((sum,row)=>sum+row.good_grams,0);
+    const scrapTotal = usages.reduce((sum,row)=>sum+row.scrap_grams,0);
+    const capturedAttempt = {...attempt, good_grams:goodTotal, scrap_grams:scrapTotal, roll_usages:usages, usage_confirmed_at:new Date().toISOString()};
+    job.actual_grams_used = goodTotal;
+    job.scrap_grams = scrapTotal;
+    job.roll_usages = usages;
+    job.production_attempts = (job.production_attempts || []).map(row=>row.id === attempt.id ? capturedAttempt : row);
+    closeQcUsage();
+    await setStatus(job.id, pending.status, pending.commandContext);
   }
 
   async function syncRawInventoryAfterConsumption(rollIds=[]){
@@ -5033,8 +5149,15 @@ ${err.message || err}`); }
   async function toggleInventoryExclusion(id){
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
+    const excluding = !j.exclude_inventory_reduction;
+    if(excluding && !confirm('Exclude Inventory for this job? No material will be consumed, and any active reservation will be released.')) return;
     const updated = {...j, exclude_inventory_reduction:!j.exclude_inventory_reduction, updated_at:new Date().toISOString()};
     try{
+      if(excluding){
+        if(j.order_number) await releaseLinkedProductionMaterial(j, 'inventory_excluded');
+        else await releaseReservationForJob(j);
+        updated.material_reservations = [];
+      }
       // Important: update only the inventory flag so this button does not fail if older
       // production_jobs schemas are missing optional columns used by the full job editor.
       if(state.user?.id && !String(id).startsWith('local-')){
@@ -5054,12 +5177,8 @@ ${err.message || err}`); }
       render();
       toast(updated.exclude_inventory_reduction ? 'Job excluded from inventory planning.' : 'Job included in inventory planning.');
     }catch(err){
-      // Still update browser fallback so the card stops reserving filament locally.
-      console.warn(err);
-      state.jobs = state.jobs.map(x=>x.id===id?updated:x);
-      localWrite(LS_JOBS,state.jobs);
-      render();
-      toast('Inventory flag updated locally. Run the latest SQL if cloud sync still complains.');
+      console.error('[OliPolyERP] Inventory exclusion failed', {job_id:id, order_number:j.order_number || null, inventory_mode:excluding ? 'exclude_requested' : 'include_requested', lifecycle_stage:j.production_status, error_code:err?.postgresCode || err?.code || null, message:err?.message || String(err)});
+      toast('Inventory exclusion was not changed. The existing reservation and audit state were preserved.');
     }
   }
 
@@ -5776,6 +5895,8 @@ ${err.message || err}`); }
   $('logoutBtn').addEventListener('click', signOut);
   $('cancelCloseBtn').addEventListener('click', closeClose);
   $('confirmCloseBtn').addEventListener('click', confirmClose);
+  $('cancelQcUsageBtn')?.addEventListener('click', closeQcUsage);
+  $('confirmQcUsageBtn')?.addEventListener('click', confirmQcUsage);
   $('closeQty').addEventListener('input', () => {
     const j = state.jobs.find(x=>x.id===state.closingId);
     if(j) populateCloseRollAllocations(j);
