@@ -19,7 +19,7 @@ assert.match(admin, /paymentRequestsInFlight\.has\(order\.id\)/, 'only one payme
 assert.match(admin, /const authoritative = Array\.isArray\(result\.data\)[\s\S]*authoritative\.payment_status !== 'paid'[\s\S]*orders = orders\.map[\s\S]*loadIntoForm/, 'detail and list state update only from the authoritative response');
 assert.match(admin, /Payment \(command controlled\)[\s\S]*select id="paymentStatus" disabled aria-readonly="true"/, 'payment dropdown cannot fake a protected payment edit');
 assert.doesNotMatch(admin.match(/const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS[\s\S]*?\];/)[0], /payment_status|balance_amount|paid_date/, 'normal Save excludes canonical payment fields');
-assert.match(admin, /Cannot push to Finance: this Order is still marked Unpaid\./, 'unpaid Finance preflight is explicit');
+assert.match(admin, /Mark this Order paid before pushing it to Finance\./, 'unpaid Finance preflight is explicit and actionable');
 assert.match(admin, /financePostRequestsInFlight\.has\(requestKey\)/, 'Finance duplicate dispatch remains guarded');
 
 assert.match(migration, /auth\.uid\(\)[\s\S]*Authenticated order owner is required/, 'payment RPC requires authentication');
