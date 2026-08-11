@@ -72,3 +72,31 @@ test('Orders lifecycle presentation reads the hydrated authoritative Order', () 
   assert.match(html, /data-step="closed"/);
   assert.match(html, /data-step="canceled"/);
 });
+
+test('shared light-theme text tokens meet normal-text contrast expectations', () => {
+  const css = read('css/erp-ui.css');
+  const token = name => css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1];
+  const rgb = hex => [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255);
+  const luminance = hex => rgb(hex)
+    .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+  const contrast = (foreground, background) => {
+    const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+    return (values[0] + 0.05) / (values[1] + 0.05);
+  };
+
+  for (const name of ['erp-text', 'erp-text-secondary', 'erp-muted', 'erp-meta', 'erp-link',
+    'erp-placeholder', 'erp-disabled-text']) {
+    assert.ok(contrast(token(name), token('erp-surface')) >= 4.5, `${name} on ERP surface`);
+  }
+  assert.ok(contrast(token('erp-inverse'), token('erp-primary')) >= 4.5, 'inverse primary-button label');
+  assert.ok(contrast(token('erp-inverse'), '#344259') >= 4.5, 'inverse Hub module-tile label');
+});
+
+test('shared components explicitly protect inverse labels and secondary copy', () => {
+  const css = read('css/erp-ui.css');
+  assert.match(css, /\.mini-links a[\s\S]*color:var\(--erp-inverse\)\s*!important/);
+  assert.match(css, /footer[\s\S]*color:var\(--erp-muted\)\s*!important/);
+  assert.match(css, /:focus-visible\s*\{\s*outline:\s*3px solid #176b8c/);
+  assert.match(css, /button:disabled[\s\S]*--erp-disabled-text/);
+});

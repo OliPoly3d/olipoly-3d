@@ -1,6 +1,24 @@
 /* OliPoly ERP shared presentation layer. Business pages keep their existing DOM hooks. */
 :root {
   --erp-bg: #f6f4ef;
+  --erp-surface: #ffffff;
+  --erp-surface-raised: #fcfbf8;
+  --erp-border: #d9d6cf;
+  --erp-text: #25282b;
+  --erp-text-secondary: #454b50;
+  --erp-muted: #5b6268;
+  --erp-meta: #545b61;
+  --erp-link: #245b73;
+  --erp-link-hover: #173f51;
+  --erp-inverse: #ffffff;
+  --erp-placeholder: #626a70;
+  --erp-disabled-text: #555c62;
+  --erp-disabled-surface: #e6e3dd;
+  --erp-primary: #2e5c70;
+  --erp-success: #276344;
+  --erp-warning: #765219;
+  --erp-danger: #913b3b;
+  --erp-info: #315f86;
   --erp-surface: #fff;
   --erp-surface-raised: #fcfbf8;
   --erp-border: #d9d6cf;
@@ -23,6 +41,29 @@
 
 html { color-scheme: light; }
 body.erp-ui {
+  /* Bridge the earlier dark ERP token set for pages that consume those names. */
+  --erp-panel: var(--erp-surface);
+  --erp-panel-raised: var(--erp-surface-raised);
+  --erp-input: #fff;
+  --erp-input-disabled: var(--erp-disabled-surface);
+  --erp-border-strong: #9b9891;
+  --erp-text-muted: var(--erp-muted);
+  --erp-heading: var(--erp-text);
+  --erp-accent: var(--erp-primary);
+  --erp-accent-secondary: var(--erp-info);
+  --erp-warning-bg: #f5ecd9;
+  --erp-warning-text: var(--erp-warning);
+  --erp-warning-border: #c8aa71;
+  --erp-error-bg: #f5e4e4;
+  --erp-error-text: var(--erp-danger);
+  --erp-error-border: #c89494;
+  --erp-success-bg: #e4f0e8;
+  --erp-success-text: var(--erp-success);
+  --erp-success-border: #91b5a0;
+  --erp-focus: #176b8c;
+  --erp-focus-ring: 0 0 0 3px rgba(23,107,140,.24);
+  --erp-hover: #f0eee9;
+  --erp-disabled-opacity: 1;
   --op-canvas: var(--erp-bg);
   --op-surface: var(--erp-surface);
   --op-surface-raised: var(--erp-surface-raised);
@@ -53,6 +94,7 @@ body.erp-ui {
 }
 body.erp-ui::before { display: none !important; }
 body.erp-ui * { scrollbar-color: #b9b6af transparent; }
+body.erp-ui :focus-visible { outline: 3px solid #176b8c !important; outline-offset: 3px; }
 body.erp-ui :focus-visible { outline: 3px solid rgba(52,95,115,.35) !important; outline-offset: 2px; }
 
 body.erp-ui .erp-app-bar {
@@ -64,6 +106,7 @@ body.erp-ui .erp-app-bar {
   border-bottom: 1px solid var(--erp-border); box-shadow: 0 2px 8px rgba(35,39,42,.05);
 }
 body.erp-ui .erp-app-identity { display:flex; align-items:center; gap:12px; min-width:0; }
+body.erp-ui .erp-app-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:8px; color:var(--erp-inverse); background:var(--erp-primary); font-weight:800; }
 body.erp-ui .erp-app-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:8px; color:#fff; background:var(--erp-primary); font-weight:800; }
 .erp-app-identity strong,.erp-app-identity span { display:block; }
 .erp-app-identity strong { font-size:.92rem; }
@@ -78,6 +121,7 @@ body.erp-ui .erp-app-mark { display:grid; place-items:center; width:36px; height
 body.erp-ui .erp-nav { position:sticky; top:62px; z-index:999; display:flex; gap:3px; overflow-x:auto; padding:7px max(16px,calc((100vw - 1440px)/2)); background:#eeece6; border-bottom:1px solid var(--erp-border); }
 body.erp-ui .erp-nav a { flex:0 0 auto; padding:7px 10px; border:0; border-radius:7px; color:var(--erp-text-secondary); background:transparent; font-size:.79rem; font-weight:650; text-decoration:none; white-space:nowrap; }
 body.erp-ui .erp-nav a:hover { background:#fff; color:var(--erp-text); }
+body.erp-ui .erp-nav a[aria-current="page"] { color:var(--erp-inverse) !important; background:var(--erp-primary); }
 body.erp-ui .erp-nav a[aria-current="page"] { color:#fff; background:var(--erp-primary); }
 
 body.erp-ui .wrap, body.erp-ui main { max-width:1440px; }
@@ -93,6 +137,130 @@ body.erp-ui .erp-reliability-panel, body.erp-ui .erp-reliability-grid > div, bod
   color:var(--erp-text) !important; background:var(--erp-surface) !important;
   border-color:var(--erp-border) !important; border-radius:var(--erp-radius) !important;
   box-shadow:0 1px 3px rgba(35,39,42,.06) !important; backdrop-filter:none !important;
+}
+body.op-engine.erp-ui :is(.attention-item,.result,.pulse-tile,.activity-item,.activity-empty,
+  .capacity-card,.capacity-machine,.capacity-detail,.machine-card,.machine-slot,.printer-load-card,
+  .detail-card,.pm-card,.analytics-card,.variance-card,.finance-summary-card,.day-card,
+  .inventory-card,.snapshot-card,.cloud-card,.forecast-card,.supply-card,.material-row,
+  .material-balance-card,.material-summary-card,.material-command-panel,.history-wrap,
+  .form-section,.production-status-panel,.production-status-grid > div) {
+  color:var(--erp-text) !important; background:var(--erp-surface) !important;
+  border-color:var(--erp-border) !important; box-shadow:none !important;
+}
+body.op-engine.erp-ui details.ops-collapse > summary,
+body.op-engine.erp-ui :is(.board-header,.queue-header,.board-title,.finance-board-head) {
+  color:var(--erp-text) !important; background:#eceae5 !important; border-color:var(--erp-border) !important;
+}
+body.op-engine.erp-ui details.ops-collapse > summary :is(strong,span),
+body.op-engine.erp-ui :is(.board-header,.queue-header,.board-title,.finance-board-head) :is(h2,h3,strong,span) {
+  color:var(--erp-text) !important;
+}
+body.op-engine.erp-ui :is(.attention-item,.result,.pulse-tile,.activity-item) strong { color:var(--erp-text) !important; }
+body.op-engine.erp-ui :is(.attention-item,.result,.pulse-tile,.activity-item) small { color:var(--erp-muted) !important; }
+body.op-engine.erp-ui :is(.workspace-bar,.oa-daily-command) {
+  color:var(--erp-text) !important; background:var(--erp-surface) !important;
+  border-color:var(--erp-border) !important; box-shadow:0 1px 3px rgba(35,39,42,.06) !important;
+}
+body.op-engine.erp-ui :is(.workspace-bar,.oa-daily-command) :is(h2,h3,strong) { color:var(--erp-text) !important; }
+body.op-engine.erp-ui :is(.workspace-bar,.oa-daily-command) :is(p,small,.muted) { color:var(--erp-muted) !important; }
+body.op-engine.erp-ui .oa-daily-kpi,
+body.op-engine.erp-ui .oa-daily-bucket {
+  color:var(--erp-text) !important; background:#f8f7f4 !important; border-color:var(--erp-border) !important;
+}
+body.op-engine.erp-ui :is(.kicker,.decision-pill,.machine-state,.capacity-status,
+  .legend-chip,.reservation-chip,.scrap-chip,.start-chip,.integration-chip,.quote-link-chip) {
+  color:var(--erp-text-secondary) !important; background:#ece9f3 !important; border-color:#aaa3c0 !important;
+}
+body.op-engine.erp-ui #machineBoard .machine-slot,
+body.op-engine.erp-ui #utilizationBoard .printer-load-card > div,
+body.op-engine.erp-ui #utilizationBoard .printer-load-copy,
+body.op-engine.erp-ui #capacityHealth,
+body.op-engine.erp-ui #todaySection .ops-panel,
+body.op-engine.erp-ui .lanes .job-card :is(.stat,.material-row,.finance-mini span,.supply-usage-mini span),
+body.op-engine.erp-ui :is(.snapshot-pill-card,.snapshot-mini,.finance-health) {
+  color:var(--erp-text) !important; background:#f8f7f4 !important; border-color:var(--erp-border) !important;
+}
+body.op-engine.erp-ui #machineBoard .machine-slot :is(strong,span,small),
+body.op-engine.erp-ui #utilizationBoard :is(strong,span,small),
+body.op-engine.erp-ui .lanes .job-card :is(h4,strong,.job-meta,.tiny-note,.stat span,.stat strong) {
+  color:var(--erp-text-secondary) !important;
+}
+body.op-engine.erp-ui .lanes .job-card .job-actions :is(.mini-btn,.ghost,button) {
+  color:var(--erp-text) !important; background:#fff !important; border-color:#aaa69f !important;
+}
+body.op-engine.erp-ui #chmDomCard {
+  color:var(--erp-text) !important; background:var(--erp-surface) !important;
+  border-color:var(--erp-border) !important; box-shadow:none !important;
+}
+body.op-engine.erp-ui #chmDomCard :is(h3,strong,p,span,small) { color:var(--erp-text-secondary) !important; }
+body.op-engine.erp-ui :is(.chm-dom-kicker,.catalog-note,#catalogMessage,#productionStatusBadge,
+  .production-status-actions > span,.oa-daily-bucket-head > span) {
+  color:var(--erp-success) !important; background:var(--erp-success-bg) !important; border-color:var(--erp-success-border) !important;
+}
+body.op-engine.erp-ui :is(#historySummary,.lite-format-chip,.send-package-pill,#quoteCustomer360Btn,.watch) {
+  color:var(--erp-text-secondary) !important; background:#ece9f3 !important; border-color:#aaa3c0 !important;
+}
+body.op-engine.erp-ui .not-order {
+  color:var(--erp-danger) !important; background:var(--erp-danger-soft) !important;
+  border:1px solid #c89494; padding:8px 10px; border-radius:8px;
+}
+body.erp-ui .erp-reliability-panel { background:#eef2f2 !important; }
+body.erp-ui .erp-reliability-pill { color:var(--erp-inverse); background:#32444b; border-color:#718890; }
+body.erp-ui .hero h2, body.erp-ui h1, body.erp-ui h2, body.erp-ui h3, body.erp-ui h4 { color:var(--erp-text) !important; font-family:inherit !important; letter-spacing:-.015em; }
+body.erp-ui .summary strong, body.erp-ui .summary span, body.erp-ui .metric strong, body.erp-ui .metric span { color:var(--erp-text) !important; }
+body.erp-ui .muted, body.erp-ui .sub, body.erp-ui small, body.erp-ui .hint, body.erp-ui .meta,
+body.erp-ui .helper, body.erp-ui .help-text, body.erp-ui .description, body.erp-ui .caption,
+body.erp-ui .card-sub, body.erp-ui .tiny-note, body.erp-ui .entry-hint, body.erp-ui .empty,
+body.erp-ui footer, body.erp-ui .footer, body.erp-ui .section p, body.erp-ui .section-head p {
+  color:var(--erp-muted) !important;
+}
+body.erp-ui a:not([class]) { color:var(--erp-link) !important; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:3px; }
+body.erp-ui a:not([class]):hover { color:var(--erp-link-hover) !important; text-decoration-thickness:2px; }
+body.op-engine.erp-ui input, body.op-engine.erp-ui select, body.op-engine.erp-ui textarea { color:var(--erp-text) !important; background:#fff !important; border:1px solid #aaa69f !important; border-radius:8px !important; box-shadow:none !important; }
+body.erp-ui input::placeholder, body.erp-ui textarea::placeholder { color:var(--erp-placeholder) !important; opacity:1; }
+body.erp-ui label { color:var(--erp-text-secondary) !important; }
+body.erp-ui button, body.erp-ui .btn, body.erp-ui .primary, body.erp-ui .ghost, body.erp-ui .btn-ghost, body.erp-ui .mini-btn { border-radius:8px !important; box-shadow:none !important; transform:none !important; }
+body.erp-ui .btn, body.erp-ui .primary { color:var(--erp-inverse) !important; background:var(--erp-primary) !important; }
+body.erp-ui .ghost, body.erp-ui .btn-ghost, body.erp-ui .mini-btn { color:var(--erp-text) !important; background:#fff !important; border:1px solid var(--erp-border) !important; }
+body.erp-ui .btn-danger, body.erp-ui .danger-btn { color:var(--erp-inverse) !important; background:var(--erp-danger) !important; }
+body.erp-ui button:disabled, body.erp-ui input:disabled, body.erp-ui select:disabled,
+body.erp-ui textarea:disabled, body.erp-ui [aria-disabled="true"] {
+  color:var(--erp-disabled-text) !important; background:var(--erp-disabled-surface) !important;
+  border-color:#aaa69f !important; opacity:1 !important; cursor:not-allowed !important;
+}
+body.erp-ui table { background:#fff; }
+body.erp-ui th { color:var(--erp-text-secondary) !important; background:#efede8 !important; }
+body.op-engine.erp-ui th { color:var(--erp-text-secondary) !important; background:#e9e7e1 !important; }
+body.op-engine.erp-ui th, body.op-engine.erp-ui td { color:var(--erp-text-secondary) !important; border-color:#d4d0c8 !important; }
+body.erp-ui tbody tr:hover { background:#f7f6f2 !important; }
+body.erp-ui .pill, body.erp-ui .chip, body.erp-ui .tag, body.erp-ui .status-pill, body.erp-ui [class*="badge"] { border-radius:999px !important; box-shadow:none !important; }
+body.erp-ui .pill, body.erp-ui .chip, body.erp-ui .tag, body.erp-ui .status-pill, body.erp-ui .payment-pill,
+body.erp-ui .pulse-chip, body.erp-ui .workspace-pill {
+  color:var(--erp-text-secondary) !important; background:#ebe9e3 !important; border-color:#b9b5ad !important;
+}
+body.erp-ui :is(.chip.good,.status-success,.status-complete,.status-completed,.p-paid,.p-deposit_paid,.p-finance-pushed,.p-financial-closed,.s-completed,.pm-good) {
+  color:var(--erp-success) !important; background:#e4f0e8 !important; border-color:#91b5a0 !important;
+}
+body.erp-ui :is(.chip.warn,.status-warning,.p-unpaid,.p-deposit_due,.p-invoice-ready,.p-invoice-overdue,.p-finance-not-pushed,.pm-warn) {
+  color:var(--erp-warning) !important; background:#f5ecd9 !important; border-color:#c8aa71 !important;
+}
+body.erp-ui :is(.chip.danger,.status-error,.status-danger,.s-canceled,.s-issue_review,.p-refunded,.pm-danger) {
+  color:var(--erp-danger) !important; background:#f5e4e4 !important; border-color:#c89494 !important;
+}
+/* Hub backend links intentionally retain their approved dark tile treatment. */
+body.erp-ui .mini-links a {
+  color:var(--erp-inverse) !important; background:#344259 !important; border-color:#52627a !important;
+}
+body.erp-ui .mini-links a span, body.erp-ui .mini-links a strong, body.erp-ui .mini-links a small {
+  color:var(--erp-inverse) !important;
+}
+body.erp-ui .mini-links a:hover { color:var(--erp-inverse) !important; background:#29364b !important; border-color:#71819a !important; }
+body.erp-ui .activity-filter, body.erp-ui .activity-actions button, body.erp-ui .oa-view-tab,
+body.erp-ui .tab, body.erp-ui .tabs button {
+  color:var(--erp-text-secondary) !important; background:#fff !important; border-color:#aaa69f !important;
+}
+body.erp-ui :is(.activity-filter.active,.oa-view-tab.active,.tab.active,.tabs button.active) {
+  color:var(--erp-inverse) !important; background:var(--erp-primary) !important; border-color:var(--erp-primary) !important;
 }
 body.erp-ui .erp-reliability-panel { background:#eef2f2 !important; }
 body.erp-ui .erp-reliability-pill { color:#fff; background:#32444b; border-color:#536b75; }
