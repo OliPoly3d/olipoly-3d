@@ -48,7 +48,8 @@ assert.match(originalPosting, /return jsonb_build_object\('idempotent', true/i);
 assert.match(originalPosting, /insert into public\.financial_entries[\s\S]*update public\.orders[\s\S]*finance_pushed = true/i, 'Order status follows the Finance insert in one RPC transaction');
 assert.match(invoiceAuthority, /invoice_totals[\s\S]*subtotal[\s\S]*tax[\s\S]*final_total/i, 'existing invoice totals contract remains intact');
 
-assert.match(orders, /result\?\.idempotent \? 'Order is already posted to Finance\.' : 'Order posted to Finance\.'/);
+assert.match(orders, /result\?\.idempotent \? 'Finance entry already exists and the Order is closed\.' : 'Finance entry created and Order closed\.'/);
+assert.match(orders, /await postOrderToFinanceCommand\(currentOrder\)[\s\S]*await fetchOrders\(\)/, 'successful posting consumes the command result and refreshes the authoritative Order');
 assert.match(orders, /FINANCE_SHIPPING_UNRESOLVED[\s\S]*Finance could not determine the customer shipping charge/i);
 assert.match(orders, /Finance posting configuration is incomplete\. The order was not posted\./);
 for (const field of ['orderNumber', 'correlationId', 'rpcName', 'httpStatus', 'postgresCode', 'postingStage', 'shippingValue', 'shippingSource']) {

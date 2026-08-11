@@ -12,7 +12,8 @@ for(const field of ['stage','jobId','correlationId','httpStatus','postgresCode',
 assert.doesNotMatch(diagnostic, /Authorization|access_token|refresh_token|cookie|headers|payload|body/, 'structured diagnostic excludes credentials and request payload');
 for(const code of ['QUOTE_HANDOFF_CLIENT_TIMEOUT','QUOTE_HANDOFF_EXPLICIT_ABORT','NETWORK_ERROR']) assert.ok(helper.includes(code), `${code} is an explicit transport outcome`);
 assert.match(html, /onResponseReceived:\(\) => \{ if\(timeout\)\{ clearTimeout\(timeout\); timeout = null; \} \}/, 'HTTP response arrival disarms timeout before body parsing');
-assert.match(html, /error\.postgresCode = result\.data\?\.code[\s\S]*error\.details = result\.data\?\.details[\s\S]*error\.hint = result\.data\?\.hint/, 'PostgREST diagnostic fields remain structured');
+assert.match(html, /error\.details = result\.data\?\.details \|\| null[\s\S]*error\.postgresCode = appCode \|\| result\.data\?\.code \|\| null[\s\S]*error\.hint = result\.data\?\.hint \|\| null/, 'the shared API boundary preserves structured PostgREST diagnostics');
+assert.match(diagnostic, /postgresCode:classified\.postgresCode[\s\S]*details:classified\.details[\s\S]*hint:classified\.hint/, 'handoff logging consumes the structured fields without flattening them');
 assert.match(doc, /one source: the Quote handoff controller timer/, 'abort-source conclusion is documented');
 assert.match(doc, /live issue is not reported resolved/, 'live acceptance remains explicit');
 
