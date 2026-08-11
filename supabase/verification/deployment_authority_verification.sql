@@ -192,6 +192,12 @@ from information_schema.role_table_grants where table_schema in ('public','stora
 and grantee in ('anon','authenticated','service_role','PUBLIC') order by table_schema,table_name,grantee,privilege_type;
 
 select '20_IMMUTABILITY' as section,c.relname table_name,c.relrowsecurity rls_enabled,
+ coalesce(has_table_privilege('anon',c.oid,'UPDATE'),false) anon_can_update,
+ coalesce(has_table_privilege('anon',c.oid,'DELETE'),false) anon_can_delete,
+ coalesce(has_table_privilege('authenticated',c.oid,'UPDATE'),false) authenticated_can_update,
+ coalesce(has_table_privilege('authenticated',c.oid,'DELETE'),false) authenticated_can_delete,
+ coalesce(has_table_privilege('service_role',c.oid,'UPDATE'),false) service_role_can_update,
+ coalesce(has_table_privilege('service_role',c.oid,'DELETE'),false) service_role_can_delete,
  coalesce(jsonb_agg(distinct jsonb_build_object('trigger',t.tgname,'definition',pg_get_triggerdef(t.oid,true)))
  filter(where t.oid is not null),'[]'::jsonb) mutation_triggers,
  coalesce(jsonb_agg(distinct jsonb_build_object('policy',pol.polname,'command',pol.polcmd,
@@ -200,4 +206,22 @@ select '20_IMMUTABILITY' as section,c.relname table_name,c.relrowsecurity rls_en
 from pg_class c join pg_namespace n on n.oid=c.relnamespace
 left join pg_trigger t on t.tgrelid=c.oid and not t.tgisinternal left join pg_policy pol on pol.polrelid=c.oid
 where n.nspname='public' and c.relname in ('quote_accepted_commercial_snapshots','financial_entries','finance_correction_receipts')
+group by c.oid,c.relname,c.relrowsecurity order by c.relname;
+
+select '20_IMMUTABILITY_GUARD_FUNCTIONS' as section,c.relname table_name,t.tgname trigger_name,
+ pn.nspname||'.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' guard_function,
+ p.prosecdef security_definer,p.proconfig settings,pg_get_userbyid(p.proowner) owner,
+ md5(regexp_replace(pg_get_functiondef(p.oid),'\\s+',' ','g')) definition_hash,
+ pg_get_functiondef(p.oid) definition
+from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
+join pg_proc p on p.oid=t.tgfoid join pg_namespace pn on pn.oid=p.pronamespace
+where not t.tgisinternal and n.nspname='public'
+and c.relname in ('quote_accepted_commercial_snapshots','financial_entries','finance_correction_receipts')
+order by c.relname,t.tgname;
+
+select '20_IMMUTABILITY_COLUMN_GRANTS' as section,table_name,column_name,grantee,privilege_type,is_grantable
+from information_schema.column_privileges where table_schema='public'
+and table_name in ('quote_accepted_commercial_snapshots','financial_entries','finance_correction_receipts')
+and grantee in ('anon','authenticated','service_role','PUBLIC')
+order by table_name,column_name,grantee,privilege_type;
 group by c.relname,c.relrowsecurity order by c.relname;

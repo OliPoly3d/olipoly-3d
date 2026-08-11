@@ -9,6 +9,7 @@
 
 > **REPOSITORY INTENT VERIFIED — YELLOW.** The repository's migration chain, tests, architecture documents, browser mutation sites, repair lineage, and diagnostic scripts were inspected. The chain contains intentional supersession and temporary instrumentation, so “latest migration present” is not sufficient evidence.
 >
+> **LIVE DEPLOYMENT VERIFIED — NO.** No Supabase URL, database URL, or PostgreSQL credentials were available in this environment. The operator later supplied the `20_IMMUTABILITY` result set, which is assessed below as partial live evidence; Codex did not run a live query and the database environment/run context was not supplied.
 > **LIVE DEPLOYMENT VERIFIED — NO.** No Supabase URL, database URL, or PostgreSQL credentials were available in this environment. No live query was run.
 >
 > **UNVERIFIED — OPERATOR QUERY REQUIRED.** Until the result grids from
@@ -121,6 +122,20 @@ Sections 03–05 return exact identity arguments, language, volatility, parallel
 
 Sections 06 and 20 expose every trigger and relevant guard. `orders_sync_workflow_to_production`, recursive workflow/status triggers, or two competing triggers for the same lifecycle event are **RED**. Ordinary `updated_at`, accepted-snapshot immutability, Finance eligibility, and correction guards are expected. Accepted commercial snapshots must reject UPDATE and DELETE; command-owned Finance source entries must remain unchanged while corrections append. Operator/test cleanup exceptions, if any, need separate role-specific evidence and do not justify browser mutation.
 
+#### Live evidence received: `20_IMMUTABILITY`
+
+The operator supplied one result set from the first version of section 20. This is valid **partial live evidence**, but it does not establish the environment/run timestamp, table or column privileges, trigger-function bodies/hashes, function grants, or correction RPC definitions. Accordingly, it does not make the overall live deployment verified.
+
+| Object | Live state received | Intended state | Status | Risk / next evidence |
+|---|---|---|---|---|
+| `quote_accepted_commercial_snapshots` | RLS enabled; no policies; `quote_accepted_snapshots_no_update` blocks UPDATE/DELETE; invoice-total version trigger runs before INSERT | Immutable UPDATE/DELETE contract; command-controlled INSERT; no ordinary browser mutation | **GREEN for trigger topology; YELLOW overall** | Trigger topology matches intent. Prove the guard function body/hash and role/table/column grants. No policies is not itself a defect if browser table privileges are revoked and DEFINER insertion is intentional. |
+| `finance_correction_receipts` | RLS enabled; owner SELECT policy only; no mutation trigger | Owner-readable receipt; writes controlled by correction command/service role; browser mutation unavailable | **YELLOW — unable to prove** | RLS expresses owner read correctly, but RLS is not a grant system and absence of a trigger is not sufficient append-only enforcement. Prove authenticated table/column privileges and correction function grants/body. If authenticated can INSERT/UPDATE/DELETE directly, classify **RED**. |
+| `financial_entries` | RLS enabled; owner SELECT/INSERT/UPDATE/DELETE policies; three expected BEFORE INSERT authority/eligibility triggers | Owner read and narrow manual creation; authenticated table UPDATE/DELETE revoked; manual changes only through guarded RPCs; command-owned entries/corrections append-only | **YELLOW with a RED escalation condition** | The UPDATE/DELETE policies are permissive owner-row paths, but policies alone do not confer privileges. They are dormant only if the repository's later `REVOKE UPDATE, DELETE ... FROM authenticated` is live. If section 19/updated section 20 shows authenticated UPDATE or DELETE, this is **RED** because the policy would permit direct mutation of command-owned rows. Prove trigger bodies, effective table/column privileges, and RPC grants. |
+
+The three `financial_entries` INSERT triggers are consistent with separate eligibility, accepted-invoice, and tax-metadata responsibilities; their coexistence is not presently classified as competing authority because all are BEFORE INSERT guards/enrichment. Their execution order (`aa_`, unprefixed, `zz_`) and full bodies still require sections 03/06/20 evidence. The result contains no UPDATE/DELETE immutability trigger on `financial_entries`; repository intent relies on privilege revocation plus guarded DEFINER RPCs, so effective privileges are decisive.
+
+The verification package now includes effective anon/authenticated/service-role UPDATE/DELETE checks, guard-function definitions/hashes, and column-level privileges directly in section 20. Operators should rerun **the entire updated package**, not only section 20.
+
 ### Storage
 
 Section 07 returns bucket configuration without object rows or customer paths plus `storage.objects` policies. Expected `job-assets` behavior is private, authenticated owner-folder read/upload/delete and no anon access. Public campaign/image assets must be classified individually. Public customer/PO/tax-exempt/project-document buckets, anon upload without constrained paths, or cross-owner access are **RED**. Bucket evidence remains unverified here.
@@ -221,6 +236,7 @@ Because no live credentials existed, all deployment surfaces remain YELLOW rathe
 | Production authority | **YELLOW** | Modern text and legacy UUID paths identified | Wrong lifecycle/status authority | Run 03/06/08/10/11/16 |
 | Quote/Order authority | **YELLOW** | Modern identity registry built | Wrong Quote, duplicate Order, cross-owner link | Run 09 and public RPC review |
 | Inventory authority | **YELLOW** | Atomic/idempotent terminal source identified | Double decrement/stale reservation | Run 11/12 and body comparison |
+| Finance authority | **YELLOW** | Partial live section 20: RLS and expected INSERT triggers present, but owner UPDATE/DELETE policies remain and effective privileges were not included | If authenticated UPDATE/DELETE survives, direct mutation of command-owned ledger rows is RED | Rerun updated 19/20; prove table/column privileges and guard/RPC bodies |
 | Finance authority | **YELLOW** | Cumulative ledger/correction contract identified | Duplicate/mutable/mistated revenue/tax | Run 13/19/20 and body comparison |
 | Public RPC surface | **YELLOW** | Expected public families classified | Private ERP/customer leakage | Run 14, manually inspect returns |
 | Browser/direct-write bypass | **YELLOW** | Mutation families mapped conceptually | Command bypass | Compare browser calls to 02/19 |
@@ -264,6 +280,7 @@ All of the following are required before “LIVE DEPLOYMENT VERIFIED”:
 2. all public/storage RLS flags, policies, policy hashes, and table grants;
 3. exact public function signatures, canonical definitions/hashes, owners, languages, security/volatility/parallel flags and settings;
 4. PUBLIC/anon/authenticated/service-role execute matrix;
+5. manual security review of every deployed DEFINER and public RPC body/return shape (including the Finance/snapshot guard bodies omitted from the supplied section 20 grid);
 5. manual security review of every deployed DEFINER and public RPC body/return shape;
 6. all critical triggers and trigger-function definitions/hashes;
 7. bucket public/private configuration and `storage.objects` policies;
