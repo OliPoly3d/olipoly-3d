@@ -84,16 +84,19 @@ test('high-risk workflow implementation references remain available', () => {
   }
 });
 
-test('Engine stylesheet follows every legacy presentation source', () => {
+test('Engine stylesheet follows legacy sources and precedes the intentional ERP UI migration layer', () => {
   for (const page of Object.keys(baseline.pages)) {
     const source = fs.readFileSync(page, 'utf8').split(/<\/head>/i)[0];
     const engineIndex = source.search(/<link\b[^>]*href=["']assets\/css\/engine-rc1\.css\?v=rc1["']/i);
     assert.notEqual(engineIndex, -1, `${page}: missing Engine stylesheet`);
     for (const match of source.matchAll(/<(?:style\b|link\b[^>]*rel=["']stylesheet["'])[^>]*>/gi)) {
-      if (!/engine-rc1\.css/i.test(match[0])) {
+      if (!/engine-rc1\.css|css\/erp-ui\.css/i.test(match[0])) {
         assert.ok(match.index < engineIndex, `${page}: legacy style appears after Engine stylesheet: ${match[0]}`);
       }
     }
+    const uiIndex = source.search(/<link\b[^>]*href=["']css\/erp-ui\.css/i);
+    if (page === 'finance-pro.html') assert.equal(uiIndex, -1, 'Finance Pro remains outside the redesign');
+    else assert.ok(uiIndex > engineIndex, `${page}: shared ERP UI migration layer must follow Engine presentation`);
   }
 });
 
