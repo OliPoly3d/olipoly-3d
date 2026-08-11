@@ -50,7 +50,9 @@ assert.match(workflow, /inventoryReservationReleaseRpcRequest/, 'client must bui
 assert.match(workflow, /\/rest\/v1\/rpc\/release_production_material_reservation/, 'client must call release RPC');
 assert.match(workflow, /commandIdentity\('inventory-reservation'/, 'reservation must have durable command identity');
 assert.match(workflow, /commandIdentity\('inventory-reservation-release'/, 'release must have durable command identity');
-const linkedBlock = production.match(/if\(j\.order_number\)\{[\s\S]*?return;\n    \}/)[0];
+const linkedBlockMatch = production.match(/if\(j\.order_number \|\| j\.production_source_type === 'legacy_standalone'\)\{[\s\S]*?return;\n    \}/);
+assert.ok(linkedBlockMatch, 'authoritative reservation block covers modern linked and explicitly classified legacy Production');
+const linkedBlock = linkedBlockMatch[0];
 assert.match(linkedBlock, /reserveLinkedProductionMaterial/, 'linked ready-to-print path routes reservations through RPC');
 assert.match(production, /releaseLinkedProductionMaterial/, 'linked release path routes through RPC');
 assert.doesNotMatch(linkedBlock, /applyReservationDelta\(/, 'linked workflow must not browser-direct mutate reserved_grams');

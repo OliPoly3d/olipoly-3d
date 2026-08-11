@@ -46,8 +46,8 @@ assert.match(admin, /id="customerPhone" type="tel" placeholder="Not provided"/);
 assert.match(admin, /customer_phone: customerPhone/);
 assert.match(admin, /'customer_name','customer_email','customer_phone','order_title'/);
 assert.match(admin, /\$\('customerPhone'\)\) \$\('customerPhone'\)\.value = o\.customer_phone \|\| ''/);
-assert.match(admin, /o\.customer_phone \? ` • \$\{T\.esc\(o\.customer_phone\)\}`/);
-assert.match(admin, /orderIsClosed\(selectedOrder\)[\s\S]*cannot be edited through normal Save/);
+assert.match(admin, /o\.customer_phone \? ` • \${esc\(o\.customer_phone\)}`/, 'order list conditionally renders the persisted customer_phone through HTML escaping');
+assert.match(admin, /orderIsClosed\(selectedOrder\)[\s\S]*This order is closed and cannot be edited/, 'closed Orders reject ordinary phone edits');
 
 assert.match(verification, /column_name = 'customer_phone'/);
 assert.match(verification, /pg_get_functiondef\('public\.respond_to_quote_public\(text,text,text,text\)'::regprocedure\)/);

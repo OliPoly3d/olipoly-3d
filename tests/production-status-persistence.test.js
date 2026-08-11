@@ -51,7 +51,8 @@ assert.match(production, /applyAuthoritativeProductionJobs\(cloudMigrated, local
 assert.doesNotMatch(production, /production_jobs\?on_conflict=id/, 'Production saves must not use upsert against restrictive INSERT RLS');
 assert.match(production, /method:decision\.action === 'update' \? 'PATCH' : 'POST'/, 'owned rows update while eligible drafts insert');
 assert.match(production, /OliPolyProductionCommands = Object\.freeze\(\{syncPreAcceptanceProductionStatus\}\)/, 'handoff command crosses script scope explicitly');
-assert.match(production, /typeof syncStatus !== 'function'/, 'handoff fails closed if authoritative command wiring is unavailable');
+assert.match(production, /await syncPreAcceptanceProductionStatus\(previousJob, j\.production_status/, 'pre-acceptance lifecycle persistence dispatches through the authoritative command');
+assert.match(production, /await refreshAuthoritativeProductionState\(\)[\s\S]*render\(\)/, 'successful linked commands rehydrate authoritative cloud state before rendering');
 
 const reliability = fs.readFileSync(require.resolve('../js/erp-reliability.js'), 'utf8');
 assert.doesNotMatch(reliability, /toast\('Saved to cloud\.'/i, 'generic fetch observer cannot claim workflow success');

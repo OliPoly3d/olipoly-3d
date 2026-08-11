@@ -19,7 +19,8 @@ assert.match(sql,/72a14a94-b126-4dc5-b31f-32ec7cd6eb59[\s\S]*Q-000013[\s\S]*4601
 assert.match(quote,/\/rest\/v1\/rpc\/save_production_quote/);
 assert.doesNotMatch(ui,/ORDER_TO_PRODUCTION_STATUS/);
 assert.doesNotMatch(ui,/quoteVariantsFromAny|orderVariantsFromAny/);
-assert.match(ui,/Order created, Production linkage incomplete\./);
+assert.match(ui,/Production and Order are out of sync\./, 'incomplete or contradictory linkage is visibly identified');
+assert.match(ui,/not authoritatively linked[\s\S]*Refresh and complete the Quote\/Order handoff/, 'lifecycle changes fail closed when modern linkage is incomplete');
 assert.match(ui,/production_status === 'ready_to_print' && !j\.linkage_incomplete/);
 
 console.log('Production Quote Order identity contract assertions passed');
