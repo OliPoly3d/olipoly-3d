@@ -224,3 +224,4 @@ from information_schema.column_privileges where table_schema='public'
 and table_name in ('quote_accepted_commercial_snapshots','financial_entries','finance_correction_receipts')
 and grantee in ('anon','authenticated','service_role','PUBLIC')
 order by table_name,column_name,grantee,privilege_type;
+group by c.relname,c.relrowsecurity order by c.relname;

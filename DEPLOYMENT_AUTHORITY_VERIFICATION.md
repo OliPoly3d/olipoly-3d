@@ -10,6 +10,7 @@
 > **REPOSITORY INTENT VERIFIED — YELLOW.** The repository's migration chain, tests, architecture documents, browser mutation sites, repair lineage, and diagnostic scripts were inspected. The chain contains intentional supersession and temporary instrumentation, so “latest migration present” is not sufficient evidence.
 >
 > **LIVE DEPLOYMENT VERIFIED — NO.** No Supabase URL, database URL, or PostgreSQL credentials were available in this environment. The operator later supplied the `20_IMMUTABILITY` result set, which is assessed below as partial live evidence; Codex did not run a live query and the database environment/run context was not supplied.
+> **LIVE DEPLOYMENT VERIFIED — NO.** No Supabase URL, database URL, or PostgreSQL credentials were available in this environment. No live query was run.
 >
 > **UNVERIFIED — OPERATOR QUERY REQUIRED.** Until the result grids from
 > [`supabase/verification/deployment_authority_verification.sql`](supabase/verification/deployment_authority_verification.sql)
@@ -236,6 +237,7 @@ Because no live credentials existed, all deployment surfaces remain YELLOW rathe
 | Quote/Order authority | **YELLOW** | Modern identity registry built | Wrong Quote, duplicate Order, cross-owner link | Run 09 and public RPC review |
 | Inventory authority | **YELLOW** | Atomic/idempotent terminal source identified | Double decrement/stale reservation | Run 11/12 and body comparison |
 | Finance authority | **YELLOW** | Partial live section 20: RLS and expected INSERT triggers present, but owner UPDATE/DELETE policies remain and effective privileges were not included | If authenticated UPDATE/DELETE survives, direct mutation of command-owned ledger rows is RED | Rerun updated 19/20; prove table/column privileges and guard/RPC bodies |
+| Finance authority | **YELLOW** | Cumulative ledger/correction contract identified | Duplicate/mutable/mistated revenue/tax | Run 13/19/20 and body comparison |
 | Public RPC surface | **YELLOW** | Expected public families classified | Private ERP/customer leakage | Run 14, manually inspect returns |
 | Browser/direct-write bypass | **YELLOW** | Mutation families mapped conceptually | Command bypass | Compare browser calls to 02/19 |
 | Data integrity | **YELLOW** | Read-only scans supplied; none run | Existing contradictory rows | Run 09/12/13/16 |
@@ -279,6 +281,7 @@ All of the following are required before “LIVE DEPLOYMENT VERIFIED”:
 3. exact public function signatures, canonical definitions/hashes, owners, languages, security/volatility/parallel flags and settings;
 4. PUBLIC/anon/authenticated/service-role execute matrix;
 5. manual security review of every deployed DEFINER and public RPC body/return shape (including the Finance/snapshot guard bodies omitted from the supplied section 20 grid);
+5. manual security review of every deployed DEFINER and public RPC body/return shape;
 6. all critical triggers and trigger-function definitions/hashes;
 7. bucket public/private configuration and `storage.objects` policies;
 8. status/linkage columns and diagnostic counts/IDs;
