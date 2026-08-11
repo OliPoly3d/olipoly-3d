@@ -95,8 +95,48 @@ test('shared light-theme text tokens meet normal-text contrast expectations', ()
 
 test('shared components explicitly protect inverse labels and secondary copy', () => {
   const css = read('css/erp-ui.css');
-  assert.match(css, /\.mini-links a[\s\S]*color:var\(--erp-inverse\)\s*!important/);
-  assert.match(css, /footer[\s\S]*color:var\(--erp-muted\)\s*!important/);
+  assert.match(css, /\.mini-links a[\s\S]*color:\s*var\(--erp-text\)\s*!important/);
+  assert.match(css, /\.mini-links a[\s\S]*background:\s*var\(--erp-surface\)\s*!important/);
+  assert.match(css, /footer[\s\S]*color:\s*var\(--erp-muted\)\s*!important/);
   assert.match(css, /:focus-visible\s*\{\s*outline:\s*3px solid #176b8c/);
   assert.match(css, /button:disabled[\s\S]*--erp-disabled-text/);
+});
+
+test('Phase 2 semantic tokens and component scales remain centralized', () => {
+  const css = read('css/erp-ui.css');
+  for (const token of [
+    'erp-bg', 'erp-surface', 'erp-surface-subtle', 'erp-surface-raised',
+    'erp-border', 'erp-border-strong', 'erp-text', 'erp-text-secondary',
+    'erp-muted', 'erp-link', 'erp-primary', 'erp-primary-hover', 'erp-secondary',
+    'erp-danger', 'erp-warning', 'erp-success', 'erp-info', 'erp-focus',
+    'erp-disabled-text', 'erp-disabled-surface', 'erp-radius', 'erp-shadow',
+    'erp-space-1', 'erp-space-6', 'erp-font-base', 'erp-line-height',
+    'erp-control-height', 'erp-card-padding'
+  ]) assert.match(css, new RegExp(`--${token}:`), token);
+
+  assert.match(css, /body\.erp-ui\s*\{/);
+  assert.match(css, /\[readonly\][\s\S]*--erp-surface-subtle/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /@media \(max-width:\s*1024px\)/);
+  assert.match(css, /@media \(max-width:\s*760px\)/);
+  assert.match(css, /@media \(max-width:\s*420px\)/);
+});
+
+test('Phase 2 remains presentation-only and Finance remains shell-only', () => {
+  const shared = read('css/erp-ui.css');
+  assert.doesNotMatch(shared, /finance-pro|supabase|\.rpc\(|fetch\(|localStorage|sessionStorage/i);
+  assert.doesNotMatch(read('finance-pro.html'), /css\/erp-ui\.css|js\/erp-ui\.js/);
+
+  const shell = read('js/erp-ui.js');
+  assert.match(shell, /document\.body\.prepend\(nav\);\s*document\.body\.prepend\(bar\);/);
+  assert.match(shell, /data-erp-auth="top"/);
+});
+
+test('workflow adapters and command hooks remain outside the presentation layer', () => {
+  const shared = read('css/erp-ui.css');
+  assert.doesNotMatch(shared, /ready_to_print\s*\{|start_print|pass_qc|calculateQuoteTotals/);
+  assert.match(read('production-control.html'), /data-workflow-command="start_print"/);
+  assert.match(read('production-control.html'), /data-workflow-command="pass_qc"/);
+  assert.match(read('orders-admin.html'), /orders-lifecycle-visual\.js/);
+  assert.match(read('quote.html'), /erp-status\.js/);
 });
