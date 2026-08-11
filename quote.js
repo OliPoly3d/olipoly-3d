@@ -508,15 +508,17 @@
     const list = readLocalHistory();
     const idx = list.findIndex((q) => q.quoteNumber === quoteNumber);
 
+    const draftFields = { ...(data.fields || {}) };
+    ['quoteStatus','customerResponse','convertedToOrder','convertedOrderNumber','productionJobId'].forEach(key => delete draftFields[key]);
+    const recoveryDraft = { ...data, fields:draftFields };
     const record = {
       quoteNumber,
       invoiceNumber: $("invoiceNumber")?.value?.trim() || "",
-      quoteStatus: $("quoteStatus")?.value || "pending",
       customerName: $("customerName")?.value?.trim() || $("companyName")?.value?.trim() || "",
       customerEmail: $("customerEmail")?.value?.trim() || "",
       quoteTitle: $("quoteTitle")?.value?.trim() || "",
       quoteTotal: totalsSnapshot.final_total,
-      quoteData: data,
+      quoteData: recoveryDraft,
       updatedAt: new Date().toISOString(),
       durable: false,
       recovery_reason: "remote-save-failed"
@@ -702,7 +704,7 @@
     const selected = Number(prompt(`Recovery copies are non-durable and will not upload automatically. Enter a number to load one as an unsaved draft, then review it and use Save Quote to import explicitly:\n\n${choices}`));
     const row = rows[selected - 1];
     if (!row) return;
-    const fields = mergeSavedQuoteRowIntoFields(row.quoteData?.fields || {}, row);
+    const fields = mergeSavedQuoteRowIntoFields(row.quoteData?.fields || {}, {});
     populateFields(fields);
     if (typeof window.render === "function") window.render();
     toast(`${row.quoteNumber} loaded as an unsaved recovery draft. Review, then Save Quote explicitly.`);

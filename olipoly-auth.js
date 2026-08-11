@@ -14,6 +14,16 @@
   const REFRESH_KEY = 'sb_refresh_token';
   const USER_KEY = 'sb_user';
   const CLIENT_INSTANCE_KEY = 'olipoly-shared-auth-v1';
+  const OPERATIONAL_CACHE_KEYS = Object.freeze([
+    'olipoly_production_jobs_v3', 'olipoly_production_jobs_v2', 'olipoly_production_jobs_v1',
+    'olipoly_production_jobs_local_v1', 'olipoly_active_projects_local_v1',
+    'olipoly_active_projects_v1', 'active_projects', 'olipoly_linked_workflow_recovery_v1',
+    'olipoly_raw_material_inventory_v3', 'olipoly_finished_goods_inventory_v3',
+    'olipoly_non_filament_supplies_v1', 'olipoly_inventory_ledger_v2',
+    'olipoly_inventory_recovery_review_v1', 'olipoly_spool_pool_v1',
+    'olipoly_orders_admin_v1', 'olipoly_orders_v1', 'olipoly_quote_history_v3',
+    'olipoly_order_closure_overrides_v1'
+  ]);
 
   const readJson = (key, fallback = null) => {
     try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
@@ -53,6 +63,13 @@
     const normalized = normalizeSession(session);
     if (!normalized || !normalized.access_token) return null;
 
+    const previousUserId = readSession()?.user?.id || null;
+    const nextUserId = normalized.user?.id || null;
+    if (previousUserId && nextUserId && previousUserId !== nextUserId) {
+      clearOperationalCaches();
+      console.info('[OliPolyERP] AUTH_USER_CHANGED_CACHE_CLEARED', { previousUserId, nextUserId });
+    }
+
     localStorage.setItem(TOKEN_KEY, normalized.access_token);
     if (normalized.refresh_token) localStorage.setItem(REFRESH_KEY, normalized.refresh_token);
     if (normalized.user) localStorage.setItem(USER_KEY, JSON.stringify(normalized.user));
@@ -71,8 +88,13 @@
     return { ...saved, access_token: token, refresh_token: refresh, user };
   }
 
+  function clearOperationalCaches() {
+    OPERATIONAL_CACHE_KEYS.forEach(key => localStorage.removeItem(key));
+  }
+
   function clearSession() {
     [SESSION_KEY, TOKEN_KEY, REFRESH_KEY, USER_KEY].forEach(k => localStorage.removeItem(k));
+    clearOperationalCaches();
     window.dispatchEvent(new CustomEvent('olipoly-auth-changed', { detail: null }));
   }
 
@@ -191,6 +213,7 @@
     signup,
     logout: clearSession,
     clearSession,
+    clearOperationalCaches,
     readSession,
     writeSession,
     refresh,
