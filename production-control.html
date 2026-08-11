@@ -1026,25 +1026,9 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
 <script src="olipoly-auth.js?v=20260708-foundation4"></script>
 <script src="js/production-quote-handoff.js?v=20260728-row-nowait-v6"></script>
-<script>
-/* === OliPoly Inline Shared Auth Bridge for Production Control === */
-(function(){
-  if(window.OliPolyAuth) return;
-  const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co';
-  const SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
-  const SESSION_KEY='olipoly_auth_session_v1', TOKEN_KEY='sb_token', REFRESH_KEY='sb_refresh_token', USER_KEY='sb_user';
-  const readJson=(k,f=null)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};
-  function readSession(){const s=readJson(SESSION_KEY,{})||{};const t=localStorage.getItem(TOKEN_KEY)||s.access_token||null;const r=localStorage.getItem(REFRESH_KEY)||s.refresh_token||null;const u=readJson(USER_KEY,null)||s.user||null;return (!t&&!r)?null:{...s,access_token:t,refresh_token:r,user:u};}
-  function writeSession(s){if(!s?.access_token)return null;localStorage.setItem(TOKEN_KEY,s.access_token);if(s.refresh_token)localStorage.setItem(REFRESH_KEY,s.refresh_token);if(s.user)localStorage.setItem(USER_KEY,JSON.stringify(s.user));localStorage.setItem(SESSION_KEY,JSON.stringify({...s,saved_at:Date.now()}));return s;}
-  async function refresh(){const rt=localStorage.getItem(REFRESH_KEY)||readSession()?.refresh_token;if(!rt)return readSession();try{const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:rt})});const data=await res.json().catch(()=>null);if(res.ok&&data?.access_token)return writeSession(data)}catch(e){console.warn(e)}return readSession();}
-  async function ensure(){const s=readSession();if(!s)return null;const exp=Number(s.expires_at||0);if(exp&&((exp*1000)-Date.now())<600000)return refresh();return s;}
-  async function getUser(){await ensure();const t=localStorage.getItem(TOKEN_KEY);if(!t)return null;const res=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${t}`}});const data=await res.json().catch(()=>null);if(res.ok){localStorage.setItem(USER_KEY,JSON.stringify(data));return data}return null;}
-  window.OliPolyAuth={SUPABASE_URL,SUPABASE_KEY,readSession,writeSession,ensure,refresh,getUser,getToken(){return localStorage.getItem(TOKEN_KEY)||readSession()?.access_token||null;}};
-  ensure();
-})();
-</script>
 
   <link rel="stylesheet" href="assets/erp-upgrade.css">
+  <script src="js/erp-status.js"></script>
   <script defer src="js/workflow-status.js?v=20260716-m2b1"></script>
   <script defer src="js/inventory-lifecycle.js?v=20260716-m2b1"></script>
   <script defer src="js/erp-core.js?v=erp-1.0"></script>
@@ -1773,7 +1757,6 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   <div id="toast" class="toast"></div>
 
-<script src="olipoly-auth.js"></script>
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/production-evidence.js?v=20260728-null-semantics"></script>
 <script src="js/production-recovery-storage.js?v=20260803-runtime-repair"></script>
@@ -4301,10 +4284,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   function mapLegacyStatus(v){
-    const val = String(v || '').trim().toLowerCase();
-    if(val === 'estimate') return 'estimate';
-    if(['waiting_customer','quote_sent','quote_pending','draft_quote','quoted'].includes(val)) return 'waiting_customer';
-    return window.OliPolyWorkflow.normalizeOrderStatus(val);
+    return window.OliPolyStatus.normalizeProductionStatus(v);
   }
 
   function normalizeJob(j){
@@ -4316,7 +4296,13 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       user_id:j.user_id || state.user?.id || null,
       job_title:j.job_title || j.project_title || 'Untitled Job',
       job_type:mapLegacyType(j.job_type || j.project_type || 'customer_custom'),
-      production_status:mapLegacyStatus(j.production_status || j.project_status || 'estimate'),
+      // production_status is the modern authority. Project/job/payload aliases
+      // are read only when that field is absent and are never persisted here.
+      production_status:window.OliPolyStatus.productionStatusFromRecord({
+        ...j,
+        job_status:j.job_status || j.project_status,
+        job_payload:j.job_payload
+      }),
       priority:j.priority || 'normal',
       quantity:q,
       machine_preference:j.machine_preference || j.machine || 'either',

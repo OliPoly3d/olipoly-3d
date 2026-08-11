@@ -113,7 +113,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = 'js/olipoly-auth.js';
+      script.src = 'olipoly-auth.js';
       script.dataset.engineAuthBridge = 'true';
       script.onload = () => resolve(window.OliPolyAuth || null);
       script.onerror = () => resolve(null);

@@ -1174,7 +1174,6 @@ function buildConfirmationHtmlEmail({ customerName, orderNumber, project, trackL
 async function loadCustomerResponses() {
   const list = document.getElementById("responsesList");
 
-  const normalizeStatus = (value) => String(value || "").trim().toLowerCase();
   const closedStatuses = new Set([
     "converted_to_order",
     "converted",
@@ -1187,8 +1186,9 @@ async function loadCustomerResponses() {
   const needsFollowUp = (q) => {
     if (!q) return false;
     if (!q.customer_response) return false;
-    if (q.converted_order_number) return false;
-    if (closedStatuses.has(normalizeStatus(q.quote_status))) return false;
+    const state = window.OliPolyStatus.quoteStateFromRecord(q);
+    if (state.converted) return false;
+    if (closedStatuses.has(state.quoteStatus)) return false;
     return true;
   };
 

@@ -24,6 +24,9 @@
     'olipoly_orders_admin_v1', 'olipoly_orders_v1', 'olipoly_quote_history_v3',
     'olipoly_order_closure_overrides_v1'
   ]);
+  const authStateListeners = new Set();
+  const userChangeHandlers = new Set();
+  let currentSession = null;
 
   const readJson = (key, fallback = null) => {
     try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
@@ -74,8 +77,13 @@
     if (normalized.refresh_token) localStorage.setItem(REFRESH_KEY, normalized.refresh_token);
     if (normalized.user) localStorage.setItem(USER_KEY, JSON.stringify(normalized.user));
     localStorage.setItem(SESSION_KEY, JSON.stringify(normalized));
+    currentSession = normalized;
 
     window.dispatchEvent(new CustomEvent('olipoly-auth-changed', { detail: normalized }));
+    authStateListeners.forEach(listener => listener(normalized));
+    if (previousUserId && nextUserId && previousUserId !== nextUserId) {
+      userChangeHandlers.forEach(handler => handler({ previousUserId, nextUserId }));
+    }
     return normalized;
   }
 
@@ -95,7 +103,9 @@
   function clearSession() {
     [SESSION_KEY, TOKEN_KEY, REFRESH_KEY, USER_KEY].forEach(k => localStorage.removeItem(k));
     clearOperationalCaches();
+    currentSession = null;
     window.dispatchEvent(new CustomEvent('olipoly-auth-changed', { detail: null }));
+    authStateListeners.forEach(listener => listener(null));
   }
 
   async function authApi(path, options = {}) {
@@ -168,7 +178,11 @@
   let recoveryPromise = null;
   async function recoverSession() {
     const current = readSession();
-    if (!current) return null;
+    if (!current) {
+      clearOperationalCaches();
+      currentSession = null;
+      return null;
+    }
 
     let session = current;
     let refreshed = false;
@@ -199,6 +213,26 @@
   const ensure = recover;
   const getSession = recover;
 
+  function getCurrentSession() { return currentSession || readSession(); }
+  function getCurrentUser() { return getCurrentSession()?.user || null; }
+  async function requireAuthenticatedUser() {
+    const session = await recover();
+    if (!session?.user) throw new Error('Sign in is required.');
+    return session.user;
+  }
+  function onAuthState(listener, options = {}) {
+    if (typeof listener !== 'function') return () => {};
+    authStateListeners.add(listener);
+    if (options.immediate !== false) listener(getCurrentSession());
+    return () => authStateListeners.delete(listener);
+  }
+  function registerUserChangeHandler(handler) {
+    if (typeof handler !== 'function') return () => {};
+    userChangeHandlers.add(handler);
+    return () => userChangeHandlers.delete(handler);
+  }
+  function hasCommandAuthority() { return !!getCurrentSession()?.user?.id; }
+
   window.OliPolyAuth = {
     SUPABASE_URL,
     SUPABASE_KEY,
@@ -220,6 +254,12 @@
     recover,
     ensure,
     getSession,
+    getCurrentSession,
+    getCurrentUser,
+    requireAuthenticatedUser,
+    onAuthState,
+    registerUserChangeHandler,
+    hasCommandAuthority,
     getToken,
     getUser,
     authHeaders() {
