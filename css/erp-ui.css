@@ -1,299 +1,253 @@
-/* OliPoly ERP shared presentation layer. Business pages keep their existing DOM hooks. */
+/* OliPoly ERP Phase 2 presentation layer.
+   This file is intentionally scoped to body.erp-ui. It changes presentation only;
+   Finance Pro does not load it and business-page DOM hooks remain untouched. */
 :root {
-  --erp-bg: #f6f4ef;
+  --erp-bg: #f5f3ee;
   --erp-surface: #ffffff;
-  --erp-surface-raised: #fcfbf8;
-  --erp-border: #d9d6cf;
-  --erp-text: #25282b;
-  --erp-text-secondary: #454b50;
-  --erp-muted: #5b6268;
-  --erp-meta: #545b61;
+  --erp-surface-subtle: #efede8;
+  --erp-surface-raised: #fbfaf7;
+  --erp-border: #d5d1c9;
+  --erp-border-strong: #99958d;
+  --erp-text: #202529;
+  --erp-text-secondary: #454c51;
+  --erp-muted: #5d656a;
+  --erp-meta: #555d62;
   --erp-link: #245b73;
   --erp-link-hover: #173f51;
   --erp-inverse: #ffffff;
   --erp-placeholder: #626a70;
+  --erp-primary: #2e5c70;
+  --erp-primary-hover: #234858;
+  --erp-secondary: #ffffff;
+  --erp-danger: #913b3b;
+  --erp-warning: #765219;
+  --erp-success: #276344;
+  --erp-info: #315f86;
+  --erp-focus: #176b8c;
   --erp-disabled-text: #555c62;
   --erp-disabled-surface: #e6e3dd;
-  --erp-primary: #2e5c70;
-  --erp-success: #276344;
-  --erp-warning: #765219;
-  --erp-danger: #913b3b;
-  --erp-info: #315f86;
-  --erp-surface: #fff;
-  --erp-surface-raised: #fcfbf8;
-  --erp-border: #d9d6cf;
-  --erp-text: #25282b;
-  --erp-text-secondary: #52585e;
-  --erp-muted: #70767c;
-  --erp-primary: #345f73;
-  --erp-success: #39745a;
-  --erp-warning: #8a6428;
-  --erp-danger: #a14848;
-  --erp-info: #456c91;
+  --erp-status-neutral-bg: #ebe9e3;
+  --erp-status-success-bg: #e4f0e8;
+  --erp-status-warning-bg: #f5ecd9;
+  --erp-status-danger-bg: #f5e4e4;
+  --erp-status-info-bg: #e8eff5;
+  --erp-radius-sm: 7px;
   --erp-radius: 10px;
+  --erp-radius-lg: 14px;
+  --erp-shadow: 0 1px 3px rgba(35, 39, 42, .07);
+  --erp-shadow-raised: 0 8px 24px rgba(35, 39, 42, .08);
   --erp-space-1: 4px;
   --erp-space-2: 8px;
   --erp-space-3: 12px;
   --erp-space-4: 16px;
   --erp-space-5: 24px;
   --erp-space-6: 32px;
+  --erp-font-xs: .75rem;
+  --erp-font-sm: .875rem;
+  --erp-font-base: 1rem;
+  --erp-font-lg: 1.25rem;
+  --erp-font-xl: clamp(1.55rem, 2vw, 2rem);
+  --erp-line-height: 1.5;
+  --erp-control-height: 40px;
+  --erp-card-padding: clamp(14px, 1.6vw, 20px);
 }
 
 html { color-scheme: light; }
 body.erp-ui {
-  /* Bridge the earlier dark ERP token set for pages that consume those names. */
+  /* Compatibility aliases used by the established operational pages. */
   --erp-panel: var(--erp-surface);
   --erp-panel-raised: var(--erp-surface-raised);
-  --erp-input: #fff;
+  --erp-input: var(--erp-surface);
   --erp-input-disabled: var(--erp-disabled-surface);
-  --erp-border-strong: #9b9891;
   --erp-text-muted: var(--erp-muted);
   --erp-heading: var(--erp-text);
   --erp-accent: var(--erp-primary);
   --erp-accent-secondary: var(--erp-info);
-  --erp-warning-bg: #f5ecd9;
+  --erp-warning-bg: var(--erp-status-warning-bg);
   --erp-warning-text: var(--erp-warning);
   --erp-warning-border: #c8aa71;
-  --erp-error-bg: #f5e4e4;
+  --erp-error-bg: var(--erp-status-danger-bg);
   --erp-error-text: var(--erp-danger);
   --erp-error-border: #c89494;
-  --erp-success-bg: #e4f0e8;
+  --erp-success-bg: var(--erp-status-success-bg);
   --erp-success-text: var(--erp-success);
   --erp-success-border: #91b5a0;
-  --erp-focus: #176b8c;
-  --erp-focus-ring: 0 0 0 3px rgba(23,107,140,.24);
-  --erp-hover: #f0eee9;
+  --erp-focus-ring: 0 0 0 3px rgba(23, 107, 140, .24);
+  --erp-hover: #eeece7;
   --erp-disabled-opacity: 1;
   --op-canvas: var(--erp-bg);
   --op-surface: var(--erp-surface);
   --op-surface-raised: var(--erp-surface-raised);
-  --op-surface-muted: #efede8;
+  --op-surface-muted: var(--erp-surface-subtle);
   --op-ink: var(--erp-text);
   --op-ink-strong: #17191b;
   --op-muted: var(--erp-text-secondary);
   --op-muted-quiet: var(--erp-muted);
   --op-border: var(--erp-border);
-  --op-border-strong: #aaa69e;
+  --op-border-strong: var(--erp-border-strong);
   --op-accent: var(--erp-primary);
-  --op-accent-hover: #274c5d;
+  --op-accent-hover: var(--erp-primary-hover);
   --op-accent-dark: var(--erp-primary);
   --op-accent-soft: #e5eef1;
   --op-success: var(--erp-success);
-  --op-success-soft: #e8f2ec;
+  --op-success-soft: var(--erp-status-success-bg);
   --op-warning: var(--erp-warning);
-  --op-warning-soft: #f5eee0;
+  --op-warning-soft: var(--erp-status-warning-bg);
   --op-danger: var(--erp-danger);
-  --op-danger-soft: #f7eaea;
+  --op-danger-soft: var(--erp-status-danger-bg);
   --op-info: var(--erp-info);
-  --op-info-soft: #e8eff5;
+  --op-info-soft: var(--erp-status-info-bg);
   margin: 0;
   color: var(--erp-text) !important;
   background: var(--erp-bg) !important;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-  line-height: 1.5;
+  font-size: var(--erp-font-base);
+  line-height: var(--erp-line-height);
 }
 body.erp-ui::before { display: none !important; }
-body.erp-ui * { scrollbar-color: #b9b6af transparent; }
+body.erp-ui * { box-sizing: border-box; scrollbar-color: #aaa69e transparent; }
 body.erp-ui :focus-visible { outline: 3px solid #176b8c !important; outline-offset: 3px; }
-body.erp-ui :focus-visible { outline: 3px solid rgba(52,95,115,.35) !important; outline-offset: 2px; }
 
+/* Canonical shell: identity and authentication stay above primary navigation. */
 body.erp-ui .erp-app-bar {
   position: sticky; top: 0; z-index: 1000;
-  display: grid; grid-template-columns: minmax(190px,1fr) auto;
+  display: grid; grid-template-columns: minmax(190px, 1fr) auto;
   align-items: center; gap: var(--erp-space-4);
-  min-height: 62px; padding: 10px max(16px,calc((100vw - 1440px)/2));
-  color: var(--erp-text); background: rgba(255,255,255,.97);
-  border-bottom: 1px solid var(--erp-border); box-shadow: 0 2px 8px rgba(35,39,42,.05);
+  min-height: 60px; padding: 9px max(16px, calc((100vw - 1440px) / 2));
+  color: var(--erp-text); background: rgba(255, 255, 255, .98);
+  border-bottom: 1px solid var(--erp-border); box-shadow: var(--erp-shadow);
 }
-body.erp-ui .erp-app-identity { display:flex; align-items:center; gap:12px; min-width:0; }
-body.erp-ui .erp-app-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:8px; color:var(--erp-inverse); background:var(--erp-primary); font-weight:800; }
-body.erp-ui .erp-app-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:8px; color:#fff; background:var(--erp-primary); font-weight:800; }
-.erp-app-identity strong,.erp-app-identity span { display:block; }
-.erp-app-identity strong { font-size:.92rem; }
-.erp-app-identity span { overflow:hidden; color:var(--erp-muted); font-size:.78rem; text-overflow:ellipsis; white-space:nowrap; }
-.erp-auth { display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width:0; }
-.erp-auth-copy { text-align:right; line-height:1.25; }
-.erp-auth-copy strong,.erp-auth-copy small { display:block; }
-.erp-auth-copy strong { font-size:.78rem; }
-.erp-auth-copy small { max-width:260px; overflow:hidden; color:var(--erp-muted); font-size:.72rem; text-overflow:ellipsis; white-space:nowrap; }
-.erp-auth-action { min-height:36px !important; padding:7px 12px !important; border:1px solid var(--erp-border) !important; border-radius:8px !important; color:var(--erp-text) !important; background:#fff !important; font:inherit; font-size:.82rem; font-weight:700; text-decoration:none; cursor:pointer; }
+body.erp-ui .erp-app-identity { display: flex; align-items: center; gap: 11px; min-width: 0; }
+body.erp-ui .erp-app-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; color: var(--erp-inverse); background: var(--erp-primary); font-weight: 800; }
+.erp-app-identity strong, .erp-app-identity span, .erp-auth-copy strong, .erp-auth-copy small { display: block; }
+.erp-app-identity strong { color: var(--erp-text); font-size: .92rem; }
+.erp-app-identity > span > span { overflow: hidden; color: var(--erp-muted); font-size: var(--erp-font-xs); text-overflow: ellipsis; white-space: nowrap; }
+.erp-auth { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
+.erp-auth-copy { text-align: right; line-height: 1.25; }
+.erp-auth-copy strong { color: var(--erp-text); font-size: .78rem; }
+.erp-auth-copy small { max-width: 260px; overflow: hidden; color: var(--erp-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.erp-auth-action { min-height: 36px !important; padding: 7px 12px !important; border: 1px solid var(--erp-border-strong) !important; border-radius: var(--erp-radius-sm) !important; color: var(--erp-text) !important; background: var(--erp-surface) !important; font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+body.erp-ui .erp-nav { position: sticky; top: 60px; z-index: 999; display: flex; gap: 3px; overflow-x: auto; padding: 6px max(16px, calc((100vw - 1440px) / 2)); background: var(--erp-surface-subtle); border-bottom: 1px solid var(--erp-border); scrollbar-width: thin; }
+body.erp-ui .erp-nav a { flex: 0 0 auto; padding: 7px 10px; border-radius: var(--erp-radius-sm); color: var(--erp-text-secondary); font-size: .79rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+body.erp-ui .erp-nav a:hover { color: var(--erp-text); background: var(--erp-surface); }
+body.erp-ui .erp-nav a[aria-current="page"] { color: var(--erp-inverse) !important; background: var(--erp-primary); }
 
-body.erp-ui .erp-nav { position:sticky; top:62px; z-index:999; display:flex; gap:3px; overflow-x:auto; padding:7px max(16px,calc((100vw - 1440px)/2)); background:#eeece6; border-bottom:1px solid var(--erp-border); }
-body.erp-ui .erp-nav a { flex:0 0 auto; padding:7px 10px; border:0; border-radius:7px; color:var(--erp-text-secondary); background:transparent; font-size:.79rem; font-weight:650; text-decoration:none; white-space:nowrap; }
-body.erp-ui .erp-nav a:hover { background:#fff; color:var(--erp-text); }
-body.erp-ui .erp-nav a[aria-current="page"] { color:var(--erp-inverse) !important; background:var(--erp-primary); }
-body.erp-ui .erp-nav a[aria-current="page"] { color:#fff; background:var(--erp-primary); }
+/* Page hierarchy and density. Legacy branded bars become compact page-action rows. */
+body.erp-ui .wrap, body.erp-ui main { max-width: 1440px; }
+body.erp-ui .wrap { padding-top: 16px; }
+body.erp-ui .topbar, body.erp-ui .top { position: relative !important; top: auto !important; z-index: 2 !important; min-height: 0 !important; margin-bottom: 14px !important; padding: 9px 12px !important; border: 1px solid var(--erp-border) !important; border-radius: var(--erp-radius) !important; background: var(--erp-surface) !important; box-shadow: var(--erp-shadow) !important; }
+body.erp-ui .topbar .brand, body.erp-ui .topbar > .brand, body.erp-ui .top > div:first-child { display: none !important; }
+body.erp-ui .topbar:has(.brand), body.erp-ui .top { justify-content: flex-end !important; }
+body.erp-ui h1 { margin-block: 0 var(--erp-space-2); font-size: var(--erp-font-xl) !important; line-height: 1.2; }
+body.erp-ui h2 { font-size: clamp(1.25rem, 1.5vw, 1.55rem) !important; line-height: 1.25; }
+body.erp-ui h3 { font-size: 1.05rem !important; line-height: 1.3; }
+body.erp-ui h4 { font-size: .95rem !important; line-height: 1.35; }
+body.erp-ui h1, body.erp-ui h2, body.erp-ui h3, body.erp-ui h4 { color: var(--erp-text) !important; font-family: inherit !important; letter-spacing: -.012em; }
+body.erp-ui :is(.hero, .section, .section-card) { margin-bottom: var(--erp-space-4) !important; }
+body.erp-ui .section-head { margin-bottom: var(--erp-space-3) !important; }
+body.erp-ui .section-head h2, body.erp-ui .section-head h3 { margin-bottom: 2px !important; }
+body.erp-ui :is(.muted, .sub, small, .hint, .meta, .helper, .help-text, .description, .caption, .card-sub, .tiny-note, .entry-hint, .empty, footer, .footer, .section p, .section-head p) { color: var(--erp-muted) !important; }
+body.erp-ui :is(.kicker, .eyebrow, label) { color: var(--erp-text-secondary) !important; font-weight: 700; }
 
-body.erp-ui .wrap, body.erp-ui main { max-width:1440px; }
-body.erp-ui .wrap { padding-top:18px; }
-body.erp-ui .topbar { position:relative !important; top:auto !important; z-index:2 !important; margin-bottom:16px !important; border-radius:var(--erp-radius) !important; }
-body.erp-ui .topbar .brand, body.erp-ui .topbar > .brand { display:none !important; }
-body.erp-ui .topbar:has(.brand) { justify-content:flex-end !important; min-height:0 !important; padding:10px 12px !important; }
-body.erp-ui .topbar, body.erp-ui .card, body.erp-ui .panel, body.erp-ui .section, body.erp-ui .section-card,
-body.erp-ui .summary, body.erp-ui .quick-card, body.erp-ui .attention-card, body.erp-ui .lane,
-body.erp-ui .job-card, body.erp-ui .item, body.erp-ui .row, body.erp-ui .metric, body.erp-ui .stat,
-body.erp-ui .signal, body.erp-ui .tool-card, body.erp-ui .group-card, body.erp-ui details, body.erp-ui dialog,
-body.erp-ui .erp-reliability-panel, body.erp-ui .erp-reliability-grid > div, body.erp-ui .erp-reliability-hub-summary {
-  color:var(--erp-text) !important; background:var(--erp-surface) !important;
-  border-color:var(--erp-border) !important; border-radius:var(--erp-radius) !important;
-  box-shadow:0 1px 3px rgba(35,39,42,.06) !important; backdrop-filter:none !important;
-}
-body.op-engine.erp-ui :is(.attention-item,.result,.pulse-tile,.activity-item,.activity-empty,
-  .capacity-card,.capacity-machine,.capacity-detail,.machine-card,.machine-slot,.printer-load-card,
-  .detail-card,.pm-card,.analytics-card,.variance-card,.finance-summary-card,.day-card,
-  .inventory-card,.snapshot-card,.cloud-card,.forecast-card,.supply-card,.material-row,
-  .material-balance-card,.material-summary-card,.material-command-panel,.history-wrap,
-  .form-section,.production-status-panel,.production-status-grid > div) {
-  color:var(--erp-text) !important; background:var(--erp-surface) !important;
-  border-color:var(--erp-border) !important; box-shadow:none !important;
-}
-body.op-engine.erp-ui details.ops-collapse > summary,
-body.op-engine.erp-ui :is(.board-header,.queue-header,.board-title,.finance-board-head) {
-  color:var(--erp-text) !important; background:#eceae5 !important; border-color:var(--erp-border) !important;
-}
-body.op-engine.erp-ui details.ops-collapse > summary :is(strong,span),
-body.op-engine.erp-ui :is(.board-header,.queue-header,.board-title,.finance-board-head) :is(h2,h3,strong,span) {
-  color:var(--erp-text) !important;
-}
-body.op-engine.erp-ui :is(.attention-item,.result,.pulse-tile,.activity-item) strong { color:var(--erp-text) !important; }
-body.op-engine.erp-ui :is(.attention-item,.result,.pulse-tile,.activity-item) small { color:var(--erp-muted) !important; }
-body.op-engine.erp-ui :is(.workspace-bar,.oa-daily-command) {
-  color:var(--erp-text) !important; background:var(--erp-surface) !important;
-  border-color:var(--erp-border) !important; box-shadow:0 1px 3px rgba(35,39,42,.06) !important;
-}
-body.op-engine.erp-ui :is(.workspace-bar,.oa-daily-command) :is(h2,h3,strong) { color:var(--erp-text) !important; }
-body.op-engine.erp-ui :is(.workspace-bar,.oa-daily-command) :is(p,small,.muted) { color:var(--erp-muted) !important; }
-body.op-engine.erp-ui .oa-daily-kpi,
-body.op-engine.erp-ui .oa-daily-bucket {
-  color:var(--erp-text) !important; background:#f8f7f4 !important; border-color:var(--erp-border) !important;
-}
-body.op-engine.erp-ui :is(.kicker,.decision-pill,.machine-state,.capacity-status,
-  .legend-chip,.reservation-chip,.scrap-chip,.start-chip,.integration-chip,.quote-link-chip) {
-  color:var(--erp-text-secondary) !important; background:#ece9f3 !important; border-color:#aaa3c0 !important;
-}
-body.op-engine.erp-ui #machineBoard .machine-slot,
-body.op-engine.erp-ui #utilizationBoard .printer-load-card > div,
-body.op-engine.erp-ui #utilizationBoard .printer-load-copy,
-body.op-engine.erp-ui #capacityHealth,
-body.op-engine.erp-ui #todaySection .ops-panel,
-body.op-engine.erp-ui .lanes .job-card :is(.stat,.material-row,.finance-mini span,.supply-usage-mini span),
-body.op-engine.erp-ui :is(.snapshot-pill-card,.snapshot-mini,.finance-health) {
-  color:var(--erp-text) !important; background:#f8f7f4 !important; border-color:var(--erp-border) !important;
-}
-body.op-engine.erp-ui #machineBoard .machine-slot :is(strong,span,small),
-body.op-engine.erp-ui #utilizationBoard :is(strong,span,small),
-body.op-engine.erp-ui .lanes .job-card :is(h4,strong,.job-meta,.tiny-note,.stat span,.stat strong) {
-  color:var(--erp-text-secondary) !important;
-}
-body.op-engine.erp-ui .lanes .job-card .job-actions :is(.mini-btn,.ghost,button) {
-  color:var(--erp-text) !important; background:#fff !important; border-color:#aaa69f !important;
-}
-body.op-engine.erp-ui #chmDomCard {
-  color:var(--erp-text) !important; background:var(--erp-surface) !important;
-  border-color:var(--erp-border) !important; box-shadow:none !important;
-}
-body.op-engine.erp-ui #chmDomCard :is(h3,strong,p,span,small) { color:var(--erp-text-secondary) !important; }
-body.op-engine.erp-ui :is(.chm-dom-kicker,.catalog-note,#catalogMessage,#productionStatusBadge,
-  .production-status-actions > span,.oa-daily-bucket-head > span) {
-  color:var(--erp-success) !important; background:var(--erp-success-bg) !important; border-color:var(--erp-success-border) !important;
-}
-body.op-engine.erp-ui :is(#historySummary,.lite-format-chip,.send-package-pill,#quoteCustomer360Btn,.watch) {
-  color:var(--erp-text-secondary) !important; background:#ece9f3 !important; border-color:#aaa3c0 !important;
-}
-body.op-engine.erp-ui .not-order {
-  color:var(--erp-danger) !important; background:var(--erp-danger-soft) !important;
-  border:1px solid #c89494; padding:8px 10px; border-radius:8px;
-}
-body.erp-ui .erp-reliability-panel { background:#eef2f2 !important; }
-body.erp-ui .erp-reliability-pill { color:var(--erp-inverse); background:#32444b; border-color:#718890; }
-body.erp-ui .hero h2, body.erp-ui h1, body.erp-ui h2, body.erp-ui h3, body.erp-ui h4 { color:var(--erp-text) !important; font-family:inherit !important; letter-spacing:-.015em; }
-body.erp-ui .summary strong, body.erp-ui .summary span, body.erp-ui .metric strong, body.erp-ui .metric span { color:var(--erp-text) !important; }
-body.erp-ui .muted, body.erp-ui .sub, body.erp-ui small, body.erp-ui .hint, body.erp-ui .meta,
-body.erp-ui .helper, body.erp-ui .help-text, body.erp-ui .description, body.erp-ui .caption,
-body.erp-ui .card-sub, body.erp-ui .tiny-note, body.erp-ui .entry-hint, body.erp-ui .empty,
-body.erp-ui footer, body.erp-ui .footer, body.erp-ui .section p, body.erp-ui .section-head p {
-  color:var(--erp-muted) !important;
-}
-body.erp-ui a:not([class]) { color:var(--erp-link) !important; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:3px; }
-body.erp-ui a:not([class]):hover { color:var(--erp-link-hover) !important; text-decoration-thickness:2px; }
-body.op-engine.erp-ui input, body.op-engine.erp-ui select, body.op-engine.erp-ui textarea { color:var(--erp-text) !important; background:#fff !important; border:1px solid #aaa69f !important; border-radius:8px !important; box-shadow:none !important; }
-body.erp-ui input::placeholder, body.erp-ui textarea::placeholder { color:var(--erp-placeholder) !important; opacity:1; }
-body.erp-ui label { color:var(--erp-text-secondary) !important; }
-body.erp-ui button, body.erp-ui .btn, body.erp-ui .primary, body.erp-ui .ghost, body.erp-ui .btn-ghost, body.erp-ui .mini-btn { border-radius:8px !important; box-shadow:none !important; transform:none !important; }
-body.erp-ui .btn, body.erp-ui .primary { color:var(--erp-inverse) !important; background:var(--erp-primary) !important; }
-body.erp-ui .ghost, body.erp-ui .btn-ghost, body.erp-ui .mini-btn { color:var(--erp-text) !important; background:#fff !important; border:1px solid var(--erp-border) !important; }
-body.erp-ui .btn-danger, body.erp-ui .danger-btn { color:var(--erp-inverse) !important; background:var(--erp-danger) !important; }
-body.erp-ui button:disabled, body.erp-ui input:disabled, body.erp-ui select:disabled,
-body.erp-ui textarea:disabled, body.erp-ui [aria-disabled="true"] {
-  color:var(--erp-disabled-text) !important; background:var(--erp-disabled-surface) !important;
-  border-color:#aaa69f !important; opacity:1 !important; cursor:not-allowed !important;
-}
-body.erp-ui table { background:#fff; }
-body.erp-ui th { color:var(--erp-text-secondary) !important; background:#efede8 !important; }
-body.op-engine.erp-ui th { color:var(--erp-text-secondary) !important; background:#e9e7e1 !important; }
-body.op-engine.erp-ui th, body.op-engine.erp-ui td { color:var(--erp-text-secondary) !important; border-color:#d4d0c8 !important; }
-body.erp-ui tbody tr:hover { background:#f7f6f2 !important; }
-body.erp-ui .pill, body.erp-ui .chip, body.erp-ui .tag, body.erp-ui .status-pill, body.erp-ui [class*="badge"] { border-radius:999px !important; box-shadow:none !important; }
-body.erp-ui .pill, body.erp-ui .chip, body.erp-ui .tag, body.erp-ui .status-pill, body.erp-ui .payment-pill,
-body.erp-ui .pulse-chip, body.erp-ui .workspace-pill {
-  color:var(--erp-text-secondary) !important; background:#ebe9e3 !important; border-color:#b9b5ad !important;
-}
-body.erp-ui :is(.chip.good,.status-success,.status-complete,.status-completed,.p-paid,.p-deposit_paid,.p-finance-pushed,.p-financial-closed,.s-completed,.pm-good) {
-  color:var(--erp-success) !important; background:#e4f0e8 !important; border-color:#91b5a0 !important;
-}
-body.erp-ui :is(.chip.warn,.status-warning,.p-unpaid,.p-deposit_due,.p-invoice-ready,.p-invoice-overdue,.p-finance-not-pushed,.pm-warn) {
-  color:var(--erp-warning) !important; background:#f5ecd9 !important; border-color:#c8aa71 !important;
-}
-body.erp-ui :is(.chip.danger,.status-error,.status-danger,.s-canceled,.s-issue_review,.p-refunded,.pm-danger) {
-  color:var(--erp-danger) !important; background:#f5e4e4 !important; border-color:#c89494 !important;
-}
-/* Hub backend links intentionally retain their approved dark tile treatment. */
-body.erp-ui .mini-links a {
-  color:var(--erp-inverse) !important; background:#344259 !important; border-color:#52627a !important;
-}
-body.erp-ui .mini-links a span, body.erp-ui .mini-links a strong, body.erp-ui .mini-links a small {
-  color:var(--erp-inverse) !important;
-}
-body.erp-ui .mini-links a:hover { color:var(--erp-inverse) !important; background:#29364b !important; border-color:#71819a !important; }
-body.erp-ui .activity-filter, body.erp-ui .activity-actions button, body.erp-ui .oa-view-tab,
-body.erp-ui .tab, body.erp-ui .tabs button {
-  color:var(--erp-text-secondary) !important; background:#fff !important; border-color:#aaa69f !important;
-}
-body.erp-ui :is(.activity-filter.active,.oa-view-tab.active,.tab.active,.tabs button.active) {
-  color:var(--erp-inverse) !important; background:var(--erp-primary) !important; border-color:var(--erp-primary) !important;
-}
-body.erp-ui .erp-reliability-panel { background:#eef2f2 !important; }
-body.erp-ui .erp-reliability-pill { color:#fff; background:#32444b; border-color:#536b75; }
-body.erp-ui .hero h2, body.erp-ui h1, body.erp-ui h2, body.erp-ui h3, body.erp-ui h4 { color:var(--erp-text) !important; font-family:inherit !important; letter-spacing:-.015em; }
-body.erp-ui .summary strong, body.erp-ui .summary span, body.erp-ui .metric strong, body.erp-ui .metric span { color:var(--erp-text) !important; }
-body.erp-ui .muted, body.erp-ui .sub, body.erp-ui small, body.erp-ui .hint, body.erp-ui .empty { color:var(--erp-muted) !important; }
-body.erp-ui input, body.erp-ui select, body.erp-ui textarea { color:var(--erp-text) !important; background:#fff !important; border:1px solid #bbb8b1 !important; border-radius:8px !important; box-shadow:none !important; }
-body.erp-ui input::placeholder, body.erp-ui textarea::placeholder { color:#777b7f !important; opacity:1; }
-body.erp-ui label { color:var(--erp-text-secondary) !important; }
-body.erp-ui button, body.erp-ui .btn, body.erp-ui .primary, body.erp-ui .ghost, body.erp-ui .btn-ghost, body.erp-ui .mini-btn { border-radius:8px !important; box-shadow:none !important; transform:none !important; }
-body.erp-ui .btn, body.erp-ui .primary { color:#fff !important; background:var(--erp-primary) !important; }
-body.erp-ui .ghost, body.erp-ui .btn-ghost, body.erp-ui .mini-btn { color:var(--erp-text) !important; background:#fff !important; border:1px solid var(--erp-border) !important; }
-body.erp-ui .btn-danger, body.erp-ui .danger-btn { color:#fff !important; background:var(--erp-danger) !important; }
-body.erp-ui button:disabled, body.erp-ui [aria-disabled="true"] { opacity:.48 !important; cursor:not-allowed !important; }
-body.erp-ui table { background:#fff; }
-body.erp-ui th { color:var(--erp-text-secondary) !important; background:#efede8 !important; }
-body.erp-ui th, body.erp-ui td { border-color:#e2dfd8 !important; }
-body.erp-ui tbody tr:hover { background:#f7f6f2 !important; }
-body.erp-ui .pill, body.erp-ui .chip, body.erp-ui .tag, body.erp-ui .status-pill, body.erp-ui [class*="badge"] { border-radius:999px !important; box-shadow:none !important; }
-body.erp-ui .empty { padding:24px !important; border:1px dashed #c9c5bd !important; background:#faf9f6 !important; text-align:center; }
-body.erp-ui .timeline-step { color:var(--erp-text-secondary) !important; background:#f5f3ee !important; border-color:var(--erp-border) !important; }
-body.erp-ui .timeline-step strong { color:inherit !important; }
-body.erp-ui .timeline-step.is-done { color:var(--erp-success) !important; background:#edf5f0 !important; }
-body.erp-ui .timeline-step.is-active { color:#fff !important; background:var(--erp-primary) !important; border-color:var(--erp-primary) !important; }
-body.erp-ui .timeline-step.is-active strong, body.erp-ui .timeline-step.is-active small { color:#fff !important; }
-body.erp-ui .timeline-step.is-terminal { color:#fff !important; background:var(--erp-danger) !important; border-color:var(--erp-danger) !important; }
+/* Surfaces: one border per meaningful group, restrained shadow, less nesting. */
+body.erp-ui :is(.card, .panel, .section, .section-card, .summary, .quick-card, .attention-card, .lane, .job-card, .item, .metric, .stat, .signal, .tool-card, .group-card, details, dialog, .erp-reliability-panel, .erp-reliability-grid > div, .erp-reliability-hub-summary) { color: var(--erp-text) !important; background: var(--erp-surface) !important; border-color: var(--erp-border) !important; border-radius: var(--erp-radius) !important; box-shadow: var(--erp-shadow) !important; backdrop-filter: none !important; }
+body.erp-ui :is(.card, .panel, .section-card, .attention-card, .job-card, .tool-card, .group-card) { padding: var(--erp-card-padding); }
+body.erp-ui :is(.card, .panel, .section-card, .attention-card) :is(.card, .panel, .stat, .metric, .item) { box-shadow: none !important; }
+body.erp-ui details > summary { color: var(--erp-text) !important; background: var(--erp-surface-subtle) !important; border-color: var(--erp-border) !important; }
+body.erp-ui .summary strong, body.erp-ui .metric strong { color: var(--erp-text) !important; }
+body.erp-ui .summary span, body.erp-ui .metric span { color: var(--erp-text-secondary) !important; }
 
-@media (max-width:760px) {
-  body.erp-ui .erp-app-bar { grid-template-columns:1fr auto; padding:8px 12px; }
-  .erp-app-identity span,.erp-auth-copy { display:none; }
-  body.erp-ui .erp-nav { top:56px; padding-inline:8px; }
-  body.erp-ui .wrap { width:min(100% - 20px,1440px) !important; padding-top:12px !important; }
-  body.erp-ui .top-actions, body.erp-ui .btn-row, body.erp-ui .actions { gap:6px !important; }
-  body.erp-ui table { min-width:720px; }
-  body.erp-ui .table-wrap { overflow-x:auto; }
+/* Forms distinguish authoritative read-only values from unavailable controls. */
+body.erp-ui input, body.erp-ui select, body.erp-ui textarea { min-height: var(--erp-control-height); color: var(--erp-text) !important; background: var(--erp-surface) !important; border: 1px solid var(--erp-border-strong) !important; border-radius: var(--erp-radius-sm) !important; box-shadow: none !important; }
+body.erp-ui textarea { min-height: 84px; line-height: 1.45; }
+body.erp-ui input::placeholder, body.erp-ui textarea::placeholder { color: var(--erp-placeholder) !important; opacity: 1; }
+body.erp-ui :is(input, textarea)[readonly] { color: var(--erp-text) !important; background: var(--erp-surface-subtle) !important; border-style: solid !important; }
+body.erp-ui button:disabled, body.erp-ui input:disabled, body.erp-ui select:disabled, body.erp-ui textarea:disabled, body.erp-ui [aria-disabled="true"] { color: var(--erp-disabled-text) !important; background: var(--erp-disabled-surface) !important; border-color: var(--erp-border-strong) !important; opacity: 1 !important; cursor: not-allowed !important; }
+
+/* Action hierarchy. Dark actions always receive readable inverse labels. */
+body.erp-ui :is(button, .btn, .primary, .ghost, .btn-ghost, .mini-btn, .btn-danger, .danger-btn) { min-height: 38px; border-radius: var(--erp-radius-sm) !important; box-shadow: none !important; transform: none !important; font-weight: 700; }
+body.erp-ui :is(.btn, .primary) { color: var(--erp-inverse) !important; background: var(--erp-primary) !important; border-color: var(--erp-primary) !important; }
+body.erp-ui :is(.btn, .primary):hover { color: var(--erp-inverse) !important; background: var(--erp-primary-hover) !important; }
+body.erp-ui :is(.ghost, .btn-ghost, .mini-btn) { color: var(--erp-text) !important; background: var(--erp-secondary) !important; border: 1px solid var(--erp-border-strong) !important; }
+body.erp-ui :is(.ghost, .btn-ghost, .mini-btn):hover { color: var(--erp-text) !important; background: var(--erp-hover) !important; }
+body.erp-ui :is(.btn-danger, .danger-btn) { color: var(--erp-inverse) !important; background: var(--erp-danger) !important; border-color: var(--erp-danger) !important; }
+body.erp-ui a:not([class]) { color: var(--erp-link) !important; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+body.erp-ui a:not([class]):hover { color: var(--erp-link-hover) !important; text-decoration-thickness: 2px; }
+
+/* Status, alert, table, and empty-state primitives. */
+body.erp-ui :is(.pill, .chip, .tag, .status-pill, [class*="badge"], .payment-pill, .pulse-chip, .workspace-pill) { border-radius: 999px !important; box-shadow: none !important; color: var(--erp-text-secondary) !important; background: var(--erp-status-neutral-bg) !important; border-color: #aaa69f !important; }
+body.erp-ui :is(.chip.good, .status-success, .status-complete, .status-completed, .p-paid, .p-deposit_paid, .p-finance-pushed, .p-financial-closed, .s-completed, .pm-good) { color: var(--erp-success) !important; background: var(--erp-status-success-bg) !important; border-color: #91b5a0 !important; }
+body.erp-ui :is(.chip.warn, .status-warning, .p-unpaid, .p-deposit_due, .p-invoice-ready, .p-invoice-overdue, .p-finance-not-pushed, .pm-warn) { color: var(--erp-warning) !important; background: var(--erp-status-warning-bg) !important; border-color: #c8aa71 !important; }
+body.erp-ui :is(.chip.danger, .status-error, .status-danger, .s-canceled, .s-issue_review, .p-refunded, .pm-danger) { color: var(--erp-danger) !important; background: var(--erp-status-danger-bg) !important; border-color: #c89494 !important; }
+body.erp-ui :is(.message, .alert, .notice, .stripe-note) { color: var(--erp-text-secondary) !important; border-radius: var(--erp-radius-sm) !important; }
+body.erp-ui table { width: 100%; color: var(--erp-text-secondary); background: var(--erp-surface); border-collapse: collapse; }
+body.erp-ui th { color: var(--erp-text) !important; background: var(--erp-surface-subtle) !important; font-size: var(--erp-font-xs); letter-spacing: .025em; text-align: left; }
+body.erp-ui th, body.erp-ui td { padding: 9px 10px !important; border-color: var(--erp-border) !important; border-width: 0 0 1px !important; }
+body.erp-ui tbody tr:hover { background: #f7f6f2 !important; }
+body.erp-ui td.numeric, body.erp-ui th.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+body.erp-ui .empty, body.erp-ui .erp-empty-state { min-height: 0 !important; padding: 16px !important; color: var(--erp-muted) !important; background: var(--erp-surface-raised) !important; border: 1px dashed var(--erp-border-strong) !important; border-radius: var(--erp-radius) !important; text-align: center; }
+
+/* Hub launchpad: light compact destinations instead of large dark commands. */
+body.erp-ui :is(.quick-card, .tool-card, .mini-links a) { color: var(--erp-text) !important; background: var(--erp-surface) !important; border: 1px solid var(--erp-border) !important; box-shadow: none !important; text-decoration: none; }
+body.erp-ui :is(.quick-card, .tool-card, .mini-links a):hover { color: var(--erp-text) !important; background: var(--erp-surface-raised) !important; border-color: var(--erp-border-strong) !important; box-shadow: var(--erp-shadow-raised) !important; }
+body.erp-ui :is(.quick-card, .tool-card, .mini-links a) :is(strong, span) { color: var(--erp-text) !important; }
+body.erp-ui :is(.quick-card, .tool-card, .mini-links a) small { color: var(--erp-muted) !important; }
+body.erp-ui .group-grid { gap: var(--erp-space-4) !important; }
+body.erp-ui .group-card { padding: var(--erp-space-4) !important; }
+body.erp-ui .mini-links { gap: var(--erp-space-2) !important; }
+
+/* Operational scanning: calm nested surfaces and clear lane / order hierarchy. */
+body.op-engine.erp-ui :is(.workspace-bar, .oa-daily-command, .attention-item, .result, .pulse-tile, .activity-item, .activity-empty, .capacity-card, .capacity-machine, .capacity-detail, .machine-card, .machine-slot, .printer-load-card, .detail-card, .pm-card, .analytics-card, .variance-card, .finance-summary-card, .day-card, .inventory-card, .snapshot-card, .cloud-card, .forecast-card, .supply-card, .material-row, .material-balance-card, .material-summary-card, .material-command-panel, .history-wrap, .form-section, .production-status-panel, .production-status-grid > div) { color: var(--erp-text) !important; background: var(--erp-surface) !important; border-color: var(--erp-border) !important; box-shadow: none !important; }
+body.op-engine.erp-ui :is(.board-header, .queue-header, .board-title, .finance-board-head, .oa-daily-bucket-head) { color: var(--erp-text) !important; background: var(--erp-surface-subtle) !important; border-color: var(--erp-border) !important; }
+body.op-engine.erp-ui .lanes { gap: var(--erp-space-3) !important; }
+body.op-engine.erp-ui .lane { padding: var(--erp-space-3) !important; background: var(--erp-surface-raised) !important; }
+body.op-engine.erp-ui .lanes .job-card { padding: var(--erp-space-3) !important; }
+body.op-engine.erp-ui .lanes .job-card :is(.stat, .material-row, .finance-mini span, .supply-usage-mini span) { color: var(--erp-text-secondary) !important; background: var(--erp-surface-raised) !important; border-color: var(--erp-border) !important; }
+body.op-engine.erp-ui .lanes .job-card :is(h4, strong) { color: var(--erp-text) !important; }
+body.op-engine.erp-ui .lanes .job-card :is(.job-meta, .tiny-note, .stat span) { color: var(--erp-muted) !important; }
+body.op-engine.erp-ui :is(.oa-daily-kpi, .oa-daily-bucket, .snapshot-pill-card, .snapshot-mini, .finance-health) { color: var(--erp-text) !important; background: var(--erp-surface-raised) !important; border-color: var(--erp-border) !important; }
+body.op-engine.erp-ui :is(.chm-dom-kicker, .catalog-note, #catalogMessage, #productionStatusBadge, .production-status-actions > span, .oa-daily-bucket-head > span) { color: var(--erp-success) !important; background: var(--erp-status-success-bg) !important; border-color: #91b5a0 !important; }
+body.op-engine.erp-ui .not-order { color: var(--erp-danger) !important; background: var(--erp-status-danger-bg) !important; border: 1px solid #c89494; padding: 8px 10px; border-radius: var(--erp-radius-sm); }
+body.erp-ui .erp-reliability-panel { background: #eef2f2 !important; }
+body.erp-ui .erp-reliability-pill { color: var(--erp-inverse) !important; background: #32444b !important; border-color: #536b75 !important; }
+
+/* Authoritative lifecycle is display-only; CSS styles adapter-produced classes. */
+body.erp-ui .timeline-step { color: var(--erp-text-secondary) !important; background: var(--erp-surface-raised) !important; border-color: var(--erp-border) !important; }
+body.erp-ui .timeline-step strong { color: inherit !important; }
+body.erp-ui .timeline-step.is-done { color: var(--erp-success) !important; background: var(--erp-status-success-bg) !important; }
+body.erp-ui .timeline-step.is-active { color: var(--erp-inverse) !important; background: var(--erp-primary) !important; border-color: var(--erp-primary) !important; }
+body.erp-ui .timeline-step.is-active :is(strong, small) { color: var(--erp-inverse) !important; }
+body.erp-ui .timeline-step.is-terminal { color: var(--erp-inverse) !important; background: var(--erp-danger) !important; border-color: var(--erp-danger) !important; }
+body.erp-ui :is(.activity-filter, .activity-actions button, .oa-view-tab, .tab, .tabs button) { color: var(--erp-text-secondary) !important; background: var(--erp-surface) !important; border-color: var(--erp-border-strong) !important; }
+body.erp-ui :is(.activity-filter.active, .oa-view-tab.active, .tab.active, .tabs button.active) { color: var(--erp-inverse) !important; background: var(--erp-primary) !important; border-color: var(--erp-primary) !important; }
+
+/* Knowledge, handbook, recipes and campaigns share a calm editorial/utility surface. */
+body.erp-ui :is(#articles, .article-grid, .recipe-grid, .campaign-list) { gap: var(--erp-space-3) !important; }
+body.erp-ui :is(.article, .article-card, .recipe-card, .campaign-card) { color: var(--erp-text) !important; background: var(--erp-surface) !important; border-color: var(--erp-border) !important; border-radius: var(--erp-radius) !important; box-shadow: var(--erp-shadow) !important; }
+
+@media (max-width: 1024px) {
+  body.op-engine.erp-ui .lanes { grid-template-columns: repeat(2, minmax(280px, 1fr)) !important; overflow-x: auto; }
+  body.erp-ui :is(.hero, .grid) { gap: var(--erp-space-3) !important; }
+}
+@media (max-width: 760px) {
+  body.erp-ui .erp-app-bar { grid-template-columns: minmax(0, 1fr) auto; min-height: 56px; padding: 8px 12px; }
+  .erp-app-identity > span > span, .erp-auth-copy { display: none; }
+  body.erp-ui .erp-nav { top: 56px; padding-inline: 8px; }
+  body.erp-ui .wrap { width: min(100% - 20px, 1440px) !important; padding-top: 12px !important; }
+  body.erp-ui :is(.top-actions, .btn-row, .actions) { gap: 6px !important; flex-wrap: wrap !important; }
+  body.erp-ui :is(.topbar, .top) { justify-content: stretch !important; }
+  body.erp-ui :is(.topbar, .top) > :last-child { width: 100%; }
+  body.erp-ui .table-wrap, body.erp-ui :is(.table-scroll, .orders-table-wrap) { overflow-x: auto; }
+  body.erp-ui table { min-width: 680px; }
+  body.op-engine.erp-ui .lanes { grid-template-columns: minmax(280px, 88vw) !important; scroll-snap-type: x proximity; }
+  body.op-engine.erp-ui .lane { scroll-snap-align: start; }
+}
+@media (max-width: 420px) {
+  body.erp-ui .erp-app-mark { width: 32px; height: 32px; font-size: .78rem; }
+  .erp-auth-action { padding-inline: 9px !important; }
+  body.erp-ui :is(.card, .panel, .section-card, .attention-card, .job-card, .tool-card, .group-card) { padding: 13px; }
+  body.erp-ui :is(.form-grid, .filters, .metrics, .summary-grid) { grid-template-columns: 1fr !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.erp-ui *, body.erp-ui *::before, body.erp-ui *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
