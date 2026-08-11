@@ -23,6 +23,8 @@
   --erp-warning: #765219;
   --erp-success: #276344;
   --erp-info: #315f86;
+  --erp-editorial-accent: var(--erp-link);
+  --erp-editorial-warning: var(--erp-warning);
   --erp-focus: #176b8c;
   --erp-disabled-text: #555c62;
   --erp-disabled-surface: #e6e3dd;
@@ -171,6 +173,8 @@ body.erp-ui :is(.btn, .primary):hover { color: var(--erp-inverse) !important; ba
 body.erp-ui :is(.ghost, .btn-ghost, .mini-btn) { color: var(--erp-text) !important; background: var(--erp-secondary) !important; border: 1px solid var(--erp-border-strong) !important; }
 body.erp-ui :is(.ghost, .btn-ghost, .mini-btn):hover { color: var(--erp-text) !important; background: var(--erp-hover) !important; }
 body.erp-ui :is(.btn-danger, .danger-btn) { color: var(--erp-inverse) !important; background: var(--erp-danger) !important; border-color: var(--erp-danger) !important; }
+body.erp-ui :is(.top-actions, .btn-row, .actions, .action-strip, .links) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--erp-space-2); min-width: 0; }
+body.erp-ui :is(.top-actions, .btn-row, .actions, .action-strip, .links) > :is(button, .btn, .ghost, .btn-ghost, .btn-danger, a) { max-width: 100%; }
 body.erp-ui a:not([class]) { color: var(--erp-link) !important; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 body.erp-ui a:not([class]):hover { color: var(--erp-link-hover) !important; text-decoration-thickness: 2px; }
 
@@ -179,6 +183,7 @@ body.erp-ui :is(.pill, .chip, .tag, .status-pill, [class*="badge"], .payment-pil
 body.erp-ui :is(.chip.good, .status-success, .status-complete, .status-completed, .p-paid, .p-deposit_paid, .p-finance-pushed, .p-financial-closed, .s-completed, .pm-good) { color: var(--erp-success) !important; background: var(--erp-status-success-bg) !important; border-color: #91b5a0 !important; }
 body.erp-ui :is(.chip.warn, .status-warning, .p-unpaid, .p-deposit_due, .p-invoice-ready, .p-invoice-overdue, .p-finance-not-pushed, .pm-warn) { color: var(--erp-warning) !important; background: var(--erp-status-warning-bg) !important; border-color: #c8aa71 !important; }
 body.erp-ui :is(.chip.danger, .status-error, .status-danger, .s-canceled, .s-issue_review, .p-refunded, .pm-danger) { color: var(--erp-danger) !important; background: var(--erp-status-danger-bg) !important; border-color: #c89494 !important; }
+body.erp-ui :is(.chip.info, .status-info, .s-in_design, .s-in_production, .s-post_processing, .p-invoice-sent) { color: var(--erp-info) !important; background: var(--erp-status-info-bg) !important; border-color: var(--erp-border-strong) !important; }
 body.erp-ui :is(.message, .alert, .notice, .stripe-note) { color: var(--erp-text-secondary) !important; border-radius: var(--erp-radius-sm) !important; }
 body.erp-ui table { width: 100%; color: var(--erp-text-secondary); background: var(--erp-surface); border-collapse: collapse; }
 body.erp-ui th { color: var(--erp-text) !important; background: var(--erp-surface-subtle) !important; font-size: var(--erp-font-xs); letter-spacing: .025em; text-align: left; }
@@ -225,6 +230,53 @@ body.erp-ui :is(.activity-filter.active, .oa-view-tab.active, .tab.active, .tabs
 body.erp-ui :is(#articles, .article-grid, .recipe-grid, .campaign-list) { gap: var(--erp-space-3) !important; }
 body.erp-ui :is(.article, .article-card, .recipe-card, .campaign-card) { color: var(--erp-text) !important; background: var(--erp-surface) !important; border-color: var(--erp-border) !important; border-radius: var(--erp-radius) !important; box-shadow: var(--erp-shadow) !important; }
 
+/* Phase 2.1 production cleanup: override the remaining high-specificity legacy
+   night-theme rules without changing any operational markup or hooks. */
+body.op-engine.erp-ui :is(.today-item, .today-copy, .machine-card, .machine-slot, .printer-load-card, .printer-load-card > div) {
+  color: var(--erp-text) !important;
+  background: var(--erp-surface-raised) !important;
+  border-color: var(--erp-border) !important;
+  box-shadow: none !important;
+}
+body.op-engine.erp-ui :is(#machineBoard .machine-slot, #utilizationBoard .printer-load-card > div) {
+  color: var(--erp-text-secondary) !important;
+  background: var(--erp-surface-raised) !important;
+  border-color: var(--erp-border) !important;
+}
+body.op-engine.erp-ui .machine-slot + .machine-slot {
+  border-top: 1px solid var(--erp-border) !important;
+}
+body.op-engine.erp-ui :is(.today-title, .printer-load-title, .machine-slot strong) { color: var(--erp-text) !important; }
+body.op-engine.erp-ui :is(.today-meta, .printer-load-sub, .printer-load-title span, .machine-slot span, .machine-slot .tiny-note) { color: var(--erp-muted) !important; }
+
+/* Quote actions use intrinsic button widths and wrapping rather than fixed
+   three-column tracks. Long labels therefore cannot collide or be clipped. */
+body.erp-ui .topbar:has(.topbar-actions.compact-actions) { grid-template-columns: minmax(0, 1fr) !important; }
+body.erp-ui .topbar-actions.compact-actions { width: 100% !important; max-width: none !important; min-width: 0 !important; justify-self: stretch !important; }
+body.erp-ui .topbar-actions.compact-actions :is(.primary-actions, .secondary-actions) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: stretch !important;
+  gap: var(--erp-space-2) !important;
+  width: 100% !important;
+}
+body.erp-ui .topbar-actions.compact-actions :is(.btn, .btn-ghost) {
+  flex: 1 1 190px !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 9px 12px !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+/* Handbook/editorial semantics: pale dark-theme labels are replaced with
+   contrast-tested dark text while their useful light callout surfaces remain. */
+body.erp-ui :is(.eyebrow, .detail .owner, .table th) { color: var(--erp-editorial-accent) !important; }
+body.erp-ui :is(.branch-title, .detail .watch) { color: var(--erp-editorial-warning) !important; }
+body.erp-ui .detail .watch { background: var(--erp-status-warning-bg) !important; border-color: var(--erp-warning-border) !important; }
+
 @media (max-width: 1024px) {
   body.op-engine.erp-ui .lanes { grid-template-columns: repeat(2, minmax(280px, 1fr)) !important; overflow-x: auto; }
   body.erp-ui :is(.hero, .grid) { gap: var(--erp-space-3) !important; }
@@ -241,6 +293,7 @@ body.erp-ui :is(.article, .article-card, .recipe-card, .campaign-card) { color: 
   body.erp-ui table { min-width: 680px; }
   body.op-engine.erp-ui .lanes { grid-template-columns: minmax(280px, 88vw) !important; scroll-snap-type: x proximity; }
   body.op-engine.erp-ui .lane { scroll-snap-align: start; }
+  body.erp-ui .topbar-actions.compact-actions :is(.btn, .btn-ghost) { flex-basis: 100% !important; }
 }
 @media (max-width: 420px) {
   body.erp-ui .erp-app-mark { width: 32px; height: 32px; font-size: .78rem; }
