@@ -100,6 +100,8 @@ test('shared components explicitly protect inverse labels and secondary copy', (
   assert.match(css, /footer[\s\S]*color:\s*var\(--erp-muted\)\s*!important/);
   assert.match(css, /:focus-visible\s*\{\s*outline:\s*3px solid #176b8c/);
   assert.match(css, /button:disabled[\s\S]*--erp-disabled-text/);
+  assert.match(css, /\.action-strip, \.links\)[^}]*flex-wrap:\s*wrap/);
+  assert.match(css, /\.status-info[^}]*--erp-status-info-bg/);
 });
 
 test('Phase 2 semantic tokens and component scales remain centralized', () => {
@@ -139,4 +141,34 @@ test('workflow adapters and command hooks remain outside the presentation layer'
   assert.match(read('production-control.html'), /data-workflow-command="pass_qc"/);
   assert.match(read('orders-admin.html'), /orders-lifecycle-visual\.js/);
   assert.match(read('quote.html'), /erp-status\.js/);
+});
+
+test('Phase 2.1 removes legacy Production night surfaces without changing workflow hooks', () => {
+  const css = read('css/erp-ui.css');
+  const production = read('production-control.html');
+  assert.match(css, /#machineBoard \.machine-slot[\s\S]*background:\s*var\(--erp-surface-raised\)\s*!important/);
+  assert.match(css, /#utilizationBoard \.printer-load-card > div[\s\S]*background:\s*var\(--erp-surface-raised\)\s*!important/);
+  assert.match(css, /\.today-item[\s\S]*background:\s*var\(--erp-surface-raised\)\s*!important/);
+  for (const hook of ['syncRepairBtn', 'jobForm', 'confirmQcUsageBtn']) {
+    assert.match(production, new RegExp(`id=["']${hook}["']`));
+  }
+});
+
+test('Quote action bar wraps long labels rather than forcing overlap-prone columns', () => {
+  const css = read('css/erp-ui.css');
+  const quote = read('quote.html');
+  assert.match(css, /\.topbar-actions\.compact-actions :is\(\.primary-actions, \.secondary-actions\)[\s\S]*display:\s*flex\s*!important[\s\S]*flex-wrap:\s*wrap\s*!important/);
+  assert.match(css, /\.topbar-actions\.compact-actions :is\(\.btn, \.btn-ghost\)[\s\S]*white-space:\s*normal\s*!important/);
+  assert.match(css, /max-width:\s*760px[\s\S]*flex-basis:\s*100%\s*!important/);
+  assert.match(quote, /id="prepareCustomerEmailBtn"[^>]*>Prepare Customer Email</);
+  assert.match(quote, /id="acceptCreateBtn"/);
+});
+
+test('Handbook uses readable centralized editorial and warning semantics', () => {
+  const css = read('css/erp-ui.css');
+  assert.match(css, /--erp-editorial-accent:\s*var\(--erp-link\)/);
+  assert.match(css, /--erp-editorial-warning:\s*var\(--erp-warning\)/);
+  assert.match(css, /\.detail \.owner, \.table th\)[^}]*var\(--erp-editorial-accent\)/);
+  assert.match(css, /\.branch-title, \.detail \.watch\)[^}]*var\(--erp-editorial-warning\)/);
+  assert.doesNotMatch(read('finance-pro.html'), /css\/erp-ui\.css|js\/erp-ui\.js/);
 });

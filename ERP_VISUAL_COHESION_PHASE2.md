@@ -158,6 +158,77 @@ At 1440, 1280, 1024, 768 and 390 pixels, verify the following. Browser claims mu
 
 These ideas cross the presentation boundary and require separate functional design and testing.
 
+## Phase 2.1 — Visual regression and readability cleanup
+
+Phase 2.1 is a focused presentation-only follow-up. The audit reviewed the rendered-source contracts and stylesheet cascade at the requested 1440, 1280, 1024, 768, and 390 pixel targets. Automated checks verify semantic contrast and responsive behavior without brittle pixel snapshots; authenticated browser review with representative live data remains required.
+
+### Known issues fixed
+
+| Page | Element / component | Problem | Severity | Fix applied | Shared token or page-specific? | Functionality impact | Visual review required? |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Production Control | P1S/P2S current-job and next-job `.machine-slot` blocks | A high-specificity legacy stylesheet kept near-black inner surfaces after the shared light-theme migration. | High | Applied the raised light surface, quiet border, primary heading, and readable muted metadata; adjacent slots use a divider rather than dark blocks. | Shared stylesheet, Production component selector | None; CSS only, with IDs, generated markup, data attributes, and lifecycle commands unchanged. | Yes—use populated P1S and P2S data at all target widths. |
+| Production Control | Today View `.today-item` action panels | Nested operational cards retained old-theme visual weight and inconsistent text hierarchy. | High | Applied light raised surfaces, quiet borders, no nested shadow, and explicit primary/muted text semantics while retaining warning/status treatments. | Shared stylesheet, Production component selector | None. | Yes—review ready, warning, and danger examples. |
+| Production Control | Printer load cards and inner load panels | Load details could still resolve to the legacy `#0c1628` background due to ID selector specificity. | High | Added an equally targeted shared-layer override using the light raised surface and semantic text tokens. | Shared stylesheet, Production component selector | None. | Yes—review assigned and “Needs printer selection” states. |
+| Quote | Header `.topbar-actions.compact-actions` | Fixed three-column tracks plus nowrap labels made “Prepare Customer Email” collision/overflow prone. | High | Replaced the fixed action tracks in the final shared cascade with intrinsic flex items, wrapping, consistent gaps, normal label wrapping, and a one-control row at narrow widths. | Shared action component rule with Quote action-bar selector | None; all button IDs and handlers remain unchanged. | Yes—review desktop/tablet widths and every enabled/disabled action state. |
+| ERP Handbook | Eyebrows, owner labels, table headings | Pale cyan inherited from the night theme had poor contrast on white surfaces. | High | Mapped editorial accents to the darker shared link/blue token. | Shared semantic token | None; content and interaction are unchanged. | Yes. |
+| ERP Handbook | Branch labels and Watch-out callout text | Pale yellow/orange was difficult to read on the light warning surface. | High | Mapped warning copy to the darker shared warning token and retained the pale warning surface and border. | Shared semantic token | None. | Yes. |
+
+### Similar issues found proactively
+
+| Page(s) | Element / component | Problem | Severity | Fix applied | Shared token or page-specific? | Functionality impact | Visual review required? |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Hub, Production, Orders, Inventory, Recipes, Campaign Manager, Handbook, Knowledge Library | Common action rows (`.top-actions`, `.btn-row`, `.actions`, `.action-strip`, `.links`) | Page-local gaps and wrapping rules were inconsistent and some did not protect intrinsic width at intermediate laptop/tablet sizes. | Medium | Centralized wrapping, alignment, gap, minimum-width containment, and child max-width protection at all widths. | Shared component rule | None. | Yes—especially 1024 and 768 pixels. |
+| Orders Admin and other status consumers | Informational status pills | Blue/in-progress statuses could fall through to either pale old-theme foregrounds or the neutral badge treatment. | Medium | Added an explicit dark-blue-on-light-info status rule for shared info and established in-progress/invoice-sent classes. | Shared semantic status rule | None; status mapping and labels are unchanged. | Yes—review populated Order status combinations. |
+| Production Control | Current/next/load supporting copy | Removing dark panels exposed legacy text assumptions that could have produced weak or mismatched copy. | Medium | Explicitly mapped titles to primary and supporting labels to the tested muted token. | Shared stylesheet, Production component selector | None. | Yes. |
+| All in-scope pages | Disabled/read-only fields, placeholders, footer/helper copy, table headers, selected navigation, empty states, nested cards | Cascade audit confirmed these remain protected by the Phase 2 shared opaque, contrast-tested tokens and component rules; no new one-off override was required. | Low | Retained and regression-tested the existing central rules. | Shared tokens/components | None. | Spot-check required. |
+
+### Pages reviewed with no issue
+
+The following in-scope pages were inspected for legacy dark surfaces, pale text, button/control collisions, weak status/navigation states, disabled/read-only legibility, table contrast, nested-card conflict, and horizontal overflow. No additional obvious Phase 2.1 defect requiring a page-specific change was found:
+
+- `hub.html` (the common action-row hardening applies centrally; no Hub-specific override was required)
+- `inventory-control.html`
+- `customer-360.html`
+- `product-recipes.html`
+- `campaign-manager.html`
+- `erp-knowledge-library.html`
+
+`erp-knowledge.html` is not present. No separate internal file/document/upload page is present; the embedded Job Assets areas in Production, Orders, Customer 360, and Product Recipes were included in their owning-page audit. Public pages, archives, generated customer documents, print-only output, and customer quote response are outside the internal ERP scope.
+
+`orders-admin.html` was reviewed as a priority operational page. Its actionable Phase 2.1 finding was the shared informational status treatment recorded above; no Orders-specific markup or runtime edit was needed. Production and Inventory warning/status colors remain semantic rather than being flattened into neutral colors.
+
+### Shared token and component changes
+
+- Added `--erp-editorial-accent` and `--erp-editorial-warning` as aliases of existing accessible semantic colors; no new raw palette colors were introduced.
+- Added explicit shared info-status presentation.
+- Hardened common action rows against wrapping and horizontal overflow.
+- Added final-cascade light-surface protection for Production current/next job, Today View, and printer load components whose old selectors had higher specificity than the original migration rule.
+
+### Page-specific changes
+
+No page HTML or JavaScript was changed. Component-targeted selectors live in the shared stylesheet for Production, Quote, and Handbook because they correct legacy page structures while preserving all existing DOM and behavioral hooks.
+
+### Automated protection added
+
+Focused tests now guard the Production light-surface overrides, Quote intrinsic wrapping and long-label behavior, Handbook semantic contrast aliases, common action-row wrapping, informational statuses, critical Production and Quote control hooks, and continued Finance Pro exclusion.
+
+Final Phase 2.1 automated result: **168 passed, 0 failed**. The increase from the trusted 165-test baseline is the three focused Phase 2.1 source-contract tests.
+
+### Finance Pro and functional freeze
+
+Finance Pro internal presentation remains excluded: `finance-pro.html` still loads neither `css/erp-ui.css` nor `js/erp-ui.js`, and no Finance file was edited. This cleanup changes CSS, source-contract tests, and this document only. It changes no business logic, workflow, RPC, handler, status authority, auth authority, inventory behavior, Quote behavior, Orders behavior, Production behavior, Finance behavior, or database migration.
+
+### Manual visual checks still required
+
+Use an authenticated environment with representative records at 1440, 1280, 1024, 768, and where practical 390 pixels:
+
+1. Populate both P1S/P2S current and next jobs, Today View warnings/actions, and assigned/unassigned printer loads; confirm all operational interiors are light and status colors remain distinct.
+2. Exercise every Quote header action state; confirm “Prepare Customer Email” wraps without clipping, controls do not overlap, and primary/secondary hierarchy is retained.
+3. Read Handbook eyebrows, ownership table headings, branch labels, and Watch-out panels in normal and zoomed text settings.
+4. Spot-check Orders and Inventory status chips, action bars, dense forms, disabled/read-only controls, tables, and narrow-width overflow.
+5. Spot-check Hub, Customer 360, Recipes, Campaign Manager, and Knowledge Library action wrapping, helper/footer copy, cards, navigation, and keyboard focus.
+6. Navigate to Finance Pro only to confirm the link boundary; do not treat its internal presentation as part of this visual review.
+
 ## 18. Focused commit hash
 
 The focused implementation commit hash is reported in the final delivery and Pull Request. A Git commit cannot reliably embed its own hash because changing this file changes that hash.
