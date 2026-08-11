@@ -973,6 +973,8 @@ body{font-family:Inter,Arial,sans-serif}
 <link rel="stylesheet" href="css/job-assets.css">
   <link rel="stylesheet" href="assets/css/engine-rc1.css?v=rc1">
   <script defer src="js/engine-shell.js?v=rc2"></script>
+  <link rel="stylesheet" href="css/erp-ui.css?v=20260811">
+  <script defer src="js/erp-ui.js?v=20260811"></script>
 </head>
 <body class="op-engine">
   <div class="wrap">
@@ -1124,6 +1126,7 @@ body{font-family:Inter,Arial,sans-serif}
           <div class="timeline-step" data-step="qc"><span>3</span><strong>QC</strong><small>Finishing / checks</small></div>
           <div class="timeline-step" data-step="ready_for_fulfillment"><span>4</span><strong>Fulfillment</strong><small>Pickup / ship</small></div>
           <div class="timeline-step" data-step="closed"><span>5</span><strong>Closed</strong><small>Fulfilled</small></div>
+          <div class="timeline-step" data-step="canceled"><span>×</span><strong>Canceled</strong><small>Terminal</small></div>
         </div>
 
         <div class="form-grid">
@@ -1449,6 +1452,7 @@ Aurora, OH 44202</textarea></div>
   <script src="olipoly-auth.js"></script>
   <script src="js/job-asset-model.js"></script>
   <script src="js/job-assets-ui.js"></script>
+  <script src="js/orders-lifecycle-visual.js"></script>
 
   <script>
     const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
@@ -5299,11 +5303,19 @@ function generateTravelerPdf(){
       })[value] || value || '—';
     }
 
+    function ordersAdminLifecycleVisualState(value){
+      return window.OliPolyOrdersLifecycleVisual.state(value, normalizeOrderStatusForDb);
+    }
+    window.OliPolyOrdersLifecycleVisualState = ordersAdminLifecycleVisualState;
+
     function ordersAdminV2RefreshWorkspace(){
       const orderNumber = $('orderNumber')?.value?.trim() || '';
       const customer = $('customerName')?.value?.trim() || '';
       const title = $('orderTitle')?.value?.trim() || '';
-      const status = $('status')?.value || '';
+      // The hydrated Order is authoritative. The disabled form control can lag after
+      // close/Finance commands and must not drive the lifecycle presentation.
+      const hydratedOrder = activeId ? orders.find(order => order.id === activeId) : null;
+      const status = normalizeOrderStatusForDb(hydratedOrder?.status || $('status')?.value || '');
       const payment = $('paymentStatus')?.value || '';
 
       const n = $('workspaceOrderNumber');
@@ -5315,15 +5327,12 @@ function generateTravelerPdf(){
       if (s) s.textContent = `Status: ${ordersAdminV2StatusText(status)}`;
       if (p) p.textContent = `Payment: ${ordersAdminV2PaymentText(payment)}`;
 
-      const timelineOrder = ['ready_to_print','printing','qc','ready_for_fulfillment','closed'];
-      const timelineStepMap = Object.fromEntries(timelineOrder.map(value => [value, value]));
-      const mapped = timelineStepMap[status] || 'ready_to_print';
-      const activeIndex = timelineOrder.indexOf(mapped);
+      const visual = ordersAdminLifecycleVisualState(status);
       document.querySelectorAll('.timeline-step').forEach(step => {
         const stepValue = step.dataset.step;
-        const stepIndex = timelineOrder.indexOf(stepValue);
-        step.classList.toggle('is-active', stepValue === mapped);
-        step.classList.toggle('is-done', activeIndex >= 0 && stepIndex >= 0 && stepIndex < activeIndex);
+        step.classList.toggle('is-active', stepValue === visual.active);
+        step.classList.toggle('is-terminal', visual.active === 'canceled' && stepValue === 'canceled');
+        step.classList.toggle('is-done', visual.completed.includes(stepValue));
       });
     }
 
