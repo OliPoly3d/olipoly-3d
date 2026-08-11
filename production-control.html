@@ -3037,6 +3037,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
   async function setStatus(id,status,commandContext = {}){
+    if(state.authorityMode !== 'authoritative') return toast('RECOVERY / OFFLINE DATA is read-only. Reconnect and refresh before changing Production lifecycle.');
     const j = state.jobs.find(x=>x.id===id);
     if(!j) return;
     const inventoryBoundary = j.production_status === 'qc' && ['ready_for_fulfillment','ready_to_print'].includes(status);
