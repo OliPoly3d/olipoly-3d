@@ -10,6 +10,7 @@
 > **REPOSITORY INTENT VERIFIED — YELLOW.** The repository's migration chain, tests, architecture documents, browser mutation sites, repair lineage, and diagnostic scripts were inspected. The chain contains intentional supersession and temporary instrumentation, so “latest migration present” is not sufficient evidence.
 >
 > **LIVE DEPLOYMENT VERIFIED — NO.** No Supabase URL, database URL, or PostgreSQL credentials were available in this environment. The operator later supplied the `20_IMMUTABILITY` result set, which is assessed below as partial live evidence; Codex did not run a live query and the database environment/run context was not supplied.
+> **LIVE DEPLOYMENT VERIFIED — NO.** No Supabase URL, database URL, or PostgreSQL credentials were available in this environment. No live query was run.
 >
 > **UNVERIFIED — OPERATOR QUERY REQUIRED.** Until the result grids from
 > [`supabase/verification/deployment_authority_verification.sql`](supabase/verification/deployment_authority_verification.sql)
@@ -124,6 +125,9 @@ Sections 06 and 20 expose every trigger and relevant guard. `orders_sync_workflo
 #### Live evidence received: `20_IMMUTABILITY` and `20_IMMUTABILITY_COLUMN_GRANTS`
 
 The operator supplied the first-version section 20 result plus a parsed account of the live column-grant grid. This is valid **partial live evidence**, but it does not establish the environment/run timestamp, all table privileges, function grants, or correction RPC definitions. Accordingly, it does not make the overall live deployment verified. It does, however, prove one P0 discrepancy; incomplete evidence is not a reason to leave a demonstrated defect YELLOW.
+#### Live evidence received: `20_IMMUTABILITY`
+
+The operator supplied one result set from the first version of section 20. This is valid **partial live evidence**, but it does not establish the environment/run timestamp, table or column privileges, trigger-function bodies/hashes, function grants, or correction RPC definitions. Accordingly, it does not make the overall live deployment verified.
 
 | Object | Live state received | Intended state | Status | Risk / next evidence |
 |---|---|---|---|---|
@@ -140,6 +144,12 @@ The three `financial_entries` INSERT triggers are consistent with separate eligi
 **Proposed remediation type only:** `GRANT CORRECTION` delivered by a reviewed forward-only migration, with `POLICY REPLACEMENT` or an immutable-row guard considered as defense in depth. Do not implement it until the discrepancy is reviewed.
 
 The verification package includes effective anon/authenticated/service-role UPDATE/DELETE checks, guard-function definitions/hashes, and column-level privileges directly in section 20. Operators should rerun **the entire updated package**, not only section 20.
+| `finance_correction_receipts` | RLS enabled; owner SELECT policy only; no mutation trigger | Owner-readable receipt; writes controlled by correction command/service role; browser mutation unavailable | **YELLOW — unable to prove** | RLS expresses owner read correctly, but RLS is not a grant system and absence of a trigger is not sufficient append-only enforcement. Prove authenticated table/column privileges and correction function grants/body. If authenticated can INSERT/UPDATE/DELETE directly, classify **RED**. |
+| `financial_entries` | RLS enabled; owner SELECT/INSERT/UPDATE/DELETE policies; three expected BEFORE INSERT authority/eligibility triggers | Owner read and narrow manual creation; authenticated table UPDATE/DELETE revoked; manual changes only through guarded RPCs; command-owned entries/corrections append-only | **YELLOW with a RED escalation condition** | The UPDATE/DELETE policies are permissive owner-row paths, but policies alone do not confer privileges. They are dormant only if the repository's later `REVOKE UPDATE, DELETE ... FROM authenticated` is live. If section 19/updated section 20 shows authenticated UPDATE or DELETE, this is **RED** because the policy would permit direct mutation of command-owned rows. Prove trigger bodies, effective table/column privileges, and RPC grants. |
+
+The three `financial_entries` INSERT triggers are consistent with separate eligibility, accepted-invoice, and tax-metadata responsibilities; their coexistence is not presently classified as competing authority because all are BEFORE INSERT guards/enrichment. Their execution order (`aa_`, unprefixed, `zz_`) and full bodies still require sections 03/06/20 evidence. The result contains no UPDATE/DELETE immutability trigger on `financial_entries`; repository intent relies on privilege revocation plus guarded DEFINER RPCs, so effective privileges are decisive.
+
+The verification package now includes effective anon/authenticated/service-role UPDATE/DELETE checks, guard-function definitions/hashes, and column-level privileges directly in section 20. Operators should rerun **the entire updated package**, not only section 20.
 
 ### Storage
 
@@ -228,6 +238,7 @@ These classifications are repository-level triage, not live conclusions. Tests w
 ## Red/yellow/green scorecard
 
 Most deployment surfaces remain YELLOW because no live credentials existed. The operator-supplied immutability and column-grant evidence is sufficient to mark the Finance/direct-write discrepancy RED without claiming the rest of the deployment verified.
+Because no live credentials existed, all deployment surfaces remain YELLOW rather than being falsely marked GREEN or RED.
 
 | Surface | Status | Evidence | Risk | Recommended next action |
 |---|---|---|---|---|
@@ -244,6 +255,10 @@ Most deployment surfaces remain YELLOW because no live credentials existed. The 
 | Finance authority | **RED — P0** | Live owner UPDATE policy + 31 authenticated column UPDATE grants + no UPDATE guard in supplied trigger topology | Direct mutation of command-owned Order income bypasses append-only corrections and audit receipts | Review discrepancy; collect remaining scope evidence; propose GRANT CORRECTION via forward-only migration |
 | Public RPC surface | **YELLOW** | Expected public families classified | Private ERP/customer leakage | Run 14, manually inspect returns |
 | Browser/direct-write bypass | **RED — P0 (Finance)** | Finance UI uses RPCs, but the live database independently permits owner-row UPDATE of economically significant `financial_entries` columns | Any authenticated client can bypass the UI/RPC contract | Treat database privilege boundary as authoritative; review GRANT CORRECTION |
+| Finance authority | **YELLOW** | Partial live section 20: RLS and expected INSERT triggers present, but owner UPDATE/DELETE policies remain and effective privileges were not included | If authenticated UPDATE/DELETE survives, direct mutation of command-owned ledger rows is RED | Rerun updated 19/20; prove table/column privileges and guard/RPC bodies |
+| Finance authority | **YELLOW** | Cumulative ledger/correction contract identified | Duplicate/mutable/mistated revenue/tax | Run 13/19/20 and body comparison |
+| Public RPC surface | **YELLOW** | Expected public families classified | Private ERP/customer leakage | Run 14, manually inspect returns |
+| Browser/direct-write bypass | **YELLOW** | Mutation families mapped conceptually | Command bypass | Compare browser calls to 02/19 |
 | Data integrity | **YELLOW** | Read-only scans supplied; none run | Existing contradictory rows | Run 09/12/13/16 |
 | Temporary diagnostics | **YELLOW** | Temporary 030004 and gated 280010 identified | Logging/privacy/performance or stale body | Run 15 and hash terminal definitions |
 | Test/repo alignment | **YELLOW** | Nine failures triaged without assumptions | Stale safety net or real defect | Capture exact test outputs and live evidence |
@@ -287,6 +302,7 @@ All of the following are required before “LIVE DEPLOYMENT VERIFIED”:
 3. exact public function signatures, canonical definitions/hashes, owners, languages, security/volatility/parallel flags and settings;
 4. PUBLIC/anon/authenticated/service-role execute matrix;
 5. manual security review of every deployed DEFINER and public RPC body/return shape (including the Finance/snapshot guard bodies omitted from the supplied section 20 grid);
+5. manual security review of every deployed DEFINER and public RPC body/return shape;
 6. all critical triggers and trigger-function definitions/hashes;
 7. bucket public/private configuration and `storage.objects` policies;
 8. status/linkage columns and diagnostic counts/IDs;
