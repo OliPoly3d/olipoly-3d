@@ -2298,6 +2298,9 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       document.querySelectorAll('#orderDetailCard .form-grid input, #orderDetailCard .form-grid select, #orderDetailCard .form-grid textarea').forEach(control => {
         control.disabled = closed;
       });
+      // Lifecycle and payment are always command-owned. The general form reset
+      // above must never turn these display-only controls back into draft inputs.
+      if ($('status')) $('status').disabled = true;
       if ($('paymentStatus')) $('paymentStatus').disabled = true;
       ['saveBtn','quickSaveBtn'].forEach(id => {
         const button = $(id);
@@ -2946,7 +2949,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       $('sumCompleted').textContent = closedOrders().length;
       $('sumValue').textContent = money(orders.reduce((s,o)=>s+num(o.order_total),0));
       $('sumDepositDue').textContent = orders.filter(o => o.payment_status === 'deposit_due').length;
-      $('sumInProduction').textContent = orders.filter(o => ['awaiting_production','in_design','in_production','post_processing','production_complete','on_hold','issue_review'].includes(o.status)).length;
+      $('sumInProduction').textContent = orders.filter(o => ['printing','qc'].includes(o.status)).length;
       const readyFinance = readyFinanceOrders();
       if ($('sumReadyFinance')) $('sumReadyFinance').textContent = readyFinance.length;
       if ($('sumReadyFinanceValue')) $('sumReadyFinanceValue').textContent = money(readyFinance.reduce((s,o)=>s+num(o.order_total),0));
@@ -2978,14 +2981,14 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
     function oaDailyBuckets(){
       const active = activeOrders();
       const todayIso = today();
-      const overdue = active.filter(o => isInvoiceOverdue(o) || (oaDailyDateValue(o) && oaDailyDateValue(o) < todayIso && !['completed','shipped'].includes(o.status)));
+      const overdue = active.filter(o => isInvoiceOverdue(o) || (oaDailyDateValue(o) && oaDailyDateValue(o) < todayIso && o.status !== 'ready_for_fulfillment'));
       const moneyFollowup = active.filter(o => !orderClosureFlags(o).payment_not_required && ['unpaid','due_on_completion','deposit_due','deposit_paid'].includes(o.payment_status) && oaDailyBalance(o) > 0);
       const invoiceWork = active.filter(o => {
         const hasTotal = num(o.order_total) > 0;
         const needsInvoice = hasTotal && (!o.invoice_number || (!!o.invoice_number && !o.invoice_sent && o.payment_status !== 'paid'));
         return needsInvoice || oaDailyIsPoOrder(o) || isInvoiceOverdue(o);
       });
-      const ready = active.filter(o => ['ready_for_pickup','shipped'].includes(o.status) || (o.status === 'completed' && !orderIsClosed(o)));
+      const ready = active.filter(o => o.status === 'ready_for_fulfillment');
       const poWatch = active.filter(oaDailyIsPoOrder);
       return {overdue, moneyFollowup, invoiceWork, ready, poWatch};
     }
@@ -3025,7 +3028,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       oaDailyRenderBucket('oaBucketOverdue','oaBucketOverdueCount',b.overdue, o => isInvoiceOverdue(o) ? 'Invoice overdue' : 'Past target/order date');
       oaDailyRenderBucket('oaBucketMoney','oaBucketMoneyCount',b.moneyFollowup, o => `${paymentLabel(o.payment_status)} · ${money(oaDailyBalance(o))} balance`);
       oaDailyRenderBucket('oaBucketInvoice','oaBucketInvoiceCount',b.invoiceWork, o => oaDailyIsPoOrder(o) ? 'PO / terms watch' : (!o.invoice_number ? 'Needs invoice number' : 'Invoice not sent'));
-      oaDailyRenderBucket('oaBucketReady','oaBucketReadyCount',b.ready, o => o.status === 'completed' ? 'Closeout checklist' : statusLabel(o.status));
+      oaDailyRenderBucket('oaBucketReady','oaBucketReadyCount',b.ready, o => statusLabel(o.status));
     }
 
     function oaDailyApplyFilter(mode){
@@ -3050,7 +3053,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         $('paymentFilter').value = 'all';
       } else if(mode === 'ready'){
         orderViewMode = 'active';
-        $('statusFilter').value = 'ready_for_pickup';
+        $('statusFilter').value = 'ready_for_fulfillment';
         $('paymentFilter').value = 'all';
         if($('invoiceFilter')) $('invoiceFilter').value = 'all';
       }
@@ -3099,8 +3102,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
             ${o.status === 'completed' ? `<span class="payment-pill ${completionEmailIsClosed(o) ? 'p-not-required' : 'p-needs-action'}">${orderClosureFlags(o).completion_email_not_required ? 'Completion Email Not Required' : (o.completion_email_sent ? 'Completion Email Sent' : 'Needs Completion Email')}</span>` : ''}
             ${orderIsClosed(o) ? `<span class="payment-pill p-closed-ready">Closed</span>` : ''}
           </div>
-          <p>${o.customer_name || 'No customer'}${o.customer_email ? ` • ${o.customer_email}` : ''}${o.customer_phone ? ` • ${T.esc(o.customer_phone)}` : ''}</p>
-          ${o.source_type==='campaign'?`<p><strong>Source: Campaign</strong> · ${T.esc(o.campaign_code||'Campaign')} · submission ${T.esc(o.campaign_public_reference||'—')}<br>Customer link: ${T.esc(o.campaign_customer_link_status||'unresolved_review_required')} · payment evidence: ${T.esc(o.campaign_source_snapshot?.payment_evidence?.state||'unverified')}<br><a href="campaign-manager.html">Open Campaign Manager</a></p><details><summary>Immutable submitted items</summary>${(o.campaign_source_snapshot?.items||[]).map(item=>`<div><strong>${T.esc(item.product_public_code||'Item')} · qty ${T.esc(item.quantity)}</strong><br>${T.esc(item.offer_snapshot?.title||'')} · ${T.esc(item.authoritative_line_subtotal)}${item.personalization_requested?`<br>Personalization: ${T.esc(JSON.stringify(item.personalization_selection||{}))}`:''}</div>`).join('')}</details>`:''}
+          <p>${esc(o.customer_name || 'No customer')}${o.customer_email ? ` • ${esc(o.customer_email)}` : ''}${o.customer_phone ? ` • ${esc(o.customer_phone)}` : ''}</p>
+          ${o.source_type==='campaign'?`<p><strong>Source: Campaign</strong> · ${esc(o.campaign_code||'Campaign')} · submission ${esc(o.campaign_public_reference||'—')}<br>Customer link: ${esc(o.campaign_customer_link_status||'unresolved_review_required')} · payment evidence: ${esc(o.campaign_source_snapshot?.payment_evidence?.state||'unverified')}<br><a href="campaign-manager.html">Open Campaign Manager</a></p><details><summary>Immutable submitted items</summary>${(o.campaign_source_snapshot?.items||[]).map(item=>`<div><strong>${esc(item.product_public_code||'Item')} · qty ${esc(item.quantity)}</strong><br>${esc(item.offer_snapshot?.title||'')} · ${esc(item.authoritative_line_subtotal)}${item.personalization_requested?`<br>Personalization: ${esc(JSON.stringify(item.personalization_selection||{}))}`:''}</div>`).join('')}</details>`:''}
           ${o.customer_name ? `<a class="customer-360-chip" href="customer-360.html?search=${encodeURIComponent(o.customer_name)}" onclick="event.stopPropagation()"> Customer 360</a>` : ''}
         </div>
       `).join('');
@@ -3381,9 +3384,6 @@ const payload = snapshotForm();
 
       const currentRow = activeId ? orders.find(o => o.id === activeId) : null;
       const oldOrderNumber = currentRow?.order_number || null;
-      const backwardWarning = currentRow && window.OliPolyWorkflow.backwardMoveWarning(currentRow.status, payload.status);
-      if(backwardWarning && !confirm(backwardWarning)) return setMsg($('formMessage'),'Backward workflow move canceled.');
-
       const ordinaryPayload = buildOrdinaryOrderEditPayload(payload, currentRow);
       if(!Object.keys(ordinaryPayload).length) return setMsg($('formMessage'),'Order saved.');
       let res;
@@ -3417,10 +3417,6 @@ const payload = snapshotForm();
 
       if(oldOrderNumber && oldOrderNumber !== payload.order_number){
         setMsg($('formMessage'),'Order number changed; public tracking projection will update through approved workflow commands.');
-      }
-
-      if(currentRow && currentRow.status !== payload.status){
-        await syncOrderStatusToProduction({...payload, updated_at:patchedOrder.updated_at, source_quote_number: currentRow?.source_quote_number || payload.source_quote_number || null}, patchedOrder, false);
       }
 
       setMsg($('formMessage'),'Order saved.');
