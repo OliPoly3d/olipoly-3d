@@ -1115,7 +1115,6 @@
         "js/product-recipe-model.js?v=20260716-m4a",
         "js/production-status-persistence.js?v=20260716-m2b1",
         "js/workflow-status.js?v=20260716-m2b1",
-        "olipoly-auth.js",
         "olipoly-auth.js?v=20260708-foundation4"
       ],
       "stylesheets": [
@@ -1610,8 +1609,8 @@
         "js/customer-360.js",
         "js/job-asset-model.js",
         "js/job-assets-ui.js",
-        "js/olipoly-auth.js",
-        "js/workflow-status.js"
+        "js/workflow-status.js",
+        "olipoly-auth.js"
       ],
       "stylesheets": [
         "css/erp-reliability.css?v=20260608",
@@ -1791,7 +1790,7 @@
       ],
       "scripts": [
         "js/campaign-manager.js",
-        "js/olipoly-auth.js"
+        "olipoly-auth.js"
       ],
       "stylesheets": [],
       "inlineHandlers": [],

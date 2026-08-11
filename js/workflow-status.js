@@ -38,12 +38,15 @@
   });
 
   function normalizeOrderStatus(value){
-    return LEGACY_ORDER_STATUS_MAP[String(value || '').trim().toLowerCase()] || 'ready_to_print';
+    return globalThis.OliPolyStatus?.normalizeOrderStatus
+      ? globalThis.OliPolyStatus.normalizeOrderStatus(value)
+      : LEGACY_ORDER_STATUS_MAP[String(value || '').trim().toLowerCase()] || 'ready_to_print';
   }
   function isPreAcceptanceStatus(value){
     return PRE_ACCEPTANCE_STATUSES.has(String(value || '').trim().toLowerCase());
   }
   function orderStatusLabel(value){
+    if(globalThis.OliPolyStatus?.orderStatusLabel) return globalThis.OliPolyStatus.orderStatusLabel(value);
     const status = normalizeOrderStatus(value);
     return ORDER_STATUS_LABELS[status];
   }

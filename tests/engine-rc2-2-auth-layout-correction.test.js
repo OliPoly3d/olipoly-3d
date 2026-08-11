@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const authSource = fs.readFileSync('js/olipoly-auth.js', 'utf8');
+const authSource = fs.readFileSync('olipoly-auth.js', 'utf8');
 const shell = fs.readFileSync('js/engine-shell.js', 'utf8');
 const engineCss = fs.readFileSync('assets/css/engine-rc1.css', 'utf8');
 const assetCss = fs.readFileSync('css/job-assets.css', 'utf8');
