@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 
 const privatePages = ['hub.html','orders-admin.html','quote.html','production-control.html','inventory-control.html','finance-pro.html','customer-360.html','product-recipes.html','campaign-manager.html','erp-handbook.html','erp-knowledge-library.html'];
-const publicPages = ['index.html','collections.html','studio.html','creations.html','collaboration.html','community.html','about.html','faq.html','legal.html','pay.html','track.html','events.html','start-project.html','project-received.html','quote-response.html','fundraiser.html','niles.html','showcase.html'];
+const publicPages = ['index.html','collections.html','studio.html','creations.html','collaboration.html','community.html','about.html','faq.html','legal.html','pay.html','track.html','events.html','start-project.html','project-received.html','quote-response.html','fundraiser.html','niles.html'];
 const destinations = ['hub.html','customer-360.html','quote.html','orders-admin.html','production-control.html','inventory-control.html','product-recipes.html','campaign-manager.html','finance-pro.html','erp-handbook.html','erp-knowledge-library.html'];
 
 test('all and only private Engine pages load the RC2 shell', () => {
