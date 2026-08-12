@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const pages = `quote-response.html project-received.html northeast-ohio-3d-printing.html custom-3d-printing-aurora-ohio.html custom-3d-printing-niles-ohio.html custom-3d-printing-hudson-ohio.html custom-3d-printing-twinsburg-ohio.html custom-3d-printing-streetsboro-ohio.html custom-3d-printing-solon-ohio.html custom-3d-printing-chagrin-falls-ohio.html showcase.html branded-details.html eye-catching-work.html finished-pieces.html from-imagination.html designed-before-printing.html raw-to-refined.html real-solutions.html fundraiser.html niles.html`.split(' ');
+const pages = `quote-response.html project-received.html fundraiser.html niles.html`.split(' ');
 
 for (const page of pages) {
   const html = fs.readFileSync(path.join(root, page), 'utf8');

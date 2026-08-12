@@ -20,5 +20,5 @@ assert.match(migration,/asset\.designation='customer_supplied'/,'only safely-def
 assert.match(migration,/source\.owner_id=new\.user_id/);assert.match(migration,/asset\.owner_id=new\.user_id/);
 assert.doesNotMatch(migration,/storage\.objects|delete from public\.asset/,'migration does not destroy records or bytes');
 assert.match(css,/overflow-wrap:anywhere/);assert.match(css,/min-height:44px/);assert.match(css,/1180px/);
-for(const page of ['index.html','collections.html','custom-3d-printing-aurora-ohio.html'])assert.doesNotMatch(read(page),/data-job-assets|job-assets-ui/,'public RC5 remains isolated');
+for(const page of ['index.html','collections.html','studio.html'])assert.doesNotMatch(read(page),/data-job-assets|job-assets-ui/,'public RC5 remains isolated');
 console.log('RC2.3 authoritative asset lifecycle assertions passed');

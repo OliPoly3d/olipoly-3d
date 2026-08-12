@@ -1,11 +1,17 @@
 User-agent: *
 Allow: /
 
+# Internal ERP applications are not public search content.
 Disallow: /hub.html
-Disallow: /orders-admin.html
-Disallow: /quote.html
-Disallow: /production-control.html
-Disallow: /inventory-control.html
+Disallow: /campaign-manager.html
+Disallow: /customer-360.html
+Disallow: /erp-handbook.html
+Disallow: /erp-knowledge-library.html
 Disallow: /finance-pro.html
+Disallow: /inventory-control.html
+Disallow: /orders-admin.html
+Disallow: /product-recipes.html
+Disallow: /production-control.html
+Disallow: /quote.html
 
 Sitemap: https://olipoly3d.com/sitemap.xml
