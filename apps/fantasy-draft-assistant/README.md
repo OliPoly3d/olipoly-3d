@@ -70,3 +70,16 @@ Believeland is a private 12-team League Manager, Head-to-Head Points, Point Per 
 The roster is 16: 10 starters (QB 1, RB 2, WR 2, TE 1, RB/WR/TE FLEX 2, D/ST 1, K 1) plus Bench 6. IR 2 is separate. Maxima are QB 4, RB 8, WR 8, TE 3, D/ST 3, and K 3; DT, DE, LB, CB, S, P, and HC are zero.
 
 Detailed rules are typed in `src/domain/scoring.ts` and persisted by `202608130004_believeland_scoring_and_auth_support.sql`. No 100–199 receiving bonus or rushing game-yardage bonus was supplied, so none exists. D/ST 18–21 and 22–27 points-allowed bands are `points: null, unresolved: true`; source confirmation is required. Overlapping ESPN return-TD categories must be de-duplicated by a future scoring engine.
+
+## Runtime deployment configuration
+
+The committed static site loads `/draft-assistant/config.js` before its module bundle. For a deployed build, edit `draft-assistant/config.js` (or its build source `apps/fantasy-draft-assistant/public/config.js`) using only this browser-readable shape:
+
+```js
+window.__DRAFT_ASSISTANT_CONFIG__ = Object.freeze({
+  supabaseUrl: "https://ffcjcepugnyhfkfezdlw.supabase.co",
+  supabasePublishableKey: "PASTE_THE_PUBLISHABLE_KEY_HERE"
+});
+```
+
+The publishable key is designed for browser use with RLS; it is not a server secret. Never add `service_role`, `sb_secret_*`, database passwords, OpenAI keys, or any other server-side credential. Production prefers this runtime object and fails closed when it is absent, empty, or partial—even if stale `VITE_DRAFT_*` values were present at build time. Local development and tests continue to support `VITE_DRAFT_SUPABASE_URL` and `VITE_DRAFT_SUPABASE_PUBLISHABLE_KEY`; unconfigured local builds retain explicit local-only mode.
