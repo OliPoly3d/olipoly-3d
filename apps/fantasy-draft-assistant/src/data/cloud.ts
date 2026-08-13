@@ -37,3 +37,4 @@ export class DraftCloudGateway {
   }
 }
 export const draftCloud = new DraftCloudGateway(readDraftCloudConfig(import.meta.env))
+import{createClient,type SupabaseClient}from'@supabase/supabase-js';const url=import.meta.env.VITE_DRAFT_SUPABASE_URL?.trim(),key=import.meta.env.VITE_DRAFT_SUPABASE_ANON_KEY?.trim();export const draftCloud:{configured:boolean;client:SupabaseClient|null}={configured:Boolean(url&&key),client:url&&key?createClient(url,key):null};export async function connectivity(){if(!draftCloud.client||!navigator.onLine)return'LOCAL DEV · CLOUD OFF';const{error}=await draftCloud.client.from('leagues').select('id').limit(1);return error?'SYNC ERROR':'DRAFT CLOUD CONNECTED'}
