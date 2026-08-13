@@ -1,0 +1,10 @@
+import { describe, expect, it } from 'vitest'
+import { configurationStatus, readDraftCloudConfig } from './cloud'
+import { authViewFor, loginMarkup } from '../ui/auth'
+describe('Draft cloud configuration and auth states', () => {
+  it('prefers complete runtime browser configuration in production', () => { const config = readDraftCloudConfig({ VITE_DRAFT_SUPABASE_URL:'https://build.example', VITE_DRAFT_SUPABASE_PUBLISHABLE_KEY:'build-key' }, { supabaseUrl:'https://runtime.example', supabasePublishableKey:'runtime-key' }, true); expect(config).toMatchObject({url:'https://runtime.example',publishableKey:'runtime-key',source:'runtime'}); expect(configurationStatus(config)).toBe('connecting') })
+  it('fails closed in production when runtime configuration is missing or partial', () => { expect(configurationStatus(readDraftCloudConfig({ VITE_DRAFT_APP_ENV:'local', VITE_DRAFT_SUPABASE_URL:'https://build.example', VITE_DRAFT_SUPABASE_PUBLISHABLE_KEY:'build-key' }, undefined, true))).toBe('configuration-error'); expect(configurationStatus(readDraftCloudConfig({}, {supabaseUrl:'https://partial.example'}, true))).toBe('configuration-error') })
+  it('continues to support VITE values for local development and tests', () => { const config=readDraftCloudConfig({VITE_DRAFT_APP_ENV:'local',VITE_DRAFT_SUPABASE_URL:'https://ffcjcepugnyhfkfezdlw.supabase.co',VITE_DRAFT_SUPABASE_PUBLISHABLE_KEY:'publishable-test'},undefined,false); expect(config.source).toBe('build'); expect(configurationStatus(config)).toBe('connecting') })
+  it('allows explicitly labelled local-only startup without cloud values', () => expect(configurationStatus(readDraftCloudConfig({ VITE_DRAFT_APP_ENV:'local' },undefined,false))).toBe('local-only'))
+  it('maps authenticated and unauthorized states explicitly', () => { expect(authViewFor('authenticated',true)).toBe('authenticated'); expect(authViewFor('unauthorized',true)).toBe('unauthorized'); expect(loginMarkup('unauthorized')).toContain('Access not authorized'); expect(loginMarkup('email')).toContain('Send magic link'); expect(loginMarkup('check-email')).toContain('Check your email') })
+})
