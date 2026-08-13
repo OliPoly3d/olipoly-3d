@@ -14,6 +14,7 @@ npm run dev
 ```
 
 Set `VITE_DRAFT_SUPABASE_URL` and `VITE_DRAFT_SUPABASE_PUBLISHABLE_KEY`. Only the publishable key belongs in browser variables. With no Draft Supabase variables in the `local` environment, the app shows an explicit orange **LOCAL DEVELOPMENT MODE** banner. Production fails closed when configuration is incomplete. Configured deployments require a magic-link session and an authorized `draft_allowed_users` row.
+Set `VITE_DRAFT_SUPABASE_URL`, `VITE_DRAFT_SUPABASE_ANON_KEY`, and `VITE_DRAFT_ALLOWED_EMAIL`. Only the publishable anon key belongs in browser variables. With no Draft Supabase variables, the app shows an explicit orange **LOCAL DEVELOPMENT MODE** banner. Configured deployments require a magic-link session; RLS also requires the user in `draft_allowed_users`.
 
 Apply to a fresh Draft Assistant project, in order:
 
