@@ -378,3 +378,42 @@ Scores use centralized, comparable component ranges: baseline value (0–10), ro
 Scarcity combines unmet league starter demand, available supply, manager demand before the next owned pick, and tier pressure. Cost of Waiting compares the candidate's baseline quality with the deterministic nth positional alternative, where n is estimated from the need strength of teams holding intervening picks. The forecast respects snake parity, starting round, keepers, and traded ownership, and reports position pressure rather than pretending to predict players or percentages. Recent runs are observations and do not directly force the same position.
 
 The live room displays BEST PICK, ALTERNATIVE, and BEST VALUE with light positional diversity, categorical confidence, ranked Draft Pulse facts, structured WHY facts, and a deterministic countercase. Confidence uses score margin and known data limitations. Phase 5 has no current NFL news, injury context, live ECR/ADP, external feed, probabilistic model, OpenAI call, or defensible IDP projection; static fixture value is explicitly labeled **BASELINE FIXTURE RANKING** until Phase 6.
+
+---
+
+## Phase 6 — Current Player Data and NFL Context Pipeline
+
+Phase 6 adds a normalized, snapshot-based boundary between external data and deterministic recommendations. `PlayerDataProvider`, `RankingProvider`, `NewsProvider`, `StatusProvider`, and `IdpProvider` return normalized records; UI and recommendation code never consume vendor payloads or fetch a source per recommendation. A snapshot has a stable identifier, creation time, scoring context, provider results, quality/freshness, normalized players, and structured context changes. Given the same draft state, user context, and snapshot, recommendations remain reproducible.
+
+### Identity and normalized facts
+
+Canonical IDs distinguish a player's normalized name, NFL team, and position; vendor IDs may replace the derived component when a supported provider supplies one. Name normalization handles Unicode marks, punctuation, whitespace, and suffixes. DST records use team identity. Temporary fixture IDs remain an explicit mapping key during migration. Optional fields stay absent rather than being invented.
+
+A player record may contain rankings, ADP, official availability/injury facts, interpretive role context, concise news events, IDP context, provenance, uncertainty flags, and categorical data quality. Source classes are `OFFICIAL`, `PRIMARY_REPORTING`, `SECONDARY_REPORTING`, `ANALYST_INTERPRETATION`, and `SPECULATION`. Confidence is categorical (`HIGH`, `MED`, `LOW`). Freshness is `FRESH`, `AGING`, `STALE`, or `UNKNOWN`; stale and scoring-mismatched rankings receive lower consensus weight and remain flagged. Conflicting rank/role inputs survive as disagreement rather than becoming a false fact. Official status is modeled separately so a future provider merger can give it precedence.
+
+### Current provider/access status
+
+No automated third-party provider is enabled in Phase 6. FantasyPros, ESPN, CBS, and Yahoo have not been automated because this repository has no documented supported public browser API, redistribution permission, or server-side credential boundary for those ranking products. Phase 6 does not scrape sites, bypass authentication/paywalls, automate user credentials, or assume browser CORS. A source that requires a private key must be implemented later behind an approved server-side proxy/edge function. Secrets must never be placed in Vite variables, `runtime-config.js`, client code, import files, or documentation.
+
+The provider interfaces and non-secret configuration shape support later additions after each source's official access method, authentication, scraping terms, storage/redistribution rules, CORS behavior, priority, scoring formats, and freshness thresholds are reviewed. Until then, explicit manual import is the safe ranking provider. Refresh reports that no automatic source is configured and retains the last successful snapshot.
+
+### Manual ranking import (iPad and ChatGPT compatible)
+
+The Player Data drawer accepts UTF-8 CSV or a JSON array, previews matched/unmatched/error counts, and activates only after confirmation. Validation never replaces the current snapshot. Required fields are `player_name`, `position`, and positive `overall_rank`. Optional fields are `team`, `position_rank`, `tier`, `adp`, `source`, and `updated_at`. The user supplies snapshot source, ISO-8601 update time, and the current league supplies scoring context.
+
+```csv
+player_name,team,position,overall_rank,position_rank,tier,adp,source,updated_at
+Example Player,CLE,RB,24,12,3,29.5,Manual ranking export,2026-08-14T12:00:00Z
+```
+
+JSON uses the same snake-case keys. ChatGPT may create either plain-text format on mobile; no proprietary file or shell command is required. Teams use current NFL abbreviations (aliases `JAC`→`JAX`, `WSH`→`WAS`, `LVR`→`LV` are normalized). Accepted offensive positions are `QB`, `RB`, `WR`, `TE`, `DST`/`D/ST`, and `K`; IDP positions include `DL`, `DT`, `DE`, `LB`, `DB`, `CB`, and `S`. Rows that cannot map uniquely by normalized name, position, and optional team are reported as unmatched. Invalid ranks are rejected. Imports do not partially activate.
+
+### Recommendation, cache, and UI behavior
+
+IndexedDB stores one last-good local snapshot per league. It is local only, not cloud synchronized. A failed refresh cannot delete it. Current normalized rank/tier replaces fixture baseline when mapped; otherwise the recommendation discloses `BASELINE FIXTURE RANKING`. OUT and suspended statuses apply bounded penalties; confirmed season-ending, retired, or out-of-pool players are hard excluded. Low-confidence role/news reports have bounded effects. Stale, missing, or conflicting context lowers categorical confidence. ADP is displayed/stored as market context and is not a projection or return probability.
+
+The cockpit preserves the Broadcast War Room layout. A compact Player Data control shows global freshness and opens refresh/import status. Material badges are restricted to injury, suspension, role risk, news, and stale data. Player detail is the source-inspection surface for ranking sources, timestamps, role, status, news, and freshness. WHY consumes normalized NFL facts. Breaking changes use structured `PlayerContextChange` records; no push worker is introduced.
+
+`OffseasonBriefingContext` can carry team, role, injury, news, ranking, freshness, uncertainty, and snapshot ID as a factual packet. It still does not generate prose. RoboCop IDP has a distinct provider/type boundary and preserves fixture fallback because no approved IDP provider is configured. IDP completeness must be shown as partial/unavailable rather than inferred.
+
+Phase 6 contains no OpenAI integration, conversational reasoning, SQL, Supabase migration, background refetch, or per-recommendation network call.
