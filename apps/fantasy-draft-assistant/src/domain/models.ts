@@ -9,7 +9,8 @@ export interface DraftSlot{seasonId:Id;slot:number;originalTeamId:Id} export int
 export interface KeeperPlayer{id:Id;canonicalPlayerId:Id|null;displayName:string;normalizedName:string;position?:Position;nflTeam?:string} export interface KeeperAssignment{id:Id;seasonId:Id;teamId:Id;keeperSlot:number;player:KeeperPlayer;status:'provisional'|'locked'}
 export interface KeeperLockState{seasonId:Id;status:'provisional'|'locked';deadline:string|null;lockedAt:string|null;lockedBy:string|null;audit:{action:'locked'|'unlocked';at:string;actor:string}[]}
 export interface SeasonSetup{league:League;season:Season;settings:LeagueSettings;managers:Manager[];teams:SeasonTeam[];rosterSlots:RosterSlotDefinition[];positionLimits:PositionLimit[];draft:DraftConfiguration;draftSlots:DraftSlot[];ownership:PickOwnership[];keepers:KeeperAssignment[];keeperLock:KeeperLockState}
-export interface DraftPlayer{id:Id;canonicalPlayerId:Id|null;displayName:string;normalizedName:string;position:Position;nflTeam?:string}
+export interface PlayerRelationship{type:'HANDCUFF'|'COMPETITION'|'STACK';playerId:Id}
+export interface DraftPlayer{id:Id;canonicalPlayerId:Id|null;displayName:string;normalizedName:string;position:Position;nflTeam?:string;byeWeek?:number;baselineRank?:number;fixtureTier?:number;baselineValue?:number;relationships?:PlayerRelationship[]}
 export type DraftEventType='DRAFT_STARTED'|'PICK_MADE'|'PICK_UNDONE'|'PICK_EDITED'|'DRAFT_PAUSED'|'DRAFT_RESUMED'|'DRAFT_COMPLETED';
 export interface DraftEvent{id:Id;sessionId:Id;seasonId:Id;sequence:number;type:DraftEventType;occurredAt:string;deviceId:string;payload:Record<string,unknown>;reversesEventId?:Id;supersedesEventId?:Id}
 export interface DraftSession{id:Id;seasonId:Id;status:'NOT_STARTED'|'ACTIVE'|'PAUSED'|'COMPLETED';rounds:number;allowIncompleteKeepers:boolean;createdAt:string}
@@ -18,7 +19,7 @@ export interface PlannedPick{round:number;slot:number;sequence:number;originalTe
 export interface TeamRoster{teamId:Id;keepers:DraftPlayer[];live:DraftPlayer[];combined:DraftPlayer[];positionCounts:Partial<Record<Position,number>>}
 export interface DraftState{status:DraftSession['status'];plan:PlannedPick[];current:PlannedPick|null;activePicks:{eventId:Id;plan:PlannedPick;player:DraftPlayer}[];rosters:Record<Id,TeamRoster>;available:DraftPlayer[];keeperPlayerIds:Set<Id>;completedRounds:number;remaining:number;robPicks:{pick:PlannedPick;picksAway:number}[]}
 export type PreferenceSource='USER_SELECTED'|'USER_TEXT'|'FUTURE_INTERPRETATION';
-export interface DraftPreference{id:Id;category:string;label:string;value:string;notes?:string;source:PreferenceSource;confidence?:'CONFIRMED'|'INFERRED';updatedAt:string}
+export interface DraftPreference{id:Id;category:string;label:string;value:string;notes?:string;source:PreferenceSource;confidence?:'CONFIRMED'|'INFERRED';strength?:'SOFT'|'STRONG'|'HARD';updatedAt:string}
 export interface DraftPhilosophy{id:Id;leagueId:Id;seasonId:Id;preferences:DraftPreference[];freeformNotes:string;onboardingStatus:'NOT_STARTED'|'IN_PROGRESS'|'COMPLETED'|'DEFERRED';updatedAt:string}
 export type PlayerInterestState='INTERESTED'|'WATCH'|'FAVORITE'|'FADE'|'AVOID'|'CONCERNED';
 export interface PlayerInterest{id:Id;leagueId:Id;seasonId:Id;playerId:Id;state:PlayerInterestState;note?:string;updatedAt:string}
