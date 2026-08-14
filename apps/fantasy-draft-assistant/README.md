@@ -38,7 +38,7 @@ Temporary players have stable IDs, normalized names, positions, and nullable can
 ### Live Draft Room
 
 `#/{league}/draft` is the iPad-first live cockpit described by
-[`docs/DRAFT_ASSISTANT_DESIGN_SPEC.md`](docs/DRAFT_ASSISTANT_DESIGN_SPEC.md). It consumes the existing event-driven engine and keeps the current decision central: a switchable roster is on the left, three fixture-backed decision previews are in the center, and a local-only conversation shell is on the right. At narrower iPad widths, conversation becomes an explicit drawer rather than compressing the recommendations.
+[`docs/DRAFT_ASSISTANT_DESIGN_SPEC.md`](docs/DRAFT_ASSISTANT_DESIGN_SPEC.md). It consumes the existing event-driven engine and keeps the current decision central: a switchable roster is on the left, three deterministic decision previews are in the center, and conversation is on the right. At narrower iPad widths, conversation becomes an explicit drawer rather than compressing the recommendations.
 
 The manager selector changes only the inspected roster and provides a one-tap return to Rob's team. Position chips share a single semantic color mapping (QB blue, RB red, WR green, TE yellow, D/ST orange, K purple, and a consistent muted teal for current IDP fixtures) across rosters, recommendations, recent picks, details, and the Master Player Board.
 
@@ -46,7 +46,7 @@ The top bar derives round, slot, current pick owner, active/paused state, and di
 
 Depth remains deliberate: **All Players** opens a searchable/filterable Master Player Board; player taps open a detail sheet with disabled future-intelligence categories; and **Draft Board** uses `projectDraftBoard`, including RoboCop keeper rounds. Recent picks offer controlled historical correction through the existing `editPick` operation. Draft, Undo, Pause, and Resume call only existing deterministic engine operations.
 
-Conversation uses a standard textarea for iPad dictation. Messages remain in the rendered local session only, and the only response is an explicit notice that AI reasoning is disabled. No external AI, ranking, news, injury, projection, scarcity, probability, or synchronization service is connected.
+Conversation uses a standard textarea for iPad dictation. Messages remain in the local session. When the authenticated server function passes its OpenAI health check, prompts receive server-side reasoning constrained by the deterministic recommendation and available-player context; otherwise the UI gives an explicit unconfigured/unavailable response.
 
 ## Validation
 
@@ -66,7 +66,7 @@ Tests cover seeds, keepers, snake parity, readiness, ownership, availability, un
 
 ## Deferred
 
-Phase 4B/5+ retains player-interest behavior, persisted conversational philosophy, real Argue/Briefing/Why responses, and all recommendation intelligence. AI/OpenAI, rankings, feeds, ADP, projections, real tiers, scarcity, Cost of Waiting calculations, next-turn forecasting, confidence modeling, news, injuries, IDP valuation, advanced reconciliation, takeover, and ESPN synchronization remain intentionally absent.
+Automated ranking/player/news providers, advanced reconciliation, takeover, and ESPN synchronization remain intentionally absent. Manual current-player/ranking import and the optional authenticated server-side AI endpoint are the only production activation paths in this milestone.
 
 ## Production Supabase authentication
 
@@ -106,8 +106,19 @@ The publishable key is designed for browser use with RLS; it is not a server sec
 
 The live room uses the local, pure `src/intelligence/recommendation-engine.ts` service. It combines league-specific roster construction, legality, keeper state, positional supply, tier pressure, intervening-manager needs, actual next-owned-pick timing, Cost of Waiting, and bounded personal context. Recommendations are recalculated from authoritative draft history after every pick and are never authoritative stored state.
 
-The current player-value boundary is static fixture data (`baselineRank`, `baselineValue`, and `fixtureTier`), honestly shown as **BASELINE FIXTURE RANKING**. There are no network, OpenAI, news, injury, ECR, or ADP calls in Phase 5. See the design specification for formulas, weights, confidence, and known limitations.
+When no imported snapshot exists, the player-value boundary remains static fixture data (`baselineRank`, `baselineValue`, and `fixtureTier`) and is honestly shown as **BASELINE FIXTURE RANKING**. A confirmed CSV/JSON import now atomically replaces that pool; imported and synthetic players are never combined.
 
 ## Current player data (Phase 6)
 
-Current rankings and NFL context enter the deterministic engine through normalized, versioned local snapshots. Open **PLAYER DATA** in the live room to inspect freshness or preview and confirm a CSV/JSON import. The documented portable schema, provider/access review, freshness rules, cached failure behavior, IDP boundary, and current limitations are in `docs/DRAFT_ASSISTANT_DESIGN_SPEC.md` under “Phase 6.” No ranking site credentials or private API keys are supported in browser code, and no automatic provider is currently enabled.
+Current rankings and player metadata enter the deterministic engine through normalized, versioned local snapshots. Open **LOAD CURRENT PLAYER DATA**, choose a CSV/JSON file, preview existing identity matches and new players, then confirm activation. Required columns are `player_name`, `team`, `position`, and `overall_rank`; optional columns are `position_rank`, `tier`, `adp`, `source`, and `updated_at`. The confirmed snapshot is cached in IndexedDB and becomes the entire active player pool. No automatic ranking, metadata, or news provider is currently populated.
+
+### Draft Assistant AI deployment
+
+The browser calls the authenticated Supabase Edge Function `draft-assistant-ai`. The UI reports **AI READY** only after that function validates its configured OpenAI model. Deploy it to the dedicated Fantasy Draft Assistant project and set server-side secrets (never browser/Vite configuration):
+
+```sh
+supabase secrets set --project-ref ffcjcepugnyhfkfezdlw OPENAI_API_KEY='<user-provided key>' OPENAI_MODEL='gpt-5-mini'
+supabase functions deploy --project-ref ffcjcepugnyhfkfezdlw draft-assistant-ai
+```
+
+`OPENAI_API_KEY` is required. `OPENAI_MODEL` is optional and defaults server-side to `gpt-5-mini`. Supabase JWT verification must remain enabled; the existing allowlisted authenticated session supplies the function authorization token. Until deployment and secret configuration are both complete, production truthfully reports **AI UNAVAILABLE** or **AI UNCONFIGURED**.
