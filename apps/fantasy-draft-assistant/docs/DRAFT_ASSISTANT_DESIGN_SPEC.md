@@ -352,3 +352,11 @@ Use a deployment-safe condensed system-font stack for athletic display moments a
 Recommendation cards remain the visual center: three options, with rank one clearly identified as the assistant pick through hierarchy, border strength, and restrained illumination. Compact categorical confidence rings use HIGH, MED, or LOW for fixture intelligence; numeric confidence is reserved for future defensible data and any numeric demonstration must say PREVIEW. Cost of Waiting remains prominent but subordinate to the player name, and all fixture intelligence remains explicitly labeled.
 
 Microinteractions must be short, purposeful, touch-safe, and disabled by `prefers-reduced-motion`. Spacing is engineered iPad-landscape first so roster, three recommendations, conversation, and Draft Pulse remain legible without horizontal page scrolling. The calm-first, depth-on-demand requirement and three-second decision rule remain authoritative over decorative intensity.
+
+### Dimensional styling decisions
+
+Dimensional Broadcast War Room styling is approved. Environmental lighting may use restrained CSS gradients, vignette, edge light, and tonal separation, but calm-first and the three-second rule remain authoritative. Major cockpit panels use a shared elevation hierarchy; recommendation cards use layered physical depth, and recommendation number one receives one additional restrained elevation step so rank remains immediately legible without changing the information architecture.
+
+Confidence rings use a dimensional broadcast-gauge treatment while continuing to communicate truthful categorical **HIGH / MED / LOW** confidence. Primary and secondary controls use tactile press feedback, with the DRAFT action maintaining the strongest action hierarchy. Interaction depth comes from lighting, surface, edge, elevation, shadow, and short press response. Exaggerated cursor-following 3D tilt is not desired.
+
+Official NFL team logo artwork remains a long-term product desire, but its implementation status is **DEFERRED — APPROVED ASSET SOURCE REQUIRED**. `TeamMark` monograms remain the temporary authoritative fallback and must retain a stable, accessible replacement surface until approved artwork is available. Do not download, hotlink, trace, recreate, or bundle official team artwork without that approval.
