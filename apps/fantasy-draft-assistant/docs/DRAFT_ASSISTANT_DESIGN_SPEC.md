@@ -342,3 +342,13 @@ The following decisions are locked unless this specification is explicitly updat
 | Input method | Maintain iPad dictation compatibility and touch-friendly interactions. |
 | League modeling | Use actual persisted league configurations and model Believeland and RoboCop independently where rules differ. |
 | Authority boundary | Keep deterministic draft state separate from AI interpretation; AI never becomes the source of truth for draft facts. |
+
+## Broadcast War Room Visual System
+
+Option A — **Broadcast War Room** — is the approved and locked visual direction. The balance is approximately 75% premium sports-broadcast energy and 25% Executive Draft Room restraint. A deep near-black/navy foundation, subtly elevated surfaces, restrained borders, and selective illumination must support fast decisions without becoming a game HUD or generic dashboard.
+
+Use a deployment-safe condensed system-font stack for athletic display moments and a modern system sans-serif stack for readable supporting content. Position identity is semantic and consistent: QB blue, RB red, WR green, TE yellow, D/ST orange, and K purple; text labels always accompany color. `TeamMark` reserves a stable logo surface and currently uses an accessible team-abbreviation fallback because no approved NFL logo asset source is bundled with the repository. Approved assets may replace that fallback without restructuring cards.
+
+Recommendation cards remain the visual center: three options, with rank one clearly identified as the assistant pick through hierarchy, border strength, and restrained illumination. Compact categorical confidence rings use HIGH, MED, or LOW for fixture intelligence; numeric confidence is reserved for future defensible data and any numeric demonstration must say PREVIEW. Cost of Waiting remains prominent but subordinate to the player name, and all fixture intelligence remains explicitly labeled.
+
+Microinteractions must be short, purposeful, touch-safe, and disabled by `prefers-reduced-motion`. Spacing is engineered iPad-landscape first so roster, three recommendations, conversation, and Draft Pulse remain legible without horizontal page scrolling. The calm-first, depth-on-demand requirement and three-second decision rule remain authoritative over decorative intensity.

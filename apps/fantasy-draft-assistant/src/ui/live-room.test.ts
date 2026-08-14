@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { rebuildDraftState, startDraft } from '../domain/engine';
-import { picksUntilUser, positionClass, previewRecommendations, userTeamId } from './live-room';
+import { confidenceRing, picksUntilUser, positionClass, previewRecommendations, teamMark, userTeamId } from './live-room';
 
 describe('live room view model', () => {
   it('uses consistent semantic position classes', () => {
@@ -15,6 +15,17 @@ describe('live room view model', () => {
     expect(recommendations).toHaveLength(3);
     expect(recommendations.map(({ order }) => order)).toEqual([1, 2, 3]);
     expect(recommendations.every(({ sourceLabel }) => sourceLabel === 'FIXTURE PREVIEW')).toBe(true);
+  });
+
+  it('renders categorical confidence without invented precision', () => {
+    expect(confidenceRing('HIGH', true)).toContain('HIGH');
+    expect(confidenceRing('HIGH', true)).toContain('CONFIDENCE · PREVIEW');
+    expect(confidenceRing('HIGH', true)).not.toContain('%');
+  });
+
+  it('provides an accessible team mark fallback', () => {
+    expect(teamMark('buf')).toContain('BUF team mark');
+    expect(teamMark()).toContain('NFL team mark');
   });
 
   it('derives approaching and on-clock state from the deterministic plan', () => {
