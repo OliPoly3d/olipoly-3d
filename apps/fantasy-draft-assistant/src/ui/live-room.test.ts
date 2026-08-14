@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
-import { rebuildDraftState, startDraft } from '../domain/engine';
+import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
 import { confidenceRing, picksUntilUser, positionClass, previewRecommendations, teamMark, userTeamId } from './live-room';
 import { TEAM_IDS, teamIdentity } from './team-marks';
 
@@ -29,6 +29,32 @@ describe('live room view model', () => {
     expect(TEAM_IDS.every(team => teamIdentity(team))).toBe(true);
   });
 
+  it('resolves required team identities case-insensitively and rejects unknown IDs', () => {
+    expect(teamIdentity('LAC')?.name).toBe('Los Angeles Chargers');
+    expect(teamIdentity('cle')?.name).toBe('Cleveland');
+    expect(teamIdentity('DaL')?.name).toBe('Dallas');
+    expect(teamIdentity('XYZ')).toBeUndefined();
+  });
+
+  it('preserves NFL team IDs in fixture recommendation view models', () => {
+    const recommendations = previewRecommendations(playerPool());
+    expect(recommendations.map(({ playerId, nflTeam }) => ({ playerId, nflTeam }))).toEqual([
+      { playerId: 'player-omarion-hampton', nflTeam: 'LAC' },
+      { playerId: 'player-quinshon-judkins', nflTeam: 'CLE' },
+      { playerId: 'player-ceedee-lamb', nflTeam: 'DAL' },
+    ]);
+  });
+
+  it('renders custom marks rather than the NFL fallback for recommendation teams', () => {
+    const marks = previewRecommendations(playerPool()).map(({ nflTeam }) => teamMark(nflTeam));
+    expect(marks).toEqual(expect.arrayContaining([
+      expect.stringContaining('Los Angeles Chargers team identity'),
+      expect.stringContaining('Cleveland team identity'),
+      expect.stringContaining('Dallas team identity'),
+    ]));
+    expect(marks.every(mark => !mark.includes('NFL team mark'))).toBe(true);
+  });
+
   it('renders accessible vector marks and an abbreviation fallback', () => {
     expect(teamMark('buf')).toContain('aria-label="Buffalo team identity"');
     expect(teamMark('buf')).toContain('<svg');
@@ -53,5 +79,17 @@ describe('live room view model', () => {
     const state = rebuildDraftState(startDraft(setup, playerPool(), false));
     expect(picksUntilUser(state, userTeamId(setup))).toBe(7);
     expect(state.rosters[userTeamId(setup)].combined).toEqual([]);
+  });
+
+  it('preserves fixture team identity for detail, Master Board, and recent-pick projections', () => {
+    const players = playerPool();
+    const omarion = players.find(({ displayName }) => displayName === 'Omarion Hampton')!;
+    expect(teamMark(omarion.nflTeam, 'detail')).toContain('Los Angeles Chargers team identity');
+    expect(teamMark(omarion.nflTeam, 'compact')).toContain('Los Angeles Chargers team identity');
+
+    const setup = seedSetup('believeland');
+    const state = rebuildDraftState(makePick(startDraft(setup, players, false), omarion.id));
+    expect(state.activePicks[0].player.nflTeam).toBe('LAC');
+    expect(teamMark(state.activePicks[0].player.nflTeam, 'compact')).not.toContain('NFL team mark');
   });
 });
