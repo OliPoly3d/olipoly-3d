@@ -1,4 +1,4 @@
-# Private Fantasy Draft Assistant — Phases 1–3
+# Private Fantasy Draft Assistant — Phase 4A
 
 This isolated Vite/TypeScript application lives under `apps/fantasy-draft-assistant`; production output is the unadvertised `/draft-assistant/` route. No OliPoly public header, footer, sitemap, customer menu, ERP module, or production Supabase migration references it.
 
@@ -35,6 +35,19 @@ Events use a session-local monotonically increasing sequence, not wall-clock ord
 
 Temporary players have stable IDs, normalized names, positions, and nullable canonical IDs. Phase 6 can replace the fixture provider without changing the engine. Hard limits apply to combined keeper/live counts; FLEX and bench do not invent extra maxima. RoboCop IDP Utility provisionally accepts DL/LB/DB and requires confirmation before future valuation.
 
+### Live Draft Room
+
+`#/{league}/draft` is the iPad-first live cockpit described by
+[`docs/DRAFT_ASSISTANT_DESIGN_SPEC.md`](docs/DRAFT_ASSISTANT_DESIGN_SPEC.md). It consumes the existing event-driven engine and keeps the current decision central: a switchable roster is on the left, three fixture-backed decision previews are in the center, and a local-only conversation shell is on the right. At narrower iPad widths, conversation becomes an explicit drawer rather than compressing the recommendations.
+
+The manager selector changes only the inspected roster and provides a one-tap return to Rob's team. Position chips share a single semantic color mapping (QB blue, RB red, WR green, TE yellow, D/ST orange, K purple, and a consistent muted teal for current IDP fixtures) across rosters, recommendations, recent picks, details, and the Master Player Board.
+
+The top bar derives round, slot, current pick owner, active/paused state, and distance to Rob's next owned pick from deterministic state. Draft Pulse rotates three explicitly marked demo observations. The recommendation cards use the typed `RecommendationViewModel` boundary and label every reason, confidence value, and Cost of Waiting statement as fixture preview content.
+
+Depth remains deliberate: **All Players** opens a searchable/filterable Master Player Board; player taps open a detail sheet with disabled future-intelligence categories; and **Draft Board** uses `projectDraftBoard`, including RoboCop keeper rounds. Recent picks offer controlled historical correction through the existing `editPick` operation. Draft, Undo, Pause, and Resume call only existing deterministic engine operations.
+
+Conversation uses a standard textarea for iPad dictation. Messages remain in the rendered local session only, and the only response is an explicit notice that AI reasoning is disabled. No external AI, ranking, news, injury, projection, scarcity, probability, or synchronization service is connected.
+
 ## Validation
 
 ```bash
@@ -47,7 +60,7 @@ Tests cover seeds, keepers, snake parity, readiness, ownership, availability, un
 
 ## Deferred
 
-Phase 4+ is absent: final live-room UX, AI/OpenAI, rankings, feeds, ADP, projections, tiers, scarcity, return probability, news, queue, flags, intel, IDP valuation, advanced reconciliation, takeover, and ESPN synchronization.
+Phase 4B/5+ retains player-interest behavior, persisted conversational philosophy, real Argue/Briefing/Why responses, and all recommendation intelligence. AI/OpenAI, rankings, feeds, ADP, projections, real tiers, scarcity, Cost of Waiting calculations, next-turn forecasting, confidence modeling, news, injuries, IDP valuation, advanced reconciliation, takeover, and ESPN synchronization remain intentionally absent.
 
 ## Production Supabase authentication
 
