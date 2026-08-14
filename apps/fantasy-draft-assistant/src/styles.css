@@ -95,3 +95,10 @@ body{
 @media(hover:hover){.recommendation:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--position-color) 42%,#ffffff20);box-shadow:var(--depth-3)}.recommendation.primary:hover{transform:translateY(-3px)}.player-row:hover,.recent button:hover,.master-list button:hover{transform:translateY(-1px);box-shadow:0 6px 11px #000a,inset 0 1px #ffffff13}}
 @media(max-width:1180px) and (min-width:1051px){.recommendations{padding-inline:2px}.recommendation,.recommendation.primary{min-height:395px}.rec-copy h2{font-size:clamp(19px,2vw,24px)}}
 @media(prefers-reduced-motion:reduce){.recommendation,.recommendation.primary{transition:none}.recommendation.primary{transform:none}.recommendation:hover,.recommendation.primary:hover{transform:none}}
+
+/* Original internal team identity badges; team color is decorative and never replaces position semantics. */
+.team-mark{overflow:hidden;border-color:color-mix(in srgb,var(--team-secondary,#63778c) 62%,#63778c);background:#070d15;color:var(--team-secondary,#dbe5f0);box-shadow:0 5px 10px #000c,inset 0 1px #ffffff20,0 0 12px color-mix(in srgb,var(--team-primary,#a9d9ff) 18%,transparent)}
+.team-mark svg{display:block;width:100%;height:100%;overflow:visible}.team-mark-shell{fill:var(--team-primary);stroke:color-mix(in srgb,var(--team-secondary) 72%,white);stroke-width:2}.team-mark-motif{fill:var(--team-secondary);color:var(--team-secondary);opacity:.82}.team-mark text{fill:#fff;font-family:var(--war-font-display);font-size:13px;font-weight:900;letter-spacing:.4px;text-anchor:middle;paint-order:stroke;stroke:#05080c;stroke-width:2px}
+.team-mark:after{inset:3px;border-color:#ffffff24}.primary .team-mark{box-shadow:0 6px 12px #000d,inset 0 1px #ffffff28,0 0 16px color-mix(in srgb,var(--team-primary) 32%,transparent)}
+.team-mark-detail{width:68px;height:68px}.team-mark-detail text{font-size:12px}.team-mark-compact text{font-size:14px;stroke-width:2.5px}.team-mark-fallback{overflow:visible}
+.recent button{grid-template-columns:auto auto 1fr;align-items:center}.recent button small{grid-column:3}.recent .team-mark{grid-row:1/3}.detail-identity .team-mark{flex-basis:68px}
