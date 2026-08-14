@@ -3,6 +3,7 @@ import { teamIdentity } from './team-marks';
 
 export interface RecommendationViewModel {
   playerId: string;
+  nflTeam?: string;
   order: 1 | 2 | 3;
   recommendationType: 'PRIMARY' | 'SECONDARY' | 'VALUE';
   headlineReason: string;
@@ -49,6 +50,7 @@ export function previewRecommendations(available: DraftPlayer[]): Recommendation
   const waiting = ['Tier risk if you wait', 'Comparable options remain', 'Likely available later'];
   return available.slice(0, 3).map((player, index) => ({
     playerId: player.id,
+    nflTeam: player.nflTeam,
     order: (index + 1) as 1 | 2 | 3,
     recommendationType: (['PRIMARY', 'SECONDARY', 'VALUE'] as const)[index],
     headlineReason: reasons[index],
