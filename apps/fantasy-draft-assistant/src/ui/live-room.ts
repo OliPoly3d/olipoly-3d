@@ -71,3 +71,8 @@ export function picksUntilUser(state: DraftState, teamId: string): number | null
   const nextIndex = state.plan.findIndex((pick, index) => index >= currentIndex && pick.kind === 'live' && pick.currentTeamId === teamId);
   return currentIndex < 0 || nextIndex < 0 ? null : nextIndex - currentIndex;
 }
+
+import type { PlayerInterest, PlayerInterestState } from '../domain/models';
+export const interestLabels:Record<PlayerInterestState,string>={INTERESTED:'Interested',WATCH:'Watching',FAVORITE:'Favorite',FADE:'Fade',AVOID:'Avoid',CONCERNED:'Concerned'};
+export function filterPlayersByInterest<T extends {id:string}>(players:T[],interests:PlayerInterest[],state:PlayerInterestState|null):T[]{if(!state)return players;const ids=new Set(interests.filter(x=>x.state===state).map(x=>x.playerId));return players.filter(x=>ids.has(x.id))}
+export function interestBadge(interest?:PlayerInterest):string{return interest?`<span class="interest-tag interest-${interest.state.toLowerCase()}" title="User context; does not change recommendation rank">${interestLabels[interest.state]}</span>`:''}
