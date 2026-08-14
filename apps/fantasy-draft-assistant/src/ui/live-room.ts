@@ -10,7 +10,7 @@ export interface RecommendationViewModel {
   costOfWaitingLabel: string;
   confidence: 'HIGH' | 'MED' | 'LOW';
   badges: string[];
-  sourceLabel: 'FIXTURE PREVIEW';
+  sourceLabel: 'DETERMINISTIC INTELLIGENCE';
 }
 
 export const positionClass = (position: Position) => `position-${position.replace('/', '').toLowerCase()}`;
@@ -45,22 +45,6 @@ export function confidenceRing(value: ConfidenceLevel | number, preview = false)
   return `<div class="confidence" aria-label="${label} confidence${preview ? ', preview' : ''}"><span class="confidence-ring confidence-${modifier}"><b>${label}</b></span><small>CONFIDENCE${preview ? ' · PREVIEW' : ''}</small></div>`;
 }
 
-export function previewRecommendations(available: DraftPlayer[]): RecommendationViewModel[] {
-  const reasons = ['First available fixture player', 'Alternative position profile', 'Value option from fixture order'];
-  const waiting = ['Tier risk if you wait', 'Comparable options remain', 'Likely available later'];
-  return available.slice(0, 3).map((player, index) => ({
-    playerId: player.id,
-    nflTeam: player.nflTeam,
-    order: (index + 1) as 1 | 2 | 3,
-    recommendationType: (['PRIMARY', 'SECONDARY', 'VALUE'] as const)[index],
-    headlineReason: reasons[index],
-    costOfWaitingLabel: waiting[index],
-    confidence: (['HIGH', 'MED', 'LOW'] as const)[index],
-    badges: [],
-    sourceLabel: 'FIXTURE PREVIEW',
-  }));
-}
-
 export function userTeamId(setup: SeasonSetup): string {
   const manager = setup.managers.find(({ displayName }) => displayName === 'Rob Siwicki') ?? setup.managers[0];
   return setup.teams.find(({ managerId }) => managerId === manager.id)?.id ?? setup.teams[0].id;
@@ -75,4 +59,4 @@ export function picksUntilUser(state: DraftState, teamId: string): number | null
 import type { PlayerInterest, PlayerInterestState } from '../domain/models';
 export const interestLabels:Record<PlayerInterestState,string>={INTERESTED:'Interested',WATCH:'Watching',FAVORITE:'Favorite',FADE:'Fade',AVOID:'Avoid',CONCERNED:'Concerned'};
 export function filterPlayersByInterest<T extends {id:string}>(players:T[],interests:PlayerInterest[],state:PlayerInterestState|null):T[]{if(!state)return players;const ids=new Set(interests.filter(x=>x.state===state).map(x=>x.playerId));return players.filter(x=>ids.has(x.id))}
-export function interestBadge(interest?:PlayerInterest):string{return interest?`<span class="interest-tag interest-${interest.state.toLowerCase()}" title="User context; does not change recommendation rank">${interestLabels[interest.state]}</span>`:''}
+export function interestBadge(interest?:PlayerInterest):string{return interest?`<span class="interest-tag interest-${interest.state.toLowerCase()}" title="Bounded user-context adjustment">${interestLabels[interest.state]}</span>`:''}

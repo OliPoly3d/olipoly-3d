@@ -102,3 +102,8 @@ window.__DRAFT_ASSISTANT_CONFIG__ = Object.freeze({
 ```
 
 The publishable key is designed for browser use with RLS; it is not a server secret. Never add `service_role`, `sb_secret_*`, database passwords, OpenAI keys, or any other server-side credential. Production prefers this runtime object and fails closed when it is absent, empty, or partial—even if stale `VITE_DRAFT_*` values were present at build time. Local development and tests continue to support `VITE_DRAFT_SUPABASE_URL` and `VITE_DRAFT_SUPABASE_PUBLISHABLE_KEY`; unconfigured local builds retain explicit local-only mode.
+# Deterministic draft intelligence
+
+The live room uses the local, pure `src/intelligence/recommendation-engine.ts` service. It combines league-specific roster construction, legality, keeper state, positional supply, tier pressure, intervening-manager needs, actual next-owned-pick timing, Cost of Waiting, and bounded personal context. Recommendations are recalculated from authoritative draft history after every pick and are never authoritative stored state.
+
+The current player-value boundary is static fixture data (`baselineRank`, `baselineValue`, and `fixtureTier`), honestly shown as **BASELINE FIXTURE RANKING**. There are no network, OpenAI, news, injury, ECR, or ADP calls in Phase 5. See the design specification for formulas, weights, confidence, and known limitations.

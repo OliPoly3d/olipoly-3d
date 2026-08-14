@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
-import { confidenceRing, picksUntilUser, positionClass, previewRecommendations, teamMark, userTeamId } from './live-room';
+import { confidenceRing, picksUntilUser, positionClass, teamMark, userTeamId } from './live-room';
 import { TEAM_IDS, teamIdentity } from './team-marks';
 
 describe('live room view model', () => {
@@ -11,12 +11,6 @@ describe('live room view model', () => {
     expect(positionClass('LB')).toBe('position-lb');
   });
 
-  it('creates exactly three honestly labelled fixture recommendations', () => {
-    const recommendations = previewRecommendations(playerPool());
-    expect(recommendations).toHaveLength(3);
-    expect(recommendations.map(({ order }) => order)).toEqual([1, 2, 3]);
-    expect(recommendations.every(({ sourceLabel }) => sourceLabel === 'FIXTURE PREVIEW')).toBe(true);
-  });
 
   it('renders categorical confidence without invented precision', () => {
     expect(confidenceRing('HIGH', true)).toContain('HIGH');
@@ -36,24 +30,7 @@ describe('live room view model', () => {
     expect(teamIdentity('XYZ')).toBeUndefined();
   });
 
-  it('preserves NFL team IDs in fixture recommendation view models', () => {
-    const recommendations = previewRecommendations(playerPool());
-    expect(recommendations.map(({ playerId, nflTeam }) => ({ playerId, nflTeam }))).toEqual([
-      { playerId: 'player-omarion-hampton', nflTeam: 'LAC' },
-      { playerId: 'player-quinshon-judkins', nflTeam: 'CLE' },
-      { playerId: 'player-ceedee-lamb', nflTeam: 'DAL' },
-    ]);
-  });
 
-  it('renders custom marks rather than the NFL fallback for recommendation teams', () => {
-    const marks = previewRecommendations(playerPool()).map(({ nflTeam }) => teamMark(nflTeam));
-    expect(marks).toEqual(expect.arrayContaining([
-      expect.stringContaining('Los Angeles Chargers team identity'),
-      expect.stringContaining('Cleveland team identity'),
-      expect.stringContaining('Dallas team identity'),
-    ]));
-    expect(marks.every(mark => !mark.includes('NFL team mark'))).toBe(true);
-  });
 
   it('renders accessible vector marks and an abbreviation fallback', () => {
     expect(teamMark('buf')).toContain('aria-label="Buffalo team identity"');
@@ -94,4 +71,4 @@ describe('live room view model', () => {
   });
 });
 
-describe('interest presentation boundary',()=>{it('filters the Master Board without moving base player order',async()=>{const{filterPlayersByInterest}=await import('./live-room');const players=playerPool();const filtered=filterPlayersByInterest(players,[{id:'i',leagueId:'l',seasonId:'s',playerId:players[1].id,state:'WATCH',updatedAt:''}],'WATCH');expect(filtered.map(x=>x.id)).toEqual([players[1].id]);expect(players[0].id).toBe('player-omarion-hampton')});it('renders a subtle contextual recommendation marker',async()=>{const{interestBadge}=await import('./live-room');expect(interestBadge({id:'i',leagueId:'l',seasonId:'s',playerId:'p',state:'AVOID',updatedAt:''})).toContain('does not change recommendation rank');expect(interestBadge()).toBe('')})});
+describe('interest presentation boundary',()=>{it('filters the Master Board without moving base player order',async()=>{const{filterPlayersByInterest}=await import('./live-room');const players=playerPool();const filtered=filterPlayersByInterest(players,[{id:'i',leagueId:'l',seasonId:'s',playerId:players[1].id,state:'WATCH',updatedAt:''}],'WATCH');expect(filtered.map(x=>x.id)).toEqual([players[1].id]);expect(players[0].id).toBe('player-omarion-hampton')});it('renders a subtle contextual recommendation marker',async()=>{const{interestBadge}=await import('./live-room');expect(interestBadge({id:'i',leagueId:'l',seasonId:'s',playerId:'p',state:'AVOID',updatedAt:''})).toContain('Bounded user-context adjustment');expect(interestBadge()).toBe('')})});
