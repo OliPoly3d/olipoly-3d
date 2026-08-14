@@ -1,4 +1,5 @@
 import type { DraftPlayer, DraftState, Position, SeasonSetup } from '../domain/models';
+import { teamIdentity } from './team-marks';
 
 export interface RecommendationViewModel {
   playerId: string;
@@ -20,10 +21,19 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
 }[character]!));
 
-/** Reserved logo surface. Approved assets can replace the monogram without changing consumers. */
-export function teamMark(team?: string, size: 'compact' | 'standard' = 'standard'): string {
+const motifPath = (motif: 'chevron' | 'diamond' | 'horizon' | 'orbit') => ({
+  chevron: '<path d="M15 19 32 10l17 9-6 5-11-6-11 6Z"/>',
+  diamond: '<path d="m32 9 13 10-13 10-13-10Z"/>',
+  horizon: '<path d="M15 15h34v5H15zm6 9h22v3H21z"/>',
+  orbit: '<circle cx="32" cy="19" r="10" fill="none" stroke="currentColor" stroke-width="4"/><path d="M14 19h9m18 0h9"/>',
+}[motif]);
+
+/** Single UI entry point for original internal marks and the abbreviation fallback. */
+export function teamMark(team?: string, size: 'compact' | 'standard' | 'detail' = 'standard'): string {
   const label = team?.trim().toUpperCase() || 'NFL';
-  return `<span class="team-mark team-mark-${size}" role="img" aria-label="${escapeHtml(label)} team mark">${escapeHtml(label)}</span>`;
+  const identity = teamIdentity(label);
+  if (!identity) return `<span class="team-mark team-mark-${size} team-mark-fallback" role="img" aria-label="${escapeHtml(label)} team mark">${escapeHtml(label)}</span>`;
+  return `<span class="team-mark team-mark-${size}" role="img" aria-label="${escapeHtml(identity.name)} team identity" style="--team-primary:${identity.primary};--team-secondary:${identity.secondary}"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="team-mark-shell" d="M9 12 32 4l23 8v25c0 11-9 18-23 23C18 55 9 48 9 37Z"/><g class="team-mark-motif">${motifPath(identity.motif)}</g><text x="32" y="45">${identity.initials}</text></svg></span>`;
 }
 
 /** Categorical by default; numeric values are only rendered when explicitly marked as preview. */
