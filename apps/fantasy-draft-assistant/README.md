@@ -56,6 +56,12 @@ npm test
 npm run build
 ```
 
+The production build is tracked in `draft-assistant/`. Any change under
+`apps/fantasy-draft-assistant/` that affects runtime behavior must rebuild and
+commit that output. After committing the generated files, run
+`npm run check:deployment`; it performs a clean production rebuild and fails if
+the tracked deployment artifact differs from the current source.
+
 Tests cover seeds, keepers, snake parity, readiness, ownership, availability, undo, edit, pause/resume, reconstruction, IndexedDB reload, a complete 204-pick Believeland simulation, and keeper-aware RoboCop selections.
 
 ## Deferred
