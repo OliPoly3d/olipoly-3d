@@ -107,3 +107,7 @@ The publishable key is designed for browser use with RLS; it is not a server sec
 The live room uses the local, pure `src/intelligence/recommendation-engine.ts` service. It combines league-specific roster construction, legality, keeper state, positional supply, tier pressure, intervening-manager needs, actual next-owned-pick timing, Cost of Waiting, and bounded personal context. Recommendations are recalculated from authoritative draft history after every pick and are never authoritative stored state.
 
 The current player-value boundary is static fixture data (`baselineRank`, `baselineValue`, and `fixtureTier`), honestly shown as **BASELINE FIXTURE RANKING**. There are no network, OpenAI, news, injury, ECR, or ADP calls in Phase 5. See the design specification for formulas, weights, confidence, and known limitations.
+
+## Current player data (Phase 6)
+
+Current rankings and NFL context enter the deterministic engine through normalized, versioned local snapshots. Open **PLAYER DATA** in the live room to inspect freshness or preview and confirm a CSV/JSON import. The documented portable schema, provider/access review, freshness rules, cached failure behavior, IDP boundary, and current limitations are in `docs/DRAFT_ASSISTANT_DESIGN_SPEC.md` under “Phase 6.” No ranking site credentials or private API keys are supported in browser code, and no automatic provider is currently enabled.
