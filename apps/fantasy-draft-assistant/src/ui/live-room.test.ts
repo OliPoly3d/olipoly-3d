@@ -93,3 +93,5 @@ describe('live room view model', () => {
     expect(teamMark(state.activePicks[0].player.nflTeam, 'compact')).not.toContain('NFL team mark');
   });
 });
+
+describe('interest presentation boundary',()=>{it('filters the Master Board without moving base player order',async()=>{const{filterPlayersByInterest}=await import('./live-room');const players=playerPool();const filtered=filterPlayersByInterest(players,[{id:'i',leagueId:'l',seasonId:'s',playerId:players[1].id,state:'WATCH',updatedAt:''}],'WATCH');expect(filtered.map(x=>x.id)).toEqual([players[1].id]);expect(players[0].id).toBe('player-omarion-hampton')});it('renders a subtle contextual recommendation marker',async()=>{const{interestBadge}=await import('./live-room');expect(interestBadge({id:'i',leagueId:'l',seasonId:'s',playerId:'p',state:'AVOID',updatedAt:''})).toContain('does not change recommendation rank');expect(interestBadge()).toBe('')})});

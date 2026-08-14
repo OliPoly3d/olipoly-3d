@@ -17,3 +17,16 @@ export interface DraftSnapshot{sessionId:Id;sequence:number;stateVersion:number;
 export interface PlannedPick{round:number;slot:number;sequence:number;originalTeamId:Id;currentTeamId:Id;kind:'keeper'|'live'}
 export interface TeamRoster{teamId:Id;keepers:DraftPlayer[];live:DraftPlayer[];combined:DraftPlayer[];positionCounts:Partial<Record<Position,number>>}
 export interface DraftState{status:DraftSession['status'];plan:PlannedPick[];current:PlannedPick|null;activePicks:{eventId:Id;plan:PlannedPick;player:DraftPlayer}[];rosters:Record<Id,TeamRoster>;available:DraftPlayer[];keeperPlayerIds:Set<Id>;completedRounds:number;remaining:number;robPicks:{pick:PlannedPick;picksAway:number}[]}
+export type PreferenceSource='USER_SELECTED'|'USER_TEXT'|'FUTURE_INTERPRETATION';
+export interface DraftPreference{id:Id;category:string;label:string;value:string;notes?:string;source:PreferenceSource;confidence?:'CONFIRMED'|'INFERRED';updatedAt:string}
+export interface DraftPhilosophy{id:Id;leagueId:Id;seasonId:Id;preferences:DraftPreference[];freeformNotes:string;onboardingStatus:'NOT_STARTED'|'IN_PROGRESS'|'COMPLETED'|'DEFERRED';updatedAt:string}
+export type PlayerInterestState='INTERESTED'|'WATCH'|'FAVORITE'|'FADE'|'AVOID'|'CONCERNED';
+export interface PlayerInterest{id:Id;leagueId:Id;seasonId:Id;playerId:Id;state:PlayerInterestState;note?:string;updatedAt:string}
+export type StrategicIntentCategory='POSITION_WATCH'|'PLAYER_WATCH'|'ROSTER_GOAL'|'DO_NOT_FORCE'|'LATE_ROUND_REMINDER'|'CUSTOM';
+export type StrategicIntentWindow='NEXT_2_ROUNDS'|'BEFORE_NEXT_PICK'|'LATE_ROUNDS'|'UNTIL_FILLED'|'UNTIL_DISMISSED';
+export interface StrategicIntent{id:Id;leagueId:Id;seasonId:Id;text:string;category:StrategicIntentCategory;window?:StrategicIntentWindow;status:'ACTIVE'|'PAUSED'|'RESOLVED';createdAt:string;updatedAt:string}
+export type ConversationMessageType='USER'|'SYSTEM'|'PHILOSOPHY_PROMPT'|'PHILOSOPHY_SUMMARY'|'INTENT_CREATED'|'ARGUE_REQUEST'|'OFFSEASON_BRIEF_REQUEST'|'AI_PLACEHOLDER';
+export interface ConversationMessage{id:Id;leagueId:Id;seasonId:Id;draftSessionId?:Id;type:ConversationMessageType;text:string;createdAt:string;contextId?:Id}
+export interface ArgumentRequestContext{id:Id;leagueId:Id;seasonId:Id;draftSessionId:Id;pickNumber:number|null;playerId:Id;recommendationOrder:number;rosterTeamId:Id;philosophyId:Id;activeIntentIds:Id[];createdAt:string}
+export interface OffseasonBriefingContext{id:Id;leagueId:Id;seasonId:Id;draftSessionId?:Id;playerId:Id;position:Position;team?:string;philosophyPreferenceIds:Id[];playerInterestId?:Id;createdAt:string}
+export interface DraftUserContext{philosophy:DraftPhilosophy;playerInterests:PlayerInterest[];strategicIntents:StrategicIntent[];recentConversation:ConversationMessage[]}
