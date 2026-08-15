@@ -1,4 +1,4 @@
-import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js'
 import { validatePlayerDataSnapshot, type PlayerDataSnapshot, type ScoringFormat } from './player-data'
 
 export type CloudStatus = 'local-only' | 'configuration-error' | 'connecting' | 'cloud-connected' | 'authenticated' | 'unauthorized' | 'cloud-unavailable'
@@ -33,6 +33,11 @@ export class DraftCloudGateway {
     this.client = this.initialStatus === 'connecting' ? createClient(config.url, config.publishableKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }) : null
   }
   async session(): Promise<Session | null> { if (!this.client) return null; return (await this.client.auth.getSession()).data.session }
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): () => void {
+    if (!this.client) return () => undefined
+    const { data } = this.client.auth.onAuthStateChange(callback)
+    return () => data.subscription.unsubscribe()
+  }
   async sendMagicLink(email: string): Promise<void> {
     if (!this.client) throw new Error('Draft Supabase is not configured.')
     const redirect = new URL(import.meta.env.BASE_URL || '/draft-assistant/', window.location.origin).toString()
