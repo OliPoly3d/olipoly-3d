@@ -14,6 +14,13 @@ describe('AI readiness', () => {
 
     expect(renderedStatus).toBe('AI READY')
   })
+  it('does not require a second session read after authenticated startup', async () => {
+    const cloud = { session: vi.fn().mockResolvedValue(null), client: { functions: { invoke: vi.fn().mockResolvedValue({ data: { ready: true, configured: true }, error: null }) } } }
+    let draftRoom = 'ASSISTANT · UNAVAILABLE'
+    await refreshAiStatus(cloud as never, status => { draftRoom = `ASSISTANT · ${status}` })
+    expect(draftRoom).toBe('ASSISTANT · READY')
+    expect(cloud.session).not.toHaveBeenCalled()
+  })
   it('reports server configuration as unconfigured', async () => {
     const cloud = { session: vi.fn().mockResolvedValue({ access_token: 'x' }), client: { functions: { invoke: vi.fn().mockResolvedValue({ data: { ready: false, configured: false }, error: null }) } } }
     expect(await probeAi(cloud as never)).toBe('UNCONFIGURED')
