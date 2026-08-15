@@ -1,7 +1,7 @@
 import type{ConversationMessage,DraftEvent,DraftPhilosophy,DraftSession,DraftSnapshot,PlayerInterest,SeasonSetup,StrategicIntent}from'../domain/models';
 import type{DraftContext}from'../domain/engine';
 import{emptyPhilosophy}from'../domain/user-context';
-import type{PlayerDataSnapshot}from'./player-data';
+import{validatePlayerDataSnapshot,type PlayerDataSnapshot,type ScoringFormat}from'./player-data';
 const DB='fantasy-draft-assistant',VERSION=5;
 const definitions={setups:'season.id',sessions:'id',events:'id',snapshots:'sessionId',philosophies:'id',interests:'id',intents:'id',messages:'id',playerData:'leagueId'}as const;
 type StoreName=keyof typeof definitions;
@@ -16,5 +16,5 @@ export class DraftStore{
  async getInterests(leagueId:string,seasonId:string){return(await all<PlayerInterest>('interests')).filter(x=>x.leagueId===leagueId&&x.seasonId===seasonId)} saveInterest(x:PlayerInterest){return put('interests',x)} clearInterest(id:string){return remove('interests',id)} async clearInterests(leagueId:string,seasonId:string){for(const x of await this.getInterests(leagueId,seasonId))await remove('interests',x.id)}
  async getIntents(leagueId:string,seasonId:string){return(await all<StrategicIntent>('intents')).filter(x=>x.leagueId===leagueId&&x.seasonId===seasonId)} saveIntent(x:StrategicIntent){return put('intents',x)} removeIntent(id:string){return remove('intents',id)} async clearResolvedIntents(leagueId:string,seasonId:string){for(const x of await this.getIntents(leagueId,seasonId))if(x.status==='RESOLVED')await remove('intents',x.id)}
  async getMessages(leagueId:string,seasonId:string){return(await all<ConversationMessage>('messages')).filter(x=>x.leagueId===leagueId&&x.seasonId===seasonId).sort((a,b)=>a.createdAt.localeCompare(b.createdAt))} saveMessage(x:ConversationMessage){return put('messages',x)} async clearMessages(leagueId:string,seasonId:string){for(const x of await this.getMessages(leagueId,seasonId))await remove('messages',x.id)}
- async getPlayerData(leagueId:string){return(await all<PlayerDataSnapshot&{leagueId:string}>('playerData')).find(x=>x.leagueId===leagueId)} savePlayerData(leagueId:string,x:PlayerDataSnapshot){return put('playerData',{...x,leagueId})}
+ async getPlayerData(leagueId:string,season?:number,format?:ScoringFormat){const values=await all<PlayerDataSnapshot&{leagueId:string}>('playerData'),automated=values.find(x=>x.leagueId===`${leagueId}:automated`),legacy=values.find(x=>x.leagueId===leagueId),manual=values.find(x=>x.leagueId===`${leagueId}:manual`),candidates=[automated,...(legacy?.mode!=='MANUAL_IMPORT'?[legacy]:[]),manual,...(legacy?.mode==='MANUAL_IMPORT'?[legacy]:[])].filter((x):x is PlayerDataSnapshot&{leagueId:string}=>!!x);return season==null||format==null?candidates[0]:candidates.find(x=>x.mode==='MANUAL_IMPORT'?x.scoringFormat===format:!!validatePlayerDataSnapshot(x,season,format))} savePlayerData(leagueId:string,x:PlayerDataSnapshot){const cacheKey=x.mode==='MANUAL_IMPORT'?`${leagueId}:manual`:`${leagueId}:automated`;return put('playerData',{...x,leagueId:cacheKey})}
 }

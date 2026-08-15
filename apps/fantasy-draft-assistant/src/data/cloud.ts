@@ -1,5 +1,5 @@
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js'
-import type { PlayerDataSnapshot, ScoringFormat } from './player-data'
+import { validatePlayerDataSnapshot, type PlayerDataSnapshot, type ScoringFormat } from './player-data'
 
 export type CloudStatus = 'local-only' | 'configuration-error' | 'connecting' | 'cloud-connected' | 'authenticated' | 'unauthorized' | 'cloud-unavailable'
 export interface RuntimeDraftConfig { supabaseUrl?: string; supabasePublishableKey?: string }
@@ -56,6 +56,18 @@ export class DraftCloudGateway {
     const { data, error } = await this.client.functions.invoke('draft-player-data-refresh', { body: input })
     if (error || !data?.snapshot) throw new Error(typeof data?.error === 'string' ? data.error : 'Automated player refresh is unavailable.')
     return data.snapshot as PlayerDataSnapshot
+  }
+  async loadLatestSharedPlayerSnapshot(season:number,scoringFormat:ScoringFormat):Promise<PlayerDataSnapshot|undefined>{
+    if(!this.client||!await this.session())return undefined
+    const {data,error}=await this.client.from('draft_player_data_snapshots').select('snapshot').eq('season',season).eq('scoring_format',scoringFormat).order('created_at',{ascending:false}).limit(1).maybeSingle()
+    if(error)throw error
+    return validatePlayerDataSnapshot(data?.snapshot,season,scoringFormat)
+  }
+  async refreshLatestSharedPlayerSnapshot(input:{season:number;scoringFormat:ScoringFormat;includeIdp:boolean}):Promise<PlayerDataSnapshot|undefined>{
+    if(!this.client||!await this.session())throw new Error('Player refresh requires an authenticated Draft Assistant session.')
+    const {error}=await this.client.functions.invoke('draft-player-data-refresh',{body:input})
+    if(error)throw new Error('Automated player refresh is unavailable.')
+    return this.loadLatestSharedPlayerSnapshot(input.season,input.scoringFormat)
   }
 }
 export const draftCloud = new DraftCloudGateway(readDraftCloudConfig(import.meta.env, typeof window === 'undefined' ? undefined : window.__DRAFT_ASSISTANT_CONFIG__, import.meta.env.PROD))
