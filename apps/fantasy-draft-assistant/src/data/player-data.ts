@@ -39,6 +39,20 @@ const sourceWeight=(r:RankingValue,target:ScoringFormat)=>{const freshness={FRES
 export function aggregateRankings(values:RankingValue[],target:ScoringFormat){const ranked=values.filter((v):v is RankingValue&{overallRank:number}=>v.overallRank!=null&&v.overallRank>0).map(v=>({v,w:sourceWeight(v,target)})).filter(x=>x.w>0);if(!ranked.length)return{uncertaintyFlags:['RANKING_MISSING']};const total=ranked.reduce((n,x)=>n+x.w,0),baselineRank=Math.round(ranked.reduce((n,x)=>n+x.v.overallRank*x.w,0)/total),spread=Math.max(...ranked.map(x=>x.v.overallRank))-Math.min(...ranked.map(x=>x.v.overallRank));return{baselineRank,tier:ranked.find(x=>x.v.tier!=null)?.v.tier,positionRank:ranked.find(x=>x.v.positionRank!=null)?.v.positionRank,adp:ranked.find(x=>x.v.adp!=null)?.v.adp,uncertaintyFlags:[...(spread>=18?['SOURCE_DISAGREEMENT']:[]),...(values.some(v=>v.scoringFormat!==target)?['SCORING_MISMATCH']:[]),...(values.every(v=>v.freshness==='STALE')?['RANKINGS_STALE']:[])]}}
 export const isIdpPosition=(p:Position)=>['DL','LB','DB','DT','DE','CB','S'].includes(p);
 export const scoringFormatFor=(setup:SeasonSetup):ScoringFormat=>setup.settings.idpEnabled?'KEEPER':setup.settings.ppr===1?'PPR':setup.settings.ppr===.5?'HALF_PPR':'STANDARD';
+
+/** Validates an untrusted persisted or network snapshot before it can become draft authority. */
+export function validatePlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat):PlayerDataSnapshot|undefined{
+  if(!value||typeof value!=='object')return undefined;
+  const snapshot=value as Partial<PlayerDataSnapshot>;
+  if(snapshot.version!==1||snapshot.season!==season||snapshot.scoringFormat!==scoringFormat||!snapshot.createdAt||!Number.isFinite(Date.parse(snapshot.createdAt))||!Array.isArray(snapshot.players)||!snapshot.players.length)return undefined;
+  const identities=new Set<string>();
+  for(const player of snapshot.players){
+    if(!player||typeof player.canonicalPlayerId!=='string'||!player.canonicalPlayerId||identities.has(player.canonicalPlayerId)||typeof player.displayName!=='string'||!player.displayName.trim()||!Number.isFinite(player.baselineRank)||player.baselineRank!<=0)return undefined;
+    identities.add(player.canonicalPlayerId);
+  }
+  if(!Array.isArray(snapshot.changes)||!Array.isArray(snapshot.providerResults)||typeof snapshot.id!=='string')return undefined;
+  return snapshot as PlayerDataSnapshot;
+}
 export function snapshotId(createdAt:string,format:ScoringFormat,players:PlayerIntelligence[]){const stable=players.map(p=>`${p.canonicalPlayerId}:${p.baselineRank??''}:${p.availabilityStatus??''}:${p.lastUpdated??''}`).sort().join('|');let hash=2166136261;for(const c of `${format}|${createdAt}|${stable}`)hash=Math.imul(hash^c.charCodeAt(0),16777619);return `player-data-v1-${(hash>>>0).toString(16)}`}
 
 export function applySnapshot(players:DraftPlayer[],snapshot?:PlayerDataSnapshot):DraftPlayer[]{if(!snapshot)return players;const byFixture=new Map(snapshot.players.filter(x=>x.fixturePlayerId).map(x=>[x.fixturePlayerId!,x])),byCanonical=new Map(snapshot.players.map(x=>[x.canonicalPlayerId,x]));return players.map(player=>{const current=byFixture.get(player.id)??(player.canonicalPlayerId?byCanonical.get(player.canonicalPlayerId as CanonicalPlayerId):undefined);if(!current)return player;return{...player,canonicalPlayerId:current.canonicalPlayerId,nflTeam:current.nflTeam??player.nflTeam,byeWeek:current.byeWeek??player.byeWeek,currentBaselineRank:current.baselineRank,currentTier:current.tier,currentAdp:current.adp,playerIntelligence:current}})}

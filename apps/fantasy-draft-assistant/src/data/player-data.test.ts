@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {DraftStore} from './store';
-import {activateImport,aggregateRankings,applySnapshot,canonicalPlayerId,freshnessAt,isIdpPosition,normalizePlayerName,normalizePosition,normalizeTeam,parseRankingImport,refreshPlayerData,selectPlayerPool,snapshotId,snapshotSources,type PlayerDataSnapshot,type PlayerIntelligence,type RankingValue} from './player-data';
+import {activateImport,aggregateRankings,applySnapshot,canonicalPlayerId,freshnessAt,isIdpPosition,normalizePlayerName,normalizePosition,normalizeTeam,parseRankingImport,refreshPlayerData,selectPlayerPool,snapshotId,snapshotSources,validatePlayerDataSnapshot,type PlayerDataSnapshot,type PlayerIntelligence,type RankingValue} from './player-data';
 import {playerPool,seedSetup} from '../domain/seeds';
 import {rebuildDraftState,startDraft} from '../domain/engine';
 import {emptyPhilosophy,userContext} from '../domain/user-context';
@@ -27,5 +27,18 @@ describe('production data gate',()=>{
   it('uses an explicitly labeled fixture fallback only when no snapshot exists',()=>{
     expect(selectPlayerPool(playerPool(),undefined).some(p=>p.displayName==='Test Player 003')).toBe(true);
     expect(snapshotSources()).toMatchObject({mode:'FIXTURE_FALLBACK',rankingSource:'BASELINE FIXTURE RANKING'});
+  });
+  it('validates season, scoring, unique identity, timestamp, and usable ranks',()=>{
+    const valid={...snapshot([intel('synthetic-1')]),season:2026};
+    expect(validatePlayerDataSnapshot(valid,2026,'PPR')?.id).toBe(valid.id);
+    expect(validatePlayerDataSnapshot({...valid,season:2025},2026,'PPR')).toBeUndefined();
+    expect(validatePlayerDataSnapshot({...valid,scoringFormat:'KEEPER'},2026,'PPR')).toBeUndefined();
+    expect(validatePlayerDataSnapshot({...valid,createdAt:'not-a-date'},2026,'PPR')).toBeUndefined();
+    expect(validatePlayerDataSnapshot({...valid,players:[valid.players[0],valid.players[0]]},2026,'PPR')).toBeUndefined();
+    expect(validatePlayerDataSnapshot({...valid,players:[{...valid.players[0],baselineRank:undefined}]},2026,'PPR')).toBeUndefined();
+  });
+  it('keeps stale real data atomic and excludes every fixture player',()=>{
+    const stale={...snapshot([intel('real-id',{displayName:'Real Player',normalizedName:'real player'})]),season:2026,freshness:'STALE' as const};
+    expect(selectPlayerPool(playerPool(),stale).map(player=>player.displayName)).toEqual(['Real Player']);
   });
 });

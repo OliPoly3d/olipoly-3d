@@ -1,5 +1,12 @@
 import type { DraftPlayer, DraftState, Position, SeasonSetup } from '../domain/models';
 import { teamIdentity } from './team-marks';
+import { snapshotSources, type PlayerDataSnapshot } from '../data/player-data';
+import type { AiStatus } from '../data/ai';
+
+export function playerDataStatusMarkup(snapshot:PlayerDataSnapshot|undefined,aiStatus:AiStatus):string{
+  const source=snapshotSources(snapshot);
+  return `<small>PLAYER DATA: ${source.playerSource}${snapshot?` · ${snapshot.players.length} PLAYERS`:''} · RANKINGS: ${source.rankingSource}${snapshot?` · ${snapshot.freshness}`:''} · UPDATED: ${source.updatedAt?new Date(source.updatedAt).toLocaleString():'NOT AVAILABLE'} · NEWS: ${source.news} · AI ${aiStatus}</small>`;
+}
 
 export interface RecommendationViewModel {
   playerId: string;
