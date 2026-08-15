@@ -15,7 +15,8 @@ export type DraftEventType='DRAFT_STARTED'|'PICK_MADE'|'PICK_UNDONE'|'PICK_EDITE
 export interface DraftEvent{id:Id;sessionId:Id;seasonId:Id;sequence:number;type:DraftEventType;occurredAt:string;deviceId:string;payload:Record<string,unknown>;reversesEventId?:Id;supersedesEventId?:Id}
 export interface DraftSession{id:Id;seasonId:Id;status:'NOT_STARTED'|'ACTIVE'|'PAUSED'|'COMPLETED';rounds:number;allowIncompleteKeepers:boolean;createdAt:string}
 export interface DraftSnapshot{sessionId:Id;sequence:number;stateVersion:number;projection:unknown}
-export interface PlannedPick{round:number;slot:number;sequence:number;originalTeamId:Id;currentTeamId:Id;kind:'keeper'|'live'}
+/** A chronological selection. `slot` is the immutable base-order position kept for legacy ownership records. */
+export interface PlannedPick{round:number;pickInRound:number;overallPick:number;slot:number;sequence:number;originalTeamId:Id;currentTeamId:Id;kind:'keeper'|'live'}
 export interface TeamRoster{teamId:Id;keepers:DraftPlayer[];live:DraftPlayer[];combined:DraftPlayer[];positionCounts:Partial<Record<Position,number>>}
 export interface DraftState{status:DraftSession['status'];plan:PlannedPick[];current:PlannedPick|null;activePicks:{eventId:Id;plan:PlannedPick;player:DraftPlayer}[];rosters:Record<Id,TeamRoster>;available:DraftPlayer[];keeperPlayerIds:Set<Id>;completedRounds:number;remaining:number;robPicks:{pick:PlannedPick;picksAway:number}[]}
 export type PreferenceSource='USER_SELECTED'|'USER_TEXT'|'FUTURE_INTERPRETATION';

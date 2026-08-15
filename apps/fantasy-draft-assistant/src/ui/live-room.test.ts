@@ -81,6 +81,15 @@ describe('live room view model', () => {
     expect(markup).not.toContain(playerPool()[0].displayName);
   });
 
+  it('renders the first Round 2 selection as chronological 2.1', () => {
+    const setup = seedSetup('believeland');
+    let context = startDraft(setup, playerPool(), false);
+    for (const player of playerPool().slice(0, 13)) context = makePick(context, player.id);
+    const markup = recentPicksMarkup(rebuildDraftState(context), () => 'Team 12');
+    expect(markup).toContain('2.1 (#13) · Team 12');
+    expect(markup).not.toContain('2.12 (#13)');
+  });
+
   it('gives long player and manager names contained text hooks', () => {
     const setup = seedSetup('believeland');
     const names = ['Amon-Ra St. Brown', 'Marvin Harrison Jr.', 'Brian Thomas Jr.', 'Jaxon Smith-Njigba'];
