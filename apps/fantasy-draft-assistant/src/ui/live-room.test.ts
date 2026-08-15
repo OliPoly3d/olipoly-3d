@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
-import { confidenceRing, picksUntilUser, positionClass, teamMark, userTeamId } from './live-room';
+import { confidenceRing, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
 import { TEAM_IDS, teamIdentity } from './team-marks';
 
 describe('live room view model', () => {
@@ -68,6 +68,41 @@ describe('live room view model', () => {
     const state = rebuildDraftState(makePick(startDraft(setup, players, false), omarion.id));
     expect(state.activePicks[0].player.nflTeam).toBe('LAC');
     expect(teamMark(state.activePicks[0].player.nflTeam, 'compact')).not.toContain('NFL team mark');
+  });
+
+  it('caps recent picks at four while preserving newest-first behavior', () => {
+    const setup = seedSetup('believeland');
+    let draft = startDraft(setup, playerPool(), false);
+    for (const player of playerPool().slice(0, 5)) draft = makePick(draft, player.id);
+    const markup = recentPicksMarkup(rebuildDraftState(draft), () => 'Manager');
+    expect(RECENT_PICK_LIMIT).toBe(4);
+    expect(markup.match(/class="recent-pick/g)).toHaveLength(4);
+    expect(markup.indexOf(playerPool()[4].displayName)).toBeLessThan(markup.indexOf(playerPool()[1].displayName));
+    expect(markup).not.toContain(playerPool()[0].displayName);
+  });
+
+  it('gives long player and manager names contained text hooks', () => {
+    const setup = seedSetup('believeland');
+    const names = ['Amon-Ra St. Brown', 'Marvin Harrison Jr.', 'Brian Thomas Jr.', 'Jaxon Smith-Njigba'];
+    const players = playerPool().map((player, index) => index < names.length ? { ...player, displayName: names[index] } : player);
+    let context = startDraft(setup, players, false);
+    for (const player of players.slice(0, names.length)) context = makePick(context, player.id);
+    const markup = recentPicksMarkup(rebuildDraftState(context), () => 'Commissioner Alexander Montgomery-Smythe');
+    for (const name of names) expect(markup).toContain(`<b>${name}</b>`);
+    expect(markup.match(/Commissioner Alexander Montgomery-Smythe<\/small>/g)).toHaveLength(4);
+    expect(markup.match(/class="recent-pick/g)).toHaveLength(4);
+  });
+
+  it('marks retained synthetic history as legacy without making it available', () => {
+    const setup = seedSetup('believeland');
+    const legacy = { ...playerPool()[0], id: 'legacy-test-002', displayName: 'Test Player 002', historyOnly: true };
+    const context = makePick(startDraft(setup, [legacy, ...playerPool().slice(1)], false), playerPool()[1].id);
+    const events = context.events.map(event => event.type === 'PICK_MADE' ? { ...event, payload: { ...event.payload, playerId: legacy.id } } : event);
+    const picked = rebuildDraftState({ ...context, events });
+    const markup = recentPicksMarkup(picked, () => 'Historical Manager');
+    expect(markup).toContain('Test Player 002');
+    expect(markup).toContain('LEGACY');
+    expect(picked.available.some(player => player.id === legacy.id)).toBe(false);
   });
 });
 
