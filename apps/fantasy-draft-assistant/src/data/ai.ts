@@ -11,7 +11,9 @@ export function aiStatusFromHealth(data: Partial<AiHealthResponse> | null | unde
 
 export async function probeAi(cloud: DraftCloudGateway): Promise<AiStatus> {
   try {
-    if (!cloud.client || !await cloud.session()) return 'UNAVAILABLE'
+    // requireAccess already established authorization. A second session read here
+    // raced auth hydration in production; invoke supplies the current client token.
+    if (!cloud.client) return 'UNAVAILABLE'
     const { data, error } = await cloud.client.functions.invoke('draft-assistant-ai', { body: { action: 'health' } })
     return error ? 'UNAVAILABLE' : aiStatusFromHealth(data as Partial<AiHealthResponse> | null)
   } catch {
