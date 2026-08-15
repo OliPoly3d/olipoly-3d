@@ -1,4 +1,5 @@
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js'
+import type { PlayerDataSnapshot, ScoringFormat } from './player-data'
 
 export type CloudStatus = 'local-only' | 'configuration-error' | 'connecting' | 'cloud-connected' | 'authenticated' | 'unauthorized' | 'cloud-unavailable'
 export interface RuntimeDraftConfig { supabaseUrl?: string; supabasePublishableKey?: string }
@@ -49,6 +50,12 @@ export class DraftCloudGateway {
     if (!this.client) return this.initialStatus
     if (!navigator.onLine) return 'cloud-unavailable'
     try { const session = await this.session(); if (!session) return 'cloud-connected'; return await this.authorize(session) ? 'authenticated' : 'unauthorized' } catch { return 'cloud-unavailable' }
+  }
+  async refreshPlayerData(input: { season:number; scoringFormat:ScoringFormat; includeIdp:boolean; previous?:PlayerDataSnapshot }): Promise<PlayerDataSnapshot> {
+    if (!this.client || !await this.session()) throw new Error('Player refresh requires an authenticated Draft Assistant session.')
+    const { data, error } = await this.client.functions.invoke('draft-player-data-refresh', { body: input })
+    if (error || !data?.snapshot) throw new Error(typeof data?.error === 'string' ? data.error : 'Automated player refresh is unavailable.')
+    return data.snapshot as PlayerDataSnapshot
   }
 }
 export const draftCloud = new DraftCloudGateway(readDraftCloudConfig(import.meta.env, typeof window === 'undefined' ? undefined : window.__DRAFT_ASSISTANT_CONFIG__, import.meta.env.PROD))
