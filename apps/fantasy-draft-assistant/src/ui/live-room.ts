@@ -23,6 +23,13 @@ export interface RecommendationViewModel {
 export const positionClass = (position: Position) => `position-${position.replace('/', '').toLowerCase()}`;
 export const byeWeek = (player: DraftPlayer) => 5 + Math.abs([...player.id].reduce((n, char) => n + char.charCodeAt(0), 0)) % 10;
 
+export const RECENT_PICK_LIMIT = 4;
+
+export function recentPicksMarkup(state: DraftState, managerName: (teamId: string) => string): string {
+  const picks = state.activePicks.slice(-RECENT_PICK_LIMIT).reverse();
+  return `<div class="recent-heading"><small>RECENT PICKS</small><b>Last ${Math.min(RECENT_PICK_LIMIT, state.activePicks.length)}</b></div>${picks.map(({ eventId, plan, player }) => `<button class="recent-pick${player.historyOnly ? ' legacy-pick' : ''}" data-correct="${eventId}">${teamMark(player.nflTeam, 'compact')}<span class="position-chip ${positionClass(player.position)}">${player.position}</span><b>${escapeHtml(player.displayName)}</b><small>${plan.round}.${plan.slot} · ${escapeHtml(managerName(plan.currentTeamId))}</small>${player.historyOnly ? '<span class="legacy-label">LEGACY</span>' : ''}</button>`).join('') || '<p>No live picks yet.</p>'}`;
+}
+
 export type ConfidenceLevel = RecommendationViewModel['confidence'];
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({
