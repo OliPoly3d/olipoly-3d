@@ -9,7 +9,17 @@ export type ScoringFormat = 'PPR' | 'HALF_PPR' | 'STANDARD' | 'KEEPER' | 'IDP' |
 export type AvailabilityStatus = 'ACTIVE' | 'QUESTIONABLE' | 'DOUBTFUL' | 'OUT' | 'OUT_FOR_SEASON' | 'PUP' | 'IR' | 'SUSPENDED' | 'HOLDOUT' | 'RETIRED' | 'NOT_IN_PLAYER_POOL' | 'OTHER' | 'UNKNOWN';
 
 export interface SourceReference { source:string; sourceClass:SourceClass; updatedAt:string; fetchedAt?:string; reference?:string }
-export interface RankingValue extends SourceReference { overallRank?:number; positionRank?:number; tier?:number; adp?:number; rankSpread?:number; standardDeviation?:number; scoringFormat:ScoringFormat; freshness:Freshness; rankingClass?:'OFFENSE'|'IDP' }
+export interface RankingValue extends SourceReference { overallRank?:number; positionRank?:number; tier?:number; adp?:number; rankMin?:number; rankMax?:number; rankAverage?:number; rankSpread?:number; standardDeviation?:number; scoringFormat:ScoringFormat; freshness:Freshness; rankingClass?:'OFFENSE'|'IDP' }
+export type RankingSourceId='FANTASYPROS_ECR'|'ESPN'|'OTHER';
+export interface RankingSource { id:RankingSourceId; label:string; updatedAt:string; scoringFormat:ScoringFormat; rankingType:string; rankings:Map<CanonicalPlayerId,RankingValue> }
+
+/** Provider-neutral projection of objective rankings already present in the active snapshot. */
+export function rankingSources(snapshot?:PlayerDataSnapshot):RankingSource[]{
+  if(!snapshot)return[];
+  const rankings=new Map<CanonicalPlayerId,RankingValue>();
+  for(const player of snapshot.players){const value=player.sourceValues.find(source=>source.source==='FantasyPros ECR');if(value?.overallRank!=null)rankings.set(player.canonicalPlayerId,value)}
+  return rankings.size?[{id:'FANTASYPROS_ECR',label:'FantasyPros ECR',updatedAt:snapshot.endpointUpdatedAt?.rankings??snapshot.createdAt,scoringFormat:snapshot.scoringFormat,rankingType:'Expert Consensus Ranking',rankings}]:[];
+}
 export interface InjuryContext extends SourceReference { status:AvailabilityStatus; bodyArea?:string; practiceParticipation?:string }
 export interface RoleContext extends SourceReference { summary:string; confidence:Confidence; tags?:('WORKHORSE'|'COMMITTEE'|'TIMESHARE'|'STARTER'|'BACKUP'|'THIRD_DOWN'|'GOAL_LINE'|'COMPETITION'|'ROOKIE_COMPETITION'|'QB_COMPETITION'|'EASED_IN')[] }
 export interface PlayerNewsItem extends SourceReference { id:string; playerId:CanonicalPlayerId; headline:string; summary:string; eventType:string; publishedAt:string; confidence:Confidence; materiality:'HIGH'|'MED'|'LOW' }

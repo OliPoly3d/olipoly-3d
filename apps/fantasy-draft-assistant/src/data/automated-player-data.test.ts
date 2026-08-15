@@ -6,7 +6,7 @@ const payloads = { players: { players: [
   { player_id: 1, player_name: 'José Test Jr.', player_team_id: 'JAC', player_position_id: 'RB', bye_week: 8 },
   { player_id: 2, player_name: 'Edge Test', player_team_id: 'WSH', player_position_id: 'EDGE' },
 ] }, rankings: { rankings: [
-  { player_id: 1, rank_ecr: 10, pos_rank: 'RB3', tier: 2, adp: 12.5, rank_min: 7, rank_max: 16, rank_std: 2.1, updated_at: fetchedAt },
+  { player_id: 1, rank_ecr: 10, pos_rank: 'RB3', tier: 2, adp: 12.5, rank_min: 7, rank_max: 16, rank_ave: 10.4, rank_std: 2.1, updated_at: fetchedAt },
   { player_id: 2, rank_ecr: 4, pos_rank: 'DL2', tier: 1, updated_at: fetchedAt },
 ] }, news: { news: [{ news_id: 3, player_id: 1, title: 'Player ruled out', summary: 'Will not play this week.', published_at: fetchedAt, source: 'Team report' }] }, injuries: { injuries: [{ player_id: 1, designation: 'IR', body_part: 'Knee', practice_status: 'DNP', updated_at: fetchedAt }] } }
 
@@ -15,7 +15,7 @@ describe('automated player data', () => {
     const snapshot = normalizeFantasyPros(payloads, { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true, sleeper:{ sleeper1:{ player_id:'sleeper1', fantasy_data_id:1, full_name:'Jose Test', team:'JAX', position:'RB', active:true } } })
     const player = snapshot.players[1]
     expect(player).toMatchObject({ fantasyProsPlayerId:'1', sleeperPlayerId:'sleeper1', normalizedName:'jose test', nflTeam:'JAX', position:'RB', baselineRank:10, positionRank:3, tier:2, adp:12.5, availabilityStatus:'IR' })
-    expect(player.sourceValues[0]).toMatchObject({ source:'FantasyPros ECR', scoringFormat:'PPR', rankSpread:9, standardDeviation:2.1, rankingClass:'OFFENSE' })
+    expect(player.sourceValues[0]).toMatchObject({ source:'FantasyPros ECR', scoringFormat:'PPR', rankMin:7, rankMax:16, rankAverage:10.4, rankSpread:9, standardDeviation:2.1, rankingClass:'OFFENSE' })
     expect(player.newsItems[0]).toMatchObject({ headline:'Player ruled out', materiality:'HIGH' }); expect(player.injury).toMatchObject({ bodyArea:'Knee', practiceParticipation:'DNP' })
     expect(snapshot.rankingSource).toBe('FANTASYPROS ECR')
   })
