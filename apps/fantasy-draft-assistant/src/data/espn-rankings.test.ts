@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {activateEspnImport,isEspnImportActivatable,manuallyAssignEspnRow,parseEspnImport,parseEspnPdfText,reconcileEspnRows} from './espn-rankings';
+import {activateEspnImport,configurePdfWorker,isEspnImportActivatable,manuallyAssignEspnRow,parseEspnImport,parseEspnPdfText,pdfWorkerSrc,reconcileEspnRows} from './espn-rankings';
 import {playerPool} from '../domain/seeds';
 import type {DraftPlayer} from '../domain/models';
 
@@ -7,6 +7,7 @@ const canonical=playerPool().map((player,index)=>({...player,canonicalPlayerId:`
 const metadata={season:2026,scoringFormat:'PPR' as const,rankingType:'PPR300' as const,sourceUpdatedAt:null,importedAt:'2026-08-15T13:25:00.000Z',originalFilename:'espn.pdf'};
 
 describe('ESPN PPR300 parser',()=>{
+  it('configures the bundled Vite PDF.js worker asset before document parsing',()=>{const pdfjs={GlobalWorkerOptions:{workerSrc:''}};configurePdfWorker(pdfjs);expect(pdfjs.GlobalWorkerOptions.workerSrc).toBe(pdfWorkerSrc);expect(pdfWorkerSrc).toMatch(/pdf\.worker\.min-[\w-]+\.mjs$|pdf\.worker\.min\.mjs/);expect(pdfWorkerSrc).not.toMatch(/^https?:\/\//)});
   it('parses four out-of-order ranking blocks by printed rank and ignores auction values',()=>{const text=`2026 ESPN Fantasy Football Draft Kit PPR Top 300 Cheat Sheet RANKINGS 241-300 300. (TE40) Last Player, NYJ $1 9 RANKINGS 81-160 81. (WR35) Wide Receiver, WAS $13 12 RANKINGS 1-80 1. (RB1) Bijan Robinson, ATL $57 11 RANKINGS 161-240 161. (QB22) Quarter Back, JAC $2 8`;const result=parseEspnPdfText(text);expect(result.rows.map(row=>row.overall_rank)).toEqual([1,81,161,300]);expect(result.rows[0]).toEqual({overall_rank:1,position:'RB',position_rank:1,player_name:'Bijan Robinson',team:'ATL',bye_week:11});expect(result.rows[1].position).toBe('WR');expect(result.rows[2].position).toBe('QB');expect(result.rows[3].position).toBe('TE');expect(JSON.stringify(result)).not.toContain('$57')});
   it('rejects duplicate and malformed/out-of-range ranks',()=>{const duplicate=parseEspnPdfText(`1. (RB1) One Player, ATL $50 11 1. (WR1) Two Player, BUF $49 7 301. (QB1) Bad Rank, KC $30 10`);expect(duplicate.invalid.map(item=>item.reason).join(' ')).toMatch(/Duplicate overall rank|Rank must be 1-300/)});
 });

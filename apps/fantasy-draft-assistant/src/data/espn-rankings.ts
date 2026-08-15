@@ -1,5 +1,6 @@
 import type { DraftPlayer, Position } from '../domain/models';
 import { freshnessAt, normalizePlayerName, normalizePosition, normalizeTeam, type CanonicalPlayerId, type RankingSource, type RankingValue, type ScoringFormat } from './player-data';
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
 export interface EspnRankingValue extends Pick<RankingValue,'source'|'sourceClass'|'updatedAt'|'overallRank'|'positionRank'|'scoringFormat'|'freshness'> { byeWeek?:number }
 export interface EspnRankingSource extends Omit<RankingSource,'updatedAt'|'rankings'> { id:'ESPN'; label:'ESPN PPR300'; season:number; sourceUpdatedAt:string|null; importedAt:string; originalFilename:string; detectedRows:number; rankings:Map<CanonicalPlayerId,EspnRankingValue> }
@@ -12,12 +13,21 @@ const aliases:Record<string,string>={'gabe davis':'gabriel davis','hollywood bro
 const csvLine=(line:string)=>{const values:string[]= [];let value='',quoted=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'){value+='"';i++}else if(c==='"')quoted=!quoted;else if(c===','&&!quoted){values.push(value.trim());value=''}else value+=c}values.push(value.trim());return values};
 const optionalInteger=(value:unknown)=>value==null||value===''?undefined:Number.isInteger(Number(value))?Number(value):undefined;
 
+export const pdfWorkerSrc=pdfWorkerUrl;
+export const configurePdfWorker=(pdfjs:{GlobalWorkerOptions:{workerSrc:string}})=>{pdfjs.GlobalWorkerOptions.workerSrc=pdfWorkerSrc};
+
 /** Extracts text in the browser. OCR is deliberately not attempted. */
 export async function extractPdfText(data:ArrayBuffer):Promise<string>{
-  const pdfjs=await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const document=await pdfjs.getDocument({data:new Uint8Array(data)}).promise;
   const pages:string[]=[];
-  for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){const page=await document.getPage(pageNumber),content=await page.getTextContent();pages.push(content.items.map(item=>'str' in item?item.str:'').join(' '))}
+  try{
+    const pdfjs=await import('pdfjs-dist/legacy/build/pdf.mjs');
+    configurePdfWorker(pdfjs);
+    const document=await pdfjs.getDocument({data:new Uint8Array(data)}).promise;
+    for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){const page=await document.getPage(pageNumber),content=await page.getTextContent();pages.push(content.items.map(item=>'str' in item?item.str:'').join(' '))}
+  }catch(error){
+    console.error('ESPN PDF import failed while PDF.js was reading the document.',error);
+    throw new Error('Unable to read this PDF. The existing ESPN rankings were not changed.');
+  }
   const text=pages.join('\n').replace(/\s+/g,' ').trim();
   if(!text)throw new Error('This PDF contains no usable text. Scanned/image-only PDFs are unsupported; upload the text-based ESPN PPR Top 300 PDF.');
   return text;
