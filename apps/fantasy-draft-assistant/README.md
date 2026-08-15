@@ -1,5 +1,7 @@
 # Private Fantasy Draft Assistant — Phase 4A
 
+Automated player-data provider setup, failure behavior, attribution, and the gated shared-storage proposal are documented in [docs/AUTOMATED_PLAYER_DATA.md](docs/AUTOMATED_PLAYER_DATA.md). Manual ranking import and truthful fixture fallback remain available until a real snapshot is activated.
+
 This isolated Vite/TypeScript application lives under `apps/fantasy-draft-assistant`; production output is the unadvertised `/draft-assistant/` route. No OliPoly public header, footer, sitemap, customer menu, ERP module, or production Supabase migration references it.
 
 ## Security and local setup
