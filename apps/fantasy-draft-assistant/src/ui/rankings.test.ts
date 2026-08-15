@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { activateImport, parseRankingImport, rankingSources, selectPlayerPool } from '../data/player-data';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
+import type { DraftPlayer } from '../domain/models';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { emptyPhilosophy } from '../domain/user-context';
 import { runRecommendationEngine } from '../intelligence/recommendation-engine';
-import { ESPN_CLEAR_VALUE, ESPN_IGNORE_VALUE, deltaLabel, espnReconciliationOptions, filterRankingRows, orderRankingRows, rankingRows, rankingsTableMarkup, sortRankingRows, locationDefaultAvailable } from './rankings';
+import { ESPN_CLEAR_VALUE, ESPN_IGNORE_VALUE, deltaLabel, espnReconciliationOptions, filterRankingRows, orderRankingRows, rankingRows, rankingsTableMarkup, type RankingRow, sortRankingRows, locationDefaultAvailable } from './rankings';
 const setup=seedSetup('believeland');
 const snapshot=activateImport(parseRankingImport('player_name,team,position,overall_rank,position_rank,tier,adp\nTest Player 1,,QB,2,1,1,3\nTest Player 2,,RB,1,1,1,\nTest Player 3,,WR,3,1,2,5',{source:'FantasyPros ECR',updatedAt:'2026-08-15T12:00:00Z',scoringFormat:'PPR'},playerPool()));
 const model=()=>{const players=selectPlayerPool(playerPool(),snapshot),context=startDraft(setup,players),state=rebuildDraftState(context),result=runRecommendationEngine({setup,context,state,userTeamId:setup.teams[0].id,userContext:{philosophy:emptyPhilosophy(setup.league.id,setup.season.id),playerInterests:[],strategicIntents:[],recentConversation:[]}});return{players,context,state,result,rows:rankingRows(snapshot,players,state,result.draftFits)}};
@@ -24,3 +25,5 @@ describe('interactive numeric ranking sorting',()=>{
  it.each(['draftFit','deltaFp','positionRank','tier','adp'] as const)('sorts %s ascending and descending deterministically',key=>{const rows=sortable(),asc=sortRankingRows(rows,{key,direction:'asc'}),desc=sortRankingRows(rows,{key,direction:'desc'});expect(asc).toHaveLength(rows.length);expect(desc).toHaveLength(rows.length);expect(sortRankingRows(rows,{key,direction:'asc'})).toEqual(asc)});
  it('renders sortable direction indicators and truthful context defaults',()=>{expect(rankingsTableMarkup(sortable(),'COMPARE',{key:'espn',direction:'desc'})).toContain('▼');expect(locationDefaultAvailable('#/believeland/rankings/draft')).toBe(true);expect(locationDefaultAvailable('#/believeland/rankings')).toBe(false)});
 });
+
+describe('ranking interest context',()=>{it('adds and removes the current player-interest badge from a rankings render',()=>{const player={id:'interest-player',canonicalPlayerId:'interest-player',displayName:'Interest Player',normalizedName:'interest player',position:'RB',nflTeam:'CLE'}as DraftPlayer,row={player,market:{overallRank:1,source:'FantasyPros',sourceClass:'ANALYST_INTERPRETATION',updatedAt:'',scoringFormat:'PPR',freshness:'FRESH'},available:true}as RankingRow,interest={id:'interest',leagueId:'league',seasonId:'season',playerId:player.id,state:'INTERESTED',updatedAt:''}as const;expect(rankingsTableMarkup([row],'FANTASYPROS',undefined,[interest])).toContain('Interested');expect(rankingsTableMarkup([row])).not.toContain('Interested')})});
