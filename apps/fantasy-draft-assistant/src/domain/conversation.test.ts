@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isExplicitIntentRequest, isObsoleteAssistantMessage, isStrategicIntentCandidate, shouldOfferIntentAfterResponse } from './conversation'
+import { isExplicitIntentRequest, isObsoleteAssistantMessage, isStrategicIntentCandidate, shouldOfferIntentAfterResponse, strategyInstruction } from './conversation'
 
 describe('conversation classification', () => {
   it.each([
@@ -36,3 +36,5 @@ describe('conversation classification', () => {
     expect(isObsoleteAssistantMessage({ ...base, type: 'SYSTEM', text: 'Current ECR favors the running back.' })).toBe(false)
   })
 })
+
+describe('strategy instructions',()=>{it('recognizes natural instruction',()=>expect(strategyInstruction("I'm waiting on QB now.")).toMatchObject({kind:'INSTRUCTION'}));it('keeps questions and comparisons read-only',()=>{expect(strategyInstruction('Why not Brock?').kind).toBe('QUESTION');expect(strategyInstruction('Compare Brock and Player X.').kind).toBe('ANALYSIS')})})
