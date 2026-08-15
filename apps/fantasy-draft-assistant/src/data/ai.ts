@@ -1,16 +1,26 @@
 import type { DraftCloudGateway } from './cloud'
 
 export type AiStatus = 'READY' | 'UNCONFIGURED' | 'UNAVAILABLE'
+export interface AiHealthResponse { ready: boolean; configured: boolean }
+
+export function aiStatusFromHealth(data: Partial<AiHealthResponse> | null | undefined): AiStatus {
+  if (data?.ready === true && data.configured === true) return 'READY'
+  if (data?.configured === false) return 'UNCONFIGURED'
+  return 'UNAVAILABLE'
+}
 
 export async function probeAi(cloud: DraftCloudGateway): Promise<AiStatus> {
-  const session = await cloud.session()
-  if (!cloud.client || !session) return 'UNCONFIGURED'
   try {
+    if (!cloud.client || !await cloud.session()) return 'UNAVAILABLE'
     const { data, error } = await cloud.client.functions.invoke('draft-assistant-ai', { body: { action: 'health' } })
-    return !error && data?.ready === true ? 'READY' : data?.configured === false ? 'UNCONFIGURED' : 'UNAVAILABLE'
+    return error ? 'UNAVAILABLE' : aiStatusFromHealth(data as Partial<AiHealthResponse> | null)
   } catch {
     return 'UNAVAILABLE'
   }
+}
+
+export async function refreshAiStatus(cloud: DraftCloudGateway, apply: (status: AiStatus) => void): Promise<void> {
+  apply(await probeAi(cloud))
 }
 
 export const aiLabel = (status: AiStatus) => `AI ${status}`
