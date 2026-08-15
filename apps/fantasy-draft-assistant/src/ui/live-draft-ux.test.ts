@@ -36,3 +36,8 @@ describe('HOF reminder', () => {
     expect(reminderMarkup(new Date('2026-08-15T12:00:00Z'), true)).toBe('');
   });
 });
+
+describe('distinct ESPN diagnostics',()=>{
+ it('distinguishes no source, restore failure, exhausted source, and zero filters',()=>{const states=[espnBoardMarkup([],false),espnBoardMarkup([],false,'bad JSON'),espnBoardMarkup([],true),espnBoardMarkup([],true,undefined,true)];expect(states[0]).toContain('NO ESPN SOURCE');expect(states[1]).toContain('ESPN SOURCE RESTORE ERROR');expect(states[2]).toContain('NO ESPN-RANKED PLAYERS REMAIN');expect(states[3]).toContain('NO FILTER MATCHES');expect(new Set(states)).toHaveLength(4)});
+ it('populates a valid restored source normally',()=>expect(espnBoardMarkup([row(12)],true)).toContain('Player 12'));
+});

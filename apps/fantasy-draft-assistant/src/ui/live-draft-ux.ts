@@ -29,7 +29,12 @@ export function remainingEspnRows(rows: RankingRow[]): RankingRow[] {
     .sort((a, b) => a.espn!.overallRank! - b.espn!.overallRank!);
 }
 
-export function espnBoardMarkup(rows: RankingRow[], hasSource: boolean): string {
-  if (!hasSource) return '<div class="espn-empty"><p>No ESPN PPR300 ranking source is active.</p><a href="#rankings-import">IMPORT ESPN PPR300</a></div>';
-  return `<div class="espn-board-table" role="table"><div class="espn-board-row header" role="row"><b>ESPN</b><b>PLAYER</b><b>POS</b><b>TEAM</b><b>STATUS</b></div>${remainingEspnRows(rows).map(row => `<div class="espn-board-row" role="row" data-espn-player="${row.player.id}"><b>${row.espn!.overallRank}</b><strong>${row.player.displayName}</strong><span>${row.player.position}</span><span>${row.player.nflTeam ?? '—'}</span><span>AVAILABLE</span></div>`).join('')}</div>`;
+const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));
+
+export function espnBoardMarkup(rows: RankingRow[], hasSource: boolean, restoreError?:string, filtersActive=false): string {
+  if (restoreError) return `<div class="espn-empty" role="alert"><h2>ESPN SOURCE RESTORE ERROR</h2><p>Saved ESPN rankings could not be restored.</p><small>${escapeHtml(restoreError)}</small><button data-reimport-espn>REIMPORT ESPN RANKINGS</button></div>`;
+  if (!hasSource) return '<div class="espn-empty"><h2>NO ESPN SOURCE</h2><p>Import ESPN PPR300 rankings to use this view.</p><button data-reimport-espn>IMPORT ESPN PPR300</button></div>';
+  const remaining=remainingEspnRows(rows);
+  if(!remaining.length)return filtersActive?'<div class="espn-empty"><h2>NO FILTER MATCHES</h2><p>No players match the current filters.</p></div>':'<div class="espn-empty"><h2>NO ESPN-RANKED PLAYERS REMAIN</h2><p>All ESPN-ranked players in this source have been drafted.</p></div>';
+  return `<div class="espn-board-table" role="table"><div class="espn-board-row header" role="row"><b>ESPN</b><b>PLAYER</b><b>POS</b><b>TEAM</b><b>STATUS</b></div>${remaining.map(row => `<div class="espn-board-row" role="row" data-espn-player="${row.player.id}"><b>${row.espn!.overallRank}</b><strong>${row.player.displayName}</strong><span>${row.player.position}</span><span>${row.player.nflTeam ?? '—'}</span><span>AVAILABLE</span></div>`).join('')}</div>`;
 }
