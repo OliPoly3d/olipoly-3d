@@ -5,7 +5,15 @@ import type { AiStatus } from '../data/ai';
 
 export function playerDataStatusMarkup(snapshot:PlayerDataSnapshot|undefined,aiStatus:AiStatus):string{
   const source=snapshotSources(snapshot);
-  return `<small>FANTASYPROS · LAST REFRESH: ${source.updatedAt?new Date(source.updatedAt).toLocaleString():'NOT AVAILABLE'} · AUTO REFRESH: NOT CONFIGURED · PLAYER DATA: ${source.playerSource}${snapshot?` · ${snapshot.players.length} PLAYERS`:''} · RANKINGS: ${source.rankingSource}${snapshot?` · ${snapshot.freshness}`:''} · NEWS: ${source.news} · AI ${aiStatus}</small>`;
+  const items=[
+    ['FANTASYPROS',source.playerSource],
+    ['LAST REFRESH',source.updatedAt?new Date(source.updatedAt).toLocaleString():'NOT AVAILABLE'],
+    ['FRESHNESS',snapshot?.freshness??'FALLBACK'],
+    ['PLAYERS',String(snapshot?.players.length??0)],
+    ['RANKINGS',source.rankingSource],
+    ['AI',aiStatus],
+  ];
+  return `<div class="status-rail" aria-label="Draft data status">${items.map(([label,value])=>`<span class="status-rail-item"><small>${label}</small><b>${value}</b></span>`).join('')}</div>`;
 }
 
 export interface RecommendationViewModel {
