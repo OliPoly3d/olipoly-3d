@@ -29,3 +29,8 @@ describe('premium visual system contract', () => {
     expect(main).toContain('id="more-options"');
   });
 });
+
+describe('recommendation card structural layout',()=>{
+ it('uses explicit deterministic insight, decision, and action zones in document order',()=>{const insight=main.indexOf('class="decision-insight"'),waiting=main.indexOf('class="rec-intel"'),actions=main.indexOf('class="rec-actions"');expect(insight).toBeGreaterThan(0);expect(waiting).toBeGreaterThan(insight);expect(actions).toBeGreaterThan(waiting);expect(css).toContain('.rec-actions{position:static');expect(css).toContain('.rec-intel{display:grid');expect(css).toContain('.decision-insight{display:grid')});
+ it('supports three primary cards, long names, two-line insight, and separate More Options',()=>{expect(main).toContain('recommendations.map((r,index)');expect(main).toContain('id="more-options"');expect(css).toContain('-webkit-line-clamp:2');expect(css).toContain('overflow-wrap:normal')});
+});

@@ -116,3 +116,8 @@ describe('live room view model', () => {
 });
 
 describe('interest presentation boundary',()=>{it('filters the Master Board without moving base player order',async()=>{const{filterPlayersByInterest}=await import('./live-room');const players=playerPool();const filtered=filterPlayersByInterest(players,[{id:'i',leagueId:'l',seasonId:'s',playerId:players[1].id,state:'WATCH',updatedAt:''}],'WATCH');expect(filtered.map(x=>x.id)).toEqual([players[1].id]);expect(players[0].id).toBe('player-omarion-hampton')});it('renders a subtle contextual recommendation marker',async()=>{const{interestBadge}=await import('./live-room');expect(interestBadge({id:'i',leagueId:'l',seasonId:'s',playerId:'p',state:'AVOID',updatedAt:''})).toContain('Bounded user-context adjustment');expect(interestBadge()).toBe('')})});
+
+describe('compact production cockpit semantics',()=>{
+ it('shows a truthful empty recent-picks state without Last 0',()=>{const setup=seedSetup('believeland'),markup=recentPicksMarkup(rebuildDraftState(startDraft(setup,playerPool())),()=> 'Manager');expect(markup).toContain('RECENT PICKS');expect(markup).toContain('No live picks yet.');expect(markup).not.toContain('Last 0')});
+ it('calculates source age without mutating the source timestamp',async()=>{const{sourceAge}=await import('./live-room');const timestamp='2026-08-15T12:00:00.000Z';expect(sourceAge(timestamp,new Date('2026-08-16T13:00:00.000Z'))).toBe('1 day old');expect(timestamp).toBe('2026-08-15T12:00:00.000Z')});
+});

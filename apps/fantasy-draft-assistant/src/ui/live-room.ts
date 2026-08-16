@@ -2,18 +2,20 @@ import type { DraftPlayer, DraftState, Position, SeasonSetup } from '../domain/m
 import { teamIdentity } from './team-marks';
 import { snapshotSources, type PlayerDataSnapshot } from '../data/player-data';
 import type { AiStatus } from '../data/ai';
+import type { EspnRankingSource } from '../data/espn-rankings';
 
-export function playerDataStatusMarkup(snapshot:PlayerDataSnapshot|undefined,aiStatus:AiStatus):string{
+export function sourceAge(timestamp:string|undefined,now=new Date()):string{
+  if(!timestamp)return'Age unavailable';
+  const elapsed=Math.max(0,now.getTime()-Date.parse(timestamp)),days=Math.floor(elapsed/86_400_000);
+  if(days)return`${days} day${days===1?'':'s'} old`;
+  const hours=Math.floor(elapsed/3_600_000);return hours?`${hours} hour${hours===1?'':'s'} old`:'Fresh';
+}
+const sourceTime=(timestamp:string|undefined,verb:string)=>timestamp?`${verb} ${new Date(timestamp).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}`:`${verb} unavailable`;
+export function playerDataStatusMarkup(snapshot:PlayerDataSnapshot|undefined,aiStatus:AiStatus,espn?:EspnRankingSource,espnError?:{message:string;importedAt?:string}):string{
   const source=snapshotSources(snapshot);
-  const items=[
-    ['FANTASYPROS',source.playerSource],
-    ['LAST REFRESH',source.updatedAt?new Date(source.updatedAt).toLocaleString():'NOT AVAILABLE'],
-    ['FRESHNESS',snapshot?.freshness??'FALLBACK'],
-    ['PLAYERS',String(snapshot?.players.length??0)],
-    ['RANKINGS',source.rankingSource],
-    ['AI',aiStatus],
-  ];
-  return `<div class="status-rail" aria-label="Draft data status">${items.map(([label,value])=>`<span class="status-rail-item"><small>${label}</small><b>${value}</b></span>`).join('')}</div>`;
+  const fpTime=source.updatedAt,espnTime=espn?.sourceUpdatedAt??espn?.importedAt??espnError?.importedAt;
+  const espnStatus=espnError?`<span class="source-error"><b>ESPN SOURCE ERROR</b><small>${sourceTime(espnTime,'Imported')}</small><span>Saved rankings could not be restored.</span><button data-reimport-espn>REIMPORT</button></span>`:espn?`<span><b>ESPN · ${espn.rankingType}</b><small>${espn.rankings.size} matched · ${sourceTime(espnTime,'Imported')}</small><span>${sourceAge(espnTime)}</span></span><button data-reimport-espn>REPLACE</button>`:`<span><b>ESPN · NO ACTIVE SOURCE</b><small>Never imported or explicitly removed</small></span><button data-reimport-espn>IMPORT</button>`;
+  return `<div class="status-rail" aria-label="Draft data status"><section class="source-status"><span><b>FANTASYPROS · ${source.rankingSource}</b><small>${snapshot?.players.length??0} players · ${sourceTime(fpTime,'Updated')}</small><span>${sourceAge(fpTime)}</span></span><button id="refresh-source">REFRESH</button></section><section class="source-status">${espnStatus}</section><section class="source-status ai-source"><span><b>AI</b><small>${aiStatus}</small></span></section></div>`;
 }
 
 export interface RecommendationViewModel {
@@ -35,7 +37,8 @@ export const RECENT_PICK_LIMIT = 4;
 
 export function recentPicksMarkup(state: DraftState, managerName: (teamId: string) => string): string {
   const picks = state.activePicks.slice(-RECENT_PICK_LIMIT).reverse();
-  return `<div class="recent-heading"><small>RECENT PICKS</small><b>Last ${Math.min(RECENT_PICK_LIMIT, state.activePicks.length)}</b></div>${picks.map(({ eventId, plan, player }) => `<button class="recent-pick${player.historyOnly ? ' legacy-pick' : ''}" data-correct="${eventId}">${teamMark(player.nflTeam, 'compact')}<span class="position-chip ${positionClass(player.position)}">${player.position}</span><b>${escapeHtml(player.displayName)}</b><small>${plan.round}.${plan.pickInRound} (#${plan.overallPick}) · ${escapeHtml(managerName(plan.currentTeamId))}</small>${player.historyOnly ? '<span class="legacy-label">LEGACY</span>' : ''}</button>`).join('') || '<p>No live picks yet.</p>'}`;
+  if(!picks.length)return'<div class="recent-heading"><small>RECENT PICKS</small></div><p>No live picks yet.</p>';
+  return `<div class="recent-heading"><small>RECENT PICKS · LAST ${Math.min(RECENT_PICK_LIMIT, state.activePicks.length)}</small></div>${picks.map(({ eventId, plan, player }) => `<button class="recent-pick${player.historyOnly ? ' legacy-pick' : ''}" data-correct="${eventId}">${teamMark(player.nflTeam, 'compact')}<span class="position-chip ${positionClass(player.position)}">${player.position}</span><b>${escapeHtml(player.displayName)}</b><small>${plan.round}.${plan.pickInRound} (#${plan.overallPick}) · ${escapeHtml(managerName(plan.currentTeamId))}</small>${player.historyOnly ? '<span class="legacy-label">LEGACY</span>' : ''}</button>`).join('')}`;
 }
 
 export type ConfidenceLevel = RecommendationViewModel['confidence'];
