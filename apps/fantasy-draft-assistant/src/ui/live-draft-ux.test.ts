@@ -33,6 +33,8 @@ describe('HOF reminder', () => {
     expect(reminderState(new Date('2026-09-05T12:00:00Z'))).toBe('final-week');
     expect(reminderState(new Date('2026-09-12T12:00:00Z'))).toBe('due-today');
     expect(reminderState(new Date('2026-09-13T12:00:00Z'))).toBe('overdue');
+    expect(reminderMarkup(new Date('2026-08-15T12:00:00Z'), false)).toContain('Cancel FantasyPros HOF by Sep 12, 2026');
+    expect(reminderMarkup(new Date('2026-08-15T12:00:00Z'), false)).toContain('MARK DONE');
     expect(reminderMarkup(new Date('2026-08-15T12:00:00Z'), true)).toBe('');
   });
 });
