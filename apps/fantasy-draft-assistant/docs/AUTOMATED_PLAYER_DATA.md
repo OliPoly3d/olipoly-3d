@@ -5,8 +5,8 @@
 FantasyPros Public API v2 is the primary provider. The server-only `draft-player-data-refresh` Edge Function reads `FANTASYPROS_API_KEY` and calls these official endpoints under `https://api.fantasypros.com/public/v2/json`:
 
 - `GET /nfl/players`
-- `GET /nfl/2026/consensus-rankings?scoring=PPR&position=FLX` (PPR offense; `HALF` and `STD` are used for Half-PPR and Standard)
-- the same rankings endpoint with `position=ALL&include_idp=true` for an IDP league
+- concurrent `GET /nfl/2026/consensus-rankings` requests for `FLX`, `QB`, `RB`, `WR`, `TE`, `K`, and `DST` (PPR offense; `HALF` and `STD` are used for Half-PPR and Standard). `FLX` remains the provider-supplied cross-position ECR, while the position pools guarantee full positional coverage.
+- a concurrent `position=IDP` rankings request for an IDP league
 - `GET /nfl/news`
 - `GET /nfl/injuries`
 
