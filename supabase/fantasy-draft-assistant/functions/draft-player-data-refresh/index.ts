@@ -1,4 +1,4 @@
-import { normalizeFantasyPros, type FantasyProsPayloads } from '../../../../apps/fantasy-draft-assistant/src/data/automated-player-data.ts'
+import { fantasyProsScoringParameter, normalizeFantasyPros, type FantasyProsPayloads } from '../../../../apps/fantasy-draft-assistant/src/data/automated-player-data.ts'
 import type { PlayerDataSnapshot, ScoringFormat } from '../../../../apps/fantasy-draft-assistant/src/data/player-data.ts'
 
 const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type', 'content-type': 'application/json' }
@@ -32,8 +32,8 @@ Deno.serve(async (request: Request) => {
   if (!apiKey) return json({ error: 'FantasyPros provider is not configured.', configured: false }, 503)
   const input = await request.json().catch(() => ({})) as { season?: number; scoringFormat?: ScoringFormat; includeIdp?: boolean; previous?: PlayerDataSnapshot }
   const season = Number.isInteger(input.season) ? input.season! : 2026
-  const scoringFormat: ScoringFormat = input.scoringFormat === 'IDP' ? 'IDP' : 'PPR'; const includeIdp = Boolean(input.includeIdp)
-  const params = new URLSearchParams({ scoring: 'PPR', position: includeIdp ? 'ALL' : 'FLX', ...(includeIdp ? { include_idp: 'true' } : {}) })
+  const scoringFormat: ScoringFormat = input.scoringFormat === 'STANDARD' || input.scoringFormat === 'HALF_PPR' || input.scoringFormat === 'PPR' ? input.scoringFormat : 'PPR'; const includeIdp = Boolean(input.includeIdp)
+  const params = new URLSearchParams({ scoring: fantasyProsScoringParameter(scoringFormat), position: includeIdp ? 'ALL' : 'FLX', ...(includeIdp ? { include_idp: 'true' } : {}) })
   const fetchedAt = new Date().toISOString()
   try {
     const [players, rankings, news, injuries, sleeperResult] = await Promise.all([
@@ -41,7 +41,11 @@ Deno.serve(async (request: Request) => {
       fetch('https://api.sleeper.app/v1/players/nfl', { headers: { accept: 'application/json' } }).then(async response => response.ok ? response.json() : Promise.reject(new Error(`Sleeper failed with HTTP ${response.status}.`))).catch(() => undefined),
     ])
     const snapshot = normalizeFantasyPros({ players, rankings, news, injuries } satisfies FantasyProsPayloads, { fetchedAt, scoringFormat, season, includeIdp, sleeper: sleeperResult, previous: input.previous })
-    return json({ snapshot, persisted: false, persistence: 'PENDING_SCHEMA_APPROVAL', summary: { players: snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
+    const supabaseUrl=Deno.env.get('SUPABASE_URL')?.trim(),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
+    if(!supabaseUrl||!serviceKey)throw new Error('Shared snapshot persistence is not configured.')
+    const persisted=await fetch(`${supabaseUrl}/rest/v1/draft_player_data_snapshots`,{method:'POST',headers:{authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'content-type':'application/json',prefer:'return=minimal'},body:JSON.stringify({season,provider:'fantasypros',scoring_format:scoringFormat,include_idp:includeIdp,snapshot_id:snapshot.id,snapshot,quality:snapshot.quality,fetched_at:fetchedAt})})
+    if(!persisted.ok)throw new Error(`Shared snapshot persistence failed with HTTP ${persisted.status}.`)
+    return json({ snapshot, persisted: true, summary: { players: snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'Provider refresh failed.', priorSnapshotPreserved: true }, 502)
   }

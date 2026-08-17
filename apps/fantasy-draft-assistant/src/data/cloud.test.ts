@@ -10,11 +10,11 @@ describe('Draft cloud configuration and auth states', () => {
   it('reads and validates the newest authenticated shared snapshot', async()=>{
     const player={canonicalPlayerId:'nfl:fantasypros:1',displayName:'Real Player',normalizedName:'real player',position:'RB',baselineRank:1,sourceValues:[],newsItems:[],freshness:'FRESH',quality:'COMPLETE',uncertaintyFlags:[],sourceProvenance:[]};
     const snapshot={id:'shared',version:1,createdAt:'2026-08-15T12:00:00Z',season:2026,scoringFormat:'PPR',quality:'COMPLETE',freshness:'FRESH',players:[player],changes:[],providerResults:[]};
-    const maybeSingle=vi.fn().mockResolvedValue({data:{snapshot},error:null}),limit=vi.fn(()=>({maybeSingle})),order=vi.fn(()=>({limit})),eqFormat=vi.fn(()=>({order})),eqSeason=vi.fn(()=>({eq:eqFormat})),select=vi.fn(()=>({eq:eqSeason}));
+    const maybeSingle=vi.fn().mockResolvedValue({data:{snapshot},error:null}),limit=vi.fn(()=>({maybeSingle})),order=vi.fn(()=>({limit})),eqIdp=vi.fn(()=>({order})),eqFormat=vi.fn(()=>({eq:eqIdp})),eqSeason=vi.fn(()=>({eq:eqFormat})),select=vi.fn(()=>({eq:eqSeason}));
     const gateway=new DraftCloudGateway({environment:'test',url:'',publishableKey:'',source:'none'});
     Object.defineProperty(gateway,'client',{value:{auth:{getSession:vi.fn().mockResolvedValue({data:{session:{user:{id:'allowed'}}}})},from:vi.fn(()=>({select})),functions:{invoke:vi.fn()}}});
     await expect(gateway.loadLatestSharedPlayerSnapshot(2026,'PPR')).resolves.toMatchObject({id:'shared'});
-    expect(eqSeason).toHaveBeenCalledWith('season',2026);expect(eqFormat).toHaveBeenCalledWith('scoring_format','PPR');expect(order).toHaveBeenCalledWith('created_at',{ascending:false});expect(limit).toHaveBeenCalledWith(1);
-    await expect(gateway.loadLatestSharedPlayerSnapshot(2026,'KEEPER')).resolves.toBeUndefined();
+    expect(eqSeason).toHaveBeenCalledWith('season',2026);expect(eqFormat).toHaveBeenCalledWith('scoring_format','PPR');expect(eqIdp).toHaveBeenCalledWith('include_idp',false);expect(order).toHaveBeenCalledWith('activated_at',{ascending:false});expect(limit).toHaveBeenCalledWith(1);
+    await expect(gateway.loadLatestSharedPlayerSnapshot(2026,'HALF_PPR',true)).resolves.toBeUndefined();
   });
 })

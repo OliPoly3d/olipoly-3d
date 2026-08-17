@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
-import { confidenceRing, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
+import { confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
 import { TEAM_IDS, teamIdentity } from './team-marks';
 
 describe('live room view model', () => {
@@ -116,6 +116,8 @@ describe('live room view model', () => {
 });
 
 describe('interest presentation boundary',()=>{it('filters the Master Board without moving base player order',async()=>{const{filterPlayersByInterest}=await import('./live-room');const players=playerPool();const filtered=filterPlayersByInterest(players,[{id:'i',leagueId:'l',seasonId:'s',playerId:players[1].id,state:'WATCH',updatedAt:''}],'WATCH');expect(filtered.map(x=>x.id)).toEqual([players[1].id]);expect(players[0].id).toBe('player-omarion-hampton')});it('renders a subtle contextual recommendation marker',async()=>{const{interestBadge}=await import('./live-room');expect(interestBadge({id:'i',leagueId:'l',seasonId:'s',playerId:'p',state:'AVOID',updatedAt:''})).toContain('Bounded user-context adjustment');expect(interestBadge()).toBe('')})});
+
+describe('ranking context status',()=>{it('shows the active Half-PPR and IDP authority truthfully',()=>{const snapshot={id:'real',version:1,createdAt:'2026-08-17T12:00:00Z',season:2026,scoringFormat:'HALF_PPR',includeIdp:true,quality:'COMPLETE',freshness:'FRESH',playerSource:'FANTASYPROS',rankingSource:'FANTASYPROS ECR · HALF-PPR + IDP',players:playerPool().slice(0,3) as never[],changes:[],providerResults:[]} as never;const markup=playerDataStatusMarkup(snapshot,'READY');expect(markup).toContain('HALF-PPR + IDP');expect(markup).toContain('3 players');expect(markup).not.toContain('BASELINE FIXTURE')})});
 
 describe('compact production cockpit semantics',()=>{
  it('shows a truthful empty recent-picks state without Last 0',()=>{const setup=seedSetup('believeland'),markup=recentPicksMarkup(rebuildDraftState(startDraft(setup,playerPool())),()=> 'Manager');expect(markup).toContain('RECENT PICKS');expect(markup).toContain('No live picks yet.');expect(markup).not.toContain('Last 0')});

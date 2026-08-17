@@ -5,7 +5,7 @@
 FantasyPros Public API v2 is the primary provider. The server-only `draft-player-data-refresh` Edge Function reads `FANTASYPROS_API_KEY` and calls these official endpoints under `https://api.fantasypros.com/public/v2/json`:
 
 - `GET /nfl/players`
-- `GET /nfl/2026/consensus-rankings?scoring=PPR&position=FLX` (offense)
+- `GET /nfl/2026/consensus-rankings?scoring=PPR&position=FLX` (PPR offense; `HALF` and `STD` are used for Half-PPR and Standard)
 - the same rankings endpoint with `position=ALL&include_idp=true` for an IDP league
 - `GET /nfl/news`
 - `GET /nfl/injuries`
@@ -34,7 +34,7 @@ Startup remains local-first: IndexedDB supplies the last good snapshot immediate
 
 Authority order is automated current snapshot, cached real snapshot, manual real import, then fixture fallback. `selectPlayerPool` selects one complete authority, so Test Players are never mixed into a real snapshot. The deterministic recommendation engine remains provider-agnostic and deterministic.
 
-Automatic cross-device startup checks and scheduled refresh cannot truthfully ship until one shared durable server record exists. The function therefore reports `persisted: false` / `PENDING_SCHEMA_APPROVAL`; it does not pretend the returned snapshot was stored.
+Automatic cross-device startup reads the newest shared snapshot matching season, offensive scoring format, and IDP mode. The Edge Function inserts each validated snapshot with its compatibility metadata using the server-only service role; failed refreshes do not alter prior rows.
 
 ## Required secrets and deployment
 
@@ -46,11 +46,11 @@ Set Edge Function secrets (never Vite/client variables):
 
 Recommended cadence after storage approval is players daily, rankings every three hours, and news/injuries hourly. The current combined function fetches all datasets in one request; schedule it no more than hourly initially, then split dataset cadence only if provider plan limits and operational need support it.
 
-## SQL/storage approval gate — proposal only
+## Shared snapshot storage
 
 One shared/global table is the smallest durable design. It is not user-owned and is keyed by season, provider, scoring configuration, and IDP mode.
 
-Proposed table: `public.draft_player_data_snapshots`
+Table: `public.draft_player_data_snapshots`
 
 | Column | Type | Purpose |
 | --- | --- | --- |
@@ -66,9 +66,9 @@ Proposed table: `public.draft_player_data_snapshots`
 | `activated_at` | `timestamptz not null default now()` | Activation time |
 | `created_by` | `uuid null references auth.users(id)` | Manual audit; null for scheduler |
 
-Proposed constraints/indexes: quality/scoring allow-list checks; unique `(season, provider, scoring_format, include_idp, snapshot_id)`; descending lookup index on `(season, provider, scoring_format, include_idp, activated_at)`.
+Constraints/indexes: quality/scoring allow-list checks; unique `(season, provider, scoring_format, include_idp, snapshot_id)`; descending lookup index on `(season, provider, scoring_format, include_idp, activated_at)`.
 
-Proposed security:
+Security:
 
 1. Enable and force RLS.
 2. Grant `SELECT` only to `authenticated`.
@@ -76,9 +76,7 @@ Proposed security:
 4. Grant no browser `INSERT`, `UPDATE`, or `DELETE`; the Edge Function writes with its server-only service role after full validation.
 5. Keep immutable history and read the newest activated row. A failed transaction inserts/activates nothing, preserving the prior good row.
 
-After approval, the Edge Function would insert the validated snapshot in one statement and the browser would query only the newest row for its configuration through an RPC or restricted view. The app would load local data first, asynchronously compare `activated_at`/`snapshot_id`, cache a newer server snapshot, and recompute recommendations.
-
-No migration, RLS policy, RPC/view, Vault entry, or Cron job has been created in this milestone.
+Migration `202608170001_player_snapshot_compatibility.sql` creates or upgrades the table and its read policy. After that reviewed migration is applied, the Edge Function inserts each validated snapshot in one statement and the browser queries the newest row for its exact season, offensive scoring format, and IDP mode. The app loads local data first, asynchronously compares timestamps, caches a newer compatible server snapshot, and recomputes recommendations.
 
 ## Proposed Cron setup (not applied)
 

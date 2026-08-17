@@ -27,7 +27,7 @@ export interface IdpContext { rank?:number; tier?:number; tackleOpportunity?:str
 export interface PlayerIntelligence { canonicalPlayerId:CanonicalPlayerId; fixturePlayerId?:string; fantasyProsPlayerId?:string; sleeperPlayerId?:string; displayName:string; normalizedName:string; position:Position; nflTeam?:string; byeWeek?:number; active?:boolean; baselineRank?:number; positionRank?:number; tier?:number; adp?:number; sourceValues:RankingValue[]; injury?:InjuryContext; availabilityStatus?:AvailabilityStatus; role?:RoleContext; newsItems:PlayerNewsItem[]; freshness:Freshness; lastUpdated?:string; quality:DataQuality; uncertaintyFlags:string[]; sourceProvenance:SourceReference[]; idp?:IdpContext }
 export interface PlayerContextChange { playerId:CanonicalPlayerId; field:'baselineRank'|'role'|'injury'|'availability'; before?:string|number; after?:string|number; reason:string; source:string; detectedAt:string }
 export type PlayerDataMode='CURRENT'|'CACHED'|'MANUAL_IMPORT'|'FIXTURE_FALLBACK'|'DEVELOPMENT_FIXTURE';
-export interface PlayerDataSnapshot { id:string; version:1; createdAt:string; scoringFormat:ScoringFormat; leagueId?:string; season?:number; quality:DataQuality; freshness:Freshness; mode?:Exclude<PlayerDataMode,'FIXTURE_FALLBACK'|'DEVELOPMENT_FIXTURE'>; playerSource?:string; rankingSource?:string; newsStatus?:string; endpointUpdatedAt?:Partial<Record<'players'|'rankings'|'news'|'injuries',string>>; limitations?:string[]; players:PlayerIntelligence[]; changes:PlayerContextChange[]; providerResults:{providerId:string;status:'SUCCESS'|'FAILED'|'SKIPPED';checkedAt:string;message?:string}[] }
+export interface PlayerDataSnapshot { id:string; version:1; createdAt:string; scoringFormat:ScoringFormat; includeIdp?:boolean; leagueId?:string; season?:number; quality:DataQuality; freshness:Freshness; mode?:Exclude<PlayerDataMode,'FIXTURE_FALLBACK'|'DEVELOPMENT_FIXTURE'>; playerSource?:string; rankingSource?:string; newsStatus?:string; endpointUpdatedAt?:Partial<Record<'players'|'rankings'|'news'|'injuries',string>>; limitations?:string[]; players:PlayerIntelligence[]; changes:PlayerContextChange[]; providerResults:{providerId:string;status:'SUCCESS'|'FAILED'|'SKIPPED';checkedAt:string;message?:string}[] }
 
 export interface ProviderContext { setup:SeasonSetup; players:DraftPlayer[]; now:string }
 export interface PlayerDataProvider { id:string; kind:'PLAYER'|'RANKING'|'NEWS'|'STATUS'|'IDP'; refresh(context:ProviderContext):Promise<Partial<PlayerIntelligence>[]> }
@@ -48,13 +48,19 @@ export const freshnessAt=(updatedAt:string|undefined,now=new Date(),freshHours=2
 const sourceWeight=(r:RankingValue,target:ScoringFormat)=>{const freshness={FRESH:1,AGING:.65,STALE:.2,UNKNOWN:.3}[r.freshness];const format=r.scoringFormat===target?1:r.scoringFormat==='OTHER'?.55:.25;return freshness*format};
 export function aggregateRankings(values:RankingValue[],target:ScoringFormat){const ranked=values.filter((v):v is RankingValue&{overallRank:number}=>v.overallRank!=null&&v.overallRank>0).map(v=>({v,w:sourceWeight(v,target)})).filter(x=>x.w>0);if(!ranked.length)return{uncertaintyFlags:['RANKING_MISSING']};const total=ranked.reduce((n,x)=>n+x.w,0),baselineRank=Math.round(ranked.reduce((n,x)=>n+x.v.overallRank*x.w,0)/total),spread=Math.max(...ranked.map(x=>x.v.overallRank))-Math.min(...ranked.map(x=>x.v.overallRank));return{baselineRank,tier:ranked.find(x=>x.v.tier!=null)?.v.tier,positionRank:ranked.find(x=>x.v.positionRank!=null)?.v.positionRank,adp:ranked.find(x=>x.v.adp!=null)?.v.adp,uncertaintyFlags:[...(spread>=18?['SOURCE_DISAGREEMENT']:[]),...(values.some(v=>v.scoringFormat!==target)?['SCORING_MISMATCH']:[]),...(values.every(v=>v.freshness==='STALE')?['RANKINGS_STALE']:[])]}}
 export const isIdpPosition=(p:Position)=>['DL','LB','DB','DT','DE','CB','S'].includes(p);
-export const scoringFormatFor=(setup:SeasonSetup):ScoringFormat=>setup.settings.idpEnabled?'KEEPER':setup.settings.ppr===1?'PPR':setup.settings.ppr===.5?'HALF_PPR':'STANDARD';
+/** IDP is an additive roster/ranking dimension, not an offensive scoring format. */
+export const scoringFormatFor=(setup:SeasonSetup):ScoringFormat=>setup.settings.ppr===1?'PPR':setup.settings.ppr===.5?'HALF_PPR':'STANDARD';
+export const snapshotIncludesIdp=(snapshot:Partial<PlayerDataSnapshot>)=>snapshot.includeIdp===true||snapshot.scoringFormat==='IDP';
+export const snapshotCompatibilityLabel=(season:number,format:ScoringFormat,includeIdp:boolean)=>`${season} · ${format.replace('_','-')} · ${includeIdp?'IDP':'offense-only'}`;
+export function isCompatiblePlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat,includeIdp:boolean):value is PlayerDataSnapshot{
+  return !!validatePlayerDataSnapshot(value,season,scoringFormat,includeIdp);
+}
 
 /** Validates an untrusted persisted or network snapshot before it can become draft authority. */
-export function validatePlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat):PlayerDataSnapshot|undefined{
+export function validatePlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat,includeIdp=false):PlayerDataSnapshot|undefined{
   if(!value||typeof value!=='object')return undefined;
   const snapshot=value as Partial<PlayerDataSnapshot>;
-  if(snapshot.version!==1||snapshot.season!==season||snapshot.scoringFormat!==scoringFormat||!snapshot.createdAt||!Number.isFinite(Date.parse(snapshot.createdAt))||!Array.isArray(snapshot.players)||!snapshot.players.length)return undefined;
+  if(snapshot.version!==1||snapshot.season!==season||snapshot.scoringFormat!==scoringFormat||snapshotIncludesIdp(snapshot)!==includeIdp||!snapshot.createdAt||!Number.isFinite(Date.parse(snapshot.createdAt))||!Array.isArray(snapshot.players)||!snapshot.players.length)return undefined;
   const identities=new Set<string>();
   for(const player of snapshot.players){
     if(!player||typeof player.canonicalPlayerId!=='string'||!player.canonicalPlayerId||identities.has(player.canonicalPlayerId)||typeof player.displayName!=='string'||!player.displayName.trim()||!Number.isFinite(player.baselineRank)||player.baselineRank!<=0)return undefined;

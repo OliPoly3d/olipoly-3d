@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {DraftStore} from './store';
-import {activateImport,aggregateRankings,applySnapshot,canonicalPlayerId,freshnessAt,isIdpPosition,normalizePlayerName,normalizePosition,normalizeTeam,parseRankingImport,refreshPlayerData,selectPlayerPool,snapshotId,snapshotSources,validatePlayerDataSnapshot,type PlayerDataSnapshot,type PlayerIntelligence,type RankingValue} from './player-data';
+import {activateImport,aggregateRankings,applySnapshot,canonicalPlayerId,freshnessAt,isIdpPosition,normalizePlayerName,normalizePosition,normalizeTeam,parseRankingImport,refreshPlayerData,selectPlayerPool,scoringFormatFor,snapshotId,snapshotSources,validatePlayerDataSnapshot,type PlayerDataSnapshot,type PlayerIntelligence,type RankingValue} from './player-data';
 import {playerPool,seedSetup} from '../domain/seeds';
 import {rebuildDraftState,startDraft} from '../domain/engine';
 import {emptyPhilosophy,userContext} from '../domain/user-context';
@@ -40,5 +40,22 @@ describe('production data gate',()=>{
   it('keeps stale real data atomic and excludes every fixture player',()=>{
     const stale={...snapshot([intel('real-id',{displayName:'Real Player',normalizedName:'real player'})]),season:2026,freshness:'STALE' as const};
     expect(selectPlayerPool(playerPool(),stale).map(player=>player.displayName)).toEqual(['Real Player']);
+  });
+});
+
+describe('league-compatible player snapshots',()=>{
+  const real=(format:'PPR'|'HALF_PPR'|'STANDARD',includeIdp=false,season=2026)=>({id:`${format}-${includeIdp}`,version:1 as const,createdAt:'2026-08-17T12:00:00Z',season,scoringFormat:format,includeIdp,quality:'COMPLETE' as const,freshness:'FRESH' as const,players:[{canonicalPlayerId:'nfl:fantasypros:1' as never,displayName:'Real Player',normalizedName:'real player',position:'RB' as const,baselineRank:1,sourceValues:[],newsItems:[],freshness:'FRESH' as const,quality:'COMPLETE' as const,uncertaintyFlags:[],sourceProvenance:[]}],changes:[],providerResults:[]});
+  it('keeps offensive scoring and IDP as independent compatibility dimensions',()=>{
+    expect(validatePlayerDataSnapshot(real('PPR'),2026,'PPR',false)).toBeDefined();
+    expect(validatePlayerDataSnapshot(real('PPR'),2026,'HALF_PPR',false)).toBeUndefined();
+    expect(validatePlayerDataSnapshot(real('PPR'),2026,'PPR',true)).toBeUndefined();
+    expect(validatePlayerDataSnapshot(real('HALF_PPR',true),2026,'HALF_PPR',true)).toBeDefined();
+    expect(validatePlayerDataSnapshot(real('STANDARD'),2026,'PPR',false)).toBeUndefined();
+    expect(validatePlayerDataSnapshot(real('PPR',false,2025),2026,'PPR',false)).toBeUndefined();
+  });
+  it('derives the actual league configuration without slug conditionals',()=>{
+    expect(scoringFormatFor(seedSetup('believeland'))).toBe('PPR');
+    expect(scoringFormatFor(seedSetup('robocop'))).toBe('HALF_PPR');
+    expect(seedSetup('robocop').settings.idpEnabled).toBe(true);
   });
 });
