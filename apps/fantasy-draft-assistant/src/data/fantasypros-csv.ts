@@ -1,6 +1,7 @@
 import type { DraftPlayer, Position } from '../domain/models';
 import type { EspnRankingSource } from './espn-rankings';
-import { freshnessAt, normalizePlayerName, normalizePosition, normalizeTeam, type CanonicalPlayerId, type RankingValue, type ScoringFormat } from './player-data';
+import { freshnessAt, normalizePosition, normalizeTeam, type CanonicalPlayerId, type RankingValue, type ScoringFormat } from './player-data';
+import { canonicalRankingCandidates } from './ranking-reconciliation';
 
 export type FantasyProsCsvType = 'FANTASYPROS_ALL' | 'FANTASYPROS_IDP';
 export interface FantasyProsCsvRow { rowNumber:number; overallRank:number; playerName:string; team?:string; position:Position; positionRank:number; byeWeek?:number; metadata:Record<string,string> }
@@ -17,7 +18,8 @@ const offensive=new Set(['QB','RB','WR','TE','K','DST']);
 const defensive=new Set(['LB','DE','DT','S','CB','DL','DB']);
 const csvLine=(line:string)=>{const values:string[]=[];let value='',quoted=false;for(let i=0;i<line.length;i++){const char=line[i];if(char==='"'&&line[i+1]==='"'){value+='"';i++}else if(char==='"')quoted=!quoted;else if(char===','&&!quoted){values.push(value.trim());value=''}else value+=char}values.push(value.trim());return values};
 const headerKey=(value:string)=>value.replace(/^\uFEFF/,'').trim().toUpperCase().replace(/[_\s]+/g,' ');
-const matchPosition=(position:Position)=>['DE','DT'].includes(position)?'DL':['CB','S'].includes(position)?'DB':position;
+const headerAliases={rank:['RK','RANK'],name:['PLAYER NAME','PLAYER'],team:['TEAM'],position:['POS','POSITION'],bye:['BYE']} as const;
+const headerIndex=(headers:string[],aliases:readonly string[])=>headers.findIndex(header=>aliases.includes(header));
 
 /** Applies ranking authorities by canonical identity without mutating player/news data. */
 export function applyRankingAuthorities(players:DraftPlayer[],all?:FantasyProsCsvSource,idp?:FantasyProsCsvSource,espn?:EspnRankingSource):DraftPlayer[]{
@@ -27,8 +29,8 @@ export function applyRankingAuthorities(players:DraftPlayer[],all?:FantasyProsCs
 export function parseFantasyProsCsv(text:string,metadata:FantasyProsCsvMetadata):{rows:FantasyProsCsvRow[];invalid:FantasyProsCsvInvalidRow[]}{
   const lines=text.split(/\r?\n/).filter(line=>line.trim());
   if(lines.length<2)throw new Error('FantasyPros CSV must include a header and at least one ranking row.');
-  const headers=csvLine(lines[0]).map(headerKey),rankIndex=headers.indexOf('RK'),nameIndex=headers.indexOf('PLAYER NAME'),teamIndex=headers.indexOf('TEAM'),positionIndex=headers.indexOf('POS'),byeIndex=headers.indexOf('BYE');
-  if(rankIndex<0||nameIndex<0||positionIndex<0)throw new Error('FantasyPros CSV requires RK, PLAYER NAME, and POS columns.');
+  const headers=csvLine(lines[0]).map(headerKey),rankIndex=headerIndex(headers,headerAliases.rank),nameIndex=headerIndex(headers,headerAliases.name),teamIndex=headerIndex(headers,headerAliases.team),positionIndex=headerIndex(headers,headerAliases.position),byeIndex=headerIndex(headers,headerAliases.bye);
+  if(rankIndex<0||nameIndex<0||positionIndex<0)throw new Error('FantasyPros CSV requires RK/Rank, PLAYER NAME/Player, and POS/Position columns.');
   const rows:FantasyProsCsvRow[]=[],invalid:FantasyProsCsvInvalidRow[]=[],ranks=new Set<number>();
   lines.slice(1).forEach((line,index)=>{const values=csvLine(line),raw=Object.fromEntries(headers.map((header,i)=>[header,values[i]??''])),rank=Number(values[rankIndex]),name=values[nameIndex]?.trim()??'',pos=(values[positionIndex]?.trim().toUpperCase()??'').match(/^([A-Z/]+)\s*(\d+)$/),position=pos?normalizePosition(pos[1]):undefined,positionRank=Number(pos?.[2]),allowed=metadata.type==='FANTASYPROS_ALL'?offensive:defensive;let reason='';if(!Number.isInteger(rank)||rank<=0)reason='RK must be a positive integer.';else if(!name)reason='PLAYER NAME is required.';else if(!position||!allowed.has(position)||!Number.isInteger(positionRank)||positionRank<=0)reason=`POS must contain a supported ${metadata.type==='FANTASYPROS_ALL'?'draft':'IDP'} position and position rank.`;else if(ranks.has(rank))reason=`Duplicate RK ${rank}.`;if(reason){invalid.push({rowNumber:index+2,raw,reason});return}ranks.add(rank);const bye=Number(values[byeIndex]);rows.push({rowNumber:index+2,overallRank:rank,playerName:name,team:normalizeTeam(values[teamIndex]),position:position as Position,positionRank,byeWeek:Number.isInteger(bye)&&bye>0?bye:undefined,metadata:raw})});
   if(!rows.length&&!invalid.length)throw new Error('FantasyPros CSV contains no ranking rows.');
@@ -37,7 +39,7 @@ export function parseFantasyProsCsv(text:string,metadata:FantasyProsCsvMetadata)
 
 export function reconcileFantasyProsCsv(rows:FantasyProsCsvRow[],players:DraftPlayer[],metadata:FantasyProsCsvMetadata,invalid:FantasyProsCsvInvalidRow[]=[]):FantasyProsCsvPreview{
   const matched:FantasyProsCsvPreview['matched']=[],unmatched:FantasyProsCsvRow[]=[],ambiguous:FantasyProsCsvPreview['ambiguous']=[];
-  for(const row of rows){const name=normalizePlayerName(row.playerName),team=normalizeTeam(row.team),position=matchPosition(row.position);const compatible=players.filter(player=>player.canonicalPlayerId&&matchPosition(normalizePosition(player.position))===position);let candidates=compatible.filter(player=>normalizePlayerName(player.displayName)===name&&team&&normalizeTeam(player.nflTeam)===team);if(!candidates.length)candidates=compatible.filter(player=>normalizePlayerName(player.displayName)===name);if(candidates.length===1)matched.push({row,player:candidates[0]});else if(candidates.length>1)ambiguous.push({row,candidates});else unmatched.push(row)}
+  for(const row of rows){const candidates=canonicalRankingCandidates({name:row.playerName,team:row.team,position:row.position},players);if(candidates.length===1)matched.push({row,player:candidates[0]});else if(candidates.length>1)ambiguous.push({row,candidates});else unmatched.push(row)}
   return{metadata,rows,matched,unmatched,ambiguous,invalid,ignored:[],ignoredInvalid:[]};
 }
 export function previewFantasyProsCsv(text:string,metadata:FantasyProsCsvMetadata,players:DraftPlayer[]):FantasyProsCsvPreview{const parsed=parseFantasyProsCsv(text,metadata);return reconcileFantasyProsCsv(parsed.rows,players,metadata,parsed.invalid)}
