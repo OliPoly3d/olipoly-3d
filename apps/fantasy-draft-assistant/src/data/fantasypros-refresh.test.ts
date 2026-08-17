@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { fantasyProsRankingPaths, normalizeFantasyPros } from './automated-player-data'
+import { fantasyProsRankingPaths, fantasyProsRankingPoolDiagnostics, normalizeFantasyPros } from './automated-player-data'
 
 const fetchedAt='2026-08-17T12:00:00.000Z'
 const players={data:{players:[
@@ -62,9 +62,32 @@ describe('FantasyPros v2 refresh contract',()=>{
     const options={fetchedAt,season:2026,scoringFormat:'HALF_PPR' as const,includeIdp:true}
     expect(edge.normalizeFantasyPros(payloads,options)).toEqual(normalizeFantasyPros(payloads,options))
   })
-  it('requires both ranking pools atomically for IDP leagues',()=>{
+  it('allows empty K and DST supplemental pools and reports their counts',()=>{
+    const rankings=offensePools();rankings[5]={rankings:[]};rankings[6]={players:[]}
+    expect(normalizeFantasyPros({players,rankings,news,injuries},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false}).players).toHaveLength(2)
+    expect(fantasyProsRankingPoolDiagnostics(rankings,false)).toMatchObject({FLX:{status:'ok',count:2},K:{status:'empty',count:0},DST:{status:'empty',count:0}})
+  })
+  it('allows a failed supplemental QB pool when FLX remains valid',()=>{
+    const rankings=offensePools();rankings[1]={__poolError:'FantasyPros consensus rankings failed HTTP 503: unavailable'}
+    expect(normalizeFantasyPros({players,rankings,news,injuries},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false}).players).toHaveLength(2)
+    expect(fantasyProsRankingPoolDiagnostics(rankings,false).QB).toEqual({status:'failed',count:0,error:expect.stringContaining('503')})
+  })
+  it('requires FLX and, for IDP leagues, IDP atomically',()=>{
     expect(()=>normalizeFantasyPros({players,rankings:[...offensePools(),{}],news,injuries},{fetchedAt,season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).toThrow(/IDP/)
-    expect(()=>normalizeFantasyPros({players,rankings:[...offensePools({}),idp],news,injuries},{fetchedAt,season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).toThrow(/offensive/)
+    expect(()=>normalizeFantasyPros({players,rankings:[...offensePools({}),idp],news,injuries},{fetchedAt,season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).toThrow(/FLX.*empty/)
+    expect(()=>normalizeFantasyPros({players,rankings:[...offensePools({__poolError:'HTTP 400'}),idp],news,injuries},{fetchedAt,season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).toThrow(/FLX.*failed.*400/)
+    expect(()=>normalizeFantasyPros({players,rankings:[...offensePools(),{__poolError:'HTTP 400'}],news,injuries},{fetchedAt,season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).toThrow(/IDP.*failed.*400/)
+  })
+  it('deduplicates by player_id, keeps FLX ECR, and enriches it with positional rank',()=>{
+    const flx={rankings:[{player_id:1,rank_ecr:7,updated_at:fetchedAt}]}
+    const rb={rankings:[{player_id:1,rank_ecr:2,pos_rank:'RB2',tier:3,updated_at:fetchedAt}]}
+    const rankings=[flx,{},rb,{},{},{},{}]
+    const snapshot=normalizeFantasyPros({players,rankings,news,injuries},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false})
+    const runner=snapshot.players.find(player=>player.fantasyProsPlayerId==='1')
+    expect(snapshot.players).toHaveLength(1)
+    expect(runner).toMatchObject({baselineRank:7,positionRank:2,tier:3})
+    expect(runner?.sourceValues).toHaveLength(1)
+    expect(runner?.sourceValues[0]).toMatchObject({overallRank:7,positionRank:2})
   })
   it('surfaces a bounded provider 400 body and redacts a reflected key',async()=>{
     const original=globalThis.fetch

@@ -28,6 +28,14 @@ export function fantasyProsScoringParameter(format:ScoringFormat):'STD'|'HALF'|'
 }
 
 export const fantasyProsOffensiveRankingPositions = ['FLX','QB','RB','WR','TE','K','DST'] as const
+export type FantasyProsRankingPool = typeof fantasyProsOffensiveRankingPositions[number] | 'IDP'
+export type RankingPoolDiagnostic = { status:'ok'|'empty'|'failed'; count:number; error?:string }
+
+export function fantasyProsRankingPoolDiagnostics(rankings:unknown|unknown[],includeIdp:boolean):Record<string,RankingPoolDiagnostic>{
+  const payloads=Array.isArray(rankings)?rankings:[rankings]
+  const names:FantasyProsRankingPool[]=[...fantasyProsOffensiveRankingPositions,...(includeIdp?['IDP' as const]:[])]
+  return Object.fromEntries(names.map((name,index)=>{const payload=record(payloads[index]);const error=text(payload,'__poolError');const count=list(payloads[index],['rankings','players']).length;return[name,error?{status:'failed',count,error}:{status:count?'ok':'empty',count}]}))
+}
 
 /** Build only provider-supported ranking requests. FLX preserves the provider's cross-position ECR. */
 export function fantasyProsRankingPaths(season:number, format:ScoringFormat, includeIdp:boolean):string[]{
@@ -47,10 +55,12 @@ const materiality = (headline: string, category?: string): 'HIGH'|'MED'|'LOW' =>
 export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: NormalizeOptions): PlayerDataSnapshot {
   const players = list(payloads.players, ['players'])
   const rankingPayloads = Array.isArray(payloads.rankings) ? payloads.rankings : [payloads.rankings]
+  const diagnostics=fantasyProsRankingPoolDiagnostics(rankingPayloads,options.includeIdp)
   const rankingPools = rankingPayloads.map(payload => list(payload, ['rankings', 'players']))
-  const requiredPoolCount=fantasyProsOffensiveRankingPositions.length+(options.includeIdp?1:0)
-  if(rankingPools.length!==requiredPoolCount||rankingPools.slice(0,fantasyProsOffensiveRankingPositions.length).some(pool=>!pool.length)) throw new Error('All FantasyPros offensive ranking pools are required for an atomic snapshot.')
-  if (options.includeIdp && !rankingPools.at(-1)?.length) throw new Error('FantasyPros IDP rankings are required for an atomic snapshot.')
+  if(diagnostics.FLX.status==='failed')throw new Error(`Required FantasyPros FLX ranking pool failed: ${diagnostics.FLX.error}`)
+  if(diagnostics.FLX.status!=='ok')throw new Error('Required FantasyPros FLX ranking pool was empty.')
+  if(options.includeIdp&&diagnostics.IDP.status==='failed')throw new Error(`Required FantasyPros IDP ranking pool failed: ${diagnostics.IDP.error}`)
+  if(options.includeIdp&&diagnostics.IDP.status!=='ok')throw new Error('Required FantasyPros IDP ranking pool was empty.')
   const rankings = rankingPools.flatMap((pool,poolIndex)=>pool.map(row=>({row,poolIndex})))
   if (!players.length || !rankings.length) throw new Error('FantasyPros players and rankings are required for an atomic snapshot.')
   const byFp = new Map<string, PlayerIntelligence>()
@@ -73,11 +83,15 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
       const team = normalizeTeam(text(row, 'player_team_id', 'player_team', 'team'))
       player = { canonicalPlayerId: canonicalPlayerId({ name, team, position, vendorId: `fantasypros:${fpId}` }), fantasyProsPlayerId: fpId, displayName: name, normalizedName: normalizePlayerName(name), position, nflTeam: team, sourceValues: [], newsItems: [], freshness: 'UNKNOWN', quality: 'PARTIAL', uncertaintyFlags: ['PLAYER_METADATA_FROM_RANKINGS'], sourceProvenance: [] }; byFp.set(fpId, player)
     }
-    // FLX is deliberately first. It is the provider-supplied comparable ECR used by
-    // the former 513-player feed; later position pools only fill players absent there.
-    if(player.sourceValues.length)continue
     const updatedAt = iso(text(row, 'updated_at', 'last_updated'), options.fetchedAt)
     const providerRank = number(row, 'rank_ecr', 'ecr', 'overall_rank', 'rank'); const comparable=poolIndex===0||isIdpPosition(player.position); const overallRank=comparable?providerRank:undefined; const positionRank = number(row, 'pos_rank', 'position_rank')??(!comparable?providerRank:undefined); const tier = number(row, 'tier'); const adp = number(row, 'adp', 'rank_adp'); const min = number(row, 'rank_min'); const max = number(row, 'rank_max')
+    const existing=player.sourceValues[0]
+    if(existing){
+      // Positional pools enrich the canonical FLX row but never replace its comparable ECR.
+      existing.positionRank??=positionRank;existing.tier??=tier;existing.adp??=adp
+      player.positionRank??=positionRank;player.tier??=tier;player.adp??=adp
+      continue
+    }
     const ranking: RankingValue = { ...fpSource(updatedAt, options.fetchedAt), source: 'FantasyPros ECR', overallRank, positionRank, tier, adp, rankMin:min, rankMax:max, rankAverage:number(row,'rank_ave','rank_average'), rankSpread: min != null && max != null ? max - min : undefined, standardDeviation: number(row, 'rank_std', 'standard_deviation'), scoringFormat: isIdpPosition(player.position) ? 'IDP' : options.scoringFormat, rankingClass: isIdpPosition(player.position) ? 'IDP' : 'OFFENSE', freshness: freshnessAt(updatedAt, new Date(options.fetchedAt), 6, 24) }
     player.sourceValues.push(ranking); player.sourceProvenance.push(ranking); player.baselineRank = overallRank; player.positionRank = positionRank; player.tier = tier; player.adp = adp; player.lastUpdated = updatedAt; player.freshness = ranking.freshness
     if (isIdpPosition(player.position)) { player.idp = { rank: overallRank, tier }; player.uncertaintyFlags.push('IDP_BASELINE_NOT_COMPARABLE_TO_OFFENSE') }
