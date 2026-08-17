@@ -17,7 +17,7 @@ export interface RankingSource { id:RankingSourceId; label:string; updatedAt:str
 export function rankingSources(snapshot?:PlayerDataSnapshot):RankingSource[]{
   if(!snapshot)return[];
   const rankings=new Map<CanonicalPlayerId,RankingValue>();
-  for(const player of snapshot.players){const value=player.sourceValues.find(source=>source.source==='FantasyPros ECR');if(value?.overallRank!=null)rankings.set(player.canonicalPlayerId,value)}
+  for(const player of snapshot.players){const value=player.sourceValues.find(source=>source.source==='FantasyPros ECR'&&source.rankingClass!=='IDP');if(value)rankings.set(player.canonicalPlayerId,value)}
   return rankings.size?[{id:'FANTASYPROS_ECR',label:'FantasyPros ECR',updatedAt:snapshot.endpointUpdatedAt?.rankings??snapshot.createdAt,scoringFormat:snapshot.scoringFormat,rankingType:'Expert Consensus Ranking',rankings}]:[];
 }
 export interface InjuryContext extends SourceReference { status:AvailabilityStatus; bodyArea?:string; practiceParticipation?:string }

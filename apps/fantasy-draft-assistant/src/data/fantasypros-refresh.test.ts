@@ -26,19 +26,31 @@ describe('FantasyPros real-position ranking model',()=>{
     expect(fantasyProsRankingPaths(2026,'PPR',false).join('|')).not.toContain('FLX')
   })
   it('requests IDP separately without applying offensive scoring to it',()=>expect(fantasyProsRankingPaths(2026,'HALF_PPR',true).at(-1)).toBe('/nfl/2026/consensus-rankings?position=IDP'))
-  it.each([['QB',1,25,4],['RB',2,2,1],['WR',3,3,2],['TE',4,28,3]] as const)('extracts %s rank_ecr as overall ECR and pos_rank separately',(_position,id,ecr,posRank)=>{
-    const player=normalizeFantasyPros({players:metadata(),rankings:pools(),...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false}).players.find(item=>item.fantasyProsPlayerId===String(id))
-    expect(player).toMatchObject({baselineRank:ecr,positionRank:posRank,tier:2,adp:ecr+3})
-    expect(player?.sourceValues[0]).toMatchObject({overallRank:ecr,positionRank:posRank,rankMin:ecr-1,rankMax:ecr+2,rankAverage:ecr+.4,standardDeviation:1.2})
+  it('keeps rank_ecr position-relative and preserves explicit position ranks',()=>{
+    const snapshot=normalizeFantasyPros({players:metadata(),rankings:pools(),...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false})
+    expect(snapshot.players.map(player=>player.baselineRank)).toEqual([undefined,undefined,undefined,undefined])
+    expect(snapshot.players.map(player=>player.positionRank).sort((a,b)=>a!-b!)).toEqual([1,2,3,4])
+    expect(snapshot.rankingSource).toContain('OVERALL ECR UNAVAILABLE')
   })
-  it('never manufactures rank from array position or a generic rank field',()=>{
+  it('never manufactures overall rank from array position, generic rank, or concatenated pools',()=>{
     const values=pools();values[1]={players:[{player_id:2,rank:1,pos_rank:'RB1'}]}
-    expect(()=>normalizeFantasyPros({players:metadata(),rankings:values,...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false})).toThrow(/RB.*rank_ecr/)
+    const snapshot=normalizeFantasyPros({players:metadata(),rankings:values,...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false})
+    expect(snapshot.players.every(player=>player.baselineRank==null)).toBe(true)
+    expect(snapshot.players.find(player=>player.fantasyProsPlayerId==='2')?.positionRank).toBe(1)
   })
-  it('deduplicates by player_id and does not let another pool overwrite genuine ECR',()=>{
+  it('retains only a collision-free historical global snapshot authority',()=>{
+    const first=normalizeFantasyPros({players:metadata(),rankings:pools(),...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false})
+    first.players.forEach((player,index)=>{player.baselineRank=[25,2,3,28][index];player.sourceValues[0].overallRank=player.baselineRank})
+    const next=normalizeFantasyPros({players:metadata(),rankings:pools(),...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false,previous:first})
+    expect(next.players.map(player=>player.baselineRank).sort((a,b)=>a!-b!)).toEqual([2,3,25,28])
+    expect(next.rankingSource).toContain('PRIOR VALID OVERALL SNAPSHOT')
+    const reset={...first,players:first.players.map(player=>({...player,baselineRank:1}))}
+    expect(normalizeFantasyPros({players:metadata(),rankings:pools(),...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false,previous:reset}).players.every(player=>player.baselineRank==null)).toBe(true)
+  })
+  it('deduplicates by player_id without allowing another pool to synthesize overall rank',()=>{
     const values=pools();(values[2] as {rankings:unknown[]}).rankings.push(row(2,99,'RB99'))
     const snapshot=normalizeFantasyPros({players:metadata(),rankings:values,...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false})
-    expect(snapshot.players).toHaveLength(4);expect(snapshot.players.find(p=>p.fantasyProsPlayerId==='2')).toMatchObject({baselineRank:2,positionRank:1})
+    expect(snapshot.players).toHaveLength(4);expect(snapshot.players.find(p=>p.fantasyProsPlayerId==='2')).toMatchObject({baselineRank:undefined,positionRank:1})
   })
   it('allows empty supplemental K and DST while reporting every pool',()=>{
     expect(normalizeFantasyPros({players:metadata(),rankings:pools(),...empty},{fetchedAt,season:2026,scoringFormat:'PPR',includeIdp:false}).players).toHaveLength(4)
