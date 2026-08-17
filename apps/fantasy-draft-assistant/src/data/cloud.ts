@@ -1,6 +1,7 @@
 import { createClient, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js'
 import { inspectPlayerDataSnapshot, type PlayerDataSnapshot, type ScoringFormat } from './player-data'
 import { deserializeEspnSource, serializeEspnSource, type EspnRankingSource, type StoredEspnRankingSource } from './espn-rankings'
+import { deserializeFantasyProsCsvSource, serializeFantasyProsCsvSource, type FantasyProsCsvSource, type FantasyProsCsvType, type StoredFantasyProsCsvSource } from './fantasypros-csv'
 
 export type CloudStatus = 'local-only' | 'configuration-error' | 'connecting' | 'cloud-connected' | 'authenticated' | 'unauthorized' | 'cloud-unavailable'
 export interface RuntimeDraftConfig { supabaseUrl?: string; supabasePublishableKey?: string }
@@ -103,6 +104,17 @@ export class DraftCloudGateway {
   async removeSharedEspnRankingSource(leagueId:string,season:number):Promise<void>{
     if(!this.client||!await this.session())throw new Error('ESPN removal requires an authenticated Draft Assistant session.')
     const{error}=await this.client.from('draft_espn_ranking_sources').delete().eq('league_id',leagueId).eq('season',season).eq('source_type','ESPN');if(error)throw error
+  }
+  async loadSharedFantasyProsRankingSource(leagueId:string,season:number,type:FantasyProsCsvType):Promise<FantasyProsCsvSource|undefined>{
+    if(!this.client||!await this.session())return undefined
+    const{data,error}=await this.client.from('draft_espn_ranking_sources').select('ranking_source').eq('league_id',leagueId).eq('season',season).eq('source_type',type).limit(1).maybeSingle()
+    if(error)throw error
+    return data?.ranking_source?deserializeFantasyProsCsvSource(data.ranking_source as StoredFantasyProsCsvSource):undefined
+  }
+  async saveSharedFantasyProsRankingSource(leagueId:string,source:FantasyProsCsvSource):Promise<void>{
+    if(!this.client||!await this.session())throw new Error('FantasyPros CSV activation requires an authenticated Draft Assistant session.')
+    const rankingSource=serializeFantasyProsCsvSource(leagueId,source),{error}=await this.client.from('draft_espn_ranking_sources').upsert({league_id:leagueId,season:source.season,source_type:source.id,source_id:source.id,scoring_format:source.scoringFormat,imported_at:source.importedAt,source_label:source.label,document_label:source.originalFilename,ranking_source:rankingSource},{onConflict:'league_id,season,source_type'})
+    if(error)throw new Error(`Shared FantasyPros CSV persistence failed: ${error.message}`)
   }
 }
 export const draftCloud = new DraftCloudGateway(readDraftCloudConfig(import.meta.env, typeof window === 'undefined' ? undefined : window.__DRAFT_ASSISTANT_CONFIG__, import.meta.env.PROD))
