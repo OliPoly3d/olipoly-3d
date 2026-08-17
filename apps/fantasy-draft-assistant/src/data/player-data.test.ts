@@ -53,6 +53,31 @@ describe('league-compatible player snapshots',()=>{
     expect(validatePlayerDataSnapshot(real('STANDARD'),2026,'PPR',false)).toBeUndefined();
     expect(validatePlayerDataSnapshot(real('PPR',false,2025),2026,'PPR',false)).toBeUndefined();
   });
+  it.each(['QB','RB','WR','TE'] as const)('requires positive global ECR for %s',position=>{
+    const player={...real('PPR').players[0],position,baselineRank:undefined};
+    expect(inspectPlayerDataSnapshot({...real('PPR'),players:[player]},2026,'PPR')).toMatchObject({passed:false,reason:expect.stringContaining('OFFENSIVE_BASELINE_RANK_INVALID')});
+  });
+  it.each(['K','DST'] as const)('accepts %s without global ECR while preserving position rank',position=>{
+    const player={...real('PPR').players[0],canonicalPlayerId:(position==='DST'?'nfl:dst:ARI':'nfl:fantasypros:kicker') as never,displayName:position==='DST'?'Arizona Cardinals':'Real Kicker',normalizedName:position==='DST'?'arizona cardinals':'real kicker',position,baselineRank:undefined,positionRank:3,sourceValues:[{...rank(1),overallRank:undefined,positionRank:3}]};
+    const candidate={...real('PPR'),players:[player]};
+    expect(validatePlayerDataSnapshot(candidate,2026,'PPR')).toBeDefined();
+    expect(validatePlayerDataSnapshot(candidate,2026,'PPR')?.players[0]).toMatchObject({baselineRank:undefined,positionRank:3});
+  });
+  it('rejects malformed optional ECR and unrecognized roster positions',()=>{
+    const base=real('PPR').players[0];
+    expect(inspectPlayerDataSnapshot({...real('PPR'),players:[{...base,position:'K' as const,baselineRank:0}]},2026,'PPR').passed).toBe(false);
+    expect(inspectPlayerDataSnapshot({...real('PPR'),players:[{...base,position:'P' as const}]},2026,'PPR')).toMatchObject({passed:false,reason:expect.stringContaining('POSITION_INVALID')});
+  });
+  it('accepts Believeland and RoboCop mixed ranking classes',()=>{
+    const offensePositions=['QB','RB','WR','TE'] as const;
+    const offense=offensePositions.map((position,index)=>({...real('PPR').players[0],canonicalPlayerId:`nfl:offense:${position}` as never,displayName:`Real ${position}`,normalizedName:`real ${position.toLowerCase()}`,position,baselineRank:index+1}));
+    const specialists=(['K','DST'] as const).map((position,index)=>({...real('PPR').players[0],canonicalPlayerId:(position==='DST'?'nfl:dst:ARI':'nfl:kicker') as never,displayName:`Real ${position}`,normalizedName:`real ${position.toLowerCase()}`,position,baselineRank:undefined,positionRank:index+1,sourceValues:[{...rank(1),overallRank:undefined,positionRank:index+1}]}));
+    const believeland={...real('PPR'),id:'player-data-v1-5d8f0fa8',players:[...offense,...specialists]};
+    expect(validatePlayerDataSnapshot(believeland,2026,'PPR',false)).toBeDefined();
+    const idp={...real('HALF_PPR',true).players[0],canonicalPlayerId:'nfl:linebacker' as never,displayName:'Real LB',normalizedName:'real lb',position:'LB' as const,baselineRank:undefined,idp:{rank:7},sourceValues:[{...rank(7),overallRank:undefined,scoringFormat:'IDP' as const,rankingClass:'IDP' as const}]};
+    const roboCop={...real('HALF_PPR',true),id:'player-data-v1-5dfd59c0',players:[...offense.map(player=>({...player,sourceValues:[]})),...specialists,idp]};
+    expect(validatePlayerDataSnapshot(roboCop,2026,'HALF_PPR',true)).toBeDefined();
+  });
   it('derives the actual league configuration without slug conditionals',()=>{
     expect(scoringFormatFor(seedSetup('believeland'))).toBe('PPR');
     expect(scoringFormatFor(seedSetup('robocop'))).toBe('HALF_PPR');

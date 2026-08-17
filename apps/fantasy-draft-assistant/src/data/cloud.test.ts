@@ -34,6 +34,15 @@ describe('Draft cloud configuration and auth states', () => {
     await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('"persistedSnapshotId":"player-data-v1-b3c51471"');
     await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('DATABASE_ROW_RETURNED_BUT_SNAPSHOT_VALIDATION_FAILED');
   });
+  it('accepts a persisted compatible snapshot when DST has position rank but no global ECR',async()=>{
+    const dst={canonicalPlayerId:'nfl:dst:ARI',displayName:'Arizona Cardinals',normalizedName:'arizona cardinals',position:'DST',positionRank:3,sourceValues:[{source:'FantasyPros ECR',sourceClass:'ANALYST_INTERPRETATION',updatedAt:'2026-08-17T12:00:00Z',positionRank:3,scoringFormat:'PPR',freshness:'FRESH'}],newsItems:[],freshness:'FRESH',quality:'COMPLETE',uncertaintyFlags:[],sourceProvenance:[]};
+    const snapshot={id:'player-data-v1-5d8f0fa8',version:1,createdAt:'2026-08-17T12:00:00Z',season:2026,scoringFormat:'PPR',includeIdp:false,quality:'COMPLETE',freshness:'FRESH',players:[dst],changes:[],providerResults:[]};
+    const row={season:2026,scoring_format:'PPR',include_idp:false,snapshot_id:snapshot.id,snapshot};
+    const maybeSingle=vi.fn().mockResolvedValue({data:row,error:null}),limit=vi.fn(()=>({maybeSingle})),order=vi.fn(()=>({limit})),eqIdp=vi.fn(()=>({order})),eqFormat=vi.fn(()=>({eq:eqIdp})),eqSeason=vi.fn(()=>({eq:eqFormat})),select=vi.fn(()=>({eq:eqSeason}));
+    const gateway=new DraftCloudGateway({environment:'test',url:'',publishableKey:'',source:'none'});
+    Object.defineProperty(gateway,'client',{value:{auth:{getSession:vi.fn().mockResolvedValue({data:{session:{user:{id:'allowed'}}}})},from:vi.fn(()=>({select}))}});
+    await expect(gateway.inspectLatestSharedPlayerSnapshot(2026,'PPR',false)).resolves.toMatchObject({status:'DATABASE_ROW_RETURNED_AND_VALID',queryMatchedRow:true,returnedSnapshotId:snapshot.id,returnedPlayerCount:1,validationPassed:true,snapshot:{id:snapshot.id}});
+  });
   it('distinguishes zero rows and database query errors',async()=>{
     const responses=[{data:null,error:null},{data:null,error:{message:'database unavailable'}}],maybeSingle=vi.fn().mockImplementation(()=>Promise.resolve(responses.shift())),limit=vi.fn(()=>({maybeSingle})),order=vi.fn(()=>({limit})),eqIdp=vi.fn(()=>({order})),eqFormat=vi.fn(()=>({eq:eqIdp})),eqSeason=vi.fn(()=>({eq:eqFormat})),select=vi.fn(()=>({eq:eqSeason}));
     const gateway=new DraftCloudGateway({environment:'test',url:'',publishableKey:'',source:'none'});
