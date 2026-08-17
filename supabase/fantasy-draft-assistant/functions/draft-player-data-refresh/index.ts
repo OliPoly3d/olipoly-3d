@@ -62,6 +62,14 @@ export function fantasyProsScoringParameter(format:ScoringFormat):'STD'|'HALF'|'
 }
 
 export const fantasyProsOffensiveRankingPositions = ['FLX','QB','RB','WR','TE','K','DST'] as const
+export type FantasyProsRankingPool = typeof fantasyProsOffensiveRankingPositions[number] | 'IDP'
+export type RankingPoolDiagnostic = { status:'ok'|'empty'|'failed'; count:number; error?:string }
+
+export function fantasyProsRankingPoolDiagnostics(rankings:unknown|unknown[],includeIdp:boolean):Record<string,RankingPoolDiagnostic>{
+  const payloads=Array.isArray(rankings)?rankings:[rankings]
+  const names:FantasyProsRankingPool[]=[...fantasyProsOffensiveRankingPositions,...(includeIdp?['IDP' as const]:[])]
+  return Object.fromEntries(names.map((name,index)=>{const payload=record(payloads[index]);const error=text(payload,'__poolError');const count=list(payloads[index],['rankings','players']).length;return[name,error?{status:'failed',count,error}:{status:count?'ok':'empty',count}]}))
+}
 
 /** Build only provider-supported ranking requests. FLX preserves the provider's cross-position ECR. */
 export function fantasyProsRankingPaths(season:number, format:ScoringFormat, includeIdp:boolean):string[]{
@@ -81,10 +89,12 @@ const materiality = (headline: string, category?: string): 'HIGH'|'MED'|'LOW' =>
 export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: NormalizeOptions): PlayerDataSnapshot {
   const players = list(payloads.players, ['players'])
   const rankingPayloads = Array.isArray(payloads.rankings) ? payloads.rankings : [payloads.rankings]
+  const diagnostics=fantasyProsRankingPoolDiagnostics(rankingPayloads,options.includeIdp)
   const rankingPools = rankingPayloads.map(payload => list(payload, ['rankings', 'players']))
-  const requiredPoolCount=fantasyProsOffensiveRankingPositions.length+(options.includeIdp?1:0)
-  if(rankingPools.length!==requiredPoolCount||rankingPools.slice(0,fantasyProsOffensiveRankingPositions.length).some(pool=>!pool.length)) throw new Error('All FantasyPros offensive ranking pools are required for an atomic snapshot.')
-  if (options.includeIdp && !rankingPools.at(-1)?.length) throw new Error('FantasyPros IDP rankings are required for an atomic snapshot.')
+  if(diagnostics.FLX.status==='failed')throw new Error(`Required FantasyPros FLX ranking pool failed: ${diagnostics.FLX.error}`)
+  if(diagnostics.FLX.status!=='ok')throw new Error('Required FantasyPros FLX ranking pool was empty.')
+  if(options.includeIdp&&diagnostics.IDP.status==='failed')throw new Error(`Required FantasyPros IDP ranking pool failed: ${diagnostics.IDP.error}`)
+  if(options.includeIdp&&diagnostics.IDP.status!=='ok')throw new Error('Required FantasyPros IDP ranking pool was empty.')
   const rankings = rankingPools.flatMap((pool,poolIndex)=>pool.map(row=>({row,poolIndex})))
   if (!players.length || !rankings.length) throw new Error('FantasyPros players and rankings are required for an atomic snapshot.')
   const byFp = new Map<string, PlayerIntelligence>()
@@ -107,11 +117,15 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
       const team = normalizeTeam(text(row, 'player_team_id', 'player_team', 'team'))
       player = { canonicalPlayerId: canonicalPlayerId({ name, team, position, vendorId: `fantasypros:${fpId}` }), fantasyProsPlayerId: fpId, displayName: name, normalizedName: normalizePlayerName(name), position, nflTeam: team, sourceValues: [], newsItems: [], freshness: 'UNKNOWN', quality: 'PARTIAL', uncertaintyFlags: ['PLAYER_METADATA_FROM_RANKINGS'], sourceProvenance: [] }; byFp.set(fpId, player)
     }
-    // FLX is deliberately first. It is the provider-supplied comparable ECR used by
-    // the former 513-player feed; later position pools only fill players absent there.
-    if(player.sourceValues.length)continue
     const updatedAt = iso(text(row, 'updated_at', 'last_updated'), options.fetchedAt)
     const providerRank = number(row, 'rank_ecr', 'ecr', 'overall_rank', 'rank'); const comparable=poolIndex===0||isIdpPosition(player.position); const overallRank=comparable?providerRank:undefined; const positionRank = number(row, 'pos_rank', 'position_rank')??(!comparable?providerRank:undefined); const tier = number(row, 'tier'); const adp = number(row, 'adp', 'rank_adp'); const min = number(row, 'rank_min'); const max = number(row, 'rank_max')
+    const existing=player.sourceValues[0]
+    if(existing){
+      // Positional pools enrich the canonical FLX row but never replace its comparable ECR.
+      existing.positionRank??=positionRank;existing.tier??=tier;existing.adp??=adp
+      player.positionRank??=positionRank;player.tier??=tier;player.adp??=adp
+      continue
+    }
     const ranking: RankingValue = { ...fpSource(updatedAt, options.fetchedAt), source: 'FantasyPros ECR', overallRank, positionRank, tier, adp, rankMin:min, rankMax:max, rankAverage:number(row,'rank_ave','rank_average'), rankSpread: min != null && max != null ? max - min : undefined, standardDeviation: number(row, 'rank_std', 'standard_deviation'), scoringFormat: isIdpPosition(player.position) ? 'IDP' : options.scoringFormat, rankingClass: isIdpPosition(player.position) ? 'IDP' : 'OFFENSE', freshness: freshnessAt(updatedAt, new Date(options.fetchedAt), 6, 24) }
     player.sourceValues.push(ranking); player.sourceProvenance.push(ranking); player.baselineRank = overallRank; player.positionRank = positionRank; player.tier = tier; player.adp = adp; player.lastUpdated = updatedAt; player.freshness = ranking.freshness
     if (isIdpPosition(player.position)) { player.idp = { rank: overallRank, tier }; player.uncertaintyFlags.push('IDP_BASELINE_NOT_COMPARABLE_TO_OFFENSE') }
@@ -191,6 +205,12 @@ export async function providerJson(path: string, apiKey: string): Promise<unknow
   return response.json()
 }
 
+export async function fetchFantasyProsRankingPools(paths:string[],apiKey:string):Promise<unknown[]>{
+  return Promise.all(paths.map(async path=>{
+    try{return await providerJson(path,apiKey)}catch(error){return{__poolError:error instanceof Error?error.message:'FantasyPros ranking request failed.'}}
+  }))
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405)
@@ -202,20 +222,22 @@ Deno.serve(async (request: Request) => {
   const scoringFormat: ScoringFormat = input.scoringFormat === 'STANDARD' || input.scoringFormat === 'HALF_PPR' || input.scoringFormat === 'PPR' ? input.scoringFormat : 'PPR'; const includeIdp = Boolean(input.includeIdp)
   const rankingPaths=fantasyProsRankingPaths(season,scoringFormat,includeIdp)
   const fetchedAt = new Date().toISOString()
+  let rankingPools:Record<string,RankingPoolDiagnostic>|undefined
   try {
     const [players, rankings, news, injuries, sleeperResult] = await Promise.all([
-      providerJson('/nfl/players', apiKey), Promise.all(rankingPaths.map(path=>providerJson(path,apiKey))), providerJson('/nfl/news', apiKey), providerJson('/nfl/injuries', apiKey),
+      providerJson('/nfl/players', apiKey), fetchFantasyProsRankingPools(rankingPaths,apiKey), providerJson('/nfl/news', apiKey), providerJson('/nfl/injuries', apiKey),
       fetch('https://api.sleeper.app/v1/players/nfl', { headers: { accept: 'application/json' } }).then(async response => response.ok ? response.json() : Promise.reject(new Error(`Sleeper failed with HTTP ${response.status}.`))).catch(() => undefined),
     ])
+    rankingPools=fantasyProsRankingPoolDiagnostics(rankings,includeIdp)
     const snapshot = normalizeFantasyPros({ players, rankings, news, injuries } satisfies FantasyProsPayloads, { fetchedAt, scoringFormat, season, includeIdp, sleeper: sleeperResult, previous: input.previous })
     const supabaseUrl=Deno.env.get('SUPABASE_URL')?.trim(),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
     if(!supabaseUrl||!serviceKey)throw new Error('Shared snapshot persistence is not configured.')
     const writeBody={created_at:fetchedAt,season,provider:'fantasypros',scoring_format:scoringFormat,include_idp:includeIdp,snapshot_id:snapshot.id,snapshot,mode:snapshot.mode??'CURRENT',player_source:snapshot.playerSource??'FantasyPros API',ranking_source:snapshot.rankingSource??'FantasyPros ECR',news_status:snapshot.newsStatus??'FantasyPros news',quality:snapshot.quality,freshness:snapshot.freshness,fetched_at:fetchedAt,activated_at:fetchedAt,inserted_at:fetchedAt}
     const persisted=await fetch(`${supabaseUrl}/rest/v1/draft_player_data_snapshots`,{method:'POST',headers:{authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'content-type':'application/json',prefer:'return=representation'},body:JSON.stringify(writeBody)})
     const persistenceBody=await persisted.text()
-    if(!persisted.ok)return json({error:'Provider refresh succeeded but shared snapshot persistence failed.',persistenceError:`HTTP ${persisted.status}: ${persistenceBody.slice(0,1000)}`,persisted:false,snapshotId:snapshot.id,summary:{players:snapshot.players.length,quality:snapshot.quality,scoringFormat,includeIdp},priorSnapshotPreserved:true},502)
-    return json({ snapshot, snapshotId:snapshot.id, persisted: true, persistenceResponse:persistenceBody?JSON.parse(persistenceBody):null, summary: { players: snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
+    if(!persisted.ok)return json({error:'Provider refresh succeeded but shared snapshot persistence failed.',persistenceError:`HTTP ${persisted.status}: ${persistenceBody.slice(0,1000)}`,persisted:false,snapshotId:snapshot.id,rankingPools,summary:{players:snapshot.players.length,quality:snapshot.quality,scoringFormat,includeIdp},priorSnapshotPreserved:true},502)
+    return json({ snapshot, snapshotId:snapshot.id, persisted: true, rankingPools, persistenceResponse:persistenceBody?JSON.parse(persistenceBody):null, summary: { players: snapshot.players.length, normalizedPlayerCount:snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Provider refresh failed.', priorSnapshotPreserved: true }, 502)
+    return json({ error: error instanceof Error ? error.message : 'Provider refresh failed.', scoringFormat, includeIdp, rankingPools, persisted:false, priorSnapshotPreserved: true }, 502)
   }
 })

@@ -24,7 +24,7 @@ describe('automated player data', () => {
     expect(snapshot.players[0]).toMatchObject({ position:'DL', idp:{ rank:4, tier:1 } }); expect(snapshot.players[0].sourceValues[0]).toMatchObject({ scoringFormat:'IDP', rankingClass:'IDP' }); expect(snapshot.quality).toBe('PARTIAL')
   })
   it('preserves a prior real snapshot by rejecting incomplete FantasyPros refreshes', () => {
-    expect(() => normalizeFantasyPros({ ...basePayloads, rankings:{} }, { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:false })).toThrow(/atomic snapshot/)
+    expect(() => normalizeFantasyPros({ ...basePayloads, rankings:{} }, { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:false })).toThrow(/Required FantasyPros FLX ranking pool was empty/)
   })
   it('records only material changes', () => {
     const first = normalizeFantasyPros(payloads(), { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true })
