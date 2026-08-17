@@ -17,4 +17,10 @@ describe('Draft cloud configuration and auth states', () => {
     expect(eqSeason).toHaveBeenCalledWith('season',2026);expect(eqFormat).toHaveBeenCalledWith('scoring_format','PPR');expect(eqIdp).toHaveBeenCalledWith('include_idp',false);expect(order).toHaveBeenCalledWith('activated_at',{ascending:false});expect(limit).toHaveBeenCalledWith(1);
     await expect(gateway.loadLatestSharedPlayerSnapshot(2026,'HALF_PPR',true)).resolves.toBeUndefined();
   });
+  it('surfaces provider-success persistence failures with compatibility diagnostics',async()=>{
+    const gateway=new DraftCloudGateway({environment:'test',url:'',publishableKey:'',source:'none'});
+    Object.defineProperty(gateway,'client',{value:{auth:{getSession:vi.fn().mockResolvedValue({data:{session:{user:{id:'allowed'}}}})},functions:{invoke:vi.fn().mockResolvedValue({data:{persisted:false,persistenceError:'null value in column mode',snapshotId:'fp-2026',summary:{players:412}},error:null})}}});
+    await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('null value in column mode');
+    await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('HALF_PPR, IDP true, players 412, snapshot fp-2026');
+  });
 })

@@ -43,9 +43,11 @@ Deno.serve(async (request: Request) => {
     const snapshot = normalizeFantasyPros({ players, rankings, news, injuries } satisfies FantasyProsPayloads, { fetchedAt, scoringFormat, season, includeIdp, sleeper: sleeperResult, previous: input.previous })
     const supabaseUrl=Deno.env.get('SUPABASE_URL')?.trim(),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
     if(!supabaseUrl||!serviceKey)throw new Error('Shared snapshot persistence is not configured.')
-    const persisted=await fetch(`${supabaseUrl}/rest/v1/draft_player_data_snapshots`,{method:'POST',headers:{authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'content-type':'application/json',prefer:'return=minimal'},body:JSON.stringify({season,provider:'fantasypros',scoring_format:scoringFormat,include_idp:includeIdp,snapshot_id:snapshot.id,snapshot,quality:snapshot.quality,fetched_at:fetchedAt})})
-    if(!persisted.ok)throw new Error(`Shared snapshot persistence failed with HTTP ${persisted.status}.`)
-    return json({ snapshot, persisted: true, summary: { players: snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
+    const writeBody={created_at:fetchedAt,season,provider:'fantasypros',scoring_format:scoringFormat,include_idp:includeIdp,snapshot_id:snapshot.id,snapshot,mode:snapshot.mode??'CURRENT',player_source:snapshot.playerSource??'FantasyPros API',ranking_source:snapshot.rankingSource??'FantasyPros ECR',news_status:snapshot.newsStatus??'FantasyPros news',quality:snapshot.quality,freshness:snapshot.freshness,fetched_at:fetchedAt,activated_at:fetchedAt,inserted_at:fetchedAt}
+    const persisted=await fetch(`${supabaseUrl}/rest/v1/draft_player_data_snapshots`,{method:'POST',headers:{authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'content-type':'application/json',prefer:'return=representation'},body:JSON.stringify(writeBody)})
+    const persistenceBody=await persisted.text()
+    if(!persisted.ok)return json({error:'Provider refresh succeeded but shared snapshot persistence failed.',persistenceError:`HTTP ${persisted.status}: ${persistenceBody.slice(0,1000)}`,persisted:false,snapshotId:snapshot.id,summary:{players:snapshot.players.length,quality:snapshot.quality,scoringFormat,includeIdp},priorSnapshotPreserved:true},502)
+    return json({ snapshot, snapshotId:snapshot.id, persisted: true, persistenceResponse:persistenceBody?JSON.parse(persistenceBody):null, summary: { players: snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'Provider refresh failed.', priorSnapshotPreserved: true }, 502)
   }
