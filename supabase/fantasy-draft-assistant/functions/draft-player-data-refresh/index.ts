@@ -50,7 +50,7 @@ const number = (row: JsonRecord, ...keys: string[]) => { const value = text(row,
 const iso = (value: string | undefined, fallback: string) => value && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : fallback
 const fpSource = (updatedAt: string, fetchedAt: string): SourceReference => ({ source: 'FantasyPros API', sourceClass: 'ANALYST_INTERPRETATION', updatedAt, fetchedAt, reference: 'FantasyPros Public API v2' })
 
-export interface FantasyProsPayloads { players: unknown; rankings: unknown; news: unknown; injuries: unknown }
+export interface FantasyProsPayloads { players: unknown; rankings: unknown | unknown[]; news: unknown; injuries: unknown }
 export interface NormalizeOptions { fetchedAt: string; scoringFormat: ScoringFormat; season: number; includeIdp: boolean; sleeper?: unknown; previous?: PlayerDataSnapshot }
 
 /** FantasyPros Public API v2 scoring literals supported by this integration. */
@@ -59,6 +59,14 @@ export function fantasyProsScoringParameter(format:ScoringFormat):'STD'|'HALF'|'
   if(format==='HALF_PPR')return'HALF';
   if(format==='PPR')return'PPR';
   throw new Error(`FantasyPros does not support offensive scoring format ${format}.`);
+}
+
+/** Build only provider-supported ranking requests. IDP is a separate ranking pool. */
+export function fantasyProsRankingPaths(season:number, format:ScoringFormat, includeIdp:boolean):string[]{
+  const offense=new URLSearchParams({position:'ALL',scoring:fantasyProsScoringParameter(format)})
+  const paths=[`/nfl/${season}/consensus-rankings?${offense}`]
+  if(includeIdp)paths.push(`/nfl/${season}/consensus-rankings?${new URLSearchParams({position:'IDP'})}`)
+  return paths
 }
 
 const availability = (value?: string): AvailabilityStatus => {
@@ -70,7 +78,11 @@ const materiality = (headline: string, category?: string): 'HIGH'|'MED'|'LOW' =>
 
 export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: NormalizeOptions): PlayerDataSnapshot {
   const players = list(payloads.players, ['players'])
-  const rankings = list(payloads.rankings, ['rankings', 'players'])
+  const rankingPayloads = Array.isArray(payloads.rankings) ? payloads.rankings : [payloads.rankings]
+  const rankingPools = rankingPayloads.map(payload => list(payload, ['rankings', 'players']))
+  if (!rankingPools[0]?.length) throw new Error('FantasyPros offensive rankings are required for an atomic snapshot.')
+  if (options.includeIdp && rankingPayloads.length > 1 && !rankingPools[1]?.length) throw new Error('FantasyPros IDP rankings are required for an atomic snapshot.')
+  const rankings = rankingPools.flat()
   if (!players.length || !rankings.length) throw new Error('FantasyPros players and rankings are required for an atomic snapshot.')
   const byFp = new Map<string, PlayerIntelligence>()
   for (const row of players) {
@@ -158,9 +170,17 @@ async function authorized(request: Request): Promise<boolean> {
   return allowed.ok && ((await allowed.json()) as unknown[]).length === 1
 }
 
-async function providerJson(path: string, apiKey: string): Promise<unknown> {
+export function safeProviderErrorBody(body:string, apiKey:string, limit=500):string {
+  return body.replaceAll(apiKey,'[REDACTED]').replace(/[\u0000-\u001f\u007f]+/g,' ').replace(/\s+/g,' ').trim().slice(0,limit)
+}
+
+export async function providerJson(path: string, apiKey: string): Promise<unknown> {
   const response = await fetch(`https://api.fantasypros.com/public/v2/json${path}`, { headers: { 'x-api-key': apiKey, accept: 'application/json' } })
-  if (!response.ok) throw new Error(`FantasyPros ${path.split('?')[0]} failed with HTTP ${response.status}.`)
+  if (!response.ok) {
+    const detail=safeProviderErrorBody(await response.text(),apiKey)
+    const endpoint=path.includes('/consensus-rankings')?'consensus rankings':path.split('?')[0]
+    throw new Error(`FantasyPros ${endpoint} failed HTTP ${response.status}${detail?`: ${detail}`:'.'}`)
+  }
   return response.json()
 }
 
@@ -173,11 +193,11 @@ Deno.serve(async (request: Request) => {
   const input = await request.json().catch(() => ({})) as { season?: number; scoringFormat?: ScoringFormat; includeIdp?: boolean; previous?: PlayerDataSnapshot }
   const season = Number.isInteger(input.season) ? input.season! : 2026
   const scoringFormat: ScoringFormat = input.scoringFormat === 'STANDARD' || input.scoringFormat === 'HALF_PPR' || input.scoringFormat === 'PPR' ? input.scoringFormat : 'PPR'; const includeIdp = Boolean(input.includeIdp)
-  const params = new URLSearchParams({ scoring: fantasyProsScoringParameter(scoringFormat), position: includeIdp ? 'ALL' : 'FLX', ...(includeIdp ? { include_idp: 'true' } : {}) })
+  const rankingPaths=fantasyProsRankingPaths(season,scoringFormat,includeIdp)
   const fetchedAt = new Date().toISOString()
   try {
     const [players, rankings, news, injuries, sleeperResult] = await Promise.all([
-      providerJson('/nfl/players', apiKey), providerJson(`/nfl/${season}/consensus-rankings?${params}`, apiKey), providerJson('/nfl/news', apiKey), providerJson('/nfl/injuries', apiKey),
+      providerJson('/nfl/players', apiKey), Promise.all(rankingPaths.map(path=>providerJson(path,apiKey))), providerJson('/nfl/news', apiKey), providerJson('/nfl/injuries', apiKey),
       fetch('https://api.sleeper.app/v1/players/nfl', { headers: { accept: 'application/json' } }).then(async response => response.ok ? response.json() : Promise.reject(new Error(`Sleeper failed with HTTP ${response.status}.`))).catch(() => undefined),
     ])
     const snapshot = normalizeFantasyPros({ players, rankings, news, injuries } satisfies FantasyProsPayloads, { fetchedAt, scoringFormat, season, includeIdp, sleeper: sleeperResult, previous: input.previous })
