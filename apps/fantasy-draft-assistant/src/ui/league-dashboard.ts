@@ -44,12 +44,12 @@ export function leagueDashboardMarkup(input: LeagueDashboardInput): string {
       </section>
       <section class="rankings-data-card"><div class="section-heading"><h2>RANKINGS &amp; DATA</h2><span class="status-chip">SOURCES</span></div>
         <div class="source-grid"><div><small>FANTASYPROS</small><b>${freshness}</b><span>Last refresh ${updated}</span></div><div><small>ESPN</small><b>${espnPlayerCount == null ? 'Not imported' : 'PPR300 active'}</b><span>${espnPlayerCount == null ? 'Import from Rankings' : `${espnPlayerCount} player ranks`}</span></div></div>
-        <div class="card-actions"><a class="dashboard-button" href="#/${slug}/rankings">RANKINGS</a><button class="dashboard-button" id="dashboard-refresh">REFRESH PLAYER DATA</button></div>
+        <div class="card-actions"><a class="dashboard-button" href="#/${slug}/rankings">RANKINGS</a><button class="dashboard-button" id="dashboard-refresh">REFRESH PLAYER DATA</button></div><p id="dashboard-refresh-status" role="status" aria-live="polite"></p>
       </section>
     </div>
     <div class="command-grid command-secondary">
       <section class="administration-card"><div class="section-heading"><h2>LEAGUE ADMINISTRATION</h2><span class="status-chip muted-chip">SETUP</span></div><div class="command-links">
-        <a href="#/${slug}/settings">LEAGUE SETTINGS</a><a href="#/${slug}/managers">TEAMS &amp; MANAGERS</a><a href="#/${slug}/order">DRAFT ORDER</a><a href="#/${slug}/ownership">PICK OWNERSHIP</a>
+        <a href="#/${slug}/settings">LEAGUE SETTINGS</a><a href="#/${slug}/managers">TEAMS &amp; MANAGERS</a><a href="#/${slug}/order">DRAFT ORDER</a><a href="#/${slug}/ownership">PICK OWNERSHIP</a>${setup.draft.keeperCount?`<a href="#/${slug}/keepers">KEEPERS</a>`:''}
       </div></section>
       <section class="secondary-tools"><div class="section-heading"><h2>TOOLS</h2><span class="status-chip muted-chip">REFERENCE</span></div><a class="dashboard-button quiet-button" href="#/${slug}/board">DRAFT BOARD</a></section>
     </div>

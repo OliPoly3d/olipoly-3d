@@ -2,7 +2,7 @@ import type { ScoringRule } from './scoring';
 export type Id=string;export type Position='QB'|'RB'|'WR'|'TE'|'DST'|'K'|'DL'|'LB'|'DB'|'DT'|'DE'|'CB'|'S'|'P'|'HC';
 export interface League{id:Id;name:string;slug:string} export interface Season{id:Id;leagueId:Id;year:number;name:string}
 export interface LeagueSettings{seasonId:Id;scoringLabel:string;ppr:number;idpEnabled:boolean;scoringRules?:ScoringRule[];metadata?:Record<string,string|number|boolean|null>}
-export interface Manager{id:Id;leagueId:Id;displayName:string;active:boolean} export interface SeasonTeam{id:Id;seasonId:Id;managerId:Id;active:boolean}
+export interface Manager{id:Id;leagueId:Id;displayName:string;active:boolean} export interface SeasonTeam{id:Id;seasonId:Id;managerId:Id;displayName?:string;active:boolean}
 export interface RosterSlotDefinition{id:Id;seasonId:Id;label:string;count:number;eligible:Position[];kind:'starter'|'bench'|'ir'} export interface PositionLimit{seasonId:Id;position:Position;maximum:number|null}
 export interface DraftConfiguration{seasonId:Id;teamCount:number;draftType?:'offline'|'online';draftDate?:string|null;snake:boolean;rounds:number;pickTimerSeconds:number|null;keeperCount:number;liveStartRound:number;pickTradingEnabled:boolean;orderStatus:'unassigned'|'assigned'|'locked'}
 export interface DraftSlot{seasonId:Id;slot:number;originalTeamId:Id} export interface PickOwnership{seasonId:Id;round:number;slot:number;originalTeamId:Id;currentTeamId:Id}
