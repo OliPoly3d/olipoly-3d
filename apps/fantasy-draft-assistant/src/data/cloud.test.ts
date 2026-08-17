@@ -23,4 +23,22 @@ describe('Draft cloud configuration and auth states', () => {
     await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('null value in column mode');
     await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('HALF_PPR, IDP true, players 412, snapshot fp-2026');
   });
+  it('distinguishes a returned row validation failure and exposes the exact IDP predicate',async()=>{
+    const idp={canonicalPlayerId:'nfl:fantasypros:2',displayName:'Linebacker',normalizedName:'linebacker',position:'LB',sourceValues:[{rankingClass:'IDP'}],newsItems:[],freshness:'FRESH',quality:'COMPLETE',uncertaintyFlags:[],sourceProvenance:[]};
+    const snapshot={id:'player-data-v1-b3c51471',version:1,createdAt:'2026-08-17T12:00:00Z',season:2026,scoringFormat:'HALF_PPR',includeIdp:true,quality:'COMPLETE',freshness:'FRESH',players:[idp],changes:[],providerResults:[]};
+    const row={season:2026,provider:'fantasypros',scoring_format:'HALF_PPR',include_idp:true,snapshot_id:snapshot.id,quality:'COMPLETE',fetched_at:snapshot.createdAt,activated_at:snapshot.createdAt,snapshot};
+    const maybeSingle=vi.fn().mockResolvedValue({data:row,error:null}),limit=vi.fn(()=>({maybeSingle})),order=vi.fn(()=>({limit})),eqIdp=vi.fn(()=>({order})),eqFormat=vi.fn(()=>({eq:eqIdp})),eqSeason=vi.fn(()=>({eq:eqFormat})),select=vi.fn(()=>({eq:eqSeason}));
+    const gateway=new DraftCloudGateway({environment:'test',url:'',publishableKey:'',source:'none'});
+    Object.defineProperty(gateway,'client',{value:{auth:{getSession:vi.fn().mockResolvedValue({data:{session:{user:{id:'allowed'}}}})},from:vi.fn(()=>({select})),functions:{invoke:vi.fn().mockResolvedValue({data:{persisted:true,snapshotId:snapshot.id,summary:{players:1179}},error:null})}}});
+    await expect(gateway.inspectLatestSharedPlayerSnapshot(2026,'HALF_PPR',true)).resolves.toMatchObject({status:'DATABASE_ROW_RETURNED_BUT_SNAPSHOT_VALIDATION_FAILED',queryMatchedRow:true,returnedSnapshotId:snapshot.id,returnedScoringFormat:'HALF_PPR',returnedIncludeIdp:true,returnedPlayerCount:1,validationPassed:false,validationFailureReason:expect.stringContaining('IDP_RANK_INVALID')});
+    await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('"persistedSnapshotId":"player-data-v1-b3c51471"');
+    await expect(gateway.refreshLatestSharedPlayerSnapshot({season:2026,scoringFormat:'HALF_PPR',includeIdp:true})).rejects.toThrow('DATABASE_ROW_RETURNED_BUT_SNAPSHOT_VALIDATION_FAILED');
+  });
+  it('distinguishes zero rows and database query errors',async()=>{
+    const responses=[{data:null,error:null},{data:null,error:{message:'database unavailable'}}],maybeSingle=vi.fn().mockImplementation(()=>Promise.resolve(responses.shift())),limit=vi.fn(()=>({maybeSingle})),order=vi.fn(()=>({limit})),eqIdp=vi.fn(()=>({order})),eqFormat=vi.fn(()=>({eq:eqIdp})),eqSeason=vi.fn(()=>({eq:eqFormat})),select=vi.fn(()=>({eq:eqSeason}));
+    const gateway=new DraftCloudGateway({environment:'test',url:'',publishableKey:'',source:'none'});
+    Object.defineProperty(gateway,'client',{value:{auth:{getSession:vi.fn().mockResolvedValue({data:{session:{user:{id:'allowed'}}}})},from:vi.fn(()=>({select}))}});
+    await expect(gateway.inspectLatestSharedPlayerSnapshot(2026,'HALF_PPR',true)).resolves.toMatchObject({status:'DATABASE_QUERY_RETURNED_ZERO_ROWS',queryMatchedRow:false});
+    await expect(gateway.inspectLatestSharedPlayerSnapshot(2026,'HALF_PPR',true)).resolves.toMatchObject({status:'DATABASE_QUERY_ERROR',error:'database unavailable'});
+  });
 })

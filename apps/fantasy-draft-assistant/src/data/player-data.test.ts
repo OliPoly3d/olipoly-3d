@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {DraftStore} from './store';
-import {activateImport,aggregateRankings,applySnapshot,canonicalPlayerId,freshnessAt,isIdpPosition,normalizePlayerName,normalizePosition,normalizeTeam,parseRankingImport,refreshPlayerData,selectPlayerPool,scoringFormatFor,snapshotId,snapshotSources,validatePlayerDataSnapshot,type PlayerDataSnapshot,type PlayerIntelligence,type RankingValue} from './player-data';
+import {activateImport,aggregateRankings,applySnapshot,canonicalPlayerId,freshnessAt,inspectPlayerDataSnapshot,isIdpPosition,normalizePlayerName,normalizePosition,normalizeTeam,parseRankingImport,refreshPlayerData,selectPlayerPool,scoringFormatFor,snapshotId,snapshotSources,validatePlayerDataSnapshot,type PlayerDataSnapshot,type PlayerIntelligence,type RankingValue} from './player-data';
 import {playerPool,seedSetup} from '../domain/seeds';
 import {rebuildDraftState,startDraft} from '../domain/engine';
 import {emptyPhilosophy,userContext} from '../domain/user-context';
@@ -57,5 +57,12 @@ describe('league-compatible player snapshots',()=>{
     expect(scoringFormatFor(seedSetup('believeland'))).toBe('PPR');
     expect(scoringFormatFor(seedSetup('robocop'))).toBe('HALF_PPR');
     expect(seedSetup('robocop').settings.idpEnabled).toBe(true);
+  });
+  it('accepts the intended mixed offense and IDP ranking shape without fabricating offensive ECR',()=>{
+    const offense=real('HALF_PPR',true).players[0],idp={...offense,canonicalPlayerId:'nfl:fantasypros:2' as never,displayName:'Real Linebacker',normalizedName:'real linebacker',position:'LB' as const,baselineRank:undefined,idp:{rank:7},sourceValues:[{...rank(7),overallRank:undefined,scoringFormat:'IDP' as const,rankingClass:'IDP' as const}]};
+    const mixed={...real('HALF_PPR',true),players:[offense,idp]};
+    expect(validatePlayerDataSnapshot(mixed,2026,'HALF_PPR',true)).toBeDefined();
+    expect(inspectPlayerDataSnapshot({...mixed,players:[offense,{...idp,idp:undefined}]},2026,'HALF_PPR',true)).toMatchObject({passed:false,reason:expect.stringContaining('IDP_RANK_INVALID')});
+    expect(inspectPlayerDataSnapshot({...mixed,players:[offense,{...idp,sourceValues:[]}]},2026,'HALF_PPR',true)).toMatchObject({passed:false,reason:expect.stringContaining('IDP_RANKING_CLASS_MISSING')});
   });
 });

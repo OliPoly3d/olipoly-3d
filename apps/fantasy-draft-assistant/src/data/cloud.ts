@@ -1,10 +1,11 @@
 import { createClient, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js'
-import { validatePlayerDataSnapshot, type PlayerDataSnapshot, type ScoringFormat } from './player-data'
+import { inspectPlayerDataSnapshot, type PlayerDataSnapshot, type ScoringFormat } from './player-data'
 import { deserializeEspnSource, serializeEspnSource, type EspnRankingSource, type StoredEspnRankingSource } from './espn-rankings'
 
 export type CloudStatus = 'local-only' | 'configuration-error' | 'connecting' | 'cloud-connected' | 'authenticated' | 'unauthorized' | 'cloud-unavailable'
 export interface RuntimeDraftConfig { supabaseUrl?: string; supabasePublishableKey?: string }
 export interface DraftCloudConfig { environment: string; url: string; publishableKey: string; source: 'runtime' | 'build' | 'none' }
+export interface SharedSnapshotRereadDiagnostic {status:'DATABASE_QUERY_RETURNED_ZERO_ROWS'|'DATABASE_QUERY_ERROR'|'DATABASE_ROW_RETURNED_BUT_SNAPSHOT_VALIDATION_FAILED'|'DATABASE_ROW_RETURNED_AND_VALID';queryMatchedRow:boolean;returnedSnapshotId?:string;returnedScoringFormat?:string;returnedIncludeIdp?:boolean;returnedPlayerCount?:number;validationPassed:boolean;validationFailureReason?:string;error?:string;snapshot?:PlayerDataSnapshot}
 
 declare global { interface Window { __DRAFT_ASSISTANT_CONFIG__?: RuntimeDraftConfig } }
 
@@ -64,10 +65,18 @@ export class DraftCloudGateway {
     return data.snapshot as PlayerDataSnapshot
   }
   async loadLatestSharedPlayerSnapshot(season:number,scoringFormat:ScoringFormat,includeIdp=false):Promise<PlayerDataSnapshot|undefined>{
-    if(!this.client||!await this.session())return undefined
-    const {data,error}=await this.client.from('draft_player_data_snapshots').select('snapshot').eq('season',season).eq('scoring_format',scoringFormat).eq('include_idp',includeIdp).order('activated_at',{ascending:false}).limit(1).maybeSingle()
-    if(error)throw error
-    return validatePlayerDataSnapshot(data?.snapshot,season,scoringFormat,includeIdp)
+    const result=await this.inspectLatestSharedPlayerSnapshot(season,scoringFormat,includeIdp)
+    if(result.status==='DATABASE_QUERY_ERROR')throw new Error(result.error)
+    return result.snapshot
+  }
+  async inspectLatestSharedPlayerSnapshot(season:number,scoringFormat:ScoringFormat,includeIdp=false):Promise<SharedSnapshotRereadDiagnostic>{
+    if(!this.client||!await this.session())return{status:'DATABASE_QUERY_ERROR',queryMatchedRow:false,validationPassed:false,error:'Shared snapshot reread requires an authenticated Draft Assistant session.'}
+    const {data,error}=await this.client.from('draft_player_data_snapshots').select('season,provider,scoring_format,include_idp,snapshot_id,quality,fetched_at,activated_at,snapshot').eq('season',season).eq('scoring_format',scoringFormat).eq('include_idp',includeIdp).order('activated_at',{ascending:false}).limit(1).maybeSingle()
+    if(error)return{status:'DATABASE_QUERY_ERROR',queryMatchedRow:false,validationPassed:false,error:error.message??String(error)}
+    if(!data)return{status:'DATABASE_QUERY_RETURNED_ZERO_ROWS',queryMatchedRow:false,validationPassed:false}
+    const row=data as Record<string,unknown>,raw=row.snapshot as {id?:unknown;scoringFormat?:unknown;includeIdp?:unknown;players?:unknown[]}|undefined,validation=inspectPlayerDataSnapshot(raw,season,scoringFormat,includeIdp)
+    const diagnostic={queryMatchedRow:true,returnedSnapshotId:String(row.snapshot_id??raw?.id??''),returnedScoringFormat:String(row.scoring_format??raw?.scoringFormat??''),returnedIncludeIdp:typeof row.include_idp==='boolean'?row.include_idp:undefined,returnedPlayerCount:Array.isArray(raw?.players)?raw.players.length:undefined,validationPassed:validation.passed,validationFailureReason:validation.reason}
+    return validation.passed?{status:'DATABASE_ROW_RETURNED_AND_VALID',...diagnostic,snapshot:validation.snapshot}:{status:'DATABASE_ROW_RETURNED_BUT_SNAPSHOT_VALIDATION_FAILED',...diagnostic}
   }
   async refreshLatestSharedPlayerSnapshot(input:{season:number;scoringFormat:ScoringFormat;includeIdp:boolean}):Promise<PlayerDataSnapshot|undefined>{
     if(!this.client||!await this.session())throw new Error('Player refresh requires an authenticated Draft Assistant session.')
@@ -76,9 +85,9 @@ export class DraftCloudGateway {
     const details={scoringFormat:input.scoringFormat,includeIdp:input.includeIdp,players:Number(data?.summary?.players??data?.snapshot?.players?.length??0),snapshotId:data?.snapshot?.id??data?.snapshotId??'none'}
     if(result.error)throw new Error(`Player refresh function failed (${details.scoringFormat}, IDP ${details.includeIdp}, players ${details.players}, snapshot ${details.snapshotId}, persisted ${data?.persisted===true}): ${data?.persistenceError??data?.error??result.error.message}.`)
     if(data?.persisted!==true)throw new Error(`Player refresh persistence failed (${details.scoringFormat}, IDP ${details.includeIdp}, players ${details.players}, snapshot ${details.snapshotId}): ${data?.persistenceError??data?.error??'persisted was not true'}.`)
-    const reread=await this.loadLatestSharedPlayerSnapshot(input.season,input.scoringFormat,input.includeIdp)
-    if(!reread)throw new Error(`Player refresh persisted snapshot ${details.snapshotId}, but the compatible database reread returned no valid snapshot (${details.scoringFormat}, IDP ${details.includeIdp}, players ${details.players}).`)
-    return reread
+    const reread=await this.inspectLatestSharedPlayerSnapshot(input.season,input.scoringFormat,input.includeIdp)
+    if(!reread.snapshot){const diagnostic={persistedSnapshotId:details.snapshotId,persistedPlayerCount:details.players,reread:{queryMatchedRow:reread.queryMatchedRow,returnedSnapshotId:reread.returnedSnapshotId,returnedScoringFormat:reread.returnedScoringFormat,returnedIncludeIdp:reread.returnedIncludeIdp,returnedPlayerCount:reread.returnedPlayerCount,validationPassed:reread.validationPassed,validationFailureReason:reread.validationFailureReason,status:reread.status,error:reread.error}};throw new Error(`Player refresh reread failed: ${JSON.stringify(diagnostic)}`)}
+    return reread.snapshot
   }
   async loadSharedEspnRankingSource(leagueId:string,season:number):Promise<EspnRankingSource|undefined>{
     if(!this.client||!await this.session())return undefined

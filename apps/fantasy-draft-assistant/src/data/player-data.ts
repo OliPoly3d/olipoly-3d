@@ -56,18 +56,37 @@ export function isCompatiblePlayerDataSnapshot(value:unknown,season:number,scori
   return !!validatePlayerDataSnapshot(value,season,scoringFormat,includeIdp);
 }
 
+export type PlayerDataSnapshotValidation={snapshot?:PlayerDataSnapshot;passed:boolean;reason?:string};
+
 /** Validates an untrusted persisted or network snapshot before it can become draft authority. */
-export function validatePlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat,includeIdp=false):PlayerDataSnapshot|undefined{
-  if(!value||typeof value!=='object')return undefined;
+export function inspectPlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat,includeIdp=false):PlayerDataSnapshotValidation{
+  const reject=(reason:string):PlayerDataSnapshotValidation=>({passed:false,reason});
+  if(!value||typeof value!=='object')return reject('SNAPSHOT_NOT_AN_OBJECT');
   const snapshot=value as Partial<PlayerDataSnapshot>;
-  if(snapshot.version!==1||snapshot.season!==season||snapshot.scoringFormat!==scoringFormat||snapshotIncludesIdp(snapshot)!==includeIdp||!snapshot.createdAt||!Number.isFinite(Date.parse(snapshot.createdAt))||!Array.isArray(snapshot.players)||!snapshot.players.length)return undefined;
+  if(snapshot.version!==1)return reject('SNAPSHOT_VERSION_NOT_1');
+  if(snapshot.season!==season)return reject(`SNAPSHOT_SEASON_MISMATCH:${String(snapshot.season)}`);
+  if(snapshot.scoringFormat!==scoringFormat)return reject(`SNAPSHOT_SCORING_FORMAT_MISMATCH:${String(snapshot.scoringFormat)}`);
+  if(snapshotIncludesIdp(snapshot)!==includeIdp)return reject(`SNAPSHOT_INCLUDE_IDP_MISMATCH:${String(snapshot.includeIdp)}`);
+  if(!snapshot.createdAt||!Number.isFinite(Date.parse(snapshot.createdAt)))return reject('SNAPSHOT_CREATED_AT_INVALID');
+  if(!Array.isArray(snapshot.players)||!snapshot.players.length)return reject('SNAPSHOT_PLAYERS_EMPTY');
   const identities=new Set<string>();
-  for(const player of snapshot.players){
-    if(!player||typeof player.canonicalPlayerId!=='string'||!player.canonicalPlayerId||identities.has(player.canonicalPlayerId)||typeof player.displayName!=='string'||!player.displayName.trim()||!Number.isFinite(player.baselineRank)||player.baselineRank!<=0)return undefined;
+  for(const [index,player] of snapshot.players.entries()){
+    if(!player||typeof player.canonicalPlayerId!=='string'||!player.canonicalPlayerId)return reject(`PLAYER_${index}_IDENTITY_INVALID`);
+    if(identities.has(player.canonicalPlayerId))return reject(`PLAYER_${index}_IDENTITY_DUPLICATE:${player.canonicalPlayerId}`);
+    if(typeof player.displayName!=='string'||!player.displayName.trim())return reject(`PLAYER_${index}_DISPLAY_NAME_INVALID:${player.canonicalPlayerId}`);
+    if(isIdpPosition(player.position)){
+      if(!Number.isFinite(player.idp?.rank)||player.idp!.rank!<=0)return reject(`PLAYER_${index}_IDP_RANK_INVALID:${player.canonicalPlayerId}`);
+      if(!player.sourceValues?.some(source=>source.rankingClass==='IDP'))return reject(`PLAYER_${index}_IDP_RANKING_CLASS_MISSING:${player.canonicalPlayerId}`);
+    }else if(!Number.isFinite(player.baselineRank)||player.baselineRank!<=0)return reject(`PLAYER_${index}_OFFENSIVE_BASELINE_RANK_INVALID:${player.canonicalPlayerId}`);
     identities.add(player.canonicalPlayerId);
   }
-  if(!Array.isArray(snapshot.changes)||!Array.isArray(snapshot.providerResults)||typeof snapshot.id!=='string')return undefined;
-  return snapshot as PlayerDataSnapshot;
+  if(!Array.isArray(snapshot.changes))return reject('SNAPSHOT_CHANGES_INVALID');
+  if(!Array.isArray(snapshot.providerResults))return reject('SNAPSHOT_PROVIDER_RESULTS_INVALID');
+  if(typeof snapshot.id!=='string'||!snapshot.id)return reject('SNAPSHOT_ID_INVALID');
+  return{passed:true,snapshot:snapshot as PlayerDataSnapshot};
+}
+export function validatePlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat,includeIdp=false):PlayerDataSnapshot|undefined{
+  return inspectPlayerDataSnapshot(value,season,scoringFormat,includeIdp).snapshot;
 }
 export function snapshotId(createdAt:string,format:ScoringFormat,players:PlayerIntelligence[]){const stable=players.map(p=>`${p.canonicalPlayerId}:${p.baselineRank??''}:${p.availabilityStatus??''}:${p.lastUpdated??''}`).sort().join('|');let hash=2166136261;for(const c of `${format}|${createdAt}|${stable}`)hash=Math.imul(hash^c.charCodeAt(0),16777619);return `player-data-v1-${(hash>>>0).toString(16)}`}
 
