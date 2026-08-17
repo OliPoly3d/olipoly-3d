@@ -59,11 +59,33 @@ export function isCompatiblePlayerDataSnapshot(value:unknown,season:number,scori
 
 export type PlayerDataSnapshotValidation={snapshot?:PlayerDataSnapshot;passed:boolean;reason?:string};
 
+type SnapshotPlayerInput=Partial<PlayerIntelligence>&{id?:unknown};
+
+/**
+ * Projects the persisted canonical snapshot contract into the application model.
+ * Older/current shared snapshots expose their already-normalized stable identity as
+ * `players[].id`; it is the same `nfl:*` identity, not a field from which to invent one.
+ */
+export function projectSnapshotCanonicalIds(value:unknown):unknown{
+  if(!value||typeof value!=='object')return value;
+  const snapshot=value as Partial<PlayerDataSnapshot>&{players?:unknown};
+  if(!Array.isArray(snapshot.players))return value;
+  return{...snapshot,players:snapshot.players.map(item=>{
+    if(!item||typeof item!=='object')return item;
+    const player=item as SnapshotPlayerInput;
+    if(typeof player.canonicalPlayerId==='string'&&player.canonicalPlayerId)return player;
+    return typeof player.id==='string'&&player.id.startsWith('nfl:')
+      ?{...player,canonicalPlayerId:player.id as CanonicalPlayerId}
+      :player;
+  })};
+}
+
 /** Validates an untrusted persisted or network snapshot before it can become draft authority. */
 export function inspectPlayerDataSnapshot(value:unknown,season:number,scoringFormat:ScoringFormat,includeIdp=false):PlayerDataSnapshotValidation{
   const reject=(reason:string):PlayerDataSnapshotValidation=>({passed:false,reason});
-  if(!value||typeof value!=='object')return reject('SNAPSHOT_NOT_AN_OBJECT');
-  const snapshot=value as Partial<PlayerDataSnapshot>;
+  const projected=projectSnapshotCanonicalIds(value);
+  if(!projected||typeof projected!=='object')return reject('SNAPSHOT_NOT_AN_OBJECT');
+  const snapshot=projected as Partial<PlayerDataSnapshot>;
   if(snapshot.version!==1)return reject('SNAPSHOT_VERSION_NOT_1');
   if(snapshot.season!==season)return reject(`SNAPSHOT_SEASON_MISMATCH:${String(snapshot.season)}`);
   if(snapshot.scoringFormat!==scoringFormat)return reject(`SNAPSHOT_SCORING_FORMAT_MISMATCH:${String(snapshot.scoringFormat)}`);
@@ -115,6 +137,11 @@ export function selectPlayerPool(fixtures:DraftPlayer[],snapshot?:PlayerDataSnap
     currentAdp:current.adp,
     playerIntelligence:current,
   }));
+}
+
+/** Full canonical universe for source reconciliation; never draft-state filtered. */
+export function selectImportReconciliationPool(snapshot?:PlayerDataSnapshot):DraftPlayer[]{
+  return snapshot?selectPlayerPool([],snapshot):[];
 }
 
 export function snapshotSources(snapshot?:PlayerDataSnapshot){return snapshot?{mode:snapshot.mode??'CACHED',playerSource:snapshot.playerSource??'CURRENT PLAYER SNAPSHOT',rankingSource:snapshot.rankingSource??snapshot.providerResults[0]?.providerId??'CURRENT RANKING SNAPSHOT',updatedAt:snapshot.createdAt,news:snapshot.newsStatus??'NOT PROVIDED'}:{mode:'FIXTURE_FALLBACK' as const,playerSource:'FIXTURE PLAYER POOL',rankingSource:'BASELINE FIXTURE RANKING',updatedAt:undefined,news:'NOT ENABLED'}}
