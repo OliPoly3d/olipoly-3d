@@ -48,8 +48,7 @@ export const freshnessAt=(updatedAt:string|undefined,now=new Date(),freshHours=2
 const sourceWeight=(r:RankingValue,target:ScoringFormat)=>{const freshness={FRESH:1,AGING:.65,STALE:.2,UNKNOWN:.3}[r.freshness];const format=r.scoringFormat===target?1:r.scoringFormat==='OTHER'?.55:.25;return freshness*format};
 export function aggregateRankings(values:RankingValue[],target:ScoringFormat){const ranked=values.filter((v):v is RankingValue&{overallRank:number}=>v.overallRank!=null&&v.overallRank>0).map(v=>({v,w:sourceWeight(v,target)})).filter(x=>x.w>0);if(!ranked.length)return{uncertaintyFlags:['RANKING_MISSING']};const total=ranked.reduce((n,x)=>n+x.w,0),baselineRank=Math.round(ranked.reduce((n,x)=>n+x.v.overallRank*x.w,0)/total),spread=Math.max(...ranked.map(x=>x.v.overallRank))-Math.min(...ranked.map(x=>x.v.overallRank));return{baselineRank,tier:ranked.find(x=>x.v.tier!=null)?.v.tier,positionRank:ranked.find(x=>x.v.positionRank!=null)?.v.positionRank,adp:ranked.find(x=>x.v.adp!=null)?.v.adp,uncertaintyFlags:[...(spread>=18?['SOURCE_DISAGREEMENT']:[]),...(values.some(v=>v.scoringFormat!==target)?['SCORING_MISMATCH']:[]),...(values.every(v=>v.freshness==='STALE')?['RANKINGS_STALE']:[])]}}
 export const isIdpPosition=(p:Position)=>['DL','LB','DB','DT','DE','CB','S'].includes(p);
-const globalEcrRequiredPositions:ReadonlySet<Position>=new Set(['QB','RB','WR','TE']);
-const globalEcrOptionalPositions:ReadonlySet<Position>=new Set(['K','DST']);
+const supportedSnapshotPositions:ReadonlySet<Position>=new Set(['QB','RB','WR','TE','K','DST','DL','LB','DB']);
 /** IDP is an additive roster/ranking dimension, not an offensive scoring format. */
 export const scoringFormatFor=(setup:SeasonSetup):ScoringFormat=>setup.settings.ppr===1?'PPR':setup.settings.ppr===.5?'HALF_PPR':'STANDARD';
 export const snapshotIncludesIdp=(snapshot:Partial<PlayerDataSnapshot>)=>snapshot.includeIdp===true||snapshot.scoringFormat==='IDP';
@@ -76,13 +75,16 @@ export function inspectPlayerDataSnapshot(value:unknown,season:number,scoringFor
     if(!player||typeof player.canonicalPlayerId!=='string'||!player.canonicalPlayerId)return reject(`PLAYER_${index}_IDENTITY_INVALID`);
     if(identities.has(player.canonicalPlayerId))return reject(`PLAYER_${index}_IDENTITY_DUPLICATE:${player.canonicalPlayerId}`);
     if(typeof player.displayName!=='string'||!player.displayName.trim())return reject(`PLAYER_${index}_DISPLAY_NAME_INVALID:${player.canonicalPlayerId}`);
+    if(!supportedSnapshotPositions.has(player.position))return reject(`PLAYER_${index}_POSITION_INVALID:${player.canonicalPlayerId}`);
+    if(player.baselineRank!=null){
+      if(!Number.isFinite(player.baselineRank)||player.baselineRank<=0)return reject(`PLAYER_${index}_OPTIONAL_BASELINE_RANK_INVALID:${player.canonicalPlayerId}`);
+      const comparable=player.sourceValues?.some(source=>source.rankingClass!=='IDP'&&source.overallRank===player.baselineRank&&Number.isFinite(source.overallRank)&&source.overallRank!>0);
+      if(!comparable)return reject(`PLAYER_${index}_BASELINE_RANK_SOURCE_INVALID:${player.canonicalPlayerId}`);
+    }
     if(isIdpPosition(player.position)){
       if(!Number.isFinite(player.idp?.rank)||player.idp!.rank!<=0)return reject(`PLAYER_${index}_IDP_RANK_INVALID:${player.canonicalPlayerId}`);
       if(!player.sourceValues?.some(source=>source.rankingClass==='IDP'))return reject(`PLAYER_${index}_IDP_RANKING_CLASS_MISSING:${player.canonicalPlayerId}`);
-    }else if(globalEcrRequiredPositions.has(player.position)){
-      if(!Number.isFinite(player.baselineRank)||player.baselineRank!<=0)return reject(`PLAYER_${index}_OFFENSIVE_BASELINE_RANK_INVALID:${player.canonicalPlayerId}`);
-    }else if(!globalEcrOptionalPositions.has(player.position))return reject(`PLAYER_${index}_POSITION_INVALID:${player.canonicalPlayerId}`);
-    else if(player.baselineRank!=null&&(!Number.isFinite(player.baselineRank)||player.baselineRank<=0))return reject(`PLAYER_${index}_OPTIONAL_BASELINE_RANK_INVALID:${player.canonicalPlayerId}`);
+    }
     identities.add(player.canonicalPlayerId);
   }
   if(!Array.isArray(snapshot.changes))return reject('SNAPSHOT_CHANGES_INVALID');
@@ -108,7 +110,7 @@ export function selectPlayerPool(fixtures:DraftPlayer[],snapshot?:PlayerDataSnap
     position:current.position,
     nflTeam:current.nflTeam,
     byeWeek:current.byeWeek,
-    currentBaselineRank:current.baselineRank??index+1,
+    currentBaselineRank:current.baselineRank,
     currentTier:current.tier,
     currentAdp:current.adp,
     playerIntelligence:current,
