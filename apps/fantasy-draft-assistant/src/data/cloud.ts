@@ -62,17 +62,17 @@ export class DraftCloudGateway {
     if (error || !data?.snapshot) throw new Error(typeof data?.error === 'string' ? data.error : 'Automated player refresh is unavailable.')
     return data.snapshot as PlayerDataSnapshot
   }
-  async loadLatestSharedPlayerSnapshot(season:number,scoringFormat:ScoringFormat):Promise<PlayerDataSnapshot|undefined>{
+  async loadLatestSharedPlayerSnapshot(season:number,scoringFormat:ScoringFormat,includeIdp=false):Promise<PlayerDataSnapshot|undefined>{
     if(!this.client||!await this.session())return undefined
-    const {data,error}=await this.client.from('draft_player_data_snapshots').select('snapshot').eq('season',season).eq('scoring_format',scoringFormat).order('created_at',{ascending:false}).limit(1).maybeSingle()
+    const {data,error}=await this.client.from('draft_player_data_snapshots').select('snapshot').eq('season',season).eq('scoring_format',scoringFormat).eq('include_idp',includeIdp).order('activated_at',{ascending:false}).limit(1).maybeSingle()
     if(error)throw error
-    return validatePlayerDataSnapshot(data?.snapshot,season,scoringFormat)
+    return validatePlayerDataSnapshot(data?.snapshot,season,scoringFormat,includeIdp)
   }
   async refreshLatestSharedPlayerSnapshot(input:{season:number;scoringFormat:ScoringFormat;includeIdp:boolean}):Promise<PlayerDataSnapshot|undefined>{
     if(!this.client||!await this.session())throw new Error('Player refresh requires an authenticated Draft Assistant session.')
     const {error}=await this.client.functions.invoke('draft-player-data-refresh',{body:input})
     if(error)throw new Error('Automated player refresh is unavailable.')
-    return this.loadLatestSharedPlayerSnapshot(input.season,input.scoringFormat)
+    return this.loadLatestSharedPlayerSnapshot(input.season,input.scoringFormat,input.includeIdp)
   }
 }
 export const draftCloud = new DraftCloudGateway(readDraftCloudConfig(import.meta.env, typeof window === 'undefined' ? undefined : window.__DRAFT_ASSISTANT_CONFIG__, import.meta.env.PROD))

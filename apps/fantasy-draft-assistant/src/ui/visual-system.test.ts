@@ -34,3 +34,18 @@ describe('recommendation card structural layout',()=>{
  it('uses explicit deterministic insight, decision, and action zones in document order',()=>{const insight=main.indexOf('class="decision-insight"'),waiting=main.indexOf('class="rec-intel"'),actions=main.indexOf('class="rec-actions"');expect(insight).toBeGreaterThan(0);expect(waiting).toBeGreaterThan(insight);expect(actions).toBeGreaterThan(waiting);expect(css).toContain('.rec-actions{position:static');expect(css).toContain('.rec-intel{display:grid');expect(css).toContain('.decision-insight{display:grid')});
  it('supports three primary cards, long names, two-line insight, and separate More Options',()=>{expect(main).toContain('recommendations.map((r,index)');expect(main).toContain('id="more-options"');expect(css).toContain('-webkit-line-clamp:2');expect(css).toContain('overflow-wrap:normal')});
 });
+
+describe('compact live status header contract',()=>{
+  it('keeps chronological position, next-owned status, attention, and destructive reset separate',()=>{
+    expect(main).toContain('ROUND ${current.round} · PICK ${current.pickInRound}');
+    expect(main).toContain('OVERALL ${current.overallPick}');
+    expect(main).toContain('class="next-owned"');
+    expect(main).toContain("YOU'RE NEXT");
+    expect(main).toContain("YOU'RE ON THE CLOCK");
+    expect(main).toContain("'WAITING'");
+    expect(main).toContain('<button id="new-draft">START NEW DRAFT</button>');
+    expect(main).toContain("confirm('Start a new draft session?");
+    expect(css).toContain('@media (max-width:1194px) and (min-width:761px)');
+    expect(css).toContain('.session-tools button{min-height:34px');
+  });
+});

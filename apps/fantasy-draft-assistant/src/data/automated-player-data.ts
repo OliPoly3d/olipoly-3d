@@ -19,6 +19,14 @@ const fpSource = (updatedAt: string, fetchedAt: string): SourceReference => ({ s
 export interface FantasyProsPayloads { players: unknown; rankings: unknown; news: unknown; injuries: unknown }
 export interface NormalizeOptions { fetchedAt: string; scoringFormat: ScoringFormat; season: number; includeIdp: boolean; sleeper?: unknown; previous?: PlayerDataSnapshot }
 
+/** FantasyPros Public API v2 scoring literals supported by this integration. */
+export function fantasyProsScoringParameter(format:ScoringFormat):'STD'|'HALF'|'PPR'{
+  if(format==='STANDARD')return'STD';
+  if(format==='HALF_PPR')return'HALF';
+  if(format==='PPR')return'PPR';
+  throw new Error(`FantasyPros does not support offensive scoring format ${format}.`);
+}
+
 const availability = (value?: string): AvailabilityStatus => {
   const normalized = value?.trim().toUpperCase().replace(/[ -]+/g, '_')
   const values: AvailabilityStatus[] = ['ACTIVE','QUESTIONABLE','DOUBTFUL','OUT','OUT_FOR_SEASON','PUP','IR','SUSPENDED','HOLDOUT','RETIRED','NOT_IN_PLAYER_POOL','OTHER','UNKNOWN']
@@ -72,7 +80,7 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
   if (!normalized.length) throw new Error('FantasyPros rankings did not match a valid player identity.')
   for (const player of normalized) { player.quality = player.sourceValues.length ? 'COMPLETE' : 'PARTIAL'; if (!player.injury) player.uncertaintyFlags.push('INJURY_NOT_REPORTED') }
   const quality: DataQuality = options.sleeper === undefined ? 'PARTIAL' : 'COMPLETE'; const changes = detectMaterialChanges(options.previous, normalized, options.fetchedAt)
-  return { id: snapshotId(options.fetchedAt, options.scoringFormat, normalized), version: 1, createdAt: options.fetchedAt, season: options.season, scoringFormat: options.scoringFormat, mode: 'CURRENT', quality, freshness: normalized.some(p=>p.freshness==='STALE')?'STALE':'FRESH', playerSource: 'FANTASYPROS', rankingSource: 'FANTASYPROS ECR', newsStatus: 'FANTASYPROS', limitations: ['PPR ECR is market-value input; league custom scoring remains deterministic.', ...(options.includeIdp ? ['IDP baselines remain separate from offensive ECR and may only partially represent league-specific IDP scoring.'] : [])], players: normalized, changes, providerResults: [{ providerId: 'fantasypros-public-v2', status: 'SUCCESS', checkedAt: options.fetchedAt }, { providerId: 'sleeper-nfl-players', status: options.sleeper === undefined ? 'FAILED' : 'SUCCESS', checkedAt: options.fetchedAt, message: options.sleeper === undefined ? 'Supplemental metadata unavailable; FantasyPros snapshot remains valid.' : undefined }] }
+  return { id: snapshotId(options.fetchedAt, options.scoringFormat, normalized), version: 1, createdAt: options.fetchedAt, season: options.season, scoringFormat: options.scoringFormat, includeIdp: options.includeIdp, mode: 'CURRENT', quality, freshness: normalized.some(p=>p.freshness==='STALE')?'STALE':'FRESH', playerSource: 'FANTASYPROS', rankingSource: `FANTASYPROS ECR · ${options.scoringFormat.replace('_','-')}${options.includeIdp?' + IDP':''}`, newsStatus: 'FANTASYPROS', limitations: [`${options.scoringFormat.replace('_','-')} ECR is market-value input; league custom scoring remains deterministic.`, ...(options.includeIdp ? ['IDP baselines remain separate from offensive ECR and may only partially represent league-specific IDP scoring.'] : [])], players: normalized, changes, providerResults: [{ providerId: 'fantasypros-public-v2', status: 'SUCCESS', checkedAt: options.fetchedAt }, { providerId: 'sleeper-nfl-players', status: options.sleeper === undefined ? 'FAILED' : 'SUCCESS', checkedAt: options.fetchedAt, message: options.sleeper === undefined ? 'Supplemental metadata unavailable; FantasyPros snapshot remains valid.' : undefined }] }
 }
 
 export function supplementWithSleeper(players: PlayerIntelligence[], payload: unknown): void {

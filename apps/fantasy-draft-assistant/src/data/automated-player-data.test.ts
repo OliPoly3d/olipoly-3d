@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeFantasyPros } from './automated-player-data'
+import { fantasyProsScoringParameter, normalizeFantasyPros } from './automated-player-data'
 
 const fetchedAt = '2026-08-15T12:00:00.000Z'
 const payloads = { players: { players: [
@@ -17,7 +17,7 @@ describe('automated player data', () => {
     expect(player).toMatchObject({ fantasyProsPlayerId:'1', sleeperPlayerId:'sleeper1', normalizedName:'jose test', nflTeam:'JAX', position:'RB', baselineRank:10, positionRank:3, tier:2, adp:12.5, availabilityStatus:'IR' })
     expect(player.sourceValues[0]).toMatchObject({ source:'FantasyPros ECR', scoringFormat:'PPR', rankMin:7, rankMax:16, rankAverage:10.4, rankSpread:9, standardDeviation:2.1, rankingClass:'OFFENSE' })
     expect(player.newsItems[0]).toMatchObject({ headline:'Player ruled out', materiality:'HIGH' }); expect(player.injury).toMatchObject({ bodyArea:'Knee', practiceParticipation:'DNP' })
-    expect(snapshot.rankingSource).toBe('FANTASYPROS ECR')
+    expect(snapshot.rankingSource).toBe('FANTASYPROS ECR · PPR + IDP')
   })
   it('keeps IDP typed and separate from offensive ECR', () => {
     const snapshot = normalizeFantasyPros(payloads, { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true })
@@ -33,3 +33,5 @@ describe('automated player data', () => {
     expect(next.changes).toEqual(expect.arrayContaining([expect.objectContaining({ field:'baselineRank', before:10, after:30 })]))
   })
 })
+
+describe('FantasyPros scoring request mapping',()=>{it('maps supported offensive formats to provider literals',()=>{expect(fantasyProsScoringParameter('STANDARD')).toBe('STD');expect(fantasyProsScoringParameter('HALF_PPR')).toBe('HALF');expect(fantasyProsScoringParameter('PPR')).toBe('PPR')});it('does not pretend IDP is offensive scoring',()=>expect(()=>fantasyProsScoringParameter('IDP')).toThrow(/does not support/))});
