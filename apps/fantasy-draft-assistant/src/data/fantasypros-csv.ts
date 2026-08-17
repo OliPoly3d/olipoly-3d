@@ -1,4 +1,5 @@
 import type { DraftPlayer, Position } from '../domain/models';
+import type { EspnRankingSource } from './espn-rankings';
 import { freshnessAt, normalizePlayerName, normalizePosition, normalizeTeam, type CanonicalPlayerId, type RankingValue, type ScoringFormat } from './player-data';
 
 export type FantasyProsCsvType = 'FANTASYPROS_ALL' | 'FANTASYPROS_IDP';
@@ -17,6 +18,11 @@ const defensive=new Set(['LB','DE','DT','S','CB','DL','DB']);
 const csvLine=(line:string)=>{const values:string[]=[];let value='',quoted=false;for(let i=0;i<line.length;i++){const char=line[i];if(char==='"'&&line[i+1]==='"'){value+='"';i++}else if(char==='"')quoted=!quoted;else if(char===','&&!quoted){values.push(value.trim());value=''}else value+=char}values.push(value.trim());return values};
 const headerKey=(value:string)=>value.replace(/^\uFEFF/,'').trim().toUpperCase().replace(/[_\s]+/g,' ');
 const matchPosition=(position:Position)=>['DE','DT'].includes(position)?'DL':['CB','S'].includes(position)?'DB':position;
+
+/** Applies ranking authorities by canonical identity without mutating player/news data. */
+export function applyRankingAuthorities(players:DraftPlayer[],all?:FantasyProsCsvSource,idp?:FantasyProsCsvSource,espn?:EspnRankingSource):DraftPlayer[]{
+  return players.map(player=>{if(!player.canonicalPlayerId)return player;const global=all?.rankings.get(player.canonicalPlayerId as CanonicalPlayerId),defense=idp?.rankings.get(player.canonicalPlayerId as CanonicalPlayerId),reference=espn?.rankings.get(player.canonicalPlayerId as CanonicalPlayerId);return{...player,currentBaselineRank:global?.overallRank??player.currentBaselineRank,currentPositionRank:(global??defense)?.positionRank??player.currentPositionRank,espnReferenceRank:reference?.overallRank}});
+}
 
 export function parseFantasyProsCsv(text:string,metadata:FantasyProsCsvMetadata):{rows:FantasyProsCsvRow[];invalid:FantasyProsCsvInvalidRow[]}{
   const lines=text.split(/\r?\n/).filter(line=>line.trim());
