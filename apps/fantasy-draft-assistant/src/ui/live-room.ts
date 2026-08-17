@@ -71,7 +71,7 @@ export function confidenceRing(value: ConfidenceLevel | number, preview = false)
 }
 
 export function userTeamId(setup: SeasonSetup): string {
-  const manager = setup.managers.find(({ displayName }) => displayName === 'Rob Siwicki') ?? setup.managers[0];
+  const manager = setup.managers.find(({ id }) => id === setup.settings.metadata?.userManagerId) ?? setup.managers[0];
   return setup.teams.find(({ managerId }) => managerId === manager.id)?.id ?? setup.teams[0].id;
 }
 
