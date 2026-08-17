@@ -79,6 +79,18 @@ describe('league-compatible player snapshots',()=>{
     const roboCop={...real('HALF_PPR',true),id:'player-data-v1-5dfd59c0',players:[...offense.map(player=>({...player,sourceValues:[rank(player.baselineRank)]})),...specialists,idp]};
     expect(validatePlayerDataSnapshot(roboCop,2026,'HALF_PPR',true)).toBeDefined();
   });
+  it('accepts persisted RoboCop IDP positions without changing canonical identities',()=>{
+    const positions=['DE','DT','CB','S'] as const;
+    const players=positions.map((position,index)=>({...real('HALF_PPR',true).players[0],canonicalPlayerId:`nfl:fantasypros:${12217+index}` as never,displayName:`Real ${position}`,normalizedName:`real ${position.toLowerCase()}`,position,baselineRank:undefined,idp:{rank:index+1},sourceValues:[{...rank(index+1),overallRank:undefined,scoringFormat:'IDP' as const,rankingClass:'IDP' as const}]}));
+    const candidate={...real('HALF_PPR',true),players};
+    const validation=inspectPlayerDataSnapshot(candidate,2026,'HALF_PPR',true);
+    expect(validation.passed).toBe(true);
+    expect(validation.snapshot?.players.map(player=>({position:player.position,canonicalPlayerId:player.canonicalPlayerId}))).toEqual(players.map(player=>({position:player.position,canonicalPlayerId:player.canonicalPlayerId})));
+  });
+  it('continues to reject unsupported persisted positions',()=>{
+    const player={...real('HALF_PPR',true).players[0],position:'GARBAGE' as never};
+    expect(inspectPlayerDataSnapshot({...real('HALF_PPR',true),players:[player]},2026,'HALF_PPR',true)).toMatchObject({passed:false,reason:expect.stringContaining('POSITION_INVALID')});
+  });
 
   it('validates representative persisted snapshot sizes with an unranked offensive player',()=>{
     const representative=(count:number,format:'PPR'|'HALF_PPR',includeIdp:boolean)=>{
