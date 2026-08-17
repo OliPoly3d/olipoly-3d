@@ -14,10 +14,10 @@ describe('automated player data', () => {
   it('normalizes FantasyPros identity, PPR ECR, tiers, ADP, news, and injuries', () => {
     const snapshot = normalizeFantasyPros(payloads(), { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true, sleeper:{ sleeper1:{ player_id:'sleeper1', fantasy_data_id:1, full_name:'Jose Test', team:'JAX', position:'RB', active:true } } })
     const player = snapshot.players.find(player=>player.position==='RB')!
-    expect(player).toMatchObject({ fantasyProsPlayerId:'1', sleeperPlayerId:'sleeper1', normalizedName:'jose test', nflTeam:'JAX', position:'RB', baselineRank:10, positionRank:3, tier:2, adp:12.5, availabilityStatus:'IR' })
+    expect(player).toMatchObject({ fantasyProsPlayerId:'1', sleeperPlayerId:'sleeper1', normalizedName:'jose test', nflTeam:'JAX', position:'RB', baselineRank:undefined, positionRank:3, tier:2, adp:12.5, availabilityStatus:'IR' })
     expect(player.sourceValues[0]).toMatchObject({ source:'FantasyPros ECR', scoringFormat:'PPR', rankMin:7, rankMax:16, rankAverage:10.4, rankSpread:9, standardDeviation:2.1, rankingClass:'OFFENSE' })
     expect(player.newsItems[0]).toMatchObject({ headline:'Player ruled out', materiality:'HIGH' }); expect(player.injury).toMatchObject({ bodyArea:'Knee', practiceParticipation:'DNP' })
-    expect(snapshot.rankingSource).toBe('FANTASYPROS ECR · PPR + IDP')
+    expect(snapshot.rankingSource).toContain('OVERALL ECR UNAVAILABLE')
   })
   it('keeps IDP typed and separate from offensive ECR', () => {
     const snapshot = normalizeFantasyPros(payloads(), { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true })
@@ -26,10 +26,10 @@ describe('automated player data', () => {
   it('preserves a prior real snapshot by rejecting incomplete FantasyPros refreshes', () => {
     expect(() => normalizeFantasyPros({ ...basePayloads, rankings:{} }, { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:false })).toThrow(/Required FantasyPros QB ranking pool was empty/)
   })
-  it('records only material changes', () => {
+  it('does not report position ECR movement as an overall-rank change', () => {
     const first = normalizeFantasyPros(payloads(), { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true })
     const next = normalizeFantasyPros(payloads(30), { fetchedAt:'2026-08-15T13:00:00.000Z', scoringFormat:'PPR', season:2026, includeIdp:true, previous:first })
-    expect(next.changes).toEqual(expect.arrayContaining([expect.objectContaining({ field:'baselineRank', before:10, after:30 })]))
+    expect(next.changes.some(change=>change.field==='baselineRank')).toBe(false)
   })
 })
 

@@ -72,7 +72,7 @@ export function fantasyProsRankingPoolDiagnostics(rankings:unknown|unknown[],inc
   return Object.fromEntries(names.map((name,index)=>{const payload=record(payloads[index]);const error=text(payload,'__poolError');const count=list(payloads[index],['rankings','players']).length;return[name,error?{status:'failed',count,error}:{status:count?'ok':'empty',count}]}))
 }
 
-/** Request real provider position pools. FantasyPros rank_ecr remains its supplied cross-position ECR. */
+/** Request provider position pools. These calls provide position-relative ranks, not overall ECR. */
 export function fantasyProsRankingPaths(season:number, format:ScoringFormat, includeIdp:boolean):string[]{
   const scoring=fantasyProsScoringParameter(format)
   const paths=fantasyProsOffensiveRankingPositions.map(position=>`/nfl/${season}/consensus-rankings?${new URLSearchParams({position,scoring})}`)
@@ -100,8 +100,13 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
   if(options.includeIdp&&diagnostics.IDP.status==='failed')throw new Error(`Required FantasyPros IDP ranking pool failed: ${diagnostics.IDP.error}`)
   if(options.includeIdp&&diagnostics.IDP.status!=='ok')throw new Error('Required FantasyPros IDP ranking pool was empty.')
   const rankings = rankingPools.flatMap((pool,poolIndex)=>pool.map(row=>({row,poolIndex})))
-  for (const [index,position] of fantasyProsRequiredRankingPositions.entries()) if (!rankingPools[index].some(row=>number(row,'rank_ecr')!=null)) throw new Error(`Required FantasyPros ${position} ranking pool has no provider-supplied rank_ecr.`)
   if (!players.length || !rankings.length) throw new Error('FantasyPros players and rankings are required for an atomic snapshot.')
+  // A position-filtered rank_ecr resets within every pool. Only a previously
+  // activated, collision-free overall snapshot is comparable across positions.
+  const previousOffense=options.previous?.players.filter(player=>!isIdpPosition(player.position)&&player.baselineRank!=null)??[]
+  const previousRanks=new Map<number,string>(),previousGlobalRanks=new Map<string,number>();let previousIsGlobal=previousOffense.length>0
+  for(const player of previousOffense){const rank=player.baselineRank!;if(previousRanks.has(rank)&&previousRanks.get(rank)!==player.canonicalPlayerId){previousIsGlobal=false;break}previousRanks.set(rank,player.canonicalPlayerId);if(player.fantasyProsPlayerId)previousGlobalRanks.set(player.fantasyProsPlayerId,rank);previousGlobalRanks.set(player.canonicalPlayerId,rank)}
+  if(!previousIsGlobal)previousGlobalRanks.clear()
   const byFp = new Map<string, PlayerIntelligence>()
   for (const row of players) {
     const fpId = text(row, 'player_id', 'playerId', 'id'); const name = text(row, 'player_name', 'playerName', 'name'); const rawPosition = text(row, 'player_position_id', 'player_position', 'position')
@@ -124,7 +129,7 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
     }
     const updatedAt = iso(text(row, 'updated_at', 'last_updated'), options.fetchedAt)
     const pool = [...fantasyProsOffensiveRankingPositions,...(options.includeIdp?['IDP' as const]:[])][poolIndex]
-    const providerEcr = number(row, 'rank_ecr'); const idp=isIdpPosition(player.position); const overallRank=idp?undefined:providerEcr
+    const providerEcr = number(row, 'rank_ecr'); const idp=isIdpPosition(player.position); const overallRank=idp?undefined:previousGlobalRanks.get(fpId)??previousGlobalRanks.get(player.canonicalPlayerId)
     const positionRank = number(row, 'pos_rank', 'position_rank'); const tier = number(row, 'tier'); const adp = number(row, 'adp', 'rank_adp'); const min = number(row, 'rank_min'); const max = number(row, 'rank_max')
     const fields = { overallRank, positionRank, tier, adp, rankMin:min, rankMax:max, rankAverage:number(row,'rank_ave'), rankSpread:min!=null&&max!=null?max-min:undefined, standardDeviation:number(row,'rank_std') }
     const existing=player.sourceValues[0]
@@ -154,11 +159,12 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
     player.injury = { ...fpSource(updatedAt, options.fetchedAt), sourceClass: 'SECONDARY_REPORTING', status, bodyArea: text(row, 'injury', 'body_part', 'description'), practiceParticipation: text(row, 'practice_status', 'practice') }; player.availabilityStatus = status; player.sourceProvenance.push(player.injury)
   }
   supplementWithSleeper([...byFp.values()], options.sleeper)
-  const normalized = [...byFp.values()].filter(player => player.sourceValues.length).sort((a,b) => (a.baselineRank ?? 9999) - (b.baselineRank ?? 9999))
+  const normalized = [...byFp.values()].filter(player => player.sourceValues.length).sort((a,b) => (a.baselineRank ?? Number.MAX_SAFE_INTEGER) - (b.baselineRank ?? Number.MAX_SAFE_INTEGER)||a.canonicalPlayerId.localeCompare(b.canonicalPlayerId))
   if (!normalized.length) throw new Error('FantasyPros rankings did not match a valid player identity.')
   for (const player of normalized) { player.quality = player.sourceValues.length ? 'COMPLETE' : 'PARTIAL'; if (!player.injury) player.uncertaintyFlags.push('INJURY_NOT_REPORTED') }
   const quality: DataQuality = options.sleeper === undefined ? 'PARTIAL' : 'COMPLETE'; const changes = detectMaterialChanges(options.previous, normalized, options.fetchedAt)
-  return { id: snapshotId(options.fetchedAt, options.scoringFormat, normalized), version: 1, createdAt: options.fetchedAt, season: options.season, scoringFormat: options.scoringFormat, includeIdp: options.includeIdp, mode: 'CURRENT', quality, freshness: normalized.some(p=>p.freshness==='STALE')?'STALE':'FRESH', playerSource: 'FANTASYPROS', rankingSource: `FANTASYPROS ECR · ${options.scoringFormat.replace('_','-')}${options.includeIdp?' + IDP':''}`, newsStatus: 'FANTASYPROS', limitations: [`${options.scoringFormat.replace('_','-')} ECR is market-value input; league custom scoring remains deterministic.`, ...(options.includeIdp ? ['IDP baselines remain separate from offensive ECR and may only partially represent league-specific IDP scoring.'] : [])], players: normalized, changes, providerResults: [{ providerId: 'fantasypros-public-v2', status: 'SUCCESS', checkedAt: options.fetchedAt }, { providerId: 'sleeper-nfl-players', status: options.sleeper === undefined ? 'FAILED' : 'SUCCESS', checkedAt: options.fetchedAt, message: options.sleeper === undefined ? 'Supplemental metadata unavailable; FantasyPros snapshot remains valid.' : undefined }] }
+  const hasGlobalRanks=normalized.some(player=>!isIdpPosition(player.position)&&player.baselineRank!=null)
+  return { id: snapshotId(options.fetchedAt, options.scoringFormat, normalized), version: 1, createdAt: options.fetchedAt, season: options.season, scoringFormat: options.scoringFormat, includeIdp: options.includeIdp, mode: 'CURRENT', quality, freshness: normalized.some(p=>p.freshness==='STALE')?'STALE':'FRESH', playerSource: 'FANTASYPROS', rankingSource: hasGlobalRanks?`FANTASYPROS ECR · PRIOR VALID OVERALL SNAPSHOT · ${options.scoringFormat.replace('_','-')}${options.includeIdp?' + IDP':''}`:`FANTASYPROS POSITION RANKINGS · OVERALL ECR UNAVAILABLE`, newsStatus: 'FANTASYPROS', limitations: [hasGlobalRanks?'Overall ECR is retained from the prior valid cross-position FantasyPros snapshot; current position calls supply supplemental fields.':'Current FantasyPros position calls do not expose a proven cross-position overall ECR; overall rank and FantasyPros delta are unavailable.', ...(options.includeIdp ? ['IDP baselines remain separate from offensive ECR and may only partially represent league-specific IDP scoring.'] : [])], players: normalized, changes, providerResults: [{ providerId: 'fantasypros-public-v2', status: 'SUCCESS', checkedAt: options.fetchedAt }, { providerId: 'sleeper-nfl-players', status: options.sleeper === undefined ? 'FAILED' : 'SUCCESS', checkedAt: options.fetchedAt, message: options.sleeper === undefined ? 'Supplemental metadata unavailable; FantasyPros snapshot remains valid.' : undefined }] }
 }
 
 export function supplementWithSleeper(players: PlayerIntelligence[], payload: unknown): void {
