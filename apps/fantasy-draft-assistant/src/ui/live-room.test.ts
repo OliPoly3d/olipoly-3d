@@ -122,4 +122,5 @@ describe('ranking context status',()=>{it('shows the active Half-PPR and IDP aut
 describe('compact production cockpit semantics',()=>{
  it('shows a truthful empty recent-picks state without Last 0',()=>{const setup=seedSetup('believeland'),markup=recentPicksMarkup(rebuildDraftState(startDraft(setup,playerPool())),()=> 'Manager');expect(markup).toContain('RECENT PICKS');expect(markup).toContain('No live picks yet.');expect(markup).not.toContain('Last 0')});
  it('calculates source age without mutating the source timestamp',async()=>{const{sourceAge}=await import('./live-room');const timestamp='2026-08-15T12:00:00.000Z';expect(sourceAge(timestamp,new Date('2026-08-16T13:00:00.000Z'))).toBe('1 day old');expect(timestamp).toBe('2026-08-15T12:00:00.000Z')});
+ it('never renders Unix epoch for a missing or invalid source timestamp',async()=>{const{sourceTime}=await import('./live-room');expect(sourceTime(undefined,'Updated')).toBe('Updated NOT AVAILABLE');expect(sourceTime('not-a-date','Updated')).toBe('Updated NOT AVAILABLE');expect(sourceTime(undefined,'Updated')).not.toMatch(/1969|1970/)});
 });

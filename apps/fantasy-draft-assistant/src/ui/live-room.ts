@@ -10,7 +10,7 @@ export function sourceAge(timestamp:string|undefined,now=new Date()):string{
   if(days)return`${days} day${days===1?'':'s'} old`;
   const hours=Math.floor(elapsed/3_600_000);return hours?`${hours} hour${hours===1?'':'s'} old`:'Fresh';
 }
-const sourceTime=(timestamp:string|undefined,verb:string)=>timestamp?`${verb} ${new Date(timestamp).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}`:`${verb} unavailable`;
+export const sourceTime=(timestamp:string|undefined,verb:string)=>timestamp&&Number.isFinite(Date.parse(timestamp))?`${verb} ${new Date(timestamp).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}`:`${verb} NOT AVAILABLE`;
 export function playerDataStatusMarkup(snapshot:PlayerDataSnapshot|undefined,aiStatus:AiStatus,espn?:EspnRankingSource,espnError?:{message:string;importedAt?:string}):string{
   const source=snapshotSources(snapshot);
   const fpTime=source.updatedAt,espnTime=espn?.sourceUpdatedAt??espn?.importedAt??espnError?.importedAt;

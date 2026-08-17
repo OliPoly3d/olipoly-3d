@@ -1,5 +1,6 @@
 import { createClient, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js'
 import { validatePlayerDataSnapshot, type PlayerDataSnapshot, type ScoringFormat } from './player-data'
+import { deserializeEspnSource, serializeEspnSource, type EspnRankingSource, type StoredEspnRankingSource } from './espn-rankings'
 
 export type CloudStatus = 'local-only' | 'configuration-error' | 'connecting' | 'cloud-connected' | 'authenticated' | 'unauthorized' | 'cloud-unavailable'
 export interface RuntimeDraftConfig { supabaseUrl?: string; supabasePublishableKey?: string }
@@ -70,9 +71,29 @@ export class DraftCloudGateway {
   }
   async refreshLatestSharedPlayerSnapshot(input:{season:number;scoringFormat:ScoringFormat;includeIdp:boolean}):Promise<PlayerDataSnapshot|undefined>{
     if(!this.client||!await this.session())throw new Error('Player refresh requires an authenticated Draft Assistant session.')
-    const {error}=await this.client.functions.invoke('draft-player-data-refresh',{body:input})
-    if(error)throw new Error('Automated player refresh is unavailable.')
-    return this.loadLatestSharedPlayerSnapshot(input.season,input.scoringFormat,input.includeIdp)
+    const result=await this.client.functions.invoke('draft-player-data-refresh',{body:input});let data=result.data
+    if(result.error&&data==null){const response=(result.error as unknown as{context?:Response}).context;if(response)try{data=await response.clone().json()}catch{/* Keep the SDK error when the response is not JSON. */}}
+    const details={scoringFormat:input.scoringFormat,includeIdp:input.includeIdp,players:Number(data?.summary?.players??data?.snapshot?.players?.length??0),snapshotId:data?.snapshot?.id??data?.snapshotId??'none'}
+    if(result.error)throw new Error(`Player refresh function failed (${details.scoringFormat}, IDP ${details.includeIdp}, players ${details.players}, snapshot ${details.snapshotId}, persisted ${data?.persisted===true}): ${data?.persistenceError??data?.error??result.error.message}.`)
+    if(data?.persisted!==true)throw new Error(`Player refresh persistence failed (${details.scoringFormat}, IDP ${details.includeIdp}, players ${details.players}, snapshot ${details.snapshotId}): ${data?.persistenceError??data?.error??'persisted was not true'}.`)
+    const reread=await this.loadLatestSharedPlayerSnapshot(input.season,input.scoringFormat,input.includeIdp)
+    if(!reread)throw new Error(`Player refresh persisted snapshot ${details.snapshotId}, but the compatible database reread returned no valid snapshot (${details.scoringFormat}, IDP ${details.includeIdp}, players ${details.players}).`)
+    return reread
+  }
+  async loadSharedEspnRankingSource(leagueId:string,season:number):Promise<EspnRankingSource|undefined>{
+    if(!this.client||!await this.session())return undefined
+    const{data,error}=await this.client.from('draft_espn_ranking_sources').select('ranking_source').eq('league_id',leagueId).eq('season',season).eq('source_type','ESPN').order('imported_at',{ascending:false}).limit(1).maybeSingle()
+    if(error)throw error
+    return data?.ranking_source?deserializeEspnSource(data.ranking_source as StoredEspnRankingSource):undefined
+  }
+  async saveSharedEspnRankingSource(leagueId:string,source:EspnRankingSource):Promise<void>{
+    if(!this.client||!await this.session())throw new Error('ESPN activation requires an authenticated Draft Assistant session.')
+    const rankingSource=serializeEspnSource(leagueId,source),{error}=await this.client.from('draft_espn_ranking_sources').upsert({league_id:leagueId,season:source.season,source_type:'ESPN',source_id:source.id,scoring_format:source.scoringFormat,imported_at:source.importedAt,source_label:source.label,document_label:source.originalFilename,ranking_source:rankingSource},{onConflict:'league_id,season,source_type'})
+    if(error)throw new Error(`Shared ESPN persistence failed: ${error.message}`)
+  }
+  async removeSharedEspnRankingSource(leagueId:string,season:number):Promise<void>{
+    if(!this.client||!await this.session())throw new Error('ESPN removal requires an authenticated Draft Assistant session.')
+    const{error}=await this.client.from('draft_espn_ranking_sources').delete().eq('league_id',leagueId).eq('season',season).eq('source_type','ESPN');if(error)throw error
   }
 }
 export const draftCloud = new DraftCloudGateway(readDraftCloudConfig(import.meta.env, typeof window === 'undefined' ? undefined : window.__DRAFT_ASSISTANT_CONFIG__, import.meta.env.PROD))

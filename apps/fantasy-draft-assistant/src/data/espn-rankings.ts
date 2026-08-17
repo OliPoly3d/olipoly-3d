@@ -71,4 +71,9 @@ export function activateEspnImport(preview:EspnImportPreview,target:ScoringForma
 
 export interface StoredEspnRankingSource extends Omit<EspnRankingSource,'rankings'>{leagueId:string;rankings:[CanonicalPlayerId,EspnRankingValue][]}
 export const serializeEspnSource=(leagueId:string,source:EspnRankingSource):StoredEspnRankingSource=>({...source,leagueId,rankings:[...source.rankings]});
-export const deserializeEspnSource=(value:StoredEspnRankingSource):EspnRankingSource=>({...value,rankings:new Map(value.rankings)});
+export const deserializeEspnSource=(value:StoredEspnRankingSource):EspnRankingSource=>{
+  if(!value||value.id!=='ESPN'||value.scoringFormat!=='PPR'||value.rankingType!=='PPR300'||!value.leagueId||!Number.isInteger(value.season)||!Number.isFinite(Date.parse(value.importedAt))||!Array.isArray(value.rankings)||!value.rankings.length)throw new Error('Persisted ESPN source is invalid.');
+  const rankings=new Map(value.rankings);
+  if(rankings.size!==value.rankings.length||[...rankings].some(([id,ranking])=>typeof id!=='string'||!id||!Number.isFinite(ranking?.overallRank)||Number(ranking.overallRank)<=0))throw new Error('Persisted ESPN rankings are invalid.');
+  return{...value,rankings};
+};
