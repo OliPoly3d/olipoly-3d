@@ -4,7 +4,7 @@ import type { DraftPlayer, DraftUserContext, Position, SeasonSetup } from '../do
 import { playerPool, seedSetup } from '../domain/seeds';
 import { emptyPhilosophy } from '../domain/user-context';
 import { lockKeepers } from '../domain/setup';
-import { buildTeamNeedProfile, detectRecentRun, picksBeforeNextOwnedPick, runRecommendationEngine } from './recommendation-engine';
+import { buildTeamNeedProfile, detectRecentRun, picksBeforeNextOwnedPick, runRecommendationEngine, sourceRankValue } from './recommendation-engine';
 
 const context=(setup:SeasonSetup):DraftUserContext=>({philosophy:emptyPhilosophy(setup.league.id,setup.season.id),playerInterests:[],strategicIntents:[],recentConversation:[]});
 const userTeam=(setup:SeasonSetup)=>setup.teams.find(t=>t.managerId===setup.managers.find(m=>m.displayName==='Rob Siwicki')!.id)!.id;
@@ -38,4 +38,9 @@ describe('deterministic recommendation intelligence',()=>{
 describe('expanded deterministic recommendation authority',()=>{
  it('keeps the cockpit at three while exposing eight in the same authority order',()=>{const result=run();expect(result.recommendations).toHaveLength(3);expect(result.expandedRecommendations.length).toBeGreaterThan(3);expect(result.expandedRecommendations.length).toBeLessThanOrEqual(8);expect(result.expandedRecommendations.slice(0,3)).toEqual(result.recommendations)});
  it('contains no AI reranking or fabricated percentage confidence',()=>{const result=run();expect(result.expandedRecommendations.every(item=>item.sourceLabel==='DETERMINISTIC INTELLIGENCE')).toBe(true);expect(JSON.stringify(result.expandedRecommendations)).not.toContain('%')});
+});
+
+describe('Draft Fit rank semantics',()=>{
+ it('gives rank 1 a better contribution than rank 100 and invents none when missing',()=>{expect(sourceRankValue(1)).toBeGreaterThan(sourceRankValue(100)!);expect(sourceRankValue()).toBeUndefined()});
+ it('uses the sorted available population for ordinals',()=>{const pool=players([['drafted','WR',100,1],['available-1','RB',90,1],['available-2','WR',80,1],['available-3','TE',70,2]]),setup=seedSetup('believeland');let draft=startDraft(setup,pool);draft=makePick(draft,'drafted');const state=rebuildDraftState(draft),result=runRecommendationEngine({setup,context:draft,state,userTeamId:userTeam(setup),userContext:context(setup)});expect(result.draftFits.map(x=>x.playerId)).not.toContain('drafted');expect(result.draftFits.map(x=>x.rank)).toEqual([1,2,3]);expect(result.draftFits[0].score).toBeGreaterThanOrEqual(result.draftFits[1].score)});
 });
