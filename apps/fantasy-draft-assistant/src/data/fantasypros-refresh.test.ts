@@ -19,6 +19,8 @@ const injuries={injuries:[{player_id:2,status:'QUESTIONABLE',updated_at:fetchedA
 type EdgeModule={
   normalizeFantasyPros:typeof normalizeFantasyPros
   providerJson:(path:string,apiKey:string)=>Promise<unknown>
+  fantasyProsFlxDiagnostic:(payload:unknown,context:{requestPath:string;scoringFormat:'PPR'|'HALF_PPR';status:number;contentType:string;errorPreview?:string})=>Record<string,unknown>
+  safeProviderErrorBody:(body:string,apiKey:string)=>string
 }
 let edge:EdgeModule
 let edgeHandler:(request:Request)=>Promise<Response>
@@ -95,14 +97,36 @@ describe('FantasyPros v2 refresh contract',()=>{
     await expect(edge.providerJson('/nfl/2026/consensus-rankings?position=IDP','secret-key')).rejects.toThrow(/^FantasyPros consensus rankings failed HTTP 400: .*Invalid Position.*valid_format.*FLX/)
     globalThis.fetch=original
   })
+  const diagnostic=(payload:unknown)=>edge.fantasyProsFlxDiagnostic(payload,{requestPath:'/nfl/2026/consensus-rankings?position=FLX&scoring=PPR',scoringFormat:'PPR',status:200,contentType:'application/json'})
+  it('diagnoses top-level players before list parsing',()=>expect(diagnostic({players:[{player_id:1,rank_ecr:2}]})).toMatchObject({topPlayersExists:true,topPlayersCount:1,firstItemKeys:['player_id','rank_ecr']}))
+  it('diagnoses top-level rankings before list parsing',()=>expect(diagnostic({rankings:[{rank_ecr:2}]})).toMatchObject({topRankingsExists:true,topRankingsCount:1,firstItemKeys:['rank_ecr']}))
+  it('diagnoses data.players before list parsing',()=>expect(diagnostic({data:{players:[{id:1}]}})).toMatchObject({dataKeys:['players'],dataPlayersExists:true,dataPlayersCount:1,firstItemKeys:['id']}))
+  it('diagnoses data.rankings before list parsing',()=>expect(diagnostic({data:{rankings:[{id:1}]}})).toMatchObject({dataRankingsExists:true,dataRankingsCount:1,firstItemKeys:['id']}))
+  it('reports an unknown wrapper without treating it as a supported list',()=>expect(diagnostic({results:[{id:1}]})).toMatchObject({topLevelKeys:['results'],topPlayersCount:0,topRankingsCount:0,dataPlayersCount:0,dataRankingsCount:0,firstItemKeys:[]}))
+  it('reports an empty payload without inventing fields',()=>expect(diagnostic({})).toMatchObject({responseBodyType:'object',topLevelKeys:[],dataKeys:[],firstItemKeys:[]}))
+  it('reports provider error payload metadata and a safe preview',()=>expect(edge.fantasyProsFlxDiagnostic({message:'bad request'},{requestPath:'/flx',scoringFormat:'HALF_PPR',status:400,contentType:'application/json',errorPreview:'bad request'})).toMatchObject({status:400,scoringFormat:'HALF_PPR',topLevelKeys:['message'],errorPreview:'bad request'}))
+  it('returns field names only for the first result',()=>{
+    const result=diagnostic({players:[{player_id:1,secret_value:'sensitive-record-value'}]})
+    expect(result.firstItemKeys).toEqual(['player_id','secret_value'])
+    expect(JSON.stringify(result)).not.toContain('sensitive-record-value')
+  })
+  it('redacts every API key occurrence and collapses control characters',()=>expect(edge.safeProviderErrorBody('bad\nsecret-key\tsecret-key','secret-key')).toBe('bad [REDACTED] [REDACTED]'))
   it('returns the production Invalid Position diagnostic without persisting a partial snapshot',async()=>{
     Object.assign(edgeEnv,{DRAFT_PLAYER_REFRESH_TOKEN:'refresh-token',FANTASYPROS_API_KEY:'secret-key'})
     const original=globalThis.fetch
     const diagnostic={message:'Invalid Position',parameter:'position',valid_format:'QB, RB, WR, TE, K, OP, FLX, DST, IDP, DL, LB, DB, TK, TQB, TRB, TWR, TTE, TOL, HC, P'}
-    globalThis.fetch=vi.fn(async()=>new Response(JSON.stringify(diagnostic),{status:400})) as typeof fetch
+    globalThis.fetch=vi.fn(async input=>{
+      const url=String(input)
+      if(url.includes('position=FLX'))return new Response(JSON.stringify(diagnostic),{status:400,headers:{'content-type':'application/json'}})
+      if(url.includes('consensus-rankings'))return Response.json({rankings:[]})
+      if(url.includes('/nfl/players'))return Response.json(players)
+      if(url.includes('/nfl/news'))return Response.json(news)
+      if(url.includes('/nfl/injuries'))return Response.json(injuries)
+      return Response.json({})
+    }) as typeof fetch
     const response=await edgeHandler(new Request('https://example.test/refresh',{method:'POST',headers:{'x-refresh-token':'refresh-token'},body:JSON.stringify({season:2026,scoringFormat:'PPR',includeIdp:false,previous:{players:Array.from({length:513})}})}))
     expect(response.status).toBe(502)
-    expect(await response.json()).toMatchObject({error:expect.stringContaining('Invalid Position'),priorSnapshotPreserved:true})
+    expect(await response.json()).toMatchObject({error:expect.stringContaining('Invalid Position'),priorSnapshotPreserved:true,persisted:false,flxDiagnostic:{requestPath:'/nfl/2026/consensus-rankings?position=FLX&scoring=PPR',scoringFormat:'PPR',status:400,errorPreview:expect.stringContaining('Invalid Position')}})
     expect(globalThis.fetch).toHaveBeenCalledTimes(11)
     expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.some(([url])=>String(url).includes('draft_player_data_snapshots'))).toBe(false)
     globalThis.fetch=original

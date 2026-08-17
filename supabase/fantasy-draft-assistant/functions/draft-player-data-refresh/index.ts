@@ -195,6 +195,36 @@ export function safeProviderErrorBody(body:string, apiKey:string, limit=500):str
   return body.replaceAll(apiKey,'[REDACTED]').replace(/[\u0000-\u001f\u007f]+/g,' ').replace(/\s+/g,' ').trim().slice(0,limit)
 }
 
+export interface FlxDiagnostic {
+  requestPath:string
+  scoringFormat:ScoringFormat
+  status:number
+  contentType:string
+  responseBodyType:'array'|'object'|'string'|'number'|'boolean'|'null'|'invalid-json'
+  topLevelKeys:string[]
+  dataKeys:string[]
+  topPlayersExists:boolean
+  topPlayersCount:number
+  topRankingsExists:boolean
+  topRankingsCount:number
+  dataPlayersExists:boolean
+  dataPlayersCount:number
+  dataRankingsExists:boolean
+  dataRankingsCount:number
+  firstItemKeys:string[]
+  errorPreview?:string
+}
+
+/** Inspect the untouched provider JSON. This deliberately does not use list() or normalization. */
+export function fantasyProsFlxDiagnostic(payload:unknown,context:{requestPath:string;scoringFormat:ScoringFormat;status:number;contentType:string;errorPreview?:string}):FlxDiagnostic {
+  const root=record(payload),data=record(root.data)
+  const topPlayers=Array.isArray(root.players)?root.players:undefined,topRankings=Array.isArray(root.rankings)?root.rankings:undefined
+  const dataPlayers=Array.isArray(data.players)?data.players:undefined,dataRankings=Array.isArray(data.rankings)?data.rankings:undefined
+  const first=[topPlayers?.[0],topRankings?.[0],dataPlayers?.[0],dataRankings?.[0]].find(value=>value!==undefined)
+  const responseBodyType=payload===null?'null':Array.isArray(payload)?'array':typeof payload as FlxDiagnostic['responseBodyType']
+  return {requestPath:context.requestPath,scoringFormat:context.scoringFormat,status:context.status,contentType:context.contentType,responseBodyType,topLevelKeys:Object.keys(root),dataKeys:Object.keys(data),topPlayersExists:topPlayers!==undefined,topPlayersCount:topPlayers?.length??0,topRankingsExists:topRankings!==undefined,topRankingsCount:topRankings?.length??0,dataPlayersExists:dataPlayers!==undefined,dataPlayersCount:dataPlayers?.length??0,dataRankingsExists:dataRankings!==undefined,dataRankingsCount:dataRankings?.length??0,firstItemKeys:Object.keys(record(first)),...(context.errorPreview?{errorPreview:context.errorPreview}:{})}
+}
+
 export async function providerJson(path: string, apiKey: string): Promise<unknown> {
   const response = await fetch(`https://api.fantasypros.com/public/v2/json${path}`, { headers: { 'x-api-key': apiKey, accept: 'application/json' } })
   if (!response.ok) {
@@ -205,10 +235,21 @@ export async function providerJson(path: string, apiKey: string): Promise<unknow
   return response.json()
 }
 
-export async function fetchFantasyProsRankingPools(paths:string[],apiKey:string):Promise<unknown[]>{
-  return Promise.all(paths.map(async path=>{
-    try{return await providerJson(path,apiKey)}catch(error){return{__poolError:error instanceof Error?error.message:'FantasyPros ranking request failed.'}}
+export async function fetchFantasyProsRankingPools(paths:string[],apiKey:string,scoringFormat:ScoringFormat):Promise<{payloads:unknown[];flxDiagnostic:FlxDiagnostic}>{
+  let flxDiagnostic:FlxDiagnostic|undefined
+  const payloads=await Promise.all(paths.map(async(path,index)=>{
+    if(index!==0)try{return await providerJson(path,apiKey)}catch(error){return{__poolError:error instanceof Error?error.message:'FantasyPros ranking request failed.'}}
+    const response=await fetch(`https://api.fantasypros.com/public/v2/json${path}`,{headers:{'x-api-key':apiKey,accept:'application/json'}})
+    const contentType=response.headers.get('content-type')??''
+    const body=await response.text();let payload:unknown
+    try{payload=body?JSON.parse(body):null}catch{payload=body}
+    const errorPreview=response.ok?undefined:safeProviderErrorBody(body,apiKey)
+    flxDiagnostic=fantasyProsFlxDiagnostic(payload,{requestPath:path,scoringFormat,status:response.status,contentType,errorPreview})
+    if(!response.ok){const detail=errorPreview;return{__poolError:`FantasyPros consensus rankings failed HTTP ${response.status}${detail?`: ${detail}`:'.'}`}}
+    if(typeof payload==='string'){flxDiagnostic={...flxDiagnostic,responseBodyType:'invalid-json'};return{__poolError:'FantasyPros FLX rankings returned invalid JSON.'}}
+    return payload
   }))
+  return {payloads,flxDiagnostic:flxDiagnostic!}
 }
 
 Deno.serve(async (request: Request) => {
@@ -223,21 +264,23 @@ Deno.serve(async (request: Request) => {
   const rankingPaths=fantasyProsRankingPaths(season,scoringFormat,includeIdp)
   const fetchedAt = new Date().toISOString()
   let rankingPools:Record<string,RankingPoolDiagnostic>|undefined
+  let flxDiagnostic:FlxDiagnostic|undefined
   try {
     const [players, rankings, news, injuries, sleeperResult] = await Promise.all([
-      providerJson('/nfl/players', apiKey), fetchFantasyProsRankingPools(rankingPaths,apiKey), providerJson('/nfl/news', apiKey), providerJson('/nfl/injuries', apiKey),
+      providerJson('/nfl/players', apiKey), fetchFantasyProsRankingPools(rankingPaths,apiKey,scoringFormat), providerJson('/nfl/news', apiKey), providerJson('/nfl/injuries', apiKey),
       fetch('https://api.sleeper.app/v1/players/nfl', { headers: { accept: 'application/json' } }).then(async response => response.ok ? response.json() : Promise.reject(new Error(`Sleeper failed with HTTP ${response.status}.`))).catch(() => undefined),
     ])
-    rankingPools=fantasyProsRankingPoolDiagnostics(rankings,includeIdp)
-    const snapshot = normalizeFantasyPros({ players, rankings, news, injuries } satisfies FantasyProsPayloads, { fetchedAt, scoringFormat, season, includeIdp, sleeper: sleeperResult, previous: input.previous })
+    const rankingPayloads=rankings.payloads;flxDiagnostic=rankings.flxDiagnostic
+    rankingPools=fantasyProsRankingPoolDiagnostics(rankingPayloads,includeIdp)
+    const snapshot = normalizeFantasyPros({ players, rankings:rankingPayloads, news, injuries } satisfies FantasyProsPayloads, { fetchedAt, scoringFormat, season, includeIdp, sleeper: sleeperResult, previous: input.previous })
     const supabaseUrl=Deno.env.get('SUPABASE_URL')?.trim(),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
     if(!supabaseUrl||!serviceKey)throw new Error('Shared snapshot persistence is not configured.')
     const writeBody={created_at:fetchedAt,season,provider:'fantasypros',scoring_format:scoringFormat,include_idp:includeIdp,snapshot_id:snapshot.id,snapshot,mode:snapshot.mode??'CURRENT',player_source:snapshot.playerSource??'FantasyPros API',ranking_source:snapshot.rankingSource??'FantasyPros ECR',news_status:snapshot.newsStatus??'FantasyPros news',quality:snapshot.quality,freshness:snapshot.freshness,fetched_at:fetchedAt,activated_at:fetchedAt,inserted_at:fetchedAt}
     const persisted=await fetch(`${supabaseUrl}/rest/v1/draft_player_data_snapshots`,{method:'POST',headers:{authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'content-type':'application/json',prefer:'return=representation'},body:JSON.stringify(writeBody)})
     const persistenceBody=await persisted.text()
-    if(!persisted.ok)return json({error:'Provider refresh succeeded but shared snapshot persistence failed.',persistenceError:`HTTP ${persisted.status}: ${persistenceBody.slice(0,1000)}`,persisted:false,snapshotId:snapshot.id,rankingPools,summary:{players:snapshot.players.length,quality:snapshot.quality,scoringFormat,includeIdp},priorSnapshotPreserved:true},502)
-    return json({ snapshot, snapshotId:snapshot.id, persisted: true, rankingPools, persistenceResponse:persistenceBody?JSON.parse(persistenceBody):null, summary: { players: snapshot.players.length, normalizedPlayerCount:snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
+    if(!persisted.ok)return json({error:'Provider refresh succeeded but shared snapshot persistence failed.',persistenceError:`HTTP ${persisted.status}: ${persistenceBody.slice(0,1000)}`,persisted:false,snapshotId:snapshot.id,rankingPools,flxDiagnostic,summary:{players:snapshot.players.length,quality:snapshot.quality,scoringFormat,includeIdp},priorSnapshotPreserved:true},502)
+    return json({ snapshot, snapshotId:snapshot.id, persisted: true, rankingPools, flxDiagnostic, persistenceResponse:persistenceBody?JSON.parse(persistenceBody):null, summary: { players: snapshot.players.length, normalizedPlayerCount:snapshot.players.length, quality: snapshot.quality, changes: snapshot.changes.length, scoringFormat, includeIdp, sleeper: sleeperResult === undefined ? 'FAILED' : 'SUCCESS' } })
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Provider refresh failed.', scoringFormat, includeIdp, rankingPools, persisted:false, priorSnapshotPreserved: true }, 502)
+    return json({ error: error instanceof Error ? error.message : 'Provider refresh failed.', scoringFormat, includeIdp, rankingPools, flxDiagnostic, persisted:false, priorSnapshotPreserved: true }, 502)
   }
 })
