@@ -102,7 +102,7 @@ export function applySnapshot(players:DraftPlayer[],snapshot?:PlayerDataSnapshot
 /** Selects one atomic player authority. A current snapshot never decorates or mixes with fixtures. */
 export function selectPlayerPool(fixtures:DraftPlayer[],snapshot?:PlayerDataSnapshot):DraftPlayer[]{
   if(!snapshot?.players.length)return fixtures;
-  return snapshot.players.map((current,index)=>({
+  return snapshot.players.map(current=>({
     id:current.fixturePlayerId??`current:${current.canonicalPlayerId}`,
     canonicalPlayerId:current.canonicalPlayerId,
     displayName:current.displayName,
