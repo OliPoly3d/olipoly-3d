@@ -304,7 +304,8 @@ function updateTaxPreview() {
   }
   if (els.taxIncluded) els.taxIncluded.value = 'no';
   if (els.taxExemptSale?.value === 'yes') {
-    els.salesTaxCollected.value = '';
+    els.salesTaxRate.value = '0';
+    els.salesTaxCollected.value = '0.00';
     els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
     return;
   }
@@ -1352,13 +1353,13 @@ async function saveEntry(e) {
     const destinationCounty = isIncome ? normalizeCounty(els.destinationCounty?.value) : '';
 
     if (isIncome && !destinationCounty) {
-      return setMsg('Select a destination county for income/sale entries.', true);
+      return setMsg('Destination county is required.', true);
     }
 
     const taxExemptSale = isIncome && els.taxExemptSale?.value === 'yes';
 
     if (isIncome && !taxExemptSale && num(els.salesTaxRate.value) <= 0) {
-      return setMsg('Enter the sales tax rate for this income/sale entry so the filing report can audit rates by county.', true);
+      return setMsg('Sales tax rate is required for taxable sales.', true);
     }
 
     if (taxExemptSale) {
@@ -1902,47 +1903,3 @@ if (els.clearFiltersBtn) {
 });
 
 init();
-
-
-/* === OliPoly Finance Pro Tax Exempt Sale Helper V1 === */
-(function(){
-  const $ = (id) => document.getElementById(id);
-  function ensureField(){
-    if ($("taxExemptSale")) return;
-    const taxIncluded = $("taxIncluded");
-    if (!taxIncluded) return;
-    const parent = taxIncluded.closest("div") || taxIncluded.parentElement;
-    parent?.insertAdjacentHTML("afterend", `
-      <div>
-        <label for="taxExemptSale">Tax Exempt Sale?</label>
-        <select id="taxExemptSale">
-          <option value="no">No</option>
-          <option value="yes">Yes — Tax Exempt</option>
-        </select>
-      </div>
-    `);
-  }
-  function sync(){
-    const taxExempt = $("taxExemptSale")?.value === "yes";
-    if (taxExempt) {
-      if ($("salesTaxRate")) $("salesTaxRate").value = "0";
-      if ($("salesTaxCollected")) $("salesTaxCollected").value = "";
-      if ($("netRevenuePreview") && $("entryAmount")) $("netRevenuePreview").value = $("entryAmount").value || "";
-    }
-  }
-  function bind(){
-    ensureField();
-    ["taxExemptSale","entryAmount","salesTaxRate"].forEach(id => {
-      const el = $(id);
-      if (!el || el.dataset.taxExemptSaleBound === "true") return;
-      el.dataset.taxExemptSaleBound = "true";
-      el.addEventListener("input", sync);
-      el.addEventListener("change", sync);
-    });
-    sync();
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-  else bind();
-  setTimeout(bind, 500);
-  setTimeout(bind, 1500);
-})();
