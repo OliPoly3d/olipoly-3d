@@ -213,6 +213,11 @@ function normalizeCounty(value) {
   return String(value || '').trim();
 }
 
+function withReportingCounty(entry) {
+  const county = normalizeCounty(entry?.sales_county) || normalizeCounty(entry?.destination_county);
+  return { ...entry, sales_county: county };
+}
+
 function filingPeriodOptions(baseYear = currentYear()) {
   return [baseYear - 1, baseYear, baseYear + 1].flatMap(year => ([
     { value: `${year}-H1`, label: `January–June ${year}`, start: `${year}-01-01`, end: `${year}-06-30`, due: `${year}-07-23` },
@@ -1143,7 +1148,7 @@ async function fetchEntries() {
       }
 
       hide(els.authMessage);
-      entries = (data || []).map(row => typeof row === 'string' ? JSON.parse(row) : row);
+      entries = (data || []).map(row => withReportingCounty(typeof row === 'string' ? JSON.parse(row) : row));
       renderAll();
     } catch (err) {
       setAuthMsg(`Could not load entries: ${err?.message || err}`, true);
@@ -1212,6 +1217,7 @@ function startEdit(id) {
   els.entryCategory.value = isCapex ? 'Equipment' : (BASE_CATEGORIES.includes(e.category) ? e.category : 'Custom');
   els.capexToggle.checked = isCapex;
   els.taxCategory.value = e.tax_category || 'auto';
+  els.destinationCounty.value = e.sales_county || '';
 
   if (!els.businessUsePercent.value) els.businessUsePercent.value = '100';
 
@@ -1445,13 +1451,7 @@ async function saveEntry(e) {
 
     const result = await withTimeout(
       wasEditing
-        ? supabase
-            .from('financial_entries')
-            .update(manualUpdate)
-            .eq('id', editingId)
-            .eq('user_id', currentUser.id)
-            .select('id')
-            .single()
+        ? supabase.rpc('update_manual_financial_entry', { p_entry_id: editingId, p_entry: manualUpdate })
         : supabase.rpc('create_manual_financial_entry', { p_entry: payload }),
       12000,
       wasEditing ? 'Updating entry' : 'Saving entry'
