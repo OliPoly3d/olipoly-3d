@@ -937,7 +937,7 @@
   ];
   const LEGACY_LEDGER_KEYS=['olipoly_inventory_ledger_v1','olipoly_inventory_ledger_v2'];
   const $=id=>document.getElementById(id);
-  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',supplySearch:'',supplyCategory:'all',supplySort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false,authorityUnavailable:false};
+  const state={tab:'raw',rawSearch:'',rawStatus:'all',rawMaterial:'all',rawSort:'status',fgSearch:'',fgStatus:'all',fgSort:'need',supplySearch:'',supplyCategory:'all',supplySort:'need',ledgerSearch:'',ledgerType:'all',ledgerSort:'newest',adjust:null,user:null,cloud:false,authorityUnavailable:false,pendingInventoryMutations:new Set()};
 
   function uid(){return crypto.randomUUID?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(16).slice(2)}`;}
   function read(k,f=[]){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}}
@@ -1542,28 +1542,41 @@
   }
 
   async function cloudSaveSupply(s){
-    if(!state.cloud) return;
+    if(!state.cloud || !state.user?.id) throw new Error('Not logged in to cloud.');
     const payload={id:s.id,user_id:state.user.id,item_name:s.item_name,category:s.category,unit_type:s.unit_type,quantity_on_hand:s.quantity_on_hand,cost_per_unit:s.cost_per_unit,reorder_threshold:s.reorder_threshold,supplier:s.supplier,reorder_link:s.reorder_link,reorder_policy:s.reorder_policy||'auto',snooze_until:validDateOrNull(s.snooze_until),notes:s.notes,updated_at:new Date().toISOString()};
     try{
-      await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+      return await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
     }catch(err){
       const msg=String(err?.message || err || '');
       if(msg.includes('schema cache') || msg.includes('column') || msg.includes('400')){
         const fallback={...payload}; delete fallback.reorder_policy; delete fallback.snooze_until;
-        await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(fallback)});
-        return;
+        return await sbApi('/rest/v1/non_filament_materials?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(fallback)});
       }
       console.warn('supply cloud sync failed', err);
-      if(msg.includes('schema cache') || msg.includes('column') || msg.includes('relation') || msg.includes('400')){toast('Supply saved locally. Run the non-filament supplies SQL for cloud sync.');return;}
       throw err;
     }
   }
 
   async function cloudSaveFg(f){
-    if(!state.cloud) return;
+    if(!state.cloud || !state.user?.id) throw new Error('Not logged in to cloud.');
     const payload={id:f.id,user_id:state.user.id,sku:f.sku,product_name:f.product_name,category:f.category,sale_price:f.sale_price,quantity_on_hand:f.quantity_on_hand,target_quantity:f.target_quantity,print_hours_each:f.print_hours_each,status:f.status,material_recipe:f.material_recipe,image_url:f.image_url,notes:f.notes,updated_at:new Date().toISOString()};
-    await sbApi('/rest/v1/finished_goods_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+    return await sbApi('/rest/v1/finished_goods_inventory?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
   }
+
+  async function cloudDeleteInventory(table,id){
+    if(!state.cloud || !state.user?.id) throw new Error('Not logged in to cloud.');
+    const rows=await sbApi(`/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(state.user.id)}&select=id`,{
+      method:'DELETE',
+      headers:{Prefer:'return=representation'}
+    });
+    if(!Array.isArray(rows) || rows.length!==1 || String(rows[0].id)!==String(id)){
+      throw new Error(`Supabase did not confirm deletion of ${table} record ${id}.`);
+    }
+    return rows[0];
+  }
+  function cloudDeleteRaw(id){return cloudDeleteInventory('raw_material_inventory',id)}
+  function cloudDeleteSupply(id){return cloudDeleteInventory('non_filament_materials',id)}
+  function cloudDeleteFg(id){return cloudDeleteInventory('finished_goods_inventory',id)}
 
 
 
@@ -2402,52 +2415,66 @@
     $('adjustModal').classList.remove('hidden');
   }
   function closeAdjust(){state.adjust=null;$('adjustModal').classList.add('hidden')}
-  function confirmAdjust(){
+  async function confirmAdjust(){
     if(!state.adjust)return closeAdjust();
     const action=$('adjustAction').value, amount=num($('adjustAmount').value), note=$('adjustNote').value.trim();
     if(!amount && action!=='set')return toast('Enter an amount.');
-    if(state.adjust.kind==='raw'){
-      const list=raw(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
-      const before=num(list[idx].remaining_grams);
-      list[idx].remaining_grams=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
-      list[idx].updated_at=new Date().toISOString(); saveRaw(list); cloudSaveRaw(list[idx]).catch(console.warn);
-      addLedger({type:action==='subtract'?'raw_usage':'raw_adjust',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:note||'Manual raw material adjustment'});
-    }else if(state.adjust.kind==='supply'){
-      const list=supplies(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
-      const before=num(list[idx].quantity_on_hand);
-      list[idx].quantity_on_hand=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
-      list[idx].updated_at=new Date().toISOString(); saveSupplies(list); cloudSaveSupply(list[idx]).catch(console.warn);
-      addLedger({type:'supply_adjust',item:list[idx].item_name,amount:`${before} ${list[idx].unit_type} → ${list[idx].quantity_on_hand} ${list[idx].unit_type}`,note:note||'Manual non-filament supply adjustment'});
-    }else{
-      const list=finished(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
-      const before=num(list[idx].quantity_on_hand);
-      list[idx].quantity_on_hand=action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount);
-      list[idx].updated_at=new Date().toISOString(); saveFinished(list); cloudSaveFg(list[idx]).catch(console.warn);
-      addLedger({type:'fg_adjust',item:list[idx].product_name,amount:`${before} → ${list[idx].quantity_on_hand}`,note:note||'Manual finished good adjustment'});
-    }
-    closeAdjust(); render(); toast('Inventory adjusted.');
+    const mutationKey=`${state.adjust.kind}:${state.adjust.id}`;
+    if(state.pendingInventoryMutations.has(mutationKey)) return;
+    state.pendingInventoryMutations.add(mutationKey); $('confirmAdjustBtn').disabled=true;
+    try{
+      if(state.adjust.kind==='raw'){
+        const list=raw(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
+        const before=num(list[idx].remaining_grams);
+        const updated={...list[idx],remaining_grams:action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount),updated_at:new Date().toISOString()};
+        await cloudSaveRaw(updated); list[idx]=updated; saveRaw(list);
+        addLedger({type:action==='subtract'?'raw_usage':'raw_adjust',item:`${updated.material_type} ${updated.color}`,amount:`${before}g → ${updated.remaining_grams}g`,note:note||'Manual raw material adjustment'});
+      }else if(state.adjust.kind==='supply'){
+        const list=supplies(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
+        const before=num(list[idx].quantity_on_hand);
+        const updated={...list[idx],quantity_on_hand:action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount),updated_at:new Date().toISOString()};
+        await cloudSaveSupply(updated); list[idx]=updated; saveSupplies(list);
+        addLedger({type:'supply_adjust',item:updated.item_name,amount:`${before} ${updated.unit_type} → ${updated.quantity_on_hand} ${updated.unit_type}`,note:note||'Manual non-filament supply adjustment'});
+      }else{
+        const list=finished(); const idx=list.findIndex(x=>x.id===state.adjust.id); if(idx<0)return;
+        const before=num(list[idx].quantity_on_hand);
+        const updated={...list[idx],quantity_on_hand:action==='set'?amount:action==='add'?before+amount:Math.max(0,before-amount),updated_at:new Date().toISOString()};
+        await cloudSaveFg(updated); list[idx]=updated; saveFinished(list);
+        addLedger({type:'fg_adjust',item:updated.product_name,amount:`${before} → ${updated.quantity_on_hand}`,note:note||'Manual finished good adjustment'});
+      }
+      closeAdjust(); render(); toast('Inventory adjusted.');
+    }catch(err){console.warn('inventory adjustment failed',err);toast('Inventory was NOT adjusted in Supabase. Please try again.');}
+    finally{state.pendingInventoryMutations.delete(mutationKey);$('confirmAdjustBtn').disabled=false;}
   }
 
-  function quickRaw(id,dir){
+  async function quickRaw(id,dir,button){
     const input=document.querySelector(`[data-quick-amount="${CSS.escape(id)}"]`);
     const amount=num(input?.value); if(!amount)return toast('Enter grams first.');
+    const mutationKey=`raw:${id}`; if(state.pendingInventoryMutations.has(mutationKey))return;
     const list=raw(); const idx=list.findIndex(x=>x.id===id); if(idx<0)return;
     const before=num(list[idx].remaining_grams);
-    list[idx].remaining_grams=dir==='add'?before+amount:Math.max(0,before-amount);
-    list[idx].updated_at=new Date().toISOString(); saveRaw(list);
-    addLedger({type:dir==='add'?'raw_adjust':'raw_usage',item:`${list[idx].material_type} ${list[idx].color}`,amount:`${before}g → ${list[idx].remaining_grams}g`,note:dir==='add'?'Quick add raw material':'Quick use raw material'});
-    try{window.OliPolyERP?.logEvent?.('inventory_raw_adjusted',{category:'inventory', title:`${list[idx].material_type} ${list[idx].color}`, note:`${before}g → ${list[idx].remaining_grams}g`});}catch{}
-    render(); toast(dir==='add'?'Raw material added.':'Raw material used.');
+    const updated={...list[idx],remaining_grams:dir==='add'?before+amount:Math.max(0,before-amount),updated_at:new Date().toISOString()};
+    state.pendingInventoryMutations.add(mutationKey); if(button)button.disabled=true;
+    try{await cloudSaveRaw(updated);list[idx]=updated;saveRaw(list);
+      addLedger({type:dir==='add'?'raw_adjust':'raw_usage',item:`${updated.material_type} ${updated.color}`,amount:`${before}g → ${updated.remaining_grams}g`,note:dir==='add'?'Quick add raw material':'Quick use raw material'});
+      try{window.OliPolyERP?.logEvent?.('inventory_raw_adjusted',{category:'inventory', title:`${updated.material_type} ${updated.color}`, note:`${before}g → ${updated.remaining_grams}g`});}catch{}
+      render();toast(dir==='add'?'Raw material added.':'Raw material used.');
+    }catch(err){console.warn('raw material quick adjustment failed',err);toast('Raw material quantity was NOT changed in Supabase. Please try again.');}
+    finally{state.pendingInventoryMutations.delete(mutationKey);if(button?.isConnected)button.disabled=false;}
   }
-  function quickFg(id,dir){
+  async function quickFg(id,dir,button){
     const input=document.querySelector(`[data-quick-fg-amount="${CSS.escape(id)}"]`);
     const amount=num(input?.value); if(!amount)return toast('Enter quantity first.');
+    const mutationKey=`fg:${id}`; if(state.pendingInventoryMutations.has(mutationKey))return;
     const list=finished(); const idx=list.findIndex(x=>x.id===id); if(idx<0)return;
     const before=num(list[idx].quantity_on_hand);
-    list[idx].quantity_on_hand=dir==='add'?before+amount:Math.max(0,before-amount);
-    list[idx].updated_at=new Date().toISOString(); saveFinished(list);
-    addLedger({type:'fg_adjust',item:list[idx].product_name,amount:`${before} → ${list[idx].quantity_on_hand}`,note:dir==='add'?'Quick add finished goods':'Quick subtract/sold finished goods'});
-    render(); toast(dir==='add'?'Finished goods added.':'Finished goods reduced.');
+    const updated={...list[idx],quantity_on_hand:dir==='add'?before+amount:Math.max(0,before-amount),updated_at:new Date().toISOString()};
+    state.pendingInventoryMutations.add(mutationKey); if(button)button.disabled=true;
+    try{await cloudSaveFg(updated);list[idx]=updated;saveFinished(list);
+      addLedger({type:'fg_adjust',item:updated.product_name,amount:`${before} → ${updated.quantity_on_hand}`,note:dir==='add'?'Quick add finished goods':'Quick subtract/sold finished goods'});
+      render();toast(dir==='add'?'Finished goods added.':'Finished goods reduced.');
+    }catch(err){console.warn('finished-good quick adjustment failed',err);toast('Finished-good quantity was NOT changed in Supabase. Please try again.');}
+    finally{state.pendingInventoryMutations.delete(mutationKey);if(button?.isConnected)button.disabled=false;}
   }
 
   function exportBackup(extra={}){
@@ -2497,6 +2524,29 @@
     }
   }
 
+  async function deleteRaw(id,button){
+    const mutationKey=`raw:${id}`; if(state.pendingInventoryMutations.has(mutationKey))return;
+    state.pendingInventoryMutations.add(mutationKey); if(button)button.disabled=true;
+    try{await cloudDeleteRaw(id);saveRaw(raw().filter(x=>x.id!==id));addLedger({type:'raw_adjust',item:'Raw material',amount:'Deleted',note:id});render();toast('Raw material deleted.');}
+    catch(err){console.warn('raw material deletion failed',err);toast('Raw material was NOT deleted from Supabase. Please try again.');}
+    finally{state.pendingInventoryMutations.delete(mutationKey);if(button?.isConnected)button.disabled=false;}
+  }
+  async function deleteSupply(id,button){
+    const mutationKey=`supply:${id}`; if(state.pendingInventoryMutations.has(mutationKey))return;
+    const supply=supplies().find(x=>x.id===id);
+    state.pendingInventoryMutations.add(mutationKey); if(button)button.disabled=true;
+    try{await cloudDeleteSupply(id);saveSupplies(supplies().filter(x=>x.id!==id));addLedger({type:'supply_adjust',item:supply?.item_name||'Supply',amount:'Deleted',note:id});render();toast('Supply deleted.');}
+    catch(err){console.warn('supply deletion failed',err);toast('Supply was NOT deleted from Supabase. Please try again.');}
+    finally{state.pendingInventoryMutations.delete(mutationKey);if(button?.isConnected)button.disabled=false;}
+  }
+  async function deleteFg(id,button){
+    const mutationKey=`fg:${id}`; if(state.pendingInventoryMutations.has(mutationKey))return;
+    state.pendingInventoryMutations.add(mutationKey); if(button)button.disabled=true;
+    try{await cloudDeleteFg(id);saveFinished(finished().filter(x=>x.id!==id));addLedger({type:'fg_adjust',item:'Finished good',amount:'Deleted',note:id});render();toast('Finished good deleted.');}
+    catch(err){console.warn('finished-good deletion failed',err);toast('Finished good was NOT deleted from Supabase. Please try again.');}
+    finally{state.pendingInventoryMutations.delete(mutationKey);if(button?.isConnected)button.disabled=false;}
+  }
+
   function bind(){
     document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();setTab(b.dataset.tab);}));
     $('rawForm').addEventListener('submit',async e=>{e.preventDefault(); const r=rawFromForm(); if(!state.cloud)return retainRecovery('raw',r,'authority-unavailable'),toast('RECOVERY / OFFLINE DATA is read-only. Draft retained for review; inventory was not changed.'); try{await cloudSaveRaw(r); const list=raw().filter(x=>x.id!==r.id); list.unshift(r); saveRaw(list); addLedger({type:'raw_adjust',item:`${r.material_type} ${r.color}`,amount:`Saved ${grams(r.remaining_grams)}`,note:'Raw material saved'}); try{window.OliPolyERP?.logEvent?.('inventory_raw_saved',{category:'inventory', title:`${r.material_type} ${r.color}`, reserved_grams:r.reserved_grams||0, note:`${grams(r.remaining_grams)} on hand`});}catch{} resetRaw();render();toast('Raw material saved to Supabase.');}catch(err){console.warn('raw save failed; recovery retained',err); retainRecovery('raw',r,'failed-remote-save'); toast('Raw material was NOT saved to Supabase. A non-durable recovery copy was retained for review/export.');}});
@@ -2526,22 +2576,20 @@
       const tabBtn=e.target.closest('.tab[data-tab]');
       if(tabBtn){e.preventDefault(); setTab(tabBtn.dataset.tab); return;}
       const er=e.target.closest('[data-edit-raw]')?.dataset.editRaw; if(er){const r=raw().find(x=>x.id===er); if(r)fillRaw(r)}
-      const dr=e.target.closest('[data-delete-raw]')?.dataset.deleteRaw; if(dr&&confirm('Delete this raw material?')){saveRaw(raw().filter(x=>x.id!==dr));addLedger({type:'raw_adjust',item:'Raw material',amount:'Deleted',note:dr});render();toast('Raw material deleted.')}
+      const rawDeleteBtn=e.target.closest('[data-delete-raw]'); const dr=rawDeleteBtn?.dataset.deleteRaw; if(dr&&confirm('Delete this raw material?'))deleteRaw(dr,rawDeleteBtn);
       const ar=e.target.closest('[data-adjust-raw]')?.dataset.adjustRaw; if(ar)openAdjust('raw',ar);
-      const qar=e.target.closest('[data-quick-add]')?.dataset.quickAdd; if(qar)quickRaw(qar,'add');
-      const qur=e.target.closest('[data-quick-use]')?.dataset.quickUse; if(qur)quickRaw(qur,'use');
+      const rawAddBtn=e.target.closest('[data-quick-add]'); const qar=rawAddBtn?.dataset.quickAdd; if(qar)quickRaw(qar,'add',rawAddBtn);
+      const rawUseBtn=e.target.closest('[data-quick-use]'); const qur=rawUseBtn?.dataset.quickUse; if(qur)quickRaw(qur,'use',rawUseBtn);
       const es=e.target.closest('[data-edit-supply]')?.dataset.editSupply; if(es){const s=supplies().find(x=>x.id===es); if(s)fillSupply(s)}
-      const ds=e.target.closest('[data-delete-supply]')?.dataset.deleteSupply; if(ds&&confirm('Delete this supply?')){const s=supplies().find(x=>x.id===ds);saveSupplies(supplies().filter(x=>x.id!==ds));addLedger({type:'supply_adjust',item:s?.item_name||'Supply',amount:'Deleted',note:ds});render();toast('Supply deleted.')}
+      const supplyDeleteBtn=e.target.closest('[data-delete-supply]'); const ds=supplyDeleteBtn?.dataset.deleteSupply; if(ds&&confirm('Delete this supply?'))deleteSupply(ds,supplyDeleteBtn);
       const as=e.target.closest('[data-adjust-supply]')?.dataset.adjustSupply; if(as)openAdjust('supply',as);
       const ef=e.target.closest('[data-edit-fg]')?.dataset.editFg; if(ef){const f=finished().find(x=>x.id===ef); if(f)fillFg(f)}
-      const df=e.target.closest('[data-delete-fg]')?.dataset.deleteFg; if(df&&confirm('Delete this finished good?')){saveFinished(finished().filter(x=>x.id!==df));addLedger({type:'fg_adjust',item:'Finished good',amount:'Deleted',note:df});
-  if($('exportLedgerBtn')) $('exportLedgerBtn').onclick = exportLedgerCsv;
-
-  render();toast('Finished good deleted.')}
+      const fgDeleteBtn=e.target.closest('[data-delete-fg]'); const df=fgDeleteBtn?.dataset.deleteFg; if(df&&confirm('Delete this finished good?'))deleteFg(df,fgDeleteBtn);
       const af=e.target.closest('[data-adjust-fg]')?.dataset.adjustFg; if(af)openAdjust('fg',af);
-      const qaf=e.target.closest('[data-quick-fg-add]')?.dataset.quickFgAdd; if(qaf)quickFg(qaf,'add');
-      const qsf=e.target.closest('[data-quick-fg-sell]')?.dataset.quickFgSell; if(qsf)quickFg(qsf,'sell');
+      const fgAddBtn=e.target.closest('[data-quick-fg-add]'); const qaf=fgAddBtn?.dataset.quickFgAdd; if(qaf)quickFg(qaf,'add',fgAddBtn);
+      const fgSellBtn=e.target.closest('[data-quick-fg-sell]'); const qsf=fgSellBtn?.dataset.quickFgSell; if(qsf)quickFg(qsf,'sell',fgSellBtn);
     });
+    if($('exportLedgerBtn')) $('exportLedgerBtn').onclick = exportLedgerCsv;
   }
 
   migrate();
