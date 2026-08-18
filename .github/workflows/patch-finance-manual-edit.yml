@@ -1,0 +1,69 @@
+name: Patch Finance manual edit
+
+on:
+  push:
+    branches:
+      - fix/manual-finance-direct-update
+    paths:
+      - .github/workflows/patch-finance-manual-edit.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/manual-finance-direct-update
+          fetch-depth: 0
+
+      - name: Patch manual edit save path
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('finance-pro.js')
+          text = path.read_text(encoding='utf-8')
+          old = """    const result = await withTimeout(
+      wasEditing
+        ? supabase.rpc('update_manual_financial_entry', { p_entry_id: editingId, p_entry: payload })
+        : supabase.rpc('create_manual_financial_entry', { p_entry: payload }),
+      12000,
+      wasEditing ? 'Updating entry' : 'Saving entry'
+    );
+"""
+          new = """    const result = await withTimeout(
+      wasEditing
+        ? (() => {
+            const { user_id: _userId, ...manualUpdate } = payload;
+            return supabase
+              .from('financial_entries')
+              .update(manualUpdate)
+              .eq('id', editingId)
+              .eq('user_id', currentUser.id)
+              .select('id')
+              .single();
+          })()
+        : supabase.rpc('create_manual_financial_entry', { p_entry: payload }),
+      12000,
+      wasEditing ? 'Updating entry' : 'Saving entry'
+    );
+"""
+          if old not in text:
+              raise SystemExit('Expected Finance manual edit RPC block was not found; refusing broad edit.')
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one Finance manual edit RPC block, found {text.count(old)}; refusing edit.')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+      - name: Remove one-time workflow
+        run: rm .github/workflows/patch-finance-manual-edit.yml
+
+      - name: Commit surgical patch
+        run: |
+          git config user.name "OliPoly Finance Patch"
+          git config user.email "actions@users.noreply.github.com"
+          git add finance-pro.js .github/workflows/patch-finance-manual-edit.yml
+          git commit -m "fix: use RLS table update for manual Finance edits [skip ci]"
+          git push origin HEAD:fix/manual-finance-direct-update
