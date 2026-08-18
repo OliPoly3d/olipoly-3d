@@ -1440,9 +1440,17 @@ async function saveEntry(e) {
       other_direct_cost: isIncome ? num(els.otherDirectCost.value) : 0
     };
 
+    const { user_id: _userId, ...manualUpdate } = payload;
+
     const result = await withTimeout(
       wasEditing
-        ? supabase.rpc('update_manual_financial_entry', { p_entry_id: editingId, p_entry: payload })
+        ? supabase
+            .from('financial_entries')
+            .update(manualUpdate)
+            .eq('id', editingId)
+            .eq('user_id', currentUser.id)
+            .select('id')
+            .single()
         : supabase.rpc('create_manual_financial_entry', { p_entry: payload }),
       12000,
       wasEditing ? 'Updating entry' : 'Saving entry'
