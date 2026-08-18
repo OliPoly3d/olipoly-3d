@@ -17,9 +17,11 @@ const authoritativeTables = [
   'inventory_spool_pool'
 ];
 
+assert.match(inventory, /function cloudDeleteInventory\(table,id\)[\s\S]*id=eq\.\$\{encodeURIComponent\(id\)\}&user_id=eq\.\$\{encodeURIComponent\(state\.user\.id\)\}[\s\S]*method:'DELETE'[\s\S]*Prefer:'return=representation'/, 'individual inventory deletes must be owner scoped and request the deleted representation');
+assert.match(inventory, /rows\.length!==1[\s\S]*String\(rows\[0\]\.id\)!==String\(id\)/, 'individual inventory deletes must reject zero, multiple, or unexpected returned rows');
 for (const table of authoritativeTables) {
-  const deletePattern = new RegExp(String.raw`/rest/v1/${table}[^\n;]*user_id=eq[^\n;]*[\s\S]{0,160}method:\s*['"]DELETE['"]`);
-  assert.doesNotMatch(inventory, deletePattern, `${table} must not have a browser bulk DELETE reset/rebuild path`);
+  const unsafeDeletePattern = new RegExp(String.raw`/rest/v1/${table}\?(?![^\x60\n]*id=eq\.)[^\x60\n]*[\s\S]{0,160}method:\s*['"]DELETE['"]`);
+  assert.doesNotMatch(inventory, unsafeDeletePattern, `${table} must not have a browser bulk DELETE reset/rebuild path`);
 }
 
 assert.doesNotMatch(inventory, /deleteUserCloudRows|Force Full Cloud Rebuild|forceRebuild/i, 'cloud rebuild/delete helper and UI must be removed');
@@ -35,6 +37,13 @@ assert.match(inventory, /function cacheAuthoritativeInventory[\s\S]*write\(RAW_K
 assert.match(inventory, /cacheAuthoritativeInventory\(\{rawRows,fgRows,supplyRows,ledgerRows:cloudLedger\}\)/, 'cloud load routes through the cache replacement helper');
 assert.match(inventory, /NOT saved to Supabase[\s\S]*non-durable recovery copy/, 'failed remote saves are visibly non-durable recovery, not success');
 assert.match(inventory, /retainRecovery\('raw'[\s\S]*retainRecovery\('supplies'[\s\S]*retainRecovery\('finished'/, 'failed raw/supply/finished saves retain separate recovery rows');
+assert.match(inventory, /await cloudDeleteRaw\(id\);saveRaw\(raw\(\)\.filter/, 'raw local cache deletion follows confirmed cloud deletion');
+assert.match(inventory, /await cloudDeleteSupply\(id\);saveSupplies\(supplies\(\)\.filter/, 'supply local cache deletion follows confirmed cloud deletion');
+assert.match(inventory, /await cloudDeleteFg\(id\);saveFinished\(finished\(\)\.filter/, 'finished-good local cache deletion follows confirmed cloud deletion');
+assert.match(inventory, /await cloudSaveRaw\(updated\);list\[idx\]=updated;saveRaw\(list\)/, 'raw quantity adjustment saves to cloud before changing local cache');
+assert.match(inventory, /await cloudSaveFg\(updated\);list\[idx\]=updated;saveFinished\(list\)/, 'finished-good quantity adjustment saves to cloud before changing local cache');
+assert.doesNotMatch(inventory, /function quickRaw\(id,dir,button\)[\s\S]{0,900}saveRaw\(list\);[\s\S]{0,100}cloudSaveRaw/, 'raw quick adjustment must not write local cache before cloud');
+assert.doesNotMatch(inventory, /function quickFg\(id,dir,button\)[\s\S]{0,700}saveFinished\(list\);[\s\S]{0,100}cloudSaveFg/, 'finished-good quick adjustment must not write local cache before cloud');
 assert.doesNotMatch(inventory, /localStorage\.removeItem\(['"]sb_|localStorage\.removeItem\(['"]olipoly_workflow_command:/, 'Inventory reset/recovery must not clear auth/session or command retry keys');
 assert.match(persistence, /source:'remote'[\s\S]*source:'local-recovery'/, 'timestamp conflict logic preserves remote authority and local recovery classification');
 assert.match(deployedInventoryContract, /Inventory Browser-Authority Guard/, 'deployed Inventory contract documents this browser authority guard');
