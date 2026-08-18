@@ -12,10 +12,13 @@ describe('strategy control center', () => {
     expect(markup).toContain('YOUR DRAFT PLAN');
     expect(markup).toContain('WAIT — unless value falls');
     expect(markup).toContain('AFFECTS DRAFT FIT');
-    expect(markup).toContain('AI CONTEXT');
+    expect(markup).toContain('CORE DRAFT APPROACH');
     expect(markup).toContain(player.displayName);
     expect(markup).toContain('data-intent-form="i"');
     expect(markup).toContain('RESET PHILOSOPHY');
+    expect(markup).toContain('CURRENT PHILOSOPHY SUMMARY');
+    expect(markup).toContain('TIER VALUE CLIFF');
+    expect(markup).toContain('name="draftRoomExploitation"');
   });
   it('does not fabricate an unconfigured plan', () => {
     const markup = philosophyWorkspaceMarkup({ slug:'robocop', philosophy:emptyPhilosophy('l','s'), players:[], interests:[], intents:[] });
