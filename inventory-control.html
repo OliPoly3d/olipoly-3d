@@ -2014,7 +2014,7 @@
       return `<article class="inventory-card" style="--accent:${accent}">
         <div class="card-head">
           <div class="color-dot" style="--dot:${colorStyle(r.color)}"></div>
-          <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div></div>
+          <div><h3>${esc(r.material_type)} / ${esc(r.color || 'No color')}</h3><div class="card-sub">${esc(r.brand || 'No brand/type')} · ${esc(r.location || 'No location')}</div><div class="card-sub">Spool ID: ${esc(r.roll_label || '—')}</div></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${rawStatusChip(r)}${policyChip(rawPolicy(r), r.snooze_until)}</div>
         </div>
         <div class="chips"><span class="chip">${esc(r.material_type)}</span><span class="chip">${esc(r.color||'Color?')}</span>${r.brand?`<span class="chip">${esc(r.brand)}</span>`:''}<span class="chip">${esc(r.roll_type||'spool')}</span><span class="chip ${r.is_mounted?'ok':'muted'}">${r.is_mounted?'Mounted':'Not mounted'}</span><span class="chip ${r.reusable_spool?'ok':'muted'}">${r.reusable_spool?'Reusable spool':'No spool'}</span><span class="chip">${esc(r.roll_status||'active')}</span></div>
