@@ -44,3 +44,21 @@ describe('Draft Fit rank semantics',()=>{
  it('gives rank 1 a better contribution than rank 100 and invents none when missing',()=>{expect(sourceRankValue(1)).toBeGreaterThan(sourceRankValue(100)!);expect(sourceRankValue()).toBeUndefined()});
  it('uses the sorted available population for ordinals',()=>{const pool=players([['drafted','WR',100,1],['available-1','RB',90,1],['available-2','WR',80,1],['available-3','TE',70,2]]),setup=seedSetup('believeland');let draft=startDraft(setup,pool);draft=makePick(draft,'drafted');const state=rebuildDraftState(draft),result=runRecommendationEngine({setup,context:draft,state,userTeamId:userTeam(setup),userContext:context(setup)});expect(result.draftFits.map(x=>x.playerId)).not.toContain('drafted');expect(result.draftFits.map(x=>x.rank)).toEqual([1,2,3]);expect(result.draftFits[0].score).toBeGreaterThanOrEqual(result.draftFits[1].score)});
 });
+
+describe('truthful bye-week scoring',()=>{
+  it('does not penalize an unknown bye and applies only the bounded known overlap penalty',()=>{
+    const setup=seedSetup('believeland');
+    const pool=players(Array.from({length:20},(_,index)=>[`p${index}`,index%2?'WR':'RB',100-index,1] as [string,Position,number,number]));
+    pool.forEach((player,index)=>{player.byeWeek=index===7||index===8?10:index===9?undefined:6+index%8});
+    let draft=startDraft(setup,pool);
+    for(let index=0;index<8;index++)draft=makePick(draft,`p${index}`);
+    const state=rebuildDraftState(draft),user=context(setup);
+    user.philosophy.profile!.byeWeekImportance='HIGH';
+    const result=runRecommendationEngine({setup,context:draft,state,userTeamId:userTeam(setup),userContext:user});
+    const overlap=result.expandedRecommendations.find(item=>item.playerId==='p8');
+    const unknown=result.expandedRecommendations.find(item=>item.playerId==='p9');
+    expect(overlap?.breakdown.byeWeek).toBeLessThan(0);
+    expect(overlap?.breakdown.byeWeek).toBeGreaterThanOrEqual(-.35);
+    expect(unknown?.breakdown.byeWeek).toBe(0);
+  });
+});

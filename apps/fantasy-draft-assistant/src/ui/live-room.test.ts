@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
-import { confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
+import { byeWeek, confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
 import { TEAM_IDS, teamIdentity } from './team-marks';
+
+describe('truthful bye-week presentation',()=>{
+  it('shows an explicit provider or fixture bye and keeps missing data unknown',()=>{
+    const fixture=playerPool()[0];
+    expect(byeWeek(fixture)).toBe(fixture.byeWeek);
+    expect(byeWeek({...fixture,id:'real:nfl:1',byeWeek:undefined})).toBeUndefined();
+  });
+});
 
 describe('live room view model', () => {
   it('uses consistent semantic position classes', () => {
