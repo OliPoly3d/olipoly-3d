@@ -1,4 +1,6 @@
-# Private Fantasy Draft Assistant — Phase 4A
+# Private Fantasy Draft Assistant — Phase 4 completion
+
+> **Current implementation authority:** [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) supersedes status claims in historical phase notes.
 
 Automated player-data provider setup, failure behavior, attribution, and the gated shared-storage proposal are documented in [docs/AUTOMATED_PLAYER_DATA.md](docs/AUTOMATED_PLAYER_DATA.md). Manual ranking import and truthful fixture fallback remain available until a real snapshot is activated.
 
@@ -68,7 +70,7 @@ Tests cover seeds, keepers, snake parity, readiness, ownership, availability, un
 
 ## Deferred
 
-Automated ranking/player/news providers, advanced reconciliation, takeover, and ESPN synchronization remain intentionally absent. Manual current-player/ranking import and the optional authenticated server-side AI endpoint are the only production activation paths in this milestone.
+Realtime multi-device draft-event synchronization, writer takeover/conflict handling, autonomous drafting, new providers, scraping, official NFL assets, and a custom IDP projection model remain intentionally absent. Automated FantasyPros/Sleeper player refresh, manual FantasyPros ranking imports, and ESPN reference imports are implemented but are active in production only when their dedicated backend/configuration prerequisites are verified.
 
 ## Production Supabase authentication
 
@@ -112,7 +114,7 @@ When no imported snapshot exists, the player-value boundary remains static fixtu
 
 ## Current player data (Phase 6)
 
-Current rankings and player metadata enter the deterministic engine through normalized, versioned local snapshots. Open **LOAD CURRENT PLAYER DATA**, choose a CSV/JSON file, preview existing identity matches and new players, then confirm activation. Required columns are `player_name`, `team`, `position`, and `overall_rank`; optional columns are `position_rank`, `tier`, `adp`, `source`, and `updated_at`. The confirmed snapshot is cached in IndexedDB and becomes the entire active player pool. No automatic ranking, metadata, or news provider is currently populated.
+Current rankings and player metadata enter the deterministic engine through normalized, versioned local snapshots. Open **LOAD CURRENT PLAYER DATA**, choose a CSV/JSON file, preview existing identity matches and new players, then confirm activation. Required columns are `player_name`, `team`, `position`, and `overall_rank`; optional columns are `position_rank`, `tier`, `adp`, `source`, and `updated_at`. The confirmed snapshot is cached in IndexedDB and becomes the entire active player pool. Automated FantasyPros/Sleeper refresh is also implemented behind the dedicated authenticated Edge Function; repository code does not prove that function, its secrets, or Cron are deployed. See the current-state verification checklist before relying on it.
 
 ### Draft Assistant AI deployment
 

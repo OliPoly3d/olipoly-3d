@@ -1,5 +1,5 @@
 import type { Position } from '../domain/models'
-import { canonicalPlayerId, freshnessAt, isIdpPosition, normalizePlayerName, normalizePosition, normalizeTeam, snapshotId, type AvailabilityStatus, type Confidence, type DataQuality, type PlayerContextChange, type PlayerDataSnapshot, type PlayerIntelligence, type PlayerNewsItem, type RankingValue, type ScoringFormat, type SourceReference } from './player-data'
+import { canonicalPlayerId, freshnessAt, isIdpPosition, normalizeByeWeek, normalizePlayerName, normalizePosition, normalizeTeam, snapshotId, type AvailabilityStatus, type Confidence, type DataQuality, type PlayerContextChange, type PlayerDataSnapshot, type PlayerIntelligence, type PlayerNewsItem, type RankingValue, type ScoringFormat, type SourceReference } from './player-data'
 
 type JsonRecord = Record<string, unknown>
 const record = (value: unknown): JsonRecord => value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {}
@@ -80,7 +80,7 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
     const position = normalizePosition(rawPosition); if (!options.includeIdp && isIdpPosition(position)) continue
     const team = normalizeTeam(text(row, 'player_team_id', 'player_team', 'team'))
     const canonical = canonicalPlayerId({ name, team, position, vendorId: `fantasypros:${fpId}` })
-    byFp.set(fpId, { canonicalPlayerId: canonical, fantasyProsPlayerId: fpId, displayName: name, normalizedName: normalizePlayerName(name), position, nflTeam: team, byeWeek: number(row, 'bye_week', 'bye'), active: text(row, 'is_active', 'active') !== '0' && text(row, 'is_active', 'active') !== 'false', sourceValues: [], newsItems: [], freshness: 'UNKNOWN', quality: 'PARTIAL', uncertaintyFlags: [], sourceProvenance: [] })
+    byFp.set(fpId, { canonicalPlayerId: canonical, fantasyProsPlayerId: fpId, displayName: name, normalizedName: normalizePlayerName(name), position, nflTeam: team, byeWeek: normalizeByeWeek(number(row, 'bye_week', 'bye')), active: text(row, 'is_active', 'active') !== '0' && text(row, 'is_active', 'active') !== 'false', sourceValues: [], newsItems: [], freshness: 'UNKNOWN', quality: 'PARTIAL', uncertaintyFlags: [], sourceProvenance: [] })
   }
   for (const ranked of rankings) {
     const {row,poolIndex}=ranked

@@ -31,7 +31,8 @@ export interface RecommendationViewModel {
 }
 
 export const positionClass = (position: Position) => `position-${position.replace('/', '').toLowerCase()}`;
-export const byeWeek = (player: DraftPlayer) => 5 + Math.abs([...player.id].reduce((n, char) => n + char.charCodeAt(0), 0)) % 10;
+/** Displays only stored provider/import/fixture data; an absent bye stays unknown. */
+export const byeWeek = (player: DraftPlayer): number | undefined => player.byeWeek;
 
 export const RECENT_PICK_LIMIT = 4;
 
