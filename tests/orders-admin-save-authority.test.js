@@ -60,8 +60,8 @@ test('a two-field county/rate metadata payload is accepted for OP-000189', () =>
 });
 
 test('invoice presentation metadata is saved without exposing financial authority', () => {
-  const columnsSource = html.match(/const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\);/)[0];
-  const builderSource = html.match(/function buildOrdinaryOrderEditPayload\\([\\s\\S]*?\\n    \\}/)[0];
+  const columnsSource = html.match(/const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object\.freeze\(\[([\s\S]*?)\]\);/)[0];
+  const builderSource = html.match(/function buildOrdinaryOrderEditPayload\([\s\S]*?\n    \}/)[0];
   const context = {};
   vm.runInNewContext(`${columnsSource};${builderSource};this.build = buildOrdinaryOrderEditPayload`, context);
   const payload = context.build({invoice_date:'2026-08-20',invoice_due_date:'2026-09-19',invoice_terms:'net_30',olipoly_part_number:'OP-PART-42',part_revision:'Rev B',shipping_or_pickup_note:'Pickup Friday',invoice_number:'INV-PROTECTED',order_total:999}, {});

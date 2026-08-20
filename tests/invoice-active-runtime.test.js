@@ -56,7 +56,7 @@ assert.match(orders,/T\.header\('Invoice', invoiceNumber\)/);
 assert.match(orders,/class="invoice-v2-project-title"/);
 assert.match(orders,/font-family:"Playfair Display",Georgia,serif/);
 assert.match(orders,/color:#c94f83/);
-assert.match(orders,/Visit OliPoly3D\.com\/track and enter/);
+assert.match(orders,/Go to <strong>OliPoly3D\.com\/track<\/strong> and enter/);
 assert.doesNotMatch(orders,/https:\/\/olipoly3d\.com\/track\.html/);
 assert.match(orders,/class="invoice-v2-meta"/);
 assert.match(orders,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
