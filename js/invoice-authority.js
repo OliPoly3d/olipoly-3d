@@ -90,8 +90,8 @@
     if (invoice.aggregateOnly) {
       return [
         ['Accepted order total', invoice.order_total],
-        ...(invoice.deposit_amount === null ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
-        ...(invoice.amount_paid === null ? [] : [['Amount paid', invoice.amount_paid]]),
+        ...(invoice.deposit_amount === null || invoice.deposit_amount === 0 ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
+        ...(invoice.amount_paid === null || invoice.amount_paid === 0 ? [] : [['Amount paid', invoice.amount_paid]]),
         ['Total due', invoice.balance_amount]
       ];
     }
@@ -103,9 +103,9 @@
       ...(numberOrNull(t.shipping) === null ? [] : [['Shipping', numberOrNull(t.shipping)]]),
       ...(numberOrNull(t.taxable_subtotal) === null ? [] : [['Taxable subtotal', numberOrNull(t.taxable_subtotal)]]),
       ['Sales tax', numberOrNull(t.tax)],
-      ['Accepted total', numberOrNull(t.final_total)],
-      ...(invoice.deposit_amount === null ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
-      ...(invoice.amount_paid === null ? [] : [['Amount paid', invoice.amount_paid]]),
+      ['Invoice total', numberOrNull(t.final_total)],
+      ...(invoice.deposit_amount === null || invoice.deposit_amount === 0 ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
+      ...(invoice.amount_paid === null || invoice.amount_paid === 0 ? [] : [['Amount paid', invoice.amount_paid]]),
       ['Total due', invoice.balance_amount]
     ];
   }

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('orders-admin.html', 'utf8');
-const sql = fs.readFileSync('supabase/migrations/202608020010_orders_metadata_update_command.sql', 'utf8');
+const sql = fs.readFileSync('supabase/migrations/202608200001_invoice_presentation_metadata_save.sql', 'utf8');
 
 test('ordinary payload builder includes changed allowlisted metadata only', () => {
   const columnsSource = html.match(/const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object\.freeze\(\[([\s\S]*?)\]\);/)[0];
@@ -38,7 +38,7 @@ test('database authority remains narrow, owner-scoped and active-only', () => {
   assert.match(sql, /in \('closed','fulfilled','cancelled','canceled'\)/);
   assert.doesNotMatch(sql, /grant update on (table )?public\.orders to authenticated/i);
   assert.match(sql, /revoke update on table public\.orders from public, anon, authenticated/);
-  for(const protectedColumn of ['status','payment_status','paid_date','invoice_number','finance_pushed','updated_at']) {
+  for(const protectedColumn of ['status','payment_status','paid_date','invoice_number','order_total','balance_amount','finance_pushed','updated_at']) {
     assert.doesNotMatch(sql.match(/v_allowed constant text\[\] := array\[([\s\S]*?)\];/)[1], new RegExp(`'${protectedColumn}'`));
   }
 });
@@ -57,6 +57,15 @@ test('a two-field county/rate metadata payload is accepted for OP-000189', () =>
   vm.runInNewContext(`${columnsSource};${builderSource};this.build = buildOrdinaryOrderEditPayload`, context);
   const payload = context.build({order_number:'OP-000189',destination_county:'Summit',sales_tax_rate:6.75,status:'closed'}, {order_number:'OP-000189',destination_county:'Portage',sales_tax_rate:7.25,status:'printing'});
   assert.deepEqual(JSON.parse(JSON.stringify(payload)), {destination_county:'Summit',sales_tax_rate:6.75});
+});
+
+test('invoice presentation metadata is saved without exposing financial authority', () => {
+  const columnsSource = html.match(/const ORDERS_ADMIN_ORDINARY_EDIT_COLUMNS = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\);/)[0];
+  const builderSource = html.match(/function buildOrdinaryOrderEditPayload\\([\\s\\S]*?\\n    \\}/)[0];
+  const context = {};
+  vm.runInNewContext(`${columnsSource};${builderSource};this.build = buildOrdinaryOrderEditPayload`, context);
+  const payload = context.build({invoice_date:'2026-08-20',invoice_due_date:'2026-09-19',invoice_terms:'net_30',olipoly_part_number:'OP-PART-42',part_revision:'Rev B',shipping_or_pickup_note:'Pickup Friday',invoice_number:'INV-PROTECTED',order_total:999}, {});
+  assert.deepEqual(JSON.parse(JSON.stringify(payload)), {invoice_date:'2026-08-20',invoice_due_date:'2026-09-19',invoice_terms:'net_30',olipoly_part_number:'OP-PART-42',part_revision:'Rev B',shipping_or_pickup_note:'Pickup Friday'});
 });
 
 test('closed orders remain UI read-only independently of Finance', () => {
