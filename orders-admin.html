@@ -4761,6 +4761,7 @@ function generateTravelerPdf(){
           <div class="op-grid-4" style="margin-bottom:12px;">
             ${T.card('Order #', order.order_number)}
             ${T.card('PO Number', order.po_number || '—')}
+            ${T.card('Quote Reference', order.quote_number || order.source_quote_number || '—')}
             ${T.card('Customer Part #', order.po_part_number || '—')}
             ${T.card('OliPoly Part #', order.olipoly_part_number || '—')}
             ${T.card('Revision', order.part_revision || 'Rev A')}

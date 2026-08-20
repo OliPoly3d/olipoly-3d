@@ -7,7 +7,7 @@
   const BLOCKED = new Set(['totals_mismatch', 'malformed_snapshot', 'unsupported_snapshot']);
   const ALLOWED = new Set(['verified', 'aggregate_only', 'missing_snapshot']);
   const PRESENTATION_FIELDS = [
-    'invoice_date', 'invoice_due_date', 'invoice_terms', 'invoice_terms_label', 'order_date',
+    'invoice_date', 'invoice_due_date', 'invoice_terms', 'invoice_terms_label', 'order_date', 'order_title',
     'po_number', 'ap_email', 'billing_address', 'shipping_address', 'shipping_company',
     'shipping_contact_name', 'shipping_or_pickup_note', 'tracking_number', 'public_status_text',
     'payment_link', 'payment_link_stripe', 'payment_link_paypal', 'payment_link_venmo',
@@ -63,6 +63,10 @@
     const model = {
       ...extras,
       ...identity,
+      // The database RPC names this value project_title while the customer-document
+      // renderers consistently consume order_title. Preserve either contract and
+      // fall back to the freshly loaded Orders row for legacy snapshots.
+      order_title: identity.order_title ?? identity.project_title ?? presentation.order_title ?? presentation.project_title ?? null,
       status,
       blocked:false,
       aggregateOnly:status !== 'verified',
