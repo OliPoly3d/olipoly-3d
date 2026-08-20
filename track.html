@@ -58,7 +58,10 @@
     function canonicalStatus(v){ return window.OliPolyWorkflow.normalizeOrderStatus(v); }
     function statusLabel(v){ return window.OliPolyWorkflow.orderStatusLabel(v); }
     function paymentLabel(v){return ({unpaid:'Unpaid',deposit_due:'Deposit Due',deposit_paid:'Deposit Paid',paid:'Paid in Full',refunded:'Refunded'})[v]||v;}
-    function progressStep(status){return ({ready_to_print:1,printing:2,qc:3,ready_for_fulfillment:4,closed:5})[canonicalStatus(status)]||1;}
+    // Timeline step 1 represents quote approval. The five post-acceptance
+    // workflow states begin at Scheduled (step 2), so manufacturing states must
+    // not reuse zero-based workflow positions.
+    function progressStep(status){return ({ready_to_print:2,printing:3,qc:4,ready_for_fulfillment:5,closed:5})[canonicalStatus(status)]||1;}
     function statusHeadline(status){return ({ready_to_print:'Ready to Print',printing:'Printing',qc:'QC / Finishing',ready_for_fulfillment:'Ready for Pickup / Shipment',closed:'Order Complete'})[canonicalStatus(status)];}
     function statusHelper(status){return ({ready_to_print:'Your accepted order is ready for production.',printing:'Your order is currently printing.',qc:'Your order is being inspected, cleaned, and finished.',ready_for_fulfillment:'Your order is ready for pickup, delivery, or shipment.',closed:'Your order has been fulfilled and closed. Thank you for choosing OliPoly 3D!'})[canonicalStatus(status)];}
     function autoNextText(status){return ({ready_to_print:'Next, printing will begin when the assigned machine is available.',printing:'Next, the finished print will move to quality control and finishing.',qc:'Next, the order will be prepared for pickup, delivery, or shipment.',ready_for_fulfillment:'Next, follow the provided fulfillment instructions for the final handoff.',closed:'Your order is complete. Save your order number for future reference.'})[canonicalStatus(status)];}
@@ -226,7 +229,7 @@ if(venmo && canShowPaymentButtons){
       els.viewStatusHelper.textContent = statusHelper(o.status);
       els.viewAutoNext.textContent = autoNextText(o.status);
       els.viewLastChecked.textContent = formatLastChecked();
-      els.resultCard.classList.toggle('is-complete', ['completed','delivered'].includes(o.status));
+      els.resultCard.classList.toggle('is-complete', canonicalStatus(o.status) === 'closed');
 
       const currency = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(value)||0);
       els.viewTotal.textContent = o.order_total != null ? currency(o.order_total) : '—';
