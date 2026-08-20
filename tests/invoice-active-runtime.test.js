@@ -19,6 +19,9 @@ assert.equal(A.preciseUnitPrice(invoice.accepted.piece_price),'$5.125');
 assert.deepEqual(A.totalsRows(invoice).filter(r=>['Product subtotal','Sales tax','Accepted total','Current amount due'].includes(r[0])),[['Product subtotal',20.5],['Sales tax',1.33],['Accepted total',21.83],['Current amount due',21.83]]);
 assert.notEqual(invoice.accepted.piece_price,5.46);
 assert.equal(invoice.breakdownSource,'legacy_customer_totals_unspecified');
+const rpcProjectTitle=A.normalize({...op10,identity:{...op10.identity,order_title:undefined,project_title:'Mini Mixer Card Holder'}});
+assert.equal(rpcProjectTitle.order_title,'Mini Mixer Card Holder');
+assert.equal(rpcProjectTitle.invoice_number,'INV-000010','existing invoice identity remains unchanged');
 assert.equal(A.escapedMultiline(op10.identity.billing_address),'101 Example Ave<br>Suite &lt;2&gt;');
 
 const paid=A.normalize({...op10,current_payment_state:{...op10.current_payment_state,balance_amount:0,amount_paid:21.83,payment_status:'paid'}});
@@ -47,5 +50,7 @@ assert.match(orders,/normalize\(response\.data, order\)/);
 assert.doesNotMatch(finalGuard,/tax\s*=\s*0|subtotal\s*=\s*order_total|\/\s*qty/);
 assert.match(orders,/order\.aggregateOnly \? '' : `<table/);
 assert.match(orders,/order\.accepted\.quantity \?\? '—'/);
+assert.match(orders,/T\.card\('Quote Reference', order\.quote_number \|\| order\.source_quote_number \|\| '—'\)/);
+assert.match(orders,/T\.header\('Invoice', invoiceNumber\)/);
 assert.doesNotMatch(orders.slice(orders.indexOf('function buildInvoiceV2HTML'),orders.indexOf('async function loadInvoiceAuthority')),/quantity \|\| 1|order_total\s*\/|tax\s*=\s*0/);
 console.log('active invoice runtime assertions passed');
