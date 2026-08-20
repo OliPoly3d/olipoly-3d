@@ -1743,7 +1743,7 @@ Aurora, OH 44202</textarea></div>
         <div class="op-doc">
           ${T.header(businessMode ? 'Packing Slip' : 'Order Packing Slip', order.order_number || 'Order')}
 
-          <div class="op-grid-4" style="margin-bottom:12px;">
+          <div class="invoice-v2-meta">
             ${T.card('Order #', order.order_number)}
             ${T.card('PO Number', order.po_number || '—')}
             ${T.card('Revision', order.part_revision || 'Rev A')}
@@ -2229,7 +2229,8 @@ function publicTrackingPayload(payload) {
       'destination_county','sales_tax_rate',
       'exemption_certificate_on_file','po_file_on_file','po_part_number',
       'shipping_contact_name','shipping_company','ap_email','billing_address',
-      'shipping_address','internal_notes'
+      'shipping_address','shipping_or_pickup_note','invoice_date','invoice_due_date',
+      'invoice_terms','olipoly_part_number','part_revision','internal_notes'
     ]);
 
     function buildOrdinaryOrderEditPayload(formPayload, currentRow = {}){
@@ -5493,7 +5494,7 @@ function generateTravelerPdf(){
             ${T.card('Invoice Date', T.formatDate(invoiceDate))}
             ${T.card('Due Date', dueDate ? T.formatDate(dueDate) : 'Per terms')}
             ${T.card('Terms', invoiceTermsLabelV2(order.invoice_terms))}
-            ${T.card('Payment', paymentLabel(order.payment_status || 'unpaid'))}
+            ${T.card('Payment', isPaid ? 'Paid in full' : order.payment_status === 'unpaid' ? 'Due on completion' : paymentLabel(order.payment_status || 'unpaid'))}
             ${T.card('PO Number', order.po_number || '—')}
             ${T.card('Customer Part #', order.po_part_number || '—')}
             ${T.card('OliPoly Part #', order.olipoly_part_number || '—')}
@@ -5548,7 +5549,7 @@ function generateTravelerPdf(){
 
               <div class="op-note">
                 <strong>Track this order</strong><br>
-                Visit OliPoly3D.com/track and enter ${T.esc(order.order_number || 'your order number')} for the latest customer-safe update.
+                Go to <strong>OliPoly3D.com/track</strong> and enter ${T.esc(order.order_number || 'your order number')} for the latest update.
               </div>
             </div>
 
@@ -5613,9 +5614,24 @@ function generateTravelerPdf(){
           color:#c94f83;
           letter-spacing:-.015em;
         }
+        .invoice-v2-meta{
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:8px;
+          margin-bottom:12px;
+        }
+        .invoice-v2-meta .op-card{
+          min-width:0;
+          padding:10px 11px;
+        }
+        .invoice-v2-meta .op-card strong{
+          font-size:11px;
+          line-height:1.25;
+          overflow-wrap:anywhere;
+        }
         .invoice-v2-bottom{
           display:grid;
-          grid-template-columns:1.2fr .8fr;
+          grid-template-columns:1fr 1fr;
           gap:12px;
           margin-top:12px;
         }
@@ -5642,11 +5658,17 @@ function generateTravelerPdf(){
           padding-top:10px!important;
           border-top:2px solid #d9d3cb;
         }
+        .invoice-v2-total{
+          align-items:center;
+          flex-wrap:nowrap;
+        }
         .invoice-v2-total span,.invoice-v2-total strong{
-          font-size:17px!important;
+          font-size:16px!important;
           color:#231f20!important;
           font-weight:950!important;
+          white-space:nowrap;
         }
+        .invoice-v2-total strong{margin-left:auto}
         .invoice-v2-watermark{
           position:absolute;
           right:.45in;
