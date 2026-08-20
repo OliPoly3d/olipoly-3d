@@ -5485,7 +5485,7 @@ function generateTravelerPdf(){
             <div>
               <span>Order</span>
               <strong>${T.esc(order.order_number || '—')}</strong>
-              <small>${T.esc(order.order_title || 'Custom 3D printed project')}</small>
+              <small class="invoice-v2-project-title">${T.esc(order.order_title || 'Custom 3D printed project')}</small>
             </div>
           </div>
 
@@ -5548,7 +5548,7 @@ function generateTravelerPdf(){
 
               <div class="op-note">
                 <strong>Track this order</strong><br>
-                Visit https://olipoly3d.com/track.html and enter ${T.esc(order.order_number || 'your order number')} for the latest customer-safe update.
+                Visit OliPoly3D.com/track and enter ${T.esc(order.order_number || 'your order number')} for the latest customer-safe update.
               </div>
             </div>
 
@@ -5605,6 +5605,13 @@ function generateTravelerPdf(){
           margin-top:6px;
           color:#604d68;
           line-height:1.3;
+        }
+        .invoice-v2-hero .invoice-v2-project-title{
+          font-family:"Playfair Display",Georgia,serif;
+          font-size:15px;
+          font-weight:800;
+          color:#c94f83;
+          letter-spacing:-.015em;
         }
         .invoice-v2-bottom{
           display:grid;

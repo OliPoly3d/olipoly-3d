@@ -92,7 +92,7 @@
         ['Accepted order total', invoice.order_total],
         ...(invoice.deposit_amount === null ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
         ...(invoice.amount_paid === null ? [] : [['Amount paid', invoice.amount_paid]]),
-        ['Current amount due', invoice.balance_amount]
+        ['Total due', invoice.balance_amount]
       ];
     }
     const t = invoice.accepted;
@@ -106,7 +106,7 @@
       ['Accepted total', numberOrNull(t.final_total)],
       ...(invoice.deposit_amount === null ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
       ...(invoice.amount_paid === null ? [] : [['Amount paid', invoice.amount_paid]]),
-      ['Current amount due', invoice.balance_amount]
+      ['Total due', invoice.balance_amount]
     ];
   }
 
