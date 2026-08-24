@@ -1,4 +1,5 @@
-import type { DraftPlayer, DraftState, Position, SeasonSetup } from '../domain/models';
+import type { DraftPlayer, DraftState, Position } from '../domain/models';
+import { currentUserTeamId } from '../domain/current-user';
 import { teamIdentity } from './team-marks';
 import { snapshotSources, type PlayerDataSnapshot } from '../data/player-data';
 import type { AiStatus } from '../data/ai';
@@ -71,10 +72,7 @@ export function confidenceRing(value: ConfidenceLevel | number, preview = false)
   return `<div class="confidence" aria-label="${label} confidence${preview ? ', preview' : ''}"><span class="confidence-ring confidence-${modifier}"><b>${label}</b></span><small>CONFIDENCE${preview ? ' · PREVIEW' : ''}</small></div>`;
 }
 
-export function userTeamId(setup: SeasonSetup): string {
-  const manager = setup.managers.find(({ id }) => id === setup.settings.metadata?.userManagerId) ?? setup.managers[0];
-  return setup.teams.find(({ managerId }) => managerId === manager.id)?.id ?? setup.teams[0].id;
-}
+export const userTeamId = currentUserTeamId;
 
 export function picksUntilUser(state: DraftState, teamId: string): number | null {
   const currentIndex = state.current ? state.plan.findIndex(({ sequence }) => sequence === state.current?.sequence) : -1;
