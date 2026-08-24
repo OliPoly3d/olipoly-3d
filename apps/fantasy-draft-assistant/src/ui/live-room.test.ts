@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
-import { byeWeek, compactRosterSlots, confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
+import { byeWeek, confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
+import { teamConstructionSlots } from './team-construction';
 import { TEAM_IDS, teamIdentity } from './team-marks';
 
 describe('truthful bye-week presentation',()=>{
@@ -128,13 +129,13 @@ describe('interest presentation boundary',()=>{it('filters the Master Board with
 describe('ranking context status',()=>{it('shows the active Half-PPR and IDP authority truthfully',()=>{const snapshot={id:'real',version:1,createdAt:'2026-08-17T12:00:00Z',season:2026,scoringFormat:'HALF_PPR',includeIdp:true,quality:'COMPLETE',freshness:'FRESH',playerSource:'FANTASYPROS',rankingSource:'FANTASYPROS ECR · HALF-PPR + IDP',players:playerPool().slice(0,3) as never[],changes:[],providerResults:[]} as never;const markup=playerDataStatusMarkup(snapshot,'READY');expect(markup).toContain('HALF-PPR + IDP');expect(markup).toContain('3 players');expect(markup).not.toContain('BASELINE FIXTURE')})});
 
 describe('complete league-specific compact rosters', () => {
-  const labels = (slug: 'robocop' | 'believeland') => compactRosterSlots(seedSetup(slug), []).map(slot => slot.label);
+  const labels = (slug: 'robocop' | 'believeland') => teamConstructionSlots(seedSetup(slug), []).map(slot => slot.label);
   const count = (values: string[], label: string) => values.filter(value => value === label).length;
 
   it('expands every configured RoboCop starter and all eight bench positions', () => {
-    const slots = compactRosterSlots(seedSetup('robocop'), []);
+    const slots = teamConstructionSlots(seedSetup('robocop'), []);
     const values = slots.map(slot => slot.label);
-    expect(['QB','RB','WR','TE','FLEX','IDP','D/ST','K','Bench'].map(label => count(values, label))).toEqual([1,2,3,1,1,2,1,1,8]);
+    expect(['QB','RB','WR','TE','FLEX','DP','D/ST','K','Bench'].map(label => count(values, label))).toEqual([1,2,3,1,1,2,1,1,8]);
     expect(slots).toHaveLength(20);
     expect(slots.every(slot => !slot.player)).toBe(true);
     expect(new Set(slots.map(slot => slot.key)).size).toBe(20);
@@ -144,7 +145,7 @@ describe('complete league-specific compact rosters', () => {
     const values = labels('believeland');
     expect(['QB','RB','WR','TE','FLEX','D/ST','K','Bench'].map(label => count(values, label))).toEqual([1,2,2,1,2,1,1,6]);
     expect(values).toHaveLength(16);
-    expect(values).not.toContain('IDP');
+    expect(values).not.toContain('DP');
   });
 
   it('uses configuration order for occupied and empty slots without changing row count', () => {
@@ -152,7 +153,7 @@ describe('complete league-specific compact rosters', () => {
     const setup = { ...seeded, keeperLock: { ...seeded.keeperLock, status: 'locked' as const } };
     const state = rebuildDraftState(startDraft(setup, playerPool(), true));
     const rob = setup.teams.find(team => team.id === userTeamId(setup))!;
-    const slots = compactRosterSlots(setup, state.rosters[rob.id].combined);
+    const slots = teamConstructionSlots(setup, state.rosters[rob.id].combined);
     expect(slots).toHaveLength(20);
     expect(slots.filter(slot => slot.player)).toHaveLength(3);
     expect(slots.filter(slot => slot.player).map(slot => [slot.label, slot.player?.displayName])).toEqual([
@@ -166,9 +167,9 @@ describe('complete league-specific compact rosters', () => {
   it('switches and reloads cloned season configuration without cross-league leakage', () => {
     const roboReloaded = structuredClone(seedSetup('robocop'));
     const belieReloaded = structuredClone(seedSetup('believeland'));
-    expect(compactRosterSlots(roboReloaded, [])).toHaveLength(20);
-    expect(compactRosterSlots(belieReloaded, [])).toHaveLength(16);
-    expect(compactRosterSlots(belieReloaded, []).some(slot => slot.label === 'IDP')).toBe(false);
+    expect(teamConstructionSlots(roboReloaded, [])).toHaveLength(20);
+    expect(teamConstructionSlots(belieReloaded, [])).toHaveLength(16);
+    expect(teamConstructionSlots(belieReloaded, []).some(slot => slot.label === 'DP')).toBe(false);
   });
 });
 
