@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { playerPool, seedSetup } from '../domain/seeds';
 import { makePick, rebuildDraftState, startDraft } from '../domain/engine';
-import { byeWeek, confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
+import { byeWeek, compactRosterSlots, confidenceRing, playerDataStatusMarkup, picksUntilUser, positionClass, recentPicksMarkup, RECENT_PICK_LIMIT, teamMark, userTeamId } from './live-room';
 import { TEAM_IDS, teamIdentity } from './team-marks';
 
 describe('truthful bye-week presentation',()=>{
@@ -126,6 +126,51 @@ describe('live room view model', () => {
 describe('interest presentation boundary',()=>{it('filters the Master Board without moving base player order',async()=>{const{filterPlayersByInterest}=await import('./live-room');const players=playerPool();const filtered=filterPlayersByInterest(players,[{id:'i',leagueId:'l',seasonId:'s',playerId:players[1].id,state:'WATCH',updatedAt:''}],'WATCH');expect(filtered.map(x=>x.id)).toEqual([players[1].id]);expect(players[0].id).toBe('player-omarion-hampton')});it('renders a subtle contextual recommendation marker',async()=>{const{interestBadge}=await import('./live-room');expect(interestBadge({id:'i',leagueId:'l',seasonId:'s',playerId:'p',state:'AVOID',updatedAt:''})).toContain('Bounded user-context adjustment');expect(interestBadge()).toBe('')})});
 
 describe('ranking context status',()=>{it('shows the active Half-PPR and IDP authority truthfully',()=>{const snapshot={id:'real',version:1,createdAt:'2026-08-17T12:00:00Z',season:2026,scoringFormat:'HALF_PPR',includeIdp:true,quality:'COMPLETE',freshness:'FRESH',playerSource:'FANTASYPROS',rankingSource:'FANTASYPROS ECR · HALF-PPR + IDP',players:playerPool().slice(0,3) as never[],changes:[],providerResults:[]} as never;const markup=playerDataStatusMarkup(snapshot,'READY');expect(markup).toContain('HALF-PPR + IDP');expect(markup).toContain('3 players');expect(markup).not.toContain('BASELINE FIXTURE')})});
+
+describe('complete league-specific compact rosters', () => {
+  const labels = (slug: 'robocop' | 'believeland') => compactRosterSlots(seedSetup(slug), []).map(slot => slot.label);
+  const count = (values: string[], label: string) => values.filter(value => value === label).length;
+
+  it('expands every configured RoboCop starter and all eight bench positions', () => {
+    const slots = compactRosterSlots(seedSetup('robocop'), []);
+    const values = slots.map(slot => slot.label);
+    expect(['QB','RB','WR','TE','FLEX','IDP','D/ST','K','Bench'].map(label => count(values, label))).toEqual([1,2,3,1,1,2,1,1,8]);
+    expect(slots).toHaveLength(20);
+    expect(slots.every(slot => !slot.player)).toBe(true);
+    expect(new Set(slots.map(slot => slot.key)).size).toBe(20);
+  });
+
+  it('expands Believeland independently with two FLEX, no IDP, and six bench positions', () => {
+    const values = labels('believeland');
+    expect(['QB','RB','WR','TE','FLEX','D/ST','K','Bench'].map(label => count(values, label))).toEqual([1,2,2,1,2,1,1,6]);
+    expect(values).toHaveLength(16);
+    expect(values).not.toContain('IDP');
+  });
+
+  it('uses configuration order for occupied and empty slots without changing row count', () => {
+    const seeded = seedSetup('robocop');
+    const setup = { ...seeded, keeperLock: { ...seeded.keeperLock, status: 'locked' as const } };
+    const state = rebuildDraftState(startDraft(setup, playerPool(), true));
+    const rob = setup.teams.find(team => team.id === userTeamId(setup))!;
+    const slots = compactRosterSlots(setup, state.rosters[rob.id].combined);
+    expect(slots).toHaveLength(20);
+    expect(slots.filter(slot => slot.player)).toHaveLength(3);
+    expect(slots.filter(slot => slot.player).map(slot => [slot.label, slot.player?.displayName])).toEqual([
+      ['QB', 'Josh Allen'],
+      ['WR', 'Drake London'],
+      ['WR', 'Jaxon Smith-Njigba'],
+    ]);
+    expect(slots.map(slot => slot.label)).toEqual(labels('robocop'));
+  });
+
+  it('switches and reloads cloned season configuration without cross-league leakage', () => {
+    const roboReloaded = structuredClone(seedSetup('robocop'));
+    const belieReloaded = structuredClone(seedSetup('believeland'));
+    expect(compactRosterSlots(roboReloaded, [])).toHaveLength(20);
+    expect(compactRosterSlots(belieReloaded, [])).toHaveLength(16);
+    expect(compactRosterSlots(belieReloaded, []).some(slot => slot.label === 'IDP')).toBe(false);
+  });
+});
 
 describe('compact production cockpit semantics',()=>{
  it('shows a truthful empty recent-picks state without Last 0',()=>{const setup=seedSetup('believeland'),markup=recentPicksMarkup(rebuildDraftState(startDraft(setup,playerPool())),()=> 'Manager');expect(markup).toContain('RECENT PICKS');expect(markup).toContain('No live picks yet.');expect(markup).not.toContain('Last 0')});

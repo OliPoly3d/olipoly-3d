@@ -1,4 +1,4 @@
-import type { DraftPlayer, DraftState, Position } from '../domain/models';
+import type { DraftPlayer, DraftState, Position, SeasonSetup } from '../domain/models';
 import { currentUserTeamId } from '../domain/current-user';
 import { teamIdentity } from './team-marks';
 import { snapshotSources, type PlayerDataSnapshot } from '../data/player-data';
@@ -73,6 +73,32 @@ export function confidenceRing(value: ConfidenceLevel | number, preview = false)
 }
 
 export const userTeamId = currentUserTeamId;
+
+export interface CompactRosterSlot {
+  key: string;
+  label: string;
+  kind: 'starter' | 'bench';
+  player?: DraftPlayer;
+}
+
+/** Expands the active season's configured slots and assigns players without changing draft intelligence. */
+export function compactRosterSlots(setup: SeasonSetup, players: DraftPlayer[]): CompactRosterSlot[] {
+  const remaining = [...players];
+  return setup.rosterSlots.filter(definition => definition.kind !== 'ir').flatMap(definition =>
+    Array.from({ length: definition.count }, (_, index) => {
+      const playerIndex = definition.kind === 'bench'
+        ? (remaining.length ? 0 : -1)
+        : remaining.findIndex(player => definition.eligible.includes(player.position));
+      const player = playerIndex < 0 ? undefined : remaining.splice(playerIndex, 1)[0];
+      return {
+        key: `${definition.id}:${index + 1}`,
+        label: definition.label,
+        kind: definition.kind,
+        ...(player ? { player } : {}),
+      };
+    })
+  );
+}
 
 export function picksUntilUser(state: DraftState, teamId: string): number | null {
   const currentIndex = state.current ? state.plan.findIndex(({ sequence }) => sequence === state.current?.sequence) : -1;
