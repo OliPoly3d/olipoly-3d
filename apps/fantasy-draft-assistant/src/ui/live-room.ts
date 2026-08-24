@@ -76,7 +76,7 @@ export const userTeamId = currentUserTeamId;
 
 export function picksUntilUser(state: DraftState, teamId: string): number | null {
   const currentIndex = state.current ? state.plan.findIndex(({ sequence }) => sequence === state.current?.sequence) : -1;
-  const nextIndex = state.plan.findIndex((pick, index) => index >= currentIndex && pick.kind === 'live' && pick.currentTeamId === teamId);
+  const nextIndex = state.plan.findIndex((pick, index) => index > currentIndex && pick.kind === 'live' && pick.currentTeamId === teamId);
   return currentIndex < 0 || nextIndex < 0 ? null : nextIndex - currentIndex;
 }
 
