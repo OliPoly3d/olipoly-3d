@@ -33,7 +33,7 @@ After creating the private Auth user, insert its UUID into `draft_allowed_users`
 
 `League` and `Season` are distinct. `SeasonSetup` contains reusable managers, season teams, flexible roster definitions, hard position limits, stable original draft slots, per-round current ownership, keepers, and reversible lock audit history. Seeds initialize only missing setup. IndexedDB schema v3 additively persists setups, sessions, append-only events, and discardable snapshots behind `DraftStore`.
 
-**Draft events are authoritative; derived state and snapshots are rebuildable.** `createDraftPlan` uses actual round parity: odd rounds 1→12 and even rounds 12→1. RoboCop Rounds 1–3 project keeper setup records, not live events, so Round 4 starts at slot 12. Blank keeper cells remain blank; an incomplete start requires explicit administrative override.
+**Draft events are authoritative; derived state and snapshots are rebuildable.** `createDraftPlan` uses parity relative to the configured snake starting round. Pre-live keeper rounds use base order, so RoboCop Rounds 1–3 and live Round 4 run slots 1→12 before Round 5 reverses. Blank keeper cells remain blank; an incomplete start requires explicit administrative override.
 
 Events use a session-local monotonically increasing sequence, not wall-clock ordering. Phase 5 can synchronize revisions and detect competing writes with unique `(session_id, sequence)`. `PICK_UNDONE` reverses without deletion. `PICK_EDITED` supersedes an older selection while keeping later picks and current position. Pause blocks picks and resume preserves position. Completion is derived from active live fills.
 
