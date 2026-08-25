@@ -19,22 +19,24 @@ const optionalInteger=(value:unknown)=>value==null||value===''?undefined:Number.
 export const pdfWorkerSrc=pdfWorkerUrl;
 export const configurePdfWorker=(pdfjs:{GlobalWorkerOptions:{workerSrc:string}})=>{pdfjs.GlobalWorkerOptions.workerSrc=pdfWorkerSrc};
 
+export interface ExtractedPdf { text:string; pageCount:number; title?:string; createdAt?:Date }
+const pdfDate=(value:unknown)=>{if(typeof value!=='string')return undefined;const match=value.match(/^D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?(?:([+-])(\d{2})'?((?:\d{2}))'?)?/);if(!match)return undefined;const offset=match[7]?`${match[7]}${match[8]}:${match[9]??'00'}`:'Z',date=new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]??'00'}${offset}`);return Number.isNaN(date.getTime())?undefined:date};
 /** Extracts text in the browser. OCR is deliberately not attempted. */
-export async function extractPdfText(data:ArrayBuffer):Promise<string>{
+export async function extractPdfDocument(data:ArrayBuffer,onProgress?:(page:number,total:number)=>void):Promise<ExtractedPdf>{
   const pages:string[]=[];
   try{
     const pdfjs=await import('pdfjs-dist/legacy/build/pdf.mjs');
     configurePdfWorker(pdfjs);
-    const document=await pdfjs.getDocument({data:new Uint8Array(data)}).promise;
-    for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){const page=await document.getPage(pageNumber),content=await page.getTextContent();pages.push(content.items.map(item=>'str' in item?`${item.str}${'hasEOL' in item&&item.hasEOL?'\n':' '}`:'').join(''))}
+    const document=await pdfjs.getDocument({data:new Uint8Array(data)}).promise,metadata=await document.getMetadata().catch(()=>undefined),info=metadata?.info as Record<string,unknown>|undefined;
+    for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){const page=await document.getPage(pageNumber),content=await page.getTextContent();pages.push(content.items.map(item=>'str' in item?`${item.str}${'hasEOL' in item&&item.hasEOL?'\n':' '}`:'').join(''));onProgress?.(pageNumber,document.numPages)}
+    const text=pages.join('\n\f\n').replace(/[ \t]+/g,' ').replace(/\n +/g,'\n').trim();if(!text)throw new Error('IMAGE_ONLY');
+    return{text,pageCount:document.numPages,title:typeof info?.Title==='string'?info.Title:undefined,createdAt:pdfDate(info?.CreationDate)};
   }catch(error){
     console.error('ESPN PDF import failed while PDF.js was reading the document.',error);
-    throw new Error('Unable to read this PDF. The existing ESPN rankings were not changed.');
+    const message=error instanceof Error?error.message:'';if(message==='IMAGE_ONLY')throw new Error('PDF text extraction completed, but no searchable text was found. Image-only PDFs are unsupported.');if(/password/i.test(message))throw new Error('This PDF is password-protected. PDF.js could not extract its text locally.');if(/worker/i.test(message))throw new Error('The bundled local PDF parser worker could not start. No file was uploaded and source validation was not run.');throw new Error('The local PDF parser loaded, but was unable to extract the document text. Source validation was not run and existing data was not changed.');
   }
-  const text=pages.join('\n').replace(/[ \t]+/g,' ').replace(/\n +/g,'\n').trim();
-  if(!text)throw new Error('This PDF contains no usable text. Scanned/image-only PDFs are unsupported; upload the text-based ESPN PPR Top 300 PDF.');
-  return text;
 }
+export async function extractPdfText(data:ArrayBuffer):Promise<string>{return(await extractPdfDocument(data)).text}
 
 export function parseEspnPdfText(text:string):{rows:EspnImportRow[];invalid:EspnImportPreview['invalid']} {
   if(!text.trim())throw new Error('This PDF contains no usable text. Scanned/image-only PDFs are unsupported.');

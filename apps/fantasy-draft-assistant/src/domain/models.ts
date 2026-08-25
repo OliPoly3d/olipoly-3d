@@ -1,5 +1,5 @@
 import type { ScoringRule } from './scoring';
-export type Id=string;export type Position='QB'|'RB'|'WR'|'TE'|'DST'|'K'|'DL'|'LB'|'DB'|'DT'|'DE'|'CB'|'S'|'P'|'HC';
+export type Id=string;export type Position='QB'|'RB'|'WR'|'TE'|'DST'|'K'|'T'|'OT'|'G'|'C'|'OL'|'DL'|'LB'|'DB'|'DT'|'DE'|'CB'|'S'|'P'|'LS'|'HC';
 export interface League{id:Id;name:string;slug:string} export interface Season{id:Id;leagueId:Id;year:number;name:string}
 export interface LeagueSettings{seasonId:Id;scoringLabel:string;ppr:number;idpEnabled:boolean;scoringRules?:ScoringRule[];metadata?:Record<string,string|number|boolean|null>}
 export interface Manager{id:Id;leagueId:Id;displayName:string;active:boolean} export interface SeasonTeam{id:Id;seasonId:Id;managerId:Id;displayName?:string;active:boolean}
