@@ -47,6 +47,7 @@ const list = (value: unknown, keys: string[]): JsonRecord[] => {
 }
 const text = (row: JsonRecord, ...keys: string[]) => { for (const key of keys) { const value = row[key]; if (typeof value === 'string' && value.trim()) return value.trim(); if (typeof value === 'number') return String(value) } }
 const number = (row: JsonRecord, ...keys: string[]) => { const value = text(row, ...keys); if (value == null) return undefined; const parsed = Number(value.replace(/^\D+/, '')); return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined }
+const normalizeByeWeek = (value: unknown) => { if (typeof value === 'string' && !value.trim()) return undefined; const week=Number(value); return Number.isInteger(week)&&week>=1&&week<=18?week:undefined }
 const iso = (value: string | undefined, fallback: string) => value && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : fallback
 const fpSource = (updatedAt: string, fetchedAt: string): SourceReference => ({ source: 'FantasyPros API', sourceClass: 'ANALYST_INTERPRETATION', updatedAt, fetchedAt, reference: 'FantasyPros Public API v2' })
 
@@ -108,13 +109,17 @@ export function normalizeFantasyPros(payloads: FantasyProsPayloads, options: Nor
   for(const player of previousOffense){const rank=player.baselineRank!;if(previousRanks.has(rank)&&previousRanks.get(rank)!==player.canonicalPlayerId){previousIsGlobal=false;break}previousRanks.set(rank,player.canonicalPlayerId);if(player.fantasyProsPlayerId)previousGlobalRanks.set(player.fantasyProsPlayerId,rank);previousGlobalRanks.set(player.canonicalPlayerId,rank)}
   if(!previousIsGlobal)previousGlobalRanks.clear()
   const byFp = new Map<string, PlayerIntelligence>()
+  const previousByFp=new Map(options.previous?.players.filter(player=>player.fantasyProsPlayerId).map(player=>[player.fantasyProsPlayerId!,player])??[])
+  const previousByCanonical=new Map(options.previous?.players.map(player=>[player.canonicalPlayerId,player])??[])
   for (const row of players) {
     const fpId = text(row, 'player_id', 'playerId', 'id'); const name = text(row, 'player_name', 'playerName', 'name'); const rawPosition = text(row, 'player_position_id', 'player_position', 'position')
     if (!fpId || !name || !rawPosition) continue
     const position = normalizePosition(rawPosition); if (!options.includeIdp && isIdpPosition(position)) continue
     const team = normalizeTeam(text(row, 'player_team_id', 'player_team', 'team'))
     const canonical = canonicalPlayerId({ name, team, position, vendorId: `fantasypros:${fpId}` })
-    byFp.set(fpId, { canonicalPlayerId: canonical, fantasyProsPlayerId: fpId, displayName: name, normalizedName: normalizePlayerName(name), position, nflTeam: team, byeWeek: number(row, 'bye_week', 'bye'), active: text(row, 'is_active', 'active') !== '0' && text(row, 'is_active', 'active') !== 'false', sourceValues: [], newsItems: [], freshness: 'UNKNOWN', quality: 'PARTIAL', uncertaintyFlags: [], sourceProvenance: [] })
+    const prior=previousByFp.get(fpId)??previousByCanonical.get(canonical)
+    const incomingBye=normalizeByeWeek(text(row,'player_bye_week','bye_week','byeWeek','bye','BYE'))
+    byFp.set(fpId, { canonicalPlayerId: canonical, fantasyProsPlayerId: fpId, displayName: name, normalizedName: normalizePlayerName(name), position, nflTeam: team, byeWeek: incomingBye??normalizeByeWeek(prior?.byeWeek), active: text(row, 'is_active', 'active') !== '0' && text(row, 'is_active', 'active') !== 'false', sourceValues: [], newsItems: [], freshness: 'UNKNOWN', quality: 'PARTIAL', uncertaintyFlags: [], sourceProvenance: [] })
   }
   for (const ranked of rankings) {
     const {row,poolIndex}=ranked

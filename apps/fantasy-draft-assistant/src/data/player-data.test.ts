@@ -16,13 +16,16 @@ describe('truthful bye-week normalization',()=>{
     expect(normalizeByeWeek(9)).toBe(9);
     expect(normalizeByeWeek('14')).toBe(14);
     expect(normalizeByeWeek(undefined)).toBeUndefined();
+    expect(normalizeByeWeek('')).toBeUndefined();
+    expect(normalizeByeWeek('—')).toBeUndefined();
+    expect(normalizeByeWeek('N/A')).toBeUndefined();
     expect(normalizeByeWeek(0)).toBeUndefined();
     expect(normalizeByeWeek(19)).toBeUndefined();
   });
-  it('does not retain a fixture bye when a real snapshot has no bye authority',()=>{
+  it('does not let a snapshot lacking bye authority erase an existing valid bye',()=>{
     const selected=applySnapshot(playerPool(1),snapshot([intel('synthetic-1',{byeWeek:undefined})]));
     const current=selected.find(player=>player.id==='synthetic-1')!;
-    expect(current.byeWeek).toBeUndefined();
+    expect(current.byeWeek).toBe(playerPool(1)[0].byeWeek);
     expect(current.playerIntelligence?.byeWeek).toBeUndefined();
   });
   it('preserves an explicit provider bye in both league player semantics',()=>{
