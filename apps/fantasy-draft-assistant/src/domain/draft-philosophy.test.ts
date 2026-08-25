@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PHILOSOPHY_PROFILE, philosophyProfile, philosophySummary, updatePhilosophyProfile } from './draft-philosophy';
+import { DEFAULT_PHILOSOPHY_PROFILE, philosophyProfile, philosophySummary, robocop2026Philosophy, updatePhilosophyProfile } from './draft-philosophy';
 import { emptyPhilosophy } from './user-context';
 
 describe('league draft philosophy profile',()=>{
   it('hydrates old records additively without league-name rules',()=>{const legacy={...emptyPhilosophy('any-league','s'),profile:undefined,summary:undefined};expect(philosophyProfile(legacy)).toEqual(DEFAULT_PHILOSOPHY_PROFILE);expect(JSON.stringify(philosophyProfile(legacy))).not.toContain('believeland')});
   it('keeps structured settings authoritative while producing readable context',()=>{const changed=updatePhilosophyProfile(emptyPhilosophy('l','s'),{qbStrategy:'PREFER_WAITING',flexDepth:'LOW'});expect(changed.profile?.qbStrategy).toBe('PREFER_WAITING');expect(changed.summary).toContain('prefer waiting');expect(philosophySummary(changed.profile!)).toContain('league-aware')});
+  it('maps Rob’s 2026 RoboCop plan into supported structured fields and scoped notes',()=>{const philosophy=robocop2026Philosophy();expect(philosophy).toMatchObject({id:'philosophy:season-robocop-2026',leagueId:'league-robocop',seasonId:'season-robocop-2026',onboardingStatus:'COMPLETED',profile:{coreApproach:'VALUE_FIRST_ADAPTIVE',earlyRisk:'SAFETY_WITHIN_TIER',lateRisk:'PREFER_UPSIDE',rbWorkload:'LEAD_ROLE',flexDepth:'HIGH',qbStrategy:'PREFER_WAITING',teStrategy:'TIER_VALUE_CLIFF',reachTolerance:'MODERATE',byeWeekImportance:'LOW',scarcityWeight:'HIGH',returnProbabilityWeight:'HIGH'}});expect(philosophy.preferences.map(item=>item.category)).toEqual(['RB_TIMING','WR_CONSTRUCTION','QB_TIMING','TE_TIMING','IDP_TIMING','DST_TIMING','K_TIMING']);expect(philosophy.freeformNotes).toContain('canonical draft state');expect(philosophy.freeformNotes).toContain('IDP separate from offensive overall value')});
 });
