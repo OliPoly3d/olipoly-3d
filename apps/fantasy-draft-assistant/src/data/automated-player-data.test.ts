@@ -19,6 +19,14 @@ describe('automated player data', () => {
     expect(player.newsItems[0]).toMatchObject({ headline:'Player ruled out', materiality:'HIGH' }); expect(player.injury).toMatchObject({ bodyArea:'Knee', practiceParticipation:'DNP' })
     expect(snapshot.rankingSource).toContain('OVERALL ECR UNAVAILABLE')
   })
+  it('reads the current provider bye field and never lets a missing or invalid refresh erase it',()=>{
+    const current=normalizeFantasyPros({...payloads(),players:{players:[{...basePayloads.players.players[0],bye_week:undefined,player_bye_week:'11'}]}},{fetchedAt,scoringFormat:'PPR',season:2026,includeIdp:true})
+    expect(current.players.find(player=>player.position==='RB')?.byeWeek).toBe(11)
+    for(const player_bye_week of ['',null,0,'—','N/A',19]){
+      const refreshed=normalizeFantasyPros({...payloads(),players:{players:[{...basePayloads.players.players[0],bye_week:undefined,player_bye_week}]}},{fetchedAt:'2026-08-15T13:00:00.000Z',scoringFormat:'PPR',season:2026,includeIdp:true,previous:current})
+      expect(refreshed.players.find(player=>player.position==='RB')?.byeWeek).toBe(11)
+    }
+  })
   it('keeps IDP typed and separate from offensive ECR', () => {
     const snapshot = normalizeFantasyPros(payloads(), { fetchedAt, scoringFormat:'PPR', season:2026, includeIdp:true })
     expect(snapshot.players.find(player=>player.position==='DL')).toMatchObject({ position:'DL', idp:{ rank:4, tier:1 } }); expect(snapshot.players.find(player=>player.position==='DL')?.sourceValues[0]).toMatchObject({ scoringFormat:'IDP', rankingClass:'IDP' }); expect(snapshot.quality).toBe('PARTIAL')

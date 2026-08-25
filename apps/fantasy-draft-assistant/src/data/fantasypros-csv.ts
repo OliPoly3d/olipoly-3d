@@ -20,7 +20,7 @@ const defensive=new Set(['LB','DE','DT','S','CB','DL','DB']);
 const overallOffensivePositions:Position[]=['QB','RB','WR','TE'];
 const csvLine=(line:string)=>{const values:string[]=[];let value='',quoted=false;for(let i=0;i<line.length;i++){const char=line[i];if(char==='"'&&line[i+1]==='"'){value+='"';i++}else if(char==='"')quoted=!quoted;else if(char===','&&!quoted){values.push(value.trim());value=''}else value+=char}values.push(value.trim());return values};
 const headerKey=(value:string)=>value.replace(/^\uFEFF/,'').trim().toUpperCase().replace(/[_\s]+/g,' ');
-const headerAliases={rank:['RK','RANK'],name:['PLAYER NAME','PLAYER'],team:['TEAM'],position:['POS','POSITION'],bye:['BYE']} as const;
+const headerAliases={rank:['RK','RANK'],name:['PLAYER NAME','PLAYER'],team:['TEAM'],position:['POS','POSITION'],bye:['BYE','BYE WEEK','BYEWEEK','PLAYER BYE WEEK','PLAYERBYEWEEK']} as const;
 const headerIndex=(headers:string[],aliases:readonly string[])=>headers.findIndex(header=>aliases.includes(header));
 
 /** Applies ranking authorities by canonical identity without mutating player/news data. */
