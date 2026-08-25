@@ -13,7 +13,7 @@ export interface PlayerRelationship{type:'HANDCUFF'|'COMPETITION'|'STACK';player
 export interface DraftPlayer{id:Id;canonicalPlayerId:Id|null;displayName:string;normalizedName:string;position:Position;nflTeam?:string;byeWeek?:number;baselineRank?:number;fixtureTier?:number;baselineValue?:number;currentBaselineRank?:number;currentPositionRank?:number;espnReferenceRank?:number;currentTier?:number;currentAdp?:number;playerIntelligence?:import('../data/player-data').PlayerIntelligence;relationships?:PlayerRelationship[];historyOnly?:boolean}
 export type DraftEventType='DRAFT_STARTED'|'PICK_MADE'|'PICK_UNDONE'|'PICK_EDITED'|'DRAFT_PAUSED'|'DRAFT_RESUMED'|'DRAFT_COMPLETED';
 export interface DraftEvent{id:Id;sessionId:Id;seasonId:Id;sequence:number;type:DraftEventType;occurredAt:string;deviceId:string;payload:Record<string,unknown>;reversesEventId?:Id;supersedesEventId?:Id}
-export interface DraftSession{id:Id;seasonId:Id;status:'NOT_STARTED'|'ACTIVE'|'PAUSED'|'COMPLETED';rounds:number;allowIncompleteKeepers:boolean;createdAt:string}
+export interface DraftSession{id:Id;seasonId:Id;status:'NOT_STARTED'|'ACTIVE'|'PAUSED'|'COMPLETED';rounds:number;allowIncompleteKeepers:boolean;createdAt:string;/** Data Center version stays stable for this draft unless an explicit safe upgrade is performed. */playerDataSnapshotId?:string}
 export interface DraftSnapshot{sessionId:Id;sequence:number;stateVersion:number;projection:unknown}
 /** A chronological selection. `slot` is the immutable base-order position kept for legacy ownership records. */
 export interface PlannedPick{round:number;pickInRound:number;overallPick:number;slot:number;sequence:number;originalTeamId:Id;currentTeamId:Id;kind:'keeper'|'live'}
