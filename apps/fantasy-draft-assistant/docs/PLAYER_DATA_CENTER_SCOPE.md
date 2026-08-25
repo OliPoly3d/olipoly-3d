@@ -44,7 +44,7 @@ This PR will deliver a functional local-first Data Center foundation:
 
 1. Central source manifest, field authority, freshness policy, source instructions, and league compatibility.
 2. Flexible semantic header discovery and approved FantasyPros PPR, Half-PPR, IDP, ADP, and dynamic bye-sheet CSV adapters.
-3. ESPN Top 300 reuse plus Mike Clay text adapter; inert ESPN injuries and Draft Sharks HTML adapters; NFL card remains explicitly awaiting a validated sample.
+3. ESPN Top 300 reuse plus Mike Clay text adapter; first-class ESPN Print/Save as PDF injuries adapter and inert Draft Sharks HTML adapter; NFL card remains explicitly awaiting a validated sample.
 4. Non-destructive field composition with provenance, coverage/conflict reporting, deterministic content IDs, atomic IndexedDB activation, previous-snapshot rollback, and locally saved import drafts.
 5. A global, accessible `PLAYER DATA CENTER` route with source cards, multi-file/source-directed upload, validation/mapping preview, activation, limitations, help, and rollback.
 6. League read-only consumer panels and removal of league activation/automated-refresh controls only after the global route is wired.

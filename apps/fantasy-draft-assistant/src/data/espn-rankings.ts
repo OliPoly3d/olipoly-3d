@@ -26,12 +26,12 @@ export async function extractPdfText(data:ArrayBuffer):Promise<string>{
     const pdfjs=await import('pdfjs-dist/legacy/build/pdf.mjs');
     configurePdfWorker(pdfjs);
     const document=await pdfjs.getDocument({data:new Uint8Array(data)}).promise;
-    for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){const page=await document.getPage(pageNumber),content=await page.getTextContent();pages.push(content.items.map(item=>'str' in item?item.str:'').join(' '))}
+    for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){const page=await document.getPage(pageNumber),content=await page.getTextContent();pages.push(content.items.map(item=>'str' in item?`${item.str}${'hasEOL' in item&&item.hasEOL?'\n':' '}`:'').join(''))}
   }catch(error){
     console.error('ESPN PDF import failed while PDF.js was reading the document.',error);
     throw new Error('Unable to read this PDF. The existing ESPN rankings were not changed.');
   }
-  const text=pages.join('\n').replace(/\s+/g,' ').trim();
+  const text=pages.join('\n').replace(/[ \t]+/g,' ').replace(/\n +/g,'\n').trim();
   if(!text)throw new Error('This PDF contains no usable text. Scanned/image-only PDFs are unsupported; upload the text-based ESPN PPR Top 300 PDF.');
   return text;
 }
