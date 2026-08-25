@@ -19,10 +19,18 @@ describe('iPad landscape cockpit readability contract', () => {
     expect(main).toContain('<form id="chat-form">');
   });
   it('keeps three primary recommendations, Last 4, alerts and preference badges without repeated card provenance', () => {
-    expect(main).toContain('recommendations=intelligence.recommendations');
+    expect(main).toContain('recommendations=selectedTab.recommendations');
     expect(main).toContain('playerAlert(p)');
     expect(main).toContain('interestBadge(interests.find');
     expect(RECENT_PICK_LIMIT).toBe(4);
     expect(main).not.toContain('<span class="fixture">${r.sourceLabel}</span>');
+  });
+  it('provides a horizontally reachable, keyboard-operable recommendation tab list', () => {
+    expect(main).toContain('role="tablist"');
+    expect(main).toContain('role="tab"');
+    expect(main).toContain('aria-selected="${tab.id===selectedTab.id}"');
+    expect(main).toContain("['ArrowLeft','ArrowRight','Home','End']");
+    expect(css).toMatch(/\.recommendation-tabs\{[^}]*overflow-x:auto/);
+    expect(css).toContain('.recommendation-tabs button:focus-visible');
   });
 });
