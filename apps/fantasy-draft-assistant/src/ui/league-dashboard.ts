@@ -1,5 +1,6 @@
 import type { DraftState, PlayerInterest, SeasonSetup, StrategicIntent, DraftPhilosophy } from '../domain/models';
 import type { PlayerDataSnapshot } from '../data/player-data';
+import type { DataCenterSnapshot } from '../data/player-data-center';
 
 export interface LeagueDashboardInput {
   setup: SeasonSetup;
@@ -10,6 +11,7 @@ export interface LeagueDashboardInput {
   playerData?: PlayerDataSnapshot;
   espnPlayerCount?: number;
   nextOwnedPick?: string;
+  dataCenterSnapshot?: DataCenterSnapshot;
 }
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
@@ -17,14 +19,13 @@ const rosterSize = (setup: SeasonSetup) => setup.rosterSlots.filter(slot => slot
 const format = (setup: SeasonSetup) => setup.settings.ppr === 1 ? 'PPR' : setup.settings.ppr === .5 ? 'Half PPR' : 'Standard';
 
 export function leagueDashboardMarkup(input: LeagueDashboardInput): string {
-  const { setup, state, philosophy, interests, intents, playerData, espnPlayerCount, nextOwnedPick } = input;
+  const { setup, state, philosophy, interests, intents, nextOwnedPick, dataCenterSnapshot } = input;
   const slug = escapeHtml(setup.league.slug);
   const status = state?.status ?? 'NOT STARTED';
   const current = state?.current;
   const complete = status === 'COMPLETED';
-  const playerCount = playerData?.players.length ?? 0;
-  const updated = playerData ? new Date(playerData.createdAt).toLocaleString() : 'Not refreshed';
-  const freshness = playerData ? `${playerData.freshness === 'FRESH' ? 'Fresh' : 'Needs refresh'} · ${playerCount} players` : 'No shared snapshot';
+  const rankingField=setup.settings.ppr===1?'pprRank':'halfPprRank',tierField=setup.settings.ppr===1?'pprTier':'halfPprTier',coverage=dataCenterSnapshot?.coverage;
+  const sourceStatus=(id:string)=>dataCenterSnapshot?.sources.some(source=>source.id===id)?'Loaded':'Missing';
   return `<main class="league-command">
     <a class="league-back" href="#/">← Leagues</a>
     <header class="league-identity">
@@ -43,8 +44,8 @@ export function leagueDashboardMarkup(input: LeagueDashboardInput): string {
         <a class="dashboard-button" href="#/${slug}/philosophy">REVIEW PHILOSOPHY</a>
       </section>
       <section class="rankings-data-card"><div class="section-heading"><h2>RANKINGS &amp; DATA</h2><span class="status-chip">SOURCES</span></div>
-        <div class="source-grid"><div><small>FANTASYPROS</small><b>${freshness}</b><span>Last refresh ${updated}</span></div><div><small>ESPN</small><b>${espnPlayerCount == null ? 'Not imported' : 'PPR300 active'}</b><span>${espnPlayerCount == null ? 'Import from Rankings' : `${espnPlayerCount} player ranks`}</span></div></div>
-        <div class="card-actions"><a class="dashboard-button" href="#/${slug}/rankings">RANKINGS</a><button class="dashboard-button" id="dashboard-refresh">REFRESH PLAYER DATA</button></div><p id="dashboard-refresh-status" role="status" aria-live="polite"></p>
+        <p><b>${escapeHtml(setup.league.name)} is using Player Data ${dataCenterSnapshot?.version??'—'}</b></p><div class="source-grid"><div><small>${setup.settings.ppr===1?'PPR':'HALF-PPR'} ECR</small><b>${coverage?.[rankingField]??0} players</b><span>FANTASYPROS authority</span></div><div><small>ADP / TIERS / BYE</small><b>${coverage?.adp??0} / ${coverage?.[tierField]??0} / ${coverage?.bye??0}</b><span>Read-only activated coverage</span></div><div><small>PROJECTIONS / INJURIES</small><b>${sourceStatus('MIKE_CLAY')} / ${sourceStatus('ESPN_INJURIES')}</b><span>ESPN intelligence</span></div><div><small>NEWS${setup.settings.idpEnabled?' / IDP':''}</small><b>${sourceStatus('DRAFT_SHARKS')}${setup.settings.idpEnabled?` / ${coverage?.idpRank??0} players`:''}</b><span>${dataCenterSnapshot?.limitations[0]??'No active Data Center snapshot'}</span></div></div>
+        <div class="card-actions"><a class="dashboard-button" href="#/${slug}/rankings">VIEW RANKINGS</a><a class="dashboard-button" href="#/player-data-center">MANAGE DATA IN PLAYER DATA CENTER</a></div>
       </section>
     </div>
     <div class="command-grid command-secondary">
