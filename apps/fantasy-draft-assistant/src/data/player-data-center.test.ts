@@ -1,7 +1,12 @@
+// @vitest-environment jsdom
 import {describe,expect,it} from 'vitest';
 import {canonicalPlayerId} from './player-data';
 import {composeDataCenterSnapshot,discoverHeaders,normalizeHeader,parseFantasyProsCsv,reconcileDataCenterSource,type ReconciledSource} from './player-data-center';
 import {playerPool} from '../domain/seeds';
+import {readFileSync} from 'node:fs';
+import {freshnessFor,parseDraftSharksHtml,parseEspnTop300Text,validationReport,PLAYER_DATA_SOURCES} from './player-data-center';
+
+const fixture=(name:string)=>readFileSync(`src/data/__fixtures__/player-data-center/${name}`,'utf8');
 
 describe('Player Data Center flexible FantasyPros adapters',()=>{
  it('normalizes BOM, punctuation, whitespace, underscores and semantic aliases',()=>{expect(['\ufeff Bye Week','bye_week','BYE-WEEK',' Bye   Week '].map(normalizeHeader)).toEqual(['BYE WEEK','BYE WEEK','BYE WEEK','BYE WEEK']);expect(discoverHeaders(['PLAYER NAME','ECR VS. ADP','New Metric']).mapping).toMatchObject({player:0,ecrVsAdp:1})});
@@ -9,6 +14,16 @@ describe('Player Data Center flexible FantasyPros adapters',()=>{
  it('preserves unknown columns only as metadata and parses composite ADP identity',()=>{const parsed=parseFantasyProsCsv('Rank,Player (Bye),POS,Yahoo,Sleeper,AVG,Real-Time,New Numeric\n1,Jahmyr Gibbs DET (6),RB1,1,2,1.5,1.2,99','FP_ADP',{season:2026,filename:'adp.csv'});expect(parsed.errors).toEqual([]);expect(parsed.unknownColumns).toEqual(expect.arrayContaining(['Yahoo','Sleeper','New Numeric']));expect(parsed.rows[0]).toMatchObject({playerName:'Jahmyr Gibbs',team:'DET',bye:6,position:'RB',positionRank:1,adp:1.5,realTimeAdp:1.2});expect(parsed.rows[0].metadata).toHaveProperty('source:NEW NUMERIC','99')});
  it('recognizes bye sections dynamically and never makes positional ECR overall rank',()=>{const parsed=parseFantasyProsCsv('Week 12 Bye,,,,\nECR,Quarterbacks,ECR,Running Backs\nJosh Allen,1,James Cook,2','FP_BYE',{season:2026,filename:'bye.csv'});expect(parsed.rows).toEqual([expect.objectContaining({playerName:'Josh Allen',position:'QB',bye:12}),expect.objectContaining({playerName:'James Cook',position:'RB',bye:12})]);expect(parsed.rows.every(row=>row.overallRank===undefined)).toBe(true)});
  it('rejects a position-only ranking as overall',()=>{const parsed=parseFantasyProsCsv('RK,PLAYER NAME,TEAM,POS\n1,A One,BUF,RB1\n2,B Two,DAL,RB2','FP_PPR',{season:2026,filename:'rb.csv',scoringConfirmed:true});expect(parsed.errors.join(' ')).toContain('combined QB/RB/WR/TE')});
+});
+
+describe('faithful sanitized production-format fixtures',()=>{
+ it.each([['FP_PPR','fantasypros-ppr-observed.csv',517],['FP_HALF_PPR','fantasypros-half-ppr-observed.csv',882],['FP_IDP','fantasypros-idp-observed.csv',192]] as const)('parses %s observed headers and representative row volume',(id,name,count)=>{const parsed=parseFantasyProsCsv(fixture(name),id,{season:2026,filename:name,scoringConfirmed:true});expect(parsed.errors).toEqual([]);expect(parsed.rows).toHaveLength(count);expect(parsed.mapping.map(item=>item.semantic)).toEqual(expect.arrayContaining(['overallRank','tier','player','team','position','bye']));expect(parsed.unknownColumns).toEqual(id==='FP_IDP'?[]:['Provider Added'])});
+ it('keeps dynamic ADP providers metadata-only and missing composite ADP missing',()=>{const parsed=parseFantasyProsCsv(fixture('fantasypros-adp-observed.csv'),'FP_ADP',{season:2026,filename:'adp.csv'});expect(parsed.rows).toHaveLength(2);expect(parsed.rows[0]).toMatchObject({playerName:'Jahmyr Gibbs',position:'RB',positionRank:1,adp:2,realTimeAdp:1.5});expect(parsed.rows[1].adp).toBeUndefined();expect(parsed.warnings.join(' ')).toContain('remains missing rather than becoming zero');expect(parsed.unknownColumns).toEqual(expect.arrayContaining(['Yahoo','Sleeper','RTSports','New Provider']))});
+ it('handles uneven dynamic bye groups without a hardcoded week list',()=>{const parsed=parseFantasyProsCsv(fixture('fantasypros-bye-sections-observed.csv'),'FP_BYE',{season:2026,filename:'bye.csv'});expect(new Set(parsed.rows.map(row=>row.bye))).toEqual(new Set([5,14]));expect(parsed.rows).toHaveLength(6)});
+ it('validates ESPN multi-block extraction ranks and source date',()=>{const parsed=parseEspnTop300Text(fixture('espn-top-300-extracted.txt'),{season:2026,filename:'ESPN_300.pdf'});expect(parsed.errors).toEqual([]);expect(parsed.rows.map(row=>row.overallRank)).toEqual([1,81,161,241]);expect(parsed.sourceDate).toContain('2026-08-19')});
+ it('parses Draft Sharks inertly, deduplicates, and excludes markup content',()=>{const html=fixture('draft-sharks-observed.html'),parsed=parseDraftSharksHtml(`${html}${html.replace('story-1','story-1')}`,{season:2026,filename:'news.html'});expect(parsed.rows).toHaveLength(1);expect(parsed.rows[0]).toMatchObject({providerId:'ds-1',playerName:'Sanitized Player',headline:'Sanitized update'});expect(parsed.rows[0].summary).not.toContain('ad')});
+ it('exports diagnostics without source contents or local paths',()=>{const parsed=parseFantasyProsCsv(fixture('fantasypros-adp-observed.csv'),'FP_ADP',{season:2026,filename:'C:\\private\\adp.csv'}),report=validationReport(parsed),serialized=JSON.stringify(report);expect(report.filename).toBe('adp.csv');expect(report.recordCounts.parsed).toBe(2);expect(serialized).not.toContain('Jahmyr Gibbs DET (6)');expect(serialized).not.toContain('C:\\private')});
+ it('uses explicit Draft Sharks and planned-source freshness states',()=>{const news=PLAYER_DATA_SOURCES.find(item=>item.id==='DRAFT_SHARKS')!,planned=PLAYER_DATA_SOURCES.find(item=>item.id==='NFL_INJURIES')!;expect(freshnessFor(news,'2026-08-24T00:00:00Z',new Date('2026-08-25T01:00:00Z'))).toBe('RECENT');expect(freshnessFor(planned,undefined)).toBe('PLANNED / DISABLED')});
 });
 
 describe('field composition and activation identity',()=>{
