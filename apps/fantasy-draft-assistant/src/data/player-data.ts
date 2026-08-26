@@ -39,7 +39,7 @@ export interface ProviderConfig { providerId:string; enabled:boolean; priority:n
 
 const suffix=/\b(jr|sr|ii|iii|iv|v)\b/g;
 export const normalizePlayerName=(name:string)=>name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[.'’`-]/g,' ').replace(suffix,' ').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
-const teams:Record<string,string>={JAC:'JAX',JAX:'JAX',WSH:'WAS',WAS:'WAS',LA:'LAR',LAR:'LAR',STL:'LAR',OAK:'LV',LVR:'LV',LV:'LV',SD:'LAC',LAC:'LAC'};
+const teams:Record<string,string>={ARZ:'ARI',BLT:'BAL',CLV:'CLE',HST:'HOU',JAC:'JAX',JAX:'JAX',WSH:'WAS',WAS:'WAS',LA:'LAR',LAR:'LAR',STL:'LAR',OAK:'LV',LVR:'LV',LV:'LV',SD:'LAC',LAC:'LAC'};
 export const normalizeTeam=(team?:string)=>{const value=team?.trim().toUpperCase();return value?(teams[value]??value):undefined};
 const positions:Record<string,Position>={DEF:'DST','D/ST':'DST',DST:'DST',PK:'K',EDGE:'DL',ILB:'LB',OLB:'LB',FS:'DB',SS:'DB'};
 export const normalizePosition=(position:string)=>positions[position.trim().toUpperCase()]??position.trim().toUpperCase() as Position;
