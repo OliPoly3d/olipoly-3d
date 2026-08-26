@@ -3,22 +3,73 @@ name: Supabase Keep Alive
 on:
   schedule:
     - cron: "15 13 * * *"
+    - cron: "15 18 * * *"
+    - cron: "15 0 * * *"
   workflow_dispatch:
 
 jobs:
-  ping:
+  health-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
-      - name: Ping Supabase
+      - name: Check OliPoly ERP pages and Supabase modules
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          set -e
+          set -euo pipefail
 
-          echo "Pinging Supabase..."
-          curl -f -sS \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/orders?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          : "${SUPABASE_URL:?Missing SUPABASE_URL GitHub secret}"
+          : "${SUPABASE_ANON_KEY:?Missing SUPABASE_ANON_KEY GitHub secret}"
+
+          pages=(
+            "Orders Admin|https://olipoly3d.com/orders-admin.html"
+            "Production Control|https://olipoly3d.com/production-control.html"
+            "Inventory Control|https://olipoly3d.com/inventory-control.html"
+            "Finance Pro|https://olipoly3d.com/finance-pro.html"
+            "Customer 360|https://olipoly3d.com/customer-360.html"
+            "Product Recipes|https://olipoly3d.com/product-recipes.html"
+            "Quote|https://olipoly3d.com/quote.html"
+          )
+
+          modules=(
+            "Orders|orders|id"
+            "Production|production_jobs|id"
+            "Inventory|raw_material_inventory|id"
+            "Finance|financial_entries|id"
+            "Quotes|quotes|id"
+            "Recipes|product_recipes|id"
+            "Projects|active_projects|id"
+          )
+
+          echo "Checking public ERP page availability..."
+          for check in "${pages[@]}"; do
+            label="${check%%|*}"
+            url="${check#*|}"
+            curl --fail --location --silent --show-error \
+              --retry 2 --connect-timeout 10 --max-time 30 \
+              --output /dev/null "$url"
+            echo "OK: $label page"
+          done
+
+          echo "Checking read-only Supabase module access..."
+          for check in "${modules[@]}"; do
+            IFS='|' read -r label table column <<< "$check"
+            response_file="$(mktemp)"
+            curl --fail-with-body --silent --show-error \
+              --retry 2 --connect-timeout 10 --max-time 30 \
+              --get "${SUPABASE_URL}/rest/v1/${table}" \
+              --data-urlencode "select=${column}" \
+              --data-urlencode "limit=1" \
+              -H "apikey: ${SUPABASE_ANON_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+              -H "Accept: application/json" \
+              --output "$response_file"
+            jq -e 'type == "array"' "$response_file" >/dev/null
+            rm -f "$response_file"
+            echo "OK: $label module"
+          done
 
           echo ""
-          echo "Supabase keep-alive completed successfully."
+          echo "OliPoly ERP health check and Supabase keep-alive completed successfully."
