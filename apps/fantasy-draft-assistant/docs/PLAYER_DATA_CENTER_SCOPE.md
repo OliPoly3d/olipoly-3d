@@ -52,3 +52,25 @@ This PR will deliver a functional local-first Data Center foundation:
 8. Focused and regression tests plus committed generated deployment output.
 
 The absence of real source files means adapters are validated with small synthetic layout fixtures. NFL official injury parsing remains disabled until an actual sample is supplied. This PR will not add scraping, ranking APIs, credentials, background refresh, production writes, or a second canonical player system.
+
+## 2026-08-26 production parser reliability scope
+
+### Reproduction and root causes
+
+The supplied production observations are the regression baseline: FantasyPros PPR 517, Half-PPR 882, IDP 192, ADP 382, bye 663, and Draft Sharks 80 unique articles. Those adapters already route by an explicit source card and were not replaced.
+
+The ESPN Top 300 failure (279 accepted, missing D/ST ranks, and duplicate rank 1) had two independent causes: the row grammar did not accept every provider defense spelling and table parsing did not distinguish the unique 1–300 rank universe from the repeated legend example. The repair accepts `DST`, `D/ST`, and `DEF`, creates team-based DST identities, validates each of the four printed rank blocks, and excludes later duplicate-rank material. It does not encode player names, defense names, or the reported missing ranks.
+
+The ESPN injury count of 44 equals pages 1 and 2 (18 + 26), which is evidence of page extraction truncation rather than a row grammar threshold. The shared browser extraction path now records the PDF page count, awaits pages 1 through `numPages` sequentially, reports page X of Y, and retains text-item counts for every page. Parsing continues across form-feed page boundaries without resetting team context. The exact 398-row production artifact remains a fixture-specific assertion to add when the complete sanitized 15-page extraction can be committed; 398 is deliberately not a permanent acceptance threshold.
+
+Mike Clay returned zero because one universal position-leading row expression did not match the Excel PDF's player-leading, section-specific tables. Parsing now begins only after the Leaderboard / Projections divider, recognizes offense, IDP, kicker, and returner headings, applies separate schemas, normalizes ESPN/Clay team abbreviations while preserving the provider abbreviation, and labels returners supplemental-only. Return rows are reconciliation inputs and cannot independently activate a canonical player. Full 818 + 32 + 40 production counts require the complete sanitized guide extraction; small representative fixtures validate schemas without pretending to reproduce an unavailable document.
+
+### Authority and consumer boundary
+
+`source-authority.ts` is the typed source-to-consumer registry. Every composed field stores its authority category, scoring context, league compatibility, strength, allowed/prohibited consumers, freshness policy, transformation, validation confidence, and conflict behavior alongside its existing document/date provenance. Numeric presence never determines authority. ESPN remains an independent secondary ranking; ADP remains market context; Clay remains projection/opportunity/IDP projection; injury and bye remain factual; Draft Sharks remains bounded news.
+
+The deterministic recommendation score is unchanged. Its existing terms are now also exposed as named component groups. Correlated source concepts do not gain new score terms merely because an additional source was imported: secondary ESPN confirmation, Clay projections, and opportunity are zero until a separately reviewed deterministic calculation consumes those fields. This fail-closed mapping prevents import volume from inflating recommendations while keeping the existing card ordering, Draft Fit, Cost of Waiting, and league philosophy intact. AI continues to receive deterministic results rather than uploaded documents and cannot rerank candidates.
+
+### Verification and manual browser tests required
+
+Run syntax/type checking, focused parser assertions, the complete Vitest suite, ESLint, the production build, and `git diff --check`. In a browser, upload the nine approved current-season files without activating them; verify all PDF pages report progress, diagnostics show pages processed equal page count, Top 300 reports 300/0/0, injury coverage shows the prior-versus-new count, Clay section counts are visible, unresolved supplemental identities remain excluded, and activation remains an explicit local action. Do not activate production data during this verification.
