@@ -50,7 +50,7 @@ export function stagePlayerIdentities(sources:ParsedSource[],players:DraftPlayer
    else groups.set(key,{id:key,normalizedName:normalizePlayerName(row.playerName),team:normalizeTeam(row.team),position:family(row.position),evidence:[evidence],candidates,player:matched,created:!!matched?.canonicalPlayerId&&stagedIds.has(matched.canonicalPlayerId),disposition,reason});
   }
   const blocking=[...groups.values()].filter(group=>group.disposition==='BLOCKING_IDENTITY'&&group.evidence.some(item=>item.source===source.id)).length,matched=source.matched.length,denominator=matched+source.ambiguous.filter(item=>withinBoundary(item.row)).length+source.unmatched.filter(withinBoundary).length;
-  diagnostics.push({source:source.id,parsedRows:source.rows.length,uniqueSourceIdentities:unique.size,exactMatches:matched,aliasMatches:0,ambiguous:source.ambiguous.length,unmatched:source.unmatched.length,duplicates,nonFantasy,blocking,outsidePool,active:matched,informational,usableCoverage:denominator?Math.round(matched/denominator*1000)/10:100});
+  diagnostics.push({source:source.id,parsedRows:source.rows.length,uniqueSourceIdentities:unique.size,exactMatches:matched,aliasMatches:0,ambiguous:source.ambiguous.length,unmatched:source.unmatched.length,duplicates,nonFantasy,blocking,outsidePool,active:matched,informational,usableCoverage:denominator?Math.round(matched/denominator*1000)/10:0});
  }
  const all=[...groups.values()],blockingGroups=all.filter(group=>group.disposition==='BLOCKING_IDENTITY'),reviewGroups=all.filter(group=>group.disposition==='REVIEW_RECOMMENDED');
  // Only unresolved primary identities remain activation-blocking. Every unmatched supplemental/deep row stays provenance-only.
