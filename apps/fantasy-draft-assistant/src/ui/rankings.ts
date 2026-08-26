@@ -5,6 +5,8 @@ import { rankingSources } from '../data/player-data';
 import type { DraftFit } from '../intelligence/recommendation-engine';
 import type { DraftPlayer, DraftState, PlayerInterest, Position } from '../domain/models';
 import { interestBadge } from './live-room';
+import type { PlayerDataConsumerView } from '../data/player-data-consumer';
+import { consumerRankingMaps } from '../data/player-data-consumer';
 
 export type RankingMode='FANTASYPROS'|'ESPN'|'COMPARE';
 export type RankingSortKey='fp'|'idp'|'espn'|'draftFit'|'deltaFp'|'deltaEspn'|'positionRank'|'tier'|'adp';
@@ -26,6 +28,11 @@ export function rankingRows(snapshot:PlayerDataSnapshot|undefined,players:DraftP
     const allValue=all?.rankings.get(canonical),market=allValue?(manualAll||snapshot?.mode==='MANUAL_IMPORT'?allValue:{...allValue,overallRank:undefined}):undefined,idp=manualIdp?.rankings.get(canonical),draftFit=fits.get(player.id),espnValue=espn?.rankings.get(canonical);
     return[{player,market,idp,espn:espnValue,draftFit,delta:draftFit&&market?.overallRank!=null?market.overallRank-draftFit.rank:undefined,espnDelta:draftFit&&espnValue?.overallRank!=null?espnValue.overallRank-draftFit.rank:undefined,available:available.has(player.id)}];
   }).sort(classAwareFallback);
+}
+
+export function dataCenterRankingRows(view:PlayerDataConsumerView,format:'PPR'|'HALF_PPR',players:DraftPlayer[],state:DraftState,draftFits:DraftFit[]):RankingRow[]{
+  const maps=consumerRankingMaps(view,format),byCanonical=new Map(players.filter(player=>player.canonicalPlayerId).map(player=>[player.canonicalPlayerId!,player])),fits=new Map(draftFits.map(fit=>[fit.playerId,fit])),available=new Set(state.available.map(player=>player.id));
+  return[...new Set([...maps.market.keys(),...maps.idp.keys()])].flatMap(canonical=>{const player=byCanonical.get(canonical);if(!player||player.historyOnly)return[];const market=maps.market.get(canonical),idp=maps.idp.get(canonical),espn=maps.espn.get(canonical),draftFit=fits.get(player.id);return[{player,market,idp,espn,draftFit,delta:draftFit&&market?.overallRank!=null?market.overallRank-draftFit.rank:undefined,espnDelta:draftFit&&espn?.overallRank!=null?espn.overallRank-draftFit.rank:undefined,available:available.has(player.id)}]}).sort(classAwareFallback);
 }
 
 const classAwareFallback=(a:RankingRow,b:RankingRow)=>(a.market?.overallRank??Number.MAX_SAFE_INTEGER)-(b.market?.overallRank??Number.MAX_SAFE_INTEGER)||(a.market?0:1)-(b.market?0:1)||(a.idp?.overallRank??Number.MAX_SAFE_INTEGER)-(b.idp?.overallRank??Number.MAX_SAFE_INTEGER)||a.player.id.localeCompare(b.player.id);
