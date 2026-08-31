@@ -52,6 +52,14 @@ td{padding:12px 10px;border-bottom:1px solid #1c2835;vertical-align:middle}tr:la
 .myteam .locked-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .myteam .locked-pill{font-size:10px;padding:4px 7px;border-radius:999px;background:#17283a;color:#a9d3ff;border:1px solid #2f5273}
 
+
+.bench-slot{background:#0c131a;border-style:dashed}
+.callout{display:block;margin-top:4px;font-size:11px;font-weight:700;line-height:1.35;padding:5px 7px;border-radius:7px}
+.callout-risk{background:#351717;color:#ff9d9d;border:1px solid #5a2323}
+.callout-value{background:#123522;color:#8ee6aa;border:1px solid #245d38}
+.callout-sleeper{background:#102b43;color:#9fd4ff;border:1px solid #28577c}
+.callout-note{background:#17212c;color:#c7d3df;border:1px solid #2b3c4d}
+
 footer{color:var(--muted);font-size:11px;padding:18px 2px}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.74);z-index:20;padding:24px;overflow:auto}.modal.open{display:block}
 .modalbox{max-width:900px;margin:30px auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
@@ -153,7 +161,7 @@ const players = [{"name": "Nico Collins", "pos": "WR", "team": "HOU", "bye": 8, 
 const keepers = {"team rimar": ["Malik Nabers", "A.J. Brown", "Garrett Wilson"], "Run CMC": ["Ja'Marr Chase", "Justin Jefferson", "Christian McCaffrey"], "Bowers' Castle": ["Tetairoa McMillan", "Brock Bowers", "De'Von Achane"], "Pacers": ["Saquon Barkley", "Chris Olave", "Lamar Jackson"], "TL": ["Ashton Jeanty", "Josh Jacobs", "Zay Flowers"], "kevin's Top-Notch Team": ["Davante Adams", "Bhayshul Tuten", "David Montgomery"], "Hot lava Hot lava": ["Bijan Robinson", "James Cook III", "Jonathan Taylor"], "$ Shmoney": ["Jahmyr Gibbs", "Trey McBride", "Amon-Ra St. Brown"], "Aaron Rodger's BFF": ["Omarion Hampton", "Quinshon Judkins", "CeeDee Lamb"], "Nacua Matata": ["Puka Nacua", "Terry McLaurin", "Kenneth Walker III"], "Model Citizens Football Club": ["Cam Skattebo", "Breece Hall", "Derrick Henry"], "Drake's Chuba": ["Josh Allen", "Drake London", "Jaxon Smith-Njigba"]};
 
 const MY_TEAM = "Drake's Chuba";
-const rosterTemplate = ["QB","RB","RB","WR","WR","WR","TE","FLEX","DP","DP","DST","K"];
+const rosterTemplate = ["QB","RB","RB","WR","WR","WR","TE","FLEX","DP","DP","DST","K","BENCH","BENCH","BENCH","BENCH","BENCH","BENCH"];
 
 let drafted = new Set(JSON.parse(localStorage.getItem("robocopDrafted")||"[]"));
 let myPlayers = new Set(JSON.parse(localStorage.getItem("robocopMyPlayers")||"[]"));
@@ -179,12 +187,31 @@ function tierForRank(rank){
   return {id:5,label:"TIER 5 — LATE ROUND / SPECIALISTS"};
 }
 
-function riskFor(p){
-  const text=(p.note||"").toLowerCase();
-  if(p.tag==="WATCH" || /(injur|ankle|hamstring|question|uncertain|suspension|depth-chart|role uncertainty|passing-down)/.test(text)){
-    return p.note || "Monitor status before draft.";
+function hintFor(p){
+  const text=(p.note||"").trim();
+  const lower=text.toLowerCase();
+
+  if(p.tag==="WATCH" || /(injur|ankle|hamstring|question|uncertain|suspension|role uncertainty|passing-down|depth-chart mess)/.test(lower)){
+    return {type:"risk",label:"⚠ RISK",text:text || "Monitor status before draft."};
   }
-  return "";
+
+  if(p.tag==="VALUE"){
+    return {type:"value",label:"↑ VALUE",text:text || `Strong value at ${p.pos}${p.posRank} on the RoboCop-adjusted board.`};
+  }
+
+  if(/(sleeper|upside|breakout|underpriced)/.test(lower)){
+    return {type:"sleeper",label:"★ SLEEPER",text:text};
+  }
+
+  if(/(keeper pool|scarcity|depth\/value|raises usable|format raises|value)/.test(lower)){
+    return {type:"value",label:"↑ VALUE",text:text};
+  }
+
+  if(p.rank>=73 && p.rank<=140 && p.posRank<=24){
+    return {type:"sleeper",label:"★ SLEEPER",text:`Useful late-round upside: still ranks ${p.pos}${p.posRank} on this keeper-adjusted board.`};
+  }
+
+  return text ? {type:"note",label:"",text:text} : null;
 }
 
 function save(){
@@ -225,11 +252,12 @@ function allocateRoster(entries){
     let idx=-1;
     if(["QB","TE","DST","K","DP"].includes(entry.pos)){
       idx=slots.findIndex((s,i)=>!used.has(i)&&s.slot===entry.pos);
+      if(idx<0 && entry.pos==="TE") idx=slots.findIndex((s,i)=>!used.has(i)&&s.slot==="FLEX");
     } else if(entry.pos==="RB" || entry.pos==="WR"){
       idx=slots.findIndex((s,i)=>!used.has(i)&&s.slot===entry.pos);
       if(idx<0) idx=slots.findIndex((s,i)=>!used.has(i)&&s.slot==="FLEX");
     }
-    if(idx<0) idx=slots.findIndex((s,i)=>!used.has(i)&&s.slot==="FLEX");
+    if(idx<0) idx=slots.findIndex((s,i)=>!used.has(i)&&s.slot==="BENCH");
     if(idx>=0){ slots[idx].name=entry.name + (entry.keeper ? " 🔒" : ""); used.add(idx); }
   }
   entries.forEach(assign);
@@ -257,14 +285,15 @@ function renderRoster(){
   const groups=[
     ["OFFENSE",["QB","RB","RB","WR","WR","WR","TE","FLEX"]],
     ["DEFENSE",["DP","DP"]],
-    ["SPECIAL",["DST","K"]]
+    ["SPECIAL",["DST","K"]],
+    ["BENCH",["BENCH","BENCH","BENCH","BENCH","BENCH","BENCH"]]
   ];
   let cursor=0;
   groups.forEach(([label,arr])=>{
     html += `<div class="roster-group"><div class="roster-label">${label}</div>`;
     arr.forEach(slot=>{
       const s=slots[cursor++];
-      html += `<div class="roster-slot ${s.name?"":"empty"}"><span class="slotpos">${slot}</span><span class="slotname">${s.name||"Open"}</span></div>`;
+      html += `<div class="roster-slot ${slot==="BENCH"?"bench-slot ":""}${s.name?"":"empty"}"><span class="slotpos">${slot}</span><span class="slotname">${s.name||"Open"}</span></div>`;
     });
     html += `</div>`;
   });
@@ -297,16 +326,21 @@ function render(){
    if(drafted.has(p.name))tr.classList.add("drafted");
    if(myPlayers.has(p.name))tr.classList.add("mine-row");
 
-   const risk=riskFor(p);
-   const badge=p.tag==="VALUE"?'<span class="value">VALUE</span>':"";
-   const riskHtml=risk?`<span class="risk-dot">⚠ RISK</span><span class="risk-text">${risk}</span>`:"";
+   const hint=hintFor(p);
+   let noteHtml="";
+   if(hint){
+     const cls = hint.type==="risk" ? "callout-risk" :
+                 hint.type==="value" ? "callout-value" :
+                 hint.type==="sleeper" ? "callout-sleeper" : "callout-note";
+     noteHtml=`<span class="callout ${cls}">${hint.label?`<strong>${hint.label}</strong> `:""}${hint.text}</span>`;
+   }
 
    tr.innerHTML=`<td class="rank">${p.rank}<span class="posrank">${p.pos}${p.posRank}</span></td>
    <td><div class="player">${p.name}</div><div class="meta">${p.team}</div></td>
    <td><span class="pos">${p.pos}</span></td>
    <td>${p.bye}</td>
    <td>${p.market}</td>
-   <td class="note">${badge} ${p.note} ${riskHtml}</td>
+   <td class="note">${noteHtml}</td>
    <td class="draft"><div class="action-wrap">
      <button data-action="draft" data-name="${p.name}">${drafted.has(p.name)&&!myPlayers.has(p.name)?"Restore":"Drafted"}</button>
      <button class="mybtn" data-action="mine" data-name="${p.name}">${myPlayers.has(p.name)?"Remove Mine":"My Player"}</button>
