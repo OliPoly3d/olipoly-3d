@@ -45,8 +45,8 @@ td{padding:12px 10px;border-bottom:1px solid #1c2835;vertical-align:middle}tr:la
 .needbar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
 .needchip{font-size:10px;padding:5px 7px;border-radius:999px;border:1px solid #2b3c4d;background:#0d151d;color:#9eb0c2}
 .needchip.open{border-color:#6f5a1d;background:#2d2611;color:#ffd66d}
-.risk-dot{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 6px;border-radius:999px;background:#351717;color:#ff9d9d;border:1px solid #5a2323;margin-right:6px}
-.risk-text{display:block;margin-top:4px;color:#d9a0a0;font-size:11px}
+.risk-dot{display:none!important;display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 6px;border-radius:999px;background:#351717;color:#ff9d9d;border:1px solid #5a2323;margin-right:6px}
+.risk-text{display:none!important;display:block;margin-top:4px;color:#d9a0a0;font-size:11px}
 .showdrafted-wrap{display:inline-flex;align-items:center;gap:6px;padding:0 3px}
 .showdrafted-wrap input{accent-color:#4aa3ff}
 .myteam .locked-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
@@ -125,7 +125,7 @@ footer{color:var(--muted);font-size:11px;padding:18px 2px}
   <div class="stats">
     <div class="stat">Available <b id="avail">0</b></div>
     <div class="stat">Marked drafted <b id="taken">0</b></div>
-    <div class="stat">Ranking version <b>1.0 · Aug 31</b></div>
+    <div class="stat">Ranking version <b>1.1 · Aug 31 News</b></div>
   </div>
   <table>
     <thead><tr><th>RK</th><th>PLAYER</th><th>POS</th><th>BYE</th><th>BASE</th><th>ROBOCOP NOTE</th><th></th></tr></thead>
@@ -187,28 +187,60 @@ function tierForRank(rank){
   return {id:5,label:"TIER 5 — LATE ROUND / SPECIALISTS"};
 }
 
+
+const NEWS_HINTS = {
+  "Nico Collins": {type:"value", label:"↑ VALUE", text:"Houston lost Jayden Higgins to a season-ending ACL tear, boosting Collins' target outlook. DraftSharks moved him up to WR9 and already viewed him as undervalued."},
+  "Chase Brown": {type:"risk", label:"⚠ ROLE WATCH", text:"Samaje Perine remains a real passing-down factor. Brown still leads the backfield, but receiving work is less secure than his overall draft price suggests."},
+  "Jeremiyah Love": {type:"risk", label:"⚠ INJURY", text:"Recovering from a high-ankle sprain and still uncertain for Week 1. He is progressing, but early-season workload/efficiency carries added risk."},
+  "Javonte Williams": {type:"value", label:"↑ GOOD CAMP", text:"Dallas has treated Williams like a clear starter after a strong camp, and the current No. 2 RB battle remains unsettled behind him. Workload outlook is encouraging."},
+  "Rome Odunze": {type:"risk", label:"⚠ FOOT", text:"Odunze says the left-foot issue that bothered him through 2025 may be his 'new normal.' He played in the postseason, but the lingering condition adds risk."},
+  "DeVonta Smith": {type:"value", label:"↑ USAGE", text:"Preseason alignment hints Smith could see meaningful slot snaps in addition to his outside work — a potentially favorable way to manufacture targets."},
+  "D'Andre Swift": {type:"value", label:"↑ OPPORTUNITY", text:"Kyle Monangai's hyperextended knee has him iffy for the start of the season, potentially giving Swift a larger early workload than expected."},
+  "TreVeyon Henderson": {type:"risk", label:"⚠ ROLE WATCH", text:"Camp reports have questioned his vision/patience, and he currently looks likely to open behind Rhamondre Stevenson. Upside remains, but immediate volume is shaky."},
+  "Jakobi Meyers": {type:"risk", label:"⚠ INJURY", text:"Currently dealing with a right-hand injury with an unclear return timeline. DraftSharks considers him a risky pick until there is more clarity."},
+  "Tony Pollard": {type:"risk", label:"⚠ TIMESHARE", text:"Tyjae Spears has been playing more snaps/routes with the starting offense. This backfield could approach a 50/50 split, limiting Pollard's volume ceiling."},
+  "Tyjae Spears": {type:"sleeper", label:"★ SLEEPER", text:"Has played more snaps and run more routes with Cam Ward this preseason. A near-even split with Tony Pollard would make Spears interesting at his cheaper price."},
+  "Woody Marks": {type:"sleeper", label:"★ SLEEPER", text:"Houston beat reporting says the backfield could be close to a 50/50 split with David Montgomery. Marks is the clear handcuff with a path to standalone value."},
+  "Isiah Pacheco": {type:"risk", label:"⚠ INJURY", text:"Missed much of camp with an MCL sprain and is now dealing with a back issue. Detroit's reported veteran-RB interest adds another warning sign."},
+  "Tank Dell": {type:"risk", label:"⚠ AVOID FOR NOW", text:"Still working back from his major 2024 knee injury; recent reporting says he is nowhere near ready to play. Not a useful redraft target right now."},
+  "Pat Freiermuth": {type:"risk", label:"⚠ ROLE DOWN", text:"Darnell Washington played more first-team snaps and ran more routes this preseason. Freiermuth's early-season receiving role looks diminished."},
+  "Kayshon Boutte": {type:"sleeper", label:"★ SLEEPER", text:"Traded to Houston and now has a realistic path to the Texans' No. 2 WR job. Still a late-round play, but the opportunity improved materially."},
+  "Jaylin Noel": {type:"sleeper", label:"★ TARGET BOOST", text:"Houston's Jayden Higgins ACL injury increased Noel's projected targets. He remains a late-round flier, but there is now a clearer path to work."},
+  "De'Zhaun Stribling": {type:"sleeper", label:"★ SLEEPER", text:"Strong preseason continued and DraftSharks views him as ready for a meaningful 49ers role. One of their preferred double-digit-round targets."},
+  "MarShawn Lloyd": {type:"value", label:"↑ BIG OPPORTUNITY", text:"Josh Jacobs is on the Commissioner's Exempt List and cannot practice or play. Lloyd currently sits atop Green Bay's available RB depth chart and is expected to start if Jacobs misses games."},
+  "Keaton Mitchell": {type:"sleeper", label:"★ PASS-GAME BUZZ", text:"Chargers camp usage has included more receiving work, prompting increased route and target projections. Interesting late-round upside."},
+  "Mike Washington": {type:"sleeper", label:"★ SLEEPER", text:"Excellent preseason (6.2 YPC) plus Ashton Jeanty's ankle injury could create an immediate role. One of the stronger backup-RB upside bets."},
+  "Keenan Allen": {type:"risk", label:"⚠ LEGAL / SUSPENSION RISK", text:"Arrested after the Colts' preseason finale and charged with operating a vehicle while intoxicated. A league suspension is possible, though Indianapolis kept him on the 53-man roster."},
+  "Josh Downs": {type:"value", label:"↑ ROLE CLARITY", text:"Keenan Allen lined up primarily outside in his Colts preseason debut, reinforcing Downs as Indianapolis' primary slot receiver."},
+  "Emmett Johnson": {type:"sleeper", label:"★ HANDCUFF", text:"Won Kansas City's No. 2 RB job after roster cuts. He lacks standalone value while Kenneth Walker is healthy but is now the clear high-upside handcuff."},
+  "Tyquan Thornton": {type:"value", label:"↑ DEPTH CHART", text:"Played ahead of popular rookie sleeper Cyrus Allen in Kansas City's preseason finale and appears to be higher on the WR depth chart than expected."}
+};
+
 function hintFor(p){
+  if(NEWS_HINTS[p.name]) return NEWS_HINTS[p.name];
+
   const text=(p.note||"").trim();
   const lower=text.toLowerCase();
+
+  // Do not clutter the board with model-construction filler.
+  const generic =
+    lower.includes("half-ppr baseline with keeper pool removed") ||
+    lower.includes("3-wr + flex format raises usable wr depth/value") ||
+    lower.includes("6-pt pass td bump; still priced as a one-qb league") ||
+    lower.includes("bowers/mcbride are kept; available te scarcity matters") ||
+    lower.includes("late-round target; prioritize offense first") ||
+    lower.includes("final-round target unless value falls unusually far");
+
+  if(generic) return null;
 
   if(p.tag==="WATCH" || /(injur|ankle|hamstring|question|uncertain|suspension|role uncertainty|passing-down|depth-chart mess)/.test(lower)){
     return {type:"risk",label:"⚠ RISK",text:text || "Monitor status before draft."};
   }
-
   if(p.tag==="VALUE"){
     return {type:"value",label:"↑ VALUE",text:text || `Strong value at ${p.pos}${p.posRank} on the RoboCop-adjusted board.`};
   }
-
   if(/(sleeper|upside|breakout|underpriced)/.test(lower)){
     return {type:"sleeper",label:"★ SLEEPER",text:text};
-  }
-
-  if(/(keeper pool|scarcity|depth\/value|raises usable|format raises|value)/.test(lower)){
-    return {type:"value",label:"↑ VALUE",text:text};
-  }
-
-  if(p.rank>=73 && p.rank<=140 && p.posRank<=24){
-    return {type:"sleeper",label:"★ SLEEPER",text:`Useful late-round upside: still ranks ${p.pos}${p.posRank} on this keeper-adjusted board.`};
   }
 
   return text ? {type:"note",label:"",text:text} : null;
