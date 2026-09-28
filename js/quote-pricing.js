@@ -14,7 +14,7 @@
     const lineItems = input.lineItems?.length ? root.OliPolyLineItems.commercial(input.lineItems) : [];
     const quantity = lineItems.length ? lineItems.reduce((sum, item) => sum + item.quantity, 0)
       : Math.max(1, Math.round(finiteNumber(input.quantity) || 1));
-    const hasManualPrice = input.manualPiecePrice !== "" && input.manualPiecePrice != null;
+    const hasManualPrice = !lineItems.length && input.manualPiecePrice !== "" && input.manualPiecePrice != null;
     const hasProductionSuggestion = input.suggestedTotal !== "" && input.suggestedTotal != null;
     const manualPiecePrice = Math.max(0, finiteNumber(input.manualPiecePrice));
     const suggestedTotal = Math.max(0, finiteNumber(input.suggestedTotal));
