@@ -24,6 +24,9 @@ test('five dragons and one puppy retain separate prices and both material estima
   assert.equal(t.final_total,18.19);
   assert.equal(t.shipping,0);
   assert.equal(t.shipping_deferred,true);
+  const withOldSinglePrice = globalThis.calculateQuoteTotals({lineItems:items,manualPiecePrice:3,taxRate:7});
+  assert.equal(withOldSinglePrice.total,18.19);
+  assert.equal(withOldSinglePrice.hasManualPrice,false,'itemized pricing must not display the old single-price override notice');
 });
 test('cancel the puppy and add shipping without double charging it', () => {
   const t = P.snapshot([items[0]],{taxRate:7,shipping:6});

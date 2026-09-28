@@ -1,8 +1,9 @@
 # Multiple items and final order pricing
 
 This change supports a mixed-item estimate through Quote, acceptance, order revision,
-invoice, public tracking, and Finance. It has **not been deployed**. The SQL below is
-a proposed migration; no live schema, business records, payments, or counters were changed.
+invoice, public tracking, and Finance. Following explicit user authorization, the
+migration was applied and PR #265 was merged and deployed on September 28, 2026.
+Existing business records, payments, and counters were not changed by the deployment.
 
 ## Operator workflow
 
@@ -79,11 +80,11 @@ unchanged. Q and OP suffixes are not guaranteed equal; existing records are not 
 
 ## Deployment and verification
 
-Per `AGENTS.md`, stop at the migration and review PR. Do not apply the SQL automatically.
-First review and test the migration in a staging database with the existing live
-prerequisites, then apply it through the approved migration process before deploying
-the frontend. Check the current function definitions against the branch if production
-has changed since the read-only inspection. A failed migration rolls back as one
+The initial work stopped at the migration and review PR per `AGENTS.md`. The user then
+explicitly authorized live Supabase and GitHub deployment. The deployed function
+definitions were checked against the inspected versions before applying the migration,
+and the frontend was deployed afterward. For future deployments, first review and test
+the migration with the current live prerequisites. A failed migration rolls back as one
 transaction; preserve revision history and use a forward migration after deployment.
 
 Required existing functions/tables include the accepted-snapshot immutability trigger,
@@ -116,8 +117,16 @@ The full suite returned 182 passes and six failures also reproduced on unchanged
 main: `engine-rc2-1-authority-investigation`, `engine-rc2-2-deployed-storage-verification`,
 `engine-rc2-6-niles-exclusion-decision`, `invoice-authority-contract`,
 `orders-admin-action-regression`, and `workflow-command-authority`. Syntax checks and
-`git diff --check` passed. Live authenticated browser flows and visual PDF layout have
-not been verified; jsdom is a DOM test, not a browser rendering check.
+`git diff --check` passed. Live browser checks confirmed mixed-item pricing and deferred
+shipping disclosure without saving a customer quote. Live authenticated save/posting
+flows and visual PDF layout have not been verified; the cloud browser is signed out.
+
+Post-deployment checks confirmed RLS, no anonymous revision access, no direct client
+inserts, no client access to internal helpers, and a responding public tracker. The
+security advisor flags the new authenticated `SECURITY DEFINER` RPC; this is intentional:
+its owner check, locked order, validated snapshot, and append-only write restrictions
+are the authority for the command. Anonymous execution is revoked. See the
+[advisor guidance](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
 
 Manual staging checks before release:
 
