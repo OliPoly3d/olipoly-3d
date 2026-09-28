@@ -41,6 +41,12 @@ for (const [page, expected] of Object.entries(baseline.pages)) {
     const actual = inventory(source);
     for (const [key, expectedValues] of Object.entries(expected)) {
       if (key === 'bodyClasses') continue;
+      if (key === 'scripts') {
+        // A cache-version bump preserves the script's functional identity.
+        const paths=actual.scripts.map(value=>value.replace(/[?#].*$/, ''));
+        for(const value of expectedValues) assert.ok(paths.includes(value.replace(/[?#].*$/, '')), `${page}: missing script ${value}`);
+        continue;
+      }
       assert.deepEqual(actual[key].filter(value => expectedValues.includes(value)), expectedValues, `${page}: changed ${key}`);
     }
     assert.match(source, /<body\b[^>]*\bclass=["'][^"']*\bop-engine\b/i);

@@ -11,7 +11,9 @@
   }
 
   function calculateQuoteTotals(input = {}) {
-    const quantity = Math.max(1, Math.round(finiteNumber(input.quantity) || 1));
+    const lineItems = input.lineItems?.length ? root.OliPolyLineItems.commercial(input.lineItems) : [];
+    const quantity = lineItems.length ? lineItems.reduce((sum, item) => sum + item.quantity, 0)
+      : Math.max(1, Math.round(finiteNumber(input.quantity) || 1));
     const hasManualPrice = input.manualPiecePrice !== "" && input.manualPiecePrice != null;
     const hasProductionSuggestion = input.suggestedTotal !== "" && input.suggestedTotal != null;
     const manualPiecePrice = Math.max(0, finiteNumber(input.manualPiecePrice));
@@ -31,22 +33,25 @@
     const direct = suppliedDirect ? Math.max(0, finiteNumber(costs.direct)) : material + machine + design + post + packaging + shipping + hardware;
     const overhead = Math.max(0, finiteNumber(costs.overhead));
     const breakEven = suppliedBreakEven ? Math.max(0, finiteNumber(costs.breakEven)) : direct + overhead;
-    const pricingMode = hasManualPrice ? "manual" : hasProductionSuggestion ? "suggested" : "calculated";
+    const pricingMode = lineItems.length ? "itemized" : hasManualPrice ? "manual" : hasProductionSuggestion ? "suggested" : "calculated";
     const profitValue = Math.max(0, finiteNumber(input.profitValue));
     const profit = pricingMode === "calculated"
       ? input.profitMode === "flat" ? profitValue : direct * (profitValue / 100)
       : 0;
     const calculatedSubtotal = direct + profit;
-    const sellingSubtotal = hasManualPrice ? manualPiecePrice * quantity
+    const sellingSubtotal = lineItems.length ? roundCurrency(lineItems.reduce((sum, item) => sum + item.line_total, 0)) : hasManualPrice ? manualPiecePrice * quantity
       : hasProductionSuggestion ? suggestedTotal : calculatedSubtotal;
     const marketplaceFee = pricingMode === "calculated"
       ? sellingSubtotal * (Math.max(0, finiteNumber(input.marketplacePercent)) / 100) : 0;
     const preDiscount = sellingSubtotal + marketplaceFee;
     const discount = Math.max(0, finiteNumber(input.discount));
     const subtotal = roundCurrency(Math.max(0, preDiscount - discount));
+    const shippingDeferred = input.shippingDeferred === true;
+    const customerShipping = shippingDeferred ? 0 : roundCurrency(Math.max(0, finiteNumber(input.customerShipping)));
+    const taxableSubtotal = roundCurrency(subtotal + customerShipping);
     const taxRate = input.taxExempt ? 0 : root.normalizeTaxRatePercent(input.taxRate ?? 0);
-    const tax = root.calculateSalesTax(subtotal, taxRate);
-    const unroundedTotal = subtotal + tax;
+    const tax = root.calculateSalesTax(taxableSubtotal, taxRate);
+    const unroundedTotal = taxableSubtotal + tax;
     const roundingIncrement = Math.max(0, finiteNumber(input.roundingIncrement));
     const total = roundCurrency(Math.max(0, roundingIncrement
       ? Math.round(unroundedTotal / roundingIncrement) * roundingIncrement
@@ -55,7 +60,7 @@
     const depositPercent = Math.min(100, Math.max(0, finiteNumber(input.depositPercent)));
     const deposit = roundCurrency(total * (depositPercent / 100));
     const balance = roundCurrency(Math.max(0, total - deposit));
-    const perItem = hasManualPrice ? manualPiecePrice
+    const perItem = lineItems.length ? sellingSubtotal / quantity : hasManualPrice ? manualPiecePrice
       : suggestedPiecePrice || (quantity ? sellingSubtotal / quantity : 0);
     const margin = total > 0 ? ((total - breakEven) / total) * 100 : 0;
 
@@ -64,7 +69,8 @@
       manualPiece: manualPiecePrice, suggestedTotal, suggestedPiecePrice,
       piecePrice: perItem, material, machine, design, post, packaging, shipping,
       hardware, direct, overhead, base: direct, profit, marketplaceFee, preDiscount,
-      discount, subtotal, beforeTax: subtotal, taxRate, tax, unroundedTotal,
+      lineItems, customerShipping, shippingDeferred,
+      discount, subtotal, beforeTax: taxableSubtotal, taxRate, tax, unroundedTotal,
       unroundedFinal: unroundedTotal, roundingIncrement, rounding: roundingIncrement,
       roundingAdjustment, roundingGain: roundingAdjustment, total, final: total,
       deposit, balance, perItem, breakEven, margin

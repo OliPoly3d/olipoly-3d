@@ -444,7 +444,13 @@
       quantity: totals.quantity,
       price_source: totals.pricingMode,
       piece_price: totals.piecePrice,
-      subtotal: totals.subtotal,
+      subtotal: totals.preDiscount,
+      line_items: totals.lineItems,
+      shipping_charged: totals.customerShipping,
+      shipping: totals.customerShipping,
+      shipping_deferred: totals.shippingDeferred,
+      shipping_in_taxable_subtotal: true,
+      rounding_adjustment: totals.roundingAdjustment,
       discount: totals.discount,
       taxable_subtotal: totals.beforeTax,
       tax_rate: totals.taxRate,
@@ -475,6 +481,8 @@
 
   function buildQuoteData(totalsSnapshot = authoritativeTotalsSnapshot()) {
     const fields = collectFields();
+    fields.qty = String(totalsSnapshot.quantity);
+    fields.fulfillment = fields.shippingMode?.startsWith("ship") ? "shipping" : fields.shippingMode === "delivery" ? "delivery" : "pickup";
     const liteQuoteType = customerType($("liteQuoteType")?.value);
     fields.liteQuoteType = liteQuoteType;
 
@@ -976,7 +984,7 @@ ${err.message || err}`);
     const project = getField("quoteTitle") || getField("projectTitle") || "your custom 3D print";
     const total = quoteTotalText() || "See quote";
     const turnaround = getField("turnaround") || "to be confirmed based on approval timing";
-    const notes = getField("customerNotes");
+    const notes = [getField("customerNotes"), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n");
     const assumptions = getField("assumptions");
 
     return `${customerName ? `Hi ${customerName},` : "Hi,"}
@@ -1002,7 +1010,7 @@ OliPoly 3D`;
     const project = getField("quoteTitle") || getField("projectTitle") || "your custom 3D print";
     const total = quoteTotalText() || "See quote";
     const turnaround = getField("turnaround") || "to be confirmed based on approval timing";
-    const notes = getField("customerNotes");
+    const notes = [getField("customerNotes"), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n");
     const assumptions = getField("assumptions");
     const quoteNumber = getField("quoteNumber");
 
@@ -1380,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const quoteToOrderNumber = (quoteNumber) => {
     const q = (quoteNumber || "").trim();
     if (!q) return "";
-    return q.replace(/^Q-/i, "OP-");
+    return $("convertedOrderNumber")?.value || "";
   };
 
   const isProfessionalMode = () => {
@@ -3155,7 +3163,7 @@ https://olipoly3d.com`;
     const quoteNumber = val("quoteNumber") || "Quote";
     const total = totalText();
     const turnaround = val("turnaround") || "to be confirmed based on approval timing";
-    const notes = val("customerNotes");
+    const notes = [val("customerNotes"), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n");
     const assumptions = val("assumptions");
 
     return `${customer ? `Hello ${customer},` : "Hello,"}
@@ -3191,7 +3199,7 @@ https://olipoly3d.com`;
     const quoteNumber = val("quoteNumber") || "Quote";
     const total = totalText();
     const turnaround = val("turnaround") || "To be confirmed";
-    const notes = val("customerNotes");
+    const notes = [val("customerNotes"), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n");
     const assumptions = val("assumptions");
     const oliPart = val("olipolyPartNumber");
     const custPart = val("customerPartNumber");
@@ -3471,7 +3479,7 @@ https://olipoly3d.com`;
   function orderNumberFromQuote() {
     const q = quoteNumber();
     if (!q) return "";
-    return q.replace(/^Q-/i, "OP-");
+    return $("convertedOrderNumber")?.value || "";
   }
 
 
@@ -3637,6 +3645,9 @@ Open Orders Admin now?`);
     let filament = 0;
     for(let index=1; index<=4; index+=1) filament += number(`filament${index}Cost`) * number(`filament${index}Used`) / spoolWeight;
     return {
+      lineItems:window.olipolyReadQuoteItems(),
+      customerShipping:number('customerShippingCharge'),
+      shippingDeferred:value('quoteShippingChargeMode') === 'deferred',
       quantity:number('qty') || number('quantity') || 1,
       manualPiecePrice:value('manualPiecePriceOverride').trim(),
       material:filament + number('materialCost'),
@@ -3644,7 +3655,7 @@ Open Orders Admin now?`);
       design:number('designHours') * number('designRate'),
       post:number('postHours') * number('postRate') + number('laborCost'),
       packaging:number('simplePackaging') + number('packagingCost'),
-      shipping:number('simpleShipping') + number('shipping') + number('shippingCost') + number('deliveryCost'),
+      shipping:value('quoteShippingChargeMode') === 'deferred' ? 0 : number('simpleShipping') + number('shipping') + number('shippingCost') + number('deliveryCost'),
       hardware:number('simpleHardware'), profitMode:value('profitMode') || 'percent', profitValue:number('profitValue'),
       marketplacePercent:number('marketplacePercent'), discount:number('discount'), taxExempt:value('taxExempt') === 'yes',
       taxRate:number('salesTax'), roundingIncrement:number('roundingMode'), depositPercent:number('depositPercent')
@@ -3660,13 +3671,15 @@ Open Orders Admin now?`);
 
   function renderQuotePricing(){
     const t=getQuoteTotals();
+    if(t.lineItems.length && $('qty')) $('qty').value = t.quantity;
+    ['qty','quantity','manualPiecePriceOverride'].forEach(id => { if($(id)) $(id).readOnly = !!t.lineItems.length; });
     const manualLabel=t.manualPiecePrice === 0 ? 'Complimentary' : 'Manual';
     const outputs={sumQuote:t.totalText,sumPerItem:t.perItemText,sumDeposit:t.depositText,sumBalance:t.balanceText,
       sumDirect:money(t.direct),sumOverhead:money(t.marketplaceFee),sumProfit:t.hasManualPrice?manualLabel:money(t.profit),sumBreakEven:money(t.breakEven),
       batchUnitCost:money(t.breakEven/t.quantity),outDirect:money(t.direct),outOverhead:money(t.marketplaceFee),outBase:money(t.base),
       outProfit:t.hasManualPrice?manualLabel:money(t.profit),outPerItem:t.perItemText,outBreakEven:money(t.breakEven),
       outMargin:t.hasManualPrice?(t.manualPiecePrice===0?'N/A':'Manual'):`${t.margin.toFixed(1)}%`,outPreDiscount:money(t.preDiscount),
-      outDiscount:money(t.discount),outBeforeTax:t.subtotalText,outRoundedBeforeTax:t.subtotalText,outRoundingGain:money(t.roundingAdjustment),
+      outDiscount:money(t.discount),outBeforeTax:money(t.beforeTax),outRoundedBeforeTax:money(t.beforeTax),outRoundingGain:money(t.roundingAdjustment),
       outTax:t.taxText,outDeposit:t.depositText,outBalance:t.balanceText,outFinal:t.totalText,finalTotal:t.totalText,
       snapshotSuggestedPiece:money(number('productionSuggestedPiecePrice') || t.perItem),snapshotSuggestedTotal:money(number('productionSuggestedTotal') || t.total),
       snapshotProfit:money(t.profit),snapshotMargin:`${t.margin.toFixed(1)}%`,
@@ -3694,7 +3707,7 @@ Open Orders Admin now?`);
   window.olipolyCaptureRenderedQuoteTotals=()=>{renderQuotePricing();return window.olipolyRenderedQuoteTotals;};
   window.olipolyGetRenderedQuoteTotals=window.olipolyCaptureRenderedQuoteTotals;
   function bind(){
-    const customerPricingIds=['qty','quantity','manualPiecePriceOverride','discount','taxExempt','salesTax','roundingMode','depositPercent'];
+    const customerPricingIds=['qty','quantity','manualPiecePriceOverride','discount','taxExempt','salesTax','roundingMode','depositPercent','customerShippingCharge','quoteShippingChargeMode'];
     customerPricingIds.forEach((id)=>{const el=$(id);if(!el||el.dataset.quotePricingBound==='true')return;
       el.dataset.quotePricingBound='true';el.addEventListener('input',renderQuotePricing);el.addEventListener('change',renderQuotePricing);});
     renderQuotePricing();
@@ -3950,11 +3963,6 @@ Open Orders Admin now?`);
     return field("professionalMode", "off") === "on" || field("liteQuoteType") === "po" || field("liteQuoteType") === "business";
   }
 
-  function quoteToOrderNumber(q) {
-    const digits = String(q || "").match(/\d+/)?.[0] || "";
-    return digits ? `OP-${digits.padStart(6, "0").slice(-6)}` : "OP-######";
-  }
-
   function collectQuotePdfData(mode = "quote") {
     // Pass 1A.3B: PDF generation is strictly display-only. Never call render(),
     // renderQuote(), or any calculator while collecting PDF data.
@@ -3977,7 +3985,7 @@ Open Orders Admin now?`);
       mode,
       quoteNumber,
       invoiceNumber: field("invoiceNumber", `INV-${quoteNumber.replace(/^Q-/, "")}`),
-      orderNumber: quoteToOrderNumber(quoteNumber),
+      orderNumber: field("convertedOrderNumber", "Assigned when accepted"),
       quoteType: quoteTypeLabel(),
       professional: professionalMode(),
       customerName: field("customerName", field("companyName", "Customer")),
@@ -4000,7 +4008,7 @@ Open Orders Admin now?`);
       customerPartNumber: field("customerPartNumber", ""),
       olipolyPartNumber: field("olipolyPartNumber", ""),
       partRevision: field("partRevision", "Rev A"),
-      notes: field("customerNotes", "Includes the printed item(s) described and standard print preparation."),
+      notes: [field("customerNotes", "Includes the printed item(s) described and standard print preparation."), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n"),
       assumptions: field("assumptions", "Quote is based on the listed scope, quantity, materials, and production assumptions. Scope changes may require an updated quote."),
       shippingAddress: field("shippingAddress", ""),
       billingAddress: field("billingAddress", ""),
@@ -4081,7 +4089,7 @@ Open Orders Admin now?`);
           ${customerBlock}
           ${T.panel("Acceptance / Tracking", `
             ${T.esc(ctaText)}<br><br>
-            <strong>Expected order number after approval:</strong> ${T.esc(data.orderNumber)}<br>
+            <strong>Order number:</strong> ${T.esc(data.orderNumber)}<br>
             <strong>Tracker:</strong> olipoly3d.com/track.html
           `)}
         </div>
@@ -4091,11 +4099,11 @@ Open Orders Admin now?`);
             <tr>
               <th>Description</th>
               <th style="width:80px;text-align:center;">Qty</th>
-              <th style="width:120px;text-align:right;">Total</th>
+              <th style="width:95px;text-align:right;">Unit price</th><th style="width:95px;text-align:right;">Total</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
+            ${data.totals.lineItems.length ? window.OliPolyLineItems.tableRows(data.totals.lineItems, value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:6}).format(value)) : `<tr>
               <td>
                 <strong>${T.esc(data.quoteTitle)}</strong>
                 <div class="op-muted" style="margin-top:6px;font-size:11px;line-height:1.45;">
@@ -4103,14 +4111,14 @@ Open Orders Admin now?`);
                 </div>
               </td>
               <td style="text-align:center;">${T.esc(data.qty)}</td>
-              <td style="text-align:right;">${T.esc(data.subtotal)}</td>
-            </tr>
+              <td style="text-align:right;">${T.esc(data.perItem)}</td><td style="text-align:right;">${T.money(data.totals.preDiscount)}</td>
+            </tr>`}
           </tbody>
         </table>
 
         <div class="quote-v2-bottom">
           <div>
-            ${T.panel("Quote Notes", T.esc(data.assumptions).replace(/\n/g, "<br>"))}
+            ${T.panel("Quote Notes", T.esc([data.totals.lineItems.length ? data.notes : '', data.assumptions].filter(Boolean).join("\n\n")).replace(/\n/g, "<br>"))}
             <div class="op-note">
               <strong>Next Step</strong><br>
               Review the quote details and approve using the secure quote response link. If anything needs adjusted, reply or request changes before approval.
@@ -4118,7 +4126,9 @@ Open Orders Admin now?`);
           </div>
 
           <div class="quote-v2-totals">
-            <div><span>Subtotal</span><strong>${T.esc(data.subtotal)}</strong></div>
+            <div><span>Items subtotal</span><strong>${T.money(data.totals.preDiscount)}</strong></div>
+            ${data.totals.discount ? `<div><span>Discount</span><strong>−${T.money(data.totals.discount)}</strong></div>` : ''}
+            ${data.totals.customerShipping ? `<div><span>Shipping</span><strong>${T.money(data.totals.customerShipping)}</strong></div>` : ''}
             <div><span>Sales Tax</span><strong>${T.esc(data.tax)}</strong></div>
             <div><span>Deposit</span><strong>${T.esc(data.deposit || "Per terms")}</strong></div>
             <div class="quote-v2-total"><span>Total</span><strong>${T.esc(data.total)}</strong></div>
@@ -4337,7 +4347,7 @@ Open Orders Admin now?`);
     const quoteNumber = val("quoteNumber") || "Quote";
     const total = totals.totalText;
     const turnaround = val("turnaround") || "to be confirmed based on approval timing";
-    const notes = val("customerNotes");
+    const notes = [val("customerNotes"), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n");
     const assumptions = val("assumptions");
     const po = val("poNumber");
     const oliPart = val("olipolyPartNumber");
@@ -4351,6 +4361,7 @@ Your OliPoly 3D quote is ready to review.
 Quote: ${quoteNumber}
 Project: ${project}
 Quote type: ${quoteTypeLabel()}
+${totals.lineItems?.length ? totals.lineItems.map(item => `${item.description}: ${item.quantity} × ${window.OliPolyDocumentTheme.money(item.unit_price)} = ${window.OliPolyDocumentTheme.money(item.line_total)}`).join('\n') + '\n' : ''}${totals.customerShipping ? `Shipping: ${window.OliPolyDocumentTheme.money(totals.customerShipping)}\n` : ''}${totals.discount ? `Discount: ${window.OliPolyDocumentTheme.money(totals.discount)}\n` : ''}Sales tax: ${totals.taxText}
 Estimated total: ${total}
 Payment terms: ${termsLabel()}
 Estimated timing: ${turnaround}
@@ -4376,7 +4387,7 @@ https://olipoly3d.com`;
     const quoteNumber = val("quoteNumber") || "Quote";
     const total = totals.totalText;
     const turnaround = val("turnaround") || "To be confirmed";
-    const notes = val("customerNotes");
+    const notes = [val("customerNotes"), window.olipolyQuoteShippingNote?.()].filter(Boolean).join("\n\n");
     const assumptions = val("assumptions");
     const oliPart = val("olipolyPartNumber");
     const custPart = val("customerPartNumber");
@@ -4432,6 +4443,8 @@ https://olipoly3d.com`;
         </table>
       </div>
 
+      ${totals.lineItems?.length ? `<table style="width:100%;border-collapse:collapse"><thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(totals.lineItems, window.OliPolyDocumentTheme.money)}</tbody></table>` : ''}
+      <p>${totals.discount ? `Discount: ${window.OliPolyDocumentTheme.money(totals.discount)} · ` : ''}${totals.customerShipping ? `Shipping: ${window.OliPolyDocumentTheme.money(totals.customerShipping)} · ` : ''}Sales tax: ${esc(totals.taxText)}</p>
       ${notes ? `<div style="background:#fffdfa;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Notes</strong><br>${escapedMultiline(notes)}</div>` : ""}
       ${assumptions ? `<div style="background:#f7f4ee;border:1px solid #d9d3cb;border-radius:2px;padding:14px 16px;margin:18px 0;color:#69635f;font-size:13px;line-height:1.55;"><strong style="color:#312d2b;">Assumptions</strong><br>${escapedMultiline(assumptions)}</div>` : ""}
 
@@ -5107,6 +5120,7 @@ https://olipoly3d.com`;
 
   function applyProductionCostInputs(draft){
     if(!draft) return;
+    if(draft.line_items?.length) { setVal('quoteLineItems', JSON.stringify(draft.line_items)); document.getElementById('quoteLineItems')?.dispatchEvent(new Event('input', {bubbles:true})); }
 
     const material = draftNumber(draft, 'estimated_material_cost');
     const machineHours = draftNumber(draft, 'estimated_machine_hours');
@@ -5338,7 +5352,7 @@ https://olipoly3d.com`;
     'quoteNumber','invoiceNumber','manualPiecePriceOverride','manualPiecePriceReason','discount'
   ];
   const defaultValues = {
-    qty:'1', quantity:'1', shippingMode:'pickup', depositPercent:'50', quoteStatus:'draft',
+    quoteLineItems:'[]', quoteShippingChargeMode:'known', customerShippingCharge:'0', qty:'1', quantity:'1', shippingMode:'pickup', depositPercent:'50', quoteStatus:'draft',
     orderType:'custom', professionalMode:'off', invoiceRequired:'no', invoiceType:'deposit', paymentTerms:'deposit_to_start',
     taxPreset:'custom', salesTax:'0', roundingMode:'0', marketplacePercent:'0', taxExempt:'no',
     certificateOnFile:'no', poFileOnFile:'no', filamentCount:'1', spoolWeight:'1000',
@@ -5416,6 +5430,8 @@ https://olipoly3d.com`;
 
       customerFacingIds.forEach((id) => setFieldQuiet(id, ''));
       Object.entries(defaultValues).forEach(([id, value]) => setFieldQuiet(id, value));
+      $('quoteLineItems')?.dispatchEvent(new Event('change', {bubbles:true}));
+      $('quoteShippingChargeMode')?.dispatchEvent(new Event('change', {bubbles:true}));
       setFieldQuiet('liteQuoteType', typeToKeep);
 
       ['directItems','overheadItems'].forEach((id) => { const el = $(id); if (el) el.innerHTML = ''; });

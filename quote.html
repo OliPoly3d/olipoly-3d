@@ -1569,6 +1569,15 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
           <div class="full"><label for="projectImageUrl">Project Image URL <span style="font-weight:600;color:#9b8b9a;">(optional)</span></label><input id="projectImageUrl" placeholder="Optional: paste a JPG/PNG/WebP URL, CAD screenshot URL, or leave blank for OliPoly placeholder" /><p class="hint" style="margin:6px 0 0;font-size:.82rem;line-height:1.4;">Leave blank to use the built-in OliPoly project preview placeholder in quote PDFs.</p></div>
           <div><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" value="1" /></div>
           <div><label for="turnaround">Turnaround</label><input id="turnaround" placeholder="Example: 5–7 business days" /></div>
+          <div class="full"><h3>Items and customer shipping</h3>
+            <input type="hidden" id="quoteLineItems" value="[]">
+            <button type="button" class="btn" id="quoteItemizeBtn">Use itemized pricing</button>
+            <div id="quoteItems" class="hidden"></div><p id="quoteItemsMessage" role="status"></p>
+            <p>Each item has its own quantity and selling price. Edit filament estimates in Production Control.</p>
+          </div>
+          <div><label for="quoteShippingChargeMode">Customer shipping charge</label><select id="quoteShippingChargeMode"><option value="known">Known amount / included</option><option value="deferred">Add at final invoice</option></select></div>
+          <div><label for="customerShippingCharge">Shipping charged to customer ($)</label><input id="customerShippingCharge" type="number" min="0" step="0.01" value="0"></div>
+          <p class="full" id="quoteShippingNotice" role="status"></p>
           <div><label for="shippingMode">Fulfillment</label><select id="shippingMode"><option value="pickup">Local Pickup</option><option value="delivery">Local Delivery</option><option value="ship_estimated">Shipped Order (Estimated Shipping)</option><option value="ship_customer_label">Customer-Provided Label</option></select></div>
           <div><label for="depositPercent">Deposit %</label><input id="depositPercent" type="number" min="0" max="100" step="0.01" value="50" /></div>
           <div><label for="paymentTerms">Payment Terms</label><select id="paymentTerms"><option value="due_on_receipt">Due on Receipt</option><option value="deposit_to_start" selected>Deposit Required to Start</option><option value="due_on_completion">Due on Completion</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="customer_terms">Customer Standard Terms / PO Terms</option></select></div>
@@ -1979,9 +1988,11 @@ body.quote-presenter-mode .legacy-calculator-card{display:none!important;}
 
   <script src="js/document-theme.js"></script>
   <script src="olipoly-auth.js"></script>
-  <script src="js/quote-pricing.js?v=20260716-1A"></script>
+  <script src="js/order-line-items.js?v=20260928"></script>
+  <script src="js/quote-line-items.js?v=20260928"></script>
+  <script src="js/quote-pricing.js?v=20260928"></script>
   <script src="js/quote-production-handoff.js?v=20260730-workflow-v1"></script>
-  <script src="quote.js?v=20260730-production-save-handoff-v1"></script>
+  <script src="quote.js?v=20260928-items-shipping"></script>
 
   <div class="lite-status-toast" id="liteStatusToast" aria-live="polite"></div>
 

@@ -72,6 +72,9 @@
       aggregateOnly:status !== 'verified',
       componentBreakdownAvailable:!!accepted,
       breakdownSource:normalizedSource(snapshot),
+      revision:snapshot.pricing_revision || null,
+      shippingDeferred:snapshot.shipping_deferred === true || accepted?.shipping_deferred === true,
+      credit_amount:numberOrNull(snapshot.credit_amount) || 0,
       accepted:accepted ? Object.freeze({ ...accepted }) : null,
       order_total:orderTotal,
       deposit_amount:numberOrNull(payment.deposit_amount),
@@ -104,8 +107,9 @@
       ...(numberOrNull(t.taxable_subtotal) === null ? [] : [['Taxable subtotal', numberOrNull(t.taxable_subtotal)]]),
       ['Sales tax', numberOrNull(t.tax)],
       ['Invoice total', numberOrNull(t.final_total)],
-      ...(invoice.deposit_amount === null || invoice.deposit_amount === 0 ? [] : [['Deposit / prior payment', invoice.deposit_amount]]),
+      ...(invoice.payment_status !== 'deposit_due' || !invoice.deposit_amount ? [] : [['Requested deposit (not recorded paid)', invoice.deposit_amount]]),
       ...(invoice.amount_paid === null || invoice.amount_paid === 0 ? [] : [['Amount paid', invoice.amount_paid]]),
+      ...(invoice.credit_amount > 0 ? [['Customer credit', invoice.credit_amount]] : []),
       ['Total due', invoice.balance_amount]
     ];
   }

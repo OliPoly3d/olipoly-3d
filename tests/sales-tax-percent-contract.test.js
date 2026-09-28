@@ -27,7 +27,7 @@ const migration = fs.readFileSync("supabase/migrations/202608020008_canonical_sa
 
 assert.match(orders, /calculateSalesTax\(subtotal, rate\)/, "Orders Admin uses shared percent math");
 assert.doesNotMatch(orders, /subtotal \* rate \+ Number\.EPSILON/, "280.00 decimal-fraction defect is absent");
-assert.match(quote, /root\.calculateSalesTax\(subtotal, taxRate\)/, "Quote pricing uses shared tax authority");
+assert.match(quote, /root\.calculateSalesTax\(taxableSubtotal, taxRate\)/, "Quote pricing uses shared tax authority including customer shipping");
 assert.match(finance, /calculateSalesTax\(amount, els\.salesTaxRate\.value\)/, "Finance entry uses shared tax authority");
 assert.match(finance, /calculateSalesTax\(taxable, rate\)/, "Finance correction uses shared tax authority");
 assert.match(migration, /round\(new\.amount \* new\.sales_tax_rate \/ 100,2\)/, "server validates posting with percentage points");

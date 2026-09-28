@@ -182,7 +182,7 @@ const incomeSaleAmount = e => {
 };
 const computedSalesTax = e => {
   if (!e || e.type !== 'income' || e.tax_exempt_sale) return 0;
-  const taxable = incomeSaleAmount(e);
+  const taxable = taxableSubtotalOf(e);
   const rate = num(e.sales_tax_rate);
   if (taxable > 0 && rate > 0) return calculateSalesTax(taxable, rate);
   return num(e.sales_tax_collected);
@@ -191,6 +191,7 @@ const acceptedBreakdown = entry => entry?.accepted_commercial_snapshot?.accepted
   || entry?.accepted_commercial_snapshot?.invoice_totals
   || {};
 const taxableSubtotalOf = entry => {
+  if (acceptedBreakdown(entry).shipping_in_taxable_subtotal === true) return incomeSaleAmount(entry) + num(entry.shipping_charged);
   const explicit = entry?.amount === null || entry?.amount === undefined ? null : Number(entry.amount);
   if (explicit !== null && Number.isFinite(explicit)) return explicit;
   const snapshot = Number(acceptedBreakdown(entry).taxable_subtotal);
@@ -314,7 +315,8 @@ function updateTaxPreview() {
     els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
     return;
   }
-  const tax = calculateSalesTax(saleAmount, rate);
+  const shippingTaxBase = correctionOriginal && acceptedBreakdown(correctionEffective).shipping_in_taxable_subtotal === true ? num(els.shippingCharged.value) : 0;
+  const tax = calculateSalesTax(saleAmount + shippingTaxBase, rate);
   els.salesTaxCollected.value = tax ? tax.toFixed(2) : '';
   els.netRevenuePreview.value = saleAmount ? saleAmount.toFixed(2) : '';
 }
@@ -713,7 +715,7 @@ function salesTaxFilingSummary(period) {
     const county = normalizeCounty(e.sales_county);
     const taxableSubtotal = e.tax_exempt_sale ? 0 : taxableSubtotalOf(e);
     const tax = computedSalesTax(e);
-    const gross = taxableSubtotalOf(e) + num(e.shipping_charged) + tax;
+    const gross = incomeSaleAmount(e) + num(e.shipping_charged) + tax;
     const rate = num(e.sales_tax_rate);
     const exempt = !!e.tax_exempt_sale;
     const taxable = exempt ? 0 : taxableSubtotal;
@@ -1026,7 +1028,7 @@ function exportSalesTaxFilingCSV() {
     ...r.entries.map(entry => {
       const tax = computedSalesTax(entry);
       const taxable = entry.tax_exempt_sale ? 0 : taxableSubtotalOf(entry);
-      const gross = taxableSubtotalOf(entry) + num(entry.shipping_charged) + tax;
+      const gross = incomeSaleAmount(entry) + num(entry.shipping_charged) + tax;
       return ['Entry Trace',period.label,entry.entry_date,entry.entry_date,'',entry.sales_county || '',1,gross.toFixed(2),taxable.toFixed(2),entry.tax_exempt_sale ? gross.toFixed(2) : '0.00',`${num(entry.sales_tax_rate).toFixed(2)}%`,tax.toFixed(2),entry.original_entry_id || entry.id,entry.effective_entry_id || entry.id,entry.correction_group_id || '',entry.is_corrected ? 'yes' : 'no'];
     })
   ];
@@ -1232,8 +1234,8 @@ function startEdit(id) {
     const authoritativeRate = Number.isFinite(Number(e.sales_tax_rate)) && e.sales_tax_rate !== null ? Number(e.sales_tax_rate) : Number(breakdown.tax_rate) || 0;
     correctionBaseline = {
       ...e,
-      amount: e.type === 'income' ? taxableSubtotal : e.amount,
-      original_amount: e.type === 'income' ? taxableSubtotal : (e.original_amount ?? e.amount),
+      amount: e.type === 'income' ? incomeSaleAmount(e) : e.amount,
+      original_amount: e.type === 'income' ? incomeSaleAmount(e) : (e.original_amount ?? e.amount),
       sales_tax_rate: e.type === 'income' ? authoritativeRate : 0,
       tax_exempt_reason: e.accepted_commercial_snapshot?.tax_exempt_reason || '',
       exemption_certificate_on_file: !!e.accepted_commercial_snapshot?.exemption_certificate_on_file
@@ -1252,11 +1254,10 @@ function startEdit(id) {
     els.correctionTaxOverrideReason.readOnly = true;
     els.correctionTaxOverrideAmount.value = '';
     els.correctionTaxOverrideReason.value = '';
-    const customerTotal = num(breakdown.customer_total ?? breakdown.total ?? e.accepted_commercial_snapshot?.total ?? e.amount) + num(e.sales_tax_collected);
+    const customerTotal = incomeSaleAmount(e) + num(e.shipping_charged) + num(e.sales_tax_collected);
     const calculatedTax = calculateSalesTax(taxableSubtotal, authoritativeRate);
     const splitWarnings = [
       taxableSubtotal === customerTotal && num(e.sales_tax_collected) > 0 ? 'Taxable subtotal equals the full customer total while tax is also stored.' : '',
-      Math.abs(taxableSubtotal + num(e.sales_tax_collected) + num(e.shipping_charged) - customerTotal) > .01 ? 'Taxable subtotal, tax, and shipping do not reconcile to the customer total.' : '',
       calculatedTax !== num(e.sales_tax_collected) ? 'Stored tax does not match canonical rate calculation.' : '',
       !e.sales_county && num(e.sales_tax_collected) > 0 ? 'County is missing while tax collected is positive.' : ''
     ].filter(Boolean);
@@ -1561,7 +1562,7 @@ function correctedRecordFromForm() {
     proposed.amount = formRecord.amount;
     proposed.original_amount = formRecord.amount;
   }
-  if (correctionDirtyFields.has('amount') || correctionDirtyFields.has('sales_tax_rate') || correctionDirtyFields.has('tax_exempt_sale') || els.correctionTaxOverrideEnabled.checked) {
+  if (correctionDirtyFields.has('amount') || correctionDirtyFields.has('sales_tax_rate') || correctionDirtyFields.has('tax_exempt_sale') || (correctionDirtyFields.has('shipping_charged') && acceptedBreakdown(correctionEffective).shipping_in_taxable_subtotal === true) || els.correctionTaxOverrideEnabled.checked) {
     proposed.sales_tax_collected = tax;
     proposed.calculated_sales_tax = calculatedTax;
     correctionDirtyFields.add('sales_tax_collected');
@@ -1591,7 +1592,9 @@ function updateCorrectionReview() {
 
 function updateCorrectionTaxPreview() {
   if (!correctionOriginal) return;
-  const taxable = correctionDirtyFields.has('amount') ? Number(els.entryAmount.value) : taxableSubtotalOf(correctionEffective);
+  const productAmount = correctionDirtyFields.has('amount') ? Number(els.entryAmount.value) : incomeSaleAmount(correctionEffective);
+  const shipping = correctionDirtyFields.has('shipping_charged') ? Number(els.shippingCharged.value) : num(correctionEffective.shipping_charged);
+  const taxable = productAmount + (acceptedBreakdown(correctionEffective).shipping_in_taxable_subtotal === true ? shipping : 0);
   const exempt = els.correctionTaxExempt.value === 'yes';
   const rate = Number(els.correctionSalesTaxRate.value);
   const calculated = exempt ? 0 : calculateSalesTax(taxable, rate);
@@ -1885,7 +1888,7 @@ const correctionInputFields = {
 Object.entries(correctionInputFields).forEach(([id, field]) => els[id]?.addEventListener('input', () => {
   if (!correctionOriginal) return;
   correctionDirtyFields.add(els.entryType.value === 'expense' && field === 'amount' ? 'amount' : field);
-  if (field === 'amount' || field === 'sales_tax_rate' || field === 'tax_exempt_sale') updateCorrectionTaxPreview();
+  if (field === 'amount' || field === 'shipping_charged' || field === 'sales_tax_rate' || field === 'tax_exempt_sale') updateCorrectionTaxPreview();
 }));
 if (els.entryForm) els.entryForm.addEventListener('input', () => { if (correctionOriginal) updateCorrectionReview(); });
 

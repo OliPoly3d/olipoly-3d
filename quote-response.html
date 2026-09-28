@@ -219,7 +219,7 @@ img{max-width:100%}
 <div class="mini"><span>Revision</span><strong id="partRevision">—</strong></div>
 </div>
 <div class="note"><strong>Quote Notes</strong><span id="quoteNotes">—</span></div>
-<div class="note"><strong>Assumptions</strong><span id="assumptions">—</span></div>
+<div id="quoteItemTable"></div><div class="note"><strong>Assumptions</strong><span id="assumptions">—</span></div>
 <div class="note" style="border-style:solid;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,244,250,.92));">
 <strong>What happens after approval?</strong>
 <div class="next-box">
@@ -273,6 +273,7 @@ img{max-width:100%}
 </section>
 <p class="footer">OliPoly 3D quote review • customer-safe approval flow</p>
 </main>
+<script src="js/order-line-items.js?v=20260928"></script>
 <script>
 const SUPABASE_URL='https://alffoktlwhpfothieude.supabase.co';
 const SUPABASE_KEY='sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
@@ -298,7 +299,9 @@ function renderQuote(row){
   $('olipolyPart').textContent=field('olipolyPartNumber')||'—';
   $('customerPart').textContent=field('customerPartNumber')||'—';
   $('partRevision').textContent=field('partRevision')||'Rev A';
-  $('quoteNotes').textContent=field('customerNotes')||'No additional notes listed.';
+  $('quoteNotes').textContent=[field('customerNotes'), field('quoteShippingChargeMode')==='deferred' ? 'Shipping is not included and will be added to the final invoice if shipment is required.' : ''].filter(Boolean).join('\n\n') || 'No additional notes listed.';
+  const items=JSON.parse(field('quoteLineItems') || '[]');
+  $('quoteItemTable').innerHTML=items.length ? '<table style="width:100%"><thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>'+window.OliPolyLineItems.tableRows(items, value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:6}).format(value))+'</tbody></table>' : '';
   $('assumptions').textContent=field('assumptions')||'No special assumptions listed.';
 }
 async function loadQuote(){if(!quoteNumber||!token){showStatus($('loadStatus'),'This quote link is missing required information. Please ask OliPoly 3D for a new link.','error');return}try{const rows=await rpc('get_quote_public',{p_quote_number:quoteNumber,p_public_token:token});const row=Array.isArray(rows)?rows[0]:rows;if(!row)throw new Error('Quote not found.');renderQuote(row)}catch(err){showStatus($('loadStatus'),err.message||'Could not load quote.','error')}}
