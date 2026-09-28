@@ -26,6 +26,7 @@ const fields = {
   paymentTerms: "due_on_receipt"
 };
 const context = {
+  window: {},
   fields,
   totals: { totalText: "$100.00" },
   responseLink: "https://example.test/quote?a=1&b=2"

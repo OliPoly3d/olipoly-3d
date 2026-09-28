@@ -37,7 +37,7 @@ assert.doesNotMatch(js, /\.from\('financial_entries'\)\s*\.select\('\*'\)/, 'Fin
 assert.match(js, /function reportingEntries[\s\S]*report_transaction_count/, 'all reports consume one-row-per-original effective entries');
 assert.match(js, /const list = filteredEntries\(\);[\s\S]*renderTable\(list\)[\s\S]*renderMonthlyTaxReport/, 'one refreshed array rerenders all visible consumers');
 assert.match(js, /const taxableSubtotal = e\.tax_exempt_sale \? 0 : taxableSubtotalOf\(e\)/, 'filing taxable sales use the effective taxable subtotal');
-assert.match(js, /const gross = taxableSubtotalOf\(e\) \+ num\(e\.shipping_charged\) \+ tax/, 'filing customer total reconciles without making tax taxable');
+assert.match(js, /const gross = incomeSaleAmount\(e\) \+ num\(e\.shipping_charged\) \+ tax/, 'filing customer total reconciles without making tax taxable');
 assert.match(js, /e\.is_corrected \? '<span class="type-pill">Corrected<\/span>'/, 'table shows corrected indicator');
 assert.match(js, /Original Entry ID','Effective Entry ID','Metadata Correction ID'/, 'CSV keeps effective and audit identifiers');
 assert.match(js, /Gross \/ Customer Total'[\s\S]*entry\.sales_county[\s\S]*entry\.sales_tax_rate[\s\S]*entry\.original_entry_id[\s\S]*entry\.effective_entry_id/, 'filing CSV uses effective tax values and preserves audit linkage');

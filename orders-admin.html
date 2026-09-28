@@ -1118,6 +1118,23 @@ body{font-family:Inter,Arial,sans-serif}
 
       <section class="card" id="orderDetailCard">
         <h3 id="detailTitle">Order Details</h3>
+        <button class="btn-ghost" type="button" id="editOrderPricingBtn">Edit Items / Final Shipping</button>
+        <section id="orderPricingPanel" class="hidden card">
+          <h4>Revise order pricing</h4>
+          <p>Remove canceled items, update quantities or prices, and add the shipping charge. Saving updates the invoice, customer tracker, and Finance posting amount. The original accepted quote stays on record.</p>
+          <div id="orderPricingItems"></div>
+          <div class="form-grid">
+            <div><label for="orderPricingDiscount">Order discount ($)</label><input id="orderPricingDiscount" type="number" min="0" step="0.01" value="0"></div>
+            <div><label for="orderCustomerShipping">Shipping charged to customer ($)</label><input id="orderCustomerShipping" type="number" min="0" step="0.01" value="0"></div>
+            <div><label for="orderShippingDeferred">Shipping status</label><select id="orderShippingDeferred"><option value="no">Final charge / no additional charge</option><option value="yes">Add at final invoice</option></select></div>
+            <div class="full"><label for="orderPricingReason">Change description (shown on invoice)</label><input id="orderPricingReason" maxlength="2000" placeholder="Puppy canceled after prototype review; final shipping added"></div>
+          </div>
+          <p id="orderPricingPreview" role="status"></p>
+          <p>Save tax changes with normal Save before revising pricing. Update any remaining production plan in Production Control; recorded material use is retained.</p>
+          <button class="btn" type="button" id="saveOrderPricingBtn">Save Revised Pricing</button>
+          <button class="btn-ghost" type="button" id="cancelOrderPricingBtn">Cancel</button>
+          <p id="orderPricingMessage" role="status"></p>
+        </section>
         <p class="oa-closed-note hidden" id="closedOrderNotice">This order is closed.</p>
 
         <div class="order-timeline" id="orderTimeline" aria-label="Order production timeline">
@@ -1130,16 +1147,16 @@ body{font-family:Inter,Arial,sans-serif}
         </div>
 
         <div class="form-grid">
-          <div><label for="orderNumber">Order Number</label><input id="orderNumber" /></div>
+          <div><label for="orderNumber">Order Number</label><input readonly id="orderNumber" /></div>
           <div><label for="orderDate">Order Date</label><input id="orderDate" type="date" /></div>
           <div><label for="customerName">Customer Name</label><input id="customerName" /></div>
           <div><label for="customerEmail">Customer Email</label><input id="customerEmail" type="email" /></div>
           <div><label for="customerPhone">Customer Phone</label><input id="customerPhone" type="tel" placeholder="Not provided" /></div>
           <div class="full"><label for="orderTitle">Project / Item</label><input id="orderTitle" /></div>
-          <div><label for="quantity">Quantity</label><input id="quantity" type="number" min="1" step="1" value="1" /></div>
-          <div><label for="orderTotal">Order Total</label><input id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="depositAmount">Deposit</label><input id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
-          <div><label for="balanceAmount">Balance</label><input id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="quantity">Quantity</label><input readonly id="quantity" type="number" min="1" step="1" value="1" /></div>
+          <div><label for="orderTotal">Order Total</label><input readonly id="orderTotal" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="depositAmount">Deposit</label><input readonly id="depositAmount" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="balanceAmount">Balance</label><input readonly id="balanceAmount" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="status">Status (command controlled)</label><select id="status" disabled aria-readonly="true" title="Production and Fulfillment commands control Order lifecycle."><option value="ready_to_print">Ready to Print</option><option value="printing">Printing</option><option value="qc">QC / Finishing</option><option value="ready_for_fulfillment">Ready for Pickup / Shipment</option><option value="closed">Closed</option></select></div>
           <div><label for="paymentStatus">Payment (command controlled)</label><select id="paymentStatus" disabled aria-readonly="true" title="Payment status is updated by an authoritative payment command."><option value="unpaid">Unpaid / Due on Completion</option><option value="deposit_due">Deposit Due</option><option value="deposit_paid">Deposit Paid</option><option value="paid">Paid in Full</option><option value="refunded">Refunded</option></select></div>
           <div><label for="fulfillment">Fulfillment</label><select id="fulfillment"><option value="pickup">Pickup</option><option value="delivery">Delivery</option><option value="shipping">Shipping</option></select></div>
@@ -1265,7 +1282,7 @@ body{font-family:Inter,Arial,sans-serif}
               <option value="Wyandot">Wyandot</option>
             </select></div>
           <div><label for="orderSalesTaxRate">Authoritative Sales-Tax Rate %</label><input id="orderSalesTaxRate" type="number" min="0" max="20" step="0.01" value="0" /><small>Enter 7 for 7%.</small></div>
-          <div><label for="orderTaxableSubtotal">Taxable Subtotal</label><input id="orderTaxableSubtotal" type="number" min="0" step="0.01" value="0" /></div>
+          <div><label for="orderTaxableSubtotal">Taxable Subtotal</label><input readonly id="orderTaxableSubtotal" type="number" min="0" step="0.01" value="0" /></div>
           <div><label for="orderCalculatedTax">Calculated Sales Tax</label><input id="orderCalculatedTax" type="number" step="0.01" readonly /></div>
           <div><label for="taxExemptReason">Exemption Reason / Notes</label><input id="taxExemptReason" placeholder="Certificate on file, resale, nonprofit, manufacturing exemption..." /></div>
           <div><label for="certificateOnFile">Exemption Certificate On File?</label><select id="certificateOnFile"><option value="no">No</option><option value="yes">Yes</option></select></div>
@@ -1449,7 +1466,10 @@ Aurora, OH 44202</textarea></div>
 
   <script src="js/document-theme.js"></script>
   <script src="js/erp-status.js"></script>
-  <script src="js/invoice-authority.js"></script>
+  <script src="js/order-line-items.js?v=20260928"></script>
+  <script src="js/quote-pricing.js?v=20260928"></script>
+  <script src="js/order-pricing.js?v=20260928"></script>
+  <script src="js/invoice-authority.js?v=20260928"></script>
   <script src="olipoly-auth.js"></script>
   <script src="js/job-asset-model.js"></script>
   <script src="js/job-assets-ui.js"></script>
@@ -2029,6 +2049,7 @@ Aurora, OH 44202</textarea></div>
 }
 
     function autoBalance(){
+      if(activeId) return; // Saved payment state must not be recomputed from the quoted deposit.
       $('balanceAmount').value = Math.max(0, num($('orderTotal').value) - num($('depositAmount').value)).toFixed(2);
     }
 
@@ -2322,6 +2343,8 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
     }
 
     function loadIntoForm(o){
+      $('orderPricingPanel').classList.add('hidden');
+      orderPricingContext = null;
       activeId = o.id;
       applyOrderEditState(o);
       $('orderNumber').value = o.order_number || '';
@@ -2384,6 +2407,79 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       updateClosureButtons(o);
       updatePreview();
       hydrateOrderTaxMetadata(o);
+    }
+
+    let orderPricingEditor;
+    let orderPricingContext = null;
+    let pricingSavePending = false;
+    function revisedPricingDraft(){
+      if (!orderPricingContext || orderPricingContext.order.id !== activeId) throw new Error('Reopen pricing for the selected order.');
+      const {order,invoice} = orderPricingContext;
+      const items = orderPricingEditor.get();
+      if (!items.length) throw new Error('Keep at least one item; use a zero price for a no-charge order.');
+      for (const id of ['orderPricingDiscount','orderCustomerShipping']) {
+        if ($(id).value === '' || !Number.isFinite(Number($(id).value)) || Number($(id).value)<0) throw new Error('Enter nonnegative discount and shipping amounts.');
+      }
+      const totals = window.OliPolyOrderPricing.snapshot(items, {
+        discount:Number($('orderPricingDiscount').value), shipping:Number($('orderCustomerShipping').value),
+        shippingDeferred:$('orderShippingDeferred').value === 'yes',
+        taxRate:order.sales_tax_rate ?? invoice.accepted.tax_rate, taxExempt:!!order.tax_exempt
+      });
+      if(totals.discount>totals.subtotal) throw new Error('Discount cannot exceed the product subtotal.');
+      return totals;
+    }
+    function previewRevisedPricing(){
+      try {
+        const t = revisedPricingDraft();
+        const paid = orderPricingContext.invoice.amount_paid || 0;
+        $('orderCustomerShipping').disabled = t.shipping_deferred;
+        $('orderPricingPreview').textContent = `Products ${money(t.subtotal)} − discount ${money(t.discount)} + shipping ${t.shipping_deferred ? 'added later' : money(t.shipping)} + tax ${money(t.tax)} = ${money(t.final_total)}. Recorded payments ${money(paid)}. Balance due ${money(Math.max(0,t.final_total-paid))}.${paid>t.final_total ? ` Customer credit ${money(paid-t.final_total)}; arrange a refund separately.` : ''}`;
+        $('saveOrderPricingBtn').disabled = pricingSavePending;
+      } catch (error) { $('orderPricingPreview').textContent=error.message; $('saveOrderPricingBtn').disabled=true; }
+    }
+    async function openOrderPricingEditor(){
+      const order = orders.find(row => row.id === activeId);
+      if (!order || orderIsClosed(order) || order.finance_pushed) return setMsg($('formMessage'),'Select an open order that has not been pushed to Finance.',true);
+      try {
+        const invoice = await loadInvoiceAuthority(order);
+        if(activeId !== order.id) return;
+        if(!orderPricingEditor) orderPricingEditor=window.OliPolyLineItems.mount($('orderPricingItems'),{onChange:previewRevisedPricing});
+        orderPricingEditor.set(window.OliPolyOrderPricing.initialItems(invoice));
+        orderPricingContext={order,invoice,commandId:crypto.randomUUID(),submitted:null};
+        $('orderPricingDiscount').value=invoice.accepted.line_items?.length ? invoice.accepted.discount : 0;
+        $('orderCustomerShipping').value=invoice.accepted.shipping_charged ?? invoice.accepted.shipping ?? 0;
+        $('orderShippingDeferred').value=invoice.accepted.shipping_deferred ? 'yes' : 'no';
+        $('orderPricingReason').value='';
+        $('orderPricingMessage').textContent='';
+        $('orderPricingPanel').classList.remove('hidden');
+        previewRevisedPricing();
+      } catch(error) { setMsg($('formMessage'),error.message,true); }
+    }
+    async function saveRevisedOrderPricing(){
+      if(pricingSavePending) return;
+      let context;
+      try {
+        const totals=revisedPricingDraft();
+        const reason=$('orderPricingReason').value.trim();
+        if(!reason) throw new Error('Describe the canceled item, price change, or final shipping charge.');
+        context=orderPricingContext;
+        const signature=JSON.stringify({totals,reason});
+        if(context.submitted && context.submitted!==signature) context.commandId=crypto.randomUUID();
+        context.submitted=signature;
+        pricingSavePending=true;
+        $('saveOrderPricingBtn').disabled=true;
+        setMsg($('orderPricingMessage'),'Saving revised pricing…');
+        const response=await api('/rest/v1/rpc/revise_order_pricing',{method:'POST',body:JSON.stringify({
+          p_order_id:context.order.id,p_expected_updated_at:context.order.updated_at,
+          p_command_id:context.commandId,p_reason:reason,p_totals:totals
+        })});
+        if(response.error) throw new Error(response.error.code==='PGRST202' ? 'The pricing revision database migration must be deployed before this can be saved.' : response.error.message || 'Pricing was not saved.');
+        if(!Array.isArray(response.data) || response.data.length!==1) throw new Error('Pricing save was not confirmed. Refresh the order before retrying.');
+        await fetchOrders();
+        if(activeId===context.order.id) loadIntoForm(response.data[0]);
+        setMsg($('formMessage'),'Revised pricing saved. Regenerate the invoice to show the current items and shipping.');
+      } catch(error) { setMsg($('orderPricingMessage'),error.message,true); }
+      finally { pricingSavePending=false; if(orderPricingContext) previewRevisedPricing(); }
     }
 
     async function hydrateOrderTaxMetadata(order){
@@ -3590,7 +3686,8 @@ const payload = snapshotForm();
       const rows = window.OliPolyInvoiceAuthority.totalsRows(d);
       const trackLink = d.order_number ? `https://olipoly3d.com/track.html?order=${encodeURIComponent(d.order_number)}` : 'https://olipoly3d.com/track.html';
       const paymentLink = d.payment_link_stripe || d.payment_link || '';
-      const financial = rows.map(([label, amount]) => `${label}: ${money(amount)}`).join('\n');
+      const items=(d.accepted?.line_items || []).map(item => `${item.description}: ${item.quantity} × ${money(item.unit_price)} = ${money(item.line_total)}`).join('\n');
+      const financial = [items, d.shippingDeferred ? 'Shipping is not included; it will be added to the final invoice.' : '', rows.map(([label, amount]) => `${label}: ${money(amount)}`).join('\n')].filter(Boolean).join('\n\n');
       const componentNote = d.aggregateOnly ? 'Component breakdown unavailable; this invoice shows accepted aggregate totals only.\n' : '';
       return `Hello${d.customer_name ? ' ' + d.customer_name : ''},
 
@@ -3617,11 +3714,12 @@ https://olipoly3d.com`;
       const rows = A.totalsRows(d);
       const trackLink = d.order_number ? `https://olipoly3d.com/track.html?order=${encodeURIComponent(d.order_number)}` : 'https://olipoly3d.com/track.html';
       const paymentLink = d.payment_link_stripe || d.payment_link || '';
+      const invoiceItems = d.accepted?.line_items?.length ? '<table style="width:100%"><thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>'+window.OliPolyLineItems.tableRows(d.accepted.line_items,A.preciseUnitPrice)+'</tbody></table>' : '';
       const financialRows = rows.map(([label, amount], index) => `<tr><td style="padding:9px 0;border-bottom:1px solid #ebe6df;color:#69635f;overflow-wrap:anywhere;">${A.escapeHtml(label)}</td><td style="padding:9px 0;border-bottom:1px solid #ebe6df;text-align:right;color:#231f20;font-weight:${index === rows.length - 1 ? '800' : '600'};white-space:nowrap;">${money(amount)}</td></tr>`).join('');
       const primary = paymentLink
         ? `<a href="${A.escapeHtml(paymentLink)}" style="display:block;padding:14px 18px;background:#9b3d66;color:#fff;text-align:center;text-decoration:none;font-weight:700;border-radius:3px;overflow-wrap:anywhere;">View or pay invoice</a><div style="margin-top:8px;font-size:12px;color:#69635f;overflow-wrap:anywhere;">If the button does not work, use this invoice link: <a href="${A.escapeHtml(paymentLink)}" style="color:#9b3d66;">${A.escapeHtml(paymentLink)}</a></div>`
         : '<div style="padding:14px;border:1px solid #d9d3cb;background:#fffdfa;color:#312d2b;">Please process payment according to the approved purchasing terms.</div>';
-      return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media(max-width:430px){.op-wrap{padding:10px!important}.op-body{padding:18px!important}.op-meta td{display:block!important;width:100%!important;text-align:left!important;padding:4px 0!important}}</style></head><body style="margin:0;background:#f7f4ee;font-family:Arial,Helvetica,sans-serif;color:#312d2b;"><div class="op-wrap" style="padding:24px 12px;"><div style="max-width:680px;margin:auto;background:#fff;border:1px solid #d9d3cb;"><div style="height:6px;background:#c94f83;"></div><div class="op-body" style="padding:26px;overflow-wrap:anywhere;"><table role="presentation" class="op-meta" style="width:100%;border-collapse:collapse;"><tr><td><div style="font-family:Georgia,serif;font-size:30px;font-weight:700;color:#231f20;">Oli<span style="color:#c94f83;">Poly</span></div><div style="color:#69635f;font-size:13px;">Thoughtful Design for Real Life</div></td><td style="text-align:right;color:#69635f;"><strong style="color:#231f20;">INVOICE</strong><br>${A.escapeHtml(d.invoice_number || '—')}</td></tr></table><h1 style="font-family:Georgia,serif;font-size:27px;margin:28px 0 8px;color:#231f20;">${d.payment_status === 'paid' ? 'Payment received' : 'Invoice ready'}</h1><p style="line-height:1.6;color:#4e4945;">Hello${d.customer_name ? ` ${A.escapeHtml(d.customer_name)}` : ''}. Here is the authoritative summary for order <strong>${A.escapeHtml(d.order_number || '—')}</strong>${d.quote_number ? `, quote ${A.escapeHtml(d.quote_number)}` : ''}.</p>${d.aggregateOnly ? '<div style="padding:10px;border:1px solid #d9d3cb;background:#f7f4ee;color:#69635f;font-size:12px;">Component breakdown is unavailable; accepted aggregate totals are shown.</div>' : ''}<table role="presentation" style="width:100%;border-collapse:collapse;margin:18px 0;">${financialRows}<tr><td style="padding:10px 0;color:#69635f;">Payment status</td><td style="padding:10px 0;text-align:right;font-weight:700;">${A.escapeHtml(d.payment_status || 'unpaid')}</td></tr></table>${primary}<a href="${A.escapeHtml(trackLink)}" style="display:block;margin-top:12px;padding:12px;text-align:center;color:#9b3d66;border:1px solid #d9d3cb;text-decoration:none;border-radius:3px;">Track this order</a><p style="margin-top:24px;line-height:1.6;color:#4e4945;">Questions? Reply to this email or contact <a href="mailto:OliPoly3D@gmail.com" style="color:#9b3d66;">OliPoly3D@gmail.com</a>.</p></div><div style="padding:16px;text-align:center;border-top:1px solid #ebe6df;color:#69635f;font-size:12px;">OliPoly 3D LLC • olipoly3d.com</div></div></div></body></html>`;
+      return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media(max-width:430px){.op-wrap{padding:10px!important}.op-body{padding:18px!important}.op-meta td{display:block!important;width:100%!important;text-align:left!important;padding:4px 0!important}}</style></head><body style="margin:0;background:#f7f4ee;font-family:Arial,Helvetica,sans-serif;color:#312d2b;"><div class="op-wrap" style="padding:24px 12px;"><div style="max-width:680px;margin:auto;background:#fff;border:1px solid #d9d3cb;"><div style="height:6px;background:#c94f83;"></div><div class="op-body" style="padding:26px;overflow-wrap:anywhere;"><table role="presentation" class="op-meta" style="width:100%;border-collapse:collapse;"><tr><td><div style="font-family:Georgia,serif;font-size:30px;font-weight:700;color:#231f20;">Oli<span style="color:#c94f83;">Poly</span></div><div style="color:#69635f;font-size:13px;">Thoughtful Design for Real Life</div></td><td style="text-align:right;color:#69635f;"><strong style="color:#231f20;">INVOICE</strong><br>${A.escapeHtml(d.invoice_number || '—')}</td></tr></table><h1 style="font-family:Georgia,serif;font-size:27px;margin:28px 0 8px;color:#231f20;">${d.payment_status === 'paid' ? 'Payment received' : 'Invoice ready'}</h1><p style="line-height:1.6;color:#4e4945;">Hello${d.customer_name ? ` ${A.escapeHtml(d.customer_name)}` : ''}. Here is the authoritative summary for order <strong>${A.escapeHtml(d.order_number || '—')}</strong>${d.quote_number ? `, quote ${A.escapeHtml(d.quote_number)}` : ''}.</p>${invoiceItems}${d.shippingDeferred ? '<p>Shipping is not included; it will be added to the final invoice.</p>' : ''}${d.aggregateOnly ? '<div style="padding:10px;border:1px solid #d9d3cb;background:#f7f4ee;color:#69635f;font-size:12px;">Component breakdown is unavailable; accepted aggregate totals are shown.</div>' : ''}<table role="presentation" style="width:100%;border-collapse:collapse;margin:18px 0;">${financialRows}<tr><td style="padding:10px 0;color:#69635f;">Payment status</td><td style="padding:10px 0;text-align:right;font-weight:700;">${A.escapeHtml(d.payment_status || 'unpaid')}</td></tr></table>${primary}<a href="${A.escapeHtml(trackLink)}" style="display:block;margin-top:12px;padding:12px;text-align:center;color:#9b3d66;border:1px solid #d9d3cb;text-decoration:none;border-radius:3px;">Track this order</a><p style="margin-top:24px;line-height:1.6;color:#4e4945;">Questions? Reply to this email or contact <a href="mailto:OliPoly3D@gmail.com" style="color:#9b3d66;">OliPoly3D@gmail.com</a>.</p></div><div style="padding:16px;text-align:center;border-top:1px solid #ebe6df;color:#69635f;font-size:12px;">OliPoly 3D LLC • olipoly3d.com</div></div></div></body></html>`;
     }
 
     let lastInvoiceEmail={html:'',plain:'',subject:'',to:''};
@@ -5523,9 +5621,11 @@ function generateTravelerPdf(){
             )}
           </div>
 
+          ${order.revision ? `<p>Pricing revision ${T.esc(order.revision.number)}: ${T.esc(order.revision.reason)}</p>` : ''}
+          ${order.shippingDeferred ? '<p>Shipping is not included and will be added to the final invoice if shipment is required.</p>' : ''}
           ${order.aggregateOnly ? '' : `<table class="op-table invoice-v2-table">
             <thead><tr><th>Description</th><th style="width:70px;text-align:center;">Qty</th><th style="width:110px;text-align:right;">Unit price</th><th style="width:120px;text-align:right;">Subtotal</th></tr></thead>
-            <tbody><tr><td><strong>${T.esc(order.order_title || 'Custom 3D Printed Project')}</strong></td><td style="text-align:center;">${T.esc(order.accepted.quantity ?? '—')}</td><td style="text-align:right;">${window.OliPolyInvoiceAuthority.preciseUnitPrice(order.accepted.piece_price) || '—'}</td><td style="text-align:right;">${T.money(order.accepted.subtotal)}</td></tr></tbody>
+            <tbody>${order.accepted.line_items?.length ? window.OliPolyLineItems.tableRows(order.accepted.line_items,window.OliPolyInvoiceAuthority.preciseUnitPrice) : `<tr><td><strong>${T.esc(order.order_title || 'Custom 3D Printed Project')}</strong></td><td style="text-align:center;">${T.esc(order.accepted.quantity ?? '—')}</td><td style="text-align:right;">${window.OliPolyInvoiceAuthority.preciseUnitPrice(order.accepted.piece_price) || '—'}</td><td style="text-align:right;">${T.money(order.accepted.subtotal)}</td></tr>`}${Number(order.accepted.shipping_charged ?? order.accepted.shipping)>0 ? `<tr><td>Shipping</td><td style="text-align:center">1</td><td style="text-align:right">${T.money(order.accepted.shipping_charged ?? order.accepted.shipping)}</td><td style="text-align:right">${T.money(order.accepted.shipping_charged ?? order.accepted.shipping)}</td></tr>` : ''}</tbody>
           </table>`}
 
           <div class="invoice-v2-bottom">
@@ -5722,6 +5822,8 @@ function generateTravelerPdf(){
 
 
     window.addEventListener('load', () => {
+      ['orderPricingDiscount','orderCustomerShipping','orderShippingDeferred'].forEach(id => $(id).addEventListener('input',previewRevisedPricing));
+      $('cancelOrderPricingBtn').addEventListener('click',()=>{ $('orderPricingPanel').classList.add('hidden'); orderPricingContext=null; });
       ['orderSalesTaxRate','orderTaxableSubtotal','taxExempt'].forEach(id => {
         const field = document.getElementById(id);
         field?.addEventListener('input', updateOrderTaxPreview);
@@ -7017,6 +7119,8 @@ function generateTravelerPdf(){
     };
   }
   function run(){
+    bind('editOrderPricingBtn', requireOrder('Edit Items / Shipping', openOrderPricingEditor), 'Edit Items / Shipping');
+    bind('saveOrderPricingBtn', saveRevisedOrderPricing, 'Save Revised Pricing');
     bind('saveBtn', saveOrder, 'Save Order');
     bind('closeOrderBtn', requireOrder('Close Order', closeCurrentOrder), 'Close Order');
     bind('newBtn', resetForm, 'New Order');

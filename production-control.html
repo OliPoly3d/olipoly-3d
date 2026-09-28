@@ -1407,6 +1407,11 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       <button class="quick-preset" type="button" data-preset="personal_free"><strong> Personal / free</strong><span>No sales follow-up</span></button>
     </div>
     <form id="jobForm">
+      <section class="card">
+        <label><input id="estimateItemized" type="checkbox"> Multiple items in this project</label>
+        <p>Set each item's quantity, unit selling price, print time, and filament grams. Totals include every item; actual filament use is still confirmed at QC.</p>
+        <div id="estimateItems" class="hidden"></div><p id="estimateItemsMessage" role="status"></p>
+      </section>
       <div class="form-grid">
         <div class="entry-hint"><strong>Minimum useful entry:</strong> title, job type, status, priority, quantity, machine, due date, time each. Everything else improves inventory/analytics but can be added later.</div>
         <label class="span2">Job Title<input id="jobTitle" placeholder="Example: Pink dragon eggs for craft show" required></label>
@@ -1757,6 +1762,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   <div id="toast" class="toast"></div>
 
+<script src="js/order-line-items.js?v=20260928"></script>
 <script src="js/production-status-persistence.js?v=20260716-m2b1"></script>
 <script src="js/production-evidence.js?v=20260728-null-semantics"></script>
 <script src="js/production-recovery-storage.js?v=20260803-runtime-repair"></script>
@@ -2257,6 +2263,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
 
   function recipeFromForm(){
+    if ($('estimateItemized')?.checked && estimateItemsEditor) return itemizedEstimate().recipe;
     const count = Math.max(1, Math.min(8, Math.round(num($('colorCount').value) || 1)));
     const rows = [];
     for(let i=0;i<count;i++){
@@ -2352,8 +2359,31 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
   }
 
 
+  let estimateItemsEditor;
+  function itemizedEstimate(){
+    return window.OliPolyLineItems.productionSummary(estimateItemsEditor.get());
+  }
+  function syncEstimateItems(){
+    const enabled = $('estimateItemized').checked;
+    $('estimateItems').classList.toggle('hidden', !enabled);
+    ['quantity','hoursEach','gramsEach','priceEach','colorCount'].forEach(id => { $(id).readOnly = enabled; });
+    $('recipeRows').classList.toggle('hidden', enabled);
+    if (!enabled) { $('estimateItemsMessage').textContent = ''; updateRecipeDerivedFields(); return; }
+    try {
+      const summary = itemizedEstimate();
+      $('quantity').value = summary.quantity;
+      $('hoursEach').value = summary.hoursEach;
+      $('gramsEach').value = summary.gramsEach;
+      $('priceEach').value = summary.priceEach;
+      $('estimateItemsMessage').textContent = `${summary.items.length} items · ${summary.quantity} pieces · ${summary.grams.toFixed(1)}g · ${summary.hours.toFixed(2)} print hours · ${money(summary.subtotal)} product subtotal`;
+      updateRecipeDerivedFields();
+    } catch (error) { $('estimateItemsMessage').textContent = error.message; }
+  }
+
   function formJob(){
     const existing = state.jobs.find(j=>j.id===state.editingId);
+    const lineItems = $('estimateItemized').checked ? itemizedEstimate().items : [];
+    if(lineItems.length && $('excludeInventoryReduction')?.value !== 'yes' && lineItems.some(item => !item.materials.length || item.materials.some(m => !m.inventory_pick || m.grams_each <= 0))) throw new Error('Choose filament and grams for each item, or explicitly exclude inventory reduction.');
     const q = Math.max(1, Math.round(num($('quantity').value) || 1));
     const hEach = num($('hoursEach').value);
     updateRecipeDerivedFields();
@@ -2361,6 +2391,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const gEach = recipe.length ? recipe.reduce((s,r)=>s+num(r.grams_each),0) : num($('gramsEach').value);
     const now = new Date().toISOString();
     return {
+      line_items:lineItems,
       id: state.editingId || uid(),
       user_id: state.user?.id || null,
       job_title:$('jobTitle').value.trim(),
@@ -2427,6 +2458,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
 
   function fillForm(j){
     state.editingId = j.id;
+    estimateItemsEditor.set(j.line_items || []);
+    $('estimateItemized').checked = !!j.line_items?.length;
     $('jobTitle').value = j.job_title || '';
     $('jobType').value = j.job_type || 'customer_custom';
     $('productionStatus').value = j.production_status || 'idea';
@@ -2454,6 +2487,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     $('finishedSku').value = j.finished_sku || '';
     $('filamentBreakdown').value = j.filament_breakdown || '';
     renderRecipeRows(safeJsonParse(j.filament_recipe, recipeFromBreakdown(j)));
+    syncEstimateItems();
     if($('excludeInventoryReduction')) $('excludeInventoryReduction').value = j.exclude_inventory_reduction ? 'yes' : 'no';
     updatePricingPreview();
     $('notes').value = j.notes || '';
@@ -2467,6 +2501,8 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     state.editingId = null;
     state.repeatRecipeSnapshot = null;
     $('jobForm').reset();
+    estimateItemsEditor?.set([]);
+    if(estimateItemsEditor) syncEstimateItems();
     $('quantity').value = 1;
     $('colorCount').value = 1;
     $('priority').value = 'normal';
@@ -2546,6 +2582,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       // payload. Initial INSERTs contain only the reviewed editable estimate
       // columns above; advanced values remain solely in browser recovery.
       payload.job_payload = Object.fromEntries(Object.entries(payload).filter(([key])=>key !== 'job_payload'));
+      payload.job_payload.line_items = full.line_items || [];
     }
 
     try{
@@ -4292,6 +4329,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     const h = num(j.estimated_hours_each ?? j.print_hours_each ?? j.hours_each);
     const g = num(j.estimated_grams_each ?? j.grams_each);
     return {
+      line_items:j.line_items || j.job_payload?.line_items || [],
       id:j.id || uid(),
       user_id:j.user_id || state.user?.id || null,
       job_title:j.job_title || j.project_title || 'Untitled Job',
@@ -5995,6 +6033,16 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       updatePricingPreview();
     }
   }
+  estimateItemsEditor = window.OliPolyLineItems.mount($('estimateItems'), {materials:true, inventoryOptions:inventorySelectOptions, onChange:syncEstimateItems});
+  $('estimateItemized').addEventListener('change', () => {
+    if ($('estimateItemized').checked && !estimateItemsEditor.hasItems()) {
+      $('estimateItemized').checked = false;
+      const materials = recipeFromForm();
+      estimateItemsEditor.set([{id:uid(),description:$('jobTitle').value || 'First item',quantity:Math.max(1,num($('quantity').value)),unit_price:num($('priceEach').value),hours_each:num($('hoursEach').value),materials}]);
+      $('estimateItemized').checked = true;
+    }
+    syncEstimateItems();
+  });
   $('jobForm').addEventListener('input', handleJobFormLiveUpdate);
   $('jobForm').addEventListener('change', handleJobFormLiveUpdate);
   $('jobForm').addEventListener('submit', saveJob);
@@ -6202,13 +6250,14 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     ].filter(Boolean).join('\n\n');
 
     return {
+      line_items: window.OliPolyLineItems.commercial(job.line_items || job.job_payload?.line_items || []),
       version: 'production-to-quote-v1',
       created_at: new Date().toISOString(),
       production_job_id: job.id,
       source_updated_at: job.updated_at || null,
       production_job_title: job.job_title || '',
       quote_number: job.quote_number || '',
-      order_number: job.order_number || orderNumberFromQuoteNumberLocal(job.quote_number) || '',
+      order_number: job.order_number || '',
       customer_name: job.customer_name || '',
       customer_email: job.customer_email || '',
       quote_title: job.job_title || 'Custom 3D printed project',
