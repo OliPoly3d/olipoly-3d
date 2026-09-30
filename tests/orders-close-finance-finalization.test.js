@@ -52,9 +52,10 @@ test('RPC exposure and existing Orders RLS remain narrow',()=>{
   assert.doesNotMatch(sql,/disable row level security/i);
 });
 
-test('operator receives explicit closeout outcomes',()=>{
-  assert.match(html,/Finance entry created and Order closed\./);
+test('operator receives separate Finance and fulfillment outcomes',()=>{
+  assert.match(html,/Finance entry created\./);
+  assert.doesNotMatch(html,/Finance entry created and Order closed\./);
   assert.match(html,/Order closed\. No Finance entry was required\./);
   assert.match(html,/Mark this Order paid before pushing it to Finance\./);
-  assert.match(html,/Cannot push to Finance: the Order must be Ready for Pickup \/ Shipment\./);
+  assert.match(html,/Cannot push to Finance: the Order must be Ready for Pickup \/ Shipment or Closed\./);
 });
