@@ -1,0 +1,54 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+require('../js/tax-rate.js');require('../js/order-line-items.js');require('../js/quote-pricing.js');
+const pricing=require('../js/order-pricing.js');
+
+test('deployed Finance contract posts revised totals after fulfillment is closed', {skip:!process.env.PGLITE_MODULE}, async t=>{
+  const {PGlite}=require(process.env.PGLITE_MODULE), db=new PGlite();
+  t.after(()=>db.close());
+  await db.exec(fs.readFileSync('tests/sql/order-pricing-fixture.sql','utf8'));
+  await db.exec('alter table orders add column finance_pushed_at timestamptz, add column internal_notes text;');
+  await db.exec(fs.readFileSync('supabase/migrations/20260928150008_order_line_items_and_pricing_revisions.sql','utf8'));
+  // This is the RPC currently deployed, verified against pg_proc. The later
+  // declarative 202608100004 migration has not been deployed on this project.
+  const source=fs.readFileSync(process.env.FINANCE_RPC_SQL || 'supabase/migrations/202607210005_authoritative_finance_posting_corrections.sql','utf8');
+  const start=source.toLowerCase().indexOf('create or replace function public.post_order_finance_income(');
+  const tail=source.slice(start), delimiter=tail.match(/\bas\s+(\$[a-z_]*\$)/i);
+  assert.ok(start>=0 && delimiter);
+  const end=tail.indexOf(delimiter[1],delimiter.index+delimiter[0].length)+delimiter[1].length;
+  await db.exec(tail.slice(0,end)+';');
+  await db.exec('create trigger invoice_authority before insert on financial_entries for each row execute function apply_invoice_authority_to_finance_post();create trigger zz_tax before insert on financial_entries for each row execute function apply_order_tax_metadata_to_finance_post();');
+  const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222',id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const authenticate=actor=>db.query("select set_config('request.jwt.claim.sub',$1,false)",[actor]);
+  await authenticate(owner);await db.query('insert into auth.users values($1),($2)',[owner,other]);
+  const items=[{id:'dragon',description:'Dragon',quantity:1,unit_price:35.16},{id:'puppy',description:'Puppy',quantity:1,unit_price:2}];
+  const original=pricing.snapshot(items,{taxRate:6.75});
+  const revised=pricing.snapshot([items[0]],{taxRate:6.75,shipping:10});
+  await db.query("insert into orders(id,user_id,order_number,source_quote_number,quantity,order_total,balance_amount,deposit_amount,payment_status,status,updated_at,sales_tax_rate,destination_county) values($1,$2,'OP-000198','Q-TEST',2,$3,$3,0,'unpaid','ready_for_fulfillment',now(),6.75,'Portage')",[id,owner,original.final_total]);
+  await db.query("insert into quote_accepted_commercial_snapshots values($1,'OP-000198','Q-TEST',$2)",[owner,JSON.stringify({invoice_totals_schema_version:1,invoice_totals:original})]);
+  await db.query("insert into order_tracking_public(user_id,order_number,status) values($1,'OP-000198','ready_for_fulfillment')",[owner]);
+  const order=async()=>(await db.query('select * from orders where id=$1',[id])).rows[0];
+  await db.query("select revise_order_pricing($1,$2,'revision','Puppy removed; shipping finalized',$3)",[id,(await order()).updated_at,JSON.stringify(revised)]);
+  await db.query("update orders set status='closed',payment_status='paid',balance_amount=0 where id=$1",[id]);
+  await db.exec("update order_tracking_public set status='closed';");
+  const closed=await order();
+  const post=(key='closed-post',version=closed.updated_at)=>db.query("select post_order_finance_income($1,'OP-000198',$2,$3) result",[id,version,key]);
+  await authenticate(other);await assert.rejects(post(),/not found for authenticated owner/);
+  await authenticate(owner);await assert.rejects(post('stale','2020-01-01'),/changed; refresh/);
+  assert.equal((await db.query('select count(*) n from financial_entries')).rows[0].n,0);
+  assert.equal((await order()).finance_pushed,false);
+  const result=(await post()).rows[0].result;assert.equal(result.idempotent,false);
+  const entry=(await db.query('select * from financial_entries')).rows[0];
+  assert.deepEqual([Number(entry.amount),Number(entry.shipping_charged),Number(entry.sales_tax_collected)],[35.16,10,3.05]);
+  assert.equal((await db.query('select amount+shipping_charged+sales_tax_collected total from financial_entries')).rows[0].total,'48.21');
+  const after=await order();assert.equal(after.status,'closed');assert.equal(after.finance_pushed,true);
+  assert.equal(after.payment_status,'paid');assert.equal(Number(after.balance_amount),0);
+  assert.equal(Number(after.order_total),48.21);
+  assert.equal((await db.query('select status from order_tracking_public')).rows[0].status,'closed');
+  assert.deepEqual((await db.query('select snapshot from quote_accepted_commercial_snapshots')).rows[0].snapshot.invoice_totals,original);
+  assert.equal((await post()).rows[0].result.idempotent,true,'retry returns original entry despite updated version');
+  await assert.rejects(post('different-command',after.updated_at),/already been posted/);
+  await authenticate(other);await assert.rejects(post(),/already used for another owner/);
+  assert.equal((await db.query('select count(*) n from financial_entries')).rows[0].n,1);
+});

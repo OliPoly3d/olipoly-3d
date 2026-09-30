@@ -1050,7 +1050,7 @@ body{font-family:Inter,Arial,sans-serif}
           <button class="btn" id="pushAllFinanceBtn" type="button">Push All Ready</button>
           <button class="btn-ghost" id="showReadyFinanceBtn" type="button">Show Ready</button>
         </div>
-        <div class="finance-ready-note">Paid orders not yet pushed to Finance Pro.</div>
+        <div class="finance-ready-note">Paid orders not yet pushed to Finance Pro, including closed orders.</div>
       </div>
     </div>
 
@@ -1112,6 +1112,7 @@ body{font-family:Inter,Arial,sans-serif}
           <button class="oa-view-tab active" id="ordersActiveTab" type="button" data-order-view="active">Active</button>
           <button class="oa-view-tab" id="ordersNeedsTab" type="button" data-order-view="needs">Needs Action</button>
           <button class="oa-view-tab" id="ordersClosedTab" type="button" data-order-view="closed">Closed</button>
+          <button class="oa-view-tab" id="ordersAllTab" type="button" data-order-view="all">All Orders</button>
         </div>
         <div class="list" id="orderList"></div>
       </section>
@@ -1718,12 +1719,12 @@ Aurora, OH 44202</textarea></div>
         return;
       }
 
-      if (['paid','deposit_paid'].includes(order.payment_status) && num(order.order_total) > 0) {
+      if (isFinanceReadyOrder(order)) {
         note.textContent = 'Finance status: ready to push to Finance Pro.';
         return;
       }
 
-      note.textContent = 'Finance status: not ready to push yet.';
+      note.textContent = `Finance status: ${financeIneligibilityReason(order)}`;
     }
 
     function updateFinancePushButton(order = null){
@@ -2744,7 +2745,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
 
     function isFinanceReadyOrder(o){
-      return !!o && normalizeOrderStatusForDb(o.status) === 'ready_for_fulfillment' && !orderClosureFlags(o).finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0 && !o.finance_pushed;
+      return !financeIneligibilityReason(o);
     }
 
     function financeIneligibilityReason(order){
@@ -2753,7 +2754,10 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if (orderClosureFlags(order).finance_not_required) return 'Cannot push to Finance: this Order is marked Finance Not Required.';
       if (num(order.order_total) <= 0) return 'Cannot push to Finance: the authoritative Order total must be greater than zero.';
       if (order.finance_pushed) return 'Order is already posted to Finance.';
-      if (normalizeOrderStatusForDb(order.status) !== 'ready_for_fulfillment') return 'Cannot push to Finance: the Order must be Ready for Pickup / Shipment.';
+      // Legacy cancellation aliases also render as Closed; they are not completed sales.
+      const sourceStatus = String(order.persisted_status || order.status || '').trim().toLowerCase();
+      if (['canceled','cancelled','void','archived'].includes(sourceStatus)) return 'Cannot push to Finance: this Order was canceled, voided, or archived.';
+      if (!['ready_for_fulfillment','closed'].includes(normalizeOrderStatusForDb(order.status))) return 'Cannot push to Finance: the Order must be Ready for Pickup / Shipment or Closed.';
       if (num(order.sales_tax_amount) > 0 && !order.destination_county) return 'Cannot push to Finance: select the destination county for this taxable Order.';
       return '';
     }
@@ -2798,7 +2802,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if (/already been posted/i.test(detail)) return 'Order is already posted to Finance.';
       if (/FINANCE_TAX_COUNTY_REQUIRED/i.test(detail)) return 'Select the destination county before posting this taxable order to Finance.';
       if (/FINANCE_PAYMENT_INCOMPLETE/i.test(detail)) return 'Mark this Order paid before pushing it to Finance.';
-      if (/FINANCE_ORDER_NOT_READY_TO_CLOSE/i.test(detail)) return 'Cannot push to Finance: the Order must be Ready for Pickup / Shipment.';
+      if (/FINANCE_ORDER_NOT_READY_TO_CLOSE/i.test(detail)) return 'Finance rejected the Order status. Refresh the Order before retrying.';
       if (/FINANCE_TOTAL_REQUIRED/i.test(detail)) return 'Cannot push to Finance: the authoritative Order total must be greater than zero.';
       if (/FINANCE_TAX_METADATA_(?:UNRESOLVED|CONTRADICTORY)/i.test(detail)) return 'Cannot push to Finance: authoritative Order tax data is incomplete or contradictory.';
       if (/FINANCE_INVOICE_TOTALS_UNRESOLVED/i.test(detail)) return 'Cannot push to Finance: authoritative invoice totals are incomplete.';
@@ -2831,7 +2835,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       }
 
       const total = ready.reduce((s,o)=>s+num(o.order_total),0);
-      const ok = confirm(`Push ${ready.length} ready order${ready.length === 1 ? '' : 's'} to Finance Pro?\n\nPending revenue total: ${money(total)}\n\nEach order will create separate Sale, Shipping / Freight, and Sales Tax Collected entries when applicable.`);
+      const ok = confirm(`Push ${ready.length} ready order${ready.length === 1 ? '' : 's'} to Finance Pro?\n\nOrder total including shipping and tax: ${money(total)}\n\nEach order will create an income entry with its authoritative sale, shipping, and sales tax amounts.`);
       if (!ok) return;
 
       const pushed = [];
@@ -2848,14 +2852,18 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
 
       await fetchOrders();
 
-      const pushedText = pushed.length ? `Created Finance entries and closed ${pushed.length} Order${pushed.length === 1 ? '' : 's'}.` : 'No orders were pushed.';
+      const pushedText = pushed.length ? `Posted ${pushed.length} Order${pushed.length === 1 ? '' : 's'} to Finance.` : 'No orders were pushed.';
       const skippedText = skipped.length ? ` Skipped ${skipped.length}: ${skipped.join(' | ')}` : '';
       setMsg($('formMessage'), pushedText + skippedText, !!skipped.length);
     }
 
     function showReadyFinanceOrders(){
+      $('searchInput').value = '';
+      $('statusFilter').value = 'all';
+      $('paymentFilter').value = 'all';
+      if ($('invoiceFilter')) $('invoiceFilter').value = 'all';
       if ($('financeFilter')) $('financeFilter').value = 'ready';
-      renderList();
+      setOrderViewMode('all');
       $('orderList')?.scrollIntoView({behavior:'smooth', block:'start'});
     }
 
@@ -2892,13 +2900,13 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       if ($('pushFinanceBtn')) $('pushFinanceBtn').disabled = true;
       try {
         const result = await postOrderToFinanceCommand(currentOrder);
-        setMsg($('formMessage'), result?.idempotent ? 'Finance entry already exists and the Order is closed.' : 'Finance entry created and Order closed.');
         await fetchOrders();
         const saved = orders.find(o => o.id === currentOrder.id || o.order_number === currentOrder.order_number);
         if (saved) {
           loadIntoForm(saved);
           updateFinanceStatusNote(saved);
         }
+        setMsg($('formMessage'), result?.idempotent ? 'Finance entry already exists.' : 'Finance entry created.');
       } catch (err) {
         console.error('Finance command RPC failed:', {
           orderNumber: err.orderNumber || currentOrder.order_number,
@@ -2914,7 +2922,9 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
         setMsg($('formMessage'), financePostingMessage(err), true);
       } finally {
         financePostRequestsInFlight.delete(requestKey);
-        updateFinanceStatusNote(orders.find(o => o.id === currentOrder.id) || currentOrder);
+        const saved = orders.find(o => o.id === currentOrder.id) || currentOrder;
+        updateFinanceStatusNote(saved);
+        updateFinancePushButton(saved);
       }
     }
 
@@ -3051,10 +3061,9 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
           const financeState = $('financeFilter').value;
           list = list.filter(o => {
             const flags = orderClosureFlags(o);
-            const ready = !flags.finance_not_required && ['paid','deposit_paid'].includes(o.payment_status) && num(o.order_total) > 0;
             if (financeState === 'pushed') return !!o.finance_pushed;
             if (financeState === 'not_pushed') return !o.finance_pushed && !flags.finance_not_required;
-            if (financeState === 'ready') return ready && !o.finance_pushed;
+            if (financeState === 'ready') return isFinanceReadyOrder(o);
             return true;
           });
         }
@@ -3368,7 +3377,7 @@ resetForm();
       if(!currentUser){ updateAuthVisibility(); return setMsg($('authMessage'),'Login first',true); }
       const {data,error} = await api(`/rest/v1/orders?select=*&user_id=eq.${currentUser.id}&order=updated_at.desc`);
       if(error) return setMsg($('authMessage'), error.message || 'Load failed', true);
-      orders = (data || []).map(order => ({...order, status: normalizeOrderStatusForDb(order.status)}));
+      orders = (data || []).map(order => ({...order, persisted_status: order.status, status: normalizeOrderStatusForDb(order.status)}));
       renderList();
       setMsg($('authMessage'),`Loaded ${orders.length} orders.`);
       tryOpenDeepLinkedOrder();

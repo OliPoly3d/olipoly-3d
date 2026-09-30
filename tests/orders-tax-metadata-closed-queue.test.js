@@ -58,6 +58,6 @@ test('closed Orders are read-only and zero-value Orders are never Finance-ready'
   assert.match(orders, /Closed Order[^]*This order is closed\./);
   assert.match(orders, /button\.disabled = closed/);
   assert.match(orders, /This order is closed and cannot be edited\./);
-  assert.match(orders, /num\(o\.order_total\) > 0 && !o\.finance_pushed/);
+  assert.match(orders, /num\(order\.order_total\) <= 0/);
   assert.doesNotMatch(migration, /disable row level security|grant update on (table )?public\.orders/);
 });
