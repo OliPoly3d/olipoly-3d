@@ -1146,6 +1146,16 @@ body{font-family:Inter,Arial,sans-serif}
           <div class="timeline-step" data-step="canceled"><span>×</span><strong>Canceled</strong><small>Terminal</small></div>
         </div>
 
+        <section class="action-group primary-actions" id="fulfillmentClosePanel" aria-labelledby="fulfillmentCloseHeading" tabindex="-1" style="margin:16px 0;scroll-margin-top:100px">
+          <h4 id="fulfillmentCloseHeading">Fulfillment / Close Order</h4>
+          <p id="fulfillmentCloseHelp">Select an order to review fulfillment.</p>
+          <div class="btn-row">
+            <button class="btn" id="closeOrderBtn" type="button" disabled>Close Order</button>
+            <a class="btn-ghost" href="production-control.html">Return to Production</a>
+          </div>
+          <div id="fulfillmentCloseMessage" class="notice" role="status" aria-live="polite" style="display:none"></div>
+        </section>
+
         <div class="form-grid">
           <div><label for="orderNumber">Order Number</label><input readonly id="orderNumber" /></div>
           <div><label for="orderDate">Order Date</label><input id="orderDate" type="date" /></div>
@@ -1337,7 +1347,6 @@ Aurora, OH 44202</textarea></div>
             <h4>Core Order Actions</h4>
             <div class="btn-row">
               <button class="btn" id="saveBtn" type="button">Save Order</button>
-              <button class="btn-ghost" id="closeOrderBtn" type="button">Close Order</button>
               <button class="btn-ghost" id="newBtnInline" type="button">New Order</button>
               <button class="btn-danger" id="deleteBtn" type="button">Delete Order</button>
             </div>
@@ -2264,11 +2273,13 @@ function publicTrackingPayload(payload) {
 
     function resetForm(){
       activeId = null;
+      updateFulfillmentCloseState(null);
       $('detailTitle').textContent = 'Order Details';
       if ($('workspaceOrderKind')) $('workspaceOrderKind').textContent = 'Active Order';
       if ($('closedOrderNotice')) $('closedOrderNotice').classList.add('hidden');
       document.querySelectorAll('#orderDetailCard .form-grid input, #orderDetailCard .form-grid select, #orderDetailCard .form-grid textarea').forEach(control => { control.disabled = false; });
       if ($('paymentStatus')) $('paymentStatus').disabled = true;
+      if ($('status')) $('status').disabled = true;
       ['saveBtn','quickSaveBtn'].forEach(id => { if ($(id)) { $(id).disabled = false; $(id).title = ''; } });
       [
   'orderNumber',
@@ -2317,6 +2328,18 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
       clearMsg($('formMessage'));
     }
 
+    function updateFulfillmentCloseState(order){
+      const closed = !!order && orderIsClosed(order);
+      const eligible = !!order && !closed && normalizeOrderStatusForDb(order.status) === 'ready_for_fulfillment';
+      $('closeOrderBtn').disabled = !eligible;
+      $('closeOrderBtn').title = closed ? 'This Order is already closed.' : eligible ? 'Confirm fulfillment and close this order.' : 'Close Order is available only at Ready for Pickup / Shipment.';
+      $('fulfillmentCloseHelp').textContent = !order ? 'Select an order to review fulfillment.'
+        : closed ? `${order.order_number} is closed. Production and customer tracking are also closed.`
+        : eligible ? `${order.order_number} is ready for pickup / shipment. Once pickup, delivery, or shipment is complete, select Close Order below. This updates Orders, Production, and customer tracking together.`
+        : `${order.order_number} is ${statusLabel(order.status)}. Complete printing and QC in Production before closing this order.`;
+      clearMsg($('fulfillmentCloseMessage'));
+    }
+
     function applyOrderEditState(order){
       const closed = orderIsClosed(order);
       $('detailTitle').textContent = `${closed ? 'Closed Order' : 'Order Details'} — ${order.order_number}`;
@@ -2335,11 +2358,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = 'https://www.venmo.com/
         button.disabled = closed;
         button.title = closed ? 'This order is closed.' : '';
       });
-      if ($('closeOrderBtn')) {
-        const closeEligible = !closed && normalizeOrderStatusForDb(order.status) === 'ready_for_fulfillment';
-        $('closeOrderBtn').disabled = !closeEligible;
-        $('closeOrderBtn').title = closed ? 'This Order is already closed.' : closeEligible ? '' : 'Close Order is available only at Ready for Pickup / Shipment.';
-      }
+      updateFulfillmentCloseState(order);
     }
 
     function loadIntoForm(o){
@@ -2407,6 +2426,7 @@ if ($('paymentLinkVenmo')) $('paymentLinkVenmo').value = o.payment_link_venmo ||
       updateClosureButtons(o);
       updatePreview();
       hydrateOrderTaxMetadata(o);
+      ordersAdminV2RefreshWorkspace();
     }
 
     let orderPricingEditor;
@@ -3314,7 +3334,12 @@ resetForm();
         setTimeout(() => { clearOrderSearchForDeepLink(); renderList(); }, 700);
 
         setMsg($('authMessage'), `Opened ${found.order_number || target} from Hub.`);
-        setTimeout(() => document.getElementById('detailTitle')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+        setTimeout(() => {
+          const closing = new URLSearchParams(window.location.search).get('action') === 'close';
+          const destination = $(closing ? 'fulfillmentClosePanel' : 'detailTitle');
+          destination?.scrollIntoView({behavior:'smooth', block:'start'});
+          if (closing) destination?.focus({preventScroll:true});
+        }, 100);
       } else {
         // Only use the search box if no exact match exists.
         const search = $('searchInput');
@@ -3404,14 +3429,15 @@ resetForm();
 
     const closeOrderRequestsInFlight = new Set();
     async function closeCurrentOrder(){
-      clearMsg($('formMessage'));
-      if(!currentUser?.id) return setMsg($('formMessage'),'Log in before closing an Order.',true);
+      const message = $('fulfillmentCloseMessage');
+      clearMsg(message);
+      if(!currentUser?.id) return setMsg(message,'Log in before closing an Order.',true);
       const order = activeId ? orders.find(row => row.id === activeId) : null;
-      if(!order) return setMsg($('formMessage'),'Select and refresh an Order before closing it.',true);
-      if(orderIsClosed(order)) return setMsg($('formMessage'),'Order is already closed.');
-      if(normalizeOrderStatusForDb(order.status) !== 'ready_for_fulfillment') return setMsg($('formMessage'),'Cannot close this Order: it must be Ready for Pickup / Shipment.',true);
-      if(closeOrderRequestsInFlight.has(order.id)) return setMsg($('formMessage'),'Close Order is already in progress.');
-      if(!confirm(`Close ${order.order_number}?\n\nThis records fulfillment completion without changing payment or Finance history.`)) return;
+      if(!order) return setMsg(message,'Select and refresh an Order before closing it.',true);
+      if(orderIsClosed(order)) return setMsg(message,'Order is already closed.');
+      if(normalizeOrderStatusForDb(order.status) !== 'ready_for_fulfillment') return setMsg(message,'Cannot close this Order: it must be Ready for Pickup / Shipment.',true);
+      if(closeOrderRequestsInFlight.has(order.id)) return setMsg(message,'Close Order is already in progress.');
+      if(!confirm(`Close ${order.order_number}?\n\nConfirm pickup, delivery, or shipment is complete. This closes Orders, Production, and customer tracking together without changing payment or Finance history.`)) return;
       const request = window.OliPolyWorkflow.fulfillmentWorkflowRpcRequest(order.order_number,'close_order',order.updated_at,{fulfillment_confirmed_at:new Date().toISOString(),fulfillment_method:order.fulfillment || 'confirmed'});
       closeOrderRequestsInFlight.add(order.id);
       $('closeOrderBtn').disabled = true;
@@ -3425,10 +3451,10 @@ resetForm();
         renderList();
         window.OliPolyWorkflow.clearCommandIdentity('fulfillment',order.order_number,'close_order',order.updated_at);
         const noFinanceRequired = num(order.order_total) <= 0 || orderClosureFlags(order).finance_not_required;
-        setMsg($('formMessage'),noFinanceRequired ? 'Order closed. No Finance entry was required.' : 'Order closed. Finance history was not changed.');
+        setMsg(message,noFinanceRequired ? 'Order closed. No Finance entry was required.' : 'Order closed. Finance history was not changed.');
       } catch(error) {
-        const detail = String(error?.message || error || 'Close Order failed.');
-        setMsg($('formMessage'),/ORDER_NOT_READY_TO_CLOSE/i.test(detail) ? 'Cannot close this Order: it must be Ready for Pickup / Shipment.' : detail,true);
+        const detail = error?.code === '40001' ? 'This order changed. Refresh Orders Admin, then review and close it again.' : String(error?.message || error || 'Close Order failed.');
+        setMsg(message,/ORDER_NOT_READY_TO_CLOSE/i.test(detail) ? 'Cannot close this Order: it must be Ready for Pickup / Shipment.' : detail,true);
       } finally {
         closeOrderRequestsInFlight.delete(order.id);
         const current = orders.find(row => row.id === order.id);

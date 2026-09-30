@@ -2928,6 +2928,18 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
     window.dispatchEvent(new CustomEvent('olipoly:authoritative-data-refreshed', {detail:{module:'production_control', refreshedAt:new Date().toISOString()}}));
   }
 
+  // Browser Back can restore the pre-fulfillment board without reloading it.
+  window.addEventListener('pageshow', async event => {
+    if(!event.persisted || !state.user?.id || state.authorityMode !== 'authoritative') return;
+    try {
+      await refreshAuthoritativeProductionState();
+      render();
+    } catch(error) {
+      console.error('Production refresh after returning from Orders failed:', error);
+      toast('Production could not refresh. Reload the page before changing a job.');
+    }
+  });
+
   async function fetchAuthoritativeProductionJob(id){
     if(!state.user?.id) throw new Error('Sign in before changing authoritative Production.');
     const rows = await sbApi(`/rest/v1/production_jobs?select=*&id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(state.user.id)}&limit=1`, {method:'GET'});
@@ -5396,7 +5408,7 @@ th{color:var(--muted)!important}.chip,.decision-pill,.reservation-chip,.scrap-ch
       actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="ready_for_fulfillment" data-workflow-command="pass_qc" type="button">Pass QC</button>`;
       actions += `<button class="mini-btn" data-production-workflow-job="${j.id}" data-order-number="${esc(j.order_number)}" data-workflow-status="ready_to_print" data-workflow-command="needs_reprint" type="button">Needs Reprint</button>`;
     } else if(j.production_status === 'ready_for_fulfillment'){
-      actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}">Fulfill / Close in Orders</a>`;
+      actions += `<a class="mini-btn" href="orders-admin.html?order=${encodeURIComponent(j.order_number || '')}&action=close#fulfillmentClosePanel">Review / Close in Orders</a>`;
     }
     if(window.OliPolyProductionPersistence.canCancel(j)){
       if(!hasOrder && j.production_status === 'estimate') actions += `<button class="mini-btn quote-action" data-push-quote="${j.id}" type="button">Push to Quote</button>`;
