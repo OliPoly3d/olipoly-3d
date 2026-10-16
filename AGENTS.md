@@ -301,7 +301,7 @@ Refactor behavior separately from visual design.
 
 # Database Rules
 
-Never modify the Supabase schema automatically.
+Apply Supabase schema changes only after explicit user approval of the specific migration and target project/environment.
 
 If a schema change is required:
 
@@ -312,7 +312,12 @@ If a schema change is required:
 5. Explain affected queries.
 6. Update application code.
 7. Update tests.
-8. Stop.
+8. Run relevant checks and present the exact migration, target project/environment, expected effects, risks, and recovery approach for review.
+9. Ask for permission to apply the prepared migration unless that exact action is already explicitly authorized in the conversation. A general request to build a feature is not migration approval.
+10. Once approved, apply only the approved migration to the verified target using authorized access, then verify the resulting schema and access controls. Do not ask again for the same unchanged action.
+11. Report what was applied and the verification results. If execution fails, stop and report the actual state before attempting any materially different change.
+
+Approval to apply a migration does not authorize merging a PR, deploying the app, deleting data, or unrelated schema changes. If the migration or target materially changes after approval, explain the change and obtain fresh approval. If required access is unavailable, explain the blocker and provide the prepared migration for manual execution.
 
 Never assume the migration has been applied.
 
@@ -368,9 +373,9 @@ Complete one milestone.
 
 Create one Pull Request.
 
-Stop.
+After creating the PR, present the completed milestone and ask permission for the concrete next step when approval is required. Explicitly approved migration application and verification may continue within the same milestone.
 
-Never continue into another milestone automatically.
+Never continue into another milestone, merge a PR, or deploy automatically. Continue when the user explicitly authorizes that next action; do not repeatedly ask for an unchanged action already approved.
 
 ---
 

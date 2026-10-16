@@ -20,7 +20,9 @@ This milestone stores a versioned plan document with separate account, transacti
 
 No financial values, personal seed files, owner email or real owner UUID should be committed. The page is a public shell; the data is protected in the database. There is no offline financial-data cache. Explicit exports contain private records and belong outside the public repository. The shared auth bridge still stores login tokens according to the existing site's design; this milestone does not redesign site-wide authentication.
 
-## Required manual database setup — NOT applied by this change
+## Required approved database setup — NOT applied by this change
+
+Under `AGENTS.md`, prepare and review the exact migration and target project, then ask for explicit permission. Once granted, the agent may apply it using authorized access and verify the result. If access is unavailable, use the manual administrator steps below. Migration approval does not include merge or deployment approval.
 
 1. Review `supabase/migrations/20261016183209_money_foundation.sql` and run the isolated database tests.
 2. Apply that additive migration to the intended Supabase project using the administrator's normal review process. Confirm the project matches the existing auth bridge.
