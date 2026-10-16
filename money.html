@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="same-origin">
+<title>Money | OliPoly</title><link rel="stylesheet" href="assets/money.css">
+<script defer src="olipoly-auth.js"></script><script type="module" src="js/money-app.mjs"></script>
+</head>
+<body><main>
+<header><div><span class="eyebrow">OLIPOLY · PRIVATE</span><h1>Money</h1><p>Household and business, clearly accounted for.</p></div><button id="logout" hidden>Sign out</button></header>
+<p id="message" role="status" aria-live="polite">Checking sign-in…</p>
+<section id="login" hidden><h2>Sign in</h2><p>Use your existing OliPoly account. Access must be enabled for you.</p><form id="loginForm"><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button>Sign in</button></form></section>
+<div id="app" hidden>
+<div class="toolbar"><label>Account<select id="account"></select></label><label>Forecast through<input id="end" type="date" required></label><button id="refresh">Refresh</button><button id="export">Export backup</button><label class="file">Import opening plan<input id="import" type="file" accept="application/json,.json"></label></div>
+<p class="notice">Foundation preview: forecast includes recorded transactions and recurring schedules. Remaining variable budgets, future card-purchase payoffs, interest after promotions, and unknown obligations are not yet projected. These balances are not “safe to spend.” Same-day lows assume withdrawals settle before deposits.</p>
+<div id="metrics" class="metrics"></div>
+<section><h2>Accounts</h2><div class="scroll"><table><thead><tr><th>Account</th><th>Owner</th><th>Posted</th><th>After pending</th></tr></thead><tbody id="accounts"></tbody></table></div>
+<details><summary>Add an account</summary><form id="accountForm"><label>Name<input name="name" required maxlength="100"></label><label>Owner<select name="entity"><option value="household">Household</option><option value="business">OliPoly</option><option value="custodial">Custodial</option></select></label><label>Type<select name="type"><option value="cash">Cash account</option><option value="card">Credit card</option></select></label><label>Opening balance (negative if owed)<input name="opening" type="number" step="0.01" required></label><label>Cash reserve<input name="reserve" type="number" step="0.01" min="0" value="0" required></label><button>Add account</button></form></details></section>
+<section><h2>Record a transaction</h2><form id="transactionForm">
+<label>Date<input name="date" type="date" required></label><label>Description<input name="description" required maxlength="200"></label>
+<label>Type<select name="kind"><option value="expense">Purchase / expense</option><option value="income">Income / receipt</option><option value="transfer">Transfer / card payment</option><option value="adjustment">Balance adjustment</option></select></label>
+<label>Paid from / account<select name="account" class="accountOptions"></select></label><label>Transfer destination<select name="to" class="accountOptions"></select></label>
+<label>Amount (signed for adjustments)<input name="amount" type="number" step="0.01" required></label><label>Category<input name="category" maxlength="100" placeholder="Groceries, gas, dining…"></label>
+<label>Expense belongs to<select name="expenseEntity"><option value="">Account owner</option><option value="business">OliPoly — personally funded</option><option value="household">Household</option></select></label>
+<label>Funding classification<select name="funding"><option value="">Not applicable</option><option value="contribution">Owner contribution</option><option value="loan">Owner loan</option><option value="reimbursement">Reimbursement owed</option></select></label>
+<label>Status<select name="status"><option value="cleared">Cleared</option><option value="pending">Pending</option><option value="reconciled">Reconciled</option></select></label>
+<label class="wide">Notes<input name="note" maxlength="500" placeholder="Adjustment reason or funding details"></label><input name="scheduleKey" type="hidden"><button>Save transaction</button><button type="button" id="clearMatch">Cancel schedule match</button>
+</form></section>
+<section><h2>Recurring schedule</h2><p>Enter one schedule per paycheck destination. Use a transfer schedule for card payments or savings transfers.</p><form id="scheduleForm">
+<label>Name<input name="name" required maxlength="100"></label><label>Account<select name="account" class="accountOptions"></select></label><label>Transfer to (optional)<select name="to" id="scheduleTo"></select></label><label>Signed amount (negative outgoing)<input name="amount" type="number" step="0.01" required></label><label>Frequency<select name="frequency"><option value="monthly">Monthly</option><option value="biweekly">Every 14 days</option></select></label><label>First date<input name="anchor" type="date" required></label><label>Last date (optional)<input name="end" type="date"></label><label>First paycheck monthly stipend<input name="firstPayBonus" type="number" step="0.01" value="0"></label><label>Category<input name="category" maxlength="100"></label><label>Assumption<select name="estimated"><option value="false">Confirmed</option><option value="true">Provisional</option></select></label><button>Add schedule</button></form><div id="schedules"></div></section>
+<section><h2>Recorded transactions</h2><p>Use “Record” beside a scheduled event to replace it with the actual transaction. Mark transactions reconciled after checking them against the bank.</p><div class="scroll"><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Status</th></tr></thead><tbody id="transactions"></tbody></table></div></section>
+<section><h2>Spending this month</h2><div id="spending"></div></section>
+<section><h2>Monthly outlook</h2><div class="scroll"><table><thead><tr><th>Month</th><th>Opening</th><th>Lowest</th><th>Closing</th></tr></thead><tbody id="months"></tbody></table></div></section>
+<section><h2>Daily outlook</h2><p>Next 60 days shown. Monthly outlook covers the selected forecast horizon.</p><div class="scroll"><table><thead><tr><th>Date</th><th>Activity</th><th>Lowest</th><th>Closing</th></tr></thead><tbody id="days"></tbody></table></div></section>
+</div></main></body></html>
