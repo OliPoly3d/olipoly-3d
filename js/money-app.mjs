@@ -1,0 +1,84 @@
+import {validate,cents,forecast,monthly,balances,spending,statuses} from './money-engine.mjs';
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
+const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'America/New_York'}).format(new Date());
+let model=null,revision=null,userId=null,busy=false,generation=0;
+function message(text){$('message').textContent=text;}
+function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
+function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','spending','schedules'])$(id).replaceChildren();for(const f of document.forms)f.reset();}
+window.addEventListener('olipoly-auth-changed',e=>{if(userId && e.detail?.user?.id!==userId){lock();message('Signed out. Sign in to continue.');}});
+window.addEventListener('storage',e=>{if(['sb_token','sb_user','olipoly_auth_session_v1'].includes(e.key)){lock();message('Sign-in changed in another tab. Sign in again.');}});
+async function api(path,options={}) {
+  const session=await window.OliPolyAuth.recover();
+  if(!session?.user || (userId && session.user.id!==userId)) {lock();throw Error('Sign in again.');}
+  const res=await fetch(window.OliPolyAuth.SUPABASE_URL+'/rest/v1/'+path,{...options,cache:'no-store',headers:{...window.OliPolyAuth.authHeaders(),Prefer:'return=representation',...(options.headers||{})}});
+  const body=await res.json().catch(()=>null);
+  if(!res.ok) throw Error(res.status===404?'Money storage is not installed yet. Apply the reviewed database setup before using this page.':body?.message||'Could not reach Money storage.');
+  return body;
+}
+async function load(){
+  const session=await window.OliPolyAuth.recover();
+  if(!session?.user){lock();message('Sign in to open Money.');return;}
+  userId=session.user.id;const gen=++generation;
+  const access=await api('money_access?select=user_id&user_id=eq.'+encodeURIComponent(userId));
+  if(gen!==generation)return;
+  if(!access?.length){lock();message('Money access has not been enabled for this account.');return;}
+  const rows=await api('money_plans?select=body,revision&user_id=eq.'+encodeURIComponent(userId));
+  if(gen!==generation)return;
+  if(rows.length!==1)throw Error('Your Money plan has not been provisioned. Complete the database setup.');
+  model=validate(rows[0].body);revision=rows[0].revision;
+  $('login').hidden=true;$('app').hidden=false;$('logout').hidden=false;
+  if(!$('end').value){const d=new Date(model.start+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+36);d.setUTCDate(d.getUTCDate()-1);$('end').value=d.toISOString().slice(0,10);}
+  $('transactionForm').elements.date.value=today();render();message('Loaded. Opening balances are as of '+model.start+'.');
+}
+async function save(next){
+  validate(next);const gen=generation;
+  const rows=await api(`money_plans?user_id=eq.${encodeURIComponent(userId)}&revision=eq.${revision}`,{method:'PATCH',body:JSON.stringify({body:next,revision:revision+1})});
+  if(gen!==generation)throw Error('Sign-in changed; reload to verify the saved state.');
+  if(rows.length!==1)throw Error('This plan changed in another tab. Refresh before saving again; your entry has not been applied.');
+  model=validate(rows[0].body);revision=rows[0].revision;render();message('Saved. All views updated.');
+}
+async function action(fn){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}catch(e){message(e.message);}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
+function row(parent,values){const r=node('tr');for(const v of values)r.append(v instanceof Node?v:node('td',v));parent.append(r);return r;}
+function option(select,value,label){const o=node('option',label);o.value=value;select.append(o);}
+function render(){
+  const selection=$('account').value;const selects=[$('account'),...document.querySelectorAll('.accountOptions'),$('scheduleTo')];
+  for(const s of selects){const old=s.value;s.replaceChildren();if(s.id==='scheduleTo')option(s,'','None');for(const a of model.accounts)option(s,a.id,a.name);if([...s.options].some(o=>o.value===old))s.value=old;}
+  if(selection && model.accounts.some(a=>a.id===selection))$('account').value=selection;
+  const posted=balances(model,today(),true),adjusted=balances(model,today());
+  $('accounts').replaceChildren();for(const a of model.accounts)row($('accounts'),[a.name,a.entity,money(posted[a.id]),money(adjusted[a.id])]);
+  $('transactions').replaceChildren();
+  for(const t of [...model.transactions].sort((a,b)=>b.date.localeCompare(a.date))){const cell=node('td');const select=node('select');select.setAttribute('aria-label','Status for '+t.description);for(const s of statuses)option(select,s,s);select.value=t.status;select.onchange=()=>action(async()=>{const next=structuredClone(model);next.transactions.find(x=>x.id===t.id).status=select.value;await save(next);});cell.append(select);row($('transactions'),[t.date,t.description,t.category||t.kind,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '),cell]);}
+  $('schedules').replaceChildren();for(const s of model.schedules){const div=node('div',undefined,'schedule');const info=node('span',s.name+' · '+money(s.amount)+' · '+s.frequency);info.append(node('small',(s.estimated?'Provisional':'Confirmed')+' · '+(s.enabled===false?'Paused':'Active')));const b=node('button',s.enabled===false?'Resume':'Pause');b.onclick=()=>action(async()=>{const next=structuredClone(model);next.schedules.find(x=>x.id===s.id).enabled=s.enabled===false;await save(next);});div.append(info,b);$('schedules').append(div);}
+  $('spending').replaceChildren();const spend=spending(model,today().slice(0,7));for(const [k,v] of Object.entries(spend))$('spending').append(node('p',k+' — '+money(v)));if(!Object.keys(spend).length)$('spending').append(node('p','No purchases recorded this month. Opening card balances are excluded.'));
+  renderForecast();
+}
+function renderForecast(){
+  $('metrics').replaceChildren();$('months').replaceChildren();$('days').replaceChildren();if(!model.accounts.length)return;
+  const a=model.accounts.find(a=>a.id===$('account').value),days=forecast(model,$('end').value);
+  const future=days.filter(d=>d.date>=today());const low=future.length?Math.min(...future.map(d=>d.low[a.id])):null;
+  const posted=balances(model,today(),true)[a.id],adjusted=balances(model,today())[a.id];
+  for(const [label,value] of [['Posted balance',posted],['After pending',adjusted],['Lowest planned balance',low]]){const e=node('div',undefined,'metric');e.append(node('span',label),node('strong',value===null?'Outside horizon':money(value),value!==null&&value<a.reserve?'low':''));$('metrics').append(e);}
+  for(const m of monthly(days,a.id)){const r=row($('months'),[m.month,money(m.opening),money(m.low),money(m.closing)]);if(m.low<a.reserve)r.className='low';}
+  for(const d of future.slice(0,60)){const activity=node('td',undefined,'activity');for(const t of d.events.filter(t=>t.entries.some(e=>e.account===a.id))){const line=node('div',t.description+(t.estimated?' (provisional)':'')+' '+money(t.entries.find(e=>e.account===a.id).amount));if(t.status==='forecast'){const b=node('button','Record');b.onclick=()=>match(t);line.append(b);}activity.append(line);}const r=row($('days'),[d.date,activity,money(d.low[a.id]),money(d.closing[a.id])]);if(d.low[a.id]<a.reserve)r.className='low';}
+}
+function match(t){const f=$('transactionForm');f.reset();for(const k of ['date','description','kind','category','scheduleKey'])f.elements[k].value=t[k]||'';const outgoing=t.entries.find(e=>e.amount<0)||t.entries[0];f.elements.account.value=outgoing.account;f.elements.amount.value=(Math.abs(outgoing.amount)/100).toFixed(2);if(t.kind==='transfer')f.elements.to.value=t.entries.find(e=>e.account!==outgoing.account).account;f.scrollIntoView({behavior:'smooth'});message('Recording '+t.description+'. Saving replaces its forecast occurrence.');}
+$('loginForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=e.target;await window.OliPolyAuth.login(f.email.value,f.password.value);f.password.value='';await load();});};
+$('logout').onclick=()=>{window.OliPolyAuth.logout();lock();message('Signed out.');};
+$('refresh').onclick=()=>action(load);
+$('account').onchange=()=>action(async()=>renderForecast());$('end').onchange=()=>action(async()=>renderForecast());
+$('clearMatch').onclick=()=>{$('transactionForm').reset();$('transactionForm').elements.scheduleKey.value='';$('transactionForm').elements.date.value=today();};
+$('accountForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=new FormData(e.target),next=structuredClone(model);next.accounts.push({id:crypto.randomUUID(),name:f.get('name'),entity:f.get('entity'),type:f.get('type'),opening:cents(f.get('opening')),reserve:cents(f.get('reserve'))});await save(next);e.target.reset();});};
+$('transactionForm').onsubmit=e=>{e.preventDefault();action(async()=>{
+  const f=new FormData(e.target),kind=f.get('kind'),amount=cents(f.get('amount')),account=f.get('account');
+  if(kind!=='adjustment' && amount<=0)throw Error('Enter a positive amount.');
+  if(kind==='adjustment' && !f.get('note'))throw Error('Please explain this balance adjustment.');
+  const entries=[{account,amount:kind==='expense'||kind==='transfer'?-amount:amount}];if(kind==='transfer')entries.push({account:f.get('to'),amount});
+  const next=structuredClone(model);next.transactions.push({id:crypto.randomUUID(),date:f.get('date'),description:f.get('description'),kind,category:f.get('category'),status:f.get('status'),entries,expenseEntity:f.get('expenseEntity'),funding:f.get('funding')||(f.get('expenseEntity')==='business'&&model.accounts.find(a=>a.id===account)?.entity==='household'?'contribution':''),note:f.get('note'),scheduleKey:f.get('scheduleKey')||null});
+  await save(next);e.target.reset();e.target.elements.scheduleKey.value='';e.target.elements.date.value=today();
+});};
+$('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=new FormData(e.target),next=structuredClone(model);next.schedules.push({id:crypto.randomUUID(),name:f.get('name'),account:f.get('account'),to:f.get('to')||null,amount:cents(f.get('amount')),frequency:f.get('frequency'),anchor:f.get('anchor'),end:f.get('end')||null,day:Number(f.get('anchor').slice(-2)),firstPayBonus:cents(f.get('firstPayBonus')),category:f.get('category'),estimated:f.get('estimated')==='true'});await save(next);e.target.reset();});};
+$('export').onclick=()=>{if(!model)return;const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='money-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('import').onchange=e=>action(async()=>{const file=e.target.files[0];if(!file)return;if(model.accounts.length||model.transactions.length||model.schedules.length)throw Error('Opening-plan import is only available for an empty plan. Existing data will not be overwritten.');if(file.size>2000000)throw Error('Opening plan exceeds 2 MB.');const incoming=validate(JSON.parse(await file.text()));await save(incoming);e.target.value='';});
+await new Promise(resolve=>{if(document.readyState==='complete')resolve();else window.addEventListener('load',resolve,{once:true});});
+await action(load);
