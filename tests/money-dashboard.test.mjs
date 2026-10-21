@@ -12,6 +12,10 @@ test('single dashboard previews income/bill cents, monthly targets and seasonal 
   assert.equal(document.querySelectorAll('[role=tab]').length,0);
   assert.equal(document.getElementById('incomeRows').children.length,3);
   assert.match(document.getElementById('accountSummary').textContent,/\$1,250.00/);
+  const yoy=document.querySelector('#categoryRows [data-budget-id="seasonal"]');
+  assert.match(yoy.textContent,/YOY extras total/);assert.equal(yoy.querySelector('input'),null);
+  assert.equal(yoy.querySelector('a').getAttribute('href'),'#seasonalSection');
+  assert.equal(yoy.querySelector('[data-value="allowance"]').textContent,'$50.00');
   const pay=document.querySelector('#incomeRows input[type=number]');pay.value='200.02';pay.dispatchEvent(new env.dom.window.Event('change'));
   assert.equal(model.schedules[0].overrides,undefined);assert.equal(d.hasChanges(),true);
   assert.match(document.getElementById('accountSummary').textContent,/\$1,250.02/);
@@ -22,10 +26,30 @@ test('single dashboard previews income/bill cents, monthly targets and seasonal 
   const seasonal=document.querySelector('#seasonalRows input');seasonal.value='75.00';seasonal.dispatchEvent(new env.dom.window.Event('change'));
   assert.match(document.getElementById('accountSummary').textContent,/\$1,173.77/);
   assert.match(document.getElementById('seasonalTotals').textContent,/\$75.00/);
+  assert.equal(yoy.querySelector('[data-value="allowance"]').textContent,'$75.00');
+  assert.equal(yoy.querySelector('[data-value="remaining"]').textContent,'$75.00');
   document.getElementById('repeatSeasonal').click();assert.equal(d.draft().seasonalItems[0].changes[0].amount,7500);
   document.querySelector('#billRows button').click();assert.equal(recorded.entries[0].amount,-10125);
   document.getElementById('savePlan').click();await tick();assert.equal(saves,1);assert.equal(d.hasChanges(),false);
   d.clear();for(const id of ['accountSummary','incomeRows','billRows','categoryRows','seasonalRows','balanceChart'])assert.equal(document.getElementById(id).children.length,0);
+ }finally{env.restore();}
+});
+test('YOY summary aggregates multiple items, preserves actuals and explains opening-month proration', {skip:!dependency},async()=>{
+ const env=await environment(),model=fixture();model.start='2026-10-16';
+ model.seasonalItems.push({id:'trip',name:'Trip',month:10,amount:2000,entity:'household'});
+ model.transactions.push({id:'gift-actual',description:'Gift',date:'2026-10-20',kind:'expense',category:'Seasonal',status:'pending',entries:[{account:'cash',amount:-1000}]});
+ try{
+  const d=setupDashboard({getModel:()=>model,today:()=> '2026-10-21',message:()=>{},setStatus:async()=>{},record:()=>{},action:fn=>fn(),savePlan:async()=>{}});d.render();
+  const row=document.querySelector('#categoryRows [data-budget-id="seasonal"]');
+  assert.equal(row.querySelector('[data-value="allowance"]').textContent,'$36.13');
+  assert.match(row.querySelector('[data-value="source"]').textContent,/Full month \$70.00/);
+  assert.equal(row.querySelector('[data-value="spent"]').textContent,'$10.00');
+  assert.equal(row.querySelector('[data-value="remaining"]').textContent,'$26.13');
+  const input=document.querySelector('#seasonalRows input');input.value='80.00';input.dispatchEvent(new env.dom.window.Event('change'));
+  assert.equal(row.querySelector('[data-value="allowance"]').textContent,'$51.61');
+  assert.match(row.querySelector('[data-value="source"]').textContent,/Full month \$100.00/);
+  assert.equal(row.querySelector('[data-value="spent"]').textContent,'$10.00');
+  assert.equal(row.querySelector('[data-value="remaining"]').textContent,'$41.61');
  }finally{env.restore();}
 });
 test('full page records and edits an actual amount once, replaces its forecast, and clears on sign-out', {skip:!dependency},async()=>{

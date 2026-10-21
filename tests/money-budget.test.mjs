@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {budgetMonth, billsMonth, shiftMonth, validateBudgets} from '../js/money-budget.mjs';
+import {balances,validate} from '../js/money-engine.mjs';
 
 function plan() {
   return {version: 1, start: '2026-10-16', accounts: [
@@ -31,6 +32,17 @@ test('cash/card purchases and pending consume one bucket; payments and future en
   const r=budgetMonth(p,'2026-10','household','2026-10-21');
   assert.equal(r.buckets[0].spent,7000);assert.equal(r.buckets[0].pending,2000);
   assert.equal(r.buckets[0].remaining,9000);assert.equal(r.outside.length,0);
+});
+test('two categorized card purchases survive a single full payoff without double spending', () => {
+  const p=plan();p.accounts[0].opening=100000;p.accounts[1].opening=0;
+  p.transactions=[expense('grocery',25000,'Groceries'),expense('gas',25000,'Gas')];
+  validate(p);assert.deepEqual(balances(p,'2026-10-20'),{cash:100000,card:-50000,biz:0});
+  const before=budgetMonth(p,'2026-10','household','2026-10-21');
+  p.transactions.push({id:'payoff',description:'Card payoff',kind:'transfer',status:'cleared',date:'2026-10-21',entries:[{account:'cash',amount:-50000},{account:'card',amount:50000}]});
+  validate(p);assert.deepEqual(balances(p,'2026-10-21'),{cash:50000,card:0,biz:0});
+  const after=budgetMonth(p,'2026-10','household','2026-10-21');
+  assert.deepEqual(after,before);assert.deepEqual(after.buckets.map(b=>[b.name,b.spent]),[['Groceries',25000],['Gas',25000]]);
+  assert.equal(after.totals.spent,50000);
 });
 test('business expenses on personal cards stay separate; outside purchases remain visible', () => {
   const p=plan();p.transactions=[expense('biz',2000,'Groceries','card','cleared','2026-10-20','business'),expense('other',500,'Unassigned')];
