@@ -98,3 +98,34 @@ test('full page records and edits an actual amount once, replaces its forecast, 
   assert.equal(document.getElementById('forecastNote').textContent,'');
  }finally{env.restore();}
 });
+test('recurring schedule editor corrects income to a bill, keeps history, cancels safely and adds typed schedules', {skip:!dependency},async()=>{
+ const env=await environment();let model=fixture(),revision=0,session={user:{id:'test-owner'}},failSave=false;
+ model.accounts.push({id:'card',name:'Card',entity:'household',type:'card',opening:-50000,reserve:0});
+ model.schedules.push({id:'phone',name:'Phone Bill',account:'cash',amount:22500,frequency:'monthly',anchor:'2026-11-15',day:15,category:'Phone',firstPayBonus:0,estimated:true,source:'synthetic source',changes:[{date:'2027-01-01',amount:23000}],overrides:{'2026-12-15':{amount:24000,date:'2026-12-16',account:'cash'}},skipped:['2027-02-15']});
+ model.transactions.push({id:'old-phone',description:'Previously recorded',kind:'income',status:'cleared',scheduleKey:'phone:2026-11-15',date:'2026-11-15',entries:[{account:'cash',amount:22500}]});
+ const history=structuredClone(model.transactions),original=JSON.stringify(model);
+ env.dom.window.HTMLElement.prototype.scrollIntoView=function(){};
+ env.dom.window.OliPolyAuth={SUPABASE_URL:'https://example.test',recover:async()=>session,authHeaders:()=>({}),logout:()=>session=null};
+ globalThis.fetch=async(url,options={})=>{let body;if(options.method==='PATCH'){if(failSave)return {ok:false,status:409,json:async()=>({message:'Synthetic save failure'})};const next=JSON.parse(options.body);model=next.body;revision=next.revision;body=[{body:model,revision}];}else body=url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}];return {ok:true,json:async()=>body};};
+ try{
+  await import('../js/money-app.mjs?schedule-editor-dom-test');
+  const selectMonth=month=>{document.getElementById('budgetMonth').value=month;document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));};
+  const editPhone=()=>document.querySelector('[data-schedule-id="phone"] button').click();
+  const f=document.getElementById('scheduleForm'),changeKind=kind=>{f.elements.kind.value=kind;f.elements.kind.dispatchEvent(new env.dom.window.Event('change'));},submit=async()=>{f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();};
+  selectMonth('2026-12');assert.match(document.getElementById('incomeRows').textContent,/Phone Bill/);assert.doesNotMatch(document.getElementById('billRows').textContent,/Phone Bill/);
+  editPhone();assert.equal(f.elements.editScheduleId.value,'phone');assert.equal(f.elements.kind.value,'income');assert.equal(f.elements.amount.value,'225.00');assert.equal(f.elements.day.value,'15');
+  changeKind('expense');document.getElementById('cancelSchedule').click();assert.equal(JSON.stringify(model),original);assert.equal(revision,0);assert.equal(f.elements.editScheduleId.value,'');
+  editPhone();changeKind('expense');await submit();
+  assert.equal(model.schedules.length,3);assert.equal(revision,1);const phone=model.schedules.find(s=>s.id==='phone');assert.equal(phone.amount,-22500);assert.equal(phone.changes[0].amount,-23000);assert.deepEqual(phone.overrides['2026-12-15'],{amount:-24000,date:'2026-12-16',account:'cash'});assert.deepEqual(phone.skipped,['2027-02-15']);assert.equal(phone.source,'synthetic source');assert.deepEqual(model.transactions,history);
+  assert.doesNotMatch(document.getElementById('incomeRows').textContent,/Phone Bill/);assert.match(document.getElementById('billRows').textContent,/Phone Bill/);assert.equal(f.elements.editScheduleId.value,'');
+  editPhone();f.elements.anchor.value='2026-12-01';await submit();assert.equal(revision,1);assert.match(document.getElementById('message').textContent,/recorded history/);assert.equal(model.schedules.find(s=>s.id==='phone').anchor,'2026-11-15');document.getElementById('cancelSchedule').click();
+  editPhone();f.elements.amount.value='-225.00';await submit();assert.equal(revision,1);assert.match(document.getElementById('message').textContent,/positive amount/);document.getElementById('cancelSchedule').click();
+  editPhone();f.elements.amount.value='226.02';failSave=true;await submit();assert.equal(f.elements.editScheduleId.value,'phone');assert.equal(revision,1);assert.equal(model.schedules.find(s=>s.id==='phone').amount,-22500);failSave=false;await submit();assert.equal(revision,2);assert.equal(model.schedules.find(s=>s.id==='phone').amount,-22602);assert.equal(model.schedules.find(s=>s.id==='phone').overrides['2026-12-15'].amount,-24000);
+  f.elements.name.value='New bill';f.elements.account.value='cash';f.elements.amount.value='80.00';f.elements.anchor.value='2026-12-08';f.elements.anchor.dispatchEvent(new env.dom.window.Event('change'));assert.equal(f.elements.day.value,'8');await submit();assert.equal(model.schedules.find(s=>s.name==='New bill').amount,-8000);assert.match(document.getElementById('billRows').textContent,/New bill/);
+  f.elements.name.value='Card payment';changeKind('transfer');assert.equal(f.elements.to.disabled,false);assert.equal(f.elements.to.required,true);f.elements.account.value='cash';f.elements.to.value='card';f.elements.amount.value='100.00';f.elements.anchor.value='2026-12-09';f.elements.day.value='9';await submit();const transfer=model.schedules.find(s=>s.name==='Card payment');assert.equal(transfer.amount,-10000);assert.equal(transfer.to,'card');assert.deepEqual(model.transactions,history);
+  f.elements.name.value='Extra pay';changeKind('income');f.elements.frequency.value='biweekly';f.elements.frequency.dispatchEvent(new env.dom.window.Event('change'));assert.equal(f.elements.firstPayBonus.disabled,false);assert.equal(f.elements.day.disabled,true);f.elements.account.value='cash';f.elements.amount.value='1000.00';f.elements.firstPayBonus.value='40.00';f.elements.anchor.value='2026-12-01';await submit();const income=model.schedules.find(s=>s.name==='Extra pay');assert.equal(income.amount,100000);assert.equal(income.firstPayBonus,4000);
+  editPhone();f.dispatchEvent(new env.dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));assert.equal(f.elements.editScheduleId.value,'');
+  selectMonth('2026-10');assert.doesNotMatch(document.getElementById('billRows').textContent,/Phone Bill/);
+  editPhone();document.getElementById('logout').click();assert.equal(f.elements.editScheduleId.value,'');assert.equal(document.getElementById('scheduleEditNote').textContent,'');assert.equal(document.getElementById('scheduleHeading').textContent,'Add recurring schedule');
+ }finally{env.restore();}
+});

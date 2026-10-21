@@ -8,7 +8,7 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',
 let model=null,revision=null,userId=null,busy=false,generation=0;
 function message(text){$('message').textContent=text;}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();dashboard.clear();}
+function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);dashboard.clear();}
 window.addEventListener('olipoly-auth-changed',e=>{if(userId && e.detail?.user?.id!==userId){lock();message('Signed out. Sign in to continue.');}});
 window.addEventListener('storage',e=>{if(['sb_token','sb_user','olipoly_auth_session_v1'].includes(e.key)){lock();message('Sign-in changed in another tab. Sign in again.');}});
 async function api(path,options={}) {
@@ -57,7 +57,7 @@ function render(){
   if(selection && model.accounts.some(a=>a.id===selection))$('account').value=selection;
   const posted=balances(model,today(),true),adjusted=balances(model,today());
   $('accounts').replaceChildren();for(const a of model.accounts)row($('accounts'),[a.name,a.entity,money(posted[a.id]),money(adjusted[a.id])]);
-  $('schedules').replaceChildren();for(const s of model.schedules){const div=node('div',undefined,'schedule');const info=node('span',s.name+' · '+money(s.amount)+' · '+s.frequency);info.append(node('small',(s.estimated?'Provisional':'Confirmed')+' · '+(s.stoppedFrom?'Stopped from '+s.stoppedFrom:s.enabled===false?'Paused':'Active')));const b=node('button',s.stoppedFrom||s.enabled===false?'Resume':'Pause');b.onclick=()=>action(async()=>{const next=structuredClone(dashboard.draft());const target=next.schedules.find(x=>x.id===s.id);if(target.stoppedFrom){delete target.stoppedFrom;target.enabled=true;}else target.enabled=s.enabled===false;await save(next);});div.append(info,b);$('schedules').append(div);}
+  $('schedules').replaceChildren();for(const s of model.schedules){const div=node('div',undefined,'schedule');div.dataset.scheduleId=s.id;const kind=scheduleKind(s);const info=node('span',s.name+' · '+({expense:'Bill',income:'Income',transfer:'Transfer'}[kind])+' · '+money(Math.abs(s.amount))+' · '+s.frequency);info.append(node('small',(s.estimated?'Provisional':'Confirmed')+' · '+(s.stoppedFrom?'Stopped from '+s.stoppedFrom:s.enabled===false?'Paused':'Active')));const edit=node('button','Edit');edit.onclick=()=>editSchedule(s.id);const b=node('button',s.stoppedFrom||s.enabled===false?'Resume':'Pause');b.onclick=()=>action(async()=>{const next=structuredClone(dashboard.draft());const target=next.schedules.find(x=>x.id===s.id);if(target.stoppedFrom){delete target.stoppedFrom;target.enabled=true;}else target.enabled=s.enabled===false;await save(next);});const controls=node('div',undefined,'row-actions');controls.append(edit,b);div.append(info,controls);$('schedules').append(div);}
   dashboard.render();
 }
 function renderForecast(plan=dashboard.draft()){
@@ -106,7 +106,49 @@ $('transactionForm').onsubmit=e=>{e.preventDefault();action(async()=>{
   const existing=next.transactions.findIndex(t=>t.id===id);if(existing>=0)next.transactions[existing]=transaction;else next.transactions.push(transaction);
   await save(next);e.target.reset();e.target.elements.scheduleKey.value='';e.target.elements.editTransactionId.value='';e.target.elements.date.value=today();
 });};
-$('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=new FormData(e.target),next=structuredClone(dashboard.draft());next.schedules.push({id:crypto.randomUUID(),name:f.get('name'),account:f.get('account'),to:f.get('to')||null,amount:cents(f.get('amount')),frequency:f.get('frequency'),anchor:f.get('anchor'),end:f.get('end')||null,day:Number(f.get('anchor').slice(-2)),firstPayBonus:cents(f.get('firstPayBonus')),category:f.get('category'),estimated:f.get('estimated')==='true'});await save(next);e.target.reset();});};
+function scheduleKind(s){return s.to?'transfer':s.amount<0?'expense':'income';}
+function scheduleControls(){
+ const f=$('scheduleForm'),transfer=f.elements.kind.value==='transfer',monthly=f.elements.frequency.value==='monthly',bonus=!monthly&&f.elements.kind.value==='income';
+ $('scheduleToLabel').hidden=!transfer;f.elements.to.disabled=!transfer;f.elements.to.required=transfer;
+ $('scheduleDayLabel').hidden=!monthly;f.elements.day.disabled=!monthly;
+ $('scheduleBonusLabel').hidden=!bonus;f.elements.firstPayBonus.disabled=!bonus;
+}
+function resetSchedule(announce=true){
+ const f=$('scheduleForm');f.reset();f.elements.editScheduleId.value='';$('scheduleHeading').textContent='Add recurring schedule';$('saveSchedule').textContent='Add schedule';$('cancelSchedule').hidden=true;$('scheduleEditNote').hidden=true;$('scheduleEditNote').textContent='';scheduleControls();
+ if(announce)message('Schedule editing cancelled. Nothing was saved.');
+}
+function editSchedule(id){
+ const s=dashboard.draft().schedules.find(s=>s.id===id);if(!s)return;
+ resetSchedule(false);const f=$('scheduleForm');
+ for(const key of ['name','account','to','frequency','anchor','end','category'])f.elements[key].value=s[key]||'';
+ f.elements.editScheduleId.value=s.id;f.elements.kind.value=scheduleKind(s);f.elements.amount.value=(Math.abs(s.amount)/100).toFixed(2);f.elements.day.value=s.day||Number(s.anchor.slice(-2));f.elements.firstPayBonus.value=((s.firstPayBonus||0)/100).toFixed(2);f.elements.estimated.value=String(s.estimated===true);
+ $('scheduleHeading').textContent='Edit '+s.name;$('saveSchedule').textContent='Save schedule';$('cancelSchedule').hidden=false;
+ const exceptions=(s.changes||[]).length+Object.keys(s.overrides||{}).length;
+ $('scheduleEditNote').textContent='Updates this recurring schedule. Recorded transactions stay unchanged. To change only one payment, edit its Expected amount in the monthly dashboard.'+(exceptions?' '+exceptions+' existing dated or month-specific edits are kept; changing Bill / Income changes their direction too.':'');$('scheduleEditNote').hidden=false;scheduleControls();
+ for(let parent=f.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;
+ f.scrollIntoView({behavior:'smooth'});f.elements.kind.focus();
+}
+$('scheduleKind').onchange=scheduleControls;$('scheduleForm').elements.frequency.onchange=scheduleControls;
+$('scheduleForm').elements.anchor.onchange=e=>{if(!$('scheduleForm').elements.editScheduleId.value)$('scheduleForm').elements.day.value=Number(e.target.value.slice(-2));};
+$('cancelSchedule').onclick=()=>resetSchedule();
+$('scheduleForm').onkeydown=e=>{if(e.key==='Escape'&&e.currentTarget.elements.editScheduleId.value){e.preventDefault();resetSchedule();}};
+$('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{
+ const f=new FormData(e.target),next=structuredClone(dashboard.draft()),id=f.get('editScheduleId'),previous=id?next.schedules.find(s=>s.id===id):null;
+ if(id&&!previous)throw Error('This schedule is no longer available. Refresh and try again.');
+ const kind=f.get('kind'),amount=cents(f.get('amount')),bonus=cents(f.get('firstPayBonus')||'0');if(!['expense','income','transfer'].includes(kind)||amount<=0||bonus<0)throw Error('Choose a schedule type and enter a positive amount.');
+ const anchor=f.get('anchor'),frequency=f.get('frequency'),day=frequency==='monthly'?Number(f.get('day')):Number(anchor.slice(-2));
+ if(f.get('end')&&f.get('end')<anchor)throw Error('Last date must be on or after the start date.');
+ if(previous&&(next.transactions.some(t=>t.scheduleKey?.startsWith(id+':'))||Object.keys(previous.overrides||{}).length||previous.skipped?.length)&&(anchor!==previous.anchor||frequency!==previous.frequency||frequency==='monthly'&&day!==previous.day))throw Error('This schedule has recorded history or dated edits. Keep its repeat dates, or pause it and add a new schedule for different timing.');
+ const signed=n=>kind==='income'?Math.abs(n):-Math.abs(n);
+ const target={...previous,id:id||crypto.randomUUID(),name:f.get('name').trim(),account:f.get('account'),to:kind==='transfer'?f.get('to'):null,amount:signed(amount),frequency,anchor,end:f.get('end')||null,day,firstPayBonus:kind==='income'&&frequency==='biweekly'?bonus:0,category:f.get('category').trim(),estimated:f.get('estimated')==='true'};
+ if(kind==='transfer'&&!target.to)throw Error('Choose a transfer destination.');
+ if(previous&&kind!==scheduleKind(previous)){
+  if(previous.changes)target.changes=previous.changes.map(c=>({...c,amount:signed(c.amount)}));
+  if(previous.overrides)target.overrides=Object.fromEntries(Object.entries(previous.overrides).map(([key,value])=>{const o={...value,amount:signed(value.amount)};delete o.to;return [key,o];}));
+ }
+ if(previous)next.schedules[next.schedules.indexOf(previous)]=target;else next.schedules.push(target);
+ await save(next);resetSchedule(false);message('Schedule saved. Income, bills and forecasts updated.');
+});};
 $('export').onclick=()=>{if(!model)return;const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='money-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('import').onchange=e=>action(async()=>{const file=e.target.files[0];if(!file)return;if(model.accounts.length||model.transactions.length||model.schedules.length)throw Error('Opening-plan import is only available for an empty plan. Existing data will not be overwritten.');if(file.size>2000000)throw Error('Opening plan exceeds 2 MB.');const incoming=validateBudgets(validate(JSON.parse(await file.text())));await save(incoming);e.target.value='';});
 const dashboard=setupDashboard({
