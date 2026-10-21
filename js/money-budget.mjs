@@ -35,7 +35,29 @@ export function validateBudgets(model) {
       }
     }
   }
+  const seasonalIds = new Set();
+  for (const item of model.seasonalItems || []) {
+    if (!item.id || seasonalIds.has(item.id) || !item.name || !['household','business','custodial'].includes(item.entity) || !Number.isInteger(item.month) || item.month < 1 || item.month > 12 || !Number.isSafeInteger(item.amount)) throw Error('Invalid seasonal item.');
+    seasonalIds.add(item.id);
+    for (const change of item.changes || []) if (!Number.isInteger(change.year) || change.year < 1900 || !Number.isSafeInteger(change.amount)) throw Error('Invalid yearly seasonal change.');
+    for (const [month, amount] of Object.entries(item.overrides || {})) {monthBounds(month);if (!Number.isSafeInteger(amount)) throw Error('Invalid seasonal amount.');}
+  }
+  const accounts = new Map(model.accounts.map(a=>[a.id,a]));
+  for (const b of budgets) if (b.account && accounts.get(b.account)?.type !== 'cash') throw Error('Choose a cash account to fund this budget.');
+  for (const b of budgets) for (const [month,account] of Object.entries(b.funding||{})) {monthBounds(month);if(accounts.get(account)?.type!=='cash'||accounts.get(account)?.entity!==b.entity)throw Error('Invalid monthly budget funding account.');}
+  for (const p of model.planning?.cardPayoffs || []) {
+    if (accounts.get(p.card)?.type !== 'card' || accounts.get(p.from)?.type !== 'cash' || accounts.get(p.card).entity !== accounts.get(p.from).entity) throw Error('Invalid card payoff plan.');
+  }
   return model;
+}
+
+export function seasonalMonth(model, month, entity) {
+  monthBounds(month);
+  const items = (model.seasonalItems || []).filter(i=>i.entity===entity && i.month===Number(month.slice(-2))).map(i=>{
+    const yearly=[...(i.changes||[])].filter(c=>c.year<=Number(month.slice(0,4))).sort((a,b)=>a.year-b.year).at(-1)?.amount ?? i.amount;
+    return {...i,expected:i.overrides?.[month] ?? yearly};
+  });
+  return {items,total:items.reduce((n,i)=>n+i.expected,0)};
 }
 
 // One owner/category/month calculation for every card, cash account and chart.
@@ -54,7 +76,8 @@ export function budgetMonth(model, month, entity, asOf) {
     matches.forEach(t => used.add(t.id));
     const spent = matches.reduce((n, t) => n - t.entries[0].amount, 0);
     const pending = matches.filter(t => t.status === 'pending').reduce((n, t) => n - t.entries[0].amount, 0);
-    const full = b.monthly?.[month] ?? null;
+    const seasonal = b.seasonal && model.seasonalItems?.length ? seasonalMonth(model,month,entity).total : null;
+    const full = seasonal === null ? b.monthly?.[month] ?? null : Math.max(0,seasonal);
     let allowance = b.overrides?.[month] ?? full;
     const partial = model.start.slice(0, 7) === month && model.start > bounds.first && b.prorate !== false;
     if (allowance !== null && partial && b.overrides?.[month] === undefined) {

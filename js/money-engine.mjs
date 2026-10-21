@@ -55,6 +55,15 @@ export function validate(model) {
     if (s.to && s.amount >= 0) throw Error('Transfer schedule amount must be negative.');
     if (s.frequency === 'monthly' && (!Number.isInteger(s.day) || s.day < 1 || s.day > 31)) throw Error('Invalid monthly day.');
     for (const p of s.changes || []) { date(p.date); integer(p.amount); }
+    for (const [key, o] of Object.entries(s.overrides || {})) {
+      date(key); if (o.date) date(o.date); integer(o.amount);
+      if (o.account && !ids.has(o.account)) throw Error('Unknown expected account.');
+      if (o.to && (!s.to || !ids.has(o.to))) throw Error('Unknown expected transfer destination.');
+      if (s.to && (o.amount > 0 || (o.account||s.account)===(o.to||s.to))) throw Error('Expected transfer must be outgoing to a different account.');
+      if (!s.to && s.amount > 0 && o.amount < 0) throw Error('Expected income cannot be negative.');
+      if (!s.to && s.amount < 0 && o.amount > 0) throw Error('Expected expense cannot be positive.');
+      if (o.date && o.date < model.start) throw Error('Expected date predates opening balances.');
+    }
   }
   return model;
 }
@@ -71,14 +80,19 @@ export function occurrences(model, end) {
         const last = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth()+1, 0)).getUTCDate();
         day = iso(new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), Math.min(s.day,last))));
       }
-      if (day > limit) break;
+      // Overrides may move an occurrence across a month boundary, in either direction.
+      const nominalDay = day;
+      const override = s.overrides?.[nominalDay];
+      if (day > limit && !Object.keys(s.overrides || {}).some(k => k >= day && s.overrides[k].date <= limit)) break;
       const key = `${s.id}:${day}`;
       if (day >= s.anchor && day >= model.start && !matched.has(key)) {
         let amount = [...(s.changes || [])].sort((a,b)=>a.date.localeCompare(b.date)).filter(x=>x.date<=day).at(-1)?.amount ?? s.amount;
         if (s.frequency === 'biweekly' && addDays(day,-14).slice(0,7) !== day.slice(0,7)) amount += s.firstPayBonus || 0;
-        const entries = [{account:s.account,amount}];
-        if (s.to) entries.push({account:s.to,amount:-amount});
-        result.push({id:key,scheduleKey:key,date:day,description:s.name,kind:s.to?'transfer':amount<0?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true});
+        if (override) amount = override.amount;
+        const eventDate = override?.date || day;
+        const entries = [{account:override?.account || s.account,amount}];
+        if (s.to) entries.push({account:override?.to || s.to,amount:-amount});
+        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true});
       }
       if (s.frequency === 'biweekly') day = addDays(day,14);
       else month.setUTCMonth(month.getUTCMonth()+1);
@@ -91,10 +105,11 @@ export function balances(model, asOf, postedOnly=false) {
   for (const t of model.transactions) if (t.date<=asOf && (!postedOnly || t.status!=='pending')) for (const e of t.entries) out[e.account]+=e.amount;
   return out;
 }
-export function forecast(model, end) {
+export function forecast(model, end, plannedEvents = []) {
   validate(model); date(end);
   if (end < model.start || +date(end)- +date(model.start)> 1130*86400000) throw Error('Choose an end date within 36 months.');
-  const events = [...model.transactions, ...occurrences(model,end)].filter(t=>t.date<=end).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+  for (const t of plannedEvents) {date(t.date); for (const e of t.entries) {integer(e.amount);if (!model.accounts.some(a=>a.id===e.account)) throw Error('Unknown planned account.');}}
+  const events = [...model.transactions, ...occurrences(model,end), ...plannedEvents].filter(t=>t.date<=end && t.date>=model.start).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
   const grouped = new Map();
   for (const e of events) { if(!grouped.has(e.date)) grouped.set(e.date,[]); grouped.get(e.date).push(e); }
   const running = Object.fromEntries(model.accounts.map(a=>[a.id,a.opening]));

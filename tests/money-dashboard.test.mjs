@@ -1,83 +1,48 @@
-// Run with MONEY_JSDOM_MODULE pointing to jsdom@26.1.0/lib/api.js outside the repo.
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import {pathToFileURL} from 'node:url';
+// Synthetic interaction checks; use MONEY_JSDOM_MODULE for jsdom@26.1.0/lib/api.js.
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {pathToFileURL} from 'node:url';
 import {setupDashboard} from '../js/money-dashboard.mjs';
-
-const dependency = process.env.MONEY_JSDOM_MODULE;
-test('dashboard tabs, targets, bills, pending spending and privacy clearing', {skip: !dependency}, async () => {
-  const {JSDOM} = await import(pathToFileURL(dependency).href);
-  const dom = new JSDOM(fs.readFileSync(new URL('../money.html', import.meta.url), 'utf8'), {url:'https://example.test/money.html'});
-  const saved = Object.fromEntries(['window','document','Node','FormData'].map(k=>[k,globalThis[k]]));
-  for(const k of Object.keys(saved))globalThis[k]=dom.window[k];
-  try {
-    const m={version:1,start:'2026-10-16',accounts:[{id:'cash',name:'Cash',entity:'household',type:'cash',opening:0,reserve:0}],budgets:[{id:'food',name:'Groceries',entity:'household',monthly:{'2026-10':31000,'2026-11':50000}}],transactions:[{id:'purchase',kind:'expense',date:'2026-10-20',status:'pending',category:'Groceries',entries:[{account:'cash',amount:-1000}]}],schedules:[{id:'bill',name:'Electric',account:'cash',amount:-10000,frequency:'monthly',anchor:'2026-10-01',day:28}],unscheduledBills:[{name:'Phone',entity:'household',reason:'Amount unknown'}]};
-    let target,recorded;
-    const dashboard=setupDashboard({getModel:()=>m,today:()=> '2026-10-21',saveTarget:async(...args)=>target=args,record:t=>recorded=t,action:fn=>fn()});
-    dashboard.render();
-    assert.match(document.getElementById('buckets').textContent,/\$150.00 left/);
-    assert.match(document.getElementById('buckets').textContent,/\$10.00 pending included/);
-    assert.equal(document.getElementById('budgetTrend').children.length,6);
-    document.getElementById('tab-bills').click();
-    assert.equal(document.getElementById('view-budget').hidden,true);
-    assert.equal(document.getElementById('view-bills').hidden,false);
-    assert.match(document.getElementById('unknownBills').textContent,/Phone/);
-    document.querySelector('#billList button').click();
-    assert.equal(recorded.scheduleKey,'bill:2026-10-28');
-    assert.equal(document.getElementById('view-activity').hidden,false);
-    document.querySelector('#buckets button').click();
-    assert.equal(document.getElementById('budgetForm').closest('details').open,true);
-    const f=document.getElementById('budgetForm'); f.elements.amount.value='175.00';
-    f.dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
-    await Promise.resolve();assert.deepEqual(target,['food','2026-10','175.00']);
-    document.getElementById('nextMonth').click();
-    assert.equal(document.getElementById('budgetMonth').value,'2026-11');
-    assert.match(document.getElementById('buckets').textContent,/\$500.00 left/);
-    dashboard.clear();
-    for(const id of ['buckets','budgetMetrics','billList','budgetTrend','outsideSpending','unknownBills']) assert.equal(document.getElementById(id).children.length,0);
-  } finally {
-    dom.window.close();for(const [k,v] of Object.entries(saved)){if(v===undefined)delete globalThis[k];else globalThis[k]=v;}
-  }
+const dependency=process.env.MONEY_JSDOM_MODULE;
+function fixture(){return {version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Cash',entity:'household',type:'cash',opening:100000,reserve:0}],transactions:[],schedules:[{id:'pay',name:'Paycheck',account:'cash',amount:20000,frequency:'biweekly',anchor:'2026-10-02'},{id:'bill',name:'Electric',account:'cash',amount:-10000,frequency:'monthly',anchor:'2026-10-01',day:28,category:'Electric'}],budgets:[{id:'food',name:'Groceries',shortName:'Grocery',entity:'household',account:'cash',monthly:{'2026-10':20000,'2026-11':30000}},{id:'seasonal',name:'Seasonal',entity:'household',account:'cash',seasonal:true,monthly:{'2026-10':5000}}],seasonalItems:[{id:'gift',name:'Gifts',month:10,amount:5000,entity:'household'}]};}
+async function environment(){const {JSDOM}=await import(pathToFileURL(dependency).href);const dom=new JSDOM(fs.readFileSync(new URL('../money.html',import.meta.url),'utf8'),{url:'https://example.test/money.html'});const keys=['window','document','Node','FormData','fetch'];const old=Object.fromEntries(keys.map(k=>[k,globalThis[k]]));for(const k of ['window','document','Node','FormData'])globalThis[k]=dom.window[k];return {dom,restore(){dom.window.close();for(const [k,v] of Object.entries(old)){if(v===undefined)delete globalThis[k];else globalThis[k]=v;}}};}
+const tick=()=>new Promise(resolve=>setTimeout(resolve,25));
+test('single dashboard previews income/bill cents, monthly targets and seasonal recurrence before saving', {skip:!dependency},async()=>{
+ const env=await environment();let model=fixture(),recorded,saves=0;
+ try{
+  const d=setupDashboard({getModel:()=>model,today:()=> '2026-10-21',message:()=>{},setStatus:async()=>{},record:t=>recorded=t,action:fn=>fn(),savePlan:async next=>{saves++;model=next;d.render();}});d.render();
+  assert.equal(document.querySelectorAll('[role=tab]').length,0);
+  assert.equal(document.getElementById('incomeRows').children.length,3);
+  assert.match(document.getElementById('accountSummary').textContent,/\$1,250.00/);
+  const pay=document.querySelector('#incomeRows input[type=number]');pay.value='200.02';pay.dispatchEvent(new env.dom.window.Event('change'));
+  assert.equal(model.schedules[0].overrides,undefined);assert.equal(d.hasChanges(),true);
+  assert.match(document.getElementById('accountSummary').textContent,/\$1,250.02/);
+  const bill=document.querySelector('#billRows input[type=number]');bill.value='101.25';bill.dispatchEvent(new env.dom.window.Event('change'));
+  assert.match(document.getElementById('accountSummary').textContent,/\$1,248.77/);
+  const budget=document.querySelector('#categoryRows input');budget.value='250.00';budget.dispatchEvent(new env.dom.window.Event('change'));
+  assert.match(document.getElementById('accountSummary').textContent,/\$1,198.77/);
+  const seasonal=document.querySelector('#seasonalRows input');seasonal.value='75.00';seasonal.dispatchEvent(new env.dom.window.Event('change'));
+  assert.match(document.getElementById('accountSummary').textContent,/\$1,173.77/);
+  assert.match(document.getElementById('seasonalTotals').textContent,/\$75.00/);
+  document.getElementById('repeatSeasonal').click();assert.equal(d.draft().seasonalItems[0].changes[0].amount,7500);
+  document.querySelector('#billRows button').click();assert.equal(recorded.entries[0].amount,-10125);
+  document.getElementById('savePlan').click();await tick();assert.equal(saves,1);assert.equal(d.hasChanges(),false);
+  d.clear();for(const id of ['accountSummary','incomeRows','billRows','categoryRows','seasonalRows','balanceChart'])assert.equal(document.getElementById(id).children.length,0);
+ }finally{env.restore();}
 });
-
-test('full page loads, saves a purchase once and clears private views on sign-out', {skip: !dependency}, async () => {
-  const {JSDOM} = await import(pathToFileURL(dependency).href);
-  const dom = new JSDOM(fs.readFileSync(new URL('../money.html', import.meta.url), 'utf8'), {url:'https://example.test/money.html'});
-  const keys=['window','document','Node','FormData','fetch'];
-  const original=Object.fromEntries(keys.map(k=>[k,globalThis[k]]));
-  for(const k of ['window','document','Node','FormData'])globalThis[k]=dom.window[k];
-  let session={user:{id:'test-owner'}},revision=0;
-  let model={version:1,start:'2026-10-16',accounts:[{id:'cash',name:'Cash',entity:'household',type:'cash',opening:100000,reserve:0}],transactions:[],schedules:[],budgets:[{id:'food',name:'Groceries',entity:'household',monthly:{'2026-10':31000}}]};
-  dom.window.OliPolyAuth={SUPABASE_URL:'https://example.test',recover:async()=>session,authHeaders:()=>({}),logout:()=>{session=null;}};
-  globalThis.fetch=async(url,options={})=>{
-    let body;
-    if(options.method==='PATCH'){const change=JSON.parse(options.body);model=change.body;revision=change.revision;body=[{body:model,revision}];}
-    else body=url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}];
-    return {ok:true,json:async()=>body};
-  };
-  try {
-    await import('../js/money-app.mjs?dom-test');
-    assert.equal(document.getElementById('app').hidden,false);
-    document.getElementById('budgetMonth').value='2026-10';
-    document.getElementById('budgetMonth').dispatchEvent(new dom.window.Event('change'));
-    await new Promise(resolve=>setTimeout(resolve,0));
-    document.getElementById('addExpense').click();
-    const form=document.getElementById('transactionForm');
-    for(const [key,value] of Object.entries({date:'2026-10-20',description:'Market',kind:'expense',account:'cash',amount:'25.00',category:'Groceries',status:'pending'}))form.elements[key].value=value;
-    form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));
-    await new Promise(resolve=>setTimeout(resolve,20));
-    assert.equal(model.transactions.length,1);
-    assert.equal(revision,1);
-    assert.match(document.getElementById('message').textContent,/Saved/);
-    assert.match(document.getElementById('buckets').textContent,/\$135.00 left/);
-    assert.match(document.getElementById('accounts').textContent,/\$975.00/);
-    document.getElementById('logout').click();
-    assert.equal(document.getElementById('app').hidden,true);
-    assert.equal(document.getElementById('buckets').children.length,0);
-    assert.equal(document.getElementById('accounts').children.length,0);
-    assert.equal(document.getElementById('budgetRing').hasAttribute('aria-label'),false);
-  } finally {
-    dom.window.close();for(const [k,v] of Object.entries(original)){if(v===undefined)delete globalThis[k];else globalThis[k]=v;}
-  }
+test('full page records and edits an actual amount once, replaces its forecast, and clears on sign-out', {skip:!dependency},async()=>{
+ const env=await environment();let session={user:{id:'test-owner'}},revision=0,model=fixture();
+ env.dom.window.HTMLElement.prototype.scrollIntoView=function(){};
+ env.dom.window.OliPolyAuth={SUPABASE_URL:'https://example.test',recover:async()=>session,authHeaders:()=>({}),logout:()=>session=null};
+ globalThis.fetch=async(url,options={})=>{let body;if(options.method==='PATCH'){const next=JSON.parse(options.body);model=next.body;revision=next.revision;body=[{body:model,revision}];}else body=url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}];return {ok:true,json:async()=>body};};
+ try{
+  await import('../js/money-app.mjs?sheet-dom-test');assert.equal(document.getElementById('app').hidden,false);
+  document.getElementById('budgetMonth').value='2026-10';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));
+  document.querySelector('#billRows button').click();const f=document.getElementById('transactionForm');assert.equal(document.getElementById('transactionEntry').open,true);
+  f.elements.amount.value='100.37';f.elements.date.value='2026-10-27';f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();
+  assert.equal(model.transactions.length,1);assert.equal(model.transactions[0].entries[0].amount,-10037);assert.equal(model.transactions[0].scheduleKey,'bill:2026-10-28');
+  assert.match(document.getElementById('accountSummary').textContent,/\$1,249.63/);
+  document.querySelector('#billRows button').click();f.elements.amount.value='100.38';f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();
+  assert.equal(model.transactions.length,1);assert.equal(model.transactions[0].entries[0].amount,-10038);assert.equal(revision,2);
+  assert.match(document.getElementById('message').textContent,/Saved/);
+  document.getElementById('logout').click();assert.equal(document.getElementById('app').hidden,true);assert.equal(document.getElementById('accountSummary').children.length,0);assert.equal(document.getElementById('seasonalRows').children.length,0);
+ }finally{env.restore();}
 });
