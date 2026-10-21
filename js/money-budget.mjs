@@ -1,4 +1,5 @@
 import {date, iso, addDays, occurrences} from './money-engine.mjs';
+import {validateCredit} from './money-credit.mjs';
 
 export function monthBounds(month) {
   date(month + '-01');
@@ -12,17 +13,28 @@ export function shiftMonth(month, delta) {
   d.setUTCMonth(d.getUTCMonth() + delta);
   return iso(d).slice(0, 7);
 }
+export function weeklyDates(month,weekday,start=month+'-01'){
+ const bounds=monthBounds(month);if(!Number.isInteger(weekday)||weekday<0||weekday>6)throw Error('Choose a charge weekday.');date(start);
+ const dates=[];for(let d=start>bounds.first?start:bounds.first;d<=bounds.last;d=addDays(d,1))if(date(d).getUTCDay()===weekday)dates.push(d);return dates;
+}
+export function addOneTimeBudget(model,{id,name,month,amount,entity,account}){
+ monthBounds(month);if(!name?.trim()||!Number.isSafeInteger(amount)||amount<0)throw Error('Enter a name and nonnegative budget amount.');
+ if(!model.accounts.some(a=>a.id===account&&a.type==='cash'&&a.entity===entity))throw Error('Choose a cash account belonging to this view.');
+ const next=structuredClone(model);next.budgets=[...(next.budgets||[]),{id,name:name.trim(),entity,account,oneTimeMonth:month,prorate:false,monthly:{[month]:amount}}];return validateBudgets(next);
+}
 const normalized = value => String(value || '').trim().toLowerCase();
 function entityOf(model, transaction) {
   return transaction.expenseEntity || model.accounts.find(a => a.id === transaction.entries[0].account)?.entity;
 }
 export function validateBudgets(model) {
+  validateCredit(model);
   const budgets = model.budgets || [];
   if (!Array.isArray(budgets)) throw Error('Invalid budgets.');
   const ids = new Set(), categories = new Set();
   for (const b of budgets) {
     if (!b.id || ids.has(b.id) || !b.name || !['household', 'business', 'custodial'].includes(b.entity)) throw Error('Invalid budget category.');
     ids.add(b.id);
+    if(b.oneTimeMonth)monthBounds(b.oneTimeMonth);
     for (const name of new Set([b.name, ...(b.aliases || [])].map(normalized))) {
       const key = b.entity + ':' + name;
       if (!name || categories.has(key)) throw Error('Budget categories overlap.');
@@ -70,7 +82,7 @@ export function budgetMonth(model, month, entity, asOf) {
   const transactions = model.transactions.filter(t => t.kind === 'expense' &&
     t.date >= bounds.first && t.date <= cutoff && entityOf(model, t) === entity);
   const used = new Set();
-  const buckets = (model.budgets || []).filter(b => b.entity === entity).map(b => {
+  const buckets = (model.budgets || []).filter(b => b.entity === entity&&(!b.oneTimeMonth||b.oneTimeMonth===month)).map(b => {
     const names = new Set([b.name, ...(b.aliases || [])].map(normalized));
     const matches = transactions.filter(t => names.has(normalized(t.category)));
     matches.forEach(t => used.add(t.id));

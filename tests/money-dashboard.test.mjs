@@ -1,6 +1,7 @@
 // Synthetic interaction checks; use MONEY_JSDOM_MODULE for jsdom@26.1.0/lib/api.js.
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {pathToFileURL} from 'node:url';
 import {setupDashboard} from '../js/money-dashboard.mjs';
+import {installPaymentPlan} from '../js/money-credit.mjs';
 const dependency=process.env.MONEY_JSDOM_MODULE;
 function fixture(){return {version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Cash',entity:'household',type:'cash',opening:100000,reserve:0}],transactions:[],schedules:[{id:'pay',name:'Paycheck',account:'cash',amount:20000,frequency:'biweekly',anchor:'2026-10-02'},{id:'bill',name:'Electric',account:'cash',amount:-10000,frequency:'monthly',anchor:'2026-10-01',day:28,category:'Electric'}],budgets:[{id:'food',name:'Groceries',shortName:'Grocery',entity:'household',account:'cash',monthly:{'2026-10':20000,'2026-11':30000}},{id:'seasonal',name:'Seasonal',entity:'household',account:'cash',seasonal:true,monthly:{'2026-10':5000}}],seasonalItems:[{id:'gift',name:'Gifts',month:10,amount:5000,entity:'household'}]};}
 async function environment(){const {JSDOM}=await import(pathToFileURL(dependency).href);const dom=new JSDOM(fs.readFileSync(new URL('../money.html',import.meta.url),'utf8'),{url:'https://example.test/money.html'});const keys=['window','document','Node','FormData','fetch'];const old=Object.fromEntries(keys.map(k=>[k,globalThis[k]]));for(const k of ['window','document','Node','FormData'])globalThis[k]=dom.window[k];return {dom,restore(){dom.window.close();for(const [k,v] of Object.entries(old)){if(v===undefined)delete globalThis[k];else globalThis[k]=v;}}};}
@@ -127,5 +128,33 @@ test('recurring schedule editor corrects income to a bill, keeps history, cancel
   editPhone();f.dispatchEvent(new env.dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));assert.equal(f.elements.editScheduleId.value,'');
   selectMonth('2026-10');assert.doesNotMatch(document.getElementById('billRows').textContent,/Phone Bill/);
   editPhone();document.getElementById('logout').click();assert.equal(f.elements.editScheduleId.value,'');assert.equal(document.getElementById('scheduleEditNote').textContent,'');assert.equal(document.getElementById('scheduleHeading').textContent,'Add recurring schedule');
+ }finally{env.restore();}
+});
+test('debt sandbox applies payments only, one-time and weekly budgets preview, opening reset reviews before save, and logout clears insights', {skip:!dependency},async()=>{
+ const env=await environment();let model=fixture(),revision=0,session={user:{id:'test-owner'}};
+ model.accounts[0].opening=1000000;
+ model.accounts.push({id:'card',name:'Planning card',type:'card',entity:'household',opening:-100000,reserve:0,credit:{purchaseApr:0,promoBalance:0,minimum:2500,dueDay:25}},{id:'zero',name:'Unused card',type:'card',entity:'household',opening:0,reserve:0,credit:{purchaseApr:0,promoBalance:0,minimum:0}});
+ for(let i=0;i<36;i++){const d=new Date(Date.UTC(2026,9+i,1));model.budgets[0].monthly[d.toISOString().slice(0,7)]=20000;}
+ model=installPaymentPlan(model,'card',{amount:10000,day:25,from:'cash',asOf:model.start});
+ env.dom.window.HTMLElement.prototype.scrollIntoView=function(){};
+ env.dom.window.OliPolyAuth={SUPABASE_URL:'https://example.test',recover:async()=>session,authHeaders:()=>({}),logout:()=>session=null};
+ globalThis.fetch=async(url,options={})=>{let body;if(options.method==='PATCH'){const next=JSON.parse(options.body);model=next.body;revision=next.revision;body=[{body:model,revision}];}else body=url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}];return {ok:true,json:async()=>body};};
+ const change=(input,value)=>{input.value=value;input.dispatchEvent(new env.dom.window.Event('change'));},submit=async f=>{f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();};
+ try{
+  await import('../js/money-app.mjs?workbench-dom-test');
+  assert.equal(document.getElementById('creditInventory').children.length,2);assert.match(document.getElementById('creditInventory').textContent,/Unused card/);assert.ok(document.querySelector('#annualCashChart svg'));assert.match(document.getElementById('annualNote').textContent,/Partial year/);
+  change(document.getElementById('budgetMonth'),'2026-10');change(document.getElementById('creditSelect'),'card');
+  const f=document.getElementById('scenarioForm');f.elements.balance.value='2000.00';f.elements.amount.value='200.00';await submit(f);
+  assert.equal(revision,0);assert.equal(model.accounts.find(a=>a.id==='card').opening,-100000);assert.equal(document.getElementById('scenarioApply').disabled,false);
+  change(document.getElementById('creditSelect'),'zero');f.elements.balance.value='300.00';f.elements.amount.value='50.00';f.elements.day.value='25';await submit(f);assert.match(document.getElementById('scenarioNote').textContent,/2 account scenarios included/);
+  document.getElementById('scenarioApply').click();assert.equal(revision,0);assert.equal(document.querySelector('#billRows input[aria-label="Expected Planning card payment"]').value,'200.00');
+  document.getElementById('savePlan').click();await tick();assert.equal(revision,1);assert.equal(model.accounts.find(a=>a.id==='card').opening,-100000);assert.equal(model.transactions.length,0);assert.equal(model.accounts.find(a=>a.id==='card').credit.paymentAmount,20000);
+  assert.equal(model.accounts.find(a=>a.id==='zero').opening,0);assert.equal(model.accounts.find(a=>a.id==='zero').credit.paymentAmount,5000);
+  const event=document.getElementById('oneTimeBudgetForm');event.elements.name.value='Workshop';event.elements.amount.value='80.00';await submit(event);assert.equal(revision,1);assert.match(document.getElementById('categoryRows').textContent,/Workshop/);assert.ok([...document.getElementById('transactionCategory').options].some(o=>o.value==='Workshop'));
+  const weekly=document.getElementById('weeklyBudgetForm');weekly.elements.budget.value='food';weekly.elements.amount.value='10.00';assert.equal(document.getElementById('weeklyCount').value,'5');await submit(weekly);assert.equal(document.querySelector('#categoryRows [data-budget-id="food"] input').value,'50.00');assert.equal(model.budgets[0].overrides,undefined);
+  change(document.getElementById('budgetMonth'),'2026-11');assert.doesNotMatch(document.getElementById('categoryRows').textContent,/Workshop/);assert.equal(document.querySelector('#categoryRows [data-budget-id="food"] input').value,'200.00');assert.equal(document.getElementById('weeklyCount').value,'4');
+  change(document.getElementById('baselineDate'),'2026-10-21');const opening=document.querySelector('[data-opening-id="cash"]');opening.value='9000.00';document.getElementById('baselinePreview').click();assert.equal(document.getElementById('baselineApply').hidden,false);assert.equal(model.start,'2026-10-01');
+  document.getElementById('baselineApply').click();assert.equal(model.start,'2026-10-01');document.getElementById('savePlan').click();await tick();assert.equal(revision,2);assert.equal(model.start,'2026-10-21');assert.equal(model.accounts[0].opening,900000);assert.equal(model.budgets.find(b=>b.name==='Workshop').oneTimeMonth,'2026-10');
+  document.getElementById('logout').click();for(const id of ['creditInventory','promoAlerts','annualRows','annualCashChart','scenarioRows','openingRows'])assert.equal(document.getElementById(id).children.length,0);assert.equal(document.getElementById('scenarioNote').textContent,'');
  }finally{env.restore();}
 });

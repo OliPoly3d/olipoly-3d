@@ -1,12 +1,19 @@
 import {forecast, occurrences, balances} from './money-engine.mjs';
 import {budgetMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
+import {creditState,creditActivity,creditRates,reducePromo,accrueCredit} from './money-credit.mjs';
 
-// Monthly planning adds only unspent targets and unplanned everyday-card payoffs.
-// Every daily/monthly balance still comes from the original posting engine.
+// Build budget reserves, debt payments and estimated interest as postings.
+// The shared posting engine owns every daily/monthly balance.
 export function planningForecast(model, end) {
   validateBudgets(model);
-  const base = forecast(model,end), planned = [], adjustments = Object.fromEntries(model.accounts.map(a=>[a.id,0]));
+  const managed=model.accounts.filter(a=>a.credit?.scheduleId),linked=new Map(managed.map(a=>[a.credit.scheduleId,a]));
+  const effective={...model,schedules:model.schedules.map(s=>linked.has(s.id)?{...s,enabled:false}:s)};
+  const base = forecast(effective,end), planned = [], adjustments = Object.fromEntries(model.accounts.map(a=>[a.id,0]));
   const scheduled = occurrences(model,end);
+  const candidates=new Map();for(const t of scheduled.filter(t=>linked.has(t.scheduleKey.slice(0,-11)))){if(!candidates.has(t.date))candidates.set(t.date,[]);candidates.get(t.date).push(t);}
+  const creditors=model.accounts.filter(a=>a.type!=='cash'&&!a.balanceUnknown),states=Object.fromEntries(creditors.map(a=>[a.id,{...creditState(a),total:Math.max(0,-a.opening)}]));
+  const creditWarnings=new Set(),creditDaily=new Map();
+  const recordedInterest=new Set(model.transactions.filter(t=>t.kind==='expense'&&t.category?.trim().toLowerCase()==='interest').map(t=>t.entries[0].account+':'+t.date.slice(0,7)));
   const committed = {...model,transactions:[...model.transactions,...scheduled]};
   const warnings = new Set(), issues = [], incompleteFrom = {};
   function incomplete(month,entity,category,reason) {
@@ -15,7 +22,24 @@ export function planningForecast(model, end) {
     warnings.add(reason);
   }
   for (const d of base) {
-    if (d.date !== monthBounds(d.date.slice(0,7)).last) continue;
+    const post=t=>{planned.push(t);for(const e of t.entries)adjustments[e.account]+=e.amount;};
+    for(const a of creditors){const state=states[a.id];state.total=Math.max(0,-d.opening[a.id]-adjustments[a.id]);creditActivity(a,state,d.date,d.events);state.promo=Math.min(state.promo,Math.max(0,-d.closing[a.id]-adjustments[a.id]));}
+    for(const t of candidates.get(d.date)||[]){
+      const a=linked.get(t.scheduleKey.slice(0,-11)),c=a.credit,total=Math.max(0,-d.closing[a.id]-adjustments[a.id]);
+      const source=model.schedules.find(s=>s.id===c.scheduleId),override=source.overrides?.[t.nominalDate];
+      const paid=model.transactions.filter(x=>x.kind==='transfer'&&x.date.slice(0,7)===t.date.slice(0,7)&&x.date<=t.date).reduce((n,x)=>n+x.entries.filter(e=>e.account===a.id&&e.amount>0).reduce((sum,e)=>sum+e.amount,0),0);
+      const target=t.date<(c.paymentStart||model.start)?Math.abs(t.entries[0].amount):c.mode==='full'&&!override?total:c.mode==='fixed'&&c.paymentAmount===0&&!override?0:Math.abs(t.entries[0].amount);
+      const wanted=c.mode==='full'&&!override?target:Math.max(0,target-paid),amount=Math.min(wanted,total);
+      if(c.minimum!=null&&total>0&&wanted<Math.min(Math.max(0,c.minimum-paid),total))creditWarnings.add(a.name+': planned payment below latest entered statement minimum');
+      const payment={...t,creditPayment:true,estimated:true,entries:[{account:t.entries[0].account,amount:-amount},{account:a.id,amount}]};
+      if(states[a.id]){states[a.id].promo=reducePromo(states[a.id].promo,total,amount,creditRates(c,d.date));states[a.id].total=Math.max(0,total-amount);}
+      post(payment);
+    }
+    for(const a of creditors){const total=Math.max(0,-d.closing[a.id]-adjustments[a.id]);if(accrueCredit(a,states[a.id],d.date,total))creditWarnings.add(a.name+': interest incomplete — enter missing APR');}
+    const monthEnd=d.date===monthBounds(d.date.slice(0,7)).last;
+    if(monthEnd)for(const a of creditors){const state=states[a.id],known=recordedInterest.has(a.id+':'+d.date.slice(0,7)),interest=known?0:Math.max(0,Math.round(state.accrued));state.accrued=known?0:state.accrued-interest;state.interest+=interest;if(interest)post({id:'interest:'+a.id+':'+d.date,date:d.date,description:a.name+' — estimated interest',kind:'expense',category:'Interest',expenseEntity:a.entity,status:'plan',creditInterest:true,entries:[{account:a.id,amount:-interest}]});}
+    creditDaily.set(d.date,Object.fromEntries(creditors.map(a=>[a.id,{promo:states[a.id].promo,interest:states[a.id].interest,missingFrom:states[a.id].missingFrom}])));
+    if (!monthEnd) continue;
     const month = d.date.slice(0,7);
     for (const entity of ['household','business','custodial']) {
       const result = budgetMonth(committed,month,entity,d.date);
@@ -25,19 +49,21 @@ export function planningForecast(model, end) {
         if (!amount) continue;
         const account = model.accounts.find(a=>a.id===(b.funding?.[month]||b.account) && a.type==='cash' && a.entity===entity);
         if (!account) {incomplete(month,entity,b.shortName||b.name,'Budget funding account needed');continue;}
-        planned.push({id:'budget:'+b.id+':'+month,date:d.date,description:b.name+' — remaining budget',kind:'expense',category:b.name,status:'plan',entries:[{account:account.id,amount:-amount}]});
-        adjustments[account.id]-=amount;
+        post({id:'budget:'+b.id+':'+month,date:d.date,description:b.name+' — remaining budget',kind:'expense',category:b.name,status:'plan',entries:[{account:account.id,amount:-amount}]});
       }
     }
     for (const p of model.planning?.cardPayoffs || []) {
-      if (p.enabled===false) continue;
+      if (p.enabled===false||managed.some(a=>a.id===p.card)) continue;
       const amount=Math.max(0,-(d.closing[p.card]+adjustments[p.card]));
       if (!amount) continue;
       planned.push({id:'payoff:'+p.card+':'+month,date:d.date,description:'Planned full card payoff',kind:'transfer',status:'plan',entries:[{account:p.from,amount:-amount},{account:p.card,amount}]});
       adjustments[p.from]-=amount;adjustments[p.card]+=amount;
     }
+    for(const a of creditors)states[a.id].promo=Math.min(states[a.id].promo,Math.max(0,-d.closing[a.id]-adjustments[a.id]));
+    creditDaily.set(d.date,Object.fromEntries(creditors.map(a=>[a.id,{promo:states[a.id].promo,interest:states[a.id].interest,missingFrom:states[a.id].missingFrom}])));
   }
-  return {days:forecast(model,end,planned),planned,warnings:[...warnings],issues,incompleteFrom};
+  const days=forecast(effective,end,planned);for(const d of days)d.credit=creditDaily.get(d.date);
+  return {days,planned,warnings:[...warnings],issues,incompleteFrom,creditWarnings:[...creditWarnings]};
 }
 
 export function monthProjection(model, month, asOf) {
@@ -53,6 +79,10 @@ export function monthProjection(model, month, asOf) {
 export function expectedRows(model, month, entity, kind) {
   const end=monthBounds(shiftMonth(month,1)).last;
   const all=occurrences({...model,transactions:[]},end,{includeSkipped:true});
+  if(model.accounts.some(a=>a.credit?.scheduleId)){
+    const paymentRows=new Map(planningForecast(model,end).planned.filter(t=>t.creditPayment).map(t=>[t.scheduleKey,t]));
+    for(let i=0;i<all.length;i++)if(paymentRows.has(all[i].scheduleKey))all[i]=paymentRows.get(all[i].scheduleKey);
+  }
   const matched=new Map(model.transactions.filter(t=>t.scheduleKey).map(t=>[t.scheduleKey,t]));
   const keys=new Set(all.map(t=>t.scheduleKey));
   // Preserve recorded history when the source schedule is stopped or removed.

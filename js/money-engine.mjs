@@ -27,8 +27,9 @@ export function validate(model) {
   }
   const ids = new Set(model.accounts.map(x => x.id));
   for (const a of model.accounts) {
-    if (!a.name || !['household', 'business', 'custodial'].includes(a.entity) || !['cash', 'card'].includes(a.type)) throw Error('Invalid account.');
+    if (!a.name || !['household', 'business', 'custodial'].includes(a.entity) || !['cash', 'card', 'loan'].includes(a.type)) throw Error('Invalid account.');
     integer(a.opening); integer(a.reserve);
+    if(a.balanceUnknown!==undefined&&typeof a.balanceUnknown!=='boolean')throw Error('Invalid unknown-balance flag.');
   }
   const keys = new Set();
   for (const t of model.transactions) {
