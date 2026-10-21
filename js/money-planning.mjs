@@ -8,18 +8,23 @@ export function planningForecast(model, end) {
   const base = forecast(model,end), planned = [], adjustments = Object.fromEntries(model.accounts.map(a=>[a.id,0]));
   const scheduled = occurrences(model,end);
   const committed = {...model,transactions:[...model.transactions,...scheduled]};
-  const warnings = new Set();
+  const warnings = new Set(), issues = [], incompleteFrom = {};
+  function incomplete(month,entity,category,reason) {
+    issues.push({month,entity,category,reason});
+    incompleteFrom[entity] ||= month;
+    warnings.add(reason);
+  }
   for (const d of base) {
     if (d.date !== monthBounds(d.date.slice(0,7)).last) continue;
     const month = d.date.slice(0,7);
     for (const entity of ['household','business','custodial']) {
       const result = budgetMonth(committed,month,entity,d.date);
       for (const b of result.buckets) {
-        if (b.allowance === null) {warnings.add('Missing category targets');continue;}
+        if (b.allowance === null) {incomplete(month,entity,b.shortName||b.name,'Missing category targets');continue;}
         const amount = Math.max(0,b.remaining);
         if (!amount) continue;
         const account = model.accounts.find(a=>a.id===(b.funding?.[month]||b.account) && a.type==='cash' && a.entity===entity);
-        if (!account) {warnings.add('Budget funding account needed');continue;}
+        if (!account) {incomplete(month,entity,b.shortName||b.name,'Budget funding account needed');continue;}
         planned.push({id:'budget:'+b.id+':'+month,date:d.date,description:b.name+' — remaining budget',kind:'expense',category:b.name,status:'plan',entries:[{account:account.id,amount:-amount}]});
         adjustments[account.id]-=amount;
       }
@@ -32,7 +37,7 @@ export function planningForecast(model, end) {
       adjustments[p.from]-=amount;adjustments[p.card]+=amount;
     }
   }
-  return {days:forecast(model,end,planned),planned,warnings:[...warnings]};
+  return {days:forecast(model,end,planned),planned,warnings:[...warnings],issues,incompleteFrom};
 }
 
 export function monthProjection(model, month, asOf) {

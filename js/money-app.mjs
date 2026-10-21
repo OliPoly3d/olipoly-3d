@@ -1,5 +1,6 @@
-import {validate,cents,forecast,monthly,balances,statuses} from './money-engine.mjs';
-import {validateBudgets} from './money-budget.mjs';
+import {validate,cents,monthly,balances,statuses} from './money-engine.mjs';
+import {validateBudgets,monthBounds,shiftMonth} from './money-budget.mjs';
+import {planningForecast} from './money-planning.mjs';
 import {setupDashboard} from './money-dashboard.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
@@ -7,7 +8,7 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',
 let model=null,revision=null,userId=null,busy=false,generation=0;
 function message(text){$('message').textContent=text;}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules'])$(id).replaceChildren();for(const f of document.forms)f.reset();dashboard.clear();}
+function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();dashboard.clear();}
 window.addEventListener('olipoly-auth-changed',e=>{if(userId && e.detail?.user?.id!==userId){lock();message('Signed out. Sign in to continue.');}});
 window.addEventListener('storage',e=>{if(['sb_token','sb_user','olipoly_auth_session_v1'].includes(e.key)){lock();message('Sign-in changed in another tab. Sign in again.');}});
 async function api(path,options={}) {
@@ -30,7 +31,8 @@ async function load(){
   if(rows.length!==1)throw Error('Your Money plan has not been provisioned. Complete the database setup.');
   model=validateBudgets(validate(rows[0].body));revision=rows[0].revision;
   $('login').hidden=true;$('app').hidden=false;$('logout').hidden=false;
-  if(!$('end').value){const d=new Date(model.start+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+36);d.setUTCDate(d.getUTCDate()-1);$('end').value=d.toISOString().slice(0,10);}
+  $('end').min=model.start.slice(0,7);$('end').max=shiftMonth($('end').min,35);
+  if(!$('end').value||$('end').value<$('end').min||$('end').value>$('end').max)$('end').value=$('end').max;
   $('transactionForm').elements.date.value=today();render();message('Loaded. Opening balances are as of '+model.start+'.');
 }
 async function save(next){
@@ -57,16 +59,19 @@ function render(){
   $('accounts').replaceChildren();for(const a of model.accounts)row($('accounts'),[a.name,a.entity,money(posted[a.id]),money(adjusted[a.id])]);
   $('schedules').replaceChildren();for(const s of model.schedules){const div=node('div',undefined,'schedule');const info=node('span',s.name+' · '+money(s.amount)+' · '+s.frequency);info.append(node('small',(s.estimated?'Provisional':'Confirmed')+' · '+(s.stoppedFrom?'Stopped from '+s.stoppedFrom:s.enabled===false?'Paused':'Active')));const b=node('button',s.stoppedFrom||s.enabled===false?'Resume':'Pause');b.onclick=()=>action(async()=>{const next=structuredClone(dashboard.draft());const target=next.schedules.find(x=>x.id===s.id);if(target.stoppedFrom){delete target.stoppedFrom;target.enabled=true;}else target.enabled=s.enabled===false;await save(next);});div.append(info,b);$('schedules').append(div);}
   dashboard.render();
-  renderForecast();
 }
-function renderForecast(){
-  $('metrics').replaceChildren();$('months').replaceChildren();$('days').replaceChildren();if(!model.accounts.length)return;
-  const a=model.accounts.find(a=>a.id===$('account').value),days=forecast(model,$('end').value);
+function renderForecast(plan=dashboard.draft()){
+  $('metrics').replaceChildren();$('months').replaceChildren();$('days').replaceChildren();$('forecastNote').textContent='';if(!plan?.accounts.length)return;
+  if(!$('end').value||!$('end').validity.valid)throw Error('Choose a forecast month within the available range.');
+  const a=plan.accounts.find(a=>a.id===$('account').value),result=planningForecast(plan,monthBounds($('end').value).last),{days}=result;
+  const incomplete=result.incompleteFrom[a.entity],missing=result.issues.filter(i=>i.entity===a.entity&&i.month===incomplete);
+  $('forecastNote').textContent=incomplete?'Incomplete from '+incomplete+': '+missing.map(i=>i.category+' ('+i.reason+')').join(', ')+'. Set these budgets in the monthly dashboard. Later balances stay incomplete until all earlier missing months are filled.':'Category and YOY budgets are included. This is a planning projection, not a guaranteed balance.';
   const future=days.filter(d=>d.date>=today());const low=future.length?Math.min(...future.map(d=>d.low[a.id])):null;
-  const posted=balances(model,today(),true)[a.id],adjusted=balances(model,today())[a.id];
-  for(const [label,value] of [['Posted balance',posted],['After pending',adjusted],['Lowest planned balance',low]]){const e=node('div',undefined,'metric');e.append(node('span',label),node('strong',value===null?'Outside horizon':money(value),value!==null&&value<a.reserve?'low':''));$('metrics').append(e);}
-  for(const m of monthly(days,a.id)){const r=row($('months'),[m.month,money(m.opening),money(m.low),money(m.closing)]);if(m.low<a.reserve)r.className='low';}
-  for(const d of future.slice(0,60)){const activity=node('td',undefined,'activity');for(const t of d.events.filter(t=>t.entries.some(e=>e.account===a.id))){const line=node('div',t.description+(t.estimated?' (provisional)':'')+' '+money(t.entries.find(e=>e.account===a.id).amount));if(t.status==='forecast'){const b=node('button','Record');b.onclick=()=>match(t);line.append(b);}activity.append(line);}const r=row($('days'),[d.date,activity,money(d.low[a.id]),money(d.closing[a.id])]);if(d.low[a.id]<a.reserve)r.className='low';}
+  const posted=balances(plan,today(),true)[a.id],adjusted=balances(plan,today())[a.id];
+  for(const [label,value] of [['Posted balance',posted],['After pending',adjusted],['Lowest projected balance',low]]){const e=node('div',undefined,'metric'),unknown=incomplete&&label==='Lowest projected balance';e.append(node('span',label),node('strong',unknown?'Incomplete plan':value===null?'Outside horizon':money(value),!unknown&&value!==null&&value<a.reserve?'low':''));$('metrics').append(e);}
+  const reserves=new Map();for(const t of result.planned.filter(t=>t.kind==='expense')){const key=t.date.slice(0,7);reserves.set(key,(reserves.get(key)||0)-t.entries.filter(e=>e.account===a.id).reduce((n,e)=>n+e.amount,0));}
+  for(const m of monthly(days,a.id)){const unknown=incomplete&&m.month>=incomplete;const r=row($('months'),[m.month,incomplete&&m.month>incomplete?'Incomplete plan':money(m.opening),money(reserves.get(m.month)||0),unknown?'Incomplete plan':money(m.low),unknown?'Incomplete plan':money(m.closing),unknown?'Missing budgets':'Included']);if(!unknown&&m.low<a.reserve)r.className='low';}
+  for(const d of future.slice(0,60)){const activity=node('td',undefined,'activity'),unknown=incomplete&&d.date.slice(0,7)>=incomplete;for(const t of d.events.filter(t=>t.entries.some(e=>e.account===a.id))){const line=node('div',t.description+(t.status==='plan'?' (planning reserve)':t.estimated?' (provisional)':'')+' '+money(t.entries.find(e=>e.account===a.id).amount));if(t.status==='forecast'){const b=node('button','Record');b.onclick=()=>match(t);line.append(b);}activity.append(line);}const r=row($('days'),[d.date,activity,unknown?'Incomplete plan':money(d.low[a.id]),unknown?'Incomplete plan':money(d.closing[a.id])]);if(!unknown&&d.low[a.id]<a.reserve)r.className='low';}
 }
 let editorReturnFocus=null;
 function cancelEditor(announce=true){
@@ -105,7 +110,7 @@ $('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=new F
 $('export').onclick=()=>{if(!model)return;const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='money-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('import').onchange=e=>action(async()=>{const file=e.target.files[0];if(!file)return;if(model.accounts.length||model.transactions.length||model.schedules.length)throw Error('Opening-plan import is only available for an empty plan. Existing data will not be overwritten.');if(file.size>2000000)throw Error('Opening plan exceeds 2 MB.');const incoming=validateBudgets(validate(JSON.parse(await file.text())));await save(incoming);e.target.value='';});
 const dashboard=setupDashboard({
- getModel:()=>model,today,record:match,action,message,savePlan:save,cancelRecord:()=>cancelEditor(false),
+ getModel:()=>model,today,record:match,action,message,savePlan:save,cancelRecord:()=>cancelEditor(false),onPreview:renderForecast,
  setStatus:async(id,status)=>{const next=structuredClone(dashboard.draft());next.transactions.find(t=>t.id===id).status=status;await save(next);}
 });
 await new Promise(resolve=>{if(document.readyState==='complete')resolve();else window.addEventListener('load',resolve,{once:true});});

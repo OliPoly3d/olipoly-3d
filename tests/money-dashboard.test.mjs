@@ -59,6 +59,11 @@ test('full page records and edits an actual amount once, replaces its forecast, 
  globalThis.fetch=async(url,options={})=>{let body;if(options.method==='PATCH'){const next=JSON.parse(options.body);model=next.body;revision=next.revision;body=[{body:model,revision}];}else body=url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}];return {ok:true,json:async()=>body};};
  try{
   await import('../js/money-app.mjs?sheet-dom-test');assert.equal(document.getElementById('app').hidden,false);
+  const monthRow=m=>[...document.getElementById('months').children].find(r=>r.cells[0].textContent===m);
+  assert.equal(monthRow('2026-10').cells[2].textContent,'$250.00');
+  assert.equal(monthRow('2026-10').cells[4].textContent,'$1,250.00');
+  assert.equal(monthRow('2026-12').cells[4].textContent,'Incomplete plan');
+  assert.match(document.getElementById('forecastNote').textContent,/Incomplete from 2026-12/);
   document.getElementById('budgetMonth').value='2026-10';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));
   document.querySelector('#billRows button').click();const f=document.getElementById('transactionForm');assert.equal(document.getElementById('transactionEntry').open,true);
   f.elements.amount.value='100.99';document.getElementById('clearMatch').click();assert.equal(model.transactions.length,0);assert.equal(document.getElementById('transactionEntry').open,false);assert.equal(f.elements.scheduleKey.value,'');assert.equal(revision,0);document.querySelector('#billRows button').click();
@@ -72,6 +77,24 @@ test('full page records and edits an actual amount once, replaces its forecast, 
   document.querySelectorAll('#billRows button')[1].click();document.getElementById('removeBudget').click();await tick();assert.equal(model.transactions.length,0);assert.equal(model.schedules.find(s=>s.id==='bill').overrides['2026-10-28'].amount,-10038);
   document.querySelectorAll('#billRows button')[1].click();document.getElementById('removeDelete').click();await tick();assert.ok(model.schedules.find(s=>s.id==='bill').skipped.includes('2026-10-28'));assert.match(document.getElementById('billRows').textContent,/Skipped this time/);
   document.querySelector('#billRows button').click();await tick();assert.equal(model.schedules.find(s=>s.id==='bill').skipped.length,0);
+  const beforePreview=revision;
+  const budget=document.querySelector('#categoryRows input');budget.value='250.00';budget.dispatchEvent(new env.dom.window.Event('change'));
+  assert.equal(monthRow('2026-10').cells[4].textContent,'$1,199.62');
+  assert.equal(document.querySelector('#accountSummary tr').cells[3].textContent,monthRow('2026-10').cells[4].textContent);
+  assert.equal(revision,beforePreview);
+  document.getElementById('resetPlan').click();
+  assert.equal(monthRow('2026-10').cells[4].textContent,'$1,249.62');
+  document.getElementById('end').value='2026-12';document.getElementById('end').dispatchEvent(new env.dom.window.Event('change'));await tick();
+  assert.equal(monthRow('2027-01'),undefined);
+  document.getElementById('budgetMonth').value='2026-12';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));
+  assert.match(document.getElementById('accountSummary').textContent,/Incomplete plan/);
+  assert.equal(document.querySelector('#balanceChart svg'),null);
+  const missing=document.querySelector('#categoryRows input');missing.value='300.00';missing.dispatchEvent(new env.dom.window.Event('change'));
+  assert.equal(monthRow('2026-12').cells[5].textContent,'Included');
+  assert.doesNotMatch(document.getElementById('forecastNote').textContent,/Incomplete/);
+  assert.equal(document.querySelector('#accountSummary tr').cells[3].textContent,monthRow('2026-12').cells[4].textContent);
+  assert.equal(revision,beforePreview);
   document.getElementById('logout').click();assert.equal(document.getElementById('app').hidden,true);assert.equal(document.getElementById('accountSummary').children.length,0);assert.equal(document.getElementById('seasonalRows').children.length,0);
+  assert.equal(document.getElementById('forecastNote').textContent,'');
  }finally{env.restore();}
 });
