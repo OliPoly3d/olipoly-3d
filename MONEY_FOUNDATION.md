@@ -67,3 +67,18 @@ Projection assertions cover target sensitivity, forward carry, cash/card purchas
 The original `tests/money-access.test.mjs` remains available for isolated PostgreSQL checks with `@electric-sql/pglite@0.5.10`; no access-control changes occur here. Browser download failed in this environment during the preceding milestone. DOM checks are not visual or real-browser verification.
 
 Manual checks required: desktop and narrow mobile layout; section links and keyboard labels; change each expected income/bill amount by a cent before recording; move a date across a month; change budget and funding for one month; compare that month's end and next month's opening; repeat only the selected calendar month's YOY amounts; record card purchases/payments; edit actuals; expired sessions and stale-tab saves. Full browser behavior is not claimed verified.
+
+
+## Cancel and removal controls
+
+The transaction editor has a labeled Cancel action and Escape shortcut. Both close/reset the editor without a save and preserve the separate plan preview.
+
+Each actual has a removal dialog:
+
+- Put back in budget removes the actual posting(s) and returns that exact amount/date/account to an editable expectation. Ordinary transactions become one-off expectations. An inactive recurring source stays inactive; returning one actual creates a separate one-off instead of resuming the entire series.
+- Delete transaction removes the actual posting(s) and skips its matched occurrence. Other recurring dates remain unchanged. Category target amounts remain unchanged; their actual/remaining totals recalculate.
+- Balance adjustments can be deleted but cannot become expected budget items.
+
+Expected entries offer Skip this time or Stop recurring item. Skips are stored as original occurrence dates in `schedules[].skipped`, remain visibly restorable, and are excluded from forecasts. `schedules[].stoppedFrom` suppresses that and subsequent unrecorded occurrences; settings can resume the source. Existing actual history stays visible even when its source stops or no longer exists. Canceling the removal dialog changes nothing. All saved changes use the existing optimistic revision/archive flow; no records in immutable plan history are deleted.
+
+`money-actions.mjs` owns these pure transitions. Tests cover matched and one-off returns, exact cents/dates, skip/restore, stop with retained history, paired transfer removal and invalid adjustment plans, plus editor/dialog cancellation without writes. These are source changes only; no production transactions are removed during implementation.

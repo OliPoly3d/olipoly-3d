@@ -55,6 +55,8 @@ export function validate(model) {
     if (s.to && s.amount >= 0) throw Error('Transfer schedule amount must be negative.');
     if (s.frequency === 'monthly' && (!Number.isInteger(s.day) || s.day < 1 || s.day > 31)) throw Error('Invalid monthly day.');
     for (const p of s.changes || []) { date(p.date); integer(p.amount); }
+    for (const skipped of s.skipped || []) date(skipped);
+    if(s.stoppedFrom)date(s.stoppedFrom);
     for (const [key, o] of Object.entries(s.overrides || {})) {
       date(key); if (o.date) date(o.date); integer(o.amount);
       if (o.account && !ids.has(o.account)) throw Error('Unknown expected account.');
@@ -67,7 +69,7 @@ export function validate(model) {
   }
   return model;
 }
-export function occurrences(model, end) {
+export function occurrences(model, end, {includeSkipped=false}={}) {
   const matched = new Set(model.transactions.map(t => t.scheduleKey).filter(Boolean));
   const result = [];
   for (const s of model.schedules) {
@@ -85,14 +87,15 @@ export function occurrences(model, end) {
       const override = s.overrides?.[nominalDay];
       if (day > limit && !Object.keys(s.overrides || {}).some(k => k >= day && s.overrides[k].date <= limit)) break;
       const key = `${s.id}:${day}`;
-      if (day >= s.anchor && day >= model.start && !matched.has(key)) {
+      const skipped=(s.skipped||[]).includes(day);
+      if (day >= s.anchor && day >= model.start && (!s.stoppedFrom||day<s.stoppedFrom) && !matched.has(key) && (!skipped||includeSkipped)) {
         let amount = [...(s.changes || [])].sort((a,b)=>a.date.localeCompare(b.date)).filter(x=>x.date<=day).at(-1)?.amount ?? s.amount;
         if (s.frequency === 'biweekly' && addDays(day,-14).slice(0,7) !== day.slice(0,7)) amount += s.firstPayBonus || 0;
         if (override) amount = override.amount;
         const eventDate = override?.date || day;
         const entries = [{account:override?.account || s.account,amount}];
         if (s.to) entries.push({account:override?.to || s.to,amount:-amount});
-        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true});
+        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding});
       }
       if (s.frequency === 'biweekly') day = addDays(day,14);
       else month.setUTCMonth(month.getUTCMonth()+1);
