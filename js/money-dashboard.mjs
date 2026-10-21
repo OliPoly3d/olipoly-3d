@@ -11,7 +11,7 @@ function amountInput(value,label){const input=el('input');input.type='number';in
 function accountSelect(model,value,label,cashOnly=false,entity){const s=el('select');s.setAttribute('aria-label',label);for(const a of model.accounts.filter(a=>(!cashOnly||a.type==='cash')&&(!entity||a.entity===entity))){const o=el('option',a.name);o.value=a.id;s.append(o);}s.value=value||'';return s;}
 const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
 function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',accents[id]||'#78d9cc');return span;}
-const ids=['accountSummary','monthMetrics','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
+const ids=['accountSummary','monthMetrics','cashAlerts','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
 export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{},onPreview=()=>{}}){
  let saved=null,draft=null,dirty=false;
  let removing=null;
@@ -69,7 +69,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   renderExpected(model,month,entity,'bills','billRows','billTotals');
   renderCategories(model,month,entity);renderSeasonal(model,month,entity);renderTransactions(model,month,entity);renderSettings(model,entity);
   const select=$('transactionCategory'),chosen=select.value;select.replaceChildren();
-  const choices=new Map((model.budgets||[]).map(b=>[b.name,b.shortName||b.name]));
+  const choices=new Map((model.budgets||[]).filter(b=>!b.oneTimeMonth||b.oneTimeMonth===month).map(b=>[b.name,b.shortName||b.name]));
   for(const s of model.schedules)if(s.category&&!choices.has(s.category))choices.set(s.category,s.category);
   choices.set('Other','Other');for(const t of model.transactions)if(t.category&&!choices.has(t.category))choices.set(t.category,t.category);
   for(const [name,label] of choices){const o=el('option',label);o.value=name;select.append(o);}if(choices.has(chosen))select.value=chosen;
@@ -80,11 +80,14 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   const model=getDraft();if(!model)return;
   const month=$('budgetMonth').value,entity=$('budgetEntity').value,p=monthProjection(model,month,today());
   const incomplete=p.incompleteFrom[entity],relevant=model.accounts.filter(a=>a.entity===entity);$('accountSummary').replaceChildren();
-  for(const a of relevant){const row=el('tr');cell(row,a.name,'Account');cell(row,incomplete&&incomplete<month?'Incomplete plan':money(p.opening[a.id]??0),'Month opening');cell(row,money(p.current[a.id]??0),'Current');const td=cell(row,incomplete?'Incomplete plan':money(p.closing[a.id]??0),'Projected month-end');if(!incomplete&&p.closing[a.id]<a.reserve)td.className='low';$('accountSummary').append(row);}
+  for(const a of relevant){const row=el('tr');cell(row,a.name,'Account');cell(row,a.balanceUnknown?'Unknown':incomplete&&incomplete<month?'Incomplete plan':money(p.opening[a.id]??0),'Month opening');cell(row,a.balanceUnknown?'Unknown':money(p.current[a.id]??0),'Current');const td=cell(row,a.balanceUnknown?'Unknown':incomplete?'Incomplete plan':p.days.at(-1)?.credit?.[a.id]?.missingFrom?'APR needed':money(p.closing[a.id]??0),'Projected month-end');if(!a.balanceUnknown&&!incomplete&&p.closing[a.id]<a.reserve)td.className='low';$('accountSummary').append(row);}
   const account=$('chartAccount').value,days=p.days.filter(d=>d.date.startsWith(month));
+  $('cashAlerts').replaceChildren();for(const a of relevant.filter(a=>a.type==='cash')){const danger=days.filter(d=>d.date>=today()).find(d=>d.low[a.id]<a.reserve);if(danger)$('cashAlerts').append(el('p',a.name+': possible low '+money(danger.low[a.id])+' on '+danger.date+' is below your '+money(a.reserve)+' reserve. Same-day withdrawals are counted before deposits.','notice'));}
   let incoming=0,outgoing=0;for(const d of days)for(const t of d.events)for(const e of t.entries)if(e.account===account){if(e.amount>0)incoming+=e.amount;else outgoing-=e.amount;}
   $('monthMetrics').replaceChildren();for(const [label,value] of [['Expected in',incoming],['Expected out',outgoing],['Projected month-end',p.closing[account]??0]]){const card=el('div',undefined,'metric');card.append(el('span',label),el('strong',incomplete&&label!=='Expected in'?'Incomplete plan':money(value),!incomplete&&value<0?'low':''));$('monthMetrics').append(card);}
   $('projectionNote').textContent=(month===model.start.slice(0,7)&&model.start.slice(-2)!=='01'?'Opening month starts '+model.start+'; variable targets are prorated. ':'')+(p.warnings.length?'Plan incomplete: '+p.warnings.join('; ')+'. ':'')+'Projected balances include the saved plan plus changes currently shown. Negative credit-card balances mean money owed.';
+  if(p.creditWarnings.length)$('projectionNote').textContent+=' '+p.creditWarnings.join(' · ')+'.';
+  if(model.baseline?.notes?.length)$('projectionNote').textContent+=' Opening snapshot: '+model.baseline.notes.join(' · ')+'.';
   if(incomplete){$('projectionNote').textContent+=' Set category targets and funding from '+incomplete+' onward to complete this projection.';$('balanceChart').replaceChildren(el('p','Complete the missing category budgets before using this balance projection.','notice'));}
   else balanceGraph(days,account);
   const b=budgetMonth(model,month,entity,today());$('monthChart').replaceChildren();
@@ -121,6 +124,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const change=()=>run(()=>{
     const n=cents(amount.value);if(n<0)throw Error('Use a positive expected amount.');date(when.value);if(when.value<model.start)throw Error('Date is before your opening balance.');
     if(destination&&destination.value===account.value)throw Error('Choose different transfer accounts.');
+    if(t.creditPayment&&destination.value!==t.entries[1].account)throw Error('Use the debt planner to change this payment’s destination.');
     const source=model.schedules.find(s=>s.id===t.scheduleKey.slice(0,-11));
     source.overrides={...source.overrides,[t.nominalDate]:{amount:kind==='income'?n:-n,date:when.value,account:account.value,...(destination?{to:destination.value}:{})}};
     mark();renderExpected(model,month,entity,kind,id,totalId);
@@ -136,6 +140,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   for(const b of result.buckets){
    const row=el('tr');row.dataset.budgetId=b.id;
    const label=el('div');label.append(categoryLabel(b.seasonal?'YOY extras total':b.shortName||b.name,b.id));
+   if(b.oneTimeMonth)label.append(el('small','One time · '+b.oneTimeMonth));
    let input;
    if(b.seasonal){const link=el('a','Edit YOY list ↓');link.href='#seasonalSection';const note=el('small');note.append(link);label.append(note);}
    cell(row,label,'Category');
@@ -170,9 +175,9 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  }
  function renderSettings(model,entity){
   $('planningSettings').replaceChildren();
-  for(const p of (model.planning?.cardPayoffs||[]).filter(p=>model.accounts.find(a=>a.id===p.card)?.entity===entity)){
+  for(const p of (model.planning?.cardPayoffs||[]).filter(p=>model.accounts.find(a=>a.id===p.card)?.entity===entity&&!model.accounts.find(a=>a.id===p.card)?.credit?.scheduleId)){
    const label=el('label');label.className='check-label';const input=el('input');input.type='checkbox';input.checked=p.enabled!==false;label.append(input,document.createTextNode('Plan full '+model.accounts.find(a=>a.id===p.card).name+' payoff by month end'));input.onchange=()=>{p.enabled=input.checked;mark();};$('planningSettings').append(label);
   }
  }
- return {render,clear,draft:getDraft,hasChanges:()=>dirty};
+ return {render,clear,draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
 }
