@@ -1,6 +1,7 @@
 import {cents, date} from './money-engine.mjs';
 import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
+import {changeExpectation,removeActual} from './money-actions.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
 const monthName=m=>new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(m+'-01T00:00:00Z'));
@@ -9,8 +10,30 @@ function cell(row,content,label){const td=el('td');if(content instanceof Node)td
 function amountInput(value,label){const input=el('input');input.type='number';input.step='0.01';input.inputMode='decimal';input.value=value===null?'':(value/100).toFixed(2);input.setAttribute('aria-label',label);return input;}
 function accountSelect(model,value,label,cashOnly=false,entity){const s=el('select');s.setAttribute('aria-label',label);for(const a of model.accounts.filter(a=>(!cashOnly||a.type==='cash')&&(!entity||a.entity===entity))){const o=el('option',a.name);o.value=a.id;s.append(o);}s.value=value||'';return s;}
 const ids=['accountSummary','monthMetrics','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
-export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus}){
+export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{}}){
  let saved=null,draft=null,dirty=false;
+ let removing=null;
+ function closeRemoval(){removing=null;const d=$('removeDialog');if(d.open&&d.close)d.close();else d.removeAttribute('open');}
+ function removePrompt(target){
+  removing=target;const actual=target.actual,skipped=target.skipped;
+  $('removeTitle').textContent=target.description;
+  $('removeDescription').textContent=actual?'Put back in budget removes the actual entry and keeps this amount as an editable expectation. Delete removes the actual and skips its matched expectation this time; later repeats stay. Category targets remain unchanged.':'Skip only this occurrence, or stop this recurring item from this date forward. Existing recorded history is kept.';
+  $('removeBudget').hidden=!actual&&!skipped;
+  $('removeBudget').textContent='Put back in budget';
+  $('removeBudget').disabled=actual?.kind==='adjustment';
+  $('removeBudget').dataset.disabled=String(actual?.kind==='adjustment');
+  $('removeDelete').textContent=actual?'Delete transaction':'Skip this time';
+  $('removeSeries').hidden=!!actual;
+  const d=$('removeDialog');if(d.showModal)d.showModal();else d.setAttribute('open','');
+ }
+ function applyRemoval(mode){action(async()=>{
+  if(!removing)return;const t=removing;
+  const next=t.actual?removeActual(getDraft(),t.actual.id,mode):changeExpectation(getDraft(),t.scheduleKey,mode==='plan'?'restore':mode==='stop'?'stop':'skip');
+  await savePlan(next);closeRemoval();cancelRecord();message(mode==='plan'?'Put back in budget. No actual transaction remains.':'Removed. Saved history is retained.');
+ });}
+ $('removeCancel').onclick=closeRemoval;
+ $('removeDialog').addEventListener('cancel',()=>{removing=null;});
+ $('removeBudget').onclick=()=>applyRemoval('plan');$('removeDelete').onclick=()=>applyRemoval('delete');$('removeSeries').onclick=()=>applyRemoval('stop');
  function resetDraft(){saved=getModel();draft=saved?structuredClone(saved):null;dirty=false;}
  function getDraft(){if(saved!==getModel())resetDraft();return draft;}
  function mark(){dirty=true;$('planState').textContent='Previewing changes';$('savePlan').dataset.disabled='false';$('savePlan').disabled=false;preview();}
@@ -29,7 +52,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   }
   mark();render();message('Preview repeats these amounts for this calendar month in future years. Save changes to keep it.');
  });
- function clear(){saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
+ function clear(){closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
  function render(){
   const model=getDraft();if(!model)return;
   const min=model.start.slice(0,7),max=shiftMonth(min,35),input=$('budgetMonth');input.min=min;input.max=max;
@@ -81,11 +104,12 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const when=el('input');when.type='date';when.value=t.date;when.setAttribute('aria-label','Date for '+label);cell(row,when,'Date');
    const account=accountSelect(model,entry.account,'Account for '+label),accountBox=el('div');accountBox.append(account);let destination=null;if(t.kind==='transfer'){destination=accountSelect(model,t.entries[1].account,'Destination for '+label);accountBox.append(el('small','To'),destination);}cell(row,accountBox,'Account');
    const amount=amountInput(Math.abs(entry.amount),'Expected '+label);amount.min='0';cell(row,amount,'Expected');
-   const text=t.actual?money(Math.abs(t.actual.entries[0].amount))+' · '+t.actual.status+' · '+t.actual.date:'—';cell(row,text,'Actual');
-   const button=el('button',t.actual?'Edit actual':'Record');cell(row,button,'');
+   const text=t.actual?money(Math.abs(t.actual.entries[0].amount))+' · '+t.actual.status+' · '+t.actual.date:t.skipped?'Skipped this time':'—';cell(row,text,'Actual');
+   const button=el('button',t.actual?'Edit actual':t.skipped?'Put back in budget':'Record');const actions=el('div',undefined,'row-actions');actions.append(button);const remove=el('button','Remove');remove.onclick=()=>removePrompt(t);actions.append(remove);cell(row,actions,'');
    if(t.actual){when.disabled=true;account.disabled=true;amount.disabled=true;if(destination)destination.disabled=true;if(t.actual.date.startsWith(month)&&t.actual.date<=today())actual+=Math.abs(t.actual.entries[0].amount);}
-   if(t.date.startsWith(month))expected+=Math.abs(entry.amount);
-   button.onclick=()=>record(t.actual||t);button.disabled=!t.actual&&entry.amount===0;button.dataset.disabled=String(button.disabled);
+   if(t.skipped){when.disabled=true;account.disabled=true;amount.disabled=true;if(destination)destination.disabled=true;}
+   if(t.date.startsWith(month)&&!t.skipped)expected+=Math.abs(entry.amount);
+   button.onclick=()=>t.skipped?action(()=>savePlan(changeExpectation(getDraft(),t.scheduleKey,'restore'))):record(t.actual||t);button.disabled=!t.actual&&!t.skipped&&entry.amount===0;button.dataset.disabled=String(button.disabled);
    const change=()=>run(()=>{
     const n=cents(amount.value);if(n<0)throw Error('Use a positive expected amount.');date(when.value);if(when.value<model.start)throw Error('Date is before your opening balance.');
     if(destination&&destination.value===account.value)throw Error('Choose different transfer accounts.');
@@ -126,7 +150,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   $('transactions').replaceChildren();let count=0;
   for(const t of [...model.transactions].filter(t=>!t.scheduleKey&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date))){
    count++;const row=el('tr');for(const v of [t.date,t.description,t.category||t.kind,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → ')])cell(row,v);
-   const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const edit=el('button','Edit');edit.onclick=()=>record(t);cell(row,edit);$('transactions').append(row);
+   const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const controls=el('div',undefined,'row-actions');const edit=el('button','Edit');edit.onclick=()=>record(t);const remove=el('button','Remove');remove.onclick=()=>removePrompt({description:t.description,actual:t});controls.append(edit,remove);cell(row,controls);$('transactions').append(row);
   }
   $('transactionNote').textContent=count+' other transactions this month. Recorded income and bill matches appear in their sections above.';
  }

@@ -37,12 +37,17 @@ test('full page records and edits an actual amount once, replaces its forecast, 
   await import('../js/money-app.mjs?sheet-dom-test');assert.equal(document.getElementById('app').hidden,false);
   document.getElementById('budgetMonth').value='2026-10';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));
   document.querySelector('#billRows button').click();const f=document.getElementById('transactionForm');assert.equal(document.getElementById('transactionEntry').open,true);
+  f.elements.amount.value='100.99';document.getElementById('clearMatch').click();assert.equal(model.transactions.length,0);assert.equal(document.getElementById('transactionEntry').open,false);assert.equal(f.elements.scheduleKey.value,'');assert.equal(revision,0);document.querySelector('#billRows button').click();
   f.elements.amount.value='100.37';f.elements.date.value='2026-10-27';f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();
   assert.equal(model.transactions.length,1);assert.equal(model.transactions[0].entries[0].amount,-10037);assert.equal(model.transactions[0].scheduleKey,'bill:2026-10-28');
   assert.match(document.getElementById('accountSummary').textContent,/\$1,249.63/);
   document.querySelector('#billRows button').click();f.elements.amount.value='100.38';f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();
   assert.equal(model.transactions.length,1);assert.equal(model.transactions[0].entries[0].amount,-10038);assert.equal(revision,2);
   assert.match(document.getElementById('message').textContent,/Saved/);
+  document.querySelectorAll('#billRows button')[1].click();assert.equal(document.getElementById('removeDialog').open,true);document.getElementById('removeCancel').click();assert.equal(model.transactions.length,1);assert.equal(revision,2);
+  document.querySelectorAll('#billRows button')[1].click();document.getElementById('removeBudget').click();await tick();assert.equal(model.transactions.length,0);assert.equal(model.schedules.find(s=>s.id==='bill').overrides['2026-10-28'].amount,-10038);
+  document.querySelectorAll('#billRows button')[1].click();document.getElementById('removeDelete').click();await tick();assert.ok(model.schedules.find(s=>s.id==='bill').skipped.includes('2026-10-28'));assert.match(document.getElementById('billRows').textContent,/Skipped this time/);
+  document.querySelector('#billRows button').click();await tick();assert.equal(model.schedules.find(s=>s.id==='bill').skipped.length,0);
   document.getElementById('logout').click();assert.equal(document.getElementById('app').hidden,true);assert.equal(document.getElementById('accountSummary').children.length,0);assert.equal(document.getElementById('seasonalRows').children.length,0);
  }finally{env.restore();}
 });

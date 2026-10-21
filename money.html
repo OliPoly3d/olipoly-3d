@@ -32,7 +32,7 @@
 <label>Status<select name="status"><option value="cleared">Cleared</option><option value="pending">Pending</option><option value="reconciled">Reconciled</option></select></label>
 <details class="wide"><summary>Business funding and notes</summary><div class="form-grid"><label>Expense belongs to<select name="expenseEntity"><option value="">Account owner</option><option value="business">OliPoly — personally funded</option><option value="household">Household</option></select></label>
 <label>Funding classification<select name="funding"><option value="">Not applicable</option><option value="contribution">Owner contribution</option><option value="loan">Owner loan</option><option value="reimbursement">Reimbursement owed</option></select></label>
-<label class="wide">Notes<input name="note" maxlength="500" placeholder="Adjustment reason or funding details"></label></div></details><input name="scheduleKey" type="hidden"><input name="editTransactionId" type="hidden"><button>Record actual</button><button type="button" id="clearMatch">Clear form</button>
+<label class="wide">Notes<input name="note" maxlength="500" placeholder="Adjustment reason or funding details"></label></div></details><input name="scheduleKey" type="hidden"><input name="editTransactionId" type="hidden"><button>Record actual</button><button type="button" id="clearMatch">Cancel — back to dashboard</button>
 </form></details>
 <div class="scroll"><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Account / amount</th><th>Status</th><th></th></tr></thead><tbody id="transactions"></tbody></table></div><p id="transactionNote" class="help"></p></section>
 <section id="seasonalSection"><h2>Known monthly extras (YOY)</h2><p id="seasonalHeading" class="help"></p><div class="scroll"><table class="editable-table"><thead id="seasonalHead"></thead><tbody id="seasonalRows"></tbody><tfoot id="seasonalTotals"></tfoot></table></div><button id="repeatSeasonal">Repeat these amounts in future years</button><p id="seasonalBudgetNote" class="help"></p></section>
@@ -47,4 +47,4 @@
 </details>
 <details class="panel"><summary>Backup &amp; refresh</summary><div class="toolbar"><button id="refresh">Refresh from server</button><button id="export">Export backup</button><label class="file">Import opening plan<input id="import" type="file" accept="application/json,.json"></label></div></details>
 </details>
-</div></main></body></html>
+<dialog id="removeDialog" aria-labelledby="removeTitle" aria-describedby="removeDescription"><h2 id="removeTitle">Remove item?</h2><p id="removeDescription"></p><div class="remove-actions"><button type="button" id="removeBudget">Put back in budget</button><button type="button" id="removeDelete">Delete transaction</button><button type="button" id="removeSeries">Stop recurring item</button><button type="button" id="removeCancel">Cancel</button></div></dialog></div></main></body></html>

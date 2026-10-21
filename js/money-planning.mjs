@@ -47,8 +47,11 @@ export function monthProjection(model, month, asOf) {
 // Stable keys link expected and actual dates without duplicating forecast postings.
 export function expectedRows(model, month, entity, kind) {
   const end=monthBounds(shiftMonth(month,1)).last;
-  const all=occurrences({...model,transactions:[]},end);
+  const all=occurrences({...model,transactions:[]},end,{includeSkipped:true});
   const matched=new Map(model.transactions.filter(t=>t.scheduleKey).map(t=>[t.scheduleKey,t]));
+  const keys=new Set(all.map(t=>t.scheduleKey));
+  // Preserve recorded history when the source schedule is stopped or removed.
+  for(const actual of matched.values())if(!keys.has(actual.scheduleKey))all.push({...actual,id:actual.scheduleKey,status:'forecast',nominalDate:actual.scheduleKey.slice(-10)});
   return all.filter(t=>(t.date.slice(0,7)===month || matched.get(t.scheduleKey)?.date.slice(0,7)===month) &&
     (kind==='income' ? t.kind==='income' : t.entries.some(e=>e.amount<=0)) &&
     model.accounts.find(a=>a.id===t.entries[0].account)?.entity===entity)
