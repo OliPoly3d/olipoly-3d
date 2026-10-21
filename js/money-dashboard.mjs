@@ -12,7 +12,7 @@ function accountSelect(model,value,label,cashOnly=false,entity){const s=el('sele
 const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
 function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',accents[id]||'#78d9cc');return span;}
 const ids=['accountSummary','monthMetrics','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
-export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{}}){
+export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{},onPreview=()=>{}}){
  let saved=null,draft=null,dirty=false;
  let removing=null;
  function closeRemoval(){removing=null;const d=$('removeDialog');if(d.open&&d.close)d.close();else d.removeAttribute('open');}
@@ -79,13 +79,14 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function preview(){
   const model=getDraft();if(!model)return;
   const month=$('budgetMonth').value,entity=$('budgetEntity').value,p=monthProjection(model,month,today());
-  const relevant=model.accounts.filter(a=>a.entity===entity);$('accountSummary').replaceChildren();
-  for(const a of relevant){const row=el('tr');cell(row,a.name,'Account');cell(row,money(p.opening[a.id]??0),'Month opening');cell(row,money(p.current[a.id]??0),'Current');const td=cell(row,money(p.closing[a.id]??0),'Projected month-end');if(p.closing[a.id]<a.reserve)td.className='low';$('accountSummary').append(row);}
+  const incomplete=p.incompleteFrom[entity],relevant=model.accounts.filter(a=>a.entity===entity);$('accountSummary').replaceChildren();
+  for(const a of relevant){const row=el('tr');cell(row,a.name,'Account');cell(row,incomplete&&incomplete<month?'Incomplete plan':money(p.opening[a.id]??0),'Month opening');cell(row,money(p.current[a.id]??0),'Current');const td=cell(row,incomplete?'Incomplete plan':money(p.closing[a.id]??0),'Projected month-end');if(!incomplete&&p.closing[a.id]<a.reserve)td.className='low';$('accountSummary').append(row);}
   const account=$('chartAccount').value,days=p.days.filter(d=>d.date.startsWith(month));
   let incoming=0,outgoing=0;for(const d of days)for(const t of d.events)for(const e of t.entries)if(e.account===account){if(e.amount>0)incoming+=e.amount;else outgoing-=e.amount;}
-  $('monthMetrics').replaceChildren();for(const [label,value] of [['Expected in',incoming],['Expected out',outgoing],['Projected month-end',p.closing[account]??0]]){const card=el('div',undefined,'metric');card.append(el('span',label),el('strong',money(value),value<0?'low':''));$('monthMetrics').append(card);}
+  $('monthMetrics').replaceChildren();for(const [label,value] of [['Expected in',incoming],['Expected out',outgoing],['Projected month-end',p.closing[account]??0]]){const card=el('div',undefined,'metric');card.append(el('span',label),el('strong',incomplete&&label!=='Expected in'?'Incomplete plan':money(value),!incomplete&&value<0?'low':''));$('monthMetrics').append(card);}
   $('projectionNote').textContent=(month===model.start.slice(0,7)&&model.start.slice(-2)!=='01'?'Opening month starts '+model.start+'; variable targets are prorated. ':'')+(p.warnings.length?'Plan incomplete: '+p.warnings.join('; ')+'. ':'')+'Projected balances include the saved plan plus changes currently shown. Negative credit-card balances mean money owed.';
-  balanceGraph(days,account);
+  if(incomplete){$('projectionNote').textContent+=' Set category targets and funding from '+incomplete+' onward to complete this projection.';$('balanceChart').replaceChildren(el('p','Complete the missing category budgets before using this balance projection.','notice'));}
+  else balanceGraph(days,account);
   const b=budgetMonth(model,month,entity,today());$('monthChart').replaceChildren();
   const max=Math.max(1,...b.buckets.flatMap(x=>[x.allowance||0,x.spent]));
   for(const item of b.buckets){const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[item.id]||'#78d9cc');const label=el('strong');label.append(categoryLabel(item.shortName||item.name,item.id));row.append(label);const chart=el('div');for(const [label,value,cls] of [['Expected',item.allowance,'planned'],['Actual',item.spent,'actual']]){const line=el('div',undefined,'comparison-line');const track=el('div',undefined,'bar-track');const fill=el('span',undefined,cls);fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?'Set target':money(value))));chart.append(line);}row.append(chart);$('monthChart').append(row);}
@@ -94,6 +95,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const source=row.querySelector('[data-value="source"]');if(source)source.textContent=item.partial?'Full month '+money(item.full||0)+' · opening-month allowance shown':'Total of the YOY list below';
    row.querySelector('[data-value="spent"]').textContent=money(item.spent);const remainder=row.querySelector('[data-value="remaining"]');remainder.textContent=item.remaining===null?'Set target':money(item.remaining);remainder.classList.toggle('low',item.remaining!==null&&item.remaining<0);
   }}
+  onPreview(model);
  }
  function balanceGraph(days,account){
   $('balanceChart').replaceChildren();if(!days.length||!account)return;

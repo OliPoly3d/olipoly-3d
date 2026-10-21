@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validate,occurrences} from '../js/money-engine.mjs';
 import {seasonalMonth} from '../js/money-budget.mjs';
-import {monthProjection,expectedRows} from '../js/money-planning.mjs';
+import {monthProjection,expectedRows,planningForecast} from '../js/money-planning.mjs';
 function plan(){return {version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Cash',type:'cash',entity:'household',opening:100000,reserve:0},{id:'card',name:'Card',type:'card',entity:'household',opening:-1000,reserve:0}],transactions:[],schedules:[],budgets:[{id:'food',name:'Grocery',entity:'household',account:'cash',monthly:{'2026-10':20000,'2026-11':20000}}],planning:{cardPayoffs:[{card:'card',from:'cash'}]}};}
 const expense=(account,amount)=>({id:'purchase',kind:'expense',date:'2026-10-12',description:'Market',category:'Grocery',status:'pending',entries:[{account,amount:-amount}]});
 test('target changes affect month-end dollar for dollar and carry into the following month',()=>{
@@ -55,4 +55,16 @@ test('funding edits affect only the selected month and transfer expectations sup
  p.schedules=[{id:'transfer',name:'Transfer',account:'cash',to:'card',amount:-500,frequency:'monthly',anchor:'2026-10-01',day:20,overrides:{'2026-10-20':{amount:-501,account:'cash',to:'other'}}}];
  validate(p);assert.deepEqual(occurrences(p,'2026-10-31')[0].entries,[{account:'cash',amount:-501},{account:'other',amount:501}]);
  p.schedules[0].overrides['2026-10-20'].to='cash';assert.throws(()=>validate(p));
+});
+test('missing future budgets mark that month and all subsequent projections incomplete until filled',()=>{
+ const p=plan();p.budgets[0].monthly['2027-01']=20000;
+ const r=planningForecast(p,'2027-01-31');
+ assert.equal(r.incompleteFrom.household,'2026-12');
+ assert.deepEqual(r.issues,[{month:'2026-12',entity:'household',category:'Grocery',reason:'Missing category targets'}]);
+ assert.equal(monthProjection(p,'2026-11','2026-10-21').incompleteFrom.household,undefined);
+ assert.equal(monthProjection(p,'2027-01','2026-10-21').incompleteFrom.household,'2026-12');
+ p.budgets[0].monthly['2026-12']=0;
+ assert.deepEqual(planningForecast(p,'2027-01-31').issues,[]);
+ delete p.budgets[0].account;
+ assert.equal(planningForecast(p,'2027-01-31').incompleteFrom.household,'2026-10');
 });
