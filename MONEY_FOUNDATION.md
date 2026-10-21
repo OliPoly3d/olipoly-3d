@@ -1,8 +1,14 @@
-# Money: first milestone
+# Money
 
-Target: `/money.html` on the existing domain. This is an initial transaction and scheduled-cash-flow foundation, not the finished financial management system.
+Target: `/money.html` on the existing domain. The monthly budget dashboard builds on the transaction and scheduled-cash-flow foundation.
 
 ## Included
+
+- Budget-first mobile navigation: Budget, Bills, Activity and Accounts. Detailed forecasts, schedules and backups stay in expandable sections.
+- Category buckets with monthly budget, recorded spending including pending purchases, signed remainder and visible overspending. Cash/card purchases share the same bucket; card payments remain transfers.
+- Budget usage ring, category progress bars and six-month budget-versus-recorded-spending comparisons. Text values accompany each graphic.
+- Expected bills by month, matched payment status and explicit missing bill details. Workbook-derived amounts/dates remain provisional; actual matches replace expected events.
+- Month-specific category targets, inclusive opening-month proration and effective monthly overrides. Missing targets are distinct from zero. Monthly reset is the current policy.
 
 - Existing OliPoly sign-in, with separate database authorization for one designated owner.
 - Separate household, business and custodial accounts. Positive cash and negative card liabilities, stored as integer cents.
@@ -20,7 +26,9 @@ This milestone stores a versioned plan document with separate account, transacti
 
 No financial values, personal seed files, owner email or real owner UUID should be committed. The page is a public shell; the data is protected in the database. There is no offline financial-data cache. Explicit exports contain private records and belong outside the public repository. The shared auth bridge still stores login tokens according to the existing site's design; this milestone does not redesign site-wide authentication.
 
-## Required approved database setup — NOT applied by this change
+## Foundation database setup
+
+The foundation migration and verified single-owner provisioning were applied after explicit approval. The dashboard uses the existing plan document and requires no schema, policy, grant or ERP changes. Workbook-derived budgets and additional schedules are private plan configuration, never public source constants. Apply private configuration with a revision guard and retain the previous document through the existing history trigger.
 
 Under `AGENTS.md`, prepare and review the exact migration and target project, then ask for explicit permission. Once granted, the agent may apply it using authorized access and verify the result. If access is unavailable, use the manual administrator steps below. Migration approval does not include merge or deployment approval.
 
@@ -33,23 +41,29 @@ Under `AGENTS.md`, prepare and review the exact migration and target project, th
 
 ## Model
 
+Optional `budgets` records contain `id`, `name`, `entity`, `aliases`, `monthly` full-month amounts keyed by YYYY-MM, and optional `overrides` effective allowances. Integer cents are required. Prorate only the model's opening month when `prorate` is not false. Overrides are already effective amounts and are never prorated again. `source` may preserve workbook cell references privately. Missing targets are shown, not carried forward silently. Optional `unscheduledBills` records contain a name, entity and reason for missing details; they are excluded from quantified forecasts.
+
+`money-budget.mjs` owns bucket calculations for cards and cash, charts and summary totals. Spending is dated through the earlier of today and selected month end. Personally paid business expenses use `expenseEntity`. Outside-bucket purchases remain visible. `billsMonth` uses the same recurring-event generator as the forecast and matches actuals by stable occurrence key, including changed actual dates/amounts. Bill status indicates recorded/pending activity, not independently verified bank settlement.
+
 `version`, `start`, `accounts`, `transactions`, `schedules` are required. Account `opening` is the posted balance immediately before `start`; `reserve` is integer cents. Credit-card debt is negative. Transactions are dated signed account postings; a transfer has two equal/opposite entries. `scheduleKey` identifies the replaced occurrence. Transaction categories record spending at purchase, while transfers/payment entries never re-record spending. `expenseEntity` and `funding` identify personally paid business costs; they are an initial classification, not a full double-entry accounting ledger.
 
 Monthly schedules use `day` and clamp to shorter month end. Biweekly schedules retain their anchor. `firstPayBonus` applies only when the previous scheduled payday is in the preceding month. `changes: [{date,amount}]` overrides the base amount from an effective date. Holiday overrides are recorded as actual matched events; a separate forecast-only exception editor remains to be implemented.
 
 ## Explicit limits before relying on projections
 
-- No remaining-budget reservations, reallocation or rollover engine yet. Category actuals are present, not budget completeness.
+- Category budget remainders are present. Remaining-budget cash reservations, reallocation and optional rollover are not yet implemented. Bucket remainder is not bank-available cash.
 - No automatic future payoff for new card purchases, statement-cycle model, interest calculation, or debt optimizer. Scheduled fixed card payments work. Do not interpret projected cash as safe to spend.
 - No automatic sales-tax reserve, processor clearing ledgers, or ERP synchronization. Business tax liability remains unknown until supplied.
-- No bank imports, full Excel import/export, weekly view, charting or multi-user sharing yet. JSON export is available for the foundation.
+- No bank imports, full Excel import/export, weekly view or multi-user sharing yet. JSON export is available. Budget charts reflect recorded activity only; no historical purchases were reconstructed.
 - Recurring entries can be paused and replaced; a full schedule/account editor, transaction reversals and revision restore UI are later milestones.
 - Current posted balances use transactions dated through today in America/New_York. Dates represent planned/actual posting dates; month views can include partial months.
 - The confirmed end of a payroll loan deduction must be preserved, but exact effective payday/amount must be reconciled from source before that event is treated as exact. Do not silently interpret annual draft raises or changing allocation amounts as loan relief.
 
 ## Verification
 
-Run `node --check js/money-app.mjs`, `node --test tests/money-engine.test.mjs`, and `git diff --check`.
+Run `node --check` on `js/money-app.mjs`, `js/money-budget.mjs` and `js/money-dashboard.mjs`; run `node --test tests/money-engine.test.mjs tests/money-budget.test.mjs`; run `git diff --check`.
+
+For DOM interaction checks, install `jsdom@26.1.0` outside the repo, set `MONEY_JSDOM_MODULE` to its absolute `lib/api.js`, then run `node --test tests/money-dashboard.test.mjs`. These use synthetic data and stubbed authentication/network calls. They verify tabs, target edits, bill matching, full-page loading, saving a purchase once and clearing data on sign-out. They are not browser layout verification. Chromium download failed in the implementation environment; no visual browser verification is claimed.
 
 For isolated real PostgreSQL behavior, install `@electric-sql/pglite@0.5.10` in a temporary directory outside the repo, then set `MONEY_PGLITE_MODULE` to its absolute `dist/index.js` and run `node --test tests/money-access.test.mjs`. This creates an in-memory PostgreSQL database and stub Supabase roles/auth.uid; it never connects to production. It checks owner/non-owner/public access, immutable ownership/history, revision sequencing and stale updates. It does not certify the deployed Supabase configuration.
 
@@ -57,4 +71,4 @@ Manual browser checks required before activation: sign-in/out and second-user de
 
 ## Next milestone
 
-Build adaptive budget reservations and card payment scheduling into the same engine, using the workbook's month-specific category targets, October proration and reset-by-default rules. Add weekly views and debt/promo visibility after validating their effect on daily cash. Keep the private verified configuration separate from public source throughout.
+Build remaining-budget cash reservations and card payment scheduling into the same engine. Add weekly views, optional rollover and debt/promo visibility after validating their effect on daily cash. Keep the private verified configuration separate from public source throughout.
