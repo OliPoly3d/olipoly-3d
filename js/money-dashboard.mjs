@@ -9,6 +9,8 @@ function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefine
 function cell(row,content,label){const td=el('td');if(content instanceof Node)td.append(content);else td.textContent=content;if(label)td.dataset.label=label;row.append(td);return td;}
 function amountInput(value,label){const input=el('input');input.type='number';input.step='0.01';input.inputMode='decimal';input.value=value===null?'':(value/100).toFixed(2);input.setAttribute('aria-label',label);return input;}
 function accountSelect(model,value,label,cashOnly=false,entity){const s=el('select');s.setAttribute('aria-label',label);for(const a of model.accounts.filter(a=>(!cashOnly||a.type==='cash')&&(!entity||a.entity===entity))){const o=el('option',a.name);o.value=a.id;s.append(o);}s.value=value||'';return s;}
+const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
+function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',accents[id]||'#78d9cc');return span;}
 const ids=['accountSummary','monthMetrics','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
 export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{}}){
  let saved=null,draft=null,dirty=false;
@@ -86,14 +88,14 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   balanceGraph(days,account);
   const b=budgetMonth(model,month,entity,today());$('monthChart').replaceChildren();
   const max=Math.max(1,...b.buckets.flatMap(x=>[x.allowance||0,x.spent]));
-  for(const item of b.buckets){const row=el('div',undefined,'comparison-row');row.append(el('strong',item.shortName||item.name));const chart=el('div');for(const [label,value,cls] of [['Expected',item.allowance,'planned'],['Actual',item.spent,'actual']]){const line=el('div',undefined,'comparison-line');const track=el('div',undefined,'bar-track');const fill=el('span',undefined,cls);fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?'Set target':money(value))));chart.append(line);}row.append(chart);$('monthChart').append(row);}
+  for(const item of b.buckets){const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[item.id]||'#78d9cc');const label=el('strong');label.append(categoryLabel(item.shortName||item.name,item.id));row.append(label);const chart=el('div');for(const [label,value,cls] of [['Expected',item.allowance,'planned'],['Actual',item.spent,'actual']]){const line=el('div',undefined,'comparison-line');const track=el('div',undefined,'bar-track');const fill=el('span',undefined,cls);fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?'Set target':money(value))));chart.append(line);}row.append(chart);$('monthChart').append(row);}
   for(const item of b.buckets){const row=[...document.querySelectorAll('[data-budget-id]')].find(r=>r.dataset.budgetId===item.id);if(row){row.querySelector('[data-value="spent"]').textContent=money(item.spent);const remainder=row.querySelector('[data-value="remaining"]');remainder.textContent=item.remaining===null?'Set target':money(item.remaining);remainder.classList.toggle('low',item.remaining!==null&&item.remaining<0);}}
  }
  function balanceGraph(days,account){
   $('balanceChart').replaceChildren();if(!days.length||!account)return;
   const values=[days[0].opening[account],...days.map(d=>d.closing[account])],lo=Math.min(...values),hi=Math.max(...values),range=Math.max(1,hi-lo);
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 560 180');svg.setAttribute('role','img');svg.setAttribute('aria-label','Projected balance from '+money(values[0])+' to '+money(values.at(-1)));
-  const path=document.createElementNS(svg.namespaceURI,'polyline');path.setAttribute('points',values.map((v,i)=>(10+i/(values.length-1)*540)+','+(160-(v-lo)/range*140)).join(' '));path.setAttribute('fill','none');path.setAttribute('stroke','#a38cf4');path.setAttribute('stroke-width','3');svg.append(path);
+  const path=document.createElementNS(svg.namespaceURI,'polyline');path.setAttribute('points',values.map((v,i)=>(10+i/(values.length-1)*540)+','+(160-(v-lo)/range*140)).join(' '));path.setAttribute('class','balance-line');svg.append(path);
   $('balanceChart').append(svg,el('p','Opening '+money(values[0])+' → Month-end '+money(values.at(-1)),'help'));
  }
  function renderExpected(model,month,entity,kind,id,totalId){
@@ -126,7 +128,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function renderCategories(model,month,entity){
   $('categoryRows').replaceChildren();const result=budgetMonth(model,month,entity,today());
   for(const b of result.buckets.filter(b=>!b.seasonal)){
-   const row=el('tr');row.dataset.budgetId=b.id;cell(row,b.shortName||b.name,'Category');const input=amountInput(b.allowance,'Budget for '+b.name);input.min='0';cell(row,input,'Budget');
+   const row=el('tr');row.dataset.budgetId=b.id;cell(row,categoryLabel(b.shortName||b.name,b.id),'Category');const input=amountInput(b.allowance,'Budget for '+b.name);input.min='0';cell(row,input,'Budget');
    cell(row,money(b.spent),'Actual').dataset.value='spent';cell(row,b.remaining===null?'Set target':money(b.remaining),'Remaining').dataset.value='remaining';
    const account=accountSelect(model,b.funding?.[month]||b.account,'Fund '+b.name+' from',true,entity);cell(row,account,'Fund from');
    input.onchange=()=>run(()=>{const n=cents(input.value);if(n<0)throw Error('Budget cannot be negative.');const item=model.budgets.find(i=>i.id===b.id);item.overrides={...item.overrides,[month]:n};mark();});
@@ -149,7 +151,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function renderTransactions(model,month,entity){
   $('transactions').replaceChildren();let count=0;
   for(const t of [...model.transactions].filter(t=>!t.scheduleKey&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date))){
-   count++;const row=el('tr');for(const v of [t.date,t.description,t.category||t.kind,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → ')])cell(row,v);
+   count++;const row=el('tr');cell(row,t.date);cell(row,t.description);const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
    const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const controls=el('div',undefined,'row-actions');const edit=el('button','Edit');edit.onclick=()=>record(t);const remove=el('button','Remove');remove.onclick=()=>removePrompt({description:t.description,actual:t});controls.append(edit,remove);cell(row,controls);$('transactions').append(row);
   }
   $('transactionNote').textContent=count+' other transactions this month. Recorded income and bill matches appear in their sections above.';
