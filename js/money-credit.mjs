@@ -6,9 +6,13 @@ export function validateCredit(model){
  for(const a of model.accounts){
   const c=a.credit;if(!c)continue;
   if(a.type==='cash')throw Error('Credit terms need a debt account.');
-  for(const key of ['purchaseApr','promoApr','postPromoApr'])if(!validApr(c[key]))throw Error('APR must be blank or a nonnegative percentage.');
+  for(const key of ['purchaseApr','purchasePromoApr','promoApr','postPromoApr','transferFeePercent'])if(!validApr(c[key]))throw Error('APR or fee must be blank or a nonnegative percentage.');
   for(const key of ['promoBalance','minimum','payoffQuote'])if(c[key]!==undefined&&c[key]!==null&&!validMoney(c[key]))throw Error('Invalid credit amount.');
-  if(c.promoEnd)date(c.promoEnd);
+  for(const key of ['promoStart','promoEnd','purchasePromoEnd','transferDeadline'])if(c[key])date(c[key]);
+  if(c.promoStart&&c.promoEnd&&c.promoStart>c.promoEnd)throw Error('Promotion start must be on or before its end.');
+  if(c.purchasePromoEnd&&c.purchasePromoApr==null)throw Error('Enter the purchase promotional APR.');
+  if(c.termsProvisional!==undefined&&typeof c.termsProvisional!=='boolean')throw Error('Invalid provisional terms setting.');
+  if(c.termsNotes!==undefined&&typeof c.termsNotes!=='string')throw Error('Invalid credit notes.');
   if(c.minimumAsOf)date(c.minimumAsOf);
   if(c.promoScope&&!['balance_transfer','purchases','all'].includes(c.promoScope))throw Error('Invalid promotion scope.');
   if(c.mode&&!['fixed','full'].includes(c.mode))throw Error('Invalid payment plan.');
@@ -20,8 +24,9 @@ export function validateCredit(model){
  return model;
 }
 export function creditRates(c={},day){
- const active=!!c.promoEnd&&day<=c.promoEnd;
- return {active,purchase:active&&['all','purchases'].includes(c.promoScope)?c.promoApr:c.purchaseApr,promo:active?c.promoApr:c.postPromoApr};
+ const active=!!c.promoEnd&&day<=c.promoEnd&&(!c.promoStart||day>=c.promoStart);
+ const purchaseActive=!!c.purchasePromoEnd&&day<=c.purchasePromoEnd;
+ return {active,purchase:c.purchasePromoEnd?(purchaseActive?c.purchasePromoApr:c.purchaseApr):active&&['all','purchases'].includes(c.promoScope)?c.promoApr:c.purchaseApr,promo:active?c.promoApr:c.postPromoApr};
 }
 // Planning estimate: credits pay the higher APR bucket first. Issuer allocation
 // of minimum payments, grace periods, statement cycles and fees may differ.
@@ -35,7 +40,7 @@ export function creditActivity(account,state,day,events){
  const c=account.credit||{},rates=creditRates(c,day);
  for(const t of events)for(const entry of t.entries.filter(e=>e.account===account.id)){
   if(entry.amount>0){state.promo=reducePromo(state.promo,Math.max(0,state.total||0),entry.amount,rates);state.total=Math.max(0,(state.total||0)-entry.amount);}
-  else{if(rates.active&&['all','purchases'].includes(c.promoScope)&&t.kind==='expense'&&t.category!=='Interest')state.promo-=entry.amount;state.total=(state.total||0)-entry.amount;}
+  else{if(!c.purchasePromoEnd&&rates.active&&['all','purchases'].includes(c.promoScope)&&t.kind==='expense'&&t.category!=='Interest')state.promo-=entry.amount;state.total=(state.total||0)-entry.amount;}
  }
 }
 export function accrueCredit(account,state,day,total){
@@ -84,9 +89,10 @@ export function transferScenario(model,from,to,amount,fee=0){
  if(from===to||!validMoney(amount)||amount===0||!validMoney(fee))throw Error('Choose different debt accounts and a positive transfer.');
  const next=structuredClone(model),a=next.accounts.find(a=>a.id===from&&a.type!=='cash'),b=next.accounts.find(a=>a.id===to&&a.type!=='cash');
  if(!a||!b||a.entity!==b.entity||amount>Math.max(0,-a.opening))throw Error('Transfer must stay within one owner and the source debt balance.');
+ if(b.credit?.transferDeadline&&next.start>b.credit.transferDeadline)throw Error('The receiving account’s promotional transfer deadline has passed. Update its terms before using this offer.');
  a.opening+=amount;b.opening-=amount+fee;
  if(a.credit)a.credit.promoBalance=Math.min(a.credit.promoBalance||0,Math.max(0,-a.opening));
- if(b.credit?.promoEnd&&['balance_transfer','all'].includes(b.credit.promoScope))b.credit.promoBalance=(b.credit.promoBalance||0)+amount+fee;
+ if(b.credit?.promoEnd&&next.start<=b.credit.promoEnd&&['balance_transfer','all'].includes(b.credit.promoScope))b.credit.promoBalance=(b.credit.promoBalance||0)+amount+fee;
  return next;
 }
 export function promoSummary(model,account,asOf,projection){

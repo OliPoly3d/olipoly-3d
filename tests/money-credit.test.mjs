@@ -67,3 +67,16 @@ test('recorded statement interest replaces the calendar-month interest estimate 
 test('confirmed purchase grace period suppresses purchase interest without suppressing expired promotional interest',()=>{
  const p=plan(),a=p.accounts[1];a.credit={...a.credit,purchaseApr:36.5,purchaseGrace:true,promoBalance:50000,promoApr:0,promoEnd:'2026-10-15',postPromoApr:36.5,promoScope:'balance_transfer'};const r=planningForecast(p,'2026-10-31');assert.equal(r.planned.find(t=>t.creditInterest).entries[0].amount,-800);assert.equal(r.creditWarnings.length,0);
 });
+test('independent purchase and balance-transfer promotions expire separately without mixing purchase principal',()=>{
+ const p=plan(),a=p.accounts[1];a.credit={...a.credit,purchaseApr:36.5,purchasePromoApr:0,purchasePromoEnd:'2026-10-15',promoBalance:50000,promoApr:0,promoStart:'2026-10-01',promoEnd:'2026-11-30',postPromoApr:36.5,promoScope:'balance_transfer'};
+ p.transactions=[{id:'purchase',description:'Purchase',date:'2026-10-05',kind:'expense',category:'Other',status:'cleared',entries:[{account:'card',amount:-10000}]}];
+ const r=planningForecast(p,'2026-10-31');assert.equal(r.days.at(-1).credit.card.promo,50000);assert.equal(r.days.at(-1).credit.card.interest,960);assert.equal(r.days.find(d=>d.date==='2026-10-15').credit.card.interest,0);
+ a.credit.purchaseApr=null;assert.equal(planningForecast(p,'2026-10-31').days.at(-1).credit.card.missingFrom,'2026-10-16');
+});
+test('balance-transfer offers enforce processing deadlines and validate provisional terms without changing source balances',()=>{
+ const p=plan();p.accounts.push({id:'target',name:'Target',type:'card',entity:'household',opening:0,reserve:0,credit:{purchaseApr:20,purchasePromoApr:0,purchasePromoEnd:'2027-11-04',promoApr:0,promoStart:'2026-11-04',promoEnd:'2028-08-04',promoScope:'balance_transfer',transferDeadline:'2026-12-31',transferFeePercent:null,termsProvisional:true,termsNotes:'Unconfirmed offer assumptions'}});
+ validateCredit(p);const before=JSON.stringify(p),moved=transferScenario(p,'card','target',50000,1500);assert.equal(moved.accounts[2].credit.promoBalance,51500);assert.equal(JSON.stringify(p),before);
+ p.start='2027-01-01';assert.throws(()=>transferScenario(p,'card','target',50000,0),/deadline/);
+ p.accounts[2].credit.purchasePromoApr=null;assert.throws(()=>validateCredit(p),/purchase promotional APR/);
+ p.accounts[2].credit.purchasePromoApr=0;p.accounts[2].credit.promoStart='2029-01-01';assert.throws(()=>validateCredit(p),/start/);
+});
