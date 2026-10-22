@@ -1,6 +1,7 @@
 import {forecast, occurrences, balances} from './money-engine.mjs';
 import {budgetMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
 import {creditState,creditActivity,creditRates,reducePromo,accrueCredit} from './money-credit.mjs';
+import {incomingOwner} from './money-income.mjs';
 
 // Build budget reserves, debt payments and estimated interest as postings.
 // The shared posting engine owns every daily/monthly balance.
@@ -87,8 +88,8 @@ export function expectedRows(model, month, entity, kind) {
   const keys=new Set(all.map(t=>t.scheduleKey));
   // Preserve recorded history when the source schedule is stopped or removed.
   for(const actual of matched.values())if(!keys.has(actual.scheduleKey))all.push({...actual,id:actual.scheduleKey,status:'forecast',nominalDate:actual.scheduleKey.slice(-10)});
+  if(kind==='income')for(const actual of model.transactions.filter(t=>!t.scheduleKey&&incomingOwner(model,t)===entity))all.push({...actual,actual});
   return all.filter(t=>(t.date.slice(0,7)===month || matched.get(t.scheduleKey)?.date.slice(0,7)===month) &&
-    (kind==='income' ? t.kind==='income' : t.entries.some(e=>e.amount<=0)) &&
-    model.accounts.find(a=>a.id===t.entries[0].account)?.entity===entity)
-    .map(t=>({...t,actual:matched.get(t.scheduleKey)}));
+    (kind==='income' ? incomingOwner(model,t)===entity : t.entries.some(e=>e.amount<=0)&&model.accounts.find(a=>a.id===t.entries[0].account)?.entity===entity))
+    .map(t=>({...t,actual:t.actual||matched.get(t.scheduleKey)}));
 }

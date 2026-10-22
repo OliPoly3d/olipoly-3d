@@ -3,13 +3,15 @@ import {validateBudgets,monthBounds,shiftMonth} from './money-budget.mjs';
 import {planningForecast} from './money-planning.mjs';
 import {setupDashboard} from './money-dashboard.mjs';
 import {setupWorkbench} from './money-workbench.mjs';
+import {setupSections,revealSection,sectionPreview} from './money-sections.mjs';
+import {addOneTimeIncome} from './money-income.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
 const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'America/New_York'}).format(new Date());
 let model=null,revision=null,userId=null,busy=false,generation=0;
 function message(text){$('message').textContent=text;}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);dashboard.clear();workbench.clear();}
+function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);dashboard.clear();workbench.clear();for(const select of $('oneTimeIncomeForm').querySelectorAll('select[name=account],select[name=from]'))select.replaceChildren();for(const preview of document.querySelectorAll('.section-preview'))preview.textContent='';for(const panel of document.querySelectorAll('#app details'))panel.open=false;}
 window.addEventListener('olipoly-auth-changed',e=>{if(userId && e.detail?.user?.id!==userId){lock();message('Signed out. Sign in to continue.');}});
 window.addEventListener('storage',e=>{if(['sb_token','sb_user','olipoly_auth_session_v1'].includes(e.key)){lock();message('Sign-in changed in another tab. Sign in again.');}});
 async function api(path,options={}) {
@@ -48,7 +50,7 @@ async function action(fn){
  const controls=new Map([...document.querySelectorAll('button')].map(c=>[c,c.disabled]));
  for(const c of controls.keys())c.disabled=true;
  $('app').inert=true;$('login').inert=true;
- try{await fn();}catch(e){message(e.message);}finally{busy=false;$('app').inert=false;$('login').inert=false;for(const [c,disabled] of controls)if(c.isConnected)c.disabled=c.dataset.disabled==='true'||disabled;}
+ try{await fn();}catch(e){message(e.message);}finally{busy=false;$('app').inert=false;$('login').inert=false;for(const [c,disabled] of controls)if(c.isConnected)c.disabled=c.dataset.disabled===undefined?disabled:c.dataset.disabled==='true';}
 }
 function row(parent,values){const r=node('tr');for(const v of values)r.append(v instanceof Node?v:node('td',v));parent.append(r);return r;}
 function option(select,value,label){const o=node('option',label);o.value=value;select.append(o);}
@@ -58,7 +60,8 @@ function render(){
   if(selection && model.accounts.some(a=>a.id===selection))$('account').value=selection;
   const posted=balances(model,today(),true),adjusted=balances(model,today());
   $('accounts').replaceChildren();for(const a of model.accounts)row($('accounts'),[a.name,a.entity,a.balanceUnknown?'Unknown':money(posted[a.id]),a.balanceUnknown?'Unknown':money(adjusted[a.id])]);
-  $('schedules').replaceChildren();for(const s of model.schedules){const div=node('div',undefined,'schedule');div.dataset.scheduleId=s.id;const kind=scheduleKind(s);const credit=model.accounts.find(a=>a.credit?.scheduleId===s.id);const info=node('span',s.name+' · '+({expense:'Bill',income:'Income',transfer:'Transfer'}[kind])+' · '+(credit?.credit.mode==='full'?'Full projected balance':money(credit?.credit.paymentAmount??Math.abs(s.amount)))+' · '+s.frequency);info.append(node('small',(s.estimated?'Provisional':'Confirmed')+' · '+(s.stoppedFrom?'Stopped from '+s.stoppedFrom:s.enabled===false?'Paused':'Active')));const edit=node('button','Edit');edit.onclick=()=>{const credit=model.accounts.find(a=>a.credit?.scheduleId===s.id);if(credit)workbench.selectCredit(credit.id);else editSchedule(s.id);};const b=node('button',s.stoppedFrom||s.enabled===false?'Resume':'Pause');b.onclick=()=>action(async()=>{const next=structuredClone(dashboard.draft());const target=next.schedules.find(x=>x.id===s.id);if(target.stoppedFrom){delete target.stoppedFrom;target.enabled=true;}else target.enabled=s.enabled===false;await save(next);});const controls=node('div',undefined,'row-actions');controls.append(edit,b);div.append(info,controls);$('schedules').append(div);}
+  $('schedules').replaceChildren();for(const s of model.schedules){const div=node('div',undefined,'schedule');div.dataset.scheduleId=s.id;const kind=scheduleKind(s);const credit=model.accounts.find(a=>a.credit?.scheduleId===s.id);const info=node('span',s.name+' · '+({expense:'Bill',income:'Income',transfer:'Transfer'}[kind])+' · '+(credit?.credit.mode==='full'?'Full projected balance':money(credit?.credit.paymentAmount??Math.abs(s.amount)))+' · '+(s.oneTime?'One time':s.frequency));info.append(node('small',(s.estimated?'Provisional':'Confirmed')+' · '+(s.stoppedFrom?'Stopped from '+s.stoppedFrom:s.enabled===false?'Paused':'Active')));const edit=node('button','Edit');edit.onclick=()=>{const credit=model.accounts.find(a=>a.credit?.scheduleId===s.id);if(credit)workbench.selectCredit(credit.id);else editSchedule(s.id);};const b=node('button',s.stoppedFrom||s.enabled===false?'Resume':'Pause');b.onclick=()=>action(async()=>{const next=structuredClone(dashboard.draft());const target=next.schedules.find(x=>x.id===s.id);if(target.stoppedFrom){delete target.stoppedFrom;target.enabled=true;}else target.enabled=s.enabled===false;await save(next);});const controls=node('div',undefined,'row-actions');controls.append(edit,b);div.append(info,controls);$('schedules').append(div);}
+  sectionPreview('adminSection',model.accounts.length+' accounts · '+model.schedules.filter(s=>s.enabled!==false&&!s.stoppedFrom&&!s.oneTime).length+' recurring schedules');
   dashboard.render();
 }
 function renderForecast(plan=dashboard.draft()){
@@ -70,6 +73,7 @@ function renderForecast(plan=dashboard.draft()){
   if(result.creditWarnings.length)$('forecastNote').textContent+=' '+result.creditWarnings.join(' · ')+'.';
   const future=days.filter(d=>d.date>=today());const low=future.length?Math.min(...future.map(d=>d.low[a.id])):null;
   const posted=balances(plan,today(),true)[a.id],adjusted=balances(plan,today())[a.id];
+  sectionPreview('forecastSection',a.name+' · '+(a.balanceUnknown||incomplete||debtFrom?'Incomplete forecast':low==null?'Outside horizon':'Lowest '+money(low)));
   for(const [label,value] of [['Posted balance',posted],['After pending',adjusted],['Lowest projected balance',low]]){const e=node('div',undefined,'metric'),unknown=a.balanceUnknown||(incomplete||debtFrom)&&label==='Lowest projected balance';e.append(node('span',label),node('strong',unknown?'Incomplete plan':value===null?'Outside horizon':money(value),!unknown&&value!==null&&value<a.reserve?'low':''));$('metrics').append(e);}
   const reserves=new Map();for(const t of result.planned.filter(t=>t.kind==='expense')){const key=t.date.slice(0,7);reserves.set(key,(reserves.get(key)||0)-t.entries.filter(e=>e.account===a.id).reduce((n,e)=>n+e.amount,0));}
   for(const m of monthly(days,a.id)){const unknown=a.balanceUnknown||incomplete&&m.month>=incomplete||debtFrom&&m.month>=debtFrom;const r=row($('months'),[m.month,a.balanceUnknown||incomplete&&m.month>incomplete||debtFrom&&m.month>debtFrom?'Incomplete plan':money(m.opening),money(reserves.get(m.month)||0),unknown?'Incomplete plan':money(m.low),unknown?'Incomplete plan':money(m.closing),unknown?(a.balanceUnknown?'Principal needed':debtFrom&&m.month>=debtFrom?'APR needed':'Missing budgets'):'Included']);if(!unknown&&m.low<a.reserve)r.className='low';}
@@ -84,12 +88,12 @@ function cancelEditor(announce=true){
 function match(t){
  editorReturnFocus=document.activeElement;
  const f=$('transactionForm');f.reset();
- for(const k of ['date','description','kind','category','scheduleKey','note','funding','expenseEntity'])f.elements[k].value=t[k]||'';
- f.elements.editTransactionId.value=t.status==='forecast'?'':t.id;
+ for(const k of ['date','description','kind','category','scheduleKey','note','funding','expenseEntity','incomeType'])f.elements[k].value=t[k]||'';
+ f.elements.editTransactionId.value=t.status==='forecast'?'':t.id;f.elements.status.value=t.status==='forecast'?'cleared':t.status;
  const outgoing=t.entries.find(e=>e.amount<0)||t.entries[0];
  f.elements.account.value=outgoing.account;f.elements.amount.value=((t.kind==='adjustment'?outgoing.amount:Math.abs(outgoing.amount))/100).toFixed(2);
  if(t.kind==='transfer')f.elements.to.value=t.entries.find(e=>e.account!==outgoing.account).account;
- $('transactionEntry').open=true;f.scrollIntoView({behavior:'smooth'});f.elements.amount.focus();
+ revealSection(f);f.scrollIntoView({behavior:'smooth'});f.elements.amount.focus();
  message(t.status==='forecast'?'Check the date, account and actual amount, then record.':'Edit the transaction and record the correction.');
 }
 $('loginForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=e.target;await window.OliPolyAuth.login(f.email.value,f.password.value);f.password.value='';await load();});};
@@ -104,7 +108,7 @@ $('transactionForm').onsubmit=e=>{e.preventDefault();action(async()=>{
   if(kind!=='adjustment' && amount<=0)throw Error('Enter a positive amount.');
   if(kind==='adjustment' && !f.get('note'))throw Error('Please explain this balance adjustment.');
   const entries=[{account,amount:kind==='expense'||kind==='transfer'?-amount:amount}];if(kind==='transfer')entries.push({account:f.get('to'),amount});
-  const next=structuredClone(dashboard.draft());const id=f.get('editTransactionId')||crypto.randomUUID();const transaction={id,date:f.get('date'),description:f.get('description'),kind,category:f.get('category'),status:f.get('status'),entries,expenseEntity:f.get('expenseEntity'),funding:f.get('funding')||(f.get('expenseEntity')==='business'&&model.accounts.find(a=>a.id===account)?.entity==='household'?'contribution':''),note:f.get('note'),scheduleKey:f.get('scheduleKey')||null};
+  const next=structuredClone(dashboard.draft());const id=f.get('editTransactionId')||crypto.randomUUID();const transaction={id,date:f.get('date'),description:f.get('description'),kind,category:f.get('category'),incomeType:f.get('incomeType')||undefined,status:f.get('status'),entries,expenseEntity:f.get('expenseEntity'),funding:f.get('funding')||(f.get('expenseEntity')==='business'&&model.accounts.find(a=>a.id===account)?.entity==='household'?'contribution':''),note:f.get('note'),scheduleKey:f.get('scheduleKey')||null};
   const existing=next.transactions.findIndex(t=>t.id===id);if(existing>=0)next.transactions[existing]=transaction;else next.transactions.push(transaction);
   await save(next);e.target.reset();e.target.elements.scheduleKey.value='';e.target.elements.editTransactionId.value='';e.target.elements.date.value=today();
 });};
@@ -153,8 +157,23 @@ $('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{
 });};
 $('export').onclick=()=>{if(!model)return;const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='money-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('import').onchange=e=>action(async()=>{const file=e.target.files[0];if(!file)return;if(model.accounts.length||model.transactions.length||model.schedules.length)throw Error('Opening-plan import is only available for an empty plan. Existing data will not be overwritten.');if(file.size>2000000)throw Error('Opening plan exceeds 2 MB.');const incoming=validateBudgets(validate(JSON.parse(await file.text())));await save(incoming);e.target.value='';});
+function incomeControls(plan=dashboard.draft()){
+ if(!plan)return;const f=$('oneTimeIncomeForm'),entity=$('budgetEntity').value;
+ f.elements.incomeType.querySelector('option[value="distribution"]').disabled=entity!=='household';if(entity!=='household'&&f.elements.incomeType.value==='distribution')f.elements.incomeType.value='other';
+ const payout=f.elements.incomeType.value==='distribution';
+ for(const [key,owner] of [['account',entity],['from','business']]){const old=f.elements[key].value;f.elements[key].replaceChildren();for(const a of plan.accounts.filter(a=>a.type==='cash'&&a.entity===owner))option(f.elements[key],a.id,a.name);if([...f.elements[key].options].some(o=>o.value===old))f.elements[key].value=old;}
+ $('incomeFromLabel').hidden=!payout;f.elements.from.disabled=!payout;f.elements.from.required=payout;f.elements.when.min=plan.start;if(!f.elements.when.value)f.elements.when.value=today()<plan.start?plan.start:today();
+ const planned=f.elements.status.value==='plan';$('addOneTimeIncome').textContent=planned?'Add to budget preview':payout?'Record owner payout':'Record income';
+ $('oneTimeIncomeHelp').textContent=planned?'Expected deposits appear once on this date. Save changes keeps the forecast; Record in the Income table replaces the expectation when the money arrives.':'Check the date, net amount and accounts. Recording saves this actual deposit together with your current plan preview.';
+}
+function resetOneTimeIncome(){const f=$('oneTimeIncomeForm');f.reset();incomeControls();}
+$('oneTimeIncomeForm').elements.incomeType.onchange=()=>incomeControls();$('oneTimeIncomeForm').elements.status.onchange=()=>incomeControls();
+$('cancelOneTimeIncome').onclick=()=>{resetOneTimeIncome();$('oneTimeIncomeEntry').open=false;message('Cancelled. No income entry was added.');};
+$('oneTimeIncomeForm').onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();$('cancelOneTimeIncome').click();}};
+$('oneTimeIncomeForm').onsubmit=e=>{e.preventDefault();const submit=async()=>{const f=new FormData(e.target),values={id:crypto.randomUUID(),when:f.get('when'),description:f.get('description'),amount:cents(f.get('amount')),account:f.get('account'),incomeType:f.get('incomeType'),from:f.get('from'),status:f.get('status')};if(values.status==='plan'){dashboard.update(next=>addOneTimeIncome(next,values));resetOneTimeIncome();message('One-time deposit added to the budget preview. Save changes keeps it; Record it when received.');}else{await save(addOneTimeIncome(dashboard.draft(),values));resetOneTimeIncome();$('oneTimeIncomeEntry').open=false;message('Deposit recorded. Balances, income and forecasts updated.');}};action(submit);};
+setupSections();
 const dashboard=setupDashboard({
- getModel:()=>model,today,record:match,action,message,savePlan:save,cancelRecord:()=>cancelEditor(false),onPreview:plan=>{renderForecast(plan);workbench.render(plan);},
+ getModel:()=>model,today,record:match,action,message,savePlan:save,cancelRecord:()=>cancelEditor(false),onPreview:plan=>{renderForecast(plan);workbench.render(plan);incomeControls(plan);},
  setStatus:async(id,status)=>{const next=structuredClone(dashboard.draft());next.transactions.find(t=>t.id===id).status=status;await save(next);}
 });
 const workbench=setupWorkbench({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(fn),today,message,action});

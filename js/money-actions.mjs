@@ -7,7 +7,7 @@ function occurrence(model,key){
 }
 function oneOff(t){
  const outgoing=t.entries.find(e=>e.amount<0)||t.entries[0];
- return {id:'planned-'+t.id,name:t.description,frequency:'monthly',anchor:t.date,end:t.date,day:Number(t.date.slice(-2)),account:outgoing.account,amount:outgoing.amount,category:t.category||'Other',estimated:true,expenseEntity:t.expenseEntity,funding:t.funding,...(t.kind==='transfer'?{to:t.entries.find(e=>e.account!==outgoing.account).account}:{})};
+ return {id:'planned-'+t.id,name:t.description,frequency:'monthly',anchor:t.date,end:t.date,day:Number(t.date.slice(-2)),account:outgoing.account,amount:outgoing.amount,category:t.category||'Other',estimated:true,oneTime:true,incomeType:t.incomeType,expenseEntity:t.expenseEntity,funding:t.funding,...(t.kind==='transfer'?{to:t.entries.find(e=>e.account!==outgoing.account).account}:{})};
 }
 export function changeExpectation(model,key,action){
   const next=structuredClone(model),{source,day}=occurrence(next,key);

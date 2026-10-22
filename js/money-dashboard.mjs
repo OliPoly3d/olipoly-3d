@@ -2,6 +2,8 @@ import {cents, date} from './money-engine.mjs';
 import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
 import {changeExpectation,removeActual} from './money-actions.mjs';
+import {sectionPreview} from './money-sections.mjs';
+import {incomingOwner} from './money-income.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
 const monthName=m=>new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(m+'-01T00:00:00Z'));
@@ -29,7 +31,8 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   $('removeBudget').disabled=actual?.kind==='adjustment';
   $('removeBudget').dataset.disabled=String(actual?.kind==='adjustment');
   $('removeDelete').textContent=actual?'Delete transaction':'Skip this time';
-  $('removeSeries').hidden=!!actual;
+  $('removeSeries').hidden=!!actual||target.oneTime===true;
+  if(!actual&&target.oneTime){$('removeDescription').textContent='Remove this one-time expectation from the forecast. No other month is affected; you can restore it later.';$('removeDelete').textContent='Remove expected entry';}
   const d=$('removeDialog');if(d.showModal)d.showModal();else d.setAttribute('open','');
  }
  function applyRemoval(mode){action(async()=>{
@@ -58,7 +61,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   }
   mark();render();message('Preview repeats these amounts for this calendar month in future years. Save changes to keep it.');
  });
- function clear(){closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
+ function clear(){for(const id of ['incomeSection','billsSection','spendingSection','seasonalSection'])sectionPreview(id,'');closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
  function render(){
   const model=getDraft();if(!model)return;
   const min=model.start.slice(0,7),max=shiftMonth(min,35),input=$('budgetMonth');input.min=min;input.max=max;
@@ -110,7 +113,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   if(model.baseline?.notes?.length)$('projectionNote').textContent+=' Opening snapshot: '+model.baseline.notes.join(' · ')+'.';
   if(incomplete){$('projectionNote').textContent+=' Set category targets and funding from '+incomplete+' onward to complete this projection.';$('balanceChart').replaceChildren(el('p','Complete the missing category budgets before using this balance projection.','notice'));}
   else balanceGraph(days,account);
-  const b=budgetMonth(model,month,entity,today());$('monthChart').replaceChildren();
+  const b=budgetMonth(model,month,entity,today());sectionPreview('spendingSection',(b.missing?'Targets incomplete':'Budget '+money(b.totals.budget))+' · Spent '+money(b.totals.spent)+' · Remaining '+(b.missing?'Incomplete':money(b.totals.remaining)));$('monthChart').replaceChildren();
   const max=Math.max(1,...b.buckets.flatMap(x=>[x.allowance||0,x.spent]));
   for(const item of b.buckets){const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[item.id]||'#78d9cc');const label=el('strong');label.append(categoryLabel(item.shortName||item.name,item.id));row.append(label);const chart=el('div');for(const [label,value,cls] of [['Expected',item.allowance,'planned'],['Actual',item.spent,'actual']]){const line=el('div',undefined,'comparison-line');const track=el('div',undefined,'bar-track');const fill=el('span',undefined,cls);fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?'Set target':money(value))));chart.append(line);}row.append(chart);$('monthChart').append(row);}
   for(const item of b.buckets){const row=[...document.querySelectorAll('[data-budget-id]')].find(r=>r.dataset.budgetId===item.id);if(row){
@@ -128,18 +131,18 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   $('balanceChart').append(svg,el('p','Opening '+money(values[0])+' → Month-end '+money(values.at(-1)),'help'));
  }
  function renderExpected(model,month,entity,kind,id,totalId){
-  $(id).replaceChildren();let expected=0,actual=0;
+  $(id).replaceChildren();let expected=0,actual=0,toRecord=0;
   for(const t of expectedRows(model,month,entity,kind)){
    const row=el('tr'),entry=t.entries[0],label=t.description;
-   const name=el('div');name.append(el('strong',label));if(t.estimated)name.append(el('small','Estimate · adjust as needed'));cell(row,name,kind==='income'?'Income':'Bill');
+   const name=el('div');name.append(el('strong',label));if(t.estimated)name.append(el('small','Estimate · adjust as needed'));if(t.funding==='distribution')name.append(el('small','Owner payout · business to household'));cell(row,name,kind==='income'?'Income':'Bill');
    const when=el('input');when.type='date';when.value=t.date;when.setAttribute('aria-label','Date for '+label);cell(row,when,'Date');
-   const account=accountSelect(model,entry.account,'Account for '+label),accountBox=el('div');accountBox.append(account);let destination=null;if(t.kind==='transfer'){destination=accountSelect(model,t.entries[1].account,'Destination for '+label);accountBox.append(el('small','To'),destination);}cell(row,accountBox,'Account');
+   const account=accountSelect(model,entry.account,'Account for '+label,t.funding==='distribution',t.funding==='distribution'?'business':undefined),accountBox=el('div');accountBox.append(account);let destination=null;if(t.kind==='transfer'){destination=accountSelect(model,t.entries[1].account,'Destination for '+label,t.funding==='distribution',t.funding==='distribution'?'household':undefined);accountBox.append(el('small','To'),destination);}cell(row,accountBox,'Account');
    const amount=amountInput(Math.abs(entry.amount),'Expected '+label);amount.min='0';cell(row,amount,'Expected');
    const text=t.actual?money(Math.abs(t.actual.entries[0].amount))+' · '+t.actual.status+' · '+t.actual.date:t.skipped?'Skipped this time':'—';cell(row,text,'Actual');
    const button=el('button',t.actual?'Edit actual':t.skipped?'Put back in budget':'Record');const actions=el('div',undefined,'row-actions');actions.append(button);const remove=el('button','Remove');remove.onclick=()=>removePrompt(t);actions.append(remove);cell(row,actions,'');
    if(t.actual){when.disabled=true;account.disabled=true;amount.disabled=true;if(destination)destination.disabled=true;if(t.actual.date.startsWith(month)&&t.actual.date<=today())actual+=Math.abs(t.actual.entries[0].amount);}
    if(t.skipped){when.disabled=true;account.disabled=true;amount.disabled=true;if(destination)destination.disabled=true;}
-   if(t.date.startsWith(month)&&!t.skipped)expected+=Math.abs(entry.amount);
+   if(t.date.startsWith(month)&&!t.skipped){expected+=Math.abs(entry.amount);if(!t.actual&&entry.amount!==0)toRecord++;}
    button.onclick=()=>t.skipped?action(()=>savePlan(changeExpectation(getDraft(),t.scheduleKey,'restore'))):record(t.actual||t);button.disabled=!t.actual&&!t.skipped&&entry.amount===0;button.dataset.disabled=String(button.disabled);
    const change=()=>run(()=>{
     const n=cents(amount.value);if(n<0)throw Error('Use a positive expected amount.');date(when.value);if(when.value<model.start)throw Error('Date is before your opening balance.');
@@ -152,6 +155,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    for(const input of [when,account,amount,destination].filter(Boolean))input.onchange=change;
    $(id).append(row);
   }
+  sectionPreview(kind==='income'?'incomeSection':'billsSection',(kind==='income'?'Deposits ':'Planned ')+money(expected)+' · Recorded '+money(actual)+' · '+toRecord+' to record');
   if(!$(id).children.length){const row=el('tr');cell(row,'No expected entries for this month.').colSpan=6;$(id).append(row);}
   $(totalId).replaceChildren();const total=el('tr');cell(total,'Total').colSpan=3;cell(total,money(expected));cell(total,money(actual));cell(total,'');$(totalId).append(total);
  }
@@ -183,11 +187,12 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   }
   $('seasonalTotals').replaceChildren();const total=el('tr');cell(total,'Expected total');for(let offset=0;offset<=2;offset++)cell(total,money(seasonalMonth(model,(year+offset)+month.slice(4),entity).total));$('seasonalTotals').append(total);
   const budget=budgetMonth(model,month,entity,today()).buckets.find(b=>b.seasonal);
+  sectionPreview('seasonalSection','Expected '+money(budget?.allowance??result.total)+' · Remaining '+(budget?.remaining===null?'Set target':money(budget?.remaining??result.total)));
   $('seasonalBudgetNote').textContent=budget?'This month’s seasonal allowance '+money(budget.allowance||0)+' · Actual '+money(budget.spent)+' · Remaining '+(budget.remaining===null?'Set target':money(budget.remaining))+(budget.partial?' (opening-month proration applied).':'.'): 'No seasonal budget is configured for this view.';
  }
  function renderTransactions(model,month,entity){
   $('transactions').replaceChildren();let count=0;
-  for(const t of [...model.transactions].filter(t=>!t.scheduleKey&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date))){
+  for(const t of [...model.transactions].filter(t=>!t.scheduleKey&&incomingOwner(model,t)!==entity&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date))){
    count++;const row=el('tr');cell(row,t.date);cell(row,t.description);const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
    const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const controls=el('div',undefined,'row-actions');const edit=el('button','Edit');edit.onclick=()=>record(t);const remove=el('button','Remove');remove.onclick=()=>removePrompt({description:t.description,actual:t});controls.append(edit,remove);cell(row,controls);$('transactions').append(row);
   }
