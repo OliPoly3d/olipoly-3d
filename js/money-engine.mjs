@@ -18,6 +18,9 @@ function integer(n) { if (!Number.isSafeInteger(n)) throw Error('Amounts must be
 function unique(items) {
   if (new Set(items.map(x => x.id)).size !== items.length || items.some(x => typeof x.id !== 'string' || !x.id)) throw Error('Missing or duplicate ID.');
 }
+function validateDistribution(model,from,to){
+ if(!model.accounts.some(a=>a.id===from&&a.entity==='business'&&a.type==='cash')||!model.accounts.some(a=>a.id===to&&a.entity==='household'&&a.type==='cash'))throw Error('Owner distributions need business cash and a household cash destination.');
+}
 export function validate(model) {
   if (model.version !== 1) throw Error('Unsupported Money file version.');
   date(model.start);
@@ -48,6 +51,7 @@ export function validate(model) {
     if (t.kind !== 'transfer' && t.entries.length !== 1) throw Error('Use one account for this transaction.');
     if (t.kind === 'expense' && (!t.category || t.entries[0].amount >= 0)) throw Error('Expense needs a category and negative amount.');
     if (t.kind === 'income' && t.entries[0].amount <= 0) throw Error('Income must be positive.');
+    if(t.funding==='distribution'){if(t.kind!=='transfer'||t.entries[0].amount>=0)throw Error('Owner distributions must be outgoing transfers.');validateDistribution(model,t.entries[0].account,t.entries[1]?.account);}
   }
   for (const s of model.schedules) {
     date(s.anchor); if (s.end) date(s.end);
@@ -55,6 +59,7 @@ export function validate(model) {
     if (s.to && (!ids.has(s.to) || s.to === s.account)) throw Error('Invalid transfer destination.');
     integer(s.amount); integer(s.firstPayBonus || 0);
     if (s.to && s.amount >= 0) throw Error('Transfer schedule amount must be negative.');
+    if(s.funding==='distribution')validateDistribution(model,s.account,s.to);
     if (s.frequency === 'monthly' && (!Number.isInteger(s.day) || s.day < 1 || s.day > 31)) throw Error('Invalid monthly day.');
     for (const p of s.changes || []) { date(p.date); integer(p.amount); }
     for (const skipped of s.skipped || []) date(skipped);
@@ -67,6 +72,7 @@ export function validate(model) {
       if (!s.to && s.amount > 0 && o.amount < 0) throw Error('Expected income cannot be negative.');
       if (!s.to && s.amount < 0 && o.amount > 0) throw Error('Expected expense cannot be positive.');
       if (o.date && o.date < model.start) throw Error('Expected date predates opening balances.');
+      if(s.funding==='distribution')validateDistribution(model,o.account||s.account,o.to||s.to);
     }
   }
   return model;
@@ -97,7 +103,7 @@ export function occurrences(model, end, {includeSkipped=false}={}) {
         const eventDate = override?.date || day;
         const entries = [{account:override?.account || s.account,amount}];
         if (s.to) entries.push({account:override?.to || s.to,amount:-amount});
-        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding});
+        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding,incomeType:s.incomeType,oneTime:s.oneTime===true});
       }
       if (s.frequency === 'biweekly') day = addDays(day,14);
       else month.setUTCMonth(month.getUTCMonth()+1);
