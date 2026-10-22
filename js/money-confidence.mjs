@@ -13,7 +13,7 @@ export function validateConfidence(m){
  for(const key of ['reconciliations','forecastSnapshots','monthClosures','monthReopenHistory'])if(m[key]&&!Array.isArray(m[key]))throw Error('Invalid review history.');
  for(const c of m.monthClosures||[]){monthBounds(c.month);date(c.closedOn);if(!['household','business','custodial'].includes(c.entity)||typeof c.signature!=='string'||!Number.isSafeInteger(c.cash))throw Error('Invalid closed month.');}
  for(const r of m.reconciliations||[]){date(r.asOf);if(!m.accounts.some(a=>a.id===r.account)||!['posted','pending'].includes(r.basis)||!Number.isSafeInteger(r.bankBalance)||typeof r.signature!=='string')throw Error('Invalid reconciliation checkpoint.');}
- for(const s of m.forecastSnapshots||[]){monthBounds(s.month);date(s.asOf);if(!['household','business','custodial'].includes(s.entity)||!s.components||['opening','income','spending','transfers','adjustments','closing'].some(k=>!Number.isSafeInteger(s.components[k])))throw Error('Invalid forecast comparison.');}
+ for(const s of m.forecastSnapshots||[]){monthBounds(s.month);date(s.asOf);if(s.source!==undefined&&!['automatic','manual'].includes(s.source))throw Error('Invalid baseline source.');if(!['household','business','custodial'].includes(s.entity)||!s.components||['opening','income','spending','transfers','adjustments','closing'].some(k=>!Number.isSafeInteger(s.components[k])))throw Error('Invalid forecast comparison.');}
  return m;
 }
 export function reconciliation(m,account,asOf,basis,bankBalance){
@@ -73,7 +73,20 @@ export function cashComponents(m,month,entity,days){
 export function saveForecastSnapshot(m,month,entity,asOf){
  if(month<asOf.slice(0,7)||month<m.start.slice(0,7))throw Error('Save a baseline for this month or a future month; past forecasts cannot be recreated.');
  if(m.forecastSnapshots?.some(s=>s.month===month&&s.entity===entity))throw Error('A baseline is already saved for this month.');
- const p=planningForecast(m,monthBounds(month).last),next=structuredClone(m);next.forecastSnapshots=[...(next.forecastSnapshots||[]),{month,entity,asOf,complete:!(p.incompleteFrom[entity]&&p.incompleteFrom[entity]<=month)&&!p.creditWarnings.length&&!(m.unscheduledBills||[]).some(b=>b.entity===entity),components:cashComponents(m,month,entity,p.days)}];return validateConfidence(next);
+ const p=planningForecast(m,monthBounds(month).last),next=structuredClone(m);next.forecastSnapshots=[...(next.forecastSnapshots||[]),{month,entity,asOf,source:'manual',complete:!(p.incompleteFrom[entity]&&p.incompleteFrom[entity]<=month)&&!p.creditWarnings.length&&!(m.unscheduledBills||[]).some(b=>b.entity===entity),components:cashComponents(m,month,entity,p.days)}];return validateConfidence(next);
+}
+export function missingBaselineOwners(model,asOf){
+ date(asOf);const month=asOf.slice(0,7);if(asOf<model.start)return [];
+ return ['household','business','custodial'].filter(entity=>model.accounts.some(a=>a.entity===entity&&a.type==='cash')&&!model.forecastSnapshots?.some(s=>s.month===month&&s.entity===entity)&&!model.monthClosures?.some(c=>c.month===month&&c.entity===entity));
+}
+// Capture the saved current-month plan once per owner; never backfill past months.
+export function ensureMonthlyBaselines(model,asOf){
+ let next=model;
+ for(const entity of missingBaselineOwners(model,asOf)){
+  next=saveForecastSnapshot(next,asOf.slice(0,7),entity,asOf);
+  next.forecastSnapshots.at(-1).source='automatic';
+ }
+ return next;
 }
 export function forecastComparison(m,snapshot,asOf){
  // Actual-only postings; future schedules and budget reserves never count as actual.
