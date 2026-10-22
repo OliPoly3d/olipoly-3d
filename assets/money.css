@@ -202,3 +202,5 @@ dialog::backdrop { background: #070c10b3; }
 
 .forecast-privacy-hint { display: none; }
 #app[data-debt-hidden=true] #forecastSection[data-debt-view] .forecast-privacy-hint { display: block; }
+
+#duplicateDialog { width: min(680px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
