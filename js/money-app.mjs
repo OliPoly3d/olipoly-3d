@@ -1,6 +1,9 @@
 import {validate,cents,monthly,balances,statuses} from './money-engine.mjs';
 import {validateBudgets,monthBounds,shiftMonth} from './money-budget.mjs';
-import {planningForecast} from './money-planning.mjs';
+import {planningForecast,clearPlanningCache} from './money-planning.mjs';
+import {validateConfidence} from './money-confidence.mjs';
+import {assertMonthLocks} from './money-month-close.mjs';
+import {setupConfidence} from './money-confidence-ui.mjs';
 import {setupDashboard} from './money-dashboard.mjs';
 import {setupWorkbench} from './money-workbench.mjs';
 import {setupSections,revealSection,sectionPreview} from './money-sections.mjs';
@@ -12,7 +15,7 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',
 let model=null,revision=null,userId=null,busy=false,generation=0;
 function message(text){$('message').textContent=text;}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);dashboard.clear();workbench.clear();for(const select of $('oneTimeIncomeForm').querySelectorAll('select[name=account],select[name=from]'))select.replaceChildren();for(const preview of document.querySelectorAll('.section-preview'))preview.textContent='';for(const panel of document.querySelectorAll('#app details'))panel.open=false;}
+function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);dashboard.clear();workbench.clear();confidence.clear();clearPlanningCache();for(const select of $('oneTimeIncomeForm').querySelectorAll('select[name=account],select[name=from]'))select.replaceChildren();for(const preview of document.querySelectorAll('.section-preview'))preview.textContent='';for(const panel of document.querySelectorAll('#app details'))panel.open=false;}
 window.addEventListener('olipoly-auth-changed',e=>{if(userId && e.detail?.user?.id!==userId){lock();message('Signed out. Sign in to continue.');}});
 window.addEventListener('storage',e=>{if(['sb_token','sb_user','olipoly_auth_session_v1'].includes(e.key)){lock();message('Sign-in changed in another tab. Sign in again.');}});
 async function api(path,options={}) {
@@ -33,18 +36,18 @@ async function load(){
   const rows=await api('money_plans?select=body,revision&user_id=eq.'+encodeURIComponent(userId));
   if(gen!==generation)return;
   if(rows.length!==1)throw Error('Your Money plan has not been provisioned. Complete the database setup.');
-  model=validateBudgets(validate(rows[0].body));revision=rows[0].revision;
+  model=validateConfidence(validateBudgets(validate(rows[0].body)));revision=rows[0].revision;
   $('login').hidden=true;$('app').hidden=false;$('logout').hidden=false;
   $('end').min=model.start.slice(0,7);$('end').max=shiftMonth($('end').min,35);
   if(!$('end').value||$('end').value<$('end').min||$('end').value>$('end').max)$('end').value=$('end').max;
   $('transactionForm').elements.date.value=today();render();message('Loaded. Opening balances are as of '+model.start+'.');
 }
 async function save(next){
-  validateBudgets(validate(next));const gen=generation;
+  validateConfidence(validateBudgets(validate(next)));assertMonthLocks(model,next);const gen=generation;
   const rows=await api(`money_plans?user_id=eq.${encodeURIComponent(userId)}&revision=eq.${revision}`,{method:'PATCH',body:JSON.stringify({body:next,revision:revision+1})});
   if(gen!==generation)throw Error('Sign-in changed; reload to verify the saved state.');
   if(rows.length!==1)throw Error('This plan changed in another tab. Refresh before saving again; your entry has not been applied.');
-  model=validateBudgets(validate(rows[0].body));revision=rows[0].revision;render();message('Saved. All views updated.');
+  model=validateConfidence(validateBudgets(validate(rows[0].body)));revision=rows[0].revision;render();message('Saved. All views updated.');
 }
 async function action(fn){
  if(busy)return;busy=true;
@@ -176,9 +179,10 @@ $('oneTimeIncomeForm').onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();$('
 $('oneTimeIncomeForm').onsubmit=e=>{e.preventDefault();const submit=async()=>{const f=new FormData(e.target),values={id:crypto.randomUUID(),when:f.get('when'),description:f.get('description'),amount:cents(f.get('amount')),account:f.get('account'),incomeType:f.get('incomeType'),from:f.get('from'),status:f.get('status')};if(values.status==='plan'){dashboard.update(next=>addOneTimeIncome(next,values));resetOneTimeIncome();message('One-time deposit added to the budget preview. Save changes keeps it; Record it when received.');}else{await save(addOneTimeIncome(dashboard.draft(),values));resetOneTimeIncome();$('oneTimeIncomeEntry').open=false;message('Deposit recorded. Balances, income and forecasts updated.');}};action(submit);};
 setupSections();setupDebtPrivacy();
 const dashboard=setupDashboard({
- getModel:()=>model,today,record:match,action,message,savePlan:save,cancelRecord:()=>cancelEditor(false),onPreview:plan=>{renderForecast(plan);workbench.render(plan);incomeControls(plan);},
+ getModel:()=>model,today,record:match,action,message,savePlan:save,cancelRecord:()=>cancelEditor(false),onPreview:plan=>{renderForecast(plan);workbench.render(plan);incomeControls(plan);confidence.render(plan);},
  setStatus:async(id,status)=>{const next=structuredClone(dashboard.draft());next.transactions.find(t=>t.id===id).status=status;await save(next);}
 });
 const workbench=setupWorkbench({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(fn),today,message,action});
+const confidence=setupConfidence({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(next=>validateConfidence(fn(next))),today,message,record:match,editSchedule,selectCredit:id=>workbench.selectCredit(id)});
 await new Promise(resolve=>{if(document.readyState==='complete')resolve();else window.addEventListener('load',resolve,{once:true});});
 await action(load);
