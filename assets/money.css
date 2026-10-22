@@ -191,3 +191,14 @@ dialog::backdrop { background: #070c10b3; }
 #oneTimeIncomeEntry { margin: 18px 0 24px; padding: 16px; background: var(--input); border: 1px solid var(--line); border-radius: 8px; }
 #oneTimeIncomeEntry > summary { color: var(--accent); }
 #oneTimeIncomeForm .row-actions { align-self: end; }
+.summary-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.summary-controls button { white-space: nowrap; }
+.privacy-only { display: none; }
+#app[data-debt-hidden=true] [data-debt-private] { display: none !important; }
+#app[data-debt-hidden=true] .privacy-only { display: block; }
+#app[data-debt-hidden=true] #annualSection .dashboard-charts { grid-template-columns: 1fr; }
+#app[data-debt-hidden=true] #forecastSection[data-debt-view] > :not(summary):not(.toolbar) { display: none !important; }
+#debtPrivacy[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
+
+.forecast-privacy-hint { display: none; }
+#app[data-debt-hidden=true] #forecastSection[data-debt-view] .forecast-privacy-hint { display: block; }

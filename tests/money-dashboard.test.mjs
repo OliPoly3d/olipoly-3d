@@ -201,3 +201,32 @@ test('collapsed sections show live totals; one-time expected income records once
   document.getElementById('logout').click();for(const span of document.querySelectorAll('.section-preview'))assert.equal(span.textContent,'');assert.ok(panels.every(p=>!p.open));assert.equal(f.elements.description.value,'');assert.equal(f.elements.account.options.length,0);assert.equal(f.elements.from.options.length,0);
  }finally{env.restore();}
 });
+test('debt screen privacy remembers only a flag, masks all debt views and preserves draft calculations and actual data', {skip:!dependency},async()=>{
+ const env=await environment();let model=fixture(),revision=0,session={user:{id:'test-owner'}};
+ model.accounts.push({id:'card',name:'Private card',type:'card',entity:'household',opening:-123456,reserve:0,credit:{purchaseApr:0,promoBalance:0,minimum:2000}},{id:'zero',name:'Unused card',type:'card',entity:'household',opening:0,reserve:0,credit:{purchaseApr:0,promoBalance:0}});
+ model=installPaymentPlan(model,'card',{amount:10000,day:25,from:'cash',asOf:model.start});const original=JSON.stringify(model);
+ env.dom.window.HTMLElement.prototype.scrollIntoView=function(){};
+ const style=document.createElement('style');style.textContent=fs.readFileSync(new URL('../assets/money.css',import.meta.url),'utf8');document.head.append(style);
+ env.dom.window.localStorage.setItem('money_hide_debt','1');
+ env.dom.window.OliPolyAuth={SUPABASE_URL:'https://example.test',recover:async()=>session,authHeaders:()=>({}),logout:()=>session=null};
+ globalThis.fetch=async(url,options={})=>{assert.notEqual(options.method,'PATCH');return {ok:true,json:async()=>url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}]};};
+ const display=e=>env.dom.window.getComputedStyle(e).display,change=(input,value)=>{input.value=value;input.dispatchEvent(new env.dom.window.Event('change'));};
+ try{
+  await import('../js/money-app.mjs?debt-privacy-test');const app=document.getElementById('app'),button=document.getElementById('debtPrivacy');
+  assert.equal(app.dataset.debtHidden,'true');assert.equal(button.textContent,'Show debt');assert.equal(button.getAttribute('aria-pressed'),'true');
+  const cardRow=()=>document.querySelector('#accountSummary [data-account-id="card"]');assert.equal(display(cardRow()),'none');assert.equal(display(document.querySelector('#accountSummary [data-account-id="zero"]')),'none');assert.notEqual(display(document.querySelector('#accountSummary [data-account-id="cash"]')),'none');
+  for(const target of document.querySelectorAll('[data-debt-private]'))assert.equal(display(target),'none');
+  assert.equal(display(document.getElementById('creditSectionPreview')),'block');assert.equal(display(document.getElementById('creditSection')),'none');
+  document.getElementById('expandSections').click();assert.equal(display(document.getElementById('creditSection')),'none');
+  change(document.getElementById('budgetMonth'),'2026-11');assert.equal(display(cardRow()),'none');
+  const budget=document.querySelector('#categoryRows input');budget.value='250.00';budget.dispatchEvent(new env.dom.window.Event('change'));assert.equal(document.getElementById('planState').textContent,'Previewing changes');assert.equal(display(cardRow()),'none');
+  change(document.getElementById('account'),'card');await tick();assert.equal(display(document.getElementById('forecastSectionPreview')),'none');assert.equal(display(document.getElementById('metrics')),'none');assert.notEqual(display(document.querySelector('.forecast-privacy-hint')),'none');
+  change(document.getElementById('account'),'cash');await tick();assert.notEqual(display(document.getElementById('metrics')),'none');
+  button.click();assert.equal(app.dataset.debtHidden,'false');assert.notEqual(display(cardRow()),'none');assert.equal(document.getElementById('planState').textContent,'Previewing changes');assert.equal(env.dom.window.localStorage.getItem('money_hide_debt'),'0');
+  const payment=[...document.querySelectorAll('#billRows tr')].find(r=>r.hasAttribute('data-debt-private'));payment.querySelector('button').click();const transaction=document.getElementById('transactionForm');transaction.elements.amount.value='95.37';assert.equal(document.getElementById('transactionEntry').open,true);
+  button.click();assert.equal(display(document.getElementById('transactionEntry')),'none');button.click();assert.equal(transaction.elements.amount.value,'95.37');assert.notEqual(display(document.getElementById('transactionEntry')),'none');
+  button.click();assert.equal(env.dom.window.localStorage.getItem('money_hide_debt'),'1');assert.equal(JSON.stringify(model),original);assert.equal(revision,0);
+  env.dom.window.dispatchEvent(new env.dom.window.StorageEvent('storage',{key:'money_hide_debt',newValue:'0'}));assert.equal(app.dataset.debtHidden,'false');env.dom.window.dispatchEvent(new env.dom.window.StorageEvent('storage',{key:'money_hide_debt',newValue:'1'}));assert.equal(app.dataset.debtHidden,'true');
+  document.getElementById('logout').click();assert.equal(env.dom.window.localStorage.getItem('money_hide_debt'),'1');assert.equal(JSON.stringify(model),original);
+ }finally{env.restore();}
+});
