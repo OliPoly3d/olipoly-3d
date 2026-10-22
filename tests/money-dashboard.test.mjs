@@ -161,3 +161,22 @@ test('debt sandbox applies payments only, one-time and weekly budgets preview, o
   document.getElementById('logout').click();for(const id of ['creditInventory','promoAlerts','annualRows','annualCashChart','scenarioRows','openingRows'])assert.equal(document.getElementById(id).children.length,0);assert.equal(document.getElementById('scenarioNote').textContent,'');
  }finally{env.restore();}
 });
+test('summary groups banks, priority cards, debt cards, zero cards and loans; red debt and dated payments stay consistent', {skip:!dependency},async()=>{
+ const env=await environment();let model=fixture();model.start='2026-10-21';model.schedules=[];model.budgets=[];model.seasonalItems=[];
+ const card=(id,opening,extra={})=>({id,name:id,entity:'household',type:'card',opening,reserve:0,credit:{purchaseApr:0,promoBalance:0},...extra});
+ model.accounts=[card('later',-50000,{credit:{purchaseApr:null,promoBalance:0}}),{id:'loan',name:'Unknown loan',entity:'household',type:'loan',opening:0,reserve:0,balanceUnknown:true},card('priority-two',0,{summaryPriority:1}),model.accounts[0],card('unused',0),card('earlier',-50000),card('priority-one',0,{summaryPriority:0})];
+ model=installPaymentPlan(model,'later',{amount:10000,day:25,from:'cash',asOf:model.start});model=installPaymentPlan(model,'earlier',{amount:10000,day:6,from:'cash',asOf:model.start});
+ const before=JSON.stringify(model),errors=[];
+ try{
+  const d=setupDashboard({getModel:()=>model,today:()=> '2026-10-22',message:e=>errors.push(e),setStatus:async()=>{},record:()=>{},action:fn=>fn(),savePlan:async()=>{}});d.render();
+  const rows=()=>[...document.querySelectorAll('#accountSummary tr')],row=id=>rows().find(r=>r.dataset.accountId===id);
+  assert.deepEqual(rows().map(r=>r.dataset.accountId),['cash','priority-one','priority-two','later','earlier','unused','loan']);
+  for(const id of ['later','earlier'])for(const td of [...row(id).cells].slice(1))assert.ok(td.classList.contains('negative'));
+  assert.equal(row('priority-one').querySelector('.negative'),null);assert.equal(row('loan').cells[3].textContent,'Unknown');
+  assert.match(row('later').cells[3].textContent,/-\$400.00/);assert.match(row('later').cells[3].textContent,/APR needed/);assert.match(row('later').cells[3].textContent,/Payments in forecast \$100.00/);
+  assert.match(row('earlier').cells[3].textContent,/-\$500.00/);assert.match(row('earlier').cells[3].textContent,/No remaining planned payment/);assert.equal(row('cash').cells[3].textContent,'$900.00');
+  assert.equal(JSON.stringify(model),before);
+  document.getElementById('budgetMonth').value='2026-11';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));
+  assert.match(row('earlier').cells[3].textContent,/-\$400.00/);assert.match(row('later').cells[3].textContent,/-\$300.00/);assert.equal(row('cash').cells[3].textContent,'$700.00');assert.deepEqual(errors,[]);
+ }finally{env.restore();}
+});

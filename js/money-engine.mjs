@@ -30,6 +30,7 @@ export function validate(model) {
     if (!a.name || !['household', 'business', 'custodial'].includes(a.entity) || !['cash', 'card', 'loan'].includes(a.type)) throw Error('Invalid account.');
     integer(a.opening); integer(a.reserve);
     if(a.balanceUnknown!==undefined&&typeof a.balanceUnknown!=='boolean')throw Error('Invalid unknown-balance flag.');
+    if(a.summaryPriority!==undefined&&(!Number.isSafeInteger(a.summaryPriority)||a.summaryPriority<0))throw Error('Invalid account summary priority.');
   }
   const keys = new Set();
   for (const t of model.transactions) {
