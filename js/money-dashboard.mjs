@@ -7,6 +7,10 @@ const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).
 const monthName=m=>new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(m+'-01T00:00:00Z'));
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
 function cell(row,content,label){const td=el('td');if(content instanceof Node)td.append(content);else td.textContent=content;if(label)td.dataset.label=label;row.append(td);return td;}
+function summaryAccounts(accounts,current){
+ const rank=a=>a.type==='cash'?0:a.type!=='card'?4:a.summaryPriority!=null?1:(current[a.id]??a.opening)<0?2:3;
+ return [...accounts].sort((a,b)=>rank(a)-rank(b)||(rank(a)===1?a.summaryPriority-b.summaryPriority:0));
+}
 function amountInput(value,label){const input=el('input');input.type='number';input.step='0.01';input.inputMode='decimal';input.value=value===null?'':(value/100).toFixed(2);input.setAttribute('aria-label',label);return input;}
 function accountSelect(model,value,label,cashOnly=false,entity){const s=el('select');s.setAttribute('aria-label',label);for(const a of model.accounts.filter(a=>(!cashOnly||a.type==='cash')&&(!entity||a.entity===entity))){const o=el('option',a.name);o.value=a.id;s.append(o);}s.value=value||'';return s;}
 const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
@@ -80,7 +84,23 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   const model=getDraft();if(!model)return;
   const month=$('budgetMonth').value,entity=$('budgetEntity').value,p=monthProjection(model,month,today());
   const incomplete=p.incompleteFrom[entity],relevant=model.accounts.filter(a=>a.entity===entity);$('accountSummary').replaceChildren();
-  for(const a of relevant){const row=el('tr');cell(row,a.name,'Account');cell(row,a.balanceUnknown?'Unknown':incomplete&&incomplete<month?'Incomplete plan':money(p.opening[a.id]??0),'Month opening');cell(row,a.balanceUnknown?'Unknown':money(p.current[a.id]??0),'Current');const td=cell(row,a.balanceUnknown?'Unknown':incomplete?'Incomplete plan':p.days.at(-1)?.credit?.[a.id]?.missingFrom?'APR needed':money(p.closing[a.id]??0),'Projected month-end');if(!a.balanceUnknown&&!incomplete&&p.closing[a.id]<a.reserve)td.className='low';$('accountSummary').append(row);}
+  for(const a of summaryAccounts(relevant,p.current)){
+   const row=el('tr');row.dataset.accountId=a.id;cell(row,a.name,'Account');
+   const amount=(value,label,unknown)=>{const td=cell(row,unknown||money(value??0),label);if(!unknown&&(value??0)<0)td.classList.add('negative');return td;};
+   amount(p.opening[a.id],'Month opening',a.balanceUnknown?'Unknown':incomplete&&incomplete<month?'Incomplete plan':null);
+   amount(p.current[a.id],'Current',a.balanceUnknown?'Unknown':null);
+   const td=amount(p.closing[a.id],'Projected month-end',a.balanceUnknown?'Unknown':incomplete?'Incomplete plan':null);
+   if(!a.balanceUnknown&&!incomplete){
+    if(a.type==='cash'&&p.closing[a.id]<a.reserve)td.classList.add('low');
+    if(p.days.at(-1)?.credit?.[a.id]?.missingFrom)td.append(el('small','Interest incomplete · APR needed','summary-note'));
+    if(a.type==='card'){
+     const payments=p.days.filter(d=>d.date.startsWith(month)).flatMap(d=>d.events).filter(t=>t.kind==='transfer'&&['plan','forecast'].includes(t.status)).reduce((sum,t)=>sum+t.entries.filter(e=>e.account===a.id&&e.amount>0).reduce((n,e)=>n+e.amount,0),0);
+     if(payments)td.append(el('small','Payments in forecast '+money(payments),'summary-note'));
+     else if((p.current[a.id]??0)<0&&month>=today().slice(0,7))td.append(el('small','No remaining planned payment this month','summary-note'));
+    }
+   }
+   $('accountSummary').append(row);
+  }
   const account=$('chartAccount').value,days=p.days.filter(d=>d.date.startsWith(month));
   $('cashAlerts').replaceChildren();for(const a of relevant.filter(a=>a.type==='cash')){const danger=days.filter(d=>d.date>=today()).find(d=>d.low[a.id]<a.reserve);if(danger)$('cashAlerts').append(el('p',a.name+': possible low '+money(danger.low[a.id])+' on '+danger.date+' is below your '+money(a.reserve)+' reserve. Same-day withdrawals are counted before deposits.','notice'));}
   let incoming=0,outgoing=0;for(const d of days)for(const t of d.events)for(const e of t.entries)if(e.account===account){if(e.amount>0)incoming+=e.amount;else outgoing-=e.amount;}
