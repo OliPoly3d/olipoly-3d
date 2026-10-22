@@ -2,7 +2,7 @@ import {cents, date} from './money-engine.mjs';
 import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
 import {changeExpectation,removeActual} from './money-actions.mjs';
-import {sectionPreview} from './money-sections.mjs';
+import {sectionPreview,revealSection} from './money-sections.mjs';
 import {incomingOwner} from './money-income.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
@@ -80,7 +80,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   for(const s of model.schedules)if(s.category&&!choices.has(s.category))choices.set(s.category,s.category);
   choices.set('Other','Other');for(const t of model.transactions)if(t.category&&!choices.has(t.category))choices.set(t.category,t.category);
   for(const [name,label] of choices){const o=el('option',label);o.value=name;select.append(o);}if(choices.has(chosen))select.value=chosen;
-  $('unknownBills').replaceChildren();for(const b of (model.unscheduledBills||[]).filter(b=>b.entity===entity))$('unknownBills').append(el('p',b.name+' — '+b.reason,'notice'));
+  $('unknownBills').replaceChildren();for(const b of (model.unscheduledBills||[]).filter(b=>b.entity===entity)){const p=el('p',b.name+' — '+b.reason+' ','notice'),link=el('a','Review / edit');link.href='#billReviewEntry';p.append(link);$('unknownBills').append(p);}
   preview();
  }
  function preview(){
@@ -173,6 +173,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    cell(row,money(b.spent),'Actual').dataset.value='spent';cell(row,b.remaining===null?'Set target':money(b.remaining),'Remaining').dataset.value='remaining';
    const account=accountSelect(model,b.funding?.[month]||b.account,'Fund '+b.name+' from',true,entity);cell(row,account,'Fund from');
    if(input)input.onchange=()=>run(()=>{const n=cents(input.value);if(n<0)throw Error('Budget cannot be negative.');const item=model.budgets.find(i=>i.id===b.id);item.overrides={...item.overrides,[month]:n};mark();});
+   const selectedTiming=b.timing?.[month],timing=el('button','Timing · '+(selectedTiming?.mode==='date'?selectedTiming.date:({daily:'Daily',weekly:'Weekly','month-end':'Month-end'}[selectedTiming?.mode]||(model.planning?.budgetTiming==='month-end'||b.seasonal||b.oneTimeMonth?'Month-end':'Weekly'))));timing.type='button';timing.onclick=()=>{const select=$('timingBudget');select.value=b.id;select.dispatchEvent(new window.Event('change'));revealSection($('timingEntry'));$('timingEntry').scrollIntoView({behavior:'smooth'});};label.append(timing);
    account.onchange=()=>{const item=model.budgets.find(i=>i.id===b.id);item.funding={...item.funding,[month]:account.value};mark();};$('categoryRows').append(row);
   }
   $('categoryTotals').replaceChildren();const tr=el('tr');cell(tr,'YOY extras total is linked to the detailed list below and included once in the projection.').colSpan=5;$('categoryTotals').append(tr);
@@ -181,7 +182,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   const result=seasonalMonth(model,month,entity),year=Number(month.slice(0,4));
   $('seasonalHeading').textContent='Your YOY-'+new Intl.DateTimeFormat('en-US',{month:'short',timeZone:'UTC'}).format(new Date(month+'-01T00:00:00Z')).toUpperCase()+' list. Edit this month, or repeat the amounts into future years.';
   $('seasonalHead').replaceChildren();const header=el('tr');for(const label of ['Expense',String(year),String(year+1),String(year+2)])header.append(el('th',label));$('seasonalHead').append(header);
-  $('seasonalRows').replaceChildren();for(const item of result.items){const row=el('tr');const label=el('div');label.append(el('strong',item.name));if(item.review)label.append(el('small',item.review));cell(row,label,'Expense');const input=amountInput(item.expected,'Expected '+item.name);cell(row,input,String(year));
+  $('seasonalRows').replaceChildren();for(const item of result.items){const row=el('tr');const label=el('div');label.append(el('strong',item.name));if(item.review){label.append(el('small',item.review));const review=el('button','Review note');review.type='button';review.onclick=()=>{const note=el('input');note.value=item.review;note.setAttribute('aria-label','Review note for '+item.name);const done=el('button','Save note / clear if resolved');done.type='button';done.onclick=()=>run(()=>{const source=model.seasonalItems.find(i=>i.id===item.id);if(note.value.trim())source.review=note.value.trim();else delete source.review;mark();renderSeasonal(model,month,entity);});label.append(note,done);review.remove();};label.append(review);}cell(row,label,'Expense');const input=amountInput(item.expected,'Expected '+item.name);cell(row,input,String(year));
    for(let offset=1;offset<=2;offset++){const future=seasonalMonth(model,(year+offset)+month.slice(4),entity).items.find(i=>i.id===item.id);cell(row,money(future.expected),String(year+offset));}
    input.onchange=()=>run(()=>{const value=cents(input.value);const source=model.seasonalItems.find(i=>i.id===item.id);source.overrides={...source.overrides,[month]:value};const budget=model.budgets.find(b=>b.seasonal&&b.entity===entity);if(budget?.overrides)delete budget.overrides[month];mark();renderSeasonal(model,month,entity);});$('seasonalRows').append(row);
   }

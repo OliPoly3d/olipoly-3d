@@ -14,7 +14,7 @@ test('cash or card actual replaces remaining budget; matching payments never dou
  for(const account of ['cash','card']){
   const p=plan();p.transactions=[expense(account,5000)];const result=monthProjection(p,'2026-10','2026-10-21');
   assert.equal(result.closing.cash,79000);assert.equal(result.closing.card,0);
-  assert.equal(result.planned.find(t=>t.id.startsWith('budget:')).entries[0].amount,-15000);
+  assert.equal(result.planned.filter(t=>t.id.startsWith('budget:')).reduce((n,t)=>n+t.entries[0].amount,0),-15000);
  }
  const p=plan();p.transactions=[expense('card',5000),{id:'pay',date:'2026-10-15',kind:'transfer',description:'Payment',status:'cleared',entries:[{account:'cash',amount:-6000},{account:'card',amount:6000}]}];
  assert.equal(monthProjection(p,'2026-10','2026-10-21').closing.cash,79000);

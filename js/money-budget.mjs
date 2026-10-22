@@ -28,13 +28,16 @@ function entityOf(model, transaction) {
 }
 export function validateBudgets(model) {
   validateCredit(model);
+  if(model.planning?.budgetTiming&&!['weekly','month-end'].includes(model.planning.budgetTiming))throw Error('Choose weekly or month-end budget timing.');
   const budgets = model.budgets || [];
   if (!Array.isArray(budgets)) throw Error('Invalid budgets.');
   const ids = new Set(), categories = new Set();
   for (const b of budgets) {
     if (!b.id || ids.has(b.id) || !b.name || !['household', 'business', 'custodial'].includes(b.entity)) throw Error('Invalid budget category.');
     ids.add(b.id);
+    if(b.weekday!==undefined&&(!Number.isInteger(b.weekday)||b.weekday<0||b.weekday>6))throw Error('Choose a valid weekly spending day.');
     if(b.oneTimeMonth)monthBounds(b.oneTimeMonth);
+    for(const [month,t] of Object.entries(b.timing||{})){const bounds=monthBounds(month);if(!['daily','weekly','date','month-end'].includes(t.mode))throw Error('Choose valid budget timing.');if(t.mode==='weekly'&&(!Number.isInteger(t.weekday)||t.weekday<0||t.weekday>6))throw Error('Choose a weekday.');if(t.mode==='date'){date(t.date);if(t.date<bounds.first||t.date>bounds.last)throw Error('Budget date must be within its month.');}}
     for (const name of new Set([b.name, ...(b.aliases || [])].map(normalized))) {
       const key = b.entity + ':' + name;
       if (!name || categories.has(key)) throw Error('Budget categories overlap.');

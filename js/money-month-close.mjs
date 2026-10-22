@@ -1,0 +1,32 @@
+import {occurrences,balances,addDays,date} from './money-engine.mjs';
+import {budgetMonth,monthBounds,seasonalMonth} from './money-budget.mjs';
+import {checkpointValid} from './money-confidence.mjs';
+const owner=(m,t)=>t.expenseEntity||m.accounts.find(a=>a.id===t.entries[0].account)?.entity;
+// Names and review notes may change; amounts, dates, ownership and ledger history may not.
+export function monthFingerprint(m,month,entity){
+ const {first,last}=monthBounds(month),accounts=m.accounts.filter(a=>a.entity===entity),ids=new Set(accounts.map(a=>a.id));
+ const transactions=m.transactions.filter(t=>t.date>=first&&t.date<=last&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({id:t.id,date:t.date,kind:t.kind,category:t.category,status:t.status,entries:t.entries,scheduleKey:t.scheduleKey||null,expenseEntity:t.expenseEntity||null})).sort((a,b)=>a.id.localeCompare(b.id));
+ const expected=occurrences(m,last).filter(t=>t.date>=first&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({key:t.scheduleKey,date:t.date,kind:t.kind,category:t.category,entries:t.entries})).sort((a,b)=>a.key.localeCompare(b.key));
+ const budgets=budgetMonth(m,month,entity,last).buckets.map(b=>({id:b.id,name:b.name,aliases:b.aliases||[],allowance:b.allowance,account:b.funding?.[month]||b.account,timing:b.timing?.[month]||{mode:m.planning?.budgetTiming==='month-end'||b.seasonal||b.oneTimeMonth?'month-end':'weekly',weekday:b.weekday??5}})).sort((a,b)=>a.id.localeCompare(b.id));
+ const opening=balances(m,addDays(first,-1));return JSON.stringify({start:m.start,accounts:accounts.map(a=>({id:a.id,type:a.type,opening:opening[a.id],unknown:!!a.balanceUnknown})).sort((a,b)=>a.id.localeCompare(b.id)),transactions,expected,budgets,seasonal:seasonalMonth(m,month,entity).items.map(s=>({id:s.id,expected:s.expected}))});
+}
+export function closeRequirements(m,month,entity,asOf){
+ const {first,last}=monthBounds(month),reasons=[];date(asOf);if(month>=asOf.slice(0,7))reasons.push('Wait until the month has ended.');if(last<m.start)reasons.push('This month predates tracking.');
+ for(const a of m.accounts.filter(a=>a.entity===entity&&a.type==='cash')){const r=m.reconciliations?.find(r=>r.account===a.id);if(!r||r.asOf<last||!checkpointValid(m,r))reasons.push('Verify '+a.name+' at month-end or later.');}
+ if(m.transactions.some(t=>t.date>=first&&t.date<=last&&t.status==='pending'&&(owner(m,t)===entity||t.entries.some(e=>m.accounts.some(a=>a.id===e.account&&a.entity===entity)))))reasons.push('Settle or correct pending transactions.');
+ if(occurrences(m,last).some(t=>t.date>=first&&owner(m,t)===entity))reasons.push('Record or skip every expected deposit, bill and transfer.');
+ if(budgetMonth(m,month,entity,last).missing)reasons.push('Complete this month’s category targets.');
+ if((m.unscheduledBills||[]).some(b=>b.entity===entity))reasons.push('Resolve unknown bills.');return reasons;
+}
+export function closeMonth(m,month,entity,asOf){
+ if(m.monthClosures?.some(c=>c.month===month&&c.entity===entity))throw Error('This month is already closed.');const reasons=closeRequirements(m,month,entity,asOf);if(reasons.length)throw Error(reasons.join(' '));
+ const next=structuredClone(m),ids=m.accounts.filter(a=>a.entity===entity&&a.type==='cash').map(a=>a.id),b=balances(m,monthBounds(month).last);next.monthClosures=[...(next.monthClosures||[]),{month,entity,closedOn:asOf,signature:monthFingerprint(m,month,entity),cash:ids.reduce((n,id)=>n+b[id],0)}];return next;
+}
+export function reopenMonth(m,month,entity,reason,asOf){
+ if(!reason.trim())throw Error('Explain why you are reopening the month.');const next=structuredClone(m);if(!next.monthClosures?.some(c=>c.month===month&&c.entity===entity))throw Error('This month is not closed.');next.monthClosures=next.monthClosures.filter(c=>c.month!==month||c.entity!==entity);next.monthReopenHistory=[...(next.monthReopenHistory||[]),{month,entity,reason:reason.trim(),asOf}];return next;
+}
+export function assertMonthLocks(previous,next){
+ for(const c of previous.monthClosures||[]){const retained=next.monthClosures?.find(x=>x.month===c.month&&x.entity===c.entity);if(!retained){if(!next.monthReopenHistory?.some(r=>r.month===c.month&&r.entity===c.entity&&r.reason?.trim()&&!previous.monthReopenHistory?.some(old=>JSON.stringify(old)===JSON.stringify(r))))throw Error('Reopen '+c.month+' with a reason first.');continue;}
+  if(monthFingerprint(next,c.month,c.entity)!==c.signature)throw Error(c.month+' is closed for '+c.entity+'. Record a current-month correction, or reopen that month with a reason.');
+ }
+}
