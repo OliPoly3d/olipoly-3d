@@ -18,6 +18,16 @@ function accountSelect(model,value,label,cashOnly=false,entity){const s=el('sele
 const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
 function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',accents[id]||'#78d9cc');return span;}
 const ids=['accountSummary','monthMetrics','cashAlerts','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
+function comparisonRow(name,id,expected,actual,max,missingLabel='Set target'){
+ const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[id]||'#78d9cc');
+ const heading=el('strong');heading.append(categoryLabel(name,id));row.append(heading);
+ const chart=el('div');
+ for(const [label,value,cls] of [['Expected',expected,'planned'],['Actual',actual,'actual']]){
+  const line=el('div',undefined,'comparison-line'),track=el('div',undefined,'bar-track'),fill=el('span',undefined,cls);
+  fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?missingLabel:money(value))));chart.append(line);
+ }
+ row.append(chart);return row;
+}
 export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{},onPreview=()=>{}}){
  let saved=null,draft=null,dirty=false;
  let removing=null;
@@ -115,7 +125,14 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   else balanceGraph(days,account);
   const b=budgetMonth(model,month,entity,today());sectionPreview('spendingSection',(b.missing?'Targets incomplete':'Budget '+money(b.totals.budget))+' · Spent '+money(b.totals.spent)+' · Remaining '+(b.missing?'Incomplete':money(b.totals.remaining)));$('monthChart').replaceChildren();
   const max=Math.max(1,...b.buckets.flatMap(x=>[x.allowance||0,x.spent]));
-  for(const item of b.buckets){const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[item.id]||'#78d9cc');const label=el('strong');label.append(categoryLabel(item.shortName||item.name,item.id));row.append(label);const chart=el('div');for(const [label,value,cls] of [['Expected',item.allowance,'planned'],['Actual',item.spent,'actual']]){const line=el('div',undefined,'comparison-line');const track=el('div',undefined,'bar-track');const fill=el('span',undefined,cls);fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?'Set target':money(value))));chart.append(line);}row.append(chart);$('monthChart').append(row);}
+  for(const item of b.buckets)$('monthChart').append(comparisonRow(item.shortName||item.name,item.id,item.allowance,item.spent,max));
+  const total=comparisonRow('Overall — categories shown','overall',b.missing?null:b.totals.budget,b.totals.spent,Math.max(1,b.totals.budget,b.totals.spent),'Incomplete targets');
+  total.id='categoryOverall';total.classList.add('comparison-total');
+  const remaining=b.totals.remaining,status=el('p',!b.buckets.length?'Add category targets to compare overall spending.':b.missing?'Set all category targets to see your overall under / over amount.':remaining===0?'On budget overall so far':money(Math.abs(remaining))+(remaining>0?' under':' over')+' overall so far','comparison-status');
+  status.classList.toggle('low',!b.missing&&remaining<0);total.append(status,el('p','This month’s category targets versus purchases recorded so far, including pending. Bills and transfers are separate.','help'));
+  const outside=b.outside.filter(t=>!t.scheduleKey).reduce((n,t)=>n-t.entries[0].amount,0);
+  if(outside){const note=el('p','Other recorded expenses outside these categories: '+money(outside)+'. ','help'),link=el('a','Review other spending');link.href='#spendingSection';note.append(link);total.append(note);}
+  $('monthChart').append(total);
   for(const item of b.buckets){const row=[...document.querySelectorAll('[data-budget-id]')].find(r=>r.dataset.budgetId===item.id);if(row){
    const allowance=row.querySelector('[data-value="allowance"]');if(allowance)allowance.textContent=item.allowance===null?'Set target':money(item.allowance);
    const source=row.querySelector('[data-value="source"]');if(source)source.textContent=item.partial?'Full month '+money(item.full||0)+' · opening-month allowance shown':'Total of the YOY list below';
