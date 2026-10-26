@@ -204,3 +204,8 @@ dialog::backdrop { background: #070c10b3; }
 #app[data-debt-hidden=true] #forecastSection[data-debt-view] .forecast-privacy-hint { display: block; }
 
 #duplicateDialog { width: min(680px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
+
+.comparison-total { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 20px; }
+.comparison-total > strong { font-weight: 700; }
+.comparison-status { color: var(--accent); font-weight: 600; }
+.comparison-status.low { color: var(--danger); }
