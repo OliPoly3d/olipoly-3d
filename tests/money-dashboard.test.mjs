@@ -276,7 +276,7 @@ test('duplicate review cancels safely, edits existing entries, allows separate p
   const purchase=()=>{f.reset();f.elements.account.value='card';f.elements.date.value='2026-10-20';f.elements.description.value='Market';f.elements.category.value='Groceries';f.elements.kind.value='expense';f.elements.amount.value='25.00';f.elements.status.value='cleared';};
   purchase();await submit(f);assert.equal(dialog.open,true);assert.equal(revision,0);assert.equal(model.transactions.length,1);document.getElementById('duplicateCancel').click();assert.equal(dialog.open,false);assert.equal(f.elements.amount.value,'25.00');assert.equal(f.elements.description.value,'Market');
   await submit(f);document.querySelector('#duplicateRows button').click();assert.equal(f.elements.editTransactionId.value,'market');f.elements.status.value='cleared';await submit(f);assert.equal(dialog.open,false);assert.equal(revision,1);assert.equal(model.transactions.length,1);assert.equal(model.transactions[0].status,'cleared');
-  purchase();await submit(f);assert.equal(dialog.open,true);document.getElementById('debtPrivacy').click();assert.equal(dialog.open,false);assert.equal(document.getElementById('duplicateRows').textContent,'');assert.equal(revision,1);document.getElementById('debtPrivacy').click();
+  purchase();await submit(f);assert.equal(dialog.open,true);document.getElementById('debtPrivacy').click();assert.equal(dialog.open,true);assert.match(document.getElementById('duplicateRows').textContent,/Market/);assert.equal(revision,1);document.getElementById('duplicateCancel').click();document.getElementById('debtPrivacy').click();
   await submit(f);failSave=true;document.getElementById('duplicateProceed').click();await tick();assert.equal(revision,1);assert.equal(f.elements.amount.value,'25.00');assert.match(document.getElementById('message').textContent,/Synthetic save failure/);failSave=false;await submit(f);assert.equal(dialog.open,true);document.getElementById('duplicateProceed').click();await tick();assert.equal(revision,2);assert.equal(model.transactions.length,2);
   f.reset();f.elements.account.value='cash';f.elements.date.value='2026-10-27';f.elements.description.value='Electric bill';f.elements.category.value='Electric';f.elements.amount.value='127.25';f.elements.status.value='cleared';await submit(f);assert.equal(dialog.open,true);assert.match(document.getElementById('duplicateRows').textContent,/Expected/);document.querySelector('#duplicateRows button').click();assert.equal(f.elements.scheduleKey.value,'bill:2026-10-28');assert.equal(f.elements.amount.value,'127.25');assert.equal(f.elements.date.value,'2026-10-27');await submit(f);assert.equal(revision,3);assert.equal(model.transactions.filter(t=>t.scheduleKey==='bill:2026-10-28').length,1);
   const income=document.getElementById('oneTimeIncomeForm');income.elements.description.value='Birthday gift';income.elements.when.value='2026-10-23';income.elements.amount.value='75.00';income.elements.status.value='cleared';await submit(income);assert.equal(dialog.open,true);assert.equal(revision,3);document.querySelector('#duplicateRows button').click();assert.equal(f.elements.scheduleKey.value,'gift:2026-10-23');await submit(f);assert.equal(revision,4);assert.equal(model.transactions.filter(t=>t.kind==='income').length,1);assert.equal(model.transactions.find(t=>t.kind==='income').entries[0].amount,7500);
@@ -297,5 +297,28 @@ test('chart overall offsets category overspend, includes pending and YOY once, a
   document.getElementById('budgetEntity').value='household';document.getElementById('budgetMonth').value='2026-11';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));assert.match(overall().textContent,/Actual: \$0.00/);
   document.getElementById('budgetMonth').value='2026-12';document.getElementById('budgetMonth').dispatchEvent(new env.dom.window.Event('change'));assert.match(overall().textContent,/Expected: Incomplete targets/);assert.doesNotMatch(overall().textContent,/under overall|On budget overall/);
   d.clear();assert.equal(document.getElementById('categoryOverall'),null);
+ }finally{env.restore();}
+});
+
+test('debt privacy keeps card purchase entry and duplicate review usable without exposing debt summaries', {skip:!dependency},async()=>{
+ const env=await environment();let model=fixture(),revision=0;
+ model.accounts.push({id:'freedom',name:'Freedom',type:'card',entity:'household',opening:0,reserve:0},{id:'unlimited',name:'Freedom Unlimited',type:'card',entity:'household',opening:0,reserve:0});
+ env.dom.window.HTMLElement.prototype.scrollIntoView=()=>{};
+ const style=document.createElement('style');style.textContent=fs.readFileSync(new URL('../assets/money.css',import.meta.url),'utf8');document.head.append(style);
+ env.dom.window.localStorage.setItem('money_hide_debt','1');
+ env.dom.window.OliPolyAuth={SUPABASE_URL:'https://test.invalid',recover:async()=>({user:{id:'test-owner'}}),authHeaders:()=>({}),logout:()=>{}};
+ globalThis.fetch=async(url,options={})=>{if(options.method==='PATCH'){const next=JSON.parse(options.body);model=next.body;revision=next.revision;}return {ok:true,json:async()=>url.includes('money_access')?[{user_id:'test-owner'}]:[{body:model,revision}]};};
+ const change=(input,value)=>{input.value=value;input.dispatchEvent(new env.dom.window.Event('change',{bubbles:true}));};
+ const display=e=>env.dom.window.getComputedStyle(e).display;
+ try{
+  await import('../js/money-app.mjs?card-purchase-privacy-regression');
+  const entry=document.getElementById('transactionEntry'),f=document.getElementById('transactionForm');
+  document.getElementById('spendingSection').open=true;entry.open=true;
+  f.elements.description.value='Weekly groceries';f.elements.date.value='2026-10-22';f.elements.amount.value='25.00';change(f.elements.kind,'expense');change(f.elements.category,'Groceries');
+  for(const id of ['freedom','unlimited']){change(f.elements.account,id);assert.equal(entry.open,true);assert.notEqual(display(entry),'none');assert.equal(f.elements.description.value,'Weekly groceries');assert.equal(f.elements.amount.value,'25.00');assert.equal(f.elements.category.value,'Groceries');assert.equal(display(document.querySelector('#accountSummary [data-account-id="'+id+'"]')),'none');}
+  f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();assert.equal(model.transactions.length,1);assert.equal(model.transactions[0].entries[0].account,'unlimited');assert.equal(model.transactions[0].category,'Groceries');
+  entry.open=true;f.elements.description.value='Weekly groceries';f.elements.date.value='2026-10-22';f.elements.amount.value='25.00';change(f.elements.kind,'expense');change(f.elements.account,'unlimited');change(f.elements.category,'Groceries');
+  f.dispatchEvent(new env.dom.window.Event('submit',{cancelable:true}));await tick();assert.equal(document.getElementById('duplicateDialog').open,true);assert.notEqual(display(document.getElementById('duplicateDialog')),'none');assert.match(document.getElementById('duplicateRows').textContent,/Weekly groceries/);document.getElementById('duplicateCancel').click();assert.equal(model.transactions.length,1);assert.equal(f.elements.amount.value,'25.00');assert.notEqual(display(entry),'none');
+  document.getElementById('clearMatch').click();assert.equal(entry.open,false);assert.equal(document.getElementById('app').dataset.debtHidden,'true');
  }finally{env.restore();}
 });
