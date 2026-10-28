@@ -1,5 +1,10 @@
 // Pure cash-flow functions. Amounts are signed integer cents; card debt is negative.
 export const statuses = ['pending', 'cleared', 'reconciled'];
+export const forecastMonths = 60;
+export function forecastEnd(start) {
+  const d = date(start);
+  return iso(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + forecastMonths, 0)));
+}
 export function date(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw Error('Use a complete calendar date.');
   const d = new Date(value + 'T00:00:00Z');
@@ -118,7 +123,7 @@ export function balances(model, asOf, postedOnly=false) {
 }
 export function forecast(model, end, plannedEvents = []) {
   validate(model); date(end);
-  if (end < model.start || +date(end)- +date(model.start)> 1130*86400000) throw Error('Choose an end date within 36 months.');
+  if (end < model.start || end > forecastEnd(model.start)) throw Error('Choose an end date within '+forecastMonths+' months.');
   for (const t of plannedEvents) {date(t.date); for (const e of t.entries) {integer(e.amount);if (!model.accounts.some(a=>a.id===e.account)) throw Error('Unknown planned account.');}}
   const events = [...model.transactions, ...occurrences(model,end), ...plannedEvents].filter(t=>t.date<=end && t.date>=model.start).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
   const grouped = new Map();

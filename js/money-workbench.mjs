@@ -1,4 +1,4 @@
-import {cents,balances,occurrences} from './money-engine.mjs';
+import {cents,balances,occurrences,forecastEnd,forecastMonths} from './money-engine.mjs';
 import {sectionPreview,revealSection} from './money-sections.mjs';
 import {monthBounds,shiftMonth,weeklyDates,addOneTimeBudget} from './money-budget.mjs';
 import {planningForecast} from './money-planning.mjs';
@@ -19,7 +19,7 @@ function lineChart(target,rows,key,label){
 export function setupWorkbench({getDraft,updateDraft,today,message,action}){
  let scenario=null,baselineCandidate=null,weeklyKey='',scenarioEdits=new Map();
  const run=fn=>{try{fn();}catch(e){message(e.message);}};
- const endFor=m=>monthBounds(shiftMonth(m.start.slice(0,7),35)).last;
+ const endFor=m=>forecastEnd(m.start);
  function clear(){for(const id of ['creditSection','annualSection','openingSection'])sectionPreview(id,'');scenario=null;scenarioEdits.clear();baselineCandidate=null;weeklyKey='';for(const id of ['creditInventory','promoAlerts','annualMetrics','annualRows','annualCashChart','annualDebtChart','scenarioRows','scenarioMetrics','scenarioCashChart','scenarioDebtChart','openingRows','openingIncluded'])$(id).replaceChildren();for(const id of ['annualNote','scenarioNote','baselineReview','weeklyDatesNote'])$(id).textContent='';$('baselineReview').hidden=true;$('baselineApply').hidden=true;$('creditTerms').reset();$('scenarioForm').reset();$('transferForm').reset();$('creditSelect').replaceChildren();$('annualYear').replaceChildren();$('baselineDate').value='';$('creditTermsNote').textContent='';$('weeklyBudgetCategory').replaceChildren();$('oneTimeFunding').replaceChildren();$('scenarioForm').elements.from.replaceChildren();$('transferForm').elements.from.replaceChildren();$('transferForm').elements.to.replaceChildren();}
  function selectCredit(id){$('creditSelect').value=id;fillCredit();revealSection($('creditTerms'));$('creditSection').scrollIntoView({behavior:'smooth'});}
  function fillCredit(){
@@ -36,7 +36,7 @@ export function setupWorkbench({getDraft,updateDraft,today,message,action}){
   p.elements.reserve.value=((m.accounts.find(a=>a.id===p.elements.from.value)?.reserve||0)/100).toFixed(2);
   if(common){p.elements.asOf.value=common.asOf;p.elements.end.value=common.end;}
   if(saved){for(const key of ['mode','day','from','asOf','end'])p.elements[key].value=saved[key];p.elements.balance.value=(saved.balance/100).toFixed(2);p.elements.amount.value=(saved.amount/100).toFixed(2);p.elements.reserve.value=(saved.reserve/100).toFixed(2);}
-  $('scenarioRows').replaceChildren();for(let i=0;i<36;i++){const month=shiftMonth(p.elements.asOf.value.slice(0,7),i);if(month>endFor(m).slice(0,7))break;const row=el('tr');cell(row,month);const input=number(null,'Payment for '+month,{min:0});input.dataset.paymentMonth=month;input.placeholder=p.elements.mode.value==='full'?'Full balance':'Use default';cell(row,input);$('scenarioRows').append(row);}
+  $('scenarioRows').replaceChildren();for(let i=0;i<forecastMonths;i++){const month=shiftMonth(p.elements.asOf.value.slice(0,7),i);if(month>endFor(m).slice(0,7))break;const row=el('tr');cell(row,month);const input=number(null,'Payment for '+month,{min:0});input.dataset.paymentMonth=month;input.placeholder=p.elements.mode.value==='full'?'Full balance':'Use default';cell(row,input);$('scenarioRows').append(row);}
   if(saved)for(const input of document.querySelectorAll('[data-payment-month]'))if(Object.hasOwn(saved.monthly,input.dataset.paymentMonth))input.value=(saved.monthly[input.dataset.paymentMonth]/100).toFixed(2);
   scenario=null;$('scenarioApply').disabled=true;$('scenarioApply').dataset.disabled='true';for(const id of ['scenarioMetrics','scenarioCashChart','scenarioDebtChart'])$(id).replaceChildren();$('scenarioNote').textContent='Preview changes here first. '+scenarioEdits.size+' account scenarios retained. Apply payment plans copies all included payment choices into the monthly budget preview; hypothetical balances and transfers stay in this sandbox.';
  }

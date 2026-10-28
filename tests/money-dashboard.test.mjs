@@ -7,6 +7,16 @@ const dependency=process.env.MONEY_JSDOM_MODULE;
 function fixture(){return ensureMonthlyBaselines({version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Cash',entity:'household',type:'cash',opening:100000,reserve:0}],transactions:[],schedules:[{id:'pay',name:'Paycheck',account:'cash',amount:20000,frequency:'biweekly',anchor:'2026-10-02'},{id:'bill',name:'Electric',account:'cash',amount:-10000,frequency:'monthly',anchor:'2026-10-01',day:28,category:'Electric'}],budgets:[{id:'food',name:'Groceries',shortName:'Grocery',entity:'household',account:'cash',monthly:{'2026-10':20000,'2026-11':30000}},{id:'seasonal',name:'Seasonal',entity:'household',account:'cash',seasonal:true,monthly:{'2026-10':5000}}],seasonalItems:[{id:'gift',name:'Gifts',month:10,amount:5000,entity:'household'}]},'2026-10-01');}
 async function environment(){const {JSDOM}=await import(pathToFileURL(dependency).href);const dom=new JSDOM(fs.readFileSync(new URL('../money.html',import.meta.url),'utf8'),{url:'https://example.test/money.html'});const keys=['window','document','Node','FormData','fetch','Date'];const old=Object.fromEntries(keys.map(k=>[k,globalThis[k]]));globalThis.Date=class extends old.Date{constructor(...args){super(...(args.length?args:['2026-10-22T16:00:00Z']));}static now(){return +new old.Date('2026-10-22T16:00:00Z');}};for(const k of ['window','document','Node','FormData'])globalThis[k]=dom.window[k];return {dom,restore(){dom.window.close();for(const [k,v] of Object.entries(old)){if(v===undefined)delete globalThis[k];else globalThis[k]=v;}}};}
 const tick=()=>new Promise(resolve=>setTimeout(resolve,25));
+test('dashboard selects December 2029 and renders the full month without a horizon error', {skip:!dependency},async()=>{
+ const env=await environment(),model=fixture();
+ for(let year=2026;year<=2029;year++)for(let mo=1;mo<=12;mo++){const month=`${year}-${String(mo).padStart(2,'0')}`;if(month>='2026-10')model.budgets[0].monthly[month]=20000;}
+ model.schedules.push({id:'future-income',name:'Future December income',account:'cash',amount:10000,anchor:'2029-12-15',end:'2029-12-15',day:15,frequency:'monthly',oneTime:true});
+ try{
+  const d=setupDashboard({getModel:()=>model,today:()=> '2026-10-21',message:()=>{},setStatus:async()=>{},record:()=>{},action:fn=>fn(),savePlan:async()=>{}});d.render();
+  const picker=document.getElementById('budgetMonth');assert.equal(picker.max,'2031-09');picker.value='2029-12';picker.dispatchEvent(new env.dom.window.Event('change'));
+  assert.match(document.getElementById('monthHeading').textContent,/December 2029/);assert.match(document.getElementById('incomeRows').textContent,/Future December income/);assert.ok(document.querySelector('#balanceChart svg'));assert.doesNotMatch(document.getElementById('projectionNote').textContent,/Missing category|Set category/);
+ }finally{env.restore();}
+});
 test('single dashboard previews income/bill cents, monthly targets and seasonal recurrence before saving', {skip:!dependency},async()=>{
  const env=await environment();let model=fixture(),recorded,saves=0;
  try{

@@ -1,4 +1,4 @@
-import {forecast, occurrences, balances,validate,addDays} from './money-engine.mjs';
+import {forecast, occurrences, balances,validate,addDays,forecastEnd} from './money-engine.mjs';
 import {budgetMonth, monthBounds, shiftMonth, validateBudgets,weeklyDates} from './money-budget.mjs';
 import {creditState,creditActivity,creditRates,reducePromo,accrueCredit} from './money-credit.mjs';
 import {incomingOwner} from './money-income.mjs';
@@ -91,7 +91,7 @@ export function monthProjection(model, month, asOf) {
 
 // Stable keys link expected and actual dates without duplicating forecast postings.
 export function expectedRows(model, month, entity, kind) {
-  const end=monthBounds(shiftMonth(month,1)).last;
+  const requestedEnd=monthBounds(shiftMonth(month,1)).last,limit=forecastEnd(model.start),end=requestedEnd<limit?requestedEnd:limit;
   const all=occurrences({...model,transactions:[]},end,{includeSkipped:true});
   if(model.accounts.some(a=>a.credit?.scheduleId)){
     const paymentRows=new Map(planningForecast(model,end).planned.filter(t=>t.creditPayment).map(t=>[t.scheduleKey,t]));

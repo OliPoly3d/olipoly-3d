@@ -1,4 +1,4 @@
-import {validate,cents,monthly,balances,statuses} from './money-engine.mjs';
+import {validate,cents,monthly,balances,statuses,forecastEnd} from './money-engine.mjs';
 import {validateBudgets,monthBounds,shiftMonth} from './money-budget.mjs';
 import {planningForecast,clearPlanningCache} from './money-planning.mjs';
 import {setupDuplicateReview} from './money-duplicate-review.mjs';
@@ -39,7 +39,7 @@ async function load(){
   if(rows.length!==1)throw Error('Your Money plan has not been provisioned. Complete the database setup.');
   model=validateConfidence(validateBudgets(validate(rows[0].body)));revision=rows[0].revision;
   $('login').hidden=true;$('app').hidden=false;$('logout').hidden=false;
-  $('end').min=model.start.slice(0,7);$('end').max=shiftMonth($('end').min,35);
+  $('end').min=model.start.slice(0,7);$('end').max=forecastEnd(model.start).slice(0,7);
   if(!$('end').value||$('end').value<$('end').min||$('end').value>$('end').max)$('end').value=$('end').max;
   let baselineNote='';try{if(await ensureAutomaticBaselines())baselineNote=' Monthly comparison baseline saved automatically.';}catch(e){baselineNote=' Automatic baseline was not saved: '+e.message;}
   if(gen!==generation)return;

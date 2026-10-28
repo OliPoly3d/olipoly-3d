@@ -1,4 +1,4 @@
-import {cents, date} from './money-engine.mjs';
+import {cents, date, forecastEnd} from './money-engine.mjs';
 import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
 import {changeExpectation,removeActual} from './money-actions.mjs';
@@ -74,7 +74,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function clear(){for(const id of ['incomeSection','billsSection','spendingSection','seasonalSection'])sectionPreview(id,'');closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
  function render(){
   const model=getDraft();if(!model)return;
-  const min=model.start.slice(0,7),max=shiftMonth(min,35),input=$('budgetMonth');input.min=min;input.max=max;
+  const min=model.start.slice(0,7),max=forecastEnd(model.start).slice(0,7),input=$('budgetMonth');input.min=min;input.max=max;
   if(!input.value||input.value<min)input.value=min;if(input.value>max)input.value=max;
   const month=input.value,entity=$('budgetEntity').value;
   $('monthHeading').textContent=monthName(month);

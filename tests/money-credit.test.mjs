@@ -1,10 +1,14 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validate,balances} from '../js/money-engine.mjs';
+import {validate,balances,forecastEnd} from '../js/money-engine.mjs';
 import {budgetMonth,addOneTimeBudget,weeklyDates,validateBudgets} from '../js/money-budget.mjs';
 import {planningForecast,expectedRows} from '../js/money-planning.mjs';
 import {installPaymentPlan,scenarioSnapshot,transferScenario,promoSummary,validateCredit} from '../js/money-credit.mjs';
 import {resetBaseline,annualSummary,planningSnapshot} from '../js/money-insights.mjs';
 function plan(){return {version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Cash',type:'cash',entity:'household',opening:100000,reserve:20000},{id:'card',name:'Card',type:'card',entity:'household',opening:-100000,reserve:0,credit:{purchaseApr:0,promoBalance:0,minimum:1000,dueDay:15}}],transactions:[],schedules:[],budgets:[]};}
+test('expected card bills at the final selectable month stay within the forecast boundary',()=>{
+ const p=installPaymentPlan(plan(),'card',{amount:2000,day:15,from:'cash',asOf:'2026-10-01'}),month=forecastEnd(p.start).slice(0,7);
+ const rows=expectedRows(p,month,'household','bills');assert.equal(month,'2031-09');assert.equal(rows.length,1);assert.equal(rows[0].date,'2031-09-15');assert.equal(Math.abs(rows[0].entries[0].amount),0);
+});
 test('standard zero-percent promo changes rate the day after expiry; unknown APR never becomes an implicit zero',()=>{
  const p=plan(),a=p.accounts[1];a.credit={...a.credit,promoBalance:100000,promoApr:0,promoEnd:'2026-10-15',postPromoApr:36.5,promoScope:'balance_transfer'};
  const r=planningForecast(p,'2026-10-31');assert.equal(r.days.at(-1).closing.card,-101600);assert.equal(r.planned.filter(t=>t.creditInterest).reduce((n,t)=>n-t.entries[0].amount,0),1600);
