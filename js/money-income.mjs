@@ -1,8 +1,8 @@
 import {date,validate,statuses} from './money-engine.mjs';
 export const incomeTypes={gift:'Gift / birthday money',windfall:'Windfall',friend:'Friend repayment',other:'Other one-time income',distribution:'OliPoly owner payout'};
 export function incomingOwner(model,t){
- const entry=t.kind==='transfer'&&t.funding==='distribution'?t.entries.find(e=>e.amount>0):t.kind==='income'?t.entries[0]:null;
- return entry?(t.kind==='income'&&t.expenseEntity||model.accounts.find(a=>a.id===entry.account)?.entity):null;
+ const entry=t.kind==='transfer'&&t.funding==='distribution'?t.entries.find(e=>e.amount>0):['income','refund'].includes(t.kind)?t.entries[0]:null;
+ return entry?(['income','refund'].includes(t.kind)&&t.expenseEntity||model.accounts.find(a=>a.id===entry.account)?.entity):null;
 }
 export function addOneTimeIncome(model,{id,when,description,amount,account,incomeType='other',from,status='plan'}){
  date(when);if(when<model.start)throw Error('Date is before your opening balance.');

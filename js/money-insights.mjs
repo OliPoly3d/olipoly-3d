@@ -1,10 +1,10 @@
-import {balanceUnknownAt,balances,date} from './money-engine.mjs';
+import {balanceUnknownAt,balances,date,occurrences} from './money-engine.mjs';
 import {validateBudgets,budgetMonth} from './money-budget.mjs';
 import {scenarioSnapshot} from './money-credit.mjs';
 import {savingsSummary} from './money-savings.mjs';
 
 export function planningSnapshot(model,asOf,overrides={}){
- const next=scenarioSnapshot(model,asOf,overrides),month=asOf.slice(0,7);
+ const next=scenarioSnapshot(model,asOf,overrides),month=asOf.slice(0,7);next.snapshotUnresolved=(model.snapshotUnresolved||[]).concat(occurrences(model,asOf).filter(t=>t.date<asOf).flatMap(t=>t.entries.filter(e=>e.amount<0).map(e=>({account:e.account,date:t.date,name:t.description}))));
  for(const entity of ['household','business','custodial'])for(const b of budgetMonth(model,month,entity,asOf).buckets)if(b.allowance!==null){const target=next.budgets.find(x=>x.id===b.id);target.overrides={...target.overrides,[month]:Math.max(0,b.remaining)};}
  return next;
 }
@@ -37,7 +37,7 @@ export function annualSummary(model,projection,year,entity){
   for(const t of d.events){
    const owner=t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity;
    if(t.kind==='income'&&owner===entity)m.income+=t.entries[0].amount;
-   if(t.kind==='expense'&&owner===entity){m.spending-=t.entries[0].amount;if(t.creditInterest||t.category?.toLowerCase()==='interest')m.interest-=t.entries[0].amount;}
+   if(['expense','refund'].includes(t.kind)&&owner===entity){m.spending-=t.entries[0].amount;if(t.creditInterest||t.category?.toLowerCase()==='interest')m.interest-=t.entries[0].amount;}
    if(t.kind==='transfer')for(const e of t.entries)if(e.amount>0&&[...cards,...loans].some(a=>a.id===e.account))m.payments+=e.amount;
   }
   m.cash=cash.reduce((n,a)=>n+d.closing[a.id],0);m.cardDebt=cards.reduce((n,a)=>n+Math.max(0,-d.closing[a.id]),0);m.loanDebt=loans.reduce((n,a)=>n+Math.max(0,-d.closing[a.id]),0);

@@ -6,7 +6,7 @@ export function setupDuplicateReview({getDraft,record,action,message}){
  let pending=null,returnFocus=null;
  const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
  const node=(tag,text)=>{const n=document.createElement(tag);n.textContent=text;return n;};
- const privateEntry=t=>t.kind!=='expense'&&t.entries.some(e=>getDraft()?.accounts.find(a=>a.id===e.account)?.type!=='cash');
+ const privateEntry=t=>!['expense','refund'].includes(t.kind)&&t.entries.some(e=>getDraft()?.accounts.find(a=>a.id===e.account)?.type!=='cash');
  function clear(restoreFocus=false){
   pending=null;if(dialog.open&&dialog.close)dialog.close();else dialog.removeAttribute('open');
   rows.replaceChildren();dialog.removeAttribute('data-debt-private');

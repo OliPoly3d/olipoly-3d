@@ -2,6 +2,7 @@ import {date, iso, addDays, occurrences} from './money-engine.mjs';
 import {validateCredit} from './money-credit.mjs';
 import {validateSavings} from './money-savings.mjs';
 import {validateReviews} from './money-review.mjs';
+import {spendingParts} from './money-categories.mjs';
 
 export function monthBounds(month) {
   date(month + '-01');
@@ -35,7 +36,7 @@ export function validateBudgets(model) {
   if(model.planning?.budgetTiming&&!['weekly','month-end'].includes(model.planning.budgetTiming))throw Error('Choose weekly or month-end budget timing.');
   const budgets = model.budgets || [];
   if (!Array.isArray(budgets)) throw Error('Invalid budgets.');
-  const ids = new Set(), categories = new Set();
+  const ids = new Set(), categories = new Map();
   for (const b of budgets) {
     if (!b.id || ids.has(b.id) || !b.name || !['household', 'business', 'custodial'].includes(b.entity)) throw Error('Invalid budget category.');
     ids.add(b.id);
@@ -44,8 +45,9 @@ export function validateBudgets(model) {
     for(const [month,t] of Object.entries(b.timing||{})){const bounds=monthBounds(month);if(!['daily','weekly','date','month-end'].includes(t.mode))throw Error('Choose valid budget timing.');if(t.mode==='weekly'&&(!Number.isInteger(t.weekday)||t.weekday<0||t.weekday>6))throw Error('Choose a weekday.');if(t.mode==='date'){date(t.date);if(t.date<bounds.first||t.date>bounds.last)throw Error('Budget date must be within its month.');}}
     for (const name of new Set([b.name, ...(b.aliases || [])].map(normalized))) {
       const key = b.entity + ':' + name;
-      if (!name || categories.has(key)) throw Error('Budget categories overlap.');
-      categories.add(key);
+      const prior=categories.get(key)||[];
+      if (!name || prior.some(other=>!b.oneTimeMonth||!other.oneTimeMonth||b.oneTimeMonth===other.oneTimeMonth)) throw Error('Budget categories overlap.');
+      categories.set(key,[...prior,b]);
     }
     for (const collection of [b.monthly || {}, b.overrides || {}]) {
       for (const [month, amount] of Object.entries(collection)) {
@@ -86,15 +88,13 @@ export function budgetMonth(model, month, entity, asOf) {
   const bounds = monthBounds(month);
   date(asOf);
   const cutoff = asOf < bounds.last ? asOf : bounds.last;
-  const transactions = model.transactions.filter(t => t.kind === 'expense' &&
+  const transactions = model.transactions.filter(t => ['expense','refund'].includes(t.kind) &&
     t.date >= bounds.first && t.date <= cutoff && entityOf(model, t) === entity);
-  const used = new Set();
   const buckets = (model.budgets || []).filter(b => b.entity === entity&&(!b.oneTimeMonth||b.oneTimeMonth===month)).map(b => {
     const names = new Set([b.name, ...(b.aliases || [])].map(normalized));
-    const matches = transactions.filter(t => names.has(normalized(t.category)));
-    matches.forEach(t => used.add(t.id));
-    const spent = matches.reduce((n, t) => n - t.entries[0].amount, 0);
-    const pending = matches.filter(t => t.status === 'pending').reduce((n, t) => n - t.entries[0].amount, 0);
+    const matches = transactions.flatMap(t=>spendingParts(t).filter(p=>names.has(normalized(p.category))).map(p=>({transaction:t,amount:p.amount})));
+    const spent = matches.reduce((n,p)=>n+p.amount,0);
+    const pending = matches.filter(p=>p.transaction.status==='pending').reduce((n,p)=>n+p.amount,0);
     const seasonal = b.seasonal && model.seasonalItems?.length ? seasonalMonth(model,month,entity).total : null;
     const full = seasonal === null ? b.monthly?.[month] ?? null : Math.max(0,seasonal);
     let allowance = b.overrides?.[month] ?? full;
@@ -105,7 +105,8 @@ export function budgetMonth(model, month, entity, asOf) {
     if (bounds.last < model.start) allowance = null;
     return {...b, full, allowance, spent, pending, partial, remaining: allowance === null ? null : allowance - spent};
   });
-  const outside = transactions.filter(t => !used.has(t.id));
+  const allNames=new Set(buckets.flatMap(b=>[b.name,...(b.aliases||[])].map(normalized)));
+  const outside=transactions.flatMap(t=>{const parts=spendingParts(t).filter(p=>!allNames.has(normalized(p.category)));return parts.length?[{...t,unbudgetedAmount:parts.reduce((n,p)=>n+p.amount,0)}]:[];});
   const totals = buckets.reduce((n, b) => ({
     budget: n.budget + (b.allowance || 0), spent: n.spent + b.spent,
     pending: n.pending + b.pending, remaining: n.remaining + (b.remaining ?? 0)

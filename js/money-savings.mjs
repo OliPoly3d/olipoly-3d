@@ -7,6 +7,7 @@ export function validateSavings(model){
  for(const b of buckets){
   if(!b.id||ids.has(b.id)||!b.name?.trim())throw Error('Give each savings bucket a unique ID and name.');ids.add(b.id);date(b.start);
   if(!Number.isSafeInteger(b.opening)||b.opening<0||!model.accounts.some(a=>a.id===b.account&&a.type==='cash'))throw Error('Choose a cash account and nonnegative opening allocation.');
+  if(b.goalAmount!=null&&(!Number.isSafeInteger(b.goalAmount)||b.goalAmount<0))throw Error('Savings goals must be nonnegative cents.');if(b.goalDate)date(b.goalDate);
   if(!Array.isArray(b.scheduleIds||[]))throw Error('Invalid bucket funding schedules.');
   for(const id of b.scheduleIds||[]){const s=model.schedules.find(s=>s.id===id);if(!s||![s.account,s.to].includes(b.account)||links.has(id))throw Error('A schedule can belong to one bucket and must touch its bank account.');links.add(id);}
  }

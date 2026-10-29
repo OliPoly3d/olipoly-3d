@@ -6,7 +6,7 @@ const owner=(m,t)=>t.expenseEntity||m.accounts.find(a=>a.id===t.entries[0].accou
 // Names and review notes may change; amounts, dates, ownership and ledger history may not.
 export function monthFingerprint(m,month,entity){
  const {first,last}=monthBounds(month),accounts=m.accounts.filter(a=>a.entity===entity),ids=new Set(accounts.map(a=>a.id));
- const transactions=m.transactions.filter(t=>t.date>=first&&t.date<=last&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({id:t.id,date:t.date,kind:t.kind,category:t.category,status:t.status,entries:t.entries,scheduleKey:t.scheduleKey||null,expenseEntity:t.expenseEntity||null})).sort((a,b)=>a.id.localeCompare(b.id));
+ const transactions=m.transactions.filter(t=>t.date>=first&&t.date<=last&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({id:t.id,date:t.date,kind:t.kind,category:t.category,status:t.status,entries:t.entries,scheduleKey:t.scheduleKey||null,expenseEntity:t.expenseEntity||null,...(t.allocations?{allocations:t.allocations}:{}),...(t.refundOf?{refundOf:t.refundOf}:{})})).sort((a,b)=>a.id.localeCompare(b.id));
  const expected=occurrences(m,last).filter(t=>t.date>=first&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({key:t.scheduleKey,date:t.date,kind:t.kind,category:t.category,entries:t.entries})).sort((a,b)=>a.key.localeCompare(b.key));
  const budgets=budgetMonth(m,month,entity,last).buckets.map(b=>({id:b.id,name:b.name,aliases:b.aliases||[],allowance:b.allowance,account:b.funding?.[month]||b.account,timing:b.timing?.[month]||{mode:m.planning?.budgetTiming==='month-end'||b.seasonal||b.oneTimeMonth?'month-end':'weekly',weekday:b.weekday??5}})).sort((a,b)=>a.id.localeCompare(b.id));
  const opening=balances(m,addDays(first,-1)),signature={start:m.start,accounts:accounts.map(a=>({id:a.id,type:a.type,opening:opening[a.id],unknown:!!a.balanceUnknown})).sort((a,b)=>a.id.localeCompare(b.id)),transactions,expected,budgets,seasonal:seasonalMonth(m,month,entity).items.map(s=>({id:s.id,expected:s.expected}))};
@@ -34,4 +34,9 @@ export function assertMonthLocks(previous,next){
  for(const c of previous.monthClosures||[]){const retained=next.monthClosures?.find(x=>x.month===c.month&&x.entity===c.entity);if(!retained){if(!next.monthReopenHistory?.some(r=>r.month===c.month&&r.entity===c.entity&&r.reason?.trim()&&!previous.monthReopenHistory?.some(old=>JSON.stringify(old)===JSON.stringify(r))))throw Error('Reopen '+c.month+' with a reason first.');continue;}
   if(monthFingerprint(next,c.month,c.entity)!==c.signature)throw Error(c.month+' is closed for '+c.entity+'. Record a current-month correction, or reopen that month with a reason.');
  }
+}
+
+export function monthEndChecklist(m,month,entity,asOf){
+ const {first,last}=monthBounds(month),relevant=t=>owner(m,t)===entity||t.entries.some(e=>m.accounts.find(a=>a.id===e.account)?.entity===entity),pending=m.transactions.filter(t=>t.date>=first&&t.date<=last&&t.status==='pending'&&relevant(t)),expected=occurrences(m,last).filter(t=>t.date>=first&&owner(m,t)===entity),accounts=m.accounts.filter(a=>a.type==='cash'&&a.entity===entity).filter(a=>{const r=m.reconciliations?.find(r=>r.account===a.id);return !r||r.asOf<last||!checkpointValid(m,r);}),budgets=budgetMonth(m,month,entity,last).buckets.filter(b=>b.allowance===null||!b.account&&!b.funding?.[month]),unknown=(m.unscheduledBills||[]).filter(b=>b.entity===entity);
+ return {pending,expected,accounts,budgets,unknown,ended:month<asOf.slice(0,7),reasons:closeRequirements(m,month,entity,asOf)};
 }
