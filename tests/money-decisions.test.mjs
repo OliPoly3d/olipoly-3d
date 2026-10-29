@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validate, balances, occurrences, spending } from '../js/money-engine.mjs';
-import { validateBudgets, budgetMonth } from '../js/money-budget.mjs';
+import {
+  validateBudgets,
+  budgetMonth,
+  applyBudgetTiming,
+  categoryBudgetSummary,
+  budgetTimingLabel,
+} from '../js/money-budget.mjs';
 import { planningSnapshot } from '../js/money-insights.mjs';
 import { planningForecast } from '../js/money-planning.mjs';
 import { cashCapacity, cashComponents, verifyBalance } from '../js/money-confidence.mjs';
@@ -691,5 +697,149 @@ test('debt runway separates estimated interest, payments and net debt reduction'
         { hypotheticalBalances: true },
       ),
     /debt account/,
+  );
+});
+
+test('category totals offset overspending and keep earmarks distinct without counting transfers twice', () => {
+  const m = fixture();
+  m.budgets[0].monthly['2026-01'] = 10000;
+  m.budgets[1].monthly['2026-01'] = 10000;
+  m.budgets.push(
+    {
+      id: 'dining',
+      name: 'Dining',
+      entity: 'household',
+      account: 'cash',
+      monthly: { '2026-01': 10000 },
+    },
+    {
+      id: 'event',
+      name: 'Birthday event',
+      entity: 'household',
+      account: 'cash',
+      oneTimeMonth: '2026-01',
+      monthly: { '2026-01': 5000 },
+    },
+  );
+  m.transactions = [
+    {
+      id: 'food',
+      date: '2026-01-08',
+      description: 'Food',
+      kind: 'expense',
+      category: 'Groceries',
+      status: 'pending',
+      entries: [{ account: 'card', amount: -14000 }],
+    },
+    {
+      id: 'gas',
+      date: '2026-01-08',
+      description: 'Fuel',
+      kind: 'expense',
+      category: 'Gas',
+      status: 'cleared',
+      entries: [{ account: 'card', amount: -2000 }],
+    },
+    {
+      id: 'payoff',
+      date: '2026-01-09',
+      description: 'Pay card',
+      kind: 'transfer',
+      status: 'cleared',
+      entries: [
+        { account: 'cash', amount: -5000 },
+        { account: 'card', amount: 5000 },
+      ],
+    },
+  ];
+  let b = budgetMonth(m, '2026-01', 'household', '2026-01-10'),
+    s = categoryBudgetSummary(b.buckets, b.outside);
+  assert.equal(b.buckets[0].remaining, -4000);
+  assert.equal(s.everyday.remaining, 14000);
+  assert.equal(s.earmarked.remaining, 5000);
+  assert.equal(s.all.remaining, 19000);
+  assert.equal(s.all.spent, 16000);
+  m.transactions.push({
+    id: 'return',
+    date: '2026-01-10',
+    description: 'Returned food',
+    kind: 'refund',
+    refundOf: 'food',
+    category: 'Groceries',
+    status: 'cleared',
+    entries: [{ account: 'card', amount: 1000 }],
+  });
+  b = budgetMonth(m, '2026-01', 'household', '2026-01-10');
+  s = categoryBudgetSummary(b.buckets, b.outside);
+  assert.equal(s.everyday.remaining, 15000);
+  assert.equal(s.all.spent, 15000);
+  delete m.budgets[0].monthly['2026-01'];
+  assert.equal(
+    categoryBudgetSummary(budgetMonth(m, '2026-01', 'household', '2026-01-10').buckets).all.missing,
+    true,
+  );
+});
+test('category timing updates pace and daily reserves while preserving monthly targets, recorded spending and other categories', () => {
+  const m = fixture(),
+    before = JSON.stringify(m),
+    old = planningForecast(m, '2026-02-28');
+  const next = applyBudgetTiming(m, {
+      budget: 'food',
+      month: '2026-01',
+      mode: 'date',
+      when: '2026-01-25',
+    }),
+    p = planningForecast(next, '2026-02-28');
+  assert.equal(JSON.stringify(m), before);
+  assert.equal(p.days.at(-1).closing.cash, old.days.at(-1).closing.cash);
+  assert.equal(budgetMonth(next, '2026-01', 'household', '2026-01-10').buckets[0].allowance, 64000);
+  assert.equal(categoryPace(next, '2026-01', 'household', '2026-01-10')[0].expectedByToday, 0);
+  assert.equal(next.budgets[1].timing, undefined);
+  assert.equal(next.budgets[0].timing['2026-02'], undefined);
+  assert.deepEqual(next.transactions, m.transactions);
+  assert.equal(budgetTimingLabel(next, next.budgets[0], '2026-01'), 'On 2026-01-25');
+});
+test('forward timing changes clamp dates, preserve earlier months and protect closed / one-time budgets', () => {
+  const m = fixture();
+  m.budgets[0].timing = { '2026-01': { mode: 'daily' }, '2026-02': { mode: 'weekly', weekday: 2 } };
+  const next = applyBudgetTiming(m, {
+    budget: 'food',
+    month: '2026-03',
+    mode: 'date',
+    when: '2026-03-31',
+    scope: 'future',
+  });
+  assert.deepEqual(next.budgets[0].timing['2026-02'], { mode: 'weekly', weekday: 2 });
+  assert.equal(next.budgets[0].timing['2027-02'].date, '2027-02-28');
+  assert.equal(next.budgets[0].timing['2028-02'].date, '2028-02-29');
+  assert.equal(next.budgets[0].timing['2026-04'].date, '2026-04-30');
+  assert.equal(next.budgets[0].monthly['2026-03'], 64000);
+  m.monthClosures = [{ month: '2026-03', entity: 'household' }];
+  assert.throws(
+    () =>
+      applyBudgetTiming(m, { budget: 'food', month: '2026-02', mode: 'daily', scope: 'future' }),
+    /closed month/,
+  );
+  m.budgets.push({
+    id: 'event',
+    name: 'One event',
+    entity: 'household',
+    account: 'cash',
+    oneTimeMonth: '2026-01',
+    monthly: { '2026-01': 1000 },
+  });
+  assert.throws(
+    () =>
+      applyBudgetTiming(m, { budget: 'event', month: '2026-01', mode: 'daily', scope: 'future' }),
+    /one-time budget/,
+  );
+  assert.throws(
+    () =>
+      applyBudgetTiming(m, { budget: 'gas', month: '2026-01', mode: 'date', when: '2026-02-01' }),
+    /selected month/,
+  );
+  assert.throws(
+    () => applyBudgetTiming(m, { budget: 'gas', month: '2026-01', mode: 'weekly', weekday: 7 }),
+    /weekday/,
   );
 });

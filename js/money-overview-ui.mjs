@@ -1,7 +1,13 @@
 import { addDays, forecast, forecastEnd, balances } from './money-engine.mjs';
-import { monthBounds, shiftMonth } from './money-budget.mjs';
+import {
+  monthBounds,
+  shiftMonth,
+  budgetTimingLabel,
+  categoryBudgetSummary,
+} from './money-budget.mjs';
 import { planningForecast } from './money-planning.mjs';
 import { planningSnapshot } from './money-insights.mjs';
+import { revealSection } from './money-sections.mjs';
 import { cashCapacity } from './money-confidence.mjs';
 import {
   horizonSummary,
@@ -163,23 +169,39 @@ export function setupOverview({ getDraft, today, record, selectCredit, message }
     } else if (view === 'pace') {
       $('decisionChartHeading').textContent = 'Spending pace · ' + month;
       $('decisionChartNote').textContent =
-        'Recorded net spending versus the allowance expected by today, using dated bills and category timing. A negative difference means less spent than expected. Undated one-time / YOY allowances need a date before pace can be judged.';
+        'Month left combines unused monthly allowances; one category can offset another. Expected by today and Pace difference use your chosen timing. Edit timing to choose daily, weekly, a specific date or month-end; Edit budget changes the target. These controls do not create a recurring bill. Undated YOY / one-time allowances need timing before a pace comparison is available.';
       const pace = categoryPace(m, month, $('budgetEntity').value, today());
       const table = el('table'),
-        head = el('tr');
-      for (const name of ['Category', 'Expected by today', 'Recorded', 'Difference'])
+        head = el('tr'),
+        thead = el('thead'),
+        body = el('tbody');
+      for (const name of [
+        'Category / timing',
+        'Month budget',
+        'Spent so far',
+        'Month left',
+        'Expected by today',
+        'Pace difference',
+      ])
         head.append(el('th', name));
-      table.append(head);
+      thead.append(head);
+      table.append(thead);
+      body.id = 'paceCategoryRows';
+      table.append(body);
       for (const b of pace) {
         const tr = el('tr');
+        tr.dataset.paceBudget = b.id;
         for (const value of [
           b.name,
-          b.expectedByToday === null ? 'Timing not set' : money(b.expectedByToday),
+          b.allowance === null ? 'Set target' : money(b.allowance),
           money(b.spent),
+          b.remaining === null ? 'Incomplete' : money(b.remaining),
+          b.expectedByToday === null ? 'Timing not set' : money(b.expectedByToday),
           b.pace === null ? '—' : money(b.pace),
         ])
           tr.append(el('td', value));
         if (b.pace > 0) tr.classList.add('pace-over');
+        tr.cells[3].classList.toggle('low', b.remaining !== null && b.remaining < 0);
         const td = tr.firstChild,
           track = el('div');
         track.className = 'pace-track';
@@ -188,8 +210,55 @@ export function setupOverview({ getDraft, today, record, selectCredit, message }
           Math.min(100, Math.max(0, b.allowance ? (b.spent / b.allowance) * 100 : 0)) + '%';
         track.append(bar);
         td.append(track);
-        table.append(tr);
+        const actions = el('div');
+        actions.className = 'pace-category-actions';
+        actions.append(
+          button('Edit timing: ' + budgetTimingLabel(m, b, month), () =>
+            document.dispatchEvent(
+              new window.CustomEvent('money-edit-budget-timing', { detail: { budget: b.id } }),
+            ),
+          ),
+          button('Edit budget', () => {
+            const section = $(b.seasonal ? 'seasonalSection' : 'spendingSection');
+            revealSection(section);
+            const row = [...document.querySelectorAll('[data-budget-id]')].find(
+                (r) => r.dataset.budgetId === b.id,
+              ),
+              input = row?.querySelector('input');
+            if (input) {
+              row.scrollIntoView({ behavior: 'smooth' });
+              input.focus();
+            } else section.scrollIntoView({ behavior: 'smooth' });
+          }),
+        );
+        const closed = m.monthClosures?.some(
+          (c) => c.month === month && c.entity === $('budgetEntity').value,
+        );
+        for (const control of actions.children) {
+          control.disabled = !!closed;
+          if (closed) control.title = 'Reopen this closed month to edit its budget or timing.';
+        }
+        td.append(actions);
+        body.append(tr);
       }
+      const all = categoryBudgetSummary(pace).all,
+        completePace = pace.length > 0 && pace.every((b) => b.expectedByToday !== null),
+        due = pace.reduce((n, b) => n + (b.expectedByToday || 0), 0),
+        tfoot = el('tfoot'),
+        overall = el('tr');
+      overall.id = 'paceOverall';
+      for (const value of [
+        'Combined categories',
+        all.missing ? 'Incomplete' : money(all.budget),
+        money(all.spent),
+        all.missing ? 'Incomplete' : money(all.remaining),
+        completePace ? money(due) : 'Timing incomplete',
+        completePace ? money(all.spent - due) : '—',
+      ])
+        overall.append(el('td', value));
+      overall.cells[3].classList.toggle('low', !all.missing && all.remaining < 0);
+      tfoot.append(overall);
+      table.append(tfoot);
       const scroll = el('div');
       scroll.className = 'scroll';
       scroll.append(table);

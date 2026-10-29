@@ -1,5 +1,5 @@
 import {addDays,balanceUnknownAt,cents, date, forecastEnd} from './money-engine.mjs';
-import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
+import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets,budgetTimingLabel,categoryBudgetSummary} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
 import {changeExpectation,removeActual} from './money-actions.mjs';
 import {sectionPreview,revealSection} from './money-sections.mjs';
@@ -18,14 +18,14 @@ function amountInput(value,label){const input=el('input');input.type='number';in
 function accountSelect(model,value,label,cashOnly=false,entity){const s=el('select');s.setAttribute('aria-label',label);for(const a of model.accounts.filter(a=>(!cashOnly||a.type==='cash')&&(!entity||a.entity===entity))){const o=el('option',a.name);o.value=a.id;s.append(o);}s.value=value||'';return s;}
 const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
 function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',accents[id]||'#78d9cc');return span;}
-const ids=['accountSummary','monthMetrics','cashAlerts','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
+const ids=['categorySpendingSummary','accountSummary','monthMetrics','cashAlerts','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
 function comparisonRow(name,id,expected,actual,max,missingLabel='Set target'){
  const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[id]||'#78d9cc');
  const heading=el('strong');heading.append(categoryLabel(name,id));row.append(heading);
  const chart=el('div');
  for(const [label,value,cls] of [['Expected',expected,'planned'],['Actual',actual,'actual']]){
   const line=el('div',undefined,'comparison-line'),track=el('div',undefined,'bar-track'),fill=el('span',undefined,cls);
-  fill.style.width=(value||0)/max*100+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?missingLabel:money(value))));chart.append(line);
+  fill.style.width=Math.max(0,(value||0)/max*100)+'%';track.append(fill);line.append(track,el('span',label+': '+(value===null?missingLabel:money(value))));chart.append(line);
  }
  row.append(chart);return row;
 }
@@ -125,7 +125,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   if(model.baseline?.notes?.length){const note=el('span',' Opening snapshot: '+model.baseline.notes.join(' · ')+'.');note.setAttribute('data-debt-private','');$('projectionNote').append(note);}
   if(incomplete){$('projectionNote').append(document.createTextNode(' Set category targets and funding from '+incomplete+' onward to complete this projection.'));$('balanceChart').replaceChildren(el('p','Complete the missing category budgets before using this balance projection.','notice'));}
   else balanceGraph(days,account);
-  const b=budgetMonth(model,month,entity,today());sectionPreview('spendingSection',(b.missing?'Targets incomplete':'Budget '+money(b.totals.budget))+' · Spent '+money(b.totals.spent)+' · Remaining '+(b.missing?'Incomplete':money(b.totals.remaining)));$('monthChart').replaceChildren();
+  const b=budgetMonth(model,month,entity,today());sectionPreview('spendingSection',(b.missing?'Targets incomplete':'Budget '+money(b.totals.budget))+' · Spent '+money(b.totals.spent)+' · Remaining '+(b.missing?'Incomplete':money(b.totals.remaining)));$('monthChart').replaceChildren();renderSpendingSummary(b,month);
   const max=Math.max(1,...b.buckets.flatMap(x=>[x.allowance||0,x.spent]));
   for(const item of b.buckets)$('monthChart').append(comparisonRow(item.shortName||item.name,item.id,item.allowance,item.spent,max));
   const total=comparisonRow('Overall — categories shown','overall',b.missing?null:b.totals.budget,b.totals.spent,Math.max(1,b.totals.budget,b.totals.spent),'Incomplete targets');
@@ -135,6 +135,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   const outside=b.outside.filter(t=>!t.scheduleKey).reduce((n,t)=>n+(t.unbudgetedAmount??-t.entries[0].amount),0);
   if(outside){const note=el('p','Other recorded expenses outside these categories: '+money(outside)+'. ','help'),link=el('a','Review other spending');link.href='#spendingSection';note.append(link);total.append(note);}
   $('monthChart').append(total);
+  const footer=$('categoryBudgetTotal');if(footer){footer.cells[1].textContent=b.missing?'Incomplete':money(b.totals.budget);footer.cells[2].textContent=money(b.totals.spent);footer.cells[3].textContent=b.missing?'Incomplete':money(b.totals.remaining);footer.cells[3].classList.toggle('low',!b.missing&&b.totals.remaining<0);}
   for(const item of b.buckets){const row=[...document.querySelectorAll('[data-budget-id]')].find(r=>r.dataset.budgetId===item.id);if(row){
    const allowance=row.querySelector('[data-value="allowance"]');if(allowance)allowance.textContent=item.allowance===null?'Set target':money(item.allowance);
    const source=row.querySelector('[data-value="source"]');if(source)source.textContent=item.partial?'Full month '+money(item.full||0)+' · opening-month allowance shown':'Total of the YOY list below';
@@ -178,6 +179,18 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   if(!$(id).children.length){const row=el('tr');cell(row,'No expected entries for this month.').colSpan=6;$(id).append(row);}
   $(totalId).replaceChildren();const total=el('tr');cell(total,'Total').colSpan=3;cell(total,money(expected));cell(total,money(actual));cell(total,'');$(totalId).append(total);
  }
+ function renderSpendingSummary(result,month){
+  const target=$('categorySpendingSummary'),summary=categoryBudgetSummary(result.buckets,result.outside),total=summary.all;target.replaceChildren();
+  target.append(el('h3','Spending budget · '+month));
+  if(!total.count){target.append(el('p','Add category targets to see your combined spending allowance.'));return;}
+  const metrics=el('div',undefined,'metrics');
+  for(const [label,value]of [['Month’s category budget',total.missing?'Incomplete':money(total.budget)],['Spent so far · net of refunds',money(total.spent)],['Left across all categories',total.missing?'Incomplete':money(total.remaining)]]){const card=el('div',undefined,'metric');card.append(el('span',label),el('strong',value));if(label==='Left across all categories'&&!total.missing&&total.remaining<0)card.classList.add('low');metrics.append(card);}target.append(metrics);
+  target.append(el('p',total.missing?'Set missing targets before relying on a combined remainder.':total.remaining>=0?'Category overages are offset by underspending elsewhere. The combined budget still has '+money(total.remaining)+' left for this month.':'Combined category spending is '+money(-total.remaining)+' over this month’s budget.','category-total-status'));
+  const text=group=>group.missing?'Incomplete':money(group.remaining);target.append(el('p','Everyday categories left: '+text(summary.everyday)+' · YOY / one-time earmarks left: '+text(summary.earmarked)+' (included above).','help'));
+  const help=el('details'),title=el('summary','What this total covers');help.append(title,el('p','This allowance covers the rest of the month. Earmarks may still be needed for their planned expenses. Cash outlook also accounts for bills outside these categories, transfers, savings and your cash floor.','help'));target.append(help);
+  if(summary.outside)target.append(el('p','Other recorded spending outside category budgets: '+money(summary.outside)+'. Review Activity to categorize it; it is excluded from these category totals.','notice'));
+  const edit=el('button','Edit category budgets');edit.type='button';edit.onclick=()=>{revealSection($('spendingSection'));$('spendingSection').scrollIntoView({behavior:'smooth'});};target.append(edit);
+ }
  function renderCategories(model,month,entity){
   $('categoryRows').replaceChildren();const result=budgetMonth(model,month,entity,today());
   for(const b of result.buckets){
@@ -192,10 +205,10 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    cell(row,money(b.spent),'Actual').dataset.value='spent';cell(row,b.remaining===null?'Set target':money(b.remaining),'Remaining').dataset.value='remaining';
    const account=accountSelect(model,b.funding?.[month]||b.account,'Fund '+b.name+' from',true,entity);cell(row,account,'Fund from');
    if(input)input.onchange=()=>run(()=>{const n=cents(input.value);if(n<0)throw Error('Budget cannot be negative.');const item=model.budgets.find(i=>i.id===b.id);item.overrides={...item.overrides,[month]:n};mark();});
-   const selectedTiming=b.timing?.[month],timing=el('button','Timing · '+(selectedTiming?.mode==='date'?selectedTiming.date:({daily:'Daily',weekly:'Weekly','month-end':'Month-end'}[selectedTiming?.mode]||(model.planning?.budgetTiming==='month-end'||b.seasonal||b.oneTimeMonth?'Month-end':'Weekly'))));timing.type='button';timing.onclick=()=>{const select=$('timingBudget');select.value=b.id;select.dispatchEvent(new window.Event('change'));revealSection($('timingEntry'));$('timingEntry').scrollIntoView({behavior:'smooth'});};label.append(timing);
+   const timing=el('button','Edit timing: '+budgetTimingLabel(model,b,month));timing.type='button';timing.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-edit-budget-timing',{detail:{budget:b.id}}));label.append(timing);
    account.onchange=()=>{const item=model.budgets.find(i=>i.id===b.id);item.funding={...item.funding,[month]:account.value};mark();};$('categoryRows').append(row);
   }
-  $('categoryTotals').replaceChildren();const tr=el('tr');cell(tr,'YOY extras total is linked to the detailed list below and included once in the projection.').colSpan=5;$('categoryTotals').append(tr);
+  $('categoryTotals').replaceChildren();const tr=el('tr');tr.id='categoryBudgetTotal';cell(tr,'All category budgets');cell(tr,result.missing?'Incomplete':money(result.totals.budget));cell(tr,money(result.totals.spent));const left=cell(tr,result.missing?'Incomplete':money(result.totals.remaining));left.classList.toggle('low',!result.missing&&result.totals.remaining<0);cell(tr,'Includes YOY once');$('categoryTotals').append(tr);
  }
  function renderSeasonal(model,month,entity){
   const result=seasonalMonth(model,month,entity),year=Number(month.slice(0,4));

@@ -531,3 +531,137 @@ test(
     }
   },
 );
+
+test(
+  'summary and pace expose the combined remainder and direct timing edits without rewriting spending',
+  { skip },
+  async () => {
+    const m = fixture();
+    m.budgets.push(
+      {
+        id: 'dining',
+        name: 'Dining',
+        entity: 'household',
+        account: 'cash',
+        monthly: { ...m.budgets[0].monthly },
+      },
+      { id: 'seasonal', name: 'YOY', entity: 'household', account: 'cash', seasonal: true },
+      {
+        id: 'event',
+        name: 'One-time event',
+        entity: 'household',
+        account: 'cash',
+        oneTimeMonth: '2026-10',
+        monthly: { '2026-10': 5000 },
+      },
+    );
+    m.seasonalItems = [
+      { id: 'gifts', name: 'Gifts', entity: 'household', month: 10, amount: 10000 },
+    ];
+    m.transactions = [
+      {
+        id: 'food',
+        date: '2026-10-26',
+        description: 'Food',
+        kind: 'expense',
+        category: 'Groceries',
+        status: 'pending',
+        entries: [{ account: 'card', amount: -14000 }],
+      },
+      {
+        id: 'gas',
+        date: '2026-10-26',
+        description: 'Gas',
+        kind: 'expense',
+        category: 'Gas',
+        status: 'cleared',
+        entries: [{ account: 'card', amount: -2000 }],
+      },
+      {
+        id: 'payoff',
+        date: '2026-10-27',
+        description: 'Pay card',
+        kind: 'transfer',
+        status: 'cleared',
+        entries: [
+          { account: 'cash', amount: -5000 },
+          { account: 'card', amount: 5000 },
+        ],
+      },
+    ];
+    const p = await page(m);
+    try {
+      const { $, change, submit } = p,
+        summary = $('categorySpendingSummary'),
+        before = JSON.stringify(p.model.transactions);
+      assert.equal(summary.closest('details'), null);
+      assert.match(summary.textContent, /Everyday categories left: \$140.00/);
+      assert.match(summary.textContent, /earmarks left: \$150.00/);
+      assert.match(summary.textContent, /combined budget still has \$290.00/);
+      assert.match($('categoryBudgetTotal').textContent, /\$290.00/);
+      document.querySelector('[data-overview="pace"]').click();
+      const food = document.querySelector('[data-pace-budget="food"]');
+      assert.equal(food.cells[3].textContent, '-$40.00');
+      assert.equal($('paceOverall').cells[3].textContent, '$290.00');
+      assert.equal($('paceOverall').cells[4].textContent, 'Timing incomplete');
+      food.querySelector('button').click();
+      assert.equal($('timingEntry').open, true);
+      const f = $('timingForm');
+      assert.equal(f.elements.budget.value, 'food');
+      change(f.elements.mode, 'date');
+      f.elements.when.value = '2026-10-31';
+      change(f.elements.scope, 'future');
+      await submit('timingForm');
+      assert.equal(p.revision, 0);
+      assert.equal(
+        document.querySelector('[data-pace-budget="food"]').cells[4].textContent,
+        '$0.00',
+      );
+      assert.match(summary.textContent, /Everyday categories left: \$140.00/);
+      assert.equal(JSON.stringify(p.model.transactions), before);
+      $('savePlan').click();
+      await tick();
+      assert.equal(p.revision, 1);
+      assert.equal(p.model.budgets[0].timing['2027-02'].date, '2027-02-28');
+      assert.equal(p.model.budgets[0].timing['2028-02'].date, '2028-02-29');
+      assert.equal(p.model.budgets[1].timing, undefined);
+      assert.equal(JSON.stringify(p.model.transactions), before);
+      document.querySelector('[data-pace-budget="food"] button').click();
+      assert.equal(f.elements.scope.value, 'month');
+      change(f.elements.mode, 'weekly');
+      change(f.elements.weekday, '1');
+      await submit('timingForm');
+      assert.match(
+        document.querySelector('[data-pace-budget="food"] button').textContent,
+        /Weekly · Monday/,
+      );
+      $('resetPlan').click();
+      assert.match(
+        document.querySelector('[data-pace-budget="food"] button').textContent,
+        /On 2026-10-31/,
+      );
+      document.querySelectorAll('[data-pace-budget="food"] button')[1].click();
+      assert.equal(document.activeElement, document.querySelector('[data-budget-id="food"] input'));
+      change(document.querySelector('[data-budget-id="food"] input'), '140.00');
+      change(document.querySelector('[data-budget-id="dining"] input'), '60.00');
+      assert.equal(
+        document.querySelector('[data-pace-budget="food"]').cells[3].textContent,
+        '$0.00',
+      );
+      assert.match(summary.textContent, /Everyday categories left: \$140.00/);
+      assert.equal($('paceOverall').cells[3].textContent, '$290.00');
+      assert.equal($('categoryBudgetTotal').cells[3].textContent, '$290.00');
+      assert.equal(JSON.stringify(p.model.transactions), before);
+      assert.equal(p.revision, 1);
+      $('resetPlan').click();
+      $('debtPrivacy').click();
+      assert.equal(summary.closest('[data-debt-private]'), null);
+      assert.equal($('categoryBudgetTotal').cells[3].textContent, '$290.00');
+      $('logout').click();
+      assert.equal(summary.textContent, '');
+      assert.equal($('timingScopeNote').textContent, '');
+    } finally {
+      p.close();
+    }
+  },
+);

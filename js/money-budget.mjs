@@ -1,4 +1,4 @@
-import {date, iso, addDays, occurrences} from './money-engine.mjs';
+import {date, iso, addDays, occurrences,forecastEnd} from './money-engine.mjs';
 import {validateCredit} from './money-credit.mjs';
 import {validateSavings} from './money-savings.mjs';
 import {validateReviews} from './money-review.mjs';
@@ -124,4 +124,36 @@ export function billsMonth(model, month, entity, asOf) {
     const actual = actuals.get(t.scheduleKey);
     return {...t, actual, state: actual ? actual.status : t.date < asOf ? 'unrecorded' : 'upcoming'};
   });
+}
+
+// One timing rule drives labels, spending pace and remaining-budget forecasts.
+export function budgetTiming(model,budget,month){
+ return budget.timing?.[month]||{mode:model.planning?.budgetTiming==='month-end'||budget.seasonal||budget.oneTimeMonth?'month-end':'weekly',weekday:budget.weekday??5};
+}
+export function budgetTimingLabel(model,budget,month){
+ const timing=budgetTiming(model,budget,month);
+ return timing.mode==='weekly'?'Weekly · '+['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][timing.weekday]:timing.mode==='daily'?'Daily':timing.mode==='date'?'On '+timing.date:'Month-end';
+}
+export function applyBudgetTiming(model,{budget,month,mode,weekday,when,scope='month'}){
+ const bounds=monthBounds(month),limit=forecastEnd(model.start).slice(0,7),source=model.budgets?.find(b=>b.id===budget);
+ if(!source)throw Error('Choose a category.');
+ if(month<model.start.slice(0,7)||month>limit||!['month','future'].includes(scope))throw Error('Choose timing within the tracking period.');
+ if(source.oneTimeMonth&&scope==='future')throw Error('A one-time budget applies only to its own month.');
+ if(source.oneTimeMonth&&source.oneTimeMonth!==month)throw Error('Choose the month for this one-time budget.');
+ const end=scope==='future'?limit:month;
+ if(model.monthClosures?.some(c=>c.entity===source.entity&&c.month>=month&&c.month<=end))throw Error('Reopen the affected closed month before changing its category timing.');
+ if(!['daily','weekly','date','month-end'].includes(mode))throw Error('Choose valid spending timing.');
+ if(mode==='weekly'&&(!Number.isInteger(weekday)||weekday<0||weekday>6))throw Error('Choose a weekday.');
+ if(mode==='date'){date(when);if(when<bounds.first||when>bounds.last)throw Error('Choose an expected date within the selected month.');}
+ const next=structuredClone(model),target=next.budgets.find(b=>b.id===budget),day=mode==='date'?Number(when.slice(-2)):null;
+ for(let key=month;key<=end;key=shiftMonth(key,1)){
+  const timing={mode};if(mode==='weekly')timing.weekday=weekday;
+  if(mode==='date')timing.date=key+'-'+String(Math.min(day,monthBounds(key).days)).padStart(2,'0');
+  target.timing={...target.timing,[key]:timing};
+ }
+ return validateBudgets(next);
+}
+export function categoryBudgetSummary(buckets,outside=[]){
+ const sum=rows=>({count:rows.length,missing:rows.some(b=>b.allowance===null),budget:rows.reduce((n,b)=>n+(b.allowance||0),0),spent:rows.reduce((n,b)=>n+b.spent,0),remaining:rows.reduce((n,b)=>n+(b.remaining??0),0)});
+ return {all:sum(buckets),everyday:sum(buckets.filter(b=>!b.seasonal&&!b.oneTimeMonth)),earmarked:sum(buckets.filter(b=>b.seasonal||b.oneTimeMonth)),outside:outside.filter(t=>!t.scheduleKey).reduce((n,t)=>n+(t.unbudgetedAmount??0),0)};
 }
