@@ -893,3 +893,41 @@ test(
     }
   },
 );
+
+test(
+  'cash-before-payday shows a one-day dot and longer windows expose dated values without changing the plan',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change } = p;
+      const original = JSON.stringify(p.model);
+      assert.equal($('dailyCashRows').children.length, 1);
+      assert.match($('dailyCashNote').textContent, /Next paycheck 2026-10-30 is outside/);
+      assert.match($('dailyCashNote').textContent, /Only one day/);
+      assert.equal($('dailyCashChart').querySelectorAll('[data-series-point]').length, 2);
+      assert.equal(
+        [...$('dailyCashChart').querySelectorAll('text')].filter((n) => n.textContent === 'Oct 29')
+          .length,
+        1,
+      );
+      change($('dailyCashWindow'), '14');
+      assert.equal($('dailyCashRows').children.length, 14);
+      assert.match($('dailyCashNote').textContent, /through 2026-11-11/);
+      assert.equal($('dailyCashRows').children[1].children[0].textContent, '2026-10-30');
+      assert.equal($('dailyCashRows').children[1].children[1].dataset.label, 'Daily closing cash');
+      assert.match($('dailyCashDetails').querySelector('summary').textContent, /14 days/);
+      change($('dailyCashWindow'), '30');
+      assert.equal($('dailyCashRows').children.length, 30);
+      change($('dailyCashWindow'), 'payday');
+      assert.equal($('dailyCashRows').children.length, 1);
+      assert.equal(p.revision, 0);
+      assert.equal(JSON.stringify(p.model), original);
+      $('logout').click();
+      assert.equal($('dailyCashRows').textContent, '');
+      assert.equal($('dailyCashWindow').value, 'payday');
+    } finally {
+      p.close();
+    }
+  },
+);

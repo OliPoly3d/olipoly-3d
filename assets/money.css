@@ -375,3 +375,41 @@ body:has(#app:not([hidden])) main { max-width:1440px; }
  #decisionMetrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
  .entry-dialog label:has(select[name=account]),.entry-dialog label:has(select[name=to]),.entry-dialog label:has(input[name=description]) { grid-column:1 / -1; }
 }
+.cash-window { max-width:260px;margin:14px 0; }
+@media(max-width:700px) {
+ body:has(#app:not([hidden])) main { padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
+ .quick-actions { position:fixed;bottom:0;left:0;right:0;z-index:12;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface);box-shadow:0 -5px 20px #0003; }
+ .quick-actions > button,.quick-actions .more-money-actions > summary { width:100%;min-height:48px;font-size:12px;padding:7px 5px;text-align:center;display:flex;align-items:center;justify-content:center; }
+ .more-money-actions > div { top:auto;bottom:calc(100% + 10px); }
+ #planBar { position:static; }
+ #planBar:has(#savePlan:not(:disabled)),#planBar:has(#undoLastSave:not([hidden])) { position:sticky; }
+ .entry-receipt { bottom:calc(80px + env(safe-area-inset-bottom)); }
+ .row-actions button,.daily-panel button,.daily-attention-row button,.daily-account-row button,.chart-toolbar button { min-height:44px; }
+ .mobile-cards { width:100%;white-space:normal; }
+ .mobile-cards thead { position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
+ .mobile-cards tbody { display:grid;gap:12px; }
+ .mobile-cards tbody tr { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px;border:1px solid var(--line);border-radius:9px;background:var(--input); }
+ .mobile-cards tbody td { min-width:0!important;max-width:none!important;border:0;padding:0!important;white-space:normal;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:5px;text-align:left; }
+ .mobile-cards td::before { content:attr(data-label);font-size:11px;font-weight:400;color:var(--muted); }
+ .mobile-cards td:first-child { grid-column:1 / -1;font-size:14px;font-weight:600; }
+ .summary-table.mobile-cards td:nth-child(3) { color:var(--accent); }
+ .summary-table.mobile-cards td.negative { color:var(--danger); }
+ .activity-cards td:nth-child(2) { order:-1;grid-column:1 / -1;font-size:15px;font-weight:600; }
+ .activity-cards td:nth-child(4),.activity-cards td:nth-child(5),.activity-cards td:last-child { grid-column:1 / -1; }
+ .activity-cards td:last-child { flex-direction:row;flex-wrap:wrap; }
+ .activity-cards td:last-child::before { width:100%; }
+ .activity-cards button { min-height:44px; }
+}
+@media(min-width:701px) and (max-width:1024px) {
+ input,select { font-size:16px;min-width:0; }
+ .row-actions button,.daily-panel button { min-height:44px; }
+}
+.activity-filters > summary { min-height:44px; }
+.activity-filters .form-grid { margin-top:14px; }
+@media(max-width:700px) {
+ #moneyWorkspace section[id],#moneyWorkspace details[id],#moneyWorkspace form[id],#weeklyReview,#accountSummary { scroll-margin-top:110px; }
+ #app:has(#savePlan:not(:disabled),#undoLastSave:not([hidden])) :is(section,details,form)[id],#app:has(#savePlan:not(:disabled),#undoLastSave:not([hidden])) #accountSummary { scroll-margin-top:220px; }
+}
+@media(max-width:1024px) {
+ .entry-dialog label:has(select[name=account]),.entry-dialog label:has(select[name=to]),.entry-dialog label:has(input[name=description]) { grid-column:1 / -1; }
+}
