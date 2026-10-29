@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validate,cents,forecast,monthly,balances,spending,occurrences} from '../js/money-engine.mjs';
+import {validate,cents,forecast,monthly,balances,spending,occurrences,forecastEnd} from '../js/money-engine.mjs';
 const account=(id,type='cash',opening=100000)=>({id,name:id,type,entity:'household',opening,reserve:10000});
 const base=()=>({version:1,start:'2026-10-16',accounts:[account('checking'),account('card','card',-5000)],transactions:[],schedules:[]});
 test('cash and category totals distinguish credit purchases and card payments',()=>{
@@ -35,4 +35,9 @@ test('reject invalid dates, fractional cents, broken transfers, duplicate IDs an
 });
 test('36 month forecast remains deterministic and does not mutate source',()=>{
  const m=base(),before=JSON.stringify(m);const d=forecast(m,'2029-10-15');assert.equal(d.length,1096);assert.equal(d.at(-1).closing.checking,100000);assert.equal(JSON.stringify(m),before);
+});
+test('full future calendar years include December events and stop at the shared five-year boundary',()=>{
+ const m=base();m.start='2026-10-21';m.schedules=[{id:'future',name:'Future bill',frequency:'monthly',day:15,anchor:'2029-12-15',end:'2029-12-15',account:'checking',amount:-1000}];
+ const before=JSON.stringify(m),days=forecast(m,'2029-12-31');assert.equal(days.at(-1).date,'2029-12-31');assert.equal(days.at(-1).closing.checking,99000);assert.equal(days.flatMap(d=>d.events).length,1);assert.equal(JSON.stringify(m),before);
+ assert.equal(forecastEnd(m.start),'2031-09-30');assert.equal(forecast(m,forecastEnd(m.start)).at(-1).date,'2031-09-30');assert.throws(()=>forecast(m,'2031-10-01'),/60 months/);assert.equal(forecastEnd('2024-02-29'),'2029-01-31');
 });

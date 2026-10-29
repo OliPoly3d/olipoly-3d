@@ -1,9 +1,10 @@
-import {cents, date} from './money-engine.mjs';
+import {addDays,balanceUnknownAt,cents, date, forecastEnd} from './money-engine.mjs';
 import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
 import {changeExpectation,removeActual} from './money-actions.mjs';
 import {sectionPreview,revealSection} from './money-sections.mjs';
 import {incomingOwner} from './money-income.mjs';
+import {savingsCategory} from './money-savings.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
 const monthName=m=>new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(m+'-01T00:00:00Z'));
@@ -74,7 +75,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function clear(){for(const id of ['incomeSection','billsSection','spendingSection','seasonalSection'])sectionPreview(id,'');closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
  function render(){
   const model=getDraft();if(!model)return;
-  const min=model.start.slice(0,7),max=shiftMonth(min,35),input=$('budgetMonth');input.min=min;input.max=max;
+  const min=model.start.slice(0,7),max=forecastEnd(model.start).slice(0,7),input=$('budgetMonth');input.min=min;input.max=max;
   if(!input.value||input.value<min)input.value=min;if(input.value>max)input.value=max;
   const month=input.value,entity=$('budgetEntity').value;
   $('monthHeading').textContent=monthName(month);
@@ -88,6 +89,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   const select=$('transactionCategory'),chosen=select.value;select.replaceChildren();
   const choices=new Map((model.budgets||[]).filter(b=>!b.oneTimeMonth||b.oneTimeMonth===month).map(b=>[b.name,b.shortName||b.name]));
   for(const s of model.schedules)if(s.category&&!choices.has(s.category))choices.set(s.category,s.category);
+  for(const b of model.savingsBuckets||[])choices.set(savingsCategory(b),savingsCategory(b));
   choices.set('Other','Other');for(const t of model.transactions)if(t.category&&!choices.has(t.category))choices.set(t.category,t.category);
   for(const [name,label] of choices){const o=el('option',label);o.value=name;select.append(o);}if(choices.has(chosen))select.value=chosen;
   $('unknownBills').replaceChildren();for(const b of (model.unscheduledBills||[]).filter(b=>b.entity===entity)){const p=el('p',b.name+' — '+b.reason+' ','notice'),link=el('a','Review / edit');link.href='#billReviewEntry';p.append(link);$('unknownBills').append(p);}
@@ -100,10 +102,10 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   for(const a of summaryAccounts(relevant,p.current)){
    const row=el('tr');row.dataset.accountId=a.id;row.toggleAttribute('data-debt-private',a.type!=='cash');cell(row,a.name,'Account');
    const amount=(value,label,unknown)=>{const td=cell(row,unknown||money(value??0),label);if(!unknown&&(value??0)<0)td.classList.add('negative');return td;};
-   amount(p.opening[a.id],'Month opening',a.balanceUnknown?'Unknown':incomplete&&incomplete<month?'Incomplete plan':null);
-   amount(p.current[a.id],'Current',a.balanceUnknown?'Unknown':null);
-   const td=amount(p.closing[a.id],'Projected month-end',a.balanceUnknown?'Unknown':incomplete?'Incomplete plan':null);
-   if(!a.balanceUnknown&&!incomplete){
+   amount(p.opening[a.id],'Month opening',balanceUnknownAt(a,addDays(month+'-01',-1))?'Unknown':incomplete&&incomplete<month?'Incomplete plan':null);
+   amount(p.current[a.id],'Current',balanceUnknownAt(a,today())?'Unknown':null);
+   const td=amount(p.closing[a.id],'Projected month-end',balanceUnknownAt(a,today())?'Unknown':incomplete?'Incomplete plan':null);
+   if(!balanceUnknownAt(a,today())&&!incomplete){
     if(a.type==='cash'&&p.closing[a.id]<a.reserve)td.classList.add('low');
     if(p.days.at(-1)?.credit?.[a.id]?.missingFrom)td.append(el('small','Interest incomplete · APR needed','summary-note'));
     if(a.type==='card'){

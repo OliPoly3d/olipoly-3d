@@ -1,0 +1,10 @@
+const states=['confirmed','estimated','decision'];
+export const reviewLabel=status=>({confirmed:'Confirmed',estimated:'Estimated',decision:'Needs a decision'}[status]||'Needs a decision');
+export function reviewStatus(item,{credit=false}={}){return item.reviewStatus||(credit?item.termsProvisional?'decision':item.purchaseApr==null?'decision':'confirmed':item.estimated?'estimated':'confirmed');}
+export function validateReviews(m){for(const x of [...m.schedules,...m.accounts.map(a=>a.credit).filter(Boolean),...(m.reviewDecisions||[])])if(x.reviewStatus!==undefined&&!states.includes(x.reviewStatus))throw Error('Choose a valid review status.');for(const x of m.reviewDecisions||[])if(!x.id||!x.name||!['household','business','custodial'].includes(x.entity))throw Error('Invalid planning decision.');return m;}
+export function reviewEntries(m,entity){return [
+ ...m.schedules.filter(s=>s.enabled!==false&&!s.oneTime&&!s.stoppedFrom&&m.accounts.find(a=>a.id===s.account)?.entity===entity).map(s=>({key:'schedule:'+s.id,name:s.name,status:reviewStatus(s),note:s.reviewNote||s.note||'',debt:[s.account,s.to].some(id=>m.accounts.find(a=>a.id===id)?.type!=='cash'&&id)})),
+ ...m.accounts.filter(a=>a.entity===entity&&a.credit).map(a=>({key:'credit:'+a.id,name:a.name+' · terms',status:reviewStatus(a.credit,{credit:true}),note:a.credit.reviewNote||a.credit.termsNotes||'',debt:true})),
+ ...(m.reviewDecisions||[]).filter(d=>d.entity===entity).map(d=>({key:'decision:'+d.id,name:d.name,status:d.reviewStatus||'decision',note:d.reviewNote||'',debt:false}))
+ ];}
+export function updateReview(m,key,status,note){if(!states.includes(status))throw Error('Choose a review status.');const next=structuredClone(m),[kind,...parts]=key.split(':'),id=parts.join(':'),target=kind==='schedule'?next.schedules.find(s=>s.id===id):kind==='credit'?next.accounts.find(a=>a.id===id)?.credit:next.reviewDecisions?.find(d=>d.id===id);if(!target)throw Error('Choose a review item.');target.reviewStatus=status;target.reviewNote=note.trim();if(kind==='schedule')target.estimated=status!=='confirmed';return validateReviews(next);}
