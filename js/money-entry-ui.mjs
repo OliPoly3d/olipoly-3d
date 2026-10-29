@@ -1,5 +1,7 @@
 import { cents, balances } from './money-engine.mjs';
 import { refundableParts, spendingParts, transactionOwner } from './money-categories.mjs';
+import { categoryAccent } from './money-home.mjs';
+import { defaultWatchedAccounts } from './money-everyday.mjs';
 import { searchLedger } from './money-decisions.mjs';
 import { formatMoney } from './money-charts.mjs';
 import { revealSection, sectionPreview } from './money-sections.mjs';
@@ -37,6 +39,17 @@ export function setupEntry({
   const f = $('transactionForm'),
     dialog = $('transactionDialog'),
     view = document.defaultView;
+  const fieldsFirst = [
+    f.elements.amount.closest('label'),
+    f.elements.kind.closest('label'),
+    f.elements.entryTiming.closest('label'),
+    $('entryAccountChoices').parentElement,
+    $('transactionToLabel'),
+    $('transactionCategoryLabel'),
+    f.elements.description.closest('label'),
+    f.querySelector('.entry-meta'),
+  ];
+  for (const field of fieldsFirst.reverse()) f.prepend(field);
   let lastLedger = '',
     receiptTimer = null;
   const preference = () => {
@@ -64,13 +77,14 @@ export function setupEntry({
       message('Use Show debt before entering or editing a debt payment. Your entry is preserved.');
       return;
     }
-    $('spendingSection').open=true;
+    $('spendingSection').open = true;
     revealSection(f);
     if (!dialog.open) {
       if (dialog.showModal) dialog.showModal();
       else dialog.setAttribute('open', '');
     }
-    sync();document.dispatchEvent(new window.Event('money-entry-shown'));
+    sync();
+    document.dispatchEvent(new window.Event('money-entry-shown'));
   }
   function close() {
     if (dialog.open && dialog.close) dialog.close();
@@ -117,6 +131,91 @@ export function setupEntry({
       expected && !f.elements.entryTiming.disabled ? 'Add to budget preview' : 'Record actual';
     if (!expense) f.elements.splitPurchase.checked = false;
     updateSplitTotal();
+    renderQuickChoices();
+  }
+  function choiceButtons(target, select, items, { color = false } = {}) {
+    const key = JSON.stringify(items);
+    if (target.dataset.choices !== key) {
+      target.replaceChildren();
+      target.dataset.choices = key;
+      for (const [value, label] of items) {
+        const b = button(label, () => {
+          if (select.disabled) return;
+          select.value = value;
+          select.dispatchEvent(new view.Event('change', { bubbles: true }));
+        });
+        b.dataset.value = value;
+        b.setAttribute('aria-label', 'Choose ' + label);
+        if (color) b.style.setProperty('--category-accent', categoryAccent(label));
+        target.append(b);
+      }
+    }
+    for (const b of target.children) {
+      b.setAttribute('aria-pressed', String(b.dataset.value === select.value));
+      b.disabled = select.disabled;
+    }
+  }
+  function renderQuickChoices() {
+    const m = getDraft();
+    if (!m) return;
+    const selected = m.accounts.find((a) => a.id === f.elements.account.value),
+      entity = selected?.entity || $('budgetEntity').value,
+      watch = defaultWatchedAccounts(m, entity).map((id) => m.accounts.find((a) => a.id === id)),
+      favorites = [
+        ...watch.filter((a) => a.type === 'card').slice(0, 2),
+        ...watch.filter((a) => a.type === 'cash').slice(0, 1),
+        selected,
+      ].filter(Boolean),
+      seen = new Set();
+    choiceButtons(
+      $('entryAccountChoices'),
+      f.elements.account,
+      favorites.filter((a) => !seen.has(a.id) && seen.add(a.id)).map((a) => [a.id, a.name]),
+    );
+    const categories = m.budgets
+        .filter(
+          (b) =>
+            b.entity === (f.elements.expenseEntity.value || entity) &&
+            !b.seasonal &&
+            !b.oneTimeMonth,
+        )
+        .map((b) => b.name),
+      current = f.elements.category.value;
+    if (current && !categories.includes(current)) categories.push(current);
+    choiceButtons(
+      $('entryCategoryChoices'),
+      f.elements.category,
+      categoryChoices().filter(([id]) => categories.includes(id)),
+      { color: true },
+    );
+    $('entryCategoryChoices').hidden = f.elements.splitPurchase.checked;
+    $('entryContextRows').replaceChildren();
+    if (!selected) return;
+    $('entryContextRows').append(el('strong', selected.name));
+    const rows = searchLedger(m, { account: selected.id, to: today() }).slice(0, 6);
+    for (const t of rows) {
+      const line = el('div');
+      line.className = 'entry-context-row';
+      line.toggleAttribute(
+        'data-debt-private',
+        t.kind !== 'expense' &&
+          t.kind !== 'refund' &&
+          t.entries.some((e) => m.accounts.find((a) => a.id === e.account)?.type !== 'cash'),
+      );
+      line.append(
+        el('small', t.date + ' · ' + t.status),
+        el('span', t.description),
+        el(
+          'strong',
+          formatMoney(
+            t.entries.filter((e) => e.account === selected.id).reduce((n, e) => n + e.amount, 0),
+          ),
+        ),
+      );
+      $('entryContextRows').append(line);
+    }
+    if (!rows.length)
+      $('entryContextRows').append(el('p', 'No recorded activity yet for this account.'));
   }
   function categoryChoices() {
     const choices = [...f.elements.category.options].map((o) => [o.value, o.textContent]);
@@ -262,7 +361,7 @@ export function setupEntry({
       fillRefund();
     }
     f.dispatchEvent(new window.Event('change'));
-    f.elements.description.focus();
+    f.elements.amount.focus();
   }
   for (const [id, kind] of [
     ['quickPurchase', 'expense'],
@@ -501,6 +600,10 @@ export function setupEntry({
     $('entryReceipt').textContent = '';
     lastLedger = '';
     $('ledgerRows').replaceChildren();
+    for (const id of ['entryAccountChoices', 'entryCategoryChoices', 'entryContextRows']) {
+      $(id).replaceChildren();
+      delete $(id).dataset.choices;
+    }
     $('ledgerCount').textContent = '';
     for (const id of ['ledgerAccount', 'ledgerCategory', 'walletSelect', 'walletBank'])
       $(id).replaceChildren();

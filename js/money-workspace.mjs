@@ -31,7 +31,10 @@ export function setupWorkspace({ getOwner }) {
       select(scope.dataset.moneyViews.split(' ')[0]);
   }
   for (const button of document.querySelectorAll('[data-money-view-button]'))
-    button.onclick = () => select(button.dataset.moneyViewButton);
+    button.onclick = () => {
+      select(button.dataset.moneyViewButton);
+      $('moneyWorkspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
   document.addEventListener('money-reveal-section', (e) => reveal(e.detail.target));
   function render() {
     if (owner !== getOwner()) {

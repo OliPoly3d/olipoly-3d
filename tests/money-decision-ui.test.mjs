@@ -931,3 +931,117 @@ test(
     }
   },
 );
+
+test(
+  'home hero, category tiles and quick choices share existing targets and entry fields without preview writes',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change } = p;
+      const original = JSON.stringify(p.model);
+      assert.match($('dailyMetrics').firstChild.textContent, /Left in this month/);
+      let navigatedHome = false;
+      $('moneyWorkspace').scrollIntoView = () => {
+        navigatedHome = true;
+      };
+      document.querySelector('[data-money-view-button=today]').click();
+      assert.equal(navigatedHome, true);
+      assert.equal($('dailyCategoryTiles').children.length, 2);
+      assert.match($('dailyCategoryTotal').textContent, /\$200.00/);
+      assert.equal($('dailyReviewPanel').open, false);
+      assert.match($('dailyReviewCount').textContent, /checks/);
+      $('quickPurchase').click();
+      const f = $('transactionForm');
+      assert.equal(f.firstElementChild, f.elements.amount.closest('label'));
+      assert.equal($('recordTransaction').form, f);
+      assert.equal(f.contains($('recordTransaction')), false);
+      assert.equal($('recordTransaction').closest('#transactionDialog'), $('transactionDialog'));
+      $('entryAccountChoices').querySelector('[data-value="card"]').click();
+      assert.equal(f.elements.account.value, 'card');
+      $('entryCategoryChoices').querySelector('[data-value="Gas"]').click();
+      assert.equal(f.elements.category.value, 'Gas');
+      assert.equal(
+        $('entryCategoryChoices').querySelector('[data-value="Gas"]').getAttribute('aria-pressed'),
+        'true',
+      );
+      assert.equal(p.revision, 0);
+      assert.equal(JSON.stringify(p.model), original);
+      $('closeTransactionEntry').click();
+      assert.equal($('transactionDialog').open, false);
+      $('quickCardPayment').click();
+      assert.equal(f.elements.category.disabled, true);
+      assert.equal($('transactionCategoryLabel').hidden, true);
+      $('clearMatch').click();
+      $('logout').click();
+      for (const id of [
+        'dailyCategoryTiles',
+        'dailyUpcomingRows',
+        'dailyDateInspector',
+        'entryAccountChoices',
+        'entryCategoryChoices',
+        'entryContextRows',
+      ])
+        assert.equal($(id).textContent, '');
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'unified coming-up Record edits the actual cents and removes exactly one matched forecast',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $ } = p;
+      const next = $('dailyUpcomingRows').querySelector('.upcoming-row');
+      assert.match(next.textContent, /Pay/);
+      next.querySelector('button').click();
+      const f = $('transactionForm');
+      assert.equal(f.elements.scheduleKey.value, 'pay:2026-10-30');
+      assert.equal(f.elements.kind.value, 'income');
+      f.elements.amount.value = '1000.03';
+      $('recordTransaction').click();
+      await tick();
+      assert.equal(p.revision, 1);
+      assert.equal(p.model.transactions.length, 1);
+      assert.equal(p.model.transactions[0].entries[0].amount, 100003);
+      assert.equal(p.model.transactions[0].scheduleKey, 'pay:2026-10-30');
+      assert.equal($('dailyUpcomingRows').querySelectorAll('.upcoming-row').length, 1);
+      assert.match($('dailyUpcomingRows').textContent, /Edit/);
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'cash chart exposes major-event labels, keyboard day selection and read-only planning reserves',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change } = p;
+      const original = JSON.stringify(p.model);
+      change($('dailyCashWindow'), '14');
+      assert.ok($('dailyCashChart').querySelectorAll('[data-event-label]').length);
+      assert.ok($('dailyCashChart').querySelector('[data-low-label]'));
+      const inspect = $('dailyCashChart').querySelector('[role=button]');
+      inspect.dispatchEvent(
+        new p.dom.window.KeyboardEvent('keydown', { key: 'End', bubbles: true }),
+      );
+      assert.equal($('dailyInspectDate').value, '2026-11-11');
+      assert.match($('dailyDateInspector').textContent, /2026-11-11/);
+      change($('dailyInspectDate'), '2026-10-30');
+      const reserve = [...$('dailyDateInspector').querySelectorAll('.cash-event-row')].find((r) =>
+        r.textContent.includes('planning reserve'),
+      );
+      assert.ok(reserve);
+      assert.equal(reserve.querySelector('button'), null);
+      assert.equal(p.revision, 0);
+      assert.equal(JSON.stringify(p.model), original);
+    } finally {
+      p.close();
+    }
+  },
+);
