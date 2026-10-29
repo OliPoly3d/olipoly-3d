@@ -47,3 +47,13 @@ The existing database accepts at most 2,000,000 bytes of JSONB text and archives
 5. Exercise cash withdrawal, cash spending and return. Edit savings goals, renewal review dates, custom recurrence and year targets. Save and refresh after checking the preview.
 6. Hide debt while reviewing the summary, scenarios, timelines, activity, duplicate prompts and a debt payment entry. Confirm purchases remain usable and debt amounts stay concealed.
 7. Use month-end checklist links; attempt an edit to a closed month and verify protection. Export a backup and inspect Storage health. No automatic bank transfers or provider cancellations are performed by this app.
+
+## Category summary and timing clarification
+
+The Summary keeps combined monthly category budget, net spending and remainder visible independently of the selected chart tab. Everyday and YOY / one-time earmarks are broken out. The category table and Spending pace table have combined totals, so one category's overage offsets another category's underspend. Uncategorized spending is disclosed separately; transfers are excluded, and linked refunds reduce category spending once. The remainder covers the rest of the month and is distinct from cash headroom after upcoming bills and buffers.
+
+Spending pace now shows month target, spent, month remainder, expected by today and pace difference together. Each category has explicit Edit timing and Edit budget actions. Timing uses one resolver shared with the forecast. The editor can apply daily, weekly, exact-date or month-end timing for the selected month or from that month through the forecast; repeated exact dates clamp to shorter month ends. One-time budgets stay in their own month, and closed months cannot be changed through this helper. Timing does not change recorded purchases or add bill schedules.
+
+Manual verification: keep the category summary visible while switching all graph tabs and hiding debt. Record an overage in one category and underspend in two others, then check the combined remainder. From Spending pace, choose Edit timing, change the mode / weekday / date and scope, preview, reset, save and refresh. Confirm monthly totals and actual spending stay unchanged while expected-by-today and daily cash timing change. Check a closed month, a one-time category, another owner view and a narrow mobile viewport.
+
+Validation for this clarification: all 115 Money checks passed with JSDOM and PGlite enabled; the focused category interaction also verifies offsetting a grocery target increase with a dining target decrease, reset/save behavior, debt privacy and sign-out clearing. Native visual QA remains a manual check in this environment.

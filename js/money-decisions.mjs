@@ -12,6 +12,7 @@ import {
   shiftMonth,
   weeklyDates,
   seasonalMonth,
+  budgetTiming,
 } from './money-budget.mjs';
 import { planningForecast } from './money-planning.mjs';
 import { planningSnapshot } from './money-insights.mjs';
@@ -122,13 +123,7 @@ export function categoryPace(model, month, entity, asOf) {
       totalScheduled = scheduled.reduce((n, t) => n + t.amount, 0),
       due = scheduled.filter((t) => t.date <= until).reduce((n, t) => n + t.amount, 0);
     const explicit = b.timing?.[month],
-      t = explicit || {
-        mode:
-          model.planning?.budgetTiming === 'month-end' || b.seasonal || b.oneTimeMonth
-            ? 'month-end'
-            : 'weekly',
-        weekday: b.weekday ?? 5,
-      };
+      t = budgetTiming(model, b, month);
     if (b.allowance === null || (!explicit && (b.seasonal || b.oneTimeMonth) && until < last))
       return { ...b, expectedByToday: null, pace: null, reason: 'Choose timing to compare pace' };
     let dates = [];

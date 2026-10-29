@@ -1,5 +1,5 @@
 import {forecast, occurrences, balances,validate,addDays,forecastEnd,principalSnapshots} from './money-engine.mjs';
-import {budgetMonth, monthBounds, shiftMonth, validateBudgets,weeklyDates} from './money-budget.mjs';
+import {budgetMonth, monthBounds, shiftMonth, validateBudgets,weeklyDates,budgetTiming} from './money-budget.mjs';
 import {creditState,creditActivity,creditRates,reducePromo,accrueCredit} from './money-credit.mjs';
 import {incomingOwner} from './money-income.mjs';
 
@@ -34,7 +34,7 @@ export function planningForecast(model, end) {
     const account=model.accounts.find(a=>a.id===(b.funding?.[month]||b.account)&&a.type==='cash'&&a.entity===entity);
     if(!account){incomplete(month,entity,b.shortName||b.name,'Budget funding account needed');continue;}
     const start=model.start>bounds.first?model.start:bounds.first;
-    const timing=b.timing?.[month]||{mode:model.planning?.budgetTiming==='month-end'||b.seasonal||b.oneTimeMonth?'month-end':'weekly',weekday:b.weekday??5};
+    const timing=budgetTiming(model,b,month);
     let dates;
     if(timing.mode==='daily'){dates=[];for(let when=start;when<=bounds.last;when=addDays(when,1))dates.push(when);}
     else if(timing.mode==='date')dates=[timing.date<start?start:timing.date];
