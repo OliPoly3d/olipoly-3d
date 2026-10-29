@@ -17,6 +17,7 @@ import {
   clearChart,
   formatMoney as money,
 } from './money-charts.mjs';
+import { categoryAccent, upcomingActivity, cashHighlights } from './money-home.mjs';
 import { revealSection } from './money-sections.mjs';
 const $ = (id) => document.getElementById(id),
   el = (tag, text, cls) => {
@@ -64,7 +65,9 @@ export function setupDaily({
     reviewOpen = false,
     acks = {},
     signatures = {},
-    findings = null;
+    findings = null,
+    upcomingExpanded = false,
+    cashState = null;
   const entity = () => $('budgetEntity').value,
     asOf = () => (today() < getDraft().start ? getDraft().start : today()),
     key = () => 'money_daily_' + getOwner();
@@ -72,7 +75,7 @@ export function setupDaily({
     try {
       return fn();
     } catch (e) {
-      message(e.message);
+      message(e.message, true);
       $('weeklyReviewMessage').textContent = e.message;
       return null;
     }
@@ -204,7 +207,7 @@ export function setupDaily({
         ),
       );
   }
-  function renderAttention(m, state) {
+  function renderAttention(m, state, notices = []) {
     const target = $('dailyAttention');
     target.replaceChildren();
     const items = [
@@ -234,13 +237,15 @@ export function setupDaily({
         action: () => go('billReviewEntry'),
       })),
     ];
-    for (const item of items.slice(0, 3)) {
+    for (const item of items.slice(0, 12)) {
       const row = el('div');
       row.className = 'daily-attention-row';
       row.toggleAttribute('data-debt-private', !!item.debt);
       row.append(el('span', item.text), button('Review', item.action));
       target.append(row);
     }
+    if (items.length > 12)
+      target.append(button('Open all review checks', () => go('confidenceSection')));
     if (!items.length)
       target.append(
         el(
@@ -251,8 +256,14 @@ export function setupDaily({
         ),
       );
     $('dailyReviewCount').textContent = state.followups
-      ? state.followups + ' unresolved checks'
-      : 'Up to date';
+      ? state.followups + ' checks'
+      : notices.length
+        ? 'Review notes'
+        : 'Up to date';
+    $('dailyReviewPanel').classList.toggle('has-review', !!state.followups || !!notices.length);
+    $('dailyReviewNotes').replaceChildren(...notices.map((text) => el('p', text)));
+    if (state.cash?.reasons.length)
+      $('dailyReviewNotes').append(el('p', 'Cash inputs: ' + state.cash.reasons.join(' · ')));
     const reviews = (m.weeklyReviews || []).filter((r) => r.entity === entity()),
       last = reviews.at(-1);
     if (last)
@@ -662,9 +673,7 @@ export function setupDaily({
       timeZone: 'UTC',
     }).format(new Date(asOf() + 'T00:00:00Z'));
     $('dailyContext').textContent =
-      'Current recorded balances and ' +
-      asOf().slice(0, 7) +
-      ' spending · pending entries included. Future-month planning stays in This month / Plan ahead.';
+      asOf().slice(0, 7) + ' · Recorded balances include pending activity.';
     const { buckets, chosen } = renderFavorites(m),
       budget = budgetMonth(m, asOf().slice(0, 7), entity(), asOf()),
       summary = categoryBudgetSummary(budget.buckets, budget.outside);
@@ -679,26 +688,26 @@ export function setupDaily({
       incompletePurpose = bankInfo?.unallocated < 0;
     $('dailyMetrics').replaceChildren(
       metric(
-        'Everyday category allowance left',
+        'Left in this month’s spending plan',
         summary.everyday.missing ? 'Incomplete' : money(summary.everyday.remaining),
         'This must cover the rest of the month. YOY / event earmarks: ' +
           (summary.earmarked.missing ? 'Incomplete' : money(summary.earmarked.remaining)),
       ),
       metric(
-        c?.nextPay ? 'Lowest cash before next paycheck' : 'Lowest cash over the next 30 days',
-        c?.complete ? money(c.low) : 'Needs review',
+        c?.nextPay ? 'Cash room before payday' : 'Cash room over the next 30 days',
+        c?.complete ? money(c.headroom) : 'Needs review',
         c
           ? 'Through ' +
               c.end +
               ' · ' +
               (c.complete
-                ? 'Room after floor / buffers ' + money(c.headroom)
-                : c.reasons.slice(0, 2).join(' · '))
+                ? 'After floor / buffers · low ' + money(c.low) + ' · floor ' + money(c.floor)
+                : 'Confirm inputs in Needs review · floor ' + money(c.floor))
           : 'Choose a cash account',
         button('See cash timeline', () => go('dailyCashDetails')),
       ),
       metric(
-        chosen ? chosen.name + ' · saved purpose' : 'Savings purpose',
+        chosen ? chosen.name + ' · saved' : 'Savings purpose',
         chosen ? money(chosen.balance) : 'Not set',
         chosen
           ? incompletePurpose
@@ -711,6 +720,7 @@ export function setupDaily({
         button('See savings goals', () => go('dailySavingsDetails')),
       ),
     );
+    $('dailyMetrics').children[1].classList.toggle('cash-risk', !!c && c.headroom < 0);
     const everyday = budget.buckets.filter((b) => !b.seasonal && !b.oneTimeMonth);
     categoryBalanceChart(
       $('dailyCategoryChart'),
@@ -728,14 +738,20 @@ export function setupDaily({
           money(summary.outside) +
           '. Review Activity before relying on category totals.',
       );
-    if (c && !c.complete) notices.push('Cash estimate is provisional. ' + c.reasons.join(' · '));
-    if (c?.headroom < 0) notices.push('Potential cash-floor shortfall ' + money(-c.headroom) + '.');
+
     if (incompletePurpose) notices.push('Savings purposes exceed their bank balance.');
-    $('dailyPlanNotice').hidden = !notices.length;
-    $('dailyPlanNotice').textContent = notices.join(' ');
+    $('dailyPlanNotice').hidden = !(c?.headroom < 0);
+    $('dailyPlanNotice').textContent =
+      c?.headroom < 0
+        ? 'Potential cash-floor shortfall: ' +
+          money(-c.headroom) +
+          '. Open the cash outlook and review before extra spending.'
+        : '';
     renderCash(m);
     renderGoals(m, buckets);
-    renderAttention(m, findings);
+    renderAttention(m, findings, notices);
+    renderUpcoming(m);
+    renderCategoryTiles(budget.buckets);
     renderReview(m);
     if ($('budgetMoveEntry').open) run(() => moveChoices());
   }
@@ -744,6 +760,9 @@ export function setupDaily({
       account = findings?.account,
       when = asOf(),
       window = $('dailyCashWindow').value;
+    cashState = null;
+    $('dailyDateInspector').replaceChildren();
+    $('dailyInspectDate').disabled = true;
     $('dailyCashRows').replaceChildren();
     $('dailyCashAssumptions').replaceChildren();
     const heading =
@@ -767,6 +786,14 @@ export function setupDaily({
       days = p.days.filter(
         (d) => d.date >= when && (!incomplete || d.date.slice(0, 7) < incomplete),
       );
+    const highlights = cashHighlights(days, account);
+    cashState = { m, days, account };
+    const dateInput = $('dailyInspectDate');
+    dateInput.min = days[0]?.date || when;
+    dateInput.max = days.at(-1)?.date || end;
+    dateInput.disabled = !days.length;
+    if (!days.some((d) => d.date === dateInput.value))
+      dateInput.value = highlights.lowest?.date || '';
     lineChart(
       $('dailyCashChart'),
       [
@@ -780,7 +807,26 @@ export function setupDaily({
           points: days.map((d) => ({ date: d.date, value: d.low[account] })),
         },
       ],
-      { title: heading, floor: c.floor },
+      {
+        title: heading,
+        floor: c.floor,
+        highlightBelowFloor: true,
+        markers: highlights.markers,
+        annotations:
+          highlights.lowest && days.length > 1
+            ? [
+                {
+                  date: highlights.lowest.date,
+                  value: highlights.lowest.low[account],
+                  label: 'Low ' + money(highlights.lowest.low[account]),
+                },
+              ]
+            : [],
+        onSelect: (when) => {
+          dateInput.value = when;
+          renderCashInspector();
+        },
+      },
     );
     for (const d of days) {
       const row = el('tr');
@@ -811,7 +857,7 @@ export function setupDaily({
       reasons = [...new Set([...c.reasons, ...creditWarnings])];
     if (reasons.length) {
       notes.push('Working estimate — see review notes below.');
-      assumptions.push('Estimate needs review: ' + reasons.join(' · ') + '.');
+      assumptions.push('Inputs need confirmation. Open Needs review on Today for the checklist.');
     }
     if (incomplete && incomplete <= end.slice(0, 7))
       assumptions.push(
@@ -820,8 +866,148 @@ export function setupDaily({
     if (requested > horizon) assumptions.push('Limited to the end of the plan.');
     $('dailyCashNote').textContent = notes.join(' ');
     $('dailyCashAssumptions').textContent = assumptions.join(' ');
+    renderCashInspector();
   }
   $('dailyCashWindow').onchange = () => run(() => renderCash(getDraft()));
+  function renderCategoryTiles(buckets) {
+    $('dailyCategoryTiles').replaceChildren();
+    for (const b of buckets.filter((b) => !b.seasonal && !b.oneTimeMonth)) {
+      const tile = button('', () => go('spendingSection', { currentMonth: true }));
+      tile.className = 'category-tile';
+      tile.style.setProperty('--category-accent', categoryAccent(b.name));
+      tile.setAttribute('aria-label', 'Review ' + b.name + ' budget');
+      const progress = el('progress');
+      progress.max = Math.max(1, b.allowance || 0);
+      progress.value = Math.min(progress.max, Math.max(0, b.spent));
+      progress.setAttribute('aria-label', b.name + ' spent against target');
+      tile.append(
+        el('span', b.shortName || b.name),
+        el(
+          'strong',
+          b.allowance === null
+            ? 'Set target'
+            : money(Math.abs(b.remaining)) + (b.remaining < 0 ? ' over' : ' left'),
+        ),
+        progress,
+        el(
+          'small',
+          money(b.spent) + ' spent' + (b.allowance === null ? '' : ' of ' + money(b.allowance)),
+        ),
+      );
+      tile.classList.toggle('over-budget', b.remaining < 0);
+      $('dailyCategoryTiles').append(tile);
+    }
+  }
+  function renderUpcoming(m) {
+    const rows = upcomingActivity(m, { asOf: asOf(), entity: entity() }),
+      shown = upcomingExpanded ? rows : rows.slice(0, 5);
+    $('dailyUpcomingRows').replaceChildren();
+    for (const t of shown) {
+      const row = el('div');
+      row.className = 'upcoming-row';
+      row.dataset.kind = t.kind;
+      row.toggleAttribute('data-debt-private', t.debt);
+      const detail = el('div'),
+        out = t.entries.find((e) => e.amount < 0) || t.entries[0];
+      detail.append(
+        el(
+          'small',
+          t.date +
+            ' · ' +
+            (t.actual
+              ? t.status
+              : t.kind === 'transfer'
+                ? 'Transfer'
+                : t.kind === 'income'
+                  ? 'Income'
+                  : 'Bill'),
+        ),
+        el('strong', t.description),
+        el(
+          'small',
+          t.entries.map((e) => m.accounts.find((a) => a.id === e.account)?.name).join(' → '),
+        ),
+      );
+      const amount = el('strong', t.unknown ? 'Needs review' : money(Math.abs(out.amount)));
+      row.append(detail, amount);
+      if (t.actual)
+        row.append(button('Edit', () => record(m.transactions.find((x) => x.id === t.id))));
+      else if (!t.unknown && out.amount !== 0)
+        row.append(button('Record', () => record({ ...t, status: 'forecast' })));
+      else
+        row.append(
+          el(
+            'small',
+            t.unknown ? 'Confirm the account balance first.' : 'No payment amount planned.',
+          ),
+        );
+      $('dailyUpcomingRows').append(row);
+    }
+    if (!rows.length)
+      $('dailyUpcomingRows').append(
+        el(
+          'p',
+          'No expected activity in the next 14 days. Category spending is reserved in the cash outlook.',
+        ),
+      );
+    $('dailyAllUpcoming').hidden = rows.length <= 5;
+    $('dailyAllUpcoming').textContent = upcomingExpanded ? 'Show less' : 'Show all';
+    $('dailyUpcomingCount').textContent =
+      rows.length > shown.length
+        ? shown.length +
+          ' of ' +
+          rows.length +
+          ' items · amounts are separate from category allowances.'
+        : 'Category allowances are included in the cash outlook.';
+  }
+  $('dailyAllUpcoming').onclick = () => {
+    upcomingExpanded = !upcomingExpanded;
+    renderUpcoming(getDraft());
+  };
+  function renderCashInspector() {
+    const target = $('dailyDateInspector');
+    target.replaceChildren();
+    if (!cashState) return;
+    const { m, days, account } = cashState,
+      d = days.find((d) => d.date === $('dailyInspectDate').value);
+    if (!d) return;
+    target.append(
+      el(
+        'strong',
+        d.date + ' · Closing ' + money(d.closing[account]) + ' · Low ' + money(d.low[account]),
+      ),
+    );
+    const events = d.events.filter((t) => t.entries.some((e) => e.account === account));
+    for (const t of events) {
+      const row = el('div');
+      row.className = 'cash-event-row';
+      row.toggleAttribute('data-debt-private', debtEntry(m, t));
+      const amount = t.entries
+        .filter((e) => e.account === account)
+        .reduce((n, e) => n + e.amount, 0);
+      row.append(
+        el(
+          'span',
+          t.description +
+            (t.budgetReserve
+              ? ' · planning reserve'
+              : t.creditInterest
+                ? ' · interest estimate'
+                : t.status === 'forecast'
+                  ? ' · expected'
+                  : ''),
+        ),
+        el('strong', money(amount)),
+      );
+      const actual = m.transactions.find((x) => x.id === t.id);
+      if (actual) row.append(button('Edit', () => record(actual)));
+      else if (t.scheduleKey && !t.budgetReserve && amount)
+        row.append(button('Record', () => record({ ...t, status: 'forecast' })));
+      target.append(row);
+    }
+    if (!events.length) target.append(el('p', 'No account activity on this date.'));
+  }
+  $('dailyInspectDate').onchange = renderCashInspector;
   function clear() {
     owner = null;
     preferences = {};
@@ -831,8 +1017,15 @@ export function setupDaily({
     acks = {};
     signatures = {};
     findings = null;
+    upcomingExpanded = false;
+    cashState = null;
     for (const id of [
       'dailyMetrics',
+      'dailyCategoryTiles',
+      'dailyUpcomingRows',
+      'dailyUpcomingCount',
+      'dailyReviewNotes',
+      'dailyDateInspector',
       'dailyContext',
       'dailyAttention',
       'dailyAccountRows',
@@ -857,6 +1050,7 @@ export function setupDaily({
     clearChart($('dailyCashChart'));
     $('weeklyReview').hidden = true;
     $('dailyCashWindow').value = 'payday';
+    $('dailyInspectDate').value = '';
     $('dailyFavoritesForm').reset();
     $('dailyFavoritesForm').elements.bucket.replaceChildren();
     $('budgetMoveForm').reset();

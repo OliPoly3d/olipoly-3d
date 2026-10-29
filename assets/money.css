@@ -194,7 +194,6 @@ dialog::backdrop { background: #070c10b3; }
 .summary-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 .summary-controls button { white-space: nowrap; }
 .privacy-only { display: none; }
-#app[data-debt-hidden=true] [data-debt-private] { display: none !important; }
 #app[data-debt-hidden=true] .privacy-only { display: block; }
 #app[data-debt-hidden=true] #annualSection .dashboard-charts { grid-template-columns: 1fr; }
 #app[data-debt-hidden=true] #forecastSection[data-debt-view] > :not(summary):not(.toolbar) { display: none !important; }
@@ -242,7 +241,7 @@ dialog::backdrop { background: #070c10b3; }
 #plannerSection details,#savingsSection details { margin-top:14px; }
 #plannerSection form { margin-top:14px; }
 #monthCloseStatus .row-actions { margin:10px 0; }
-#app[data-debt-hidden=true] #transactionDialog:has([data-debt-private]) { display:none; }
+#app[data-debt-hidden=true] #transactionDialog:has(#transactionEntry[data-debt-private]) { display:none; }
 @media(max-width:650px) {
  .low-heatmap { grid-template-columns:repeat(2,minmax(0,1fr)); }
  .chart-toolbar [role=group] { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%; }
@@ -270,7 +269,7 @@ dialog::backdrop { background: #070c10b3; }
 body:has(#app:not([hidden])) main > header,body:has(#app:not([hidden])) main > #message { display:none; }
 body:has(#app:not([hidden])) main { max-width:1440px; }
 #app:not([hidden]) { display:grid;grid-template-columns:156px minmax(0,1fr);gap:24px;align-items:start; }
-#moneyWorkspace { min-width:0; }
+#moneyWorkspace { min-width:0;scroll-margin-top:90px; }
 .money-view-nav { position:sticky;top:24px;display:flex;flex-direction:column;gap:8px;padding:20px 12px;background:#1b252c;border:1px solid var(--line);border-radius:12px; }
 .money-workspace-brand { padding:0 10px 22px;font-size:26px;font-weight:600;letter-spacing:-.04em; }
 .money-workspace-brand span { color:var(--accent); }
@@ -412,4 +411,110 @@ body:has(#app:not([hidden])) main { max-width:1440px; }
 }
 @media(max-width:1024px) {
  .entry-dialog label:has(select[name=account]),.entry-dialog label:has(select[name=to]),.entry-dialog label:has(input[name=description]) { grid-column:1 / -1; }
+}
+/* A quieter home screen, with one clear number and a smaller set of everyday choices. */
+#everydaySection { background:linear-gradient(145deg,#202e34,#1b272d 70%);border-color:#34474d;padding:28px; }
+.home-heading h2 { font-size:32px;letter-spacing:-.035em; }
+.home-heading .help { max-width:560px; }
+.daily-metrics { grid-template-columns:1.55fr 1fr 1fr;gap:0;border:1px solid #426068;border-radius:18px;background:linear-gradient(110deg,#233b3f,#203036);overflow:hidden;margin:24px 0; }
+.daily-metrics .metric { background:transparent;border:0;border-radius:0;padding:24px; }
+.daily-metrics .metric + .metric { border-left:1px solid #426068; }
+.daily-metrics .metric:first-child strong { font-size:48px;letter-spacing:-.055em;color:#a3ece0;line-height:1.15;margin:14px 0; }
+.daily-metrics .metric span { font-size:13px; }
+.daily-metrics .metric strong { font-size:28px; }
+.daily-metrics .cash-risk strong { color:var(--danger); }
+.home-review { border:1px solid var(--line);border-radius:12px;padding:0 16px;background:#202d33;margin:20px 0; }
+.home-review > summary { min-height:52px;display:flex;gap:12px;align-items:center;justify-content:space-between;cursor:pointer; }
+.home-review > summary::before { content:'✓';color:var(--accent); }
+.home-review.has-review > summary::before { content:'!';font-weight:700;color:var(--warning); }
+.home-review > summary > span:first-child { flex:1; }
+.home-review[open] { padding-bottom:16px; }
+.home-review p { font-size:13px; }
+.daily-panel { background:#202e35;border-color:#34474d;border-radius:16px;padding:20px;box-shadow:0 7px 24px #0c14161c; }
+.home-grid { grid-template-columns:1.2fr 1fr;gap:22px;margin:24px 0; }
+.category-panel .eyebrow,.upcoming-panel .eyebrow { display:block;margin-bottom:7px; }
+.category-tiles { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px; }
+.category-tile { display:grid;text-align:left;gap:9px;min-width:0;min-height:136px;padding:16px;background:#19272d;border:1px solid #3b5058;border-top:3px solid var(--category-accent);border-radius:12px; }
+.category-tile > span { font-size:13px;color:var(--muted); }
+.category-tile > strong { font-size:21px;letter-spacing:-.02em;font-variant-numeric:tabular-nums; }
+.category-tile small { font-size:11px; }
+.category-tile progress { width:100%;height:6px;border:0;border-radius:5px;accent-color:var(--category-accent); }
+.category-tile progress::-webkit-progress-bar { background:var(--line);border-radius:5px; }
+.category-tile progress::-webkit-progress-value { background:var(--category-accent);border-radius:5px; }
+.category-tile.over-budget strong { color:var(--warning); }
+.daily-category-total { margin-top:18px;font-size:17px;line-height:1.5; }
+.upcoming-row { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:16px 0;border-bottom:1px solid var(--line); }
+.upcoming-row > div { display:grid;gap:5px;border-left:3px solid #8ca2b0;padding-left:12px; }
+.upcoming-row[data-kind=income] > div { border-color:var(--accent); }
+.upcoming-row[data-kind=expense] > div { border-color:var(--warning); }
+.upcoming-row small { font-size:11px;overflow-wrap:anywhere; }
+.upcoming-row strong { font-size:13px; }
+.upcoming-row > button { grid-column:2;min-height:44px; }
+.daily-watchlist > summary { min-height:44px;font-size:16px;font-weight:600; }
+.daily-watchlist .row-actions { margin:12px 0; }
+#dailyAccountRows { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px; }
+.cash-inspector { border:1px solid var(--line);border-radius:12px;background:var(--input);padding:16px;margin:14px 0; }
+.cash-inspector:empty { display:none; }
+.cash-inspector > strong { display:block;font-size:13px;margin-bottom:10px; }
+.cash-event-row { display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding:12px 0;font-size:12px; }
+.cash-event-row > span { flex:1;min-width:140px; }
+.cash-event-row > button { min-height:44px; }
+/* The dialog is a fixed header/footer around one scrolling entry surface. */
+#transactionDialog[open] { display:flex;flex-direction:column;width:min(1080px,calc(100vw - 32px));max-width:none;max-height:92dvh;padding:0;overflow:hidden; }
+.entry-dialog-toolbar { position:static;flex-shrink:0;padding:14px 20px;margin:0; }
+.entry-dialog-layout { display:grid;grid-template-columns:minmax(0,1fr);overflow:auto;min-height:0;overscroll-behavior:contain;padding:20px;gap:24px; }
+.entry-dialog .entry-save-bar { display:flex;gap:10px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface);flex-shrink:0; }
+.entry-save-bar button { min-height:48px; }
+.entry-save-bar .primary { flex:1; }
+#entryContext { display:none; }
+.entry-context-row { display:grid;gap:6px;padding:16px 0;border-bottom:1px solid var(--line);font-size:13px; }
+.entry-amount input { font-size:40px;text-align:left;padding:12px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;letter-spacing:-.04em; }
+.entry-meta { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px; }
+.entry-meta label { min-width:0; }
+.entry-choices { display:flex;flex-wrap:wrap;gap:8px;margin-top:10px; }
+.entry-choices button { min-height:48px;padding:10px 13px;font-size:13px;background:var(--input); }
+.entry-choices button[aria-pressed=true] { border-color:var(--accent);background:#244940;color:#c1fff2; }
+#entryCategoryChoices button { border-left:3px solid var(--category-accent); }
+.entry-instructions { margin:0; }
+@media(min-width:900px) {
+ .entry-dialog-layout { grid-template-columns:260px minmax(0,1fr); }
+ #entryContext { display:block;border-right:1px solid var(--line);padding-right:22px; }
+}
+@media(min-width:701px) and (max-width:1000px) {
+ .home-grid { grid-template-columns:1fr; }
+ .daily-metrics { grid-template-columns:1fr 1fr; }
+ .daily-metrics .metric:first-child { grid-column:1 / -1;border-bottom:1px solid #426068; }
+ .daily-metrics .metric:nth-child(2) { border-left:0; }
+}
+@media(max-width:700px) {
+ #everydaySection { padding:18px 14px;border-radius:16px; }
+ .home-heading h2 { font-size:28px; }
+ .daily-metrics { grid-template-columns:repeat(2,minmax(0,1fr));border-radius:14px;margin:20px 0; }
+ .daily-metrics .metric { padding:16px 13px; }
+ .daily-metrics .metric:first-child { grid-column:1 / -1;border-bottom:1px solid #426068; }
+ .daily-metrics .metric:first-child strong { font-size:44px; }
+ .daily-metrics .metric:nth-child(2) { border-left:0; }
+ .daily-metrics .metric strong { font-size:22px; }
+ .daily-metrics .metric span { font-size:11px; }
+ .daily-metrics .metric small { font-size:11px; }
+ .home-grid { grid-template-columns:1fr;gap:18px; }
+ .category-tile { min-height:126px;padding:12px; }
+ .category-tile > strong { font-size:18px;overflow-wrap:anywhere; }
+ .category-tile > span { font-size:12px; }
+ #dailyAccountRows { grid-template-columns:1fr; }
+ #transactionDialog[open] { width:100%;height:100dvh;max-height:100dvh;margin:0;inset:0;border:0;border-radius:0; }
+ .entry-dialog-layout { padding:16px; }
+ .entry-dialog .entry-save-bar { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); }
+ .entry-save-bar #clearMatch { font-size:12px;max-width:120px; }
+ .entry-choices button { flex:1 1 auto; }
+ #planBar:has(#saveOutcome.low) { position:sticky; }
+}
+
+#app[data-debt-hidden=true] [data-debt-private] { display: none !important; }
+@media(max-width:700px) {
+ #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) { padding:0;border:0;background:transparent;box-shadow:none; }
+ #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) .plan-status { flex-direction:row;align-items:center;min-width:0;gap:10px; }
+ #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) #planState { flex:none; }
+ #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) #saveOutcome { overflow:hidden;white-space:nowrap;text-overflow:ellipsis; }
+ #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) :is(#savePlan,#resetPlan) { display:none; }
 }

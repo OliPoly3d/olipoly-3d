@@ -45,10 +45,41 @@ function beginSvg(target, width, height, title) {
   target.append(svg);
   return svg;
 }
+export function belowFloorAreas(points, floor) {
+  const regions = [];
+  if (floor === null) return regions;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1],
+      b = points[i];
+    if (a.value >= floor && b.value >= floor) continue;
+    const crossing = () => ({
+        date:
+          +new Date(a.date) +
+          ((floor - a.value) / (b.value - a.value)) * (+new Date(b.date) - +new Date(a.date)),
+        value: floor,
+      }),
+      left = a.value < floor ? a : crossing(),
+      right = b.value < floor ? b : crossing();
+    regions.push([
+      { date: left.date, value: floor },
+      left,
+      right,
+      { date: right.date, value: floor },
+    ]);
+  }
+  return regions;
+}
 export function lineChart(
   target,
   series,
-  { title = 'Projected balance', floor = null, onSelect, markers = [] } = {},
+  {
+    title = 'Projected balance',
+    floor = null,
+    onSelect,
+    markers = [],
+    annotations = [],
+    highlightBelowFloor = false,
+  } = {},
 ) {
   responsive(target, (width) => {
     const values = series.flatMap((s) => s.points.map((p) => p.value));
@@ -136,6 +167,18 @@ export function lineChart(
         ),
       );
     }
+    if (highlightBelowFloor && floor !== null) {
+      const lowSeries = series.find((s) => s.dashed) || series[0];
+      for (const region of belowFloorAreas(lowSeries?.points || [], floor))
+        svg.append(
+          svgNode('polygon', {
+            'data-below-floor': '',
+            points: region.map((p) => x(p.date) + ',' + y(p.value)).join(' '),
+            fill: 'var(--danger)',
+            opacity: 0.22,
+          }),
+        );
+    }
     for (const [index, s] of series.entries()) {
       const color = s.color || ['var(--accent)', 'var(--warning)', '#b6c1cc', '#8ab7e0'][index % 4];
       const g = svgNode('g', s.debt ? { 'data-debt-private': '' } : {});
@@ -180,6 +223,7 @@ export function lineChart(
       svg.append(g);
     }
     const visibleMarkers = markers.filter((m) => dates.includes(m.date));
+    let lastLabelX = -Infinity;
     for (const m of visibleMarkers) {
       const value = series[0].points.find((p) => p.date === m.date)?.value;
       if (value === undefined) continue;
@@ -192,6 +236,48 @@ export function lineChart(
         }),
       );
     }
+    if (markers.some((m) => m.label)) {
+      lastLabelX = -Infinity;
+      for (const m of visibleMarkers) {
+        const px = x(m.date);
+        if (!m.label || px - lastLabelX < (width < 450 ? 85 : 110)) continue;
+        lastLabelX = px;
+        const anchor = px < left + 55 ? 'start' : px > right - 55 ? 'end' : 'middle';
+        svg.append(
+          svgNode('line', {
+            x1: px,
+            x2: px,
+            y1: top,
+            y2: bottom,
+            stroke: 'var(--line)',
+            'stroke-dasharray': '2 5',
+          }),
+          svgNode(
+            'text',
+            { x: px, y: top - 8, 'text-anchor': anchor, 'data-event-label': '' },
+            m.label.length > 14 ? m.label.slice(0, 13) + '…' : m.label,
+          ),
+        );
+      }
+    }
+    for (const a of annotations.filter((a) => dates.includes(a.date))) {
+      const px = x(a.date),
+        py = y(a.value),
+        anchor = px < left + 70 ? 'start' : px > right - 70 ? 'end' : 'middle';
+      svg.append(
+        svgNode('circle', { cx: px, cy: py, r: 4, fill: 'var(--warning)' }),
+        svgNode(
+          'text',
+          {
+            x: px,
+            y: Math.min(bottom - 8, Math.max(top + 28, py + 20)),
+            'text-anchor': anchor,
+            'data-low-label': '',
+          },
+          a.label,
+        ),
+      );
+    }
     if (onSelect) {
       const hit = svgNode('rect', {
         x: left,
@@ -199,6 +285,28 @@ export function lineChart(
         width: right - left,
         height: bottom - top,
         fill: 'transparent',
+        tabindex: 0,
+        role: 'button',
+        'aria-label': 'Inspect a cash date. Use arrow keys to choose a day.',
+      });
+      let selectedIndex = 0;
+      hit.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' '].includes(event.key)) return;
+        event.preventDefault();
+        selectedIndex =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? dates.length - 1
+              : Math.max(
+                  0,
+                  Math.min(
+                    dates.length - 1,
+                    selectedIndex +
+                      (event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0),
+                  ),
+                );
+        onSelect(dates[selectedIndex]);
       });
       hit.addEventListener('click', (event) => {
         const bounds = svg.getBoundingClientRect(),
