@@ -665,3 +665,231 @@ test(
     }
   },
 );
+
+test(
+  'everyday views route existing editors and keep Today on the current month',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change } = p;
+      assert.equal($('app').dataset.moneyView, 'today');
+      assert.equal($('everydaySection').hidden, false);
+      assert.equal($('plannerSection').hidden, true);
+      document.querySelector('[data-money-view-button="month"]').click();
+      assert.equal($('summarySection').hidden, false);
+      change($('budgetMonth'), '2028-07');
+      const current = $('dailyMetrics').textContent;
+      assert.match($('dailyContext').textContent, /2026-10/);
+      document.querySelector('[data-money-view-button="today"]').click();
+      assert.equal($('dailyMetrics').textContent, current);
+      $('quickPurchase').click();
+      assert.equal($('app').dataset.moneyView, 'today');
+      assert.equal($('transactionDialog').open, true);
+      $('clearMatch').click();
+      $('reconcileForm').elements.balance.value = '9999';
+      $('reconcileResult').textContent = 'Old check';
+      $('dailyAccountRows').querySelector('button').click();
+      assert.equal($('reconcileForm').elements.balance.value, '');
+      assert.equal($('reconcileResult').textContent, '');
+      assert.equal($('reconcileForm').elements.account.value, 'cash');
+      $('dailyEditBudgets').click();
+      assert.equal($('app').dataset.moneyView, 'month');
+      assert.equal($('budgetMonth').value, '2026-10');
+      assert.equal($('spendingSection').open, true);
+      document.querySelector('[data-money-view-button="plan"]').click();
+      assert.equal($('plannerSection').hidden, false);
+      assert.equal($('everydaySection').hidden, true);
+      assert.equal(p.revision, 0);
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'budget move previews one total, saves once, and Undo restores targets in a new revision',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change, submit } = p;
+      $('openBudgetMove').click();
+      const f = $('budgetMoveForm');
+      change(f.elements.from, 'gas');
+      change(f.elements.to, 'food');
+      f.elements.amount.value = '25';
+      await submit('budgetMoveForm');
+      assert.equal(p.revision, 0);
+      assert.match($('budgetMoveResult').textContent, /Combined monthly targets are unchanged/);
+      assert.equal(p.model.budgets[0].overrides, undefined);
+      $('savePlan').click();
+      await tick();
+      assert.equal(p.revision, 1);
+      assert.equal(p.model.budgets[0].overrides['2026-10'], 12500);
+      assert.equal(p.model.budgets[1].overrides['2026-10'], 7500);
+      assert.equal($('saveReceipt').hidden, false);
+      assert.equal($('undoLastSave').hidden, false);
+      $('undoLastSave').click();
+      await tick();
+      assert.equal(p.revision, 2);
+      assert.equal(p.model.budgets[0].overrides, undefined);
+      assert.equal(p.model.budgets[1].overrides, undefined);
+      assert.equal($('budgetMoveResult').textContent, '');
+      assert.equal(p.model.changeLog.length, 2);
+      assert.equal($('undoLastSave').hidden, true);
+      assert.match($('saveReceiptHeading').textContent, /undone/);
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'entry preview explains card purchase and payment effects, cancellation saves nothing, failed save preserves entry',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change, submit } = p;
+      $('quickPurchase').click();
+      const f = $('transactionForm');
+      change(f.elements.account, 'card');
+      f.elements.description.value = 'Test purchase';
+      change(f.elements.amount, '20');
+      change(f.elements.category, 'Groceries');
+      await new Promise((r) => setTimeout(r, 160));
+      assert.match($('entryImpact').textContent, /debt owed \+\$20.00/);
+      assert.match($('entryImpact').textContent, /Cash balances unchanged/);
+      assert.match($('entryImpact').textContent, /Groceries.*\+\$20.00/);
+      $('closeTransactionEntry').click();
+      assert.equal(p.revision, 0);
+      assert.equal($('entryImpact').textContent, '');
+      $('quickCardPayment').click();
+      change(f.elements.account, 'cash');
+      change(f.elements.to, 'card');
+      change(f.elements.amount, '50');
+      await new Promise((r) => setTimeout(r, 160));
+      assert.match($('entryImpact').textContent, /Category spending change: \$0.00/);
+      assert.match($('entryImpact').textContent, /balance -\$50.00/);
+      p.fail = true;
+      await submit('transactionForm');
+      assert.equal(p.revision, 0);
+      assert.equal($('transactionDialog').open, true);
+      assert.equal(f.elements.amount.value, '50');
+      assert.match($('saveOutcome').textContent, /Synthetic server failure/);
+      assert.equal($('undoLastSave').hidden, true);
+      p.fail = false;
+      await submit('transactionForm');
+      assert.equal(p.revision, 1);
+      assert.equal(p.model.transactions.length, 1);
+      assert.equal(budgetMonth(p.model, '2026-10', 'household', '2026-10-29').totals.spent, 0);
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'Undo refuses a dirty preview and stale revision, and clears after refresh or sign-out',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change, submit } = p;
+      $('quickPurchase').click();
+      const f = $('transactionForm');
+      f.elements.description.value = 'Test';
+      f.elements.amount.value = '5';
+      await submit('transactionForm');
+      assert.equal(p.revision, 1);
+      change(document.querySelector('#categoryRows input'), '120');
+      $('undoLastSave').click();
+      await tick();
+      assert.equal(p.revision, 1);
+      assert.match($('saveOutcome').textContent, /preview/);
+      $('resetPlan').click();
+      p.conflict = true;
+      $('undoLastSave').click();
+      await tick();
+      assert.equal(p.revision, 1);
+      assert.equal($('undoLastSave').hidden, true);
+      p.conflict = false;
+      $('refresh').click();
+      await tick();
+      assert.equal($('undoLastSave').hidden, true);
+      $('logout').click();
+      assert.equal($('app').hidden, true);
+      assert.equal($('dailyAccountRows').textContent, '');
+      assert.equal($('saveReceipt').hidden, true);
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'guided review requires honest acknowledgements and saves followups without recording obligations',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, submit } = p;
+      $('startWeeklyReview').click();
+      assert.match($('weeklyReviewHeading').textContent, /1 of 4/);
+      assert.equal($('weeklyNext').disabled, true);
+      for (let step = 0; step < 3; step++) {
+        const box = $('weeklyReviewBody').querySelector('input[type=checkbox]');
+        if (box) {
+          box.checked = true;
+          box.dispatchEvent(new p.dom.window.Event('change'));
+        }
+        assert.equal($('weeklyNext').disabled, false);
+        $('weeklyNext').click();
+      }
+      assert.match($('weeklyReviewHeading').textContent, /4 of 4/);
+      assert.equal($('weeklyNext').disabled, true);
+      const box = $('weeklyReviewBody').querySelector('input[type=checkbox]');
+      box.checked = true;
+      box.dispatchEvent(new p.dom.window.Event('change'));
+      $('weeklyNext').click();
+      await tick();
+      assert.equal(p.revision, 1);
+      assert.equal(p.model.transactions.length, 0);
+      assert.equal(p.model.reconciliations, undefined);
+      assert.equal(p.model.weeklyReviews[0].status, 'followups');
+      assert.ok(p.model.weeklyReviews[0].followups > 0);
+      assert.match($('saveReceiptHighlights').textContent, /unresolved checks remain/);
+    } finally {
+      p.close();
+    }
+  },
+);
+test(
+  'watched-account preferences store only IDs, respect owner view, and hide debt values',
+  { skip },
+  async () => {
+    const p = await page();
+    try {
+      const { $, change, submit } = p;
+      $('manageDailyFavorites').click();
+      for (const box of $('dailyFavoriteChoices').querySelectorAll('input'))
+        box.checked = ['cash', 'card'].includes(box.value);
+      await submit('dailyFavoritesForm');
+      const stored = JSON.parse(p.dom.window.localStorage.getItem('money_daily_synthetic-owner'));
+      assert.deepEqual(stored.household.accounts, ['cash', 'card']);
+      assert.equal(p.revision, 0);
+      assert.equal($('dailyAccountRows').children.length, 2);
+      assert.equal(
+        $('dailyAccountRows').querySelector('[data-debt-private]').textContent,
+        '-$100.00',
+      );
+      $('debtPrivacy').click();
+      assert.equal($('app').dataset.debtHidden, 'true');
+      change($('budgetEntity'), 'business');
+      assert.match($('dailyAccountRows').textContent, /Shop/);
+      assert.doesNotMatch($('dailyAccountRows').textContent, /Daily card/);
+      change($('budgetEntity'), 'household');
+      assert.equal($('dailyAccountRows').children.length, 2);
+      assert.equal(p.dom.window.localStorage.getItem('money_daily_other-owner'), null);
+    } finally {
+      p.close();
+    }
+  },
+);

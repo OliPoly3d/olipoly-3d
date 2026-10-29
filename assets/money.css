@@ -266,3 +266,112 @@ dialog::backdrop { background: #070c10b3; }
 .pace-category-actions button { min-height:36px;padding:6px 9px;font-size:12px;white-space:normal;text-align:left; }
 #paceOverall td,#categoryBudgetTotal td { font-weight:600;border-top:2px solid var(--line); }
 @media(max-width:650px) { .category-spending-summary { padding:12px; } .category-spending-summary .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .category-spending-summary .metric:nth-child(3) { grid-column:1 / -1; } }
+/* Everyday workspace: three places, one accounting engine. */
+body:has(#app:not([hidden])) main > header,body:has(#app:not([hidden])) main > #message { display:none; }
+body:has(#app:not([hidden])) main { max-width:1440px; }
+#app:not([hidden]) { display:grid;grid-template-columns:156px minmax(0,1fr);gap:24px;align-items:start; }
+#moneyWorkspace { min-width:0; }
+.money-view-nav { position:sticky;top:24px;display:flex;flex-direction:column;gap:8px;padding:20px 12px;background:#1b252c;border:1px solid var(--line);border-radius:12px; }
+.money-workspace-brand { padding:0 10px 22px;font-size:26px;font-weight:600;letter-spacing:-.04em; }
+.money-workspace-brand span { color:var(--accent); }
+.money-view-nav button { border-color:transparent;background:transparent;text-align:left;padding:13px 12px; }
+.money-view-nav button[aria-pressed=true] { color:var(--accent);background:var(--surface-raised); }
+.money-view-nav p { padding:10px;margin:0; }
+.workspace-jump { margin:12px 0; }
+.workspace-jump > summary,.workspace-intro > summary { font-size:12px;color:var(--muted); }
+.workspace-jump .section-nav { position:static;flex-wrap:wrap;white-space:normal; }
+.workspace-intro { margin:10px 0 16px; }
+#planBar { top:12px;flex-wrap:wrap; }
+#planBar .plan-status { flex:1;min-width:160px;display:flex;flex-direction:column;gap:4px; }
+#planBar #planState { font-weight:600; }
+#saveOutcome { display:block;font-size:12px;color:var(--muted);overflow-wrap:anywhere; }
+#saveOutcome.low { color:var(--danger); }
+.more-money-actions { position:relative;margin:0; }
+.more-money-actions > summary { min-height:44px;padding:11px 13px;border:1px solid var(--line);border-radius:7px;background:var(--surface-raised);font-size:13px; }
+.more-money-actions > div { position:absolute;top:50px;right:0;z-index:9;min-width:190px;display:flex;flex-direction:column;gap:7px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:0 10px 24px #0004; }
+#everydaySection { margin-top:16px; }
+#dailyContext { margin-bottom:0; }
+.daily-metrics .metric { padding:16px; }
+.daily-metrics .metric small { display:block;margin-top:6px; }
+.daily-metrics .metric button { margin-top:10px;min-height:36px;font-size:12px;padding:6px 9px;background:transparent; }
+.daily-metrics .metric strong { overflow-wrap:anywhere; }
+.daily-grid { display:grid;grid-template-columns:minmax(0,1.4fr) minmax(240px,1fr);gap:18px;margin:20px 0;align-items:start; }
+.daily-panel { min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface-raised);padding:18px; }
+.daily-panel .section-heading { margin-bottom:8px;align-items:center; }
+.daily-panel .section-heading h3 { margin:0; }
+.daily-panel p { font-size:13px; }
+.daily-panel .section-heading button { min-height:34px;padding:6px 9px;font-size:12px; }
+.daily-watchlist { margin-top:18px; }
+.daily-account-row { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:center; }
+.daily-account-row small,.daily-goal-row small { display:block; }
+.daily-account-row button { justify-self:start;min-height:34px;padding:6px 10px;font-size:12px; }
+.daily-account-row strong { font-size:13px; }
+.daily-account-row .negative { color:var(--danger); }
+.daily-category-total { padding:14px 0;border-top:1px solid var(--line);font-weight:600;font-variant-numeric:tabular-nums; }
+.daily-attention-row { display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap; }
+.daily-attention-row > span { flex:1;min-width:120px;font-size:13px; }
+.daily-attention-row button { font-size:12px;min-height:36px;padding:6px 9px; }
+#dailyReviewCount { font-size:12px;color:var(--muted); }
+#dailyFavoriteChoices { display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px; }
+.daily-goal-row { display:grid;gap:8px;padding:14px 0;border-bottom:1px solid var(--line); }
+.daily-goal-row progress { width:100%;height:12px;border:0;accent-color:var(--accent); }
+.weekly-review { margin-top:20px; }
+#weeklyReviewSteps { display:flex;flex-wrap:wrap;gap:10px;margin:15px 0; }
+#weeklyReviewSteps span { color:var(--muted);padding:6px 10px;border-radius:6px;background:var(--input);font-size:12px; }
+#weeklyReviewSteps .current-review-step { color:var(--accent-ink);background:var(--accent); }
+#weeklyReviewBody { padding:8px 0 16px; }
+#weeklyReviewBody .check-label { margin-top:18px; }
+.budget-move-entry { margin:16px 0; }
+.budget-move-entry[open] { border-color:var(--accent); }
+.save-receipt { margin:16px 0;padding:16px 18px;border:1px solid var(--accent);border-radius:10px;background:var(--surface-raised); }
+.save-receipt .section-heading { margin:0 0 8px; }
+.save-receipt p { margin:7px 0;font-size:13px; }
+.save-receipt button { min-height:34px;font-size:12px;padding:6px 10px; }
+.entry-impact { padding:14px;border-left:3px solid var(--accent);border-radius:5px;background:var(--surface-raised); }
+.entry-impact:empty { display:none; }
+.entry-impact p { margin:6px 0;font-size:13px; }
+@media(max-width:1000px) { #app:not([hidden]) { grid-template-columns:130px minmax(0,1fr);gap:16px; } .money-view-nav { padding:18px 6px; } .daily-grid { grid-template-columns:1fr; } }
+@media(max-width:700px) {
+ #app:not([hidden]) { display:block; }
+ .money-view-nav { position:sticky;top:0;z-index:11;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:9px;border-radius:0 0 10px 10px; }
+ .money-workspace-brand,.money-view-nav p { display:none; }
+ .money-view-nav button { text-align:center;padding:10px 6px;font-size:13px; }
+ #planBar { top:65px; }
+ #planBar .plan-status { flex-basis:100%; }
+ .month-toolbar { margin-top:16px; }
+ .month-toolbar .summary-controls { width:100%; }
+ .daily-metrics { grid-template-columns:1fr; }
+ .daily-metrics .metric { padding:14px; }
+ .daily-panel { padding:14px; }
+ .daily-metrics .metric strong { font-size:25px; }
+ .daily-metrics .metric small { font-size:12px; }
+ #saveOutcome { font-size:12px; }
+ .daily-account-row { grid-template-columns:minmax(0,1fr) auto; }
+ #dailyFavoritesForm,#budgetMoveForm { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #dailyFavoritesForm label,#budgetMoveForm label { min-width:0; }
+}
+
+/* Keep the mobile everyday view focused on its numbers. */
+#app[data-money-view=today] .workspace-jump { display:none; }
+@media(max-width:700px) {
+ .month-toolbar { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;gap:9px;margin:12px 0; }
+ .month-toolbar .month-switch { grid-column:1 / -1; }
+ .month-toolbar .summary-controls { display:contents; }
+ .month-toolbar label { min-width:0;font-size:11px; }
+ .month-toolbar select { padding:8px 6px;font-size:12px; }
+ #debtPrivacy { font-size:12px;padding:8px; }
+ #planBar { padding:10px;margin:12px 0;gap:6px; }
+ #app[data-money-view=today] #everydaySection { margin-top:14px; }
+}
+#moneyWorkspace section[id],#moneyWorkspace details[id],#moneyWorkspace form[id],#weeklyReview,#accountSummary { scroll-margin-top:110px; }
+@media(max-width:700px) {
+ #moneyWorkspace section[id],#moneyWorkspace details[id],#moneyWorkspace form[id],#weeklyReview,#accountSummary { scroll-margin-top:220px; }
+}
+.entry-dialog-toolbar { position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 0 10px;margin-bottom:12px;border-bottom:1px solid var(--line);background:var(--surface); }
+.entry-dialog-toolbar button { min-height:40px;padding:8px 12px; }
+.entry-dialog #entryStatus { top:54px; }
+.entry-dialog input,.entry-dialog select,.entry-dialog form > * { min-width:0; }
+@media(max-width:700px) {
+ #decisionMetrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .entry-dialog label:has(select[name=account]),.entry-dialog label:has(select[name=to]),.entry-dialog label:has(input[name=description]) { grid-column:1 / -1; }
+}

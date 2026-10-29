@@ -1,7 +1,7 @@
 export function sectionPreview(id,text){const span=document.getElementById(id+'Preview');if(span)span.textContent=text;}
-export function revealSection(element){for(let node=element;node;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;}
+export function revealSection(element){if(element)document.dispatchEvent(new window.CustomEvent('money-reveal-section',{detail:{target:element}}));for(let node=element;node;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;}
 export function setupSections(){
- const sections=()=>document.querySelectorAll('#app > details.section-panel');
+ const sections=()=>document.querySelectorAll('#moneyWorkspace > details.section-panel');
  document.getElementById('collapseSections').onclick=()=>{for(const panel of sections())panel.open=false;};
  document.getElementById('expandSections').onclick=()=>{for(const panel of sections())panel.open=true;};
  document.addEventListener('click',event=>{const link=event.target.closest('a[href^="#"]');if(link){const target=document.getElementById(link.getAttribute('href').slice(1));if(target)revealSection(target);}});

@@ -13,10 +13,12 @@ export function validateConfidence(m){
   if(a.cashRules&&!Array.isArray(a.cashRules))throw Error('Invalid cash buffers.');
   for(const r of a.cashRules||[]){if(!r.id||!r.label||!Number.isInteger(r.day)||r.day<1||r.day>31||!['opening','closing'].includes(r.point)||!Number.isSafeInteger(r.amount)||r.amount<0||r.month!==undefined&&(!Number.isInteger(r.month)||r.month<1||r.month>12))throw Error('Invalid dated cash buffer.');}
  }
- for(const key of ['reconciliations','forecastSnapshots','monthClosures','monthReopenHistory'])if(m[key]&&!Array.isArray(m[key]))throw Error('Invalid review history.');
+ for(const key of ['reconciliations','forecastSnapshots','monthClosures','monthReopenHistory','weeklyReviews','budgetMoves'])if(m[key]&&!Array.isArray(m[key]))throw Error('Invalid review history.');
  for(const c of m.monthClosures||[]){monthBounds(c.month);date(c.closedOn);if(!['household','business','custodial'].includes(c.entity)||typeof c.signature!=='string'||!Number.isSafeInteger(c.cash))throw Error('Invalid closed month.');}
  for(const r of m.reconciliations||[]){date(r.asOf);if(!m.accounts.some(a=>a.id===r.account)||!['posted','pending'].includes(r.basis)||!Number.isSafeInteger(r.bankBalance)||typeof r.signature!=='string')throw Error('Invalid reconciliation checkpoint.');}
  for(const s of m.forecastSnapshots||[]){monthBounds(s.month);date(s.asOf);if(s.source!==undefined&&!['automatic','manual'].includes(s.source))throw Error('Invalid baseline source.');if(!['household','business','custodial'].includes(s.entity)||!s.components||['opening','income','spending','transfers','adjustments','closing'].some(k=>!Number.isSafeInteger(s.components[k])))throw Error('Invalid forecast comparison.');}
+ for(const r of m.weeklyReviews||[]){date(r.asOf);if(!r.id||!['household','business','custodial'].includes(r.entity)||!['reviewed','followups'].includes(r.status)||['followups','checked','accounts','expected','pending','missingTargets'].some(k=>!Number.isSafeInteger(r[k])||r[k]<0))throw Error('Invalid weekly review.');}
+ for(const r of m.budgetMoves||[]){date(r.asOf);monthBounds(r.month);monthBounds(r.through);if(!r.id||!['household','business','custodial'].includes(r.entity)||!Number.isSafeInteger(r.amount)||r.amount<=0||!r.from||!r.to)throw Error('Invalid budget-move history.');}
  return m;
 }
 export function reconciliation(m,account,asOf,basis,bankBalance){
