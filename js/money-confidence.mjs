@@ -3,8 +3,11 @@ import {balanceUnknownAt,balances,occurrences,addDays,date,validate} from './mon
 import {budgetMonth,monthBounds,shiftMonth,validateBudgets} from './money-budget.mjs';
 import {planningSnapshot} from './money-insights.mjs';
 import {planningForecast} from './money-planning.mjs';
+import {calendarFrequency} from './money-recurrence.mjs';
+import {validateScenarioSettings} from './money-scenarios.mjs';
 const cashIds=(m,entity)=>new Set(m.accounts.filter(a=>a.type==='cash'&&a.entity===entity).map(a=>a.id));
 export function validateConfidence(m){
+ validateScenarioSettings(m);
  for(const a of m.accounts){
   if(a.payoutReserve!==undefined&&(!Number.isSafeInteger(a.payoutReserve)||a.payoutReserve<0))throw Error('Payout reserve must be nonnegative cents.');
   if(a.cashRules&&!Array.isArray(a.cashRules))throw Error('Invalid cash buffers.');
@@ -34,21 +37,21 @@ export function attentionItems(m,asOf,entity,end=monthBounds(shiftMonth(asOf.sli
  for(const a of m.accounts.filter(a=>a.entity===entity)){
   const debt=a.type!=='cash',r=m.reconciliations?.find(r=>r.account===a.id);
   if(balanceUnknownAt(a,asOf))items.push({text:a.name+': principal is unknown',action:'opening',id:a.id,debt});
-  else if(!r||!checkpointValid(m,r)||r.asOf<addDays(asOf,-7))items.push({text:a.name+': '+(r?'balance verification needs updating':'balance not yet verified'),action:'reconcile',id:a.id,debt});
+  else if((a.type!=='card'||balances(m,asOf)[a.id]!==0||m.transactions.some(t=>t.date>=addDays(asOf,-30)&&t.entries.some(e=>e.account===a.id)))&&(!r||!checkpointValid(m,r)||r.asOf<addDays(asOf,-7)))items.push({text:a.name+': '+(r?'balance verification needs updating':'balance not yet verified'),action:'reconcile',id:a.id,debt});
   const c=a.credit||{},owed=Math.max(0,-balances(m,asOf)[a.id]);
-  if(debt&&(c.termsProvisional||owed>0&&(c.purchaseApr==null||!c.dueDay||c.minimum==null||!c.minimumAsOf||c.minimumAsOf<addDays(asOf,-45))))items.push({text:a.name+': review rates, minimum, due date or provisional terms',action:'credit',id:a.id,debt:true});
-  for(const ending of new Set([c.promoEnd,c.purchasePromoEnd].filter(Boolean)))if(ending<=addDays(asOf,c.warnDays??180))items.push({text:a.name+': promotional rate '+(ending<asOf?'expired ':'ends ')+ending,action:'credit',id:a.id,debt:true});
+  if(debt&&(owed>0&&c.termsProvisional||owed>0&&(c.purchaseApr==null||!c.dueDay||c.minimum==null||!c.minimumAsOf||c.minimumAsOf<addDays(asOf,-45))))items.push({text:a.name+': review rates, minimum, due date or provisional terms',action:'credit',id:a.id,debt:true});
+  for(const ending of new Set([c.promoEnd,c.purchasePromoEnd].filter(Boolean)))if(owed>0&&ending<=addDays(asOf,c.warnDays??180))items.push({text:a.name+': promotional rate '+(ending<asOf?'expired ':'ends ')+ending,action:'credit',id:a.id,debt:true});
  }
  for(const t of occurrences(m,asOf).filter(t=>t.date<asOf&&owner(t.entries[0].account)===entity))items.push({text:t.description+' · '+t.date+': not recorded',action:'record',transaction:t,debt:t.entries.some(e=>m.accounts.find(a=>a.id===e.account)?.type!=='cash')});
  for(const b of (m.unscheduledBills||[]).filter(b=>b.entity===entity))items.push({text:b.name+': '+b.reason,action:'bill',id:b.id||b.name});
  const p=planningForecast(m,end),missing=p.issues.filter(i=>i.entity===entity),seen=new Set();for(const i of missing)if(!seen.has(i.category)){seen.add(i.category);items.push({text:i.category+': '+i.reason+' from '+i.month,action:'budget',month:i.month});}
- for(const s of m.schedules.filter(s=>s.enabled!==false&&s.estimated&&owner(s.account)===entity))items.push({text:s.name+': provisional schedule',action:'schedule',id:s.id,debt:[s.account,s.to].filter(Boolean).some(id=>m.accounts.find(a=>a.id===id)?.type!=='cash')});
+ for(const s of m.schedules.filter(s=>s.enabled!==false&&!s.stoppedFrom&&s.estimated&&s.reviewStatus!=='confirmed'&&s.reviewStatus!=='estimated'&&owner(s.account)===entity&&(!s.end||s.end>=asOf)&&s.anchor<=addDays(asOf,90)))items.push({text:s.name+': provisional schedule',action:'schedule',id:s.id,debt:[s.account,s.to].filter(Boolean).some(id=>m.accounts.find(a=>a.id===id)?.type!=='cash')});
  for(const s of (m.seasonalItems||[]).filter(s=>s.entity===entity&&s.review))items.push({text:s.name+': '+s.review,action:'seasonal',id:s.id});
- return items;
+ return items.map(item=>({...item,priority:item.action==='record'||item.action==='bill'||item.action==='opening'||item.action==='budget'&&item.month<=asOf.slice(0,7)?'Act now':item.action==='credit'||item.action==='reconcile'?'Coming up':'Planning'}));
 }
 export function cashCapacity(m,account,asOf,{business=false}={}){
  const a=m.accounts.find(a=>a.id===account&&a.type==='cash');if(!a)throw Error('Select a cash account.');
- const future=occurrences(m,addDays(asOf,45)),nextPay=future.find(t=>t.date>asOf&&t.kind==='income'&&t.entries[0].account===account&&m.schedules.find(s=>t.scheduleKey.startsWith(s.id+':'))?.frequency==='biweekly');
+ const future=occurrences(m,addDays(asOf,45)).sort((a,b)=>a.date.localeCompare(b.date)),nextPay=future.find(t=>{const s=m.schedules.find(s=>t.scheduleKey.startsWith(s.id+':'));return t.date>asOf&&t.kind==='income'&&t.entries[0].account===account&&s&&!s.oneTime&&!calendarFrequency(s);});
  const end=business?addDays(asOf,30):nextPay?addDays(nextPay.date,-1):addDays(asOf,30),snapshot=planningSnapshot(m,asOf),projection=planningForecast(snapshot,end),reasons=[];
  if(projection.incompleteFrom[a.entity])reasons.push('Missing category targets or funding');
  if((m.unscheduledBills||[]).some(b=>b.entity===a.entity))reasons.push('Unscheduled obligations');
@@ -67,7 +70,7 @@ export function categoryTrend(m,month,entity,id,asOf){
 }
 export function cashComponents(m,month,entity,days){
  const selected=days.filter(d=>d.date.startsWith(month)),ids=cashIds(m,entity),sum=values=>[...ids].reduce((n,id)=>n+(values?.[id]||0),0),out={opening:sum(selected[0]?.opening),income:0,spending:0,transfers:0,adjustments:0,closing:sum(selected.at(-1)?.closing)};
- for(const d of selected)for(const t of d.events){const amount=t.entries.filter(e=>ids.has(e.account)).reduce((n,e)=>n+e.amount,0);if(t.kind==='income')out.income+=amount;else if(t.kind==='expense')out.spending-=amount;else if(t.kind==='transfer')out.transfers+=amount;else out.adjustments+=amount;}
+ for(const d of selected)for(const t of d.events){const amount=t.entries.filter(e=>ids.has(e.account)).reduce((n,e)=>n+e.amount,0);if(t.kind==='income')out.income+=amount;else if(['expense','refund'].includes(t.kind))out.spending-=amount;else if(t.kind==='transfer')out.transfers+=amount;else out.adjustments+=amount;}
  return out;
 }
 export function saveForecastSnapshot(m,month,entity,asOf){

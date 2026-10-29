@@ -1,4 +1,6 @@
 // Pure cash-flow functions. Amounts are signed integer cents; card debt is negative.
+import {spendingParts,validateAllocations,validateRefunds,scaleAllocations} from './money-categories.mjs';
+import {validRecurrence,calendarFrequency,nominalDates,dayStride} from './money-recurrence.mjs';
 export const statuses = ['pending', 'cleared', 'reconciled'];
 export const principalSnapshots=account=>account.principalSnapshots||[];
 export const balanceUnknownAt=(account,asOf)=>!!account.balanceUnknown&&!principalSnapshots(account).some(s=>s.date<=asOf);
@@ -56,20 +58,23 @@ export function validate(model) {
     if (!t.description || !Array.isArray(t.entries) || !t.entries.length) throw Error('Missing transaction details.');
     for (const e of t.entries) { if (!ids.has(e.account)) throw Error('Unknown account.'); integer(e.amount); }
     if (t.kind === 'transfer' && (t.entries.length !== 2 || t.entries[0].account === t.entries[1].account || t.entries.reduce((n,e)=>n+e.amount,0) !== 0)) throw Error('Transfer must balance across two accounts.');
-    if (!['expense','income','transfer','adjustment'].includes(t.kind)) throw Error('Invalid transaction kind.');
+    if (!['expense','refund','income','transfer','adjustment'].includes(t.kind)) throw Error('Invalid transaction kind.');
     if (t.kind !== 'transfer' && t.entries.length !== 1) throw Error('Use one account for this transaction.');
     if (t.kind === 'expense' && (!t.category || t.entries[0].amount >= 0)) throw Error('Expense needs a category and negative amount.');
     if (t.kind === 'income' && t.entries[0].amount <= 0) throw Error('Income must be positive.');
+    if(t.kind==='refund'&&(!t.category||t.entries[0].amount<=0))throw Error('A refund needs a category and positive received amount.');
+    validateAllocations(t);
     if(t.funding==='distribution'){if(t.kind!=='transfer'||t.entries[0].amount>=0)throw Error('Owner distributions must be outgoing transfers.');validateDistribution(model,t.entries[0].account,t.entries[1]?.account);}
   }
   for (const s of model.schedules) {
     date(s.anchor); if (s.end) date(s.end);
-    if (!s.name || !ids.has(s.account) || !['monthly','biweekly'].includes(s.frequency)) throw Error('Invalid schedule.');
+    if (!s.name || !ids.has(s.account) || !validRecurrence(s)) throw Error('Invalid schedule.');
     if (s.to && (!ids.has(s.to) || s.to === s.account)) throw Error('Invalid transfer destination.');
     integer(s.amount); integer(s.firstPayBonus || 0);
+    if(s.allocations)validateAllocations({kind:s.to||s.amount>=0?'transfer':'expense',entries:[{amount:s.amount}],allocations:s.allocations});
     if (s.to && s.amount >= 0) throw Error('Transfer schedule amount must be negative.');
     if(s.funding==='distribution')validateDistribution(model,s.account,s.to);
-    if (s.frequency === 'monthly' && (!Number.isInteger(s.day) || s.day < 1 || s.day > 31)) throw Error('Invalid monthly day.');
+    if (calendarFrequency(s) && (!Number.isInteger(s.day) || s.day < 1 || s.day > 31)) throw Error('Invalid calendar day.');
     for (const p of s.changes || []) { date(p.date); integer(p.amount); }
     for (const skipped of s.skipped || []) date(skipped);
     if(s.stoppedFrom)date(s.stoppedFrom);
@@ -84,38 +89,30 @@ export function validate(model) {
       if(s.funding==='distribution')validateDistribution(model,o.account||s.account,o.to||s.to);
     }
   }
-  return model;
+  return validateRefunds(model);
 }
 export function occurrences(model, end, {includeSkipped=false}={}) {
   const matched = new Set(model.transactions.map(t => t.scheduleKey).filter(Boolean));
   const result = [];
   for (const s of model.schedules) {
     if (s.enabled === false) continue;
-    let day = s.anchor;
     const limit = s.end && s.end < end ? s.end : end;
-    let month = date(s.anchor); month.setUTCDate(1);
-    for (let count = 0; count < 20000; count++) {
-      if (s.frequency === 'monthly') {
-        const last = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth()+1, 0)).getUTCDate();
-        day = iso(new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), Math.min(s.day,last))));
-      }
+    const moved=Object.entries(s.overrides||{}).filter(([key,o])=>(!s.end||key<=s.end)&&o.date&&o.date<=end).map(([key])=>key),nominalEnd=[limit,...moved].sort().at(-1);
+    for (const day of nominalDates(s,nominalEnd)) {
       // Overrides may move an occurrence across a month boundary, in either direction.
       const nominalDay = day;
       const override = s.overrides?.[nominalDay];
-      if (day > limit && !Object.keys(s.overrides || {}).some(k => k >= day && s.overrides[k].date <= limit)) break;
       const key = `${s.id}:${day}`;
       const skipped=(s.skipped||[]).includes(day);
-      if (day >= s.anchor && day >= model.start && (!s.stoppedFrom||day<s.stoppedFrom) && !matched.has(key) && (!skipped||includeSkipped)) {
+      if (day >= s.anchor && day >= model.start && (!s.end||day<=s.end) && (!s.stoppedFrom||day<s.stoppedFrom) && !matched.has(key) && (!skipped||includeSkipped)) {
         let amount = [...(s.changes || [])].sort((a,b)=>a.date.localeCompare(b.date)).filter(x=>x.date<=day).at(-1)?.amount ?? s.amount;
-        if (s.frequency === 'biweekly' && addDays(day,-14).slice(0,7) !== day.slice(0,7)) amount += s.firstPayBonus || 0;
+        if (!calendarFrequency(s) && addDays(day,-dayStride(s)).slice(0,7) !== day.slice(0,7)) amount += s.firstPayBonus || 0;
         if (override) amount = override.amount;
         const eventDate = override?.date || day;
         const entries = [{account:override?.account || s.account,amount}];
         if (s.to) entries.push({account:override?.to || s.to,amount:-amount});
-        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding,incomeType:s.incomeType,oneTime:s.oneTime===true,...(s.savingsBucket?{savingsBucket:s.savingsBucket}:{})});
+        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding,incomeType:s.incomeType,oneTime:s.oneTime===true,...(s.savingsBucket?{savingsBucket:s.savingsBucket}:{}),...(s.allocations?{allocations:scaleAllocations(s.allocations,Math.abs(amount))}:{})});
       }
-      if (s.frequency === 'biweekly') day = addDays(day,14);
-      else month.setUTCMonth(month.getUTCMonth()+1);
     }
   }
   return result;
@@ -160,9 +157,9 @@ export function monthly(days, account) {
 }
 export function spending(model, month) {
   const totals={};
-  for(const t of model.transactions) if(t.kind==='expense' && t.date.startsWith(month)) {
+  for(const t of model.transactions) if(['expense','refund'].includes(t.kind) && t.date.startsWith(month)) {
     const entity=t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account).entity;
-    const key=`${entity}: ${t.category}`;totals[key]=(totals[key]||0)-t.entries[0].amount;
+    for(const p of spendingParts(t)){const key=`${entity}: ${p.category}`;totals[key]=(totals[key]||0)+p.amount;}
   }
   return totals;
 }

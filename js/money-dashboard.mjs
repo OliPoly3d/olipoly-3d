@@ -39,8 +39,8 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   $('removeDescription').textContent=actual?'Put back in budget removes the actual entry and keeps this amount as an editable expectation. Delete removes the actual and skips its matched expectation this time; later repeats stay. Category targets remain unchanged.':'Skip only this occurrence, or stop this recurring item from this date forward. Existing recorded history is kept.';
   $('removeBudget').hidden=!actual&&!skipped;
   $('removeBudget').textContent='Put back in budget';
-  $('removeBudget').disabled=actual?.kind==='adjustment';
-  $('removeBudget').dataset.disabled=String(actual?.kind==='adjustment');
+  $('removeBudget').disabled=['adjustment','refund'].includes(actual?.kind);
+  $('removeBudget').dataset.disabled=String(['adjustment','refund'].includes(actual?.kind));
   $('removeDelete').textContent=actual?'Delete transaction':'Skip this time';
   $('removeSeries').hidden=!!actual||target.oneTime===true;
   if(!actual&&target.oneTime){$('removeDescription').textContent='Remove this one-time expectation from the forecast. No other month is affected; you can restore it later.';$('removeDelete').textContent='Remove expected entry';}
@@ -132,7 +132,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   total.id='categoryOverall';total.classList.add('comparison-total');
   const remaining=b.totals.remaining,status=el('p',!b.buckets.length?'Add category targets to compare overall spending.':b.missing?'Set all category targets to see your overall under / over amount.':remaining===0?'On budget overall so far':money(Math.abs(remaining))+(remaining>0?' under':' over')+' overall so far','comparison-status');
   status.classList.toggle('low',!b.missing&&remaining<0);total.append(status,el('p','This month’s category targets versus purchases recorded so far, including pending. Bills and transfers are separate.','help'));
-  const outside=b.outside.filter(t=>!t.scheduleKey).reduce((n,t)=>n-t.entries[0].amount,0);
+  const outside=b.outside.filter(t=>!t.scheduleKey).reduce((n,t)=>n+(t.unbudgetedAmount??-t.entries[0].amount),0);
   if(outside){const note=el('p','Other recorded expenses outside these categories: '+money(outside)+'. ','help'),link=el('a','Review other spending');link.href='#spendingSection';note.append(link);total.append(note);}
   $('monthChart').append(total);
   for(const item of b.buckets){const row=[...document.querySelectorAll('[data-budget-id]')].find(r=>r.dataset.budgetId===item.id);if(row){
@@ -211,12 +211,12 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   $('seasonalBudgetNote').textContent=budget?'This month’s seasonal allowance '+money(budget.allowance||0)+' · Actual '+money(budget.spent)+' · Remaining '+(budget.remaining===null?'Set target':money(budget.remaining))+(budget.partial?' (opening-month proration applied).':'.'): 'No seasonal budget is configured for this view.';
  }
  function renderTransactions(model,month,entity){
-  $('transactions').replaceChildren();let count=0;
-  for(const t of [...model.transactions].filter(t=>!t.scheduleKey&&incomingOwner(model,t)!==entity&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date))){
-   count++;const row=el('tr');row.toggleAttribute('data-debt-private',t.entries.some(e=>model.accounts.find(a=>a.id===e.account)?.type!=='cash'));cell(row,t.date);cell(row,t.description);const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
+  $('transactions').replaceChildren();const entries=[...model.transactions].filter(t=>!t.scheduleKey&&incomingOwner(model,t)!==entity&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date));const count=entries.length;
+  for(const t of entries.slice(0,300)){
+   const row=el('tr');row.toggleAttribute('data-debt-private',!['expense','refund'].includes(t.kind)&&t.entries.some(e=>model.accounts.find(a=>a.id===e.account)?.type!=='cash'));cell(row,t.date);cell(row,t.description);const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
    const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const controls=el('div',undefined,'row-actions');const edit=el('button','Edit');edit.onclick=()=>record(t);const remove=el('button','Remove');remove.onclick=()=>removePrompt({description:t.description,actual:t});controls.append(edit,remove);cell(row,controls);$('transactions').append(row);
   }
-  $('transactionNote').textContent=count+' other transactions this month. Recorded income and bill matches appear in their sections above.';
+  $('transactionNote').textContent=count+' other transactions this month.'+(count>300?' First 300 shown; use Activity to search all entries.':'')+' Recorded income and bill matches appear in their sections above.';
  }
  function renderSettings(model,entity){
   $('planningSettings').replaceChildren();
@@ -224,5 +224,5 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const label=el('label');label.className='check-label';const input=el('input');input.type='checkbox';input.checked=p.enabled!==false;label.append(input,document.createTextNode('Plan full '+model.accounts.find(a=>a.id===p.card).name+' payoff by month end'));input.onchange=()=>{p.enabled=input.checked;mark();};$('planningSettings').append(label);
   }
  }
- return {render,clear,rebaseSnapshots:(previous,next)=>{if(saved===previous){saved=next;draft.forecastSnapshots=structuredClone(next.forecastSnapshots);}},draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
+ return {acceptSaved:resetDraft,remove:t=>removePrompt({description:t.description,actual:t}),render,clear,rebaseSnapshots:(previous,next)=>{if(saved===previous){saved=next;draft.forecastSnapshots=structuredClone(next.forecastSnapshots);}},draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
 }

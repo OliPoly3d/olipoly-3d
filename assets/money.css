@@ -209,3 +209,51 @@ dialog::backdrop { background: #070c10b3; }
 .comparison-total > strong { font-weight: 700; }
 .comparison-status { color: var(--accent); font-weight: 600; }
 .comparison-status.low { color: var(--danger); }
+/* Decision tools share the existing graphite / teal surface. */
+.quick-actions,.chart-toolbar,.chart-toolbar [role=group] { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+.quick-actions { margin:18px 0; }
+.chart-toolbar { justify-content:space-between; margin-bottom:16px; }
+.chart-toolbar button[aria-pressed=true] { background:var(--accent);color:var(--accent-ink);border-color:var(--accent); }
+.decision-chart { border:1px solid var(--line);background:var(--input);padding:18px;border-radius:12px;margin:18px 0; }
+.money-chart { width:100%;height:auto;display:block;overflow:visible; }
+.money-chart text { fill:var(--muted);font-size:11px;font-family:inherit; }
+.chart-legend { display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:4px 0 14px; }
+.chart-legend span:before { content:'— ';color:var(--accent);font-weight:700; }
+.chart-legend span:nth-child(2):before { color:var(--warning); }
+.low-heatmap { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px; }
+.low-heatmap button { text-align:left;display:flex;flex-direction:column;gap:8px;padding:15px;white-space:normal; }
+.low-heatmap strong { font-size:20px; }
+.low-heatmap .safe { border-top:3px solid var(--accent); }
+.low-heatmap .tight { border-top:3px solid var(--warning); }
+.low-heatmap .risk { border-top:3px solid var(--danger);background:#402b2d; }
+.low-heatmap .unknown { border-style:dashed; }
+.pace-track { height:5px;background:var(--line);border-radius:8px;margin-top:8px;overflow:hidden; }
+.pace-track span { display:block;height:100%;background:var(--accent); }
+.pace-over .pace-track span { background:var(--warning); }
+.entry-dialog { width:min(760px,calc(100% - 20px));max-height:90dvh;overflow:auto;padding:20px; }
+.entry-dialog .panel { margin:0;border:0;padding:0; }
+.entry-dialog form { margin-bottom:0; }
+.entry-dialog .split-row { display:grid;grid-template-columns:minmax(0,1fr) 110px auto;gap:8px;align-items:center;margin:8px 0; }
+.entry-dialog #entryStatus { position:sticky;top:0;background:var(--surface-raised);padding:10px;border:1px solid var(--line);border-radius:8px;z-index:1; }
+.calendar-row { border-bottom:1px solid var(--line);padding:16px 0; }
+.calendar-row p { margin:6px 0; }
+#yearTargetRows input { min-width:95px;width:95px; }
+#decisionMetrics small { display:block; }
+#plannerSection details,#savingsSection details { margin-top:14px; }
+#plannerSection form { margin-top:14px; }
+#monthCloseStatus .row-actions { margin:10px 0; }
+#app[data-debt-hidden=true] #transactionDialog:has([data-debt-private]) { display:none; }
+@media(max-width:650px) {
+ .low-heatmap { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .chart-toolbar [role=group] { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%; }
+ .chart-toolbar button { padding:9px;font-size:12px; }
+ .decision-chart { padding:12px 8px; }
+ .entry-dialog { padding:16px; }
+ .entry-dialog .split-row { grid-template-columns:minmax(0,1fr) 90px; }
+ .entry-dialog .split-row button { grid-column:1 / -1;justify-self:start; }
+}
+
+.entry-receipt { position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:12;max-width:calc(100% - 24px);background:var(--surface-raised);border:1px solid var(--accent);border-radius:8px;padding:10px 16px;box-shadow:0 6px 30px #0006;pointer-events:none;font-size:13px; }
+
+#plannerSection label,.entry-dialog label { min-width:0; }
+@media(max-width:650px) { #plannerSection form,.entry-dialog form { grid-template-columns:repeat(2,minmax(0,1fr)); } }

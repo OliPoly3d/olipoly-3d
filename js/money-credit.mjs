@@ -1,3 +1,4 @@
+import {spendingParts,transactionOwner} from './money-categories.mjs';
 import {date,addDays,balances,principalSnapshots,balanceUnknownAt} from './money-engine.mjs';
 
 const validMoney=n=>Number.isSafeInteger(n)&&n>=0;
@@ -83,6 +84,12 @@ export function scenarioSnapshot(model,asOf,overrides={}){
  const next=structuredClone(model),current=balances(model,asOf);next.start=asOf;
  for(const a of next.accounts){if(a.credit)a.credit.promoBalance=actualPromoBalance(model,a,asOf);a.opening=current[a.id];if(!balanceUnknownAt(a,asOf)){a.balanceUnknown=false;const future=principalSnapshots(a).filter(s=>s.date>asOf);if(future.length){a.principalSnapshots=future;}else{delete a.principalSnapshots;}}if(overrides[a.id]!==undefined){if(!validMoney(overrides[a.id]))throw Error('Scenario debt must be a nonnegative amount.');a.opening=-overrides[a.id];a.balanceUnknown=false;delete a.principalSnapshots;}}
  const included=next.transactions.filter(t=>t.date<=asOf);next.transactions=next.transactions.filter(t=>t.date>asOf);
+ // Future recorded refunds still need their original category basis after older postings become the snapshot opening.
+ const futureSources=new Set(next.transactions.filter(t=>t.kind==='refund').map(t=>t.refundOf));next.refundContext=[];
+ for(const original of [...(model.refundContext||[]),...included.filter(t=>t.kind==='expense')])if(futureSources.has(original.id)){
+  const remaining=new Map();for(const part of spendingParts(original))remaining.set(part.category,(remaining.get(part.category)||0)+part.amount);for(const receipt of included.filter(t=>t.kind==='refund'&&t.refundOf===original.id))for(const p of spendingParts(receipt))remaining.set(p.category,(remaining.get(p.category)||0)+p.amount);
+  const allocations=[...remaining].filter(([,amount])=>amount>0).map(([category,amount])=>({category,amount}));next.refundContext.push({...original,date:asOf,expenseEntity:transactionOwner(model,original),entries:[{account:original.entries[0].account,amount:-allocations.reduce((n,p)=>n+p.amount,0)}],allocations});
+ }if(!next.refundContext.length)delete next.refundContext;
  for(const t of included.filter(t=>t.scheduleKey)){const id=t.scheduleKey.slice(0,-11),s=next.schedules.find(s=>s.id===id);if(s)s.skipped=[...new Set([...(s.skipped||[]),t.scheduleKey.slice(-10)])];}
  for(const s of next.schedules)if(s.overrides)for(const key of Object.keys(s.overrides))if(s.overrides[key].date&&s.overrides[key].date<asOf)delete s.overrides[key];
  return next;

@@ -9,7 +9,7 @@ export function clearPlanningCache(){forecastCache.clear();}
 // The shared posting engine owns every daily/monthly balance.
 export function planningForecast(model, end) {
   validateBudgets(validate(model));
-  const cacheKey=end+JSON.stringify(model);if(forecastCache.has(cacheKey))return forecastCache.get(cacheKey);
+  const cacheKey=end+JSON.stringify({start:model.start,version:model.version,accounts:model.accounts,transactions:model.transactions,schedules:model.schedules,budgets:model.budgets,seasonalItems:model.seasonalItems,planning:model.planning});if(forecastCache.has(cacheKey))return forecastCache.get(cacheKey);
   const managed=model.accounts.filter(a=>a.credit?.scheduleId),linked=new Map(managed.map(a=>[a.credit.scheduleId,a]));
   const effective={...model,schedules:model.schedules.map(s=>linked.has(s.id)?{...s,enabled:false}:s)};
   const base = forecast(effective,end), planned = [], adjustments = Object.fromEntries(model.accounts.map(a=>[a.id,0]));
