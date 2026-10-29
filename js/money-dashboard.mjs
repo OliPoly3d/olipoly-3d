@@ -237,5 +237,5 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const label=el('label');label.className='check-label';const input=el('input');input.type='checkbox';input.checked=p.enabled!==false;label.append(input,document.createTextNode('Plan full '+model.accounts.find(a=>a.id===p.card).name+' payoff by month end'));input.onchange=()=>{p.enabled=input.checked;mark();};$('planningSettings').append(label);
   }
  }
- return {acceptSaved:resetDraft,remove:t=>removePrompt({description:t.description,actual:t}),render,clear,rebaseSnapshots:(previous,next)=>{if(saved===previous){saved=next;draft.forecastSnapshots=structuredClone(next.forecastSnapshots);}},draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
+ return {acceptSaved:resetDraft,removeExpected:removePrompt,remove:t=>removePrompt({description:t.description,actual:t}),render,clear,rebaseSnapshots:(previous,next)=>{if(saved===previous){saved=next;draft.forecastSnapshots=structuredClone(next.forecastSnapshots);}},draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
 }

@@ -582,5 +582,6 @@ export function setupOverview({ getDraft, today, record, selectCredit, message }
     $('runwayBucket').replaceChildren();
     $('eventInspector').hidden = true;
   }
+  document.addEventListener('money-view-changed',e=>{if(!getDraft())return;if(e.detail.view==='month')view='pace';else if(e.detail.view==='plan')view='lows';else return;run(()=>render(getDraft()));});
   return { render, clear };
 }

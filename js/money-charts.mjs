@@ -286,3 +286,11 @@ export function timelineChart(target, items, { title = 'Upcoming milestones', st
     }
   });
 }
+
+export function categoryBalanceChart(target,rows){
+ responsive(target,width=>{if(!rows.length){target.textContent='Add everyday category targets to see their combined remainder.';return;}const known=rows.filter(r=>r.value!==null),extent=Math.max(1,...known.map(r=>Math.abs(r.value))),left=width<500?92:124,right=width-78,top=30,stride=42,bottom=top+rows.length*stride,height=bottom+48,zero=(left+right)/2,scale=(right-left)/2/extent,svg=beginSvg(target,width,height,'Everyday category allowance remaining in dollars; overages offset unused allowances');
+  svg.append(svgNode('text',{x:left,y:15},'Over target'),svgNode('text',{x:right,y:15,'text-anchor':'end'},'Allowance left'),svgNode('line',{x1:zero,x2:zero,y1:top-9,y2:bottom-10,stroke:'var(--line)'}));
+  rows.forEach((row,index)=>{const y=top+index*stride,g=svgNode('g');g.append(svgNode('title',{},row.name+': '+(row.value===null?'Target missing':formatMoney(row.value)+' left')),svgNode('text',{x:3,y:y+15},row.name.length>(width<500?13:19)?row.name.slice(0,width<500?12:18)+'…':row.name));if(row.value!==null){const span=Math.abs(row.value)*scale;g.append(svgNode('rect',{x:row.value<0?zero-span:zero,y:y+2,width:span,height:18,rx:2,fill:row.value<0?'var(--warning)':'var(--accent)'}));}g.append(svgNode('text',{x:width-3,y:y+15,'text-anchor':'end'},row.value===null?'Set target':formatMoney(row.value)));svg.append(g);});
+  svg.append(svgNode('text',{x:zero,y:bottom+8,'text-anchor':'middle'},'$0'),svgNode('text',{x:(left+right)/2,y:bottom+32,'text-anchor':'middle'},'Monthly allowance remaining ($)'));
+ });
+}

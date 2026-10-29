@@ -507,7 +507,7 @@ export function planFootprint(model) {
     nearLimit: storedEstimate >= 1500000,
   };
 }
-export function explainPlanChange(before, after, { asOf, account, revision } = {}) {
+export function explainPlanChange(before, after, { asOf, account, revision, month=asOf?.slice(0,7) } = {}) {
   const changes = [],
     old = new Map(before.transactions.map((t) => [t.id, t]));
   for (const t of after.transactions) {
@@ -532,7 +532,7 @@ export function explainPlanChange(before, after, { asOf, account, revision } = {
     effects = after.accounts
       .map((a) => ({ account: a.id, amount: now[a.id] - (was[a.id] ?? 0) }))
       .filter((e) => e.amount),
-    end = monthBounds(asOf.slice(0, 7)).last;
+    end = monthBounds(month).last;
   let forecast = null;
   try {
     const a =

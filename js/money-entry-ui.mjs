@@ -64,13 +64,13 @@ export function setupEntry({
       message('Use Show debt before entering or editing a debt payment. Your entry is preserved.');
       return;
     }
-    revealSection($('spendingSection'));
+    $('spendingSection').open=true;
     revealSection(f);
     if (!dialog.open) {
       if (dialog.showModal) dialog.showModal();
       else dialog.setAttribute('open', '');
     }
-    sync();
+    sync();document.dispatchEvent(new window.Event('money-entry-shown'));
   }
   function close() {
     if (dialog.open && dialog.close) dialog.close();
