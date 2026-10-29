@@ -1,6 +1,7 @@
-import {balances,date} from './money-engine.mjs';
+import {balanceUnknownAt,balances,date} from './money-engine.mjs';
 import {validateBudgets,budgetMonth} from './money-budget.mjs';
 import {scenarioSnapshot} from './money-credit.mjs';
+import {savingsSummary} from './money-savings.mjs';
 
 export function planningSnapshot(model,asOf,overrides={}){
  const next=scenarioSnapshot(model,asOf,overrides),month=asOf.slice(0,7);
@@ -10,8 +11,10 @@ export function planningSnapshot(model,asOf,overrides={}){
 
 export function resetBaseline(model,start,values,includedKeys=[]){
  date(start);if(start<model.start)throw Error('Choose a new opening date on or after the current one.');
- const next=structuredClone(model);next.start=start;next.transactions=[];
+ const next=structuredClone(model),bucketBalances=savingsSummary(model,start).buckets;next.start=start;next.transactions=[];
+ for(const b of next.savingsBuckets||[]){b.opening=bucketBalances.find(x=>x.id===b.id).balance;b.start=start;}next.savingsMoves=(next.savingsMoves||[]).filter(move=>move.date>start);
  for(const a of next.accounts){
+  delete a.principalSnapshots;
   if(!Object.hasOwn(values,a.id))throw Error('Supply every opening balance.');
   const value=values[a.id];if(value===null&&a.type==='loan'){a.opening=0;a.balanceUnknown=true;continue;}
   if(!Number.isSafeInteger(value))throw Error('Opening balances must be exact cents.');
@@ -40,11 +43,11 @@ export function annualSummary(model,projection,year,entity){
   m.cash=cash.reduce((n,a)=>n+d.closing[a.id],0);m.cardDebt=cards.reduce((n,a)=>n+Math.max(0,-d.closing[a.id]),0);m.loanDebt=loans.reduce((n,a)=>n+Math.max(0,-d.closing[a.id]),0);
   m.low=Math.min(m.low,cash.reduce((n,a)=>n+d.low[a.id],0));
   m.complete=!(projection.incompleteFrom[entity]&&key>=projection.incompleteFrom[entity]);
-  m.cardComplete=!cards.some(a=>a.balanceUnknown||d.credit?.[a.id]?.missingFrom);
-  m.debtComplete=![...cards,...loans].some(a=>a.balanceUnknown||d.credit?.[a.id]?.missingFrom);
+  m.cardComplete=!cards.some(a=>balanceUnknownAt(a,d.date)||d.credit?.[a.id]?.missingFrom);
+  m.debtComplete=![...cards,...loans].some(a=>balanceUnknownAt(a,d.date)||d.credit?.[a.id]?.missingFrom);
   months.set(key,m);
  }
  const rows=[...months.values()],last=rows.at(-1);
  return {year,entity,rows,first:selected[0]?.date,last:selected.at(-1)?.date,partial:!selected.length||selected[0].date!==year+'-01-01'||selected.at(-1).date!==year+'-12-31',complete:rows.every(m=>m.complete),cardComplete:rows.every(m=>m.cardComplete),debtComplete:rows.every(m=>m.debtComplete),income:rows.reduce((n,m)=>n+m.income,0),spending:rows.reduce((n,m)=>n+m.spending,0),interest:rows.reduce((n,m)=>n+m.interest,0),payments:rows.reduce((n,m)=>n+m.payments,0),cash:last?.cash??0,cardDebt:last?.cardDebt??0,loanDebt:last?.loanDebt??0};
 }
-export function currentInventory(model,asOf){const b=balances(model,asOf);return model.accounts.filter(a=>a.type!=='cash').map(a=>({...a,balance:a.balanceUnknown?null:Math.max(0,-b[a.id])}));}
+export function currentInventory(model,asOf){const b=balances(model,asOf);return model.accounts.filter(a=>a.type!=='cash').map(a=>({...a,balance:balanceUnknownAt(a,asOf)?null:Math.max(0,-b[a.id])}));}

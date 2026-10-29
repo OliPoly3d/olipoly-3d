@@ -1,6 +1,7 @@
-import {occurrences,balances,addDays,date} from './money-engine.mjs';
+import {occurrences,balances,addDays,date,principalSnapshots} from './money-engine.mjs';
 import {budgetMonth,monthBounds,seasonalMonth} from './money-budget.mjs';
 import {checkpointValid} from './money-confidence.mjs';
+import {savingsSummary} from './money-savings.mjs';
 const owner=(m,t)=>t.expenseEntity||m.accounts.find(a=>a.id===t.entries[0].account)?.entity;
 // Names and review notes may change; amounts, dates, ownership and ledger history may not.
 export function monthFingerprint(m,month,entity){
@@ -8,7 +9,11 @@ export function monthFingerprint(m,month,entity){
  const transactions=m.transactions.filter(t=>t.date>=first&&t.date<=last&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({id:t.id,date:t.date,kind:t.kind,category:t.category,status:t.status,entries:t.entries,scheduleKey:t.scheduleKey||null,expenseEntity:t.expenseEntity||null})).sort((a,b)=>a.id.localeCompare(b.id));
  const expected=occurrences(m,last).filter(t=>t.date>=first&&(owner(m,t)===entity||t.entries.some(e=>ids.has(e.account)))).map(t=>({key:t.scheduleKey,date:t.date,kind:t.kind,category:t.category,entries:t.entries})).sort((a,b)=>a.key.localeCompare(b.key));
  const budgets=budgetMonth(m,month,entity,last).buckets.map(b=>({id:b.id,name:b.name,aliases:b.aliases||[],allowance:b.allowance,account:b.funding?.[month]||b.account,timing:b.timing?.[month]||{mode:m.planning?.budgetTiming==='month-end'||b.seasonal||b.oneTimeMonth?'month-end':'weekly',weekday:b.weekday??5}})).sort((a,b)=>a.id.localeCompare(b.id));
- const opening=balances(m,addDays(first,-1));return JSON.stringify({start:m.start,accounts:accounts.map(a=>({id:a.id,type:a.type,opening:opening[a.id],unknown:!!a.balanceUnknown})).sort((a,b)=>a.id.localeCompare(b.id)),transactions,expected,budgets,seasonal:seasonalMonth(m,month,entity).items.map(s=>({id:s.id,expected:s.expected}))});
+ const opening=balances(m,addDays(first,-1)),signature={start:m.start,accounts:accounts.map(a=>({id:a.id,type:a.type,opening:opening[a.id],unknown:!!a.balanceUnknown})).sort((a,b)=>a.id.localeCompare(b.id)),transactions,expected,budgets,seasonal:seasonalMonth(m,month,entity).items.map(s=>({id:s.id,expected:s.expected}))};
+ const buckets=(m.savingsBuckets||[]).filter(b=>ids.has(b.account)&&b.start<=last);if(buckets.length)signature.savings={buckets:buckets.map(b=>({id:b.id,account:b.account,start:b.start,opening:b.opening,scheduleIds:b.scheduleIds||[]})),moves:(m.savingsMoves||[]).filter(move=>move.date>=first&&move.date<=last&&buckets.some(b=>b.id===move.from)),allocations:m.transactions.filter(t=>t.date>=first&&t.date<=last&&t.savingsBucket&&t.entries.some(e=>ids.has(e.account))).map(t=>[t.id,t.savingsBucket])};
+ if(buckets.length){signature.savings.moves=signature.savings.moves.map(({id,date,from,to,amount})=>({id,date,from,to,amount}));signature.savings.closing=savingsSummary(m,last).buckets.filter(b=>buckets.some(x=>x.id===b.id)).map(b=>[b.id,b.balance]);}
+ const snapshots=accounts.flatMap(a=>principalSnapshots(a).filter(s=>s.date<=last).map(s=>({account:a.id,...s})));if(snapshots.length)signature.principalSnapshots=snapshots;
+ return JSON.stringify(signature);
 }
 export function closeRequirements(m,month,entity,asOf){
  const {first,last}=monthBounds(month),reasons=[];date(asOf);if(month>=asOf.slice(0,7))reasons.push('Wait until the month has ended.');if(last<m.start)reasons.push('This month predates tracking.');

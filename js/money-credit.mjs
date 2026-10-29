@@ -1,4 +1,4 @@
-import {date,addDays,balances} from './money-engine.mjs';
+import {date,addDays,balances,principalSnapshots,balanceUnknownAt} from './money-engine.mjs';
 
 const validMoney=n=>Number.isSafeInteger(n)&&n>=0;
 const validApr=n=>n===null||n===undefined||Number.isFinite(n)&&n>=0&&n<=1000;
@@ -7,8 +7,9 @@ export function validateCredit(model){
   const c=a.credit;if(!c)continue;
   if(a.type==='cash')throw Error('Credit terms need a debt account.');
   for(const key of ['purchaseApr','purchasePromoApr','promoApr','postPromoApr','transferFeePercent'])if(!validApr(c[key]))throw Error('APR or fee must be blank or a nonnegative percentage.');
+  for(const change of c.transferFeeChanges||[]){date(change.date);if(change.percent==null||!validApr(change.percent))throw Error('Enter a valid future transfer fee.');}
   for(const key of ['promoBalance','minimum','payoffQuote'])if(c[key]!==undefined&&c[key]!==null&&!validMoney(c[key]))throw Error('Invalid credit amount.');
-  for(const key of ['promoStart','promoEnd','purchasePromoEnd','transferDeadline'])if(c[key])date(c[key]);
+  for(const key of ['promoStart','promoEnd','purchasePromoEnd','transferDeadline','finalPaymentDate'])if(c[key])date(c[key]);
   if(c.promoStart&&c.promoEnd&&c.promoStart>c.promoEnd)throw Error('Promotion start must be on or before its end.');
   if(c.purchasePromoEnd&&c.purchasePromoApr==null)throw Error('Enter the purchase promotional APR.');
   if(c.termsProvisional!==undefined&&typeof c.termsProvisional!=='boolean')throw Error('Invalid provisional terms setting.');
@@ -23,6 +24,7 @@ export function validateCredit(model){
  }
  return model;
 }
+export function transferFeeAt(credit={},asOf){return [...(credit.transferFeeChanges||[])].filter(c=>c.date<=asOf).sort((a,b)=>a.date.localeCompare(b.date)).at(-1)?.percent??credit.transferFeePercent;}
 export function creditRates(c={},day){
  const active=!!c.promoEnd&&day<=c.promoEnd&&(!c.promoStart||day>=c.promoStart);
  const purchaseActive=!!c.purchasePromoEnd&&day<=c.purchasePromoEnd;
@@ -79,7 +81,7 @@ export function installPaymentPlan(model,id,{mode='fixed',amount=0,day,from,mont
 export function scenarioSnapshot(model,asOf,overrides={}){
  date(asOf);if(asOf<model.start)throw Error('Scenario date precedes the opening balance.');
  const next=structuredClone(model),current=balances(model,asOf);next.start=asOf;
- for(const a of next.accounts){if(a.credit)a.credit.promoBalance=actualPromoBalance(model,a,asOf);a.opening=current[a.id];if(overrides[a.id]!==undefined){if(!validMoney(overrides[a.id]))throw Error('Scenario debt must be a nonnegative amount.');a.opening=-overrides[a.id];a.balanceUnknown=false;}}
+ for(const a of next.accounts){if(a.credit)a.credit.promoBalance=actualPromoBalance(model,a,asOf);a.opening=current[a.id];if(!balanceUnknownAt(a,asOf)){a.balanceUnknown=false;const future=principalSnapshots(a).filter(s=>s.date>asOf);if(future.length){a.principalSnapshots=future;}else{delete a.principalSnapshots;}}if(overrides[a.id]!==undefined){if(!validMoney(overrides[a.id]))throw Error('Scenario debt must be a nonnegative amount.');a.opening=-overrides[a.id];a.balanceUnknown=false;delete a.principalSnapshots;}}
  const included=next.transactions.filter(t=>t.date<=asOf);next.transactions=next.transactions.filter(t=>t.date>asOf);
  for(const t of included.filter(t=>t.scheduleKey)){const id=t.scheduleKey.slice(0,-11),s=next.schedules.find(s=>s.id===id);if(s)s.skipped=[...new Set([...(s.skipped||[]),t.scheduleKey.slice(-10)])];}
  for(const s of next.schedules)if(s.overrides)for(const key of Object.keys(s.overrides))if(s.overrides[key].date&&s.overrides[key].date<asOf)delete s.overrides[key];

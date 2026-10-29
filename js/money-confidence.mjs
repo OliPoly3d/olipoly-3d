@@ -1,5 +1,5 @@
 // Review, reconciliation and comparisons consume the shared posting engine.
-import {balances,occurrences,addDays,date,validate} from './money-engine.mjs';
+import {balanceUnknownAt,balances,occurrences,addDays,date,validate} from './money-engine.mjs';
 import {budgetMonth,monthBounds,shiftMonth,validateBudgets} from './money-budget.mjs';
 import {planningSnapshot} from './money-insights.mjs';
 import {planningForecast} from './money-planning.mjs';
@@ -18,7 +18,7 @@ export function validateConfidence(m){
 }
 export function reconciliation(m,account,asOf,basis,bankBalance){
  date(asOf);if(asOf<m.start||!['posted','pending'].includes(basis)||!Number.isSafeInteger(bankBalance))throw Error('Check the date, balance and comparison basis.');
- const a=m.accounts.find(a=>a.id===account);if(!a||a.balanceUnknown)throw Error('Enter the account’s principal first.');
+ const a=m.accounts.find(a=>a.id===account);if(!a||balanceUnknownAt(a,asOf))throw Error('Enter the account’s principal first.');
  const relevant=m.transactions.filter(t=>t.date<=asOf&&t.entries.some(e=>e.account===account)&&(basis==='pending'||t.status!=='pending'));
  const signature=JSON.stringify([m.start,a.opening,relevant.map(t=>[t.id,t.date,t.status,t.entries.filter(e=>e.account===account)])]);
  const ledger=balances(m,asOf,basis==='posted')[account];return {account,asOf,basis,bankBalance,signature,ledger,difference:bankBalance-ledger};
@@ -33,7 +33,7 @@ export function attentionItems(m,asOf,entity,end=monthBounds(shiftMonth(asOf.sli
  const items=[],owner=id=>m.accounts.find(a=>a.id===id)?.entity;
  for(const a of m.accounts.filter(a=>a.entity===entity)){
   const debt=a.type!=='cash',r=m.reconciliations?.find(r=>r.account===a.id);
-  if(a.balanceUnknown)items.push({text:a.name+': principal is unknown',action:'opening',id:a.id,debt});
+  if(balanceUnknownAt(a,asOf))items.push({text:a.name+': principal is unknown',action:'opening',id:a.id,debt});
   else if(!r||!checkpointValid(m,r)||r.asOf<addDays(asOf,-7))items.push({text:a.name+': '+(r?'balance verification needs updating':'balance not yet verified'),action:'reconcile',id:a.id,debt});
   const c=a.credit||{},owed=Math.max(0,-balances(m,asOf)[a.id]);
   if(debt&&(c.termsProvisional||owed>0&&(c.purchaseApr==null||!c.dueDay||c.minimum==null||!c.minimumAsOf||c.minimumAsOf<addDays(asOf,-45))))items.push({text:a.name+': review rates, minimum, due date or provisional terms',action:'credit',id:a.id,debt:true});

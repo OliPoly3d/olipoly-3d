@@ -1,5 +1,7 @@
 import {date, iso, addDays, occurrences} from './money-engine.mjs';
 import {validateCredit} from './money-credit.mjs';
+import {validateSavings} from './money-savings.mjs';
+import {validateReviews} from './money-review.mjs';
 
 export function monthBounds(month) {
   date(month + '-01');
@@ -28,6 +30,8 @@ function entityOf(model, transaction) {
 }
 export function validateBudgets(model) {
   validateCredit(model);
+  validateSavings(model);
+  validateReviews(model);
   if(model.planning?.budgetTiming&&!['weekly','month-end'].includes(model.planning.budgetTiming))throw Error('Choose weekly or month-end budget timing.');
   const budgets = model.budgets || [];
   if (!Array.isArray(budgets)) throw Error('Invalid budgets.');

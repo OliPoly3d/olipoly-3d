@@ -1,5 +1,12 @@
 // Pure cash-flow functions. Amounts are signed integer cents; card debt is negative.
 export const statuses = ['pending', 'cleared', 'reconciled'];
+export const principalSnapshots=account=>account.principalSnapshots||[];
+export const balanceUnknownAt=(account,asOf)=>!!account.balanceUnknown&&!principalSnapshots(account).some(s=>s.date<=asOf);
+export const forecastMonths = 60;
+export function forecastEnd(start) {
+  const d = date(start);
+  return iso(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + forecastMonths, 0)));
+}
 export function date(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw Error('Use a complete calendar date.');
   const d = new Date(value + 'T00:00:00Z');
@@ -32,6 +39,8 @@ export function validate(model) {
   for (const a of model.accounts) {
     if (!a.name || !['household', 'business', 'custodial'].includes(a.entity) || !['cash', 'card', 'loan'].includes(a.type)) throw Error('Invalid account.');
     integer(a.opening); integer(a.reserve);
+    if(a.principalSnapshots!==undefined&&!Array.isArray(a.principalSnapshots))throw Error('Invalid dated principals.');
+    let priorSnapshot='';const snapshotDates=new Set();for(const s of principalSnapshots(a)){date(s.date);integer(s.balance);if(a.type!=='loan'||s.date<model.start||s.balance>0||snapshotDates.has(s.date)||s.date<priorSnapshot)throw Error('A dated loan principal must have a unique date on or after tracking begins and cannot be positive.');snapshotDates.add(s.date);priorSnapshot=s.date;}
     if(a.balanceUnknown!==undefined&&typeof a.balanceUnknown!=='boolean')throw Error('Invalid unknown-balance flag.');
     if(a.summaryPriority!==undefined&&(!Number.isSafeInteger(a.summaryPriority)||a.summaryPriority<0))throw Error('Invalid account summary priority.');
   }
@@ -103,7 +112,7 @@ export function occurrences(model, end, {includeSkipped=false}={}) {
         const eventDate = override?.date || day;
         const entries = [{account:override?.account || s.account,amount}];
         if (s.to) entries.push({account:override?.to || s.to,amount:-amount});
-        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding,incomeType:s.incomeType,oneTime:s.oneTime===true});
+        if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding,incomeType:s.incomeType,oneTime:s.oneTime===true,...(s.savingsBucket?{savingsBucket:s.savingsBucket}:{})});
       }
       if (s.frequency === 'biweekly') day = addDays(day,14);
       else month.setUTCMonth(month.getUTCMonth()+1);
@@ -113,14 +122,20 @@ export function occurrences(model, end, {includeSkipped=false}={}) {
 }
 export function balances(model, asOf, postedOnly=false) {
   const out = Object.fromEntries(model.accounts.map(a=>[a.id,a.opening]));
-  for (const t of model.transactions) if (t.date<=asOf && (!postedOnly || t.status!=='pending')) for (const e of t.entries) out[e.account]+=e.amount;
+  const snapshots=new Map(model.accounts.map(a=>[a.id,principalSnapshots(a).filter(s=>s.date<=asOf).sort((a,b)=>a.date.localeCompare(b.date)).at(-1)]).filter(([,s])=>s));
+  for(const [id,snapshot] of snapshots)out[id]=snapshot.balance;
+  for (const t of model.transactions) if (t.date<=asOf && (!postedOnly || t.status!=='pending')) for (const e of t.entries) if(!snapshots.has(e.account)||t.date>snapshots.get(e.account).date)out[e.account]+=e.amount;
   return out;
 }
 export function forecast(model, end, plannedEvents = []) {
   validate(model); date(end);
-  if (end < model.start || +date(end)- +date(model.start)> 1130*86400000) throw Error('Choose an end date within 36 months.');
+  if (end < model.start || end > forecastEnd(model.start)) throw Error('Choose an end date within '+forecastMonths+' months.');
   for (const t of plannedEvents) {date(t.date); for (const e of t.entries) {integer(e.amount);if (!model.accounts.some(a=>a.id===e.account)) throw Error('Unknown planned account.');}}
   const events = [...model.transactions, ...occurrences(model,end), ...plannedEvents].filter(t=>t.date<=end && t.date>=model.start).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+  for(const a of model.accounts)for(const snapshot of principalSnapshots(a).filter(s=>s.date<=end).sort((a,b)=>a.date.localeCompare(b.date))){
+    const prior=a.opening+events.filter(t=>t.date<=snapshot.date).reduce((sum,t)=>sum+t.entries.filter(e=>e.account===a.id).reduce((n,e)=>n+e.amount,0),0);
+    events.push({id:'principal-snapshot:'+a.id+':'+snapshot.date,date:snapshot.date,description:a.name+' — confirmed principal',kind:'adjustment',status:'plan',principalSnapshot:true,entries:[{account:a.id,amount:snapshot.balance-prior}]});
+  }
   const grouped = new Map();
   for (const e of events) { if(!grouped.has(e.date)) grouped.set(e.date,[]); grouped.get(e.date).push(e); }
   const running = Object.fromEntries(model.accounts.map(a=>[a.id,a.opening]));

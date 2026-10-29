@@ -1,4 +1,4 @@
-import {addDays,date,occurrences} from './money-engine.mjs';
+import {addDays,date,occurrences,forecastEnd} from './money-engine.mjs';
 import {planningForecast} from './money-planning.mjs';
 
 const normalized=value=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -18,7 +18,7 @@ export function possibleDuplicates(model,candidate){
  const end=addDays(candidate.date,7),expected=occurrences(model,end);
  // Full-balance and capped card payments must use the same amounts as Bills.
  if(model.accounts.some(a=>a.credit?.scheduleId)){
-  const horizon=addDays(model.start,1130),payments=new Map(planningForecast(model,end<horizon?end:horizon).planned.filter(t=>t.creditPayment).map(t=>[t.scheduleKey,t]));
+  const horizon=forecastEnd(model.start),payments=new Map(planningForecast(model,end<horizon?end:horizon).planned.filter(t=>t.creditPayment).map(t=>[t.scheduleKey,t]));
   for(let i=0;i<expected.length;i++)if(payments.has(expected[i].scheduleKey))expected[i]=payments.get(expected[i].scheduleKey);
  }
  const actual=model.transactions.filter(t=>t.id!==candidate.id);
