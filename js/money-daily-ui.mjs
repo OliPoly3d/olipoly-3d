@@ -1,4 +1,4 @@
-import { balances, cents, forecastEnd } from './money-engine.mjs';
+import { addDays, balances, cents, forecastEnd } from './money-engine.mjs';
 import { budgetMonth, categoryBudgetSummary, monthBounds } from './money-budget.mjs';
 import {
   budgetMoveAvailability,
@@ -674,9 +674,6 @@ export function setupDaily({
       accountIds: watched(m),
       cashAccount: $('chartAccount').value,
     });
-    $('dailyCashDetails').querySelector('summary').textContent = findings.cash?.nextPay
-      ? 'Cash until the next paycheck'
-      : 'Cash over the next 30 days';
     const c = findings.cash,
       bankInfo = chosen && savingsSummary(m, asOf()).accounts.find((a) => a.id === chosen.account),
       incompletePurpose = bankInfo?.unallocated < 0;
@@ -736,50 +733,95 @@ export function setupDaily({
     if (incompletePurpose) notices.push('Savings purposes exceed their bank balance.');
     $('dailyPlanNotice').hidden = !notices.length;
     $('dailyPlanNotice').textContent = notices.join(' ');
-    if (c && findings.account) {
-      const p = planningForecast(planningSnapshot(m, asOf()), c.end),
-        a = m.accounts.find((a) => a.id === findings.account),
-        incomplete = p.incompleteFrom[entity()],
-        days = p.days.filter(
-          (d) => d.date >= asOf() && (!incomplete || d.date.slice(0, 7) < incomplete),
-        );
-      lineChart(
-        $('dailyCashChart'),
-        [
-          {
-            label: 'Daily closing cash',
-            points: days.map((d) => ({ date: d.date, value: d.closing[a.id] })),
-          },
-          {
-            label: 'Daily low',
-            dashed: true,
-            points: days.map((d) => ({ date: d.date, value: d.low[a.id] })),
-          },
-        ],
-        {
-          title: c.nextPay ? 'Cash until next paycheck' : 'Cash over the next 30 days',
-          floor: c.floor,
-        },
-      );
-      $('dailyCashNote').textContent =
-        a.name +
-        ' · ' +
-        asOf() +
-        ' through ' +
-        c.end +
-        ' · debits before deposits on the same day.' +
-        (c.complete
-          ? ' Includes the entered plan and remaining category allowances.'
-          : ' Estimate needs review: ' + c.reasons.join(' · '));
-    } else {
-      clearChart($('dailyCashChart'));
-      $('dailyCashNote').textContent = 'Choose a cash account.';
-    }
+    renderCash(m);
     renderGoals(m, buckets);
     renderAttention(m, findings);
     renderReview(m);
     if ($('budgetMoveEntry').open) run(() => moveChoices());
   }
+  function renderCash(m) {
+    const c = findings?.cash,
+      account = findings?.account,
+      when = asOf(),
+      window = $('dailyCashWindow').value;
+    $('dailyCashRows').replaceChildren();
+    $('dailyCashAssumptions').replaceChildren();
+    const heading =
+      window === 'payday'
+        ? c?.nextPay
+          ? 'Cash until the next paycheck'
+          : 'Cash over the next 30 days'
+        : 'Cash over the next ' + window + ' days';
+    $('dailyCashDetails').querySelector('summary').textContent = heading;
+    if (!c || !account) {
+      clearChart($('dailyCashChart'));
+      $('dailyCashNote').textContent = 'Choose a cash account.';
+      return;
+    }
+    const requested = window === 'payday' ? c.end : addDays(when, Number(window) - 1),
+      horizon = forecastEnd(m.start),
+      end = requested > horizon ? horizon : requested,
+      p = planningForecast(planningSnapshot(m, when), end),
+      a = m.accounts.find((a) => a.id === account),
+      incomplete = p.incompleteFrom[entity()],
+      days = p.days.filter(
+        (d) => d.date >= when && (!incomplete || d.date.slice(0, 7) < incomplete),
+      );
+    lineChart(
+      $('dailyCashChart'),
+      [
+        {
+          label: 'Daily closing cash',
+          points: days.map((d) => ({ date: d.date, value: d.closing[account] })),
+        },
+        {
+          label: 'Daily low',
+          dashed: true,
+          points: days.map((d) => ({ date: d.date, value: d.low[account] })),
+        },
+      ],
+      { title: heading, floor: c.floor },
+    );
+    for (const d of days) {
+      const row = el('tr');
+      for (const [label, value] of [
+        ['Date', d.date],
+        ['Daily closing cash', money(d.closing[account])],
+        ['Daily low', money(d.low[account])],
+      ]) {
+        const cell = el('td', value);
+        cell.dataset.label = label;
+        row.append(cell);
+      }
+      $('dailyCashRows').append(row);
+    }
+    const notes = [a.name + ' · ' + when + ' through ' + end + '.'];
+    if (window === 'payday' && c.nextPay)
+      notes.push('Next paycheck ' + c.nextPay + ' is outside this window.');
+    if (days.length === 1)
+      notes.push(
+        'Only one day is shown. The dots show closing cash and the day’s low; choose 14 or 30 days to see a longer outlook.',
+      );
+    const assumptions = [
+      'Debits count before deposits on the same day. Includes remaining category allowances.',
+    ];
+    const creditWarnings = p.creditWarnings.filter((w) =>
+        m.accounts.some((a) => a.entity === entity() && w.startsWith(a.name + ':')),
+      ),
+      reasons = [...new Set([...c.reasons, ...creditWarnings])];
+    if (reasons.length) {
+      notes.push('Working estimate — see review notes below.');
+      assumptions.push('Estimate needs review: ' + reasons.join(' · ') + '.');
+    }
+    if (incomplete && incomplete <= end.slice(0, 7))
+      assumptions.push(
+        'Missing category targets or funding from ' + incomplete + '; later dates are omitted.',
+      );
+    if (requested > horizon) assumptions.push('Limited to the end of the plan.');
+    $('dailyCashNote').textContent = notes.join(' ');
+    $('dailyCashAssumptions').textContent = assumptions.join(' ');
+  }
+  $('dailyCashWindow').onchange = () => run(() => renderCash(getDraft()));
   function clear() {
     owner = null;
     preferences = {};
@@ -798,6 +840,8 @@ export function setupDaily({
       'dailyCategoryTotal',
       'dailyCategoryNote',
       'dailyCashNote',
+      'dailyCashRows',
+      'dailyCashAssumptions',
       'dailyGoalRows',
       'dailyReviewCount',
       'dailyPlanNotice',
@@ -812,6 +856,7 @@ export function setupDaily({
     clearChart($('dailyCategoryChart'));
     clearChart($('dailyCashChart'));
     $('weeklyReview').hidden = true;
+    $('dailyCashWindow').value = 'payday';
     $('dailyFavoritesForm').reset();
     $('dailyFavoritesForm').elements.bucket.replaceChildren();
     $('budgetMoveForm').reset();

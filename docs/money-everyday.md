@@ -34,3 +34,9 @@ Browser checks use isolated synthetic data and stubbed persistence, with no prod
 8. Verify failed saves and stale revisions retain the entry/preview. Refresh and sign out must clear Undo and financial DOM.
 
 Transaction-file imports and automated sensitivity ranking remain outside this release.
+
+## Cash chart and mobile layout
+
+Before next paycheck ends on the day before the next recurring deposit. If payday is tomorrow, that window contains today alone: the chart shows visible, centered balance points and one date, with an exact closing-value label. Select Next 14 days or Next 30 days for a longer outlook. Daily amounts provides exact values; assumptions/review notes remain expandable and provisional estimates stay identified. Changing the display window never edits the plan, verification status or cash-floor rule.
+
+Phones keep Purchase, Card payment, Income and More actions at the bottom, with space for device safe areas. Saved status scrolls away; unsaved changes or an available Undo keep the status/save bar visible. Account summaries and activity use labeled cards below 700 pixels; activity filters start collapsed. Tablet and desktop tables retain their established format. Touch targets and full-width transaction account selectors support phone/tablet entry. Browser viewport QA is not a substitute for checking actual iPhone/iPad Safari, the on-screen keyboard and home-screen installation on the user's device.

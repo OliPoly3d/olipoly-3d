@@ -75,7 +75,9 @@ export function lineChart(
       bottom = 210,
       height = 260,
       x = (d) =>
-        left + ((+new Date(d) - first) / Math.max(86400000, last - first)) * (right - left),
+        first === last
+          ? (left + right) / 2
+          : left + ((+new Date(d) - first) / (last - first)) * (right - left),
       y = (v) => bottom - ((v - low) / (high - low)) * (bottom - top),
       svg = beginSvg(target, width, height, title);
     svg.append(
@@ -96,9 +98,9 @@ export function lineChart(
           formatMoney(Math.round(v)),
         ),
       );
-    const count = width < 450 ? 3 : 4;
+    const count = Math.min(dates.length, width < 450 ? 3 : 4);
     for (let i = 0; i < count; i++) {
-      const index = Math.round((i * (dates.length - 1)) / (count - 1)),
+      const index = count === 1 ? 0 : Math.round((i * (dates.length - 1)) / (count - 1)),
         d = dates[index];
       svg.append(
         svgNode(
@@ -106,7 +108,8 @@ export function lineChart(
           {
             x: x(d),
             y: bottom + 21,
-            'text-anchor': i === 0 ? 'start' : i === count - 1 ? 'end' : 'middle',
+            'text-anchor':
+              count === 1 ? 'middle' : i === 0 ? 'start' : i === count - 1 ? 'end' : 'middle',
           },
           shortDate(d),
         ),
@@ -145,6 +148,35 @@ export function lineChart(
           ...(s.dashed ? { 'stroke-dasharray': '4 3' } : {}),
         }),
       );
+      if (s.points.length === 1) {
+        const p = s.points[0],
+          dot = svgNode('circle', {
+            cx: x(p.date),
+            cy: y(p.value),
+            r: index ? 3.5 : 6,
+            fill: color,
+            stroke: 'var(--surface)',
+            'stroke-width': 1.5,
+            'data-series-point': s.label,
+          });
+        dot.append(
+          svgNode('title', {}, s.label + ' · ' + shortDate(p.date) + ' · ' + formatMoney(p.value)),
+        );
+        g.append(dot);
+        if (index === 0)
+          g.append(
+            svgNode(
+              'text',
+              {
+                x: x(p.date),
+                y: Math.max(top + 14, y(p.value) - 12),
+                'text-anchor': 'middle',
+                'data-point-label': '',
+              },
+              formatMoney(p.value),
+            ),
+          );
+      }
       svg.append(g);
     }
     const visibleMarkers = markers.filter((m) => dates.includes(m.date));
