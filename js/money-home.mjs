@@ -16,12 +16,12 @@ export function categoryAccent(name) {
   const s = String(name).toLowerCase();
   const known = [
     [/grocer|food/, 0],
-    [/gas|fuel/, 1],
-    [/child|school/, 2],
-    [/hobb/, 3],
-    [/dining|restaurant/, 4],
+    [/gas|fuel/, 2],
+    [/child|school/, 3],
+    [/hobb/, 6],
+    [/dining|restaurant/, 1],
     [/misc/, 5],
-    [/pet/, 6],
+    [/pet/, 4],
   ];
   const hit = known.find(([re]) => re.test(s));
   if (hit) return palette[hit[1]];

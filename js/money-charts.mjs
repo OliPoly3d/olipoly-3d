@@ -79,6 +79,7 @@ export function lineChart(
     markers = [],
     annotations = [],
     highlightBelowFloor = false,
+    projected = true,
   } = {},
 ) {
   responsive(target, (width) => {
@@ -118,7 +119,7 @@ export function lineChart(
         width: right - left,
         height: bottom - top,
         fill: 'none',
-        stroke: 'var(--line)',
+        stroke: 'var(--grid)',
       }),
     );
     for (const v of [min, (min + max) / 2, max])
@@ -126,7 +127,7 @@ export function lineChart(
         svgNode(
           'text',
           { x: left - 8, y: y(v) + 4, 'text-anchor': 'end' },
-          formatMoney(Math.round(v)),
+          new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v / 100),
         ),
       );
     const count = Math.min(dates.length, width < 450 ? 3 : 4);
@@ -188,7 +189,7 @@ export function lineChart(
           fill: 'none',
           stroke: color,
           'stroke-width': index ? 1.8 : 2.8,
-          ...(s.dashed ? { 'stroke-dasharray': '4 3' } : {}),
+          ...((s.dashed || projected) ? { 'stroke-dasharray': s.dashed ? '2 4' : '8 4' } : {}),
         }),
       );
       if (s.points.length === 1) {
@@ -326,7 +327,7 @@ export function lineChart(
     legend.className = 'chart-legend';
     for (const s of series) {
       const span = document.createElement('span');
-      span.textContent = s.label;
+      span.textContent = s.label + (projected ? ' · projected' : ' · recorded');
       if (s.debt) span.setAttribute('data-debt-private', '');
       legend.append(span);
     }

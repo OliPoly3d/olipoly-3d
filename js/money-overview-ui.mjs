@@ -137,6 +137,7 @@ export function setupOverview({ getDraft, today, record, selectCredit, message }
           },
         ],
         {
+          projected: !past,
           floor: a.reserve || 0,
           onSelect: eventDay,
           markers: points

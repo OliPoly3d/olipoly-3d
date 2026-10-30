@@ -52,3 +52,20 @@ The expandable Needs review area consolidates unresolved entries and balance/inp
 The cash chart labels major real scheduled/recorded events, annotates its lowest daily balance, shades the portion of a segment below the floor, and supports tapping, keyboard arrow keys or the Inspect a day field. The date inspector distinguishes category planning reserves and interest estimates from recordable expectations; reserves cannot be recorded as purchases. Selecting a chart date never edits financial data.
 
 Entry starts with the amount. Account/category choice buttons update the original form fields and preserve their full dropdown alternatives. Date, status, split/refund allocation, savings, funding and notes remain editable. Record and Cancel stay outside the scrolling entry surface and use native form association. At widths of 900 pixels or more, a read-only recent-account-activity pane sits beside the editor; narrower screens use the full entry width. Closing and sign-out clear the appropriate financial display state.
+
+### Appearance polish (October 2026)
+
+More actions → Appearance offers Graphite (default), Light, or Use device setting.
+The choice is local to the browser and does not edit the financial plan. Inter is
+self-hosted with its SIL Open Font License; no font service receives page requests.
+Category tiles, entry choices and budget comparisons share one category palette.
+Balances and editors retain cents; chart axes use rounded dollars. Forecast lines
+are dashed and labeled projected; past recorded cash uses a solid closing line.
+Existing collapsed section previews retain their financial summaries.
+
+Validation: full 143-test Money suite passed; appearance preference tests cover
+restoration, device changes and blocked browser storage. Final UI regression checks
+cover charts and entry after the display changes. Chromium preview used synthetic
+data at 320/390px phone and 820/1024px iPad widths, checking light/dark switching,
+no horizontal page overflow, Cancel, and visible fixed editor actions. Physical
+iOS Safari / its on-screen keyboard still require device testing.

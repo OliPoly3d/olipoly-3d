@@ -1,3 +1,4 @@
+import {categoryAccent} from './money-home.mjs';
 import {addDays,balanceUnknownAt,cents, date, forecastEnd} from './money-engine.mjs';
 import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets,budgetTimingLabel,categoryBudgetSummary} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
@@ -16,11 +17,10 @@ function summaryAccounts(accounts,current){
 }
 function amountInput(value,label){const input=el('input');input.type='number';input.step='0.01';input.inputMode='decimal';input.value=value===null?'':(value/100).toFixed(2);input.setAttribute('aria-label',label);return input;}
 function accountSelect(model,value,label,cashOnly=false,entity){const s=el('select');s.setAttribute('aria-label',label);for(const a of model.accounts.filter(a=>(!cashOnly||a.type==='cash')&&(!entity||a.entity===entity))){const o=el('option',a.name);o.value=a.id;s.append(o);}s.value=value||'';return s;}
-const accents={gas:'#e2ba75',groceries:'#86c9ac',childcare:'#8ab7e0',pets:'#b8c99a',dining:'#e49e91',outings:'#b6c1cc',seasonal:'#7fc8cd'};
-function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',accents[id]||'#78d9cc');return span;}
+function categoryLabel(name,id){const span=el('span',name,'category-label');span.style.setProperty('--category-accent',categoryAccent(name));return span;}
 const ids=['categorySpendingSummary','accountSummary','monthMetrics','cashAlerts','balanceChart','monthChart','incomeRows','incomeTotals','billRows','billTotals','categoryRows','categoryTotals','seasonalHead','seasonalRows','seasonalTotals','planningSettings','transactions','unknownBills'];
 function comparisonRow(name,id,expected,actual,max,missingLabel='Set target'){
- const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',accents[id]||'#78d9cc');
+ const row=el('div',undefined,'comparison-row');row.style.setProperty('--category-accent',categoryAccent(name));
  const heading=el('strong');heading.append(categoryLabel(name,id));row.append(heading);
  const chart=el('div');
  for(const [label,value,cls] of [['Expected',expected,'planned'],['Actual',actual,'actual']]){
