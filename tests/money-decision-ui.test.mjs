@@ -1045,3 +1045,13 @@ test(
     }
   },
 );
+test('Today spending preview and month recap are read-only; repeat purchase copies splits without a schedule identity',{skip},async()=>{
+ const p=await page();try{const {$,change,submit}=p,original=JSON.stringify(p.model);
+ assert.ok($('affordEntry').closest('#everydaySection'));assert.match($('paydayStrip').textContent,/Payday/);assert.ok($('dailyCategoryTiles').querySelector('svg'));
+ const f=$('affordForm');change(f.elements.name,'Dinner test');change(f.elements.amount,'100');await submit('affordForm');assert.match($('affordResult').textContent,/month-end|Estimate needs review/);assert.equal(JSON.stringify(p.model),original);assert.equal(p.revision,0);
+ assert.match($('monthRecap').textContent,/Unused event/);
+ $('quickPurchase').click();const e=$('transactionForm');change(e.elements.amount,'12.34');change(e.elements.description,'Repeat me');await submit('transactionForm');
+ const count=p.model.transactions.length,revision=p.revision;$('repeatRecent').click();assert.equal(e.elements.description.value,'Repeat me');assert.equal(e.elements.amount.value,'12.34');assert.equal(e.elements.date.value,'2026-10-29');assert.equal(e.elements.editTransactionId.value,'');assert.equal(e.elements.scheduleKey.value,'');assert.equal(p.model.transactions.length,count);assert.equal(p.revision,revision);
+ $('closeTransactionEntry').click();$('quickCardPayment').click();assert.match($('paymentGuide').textContent,/Added category spending: \$0.00/);
+ }finally{p.close();}
+});

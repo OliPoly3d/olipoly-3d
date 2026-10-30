@@ -131,6 +131,10 @@ export function setupEntry({
       expected && !f.elements.entryTiming.disabled ? 'Add to budget preview' : 'Record actual';
     if (!expense) f.elements.splitPurchase.checked = false;
     updateSplitTotal();
+    const from=getDraft()?.accounts.find(a=>a.id===f.elements.account.value),to=getDraft()?.accounts.find(a=>a.id===f.elements.to.value),g=$('paymentGuide');
+    g.hidden=!(transfer&&from?.type==='cash'&&to?.type==='card');
+    g.textContent=g.hidden?'':from.name+' → '+to.name+'. Cash decreases; card debt decreases by the same amount. Added category spending: $0.00. Original purchase categories stay intact.';
+    g.toggleAttribute('data-debt-private',!g.hidden);
     renderQuickChoices();
   }
   function choiceButtons(target, select, items, { color = false } = {}) {
@@ -382,6 +386,18 @@ export function setupEntry({
     revealSection($('walletEntry'));
     $('walletEntry').scrollIntoView({ behavior: 'smooth' });
   };
+  function repeatPurchase(t) {
+    if(!t){message('Record a purchase first, then repeat it here.');return;}
+    const source=t.entries.find(e=>e.amount<0);if(!source)return;
+    quick('expense',{account:source.account,description:t.description});
+    f.elements.amount.value=(-source.amount/100).toFixed(2);
+    f.elements.expenseEntity.value=t.expenseEntity||'';f.elements.savingsBucket.value=t.savingsBucket||'';
+    if(t.allocations?.length){f.elements.splitPurchase.checked=true;$('splitRows').replaceChildren();for(const part of t.allocations)addSplit(part);}else f.elements.category.value=t.category;
+    f.dispatchEvent(new window.Event('change',{bubbles:true}));
+    status('New copy for today. Check amount, account and categories before recording.');
+  }
+  $('repeatRecent').onclick=()=>repeatPurchase(searchLedger(getDraft(),{to:today()}).find(t=>t.kind==='expense'&&transactionOwner(getDraft(),t)===$('budgetEntity').value));
+  $('finishMonth').onclick=()=>{revealSection($('monthCloseEntry'));$('monthCloseEntry').scrollIntoView({behavior:'smooth'});};
   function remember(t) {
     view.clearTimeout(receiptTimer);
     receiptTimer = view.setTimeout(() => {
@@ -466,6 +482,7 @@ export function setupEntry({
         button('Edit', () => record(t)),
         button('Remove', () => remove(t)),
       );
+      if(t.kind==='expense')actions.append(button('Repeat purchase',()=>repeatPurchase(t)));
       if (t.kind === 'expense' && refundableParts(m, t.id).length)
         actions.append(
           button('Refund / repayment', () => {
@@ -598,6 +615,7 @@ export function setupEntry({
     close();
     $('entryReceipt').hidden = true;
     $('entryReceipt').textContent = '';
+    $('paymentGuide').textContent='';$('paymentGuide').hidden=true;
     lastLedger = '';
     $('ledgerRows').replaceChildren();
     for (const id of ['entryAccountChoices', 'entryCategoryChoices', 'entryContextRows']) {
