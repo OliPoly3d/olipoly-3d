@@ -69,3 +69,18 @@ cover charts and entry after the display changes. Chromium preview used syntheti
 data at 320/390px phone and 820/1024px iPad widths, checking light/dark switching,
 no horizontal page overflow, Cancel, and visible fixed editor actions. Physical
 iOS Safari / its on-screen keyboard still require device testing.
+
+### Today visual decision tools
+
+Today now includes a compact path-to-payday strip, colored category cards with
+outline icons, and the existing affordability editor as “What if I spend?”.
+Compare shows the 90-day low and selected spending month's ending cash; incomplete
+inputs stay labeled. Comparing saves nothing; Add this choice creates a plan preview.
+Savings purpose cards show goal progress when a goal exists; no goals are invented.
+More actions offers Repeat recent purchase and Finish a month. Activity also offers
+Repeat purchase on each expense. Copies use today's date and no transaction or
+schedule identity; review before recording. Card payment entry explicitly explains
+that cash and debt decrease while category spending is unchanged.
+Month-end recap separates category totals, recorded bucket contributions/withdrawals,
+and unused event allowances. Existing reconciliation/pending/expected-item checks
+and month locks remain authoritative. No allowances or cash roll forward implicitly.

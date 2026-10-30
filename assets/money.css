@@ -515,7 +515,7 @@ body:has(#app:not([hidden])) main { max-width:1440px; }
  #planBar:has(#saveOutcome.low) { position:sticky; }
 }
 
-#app[data-debt-hidden=true] [data-debt-private] { display: none !important; }
+
 @media(max-width:700px) {
  #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) { padding:0;border:0;background:transparent;box-shadow:none; }
  #planBar:has(#savePlan:disabled):not(:has(#undoLastSave:not([hidden]))):not(:has(#saveOutcome.low)) .plan-status { flex-direction:row;align-items:center;min-width:0;gap:10px; }
@@ -567,3 +567,10 @@ button[aria-pressed=true] { box-shadow:inset 0 0 0 1px var(--accent); }
  .entry-dialog-toolbar { padding-top:max(14px,env(safe-area-inset-top)); }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important;animation:none!important;scroll-behavior:auto!important; } }
+.category-icon{width:25px;height:25px;fill:none;stroke:var(--category-accent,var(--accent));stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.category-tile{background:linear-gradient(140deg,color-mix(in srgb,var(--category-accent) 15%,var(--input)),var(--input) 85%);position:relative}.category-tile>.category-icon{position:absolute;right:12px;top:12px}.category-tile>span{padding-right:28px}
+#dailyGoalRows{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}.daily-goal-row{border:1px solid var(--line);border-top:3px solid var(--category-accent);border-radius:12px;padding:16px;background:var(--input)}.daily-goal-row progress{accent-color:var(--category-accent)}
+.payday-strip,.spend-preview,#monthRecap{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--input);margin:18px 0}.payday-strip ol{display:flex;gap:10px;overflow-x:auto;list-style:none;padding:12px 0;margin:0}.payday-strip li{flex:1 0 115px;display:grid;gap:5px;padding:12px;border-top:3px solid var(--line);border-radius:8px;background:var(--surface);font-size:12px}.payday-strip li[data-kind=income]{border-color:var(--accent)}.payday-strip li[data-kind=expense]{border-color:var(--warning)}.payday-strip>small{display:block;margin-top:6px}.spend-preview>summary{font-weight:600;min-height:44px}.afford-answer{border-left:3px solid var(--accent);padding:14px;background:var(--surface-raised)}#monthRecap li{padding:8px 0;color:var(--muted)}
+@media(max-width:700px){.spend-preview form,#monthRecap .metrics{grid-template-columns:1fr}.payday-strip{padding:12px}}
+
+#app[data-debt-hidden=true] [data-debt-private] { display:none!important; }

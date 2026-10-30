@@ -1,3 +1,4 @@
+import {renderVisualExtras,clearVisualExtras,categorySymbol} from './money-visual-extras.mjs';
 import { addDays, balances, cents, forecastEnd } from './money-engine.mjs';
 import { budgetMonth, categoryBudgetSummary, monthBounds } from './money-budget.mjs';
 import {
@@ -185,6 +186,7 @@ export function setupDaily({
     for (const b of buckets) {
       const row = el('div');
       row.className = 'daily-goal-row';
+      row.style.setProperty('--category-accent',categoryAccent(b.name));
       row.append(el('strong', b.name + ' · ' + money(b.balance)));
       if (b.goalAmount != null) {
         const progress = el('progress');
@@ -751,6 +753,7 @@ export function setupDaily({
     renderGoals(m, buckets);
     renderAttention(m, findings, notices);
     renderUpcoming(m);
+    renderVisualExtras(m,asOf(),entity());
     renderCategoryTiles(budget.buckets);
     renderReview(m);
     if ($('budgetMoveEntry').open) run(() => moveChoices());
@@ -881,6 +884,7 @@ export function setupDaily({
       progress.value = Math.min(progress.max, Math.max(0, b.spent));
       progress.setAttribute('aria-label', b.name + ' spent against target');
       tile.append(
+        categorySymbol(b.name),
         el('span', b.shortName || b.name),
         el(
           'strong',
@@ -1009,6 +1013,7 @@ export function setupDaily({
   }
   $('dailyInspectDate').onchange = renderCashInspector;
   function clear() {
+    clearVisualExtras();
     owner = null;
     preferences = {};
     lastEntity = null;

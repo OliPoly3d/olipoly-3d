@@ -6,7 +6,7 @@ import {
   affordability,
   prepareYear,
 } from './money-scenarios.mjs';
-import { milestones, renewals, overlapReview } from './money-decisions.mjs';
+import { horizonSummary, milestones, renewals, overlapReview } from './money-decisions.mjs';
 import { lineChart, clearChart, timelineChart, formatMoney as money } from './money-charts.mjs';
 import { sectionPreview, revealSection } from './money-sections.mjs';
 const $ = (id) => document.getElementById(id),
@@ -116,14 +116,17 @@ export function setupPlanner({
     ])
       f.elements[key].disabled = !selected;
   }
+  $('openSpendPreview').onclick=()=>{revealSection($('affordEntry'));$('affordEntry').scrollIntoView({behavior:'smooth'});};
   $('affordForm').elements.mode.onchange = affordControls;
   $('affordForm').addEventListener('input', () => {
     afford = null;
+    $('affordResult').textContent='Inputs changed. Compare again for an updated estimate.';
     $('affordApply').disabled = true;
     $('affordApply').dataset.disabled = 'true';
   });
   $('affordForm').addEventListener('change', () => {
     afford = null;
+    $('affordResult').textContent='Inputs changed. Compare again for an updated estimate.';
     $('affordApply').disabled = true;
     $('affordApply').dataset.disabled = 'true';
   });
@@ -153,6 +156,9 @@ export function setupPlanner({
       });
       affordBase = JSON.stringify(m);
       summary($('affordResult'), { before: afford.nearBefore, after: afford.nearAfter });
+      const month=horizonSummary(afford.next,afford.account,asOf(),monthBounds(f.elements.when.value.slice(0,7)).last,afford.projection),answer=el('p');answer.className='afford-answer';
+      answer.textContent=afford.nearAfter.complete&&month.complete?'After spending: lowest cash '+money(afford.nearAfter.low)+' on '+afford.nearAfter.date+' (next 90 days); floor '+money(afford.nearAfter.floor)+'; '+f.elements.when.value.slice(0,7)+' month-end '+money(month.closing):'Estimate needs review: '+[...new Set([afford.nearAfter.reason,month.reason].filter(Boolean))].join(' · ');
+      $('affordResult').prepend(answer);
       const p = el(
         'p',
         'Full horizon tightest room: ' +
