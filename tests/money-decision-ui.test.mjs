@@ -1055,3 +1055,17 @@ test('Today spending preview and month recap are read-only; repeat purchase copi
  $('closeTransactionEntry').click();$('quickCardPayment').click();assert.match($('paymentGuide').textContent,/Added category spending: \$0.00/);
  }finally{p.close();}
 });
+
+test('expanding budget move directly populates both lists without a shortcut or save', {skip}, async()=>{
+ const p=await page();try{const {$,change}=p,entry=$('budgetMoveEntry'),f=$('budgetMoveForm'),before=JSON.stringify(p.model);
+ assert.equal(f.elements.from.options.length,0);
+ entry.open=true;entry.dispatchEvent(new p.dom.window.Event('toggle'));await tick();
+ assert.deepEqual([...f.elements.from.options].map(o=>o.value),['food','gas']);
+ assert.deepEqual([...f.elements.to.options].map(o=>o.value),['food','gas']);
+ assert.notEqual(f.elements.from.value,f.elements.to.value);
+ assert.equal(f.elements.month.value,'2026-10');assert.equal(p.revision,0);assert.equal(JSON.stringify(p.model),before);
+ change($('budgetEntity'),'business');entry.open=true;entry.dispatchEvent(new p.dom.window.Event('toggle'));await tick();
+ assert.equal(f.elements.from.options.length,0);assert.equal(f.elements.from.disabled,true);assert.match($('budgetMoveInfo').textContent,/at least two/);
+ change($('budgetEntity'),'household');entry.open=true;entry.dispatchEvent(new p.dom.window.Event('toggle'));await tick();assert.equal(f.elements.from.disabled,false);assert.equal(f.elements.from.options.length,2);
+ }finally{p.close();}
+});

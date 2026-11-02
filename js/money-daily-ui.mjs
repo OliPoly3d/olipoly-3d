@@ -567,6 +567,11 @@ export function setupDaily({
         (source.movable === null ? 'Incomplete' : money(source.movable)) +
         '. Both categories must use the same funding account.'
       : 'Add two everyday category targets to use a guided budget move.';
+    const usable = choices.length >= 2;
+    f.elements.from.disabled = !usable;
+    f.elements.to.disabled = !usable;
+    f.querySelector('button[type=submit],button:not([type])').disabled = !usable;
+    if (!usable) $('budgetMoveInfo').textContent = 'Add at least two everyday category budgets for this account owner before moving an allowance. YOY and one-time earmarks use their own editors.';
     moveControls();
   }
   function openMove() {
@@ -581,6 +586,9 @@ export function setupDaily({
     f.elements.amount.focus();
   }
   $('openBudgetMove').onclick = () => run(openMove);
+  $('budgetMoveEntry').addEventListener('toggle', () => {
+    if ($('budgetMoveEntry').open) run(() => moveChoices());
+  });
   for (const name of ['from', 'to', 'month'])
     $('budgetMoveForm').elements[name].onchange = () => run(() => moveChoices());
   $('budgetMoveForm').elements.scope.onchange = moveControls;
