@@ -1,6 +1,6 @@
 # Test migration application record
 
-Applied with Rob's explicit approval on **November 4, 2026**, to **OliPoly ERP Test** (`llscjdyiiatmuqhilube`, `us-east-2`, OliPoly3d's Org). Both approved migrations succeeded. No additional schema changes were applied. The live project was not modified; the source remains in draft PR #298 and has not been merged or deployed.
+Applied with Rob's explicit approval on **November 4, 2026**, to **OliPoly ERP Test** (`llscjdyiiatmuqhilube`, `us-east-2`, OliPoly3d's Org). Both approved migrations succeeded. No additional schema changes were applied. The live project was not modified; the source remains in draft PR #298 and has not been merged or deployed to olipoly3d.com. A separate owner-private test copy has since been published; see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Applied scripts
 
@@ -55,6 +55,6 @@ The advisor scans returned **no ERROR-level findings**, but did return the follo
 
 A user-created, separately confirmed test Auth account is needed for signed-in hosted verification. No Auth users were fabricated through SQL and no production session was copied. Then verify initialization, acceptance, parallel runs/reprints, actual consumption, payment/fee posting, receipt, public tracking and cross-device reload/conflicts through the new pages. Test iPad Safari print/share on Rob's actual device.
 
-Source publication/deployment and any PR merge remain separate actions. Finance direct-cost reconciliation, verified tax sourcing/certificates and the other staged workflows retain the limits in [README.md](README.md). This application did not convert or migrate legacy business data and did not reconcile physical inventory.
+Private test publication is recorded in [DEPLOYMENT.md](DEPLOYMENT.md). Any PR merge or deployment to the customer website remains a separate action. Finance direct-cost reconciliation, verified tax sourcing/certificates and the other staged workflows retain the limits in [README.md](README.md). This application did not convert or migrate legacy business data and did not reconcile physical inventory.
 
 For recovery, stop using the optional test connection and retain the applied schema/data. Any corrective schema change requires its own reviewed migration. Do not automatically reset this project or drop records. See [MIGRATION_REVIEW.md](MIGRATION_REVIEW.md) for the approved scope and recovery procedure.

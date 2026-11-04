@@ -1,0 +1,37 @@
+# Private test workspace publication
+
+Published November 4, 2026 with Rob's authorization.
+
+- URL: https://olipoly-ops-test.siwicki05.chatgpt.site
+- Site project: `appgprj_6aeb3558bd9081919ef7993f1c3a6924`
+- Saved version: `appgprj_6aeb3558bd9081919ef7993f1c3a6924~appgver_772d09b56c088191acadc546d9043b65`
+- Deployment: `appgdep_6aeb3607fc3c8191b9f5cecf7d607f3d`
+- Deployment status: **succeeded**
+- Site source commit: `919e0cb598030cdf1bc442c4ebd010bed8761bfa`
+- Source snapshot: OliPoly3d/olipoly-3d draft PR #298 at `8734e7920646a098e2e1790573b96c6654281615`.
+- Audience: owner-private; no external visitors.
+
+The standalone static Site packages only the three preview entry pages and their browser JS/CSS dependencies. Its root redirects to `ops-preview.html?database=test`. It does not deploy the customer website, production login configuration, SQL migrations, business records or private keys. The browser publishable key is public configuration. The production GitHub PR remains draft and unmerged.
+
+The database connection accepts only `llscjdyiiatmuqhilube` (OliPoly ERP Test). Applied migrations and advisor findings are recorded in [APPLIED.md](APPLIED.md).
+
+## Verification
+
+- Static JS syntax checks passed before packaging.
+- All packaged HTML asset/link paths resolve to included files.
+- Native publication returned succeeded with the URL above.
+- Browser navigation to the deployed root showed the expected **Continue with ChatGPT** private access gate. No authenticated hosted UI walkthrough is claimed.
+- Supabase public Auth settings returned HTTP 200: email login enabled, signup enabled, email confirmation required. No signup email was sent and no password or Auth user was created by the agent.
+- Existing schema/REST checks and the 31-check local workflow rehearsal remain documented separately.
+
+## Rob's login setup
+
+1. Open the URL on the iPad in Safari.
+2. If prompted, choose **Continue with ChatGPT** using the ChatGPT account that owns this Site.
+3. On the OliPoly test sign-in screen, choose **Create test account** with your chosen email and a new password of at least 12 characters. Enter the password yourself; do not send it in chat. This test account is separate from the production OliPoly login.
+4. Confirm the email, then return to the original test URL and sign in. The UI does not consume a confirmation callback session automatically.
+5. Use the same test credentials on the PC and iPad to share the fictional workspace.
+
+The confirmation redirect destination has not been verified or changed through Supabase Management settings; return to the original test URL after confirming. If the email confirmation step fails, inspect the actual response before sending another signup request. Do not bypass confirmation or fabricate an Auth user.
+
+The signed-in connected journey, cross-device conflicts/reload and actual iPad Safari print/share remain pending Rob's account setup. Use fictional data only. Current Finance reconciliation and tax-sourcing limits are unchanged.
