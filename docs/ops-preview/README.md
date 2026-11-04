@@ -6,7 +6,7 @@ Three unique pages exercise one mixed-item, fixed-price pickup order:
 - `ops-order-preview.html` — draft, approval, production runs, pickup, payment and receipt.
 - `ops-track-preview.html` — overall customer milestones.
 
-Without a query parameter the sample uses fictional browser-local records under `olipoly.ops.preview.v1`. Choose **Use test database**, or open `ops-preview.html?database=test`, for the prepared separate-project connection. It requires the migrations in [MIGRATION_REVIEW.md](MIGRATION_REVIEW.md), an explicitly approved application to **OliPoly ERP Test**, and a separate test account. No migration has been applied by preparing this branch. The source is in a draft PR, not deployed to the customer website.
+Without a query parameter the sample uses fictional browser-local records under `olipoly.ops.preview.v1`. Choose **Use test database**, or open `ops-preview.html?database=test`, for the prepared separate-project connection. The migrations in [MIGRATION_REVIEW.md](MIGRATION_REVIEW.md) were approved and applied to **OliPoly ERP Test** on November 4, 2026; see [APPLIED.md](APPLIED.md) for hosted verification and advisor findings. A separate user-created test account is still required. The source is in a draft PR, not deployed to the customer website.
 
 ## Connected boundary
 

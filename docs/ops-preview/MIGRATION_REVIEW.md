@@ -1,6 +1,6 @@
 # Exact test-database migration review
 
-Prepared November 4, 2026. **Not applied.** Target: **OliPoly ERP Test**, project ref **`llscjdyiiatmuqhilube`**, region `us-east-2`, in OliPoly3d's Org. This review does not authorize merge, deployment, changes to the live project, or copying customer data.
+Prepared November 4, 2026. **Applied with explicit approval on November 4, 2026.** See [APPLIED.md](APPLIED.md) for hosted versions, verification and outstanding advisor findings. Target: **OliPoly ERP Test**, project ref **`llscjdyiiatmuqhilube`**, region `us-east-2`, in OliPoly3d's Org. This review does not authorize merge, deployment, changes to the live project, or copying customer data.
 
 ## Why the schema is needed
 
