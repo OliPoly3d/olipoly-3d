@@ -60,6 +60,21 @@ test('connected workspace: actual Postgres workflow and isolation rehearsal', {s
       assert.equal((await db.query('select count(*)::int n from public.raw_material_inventory')).rows[0].n,3);
       assert.equal((await db.query('select public.ops_preview_initialize() as state')).rows[0].state.revision,state.revision);
     });
+    await t.test('intake and shared quote revisions persist without creating an order or reserving stock', async () => {
+      let draft=M.copy(state.orders[0]); draft.quoteStage='request';
+      draft.intake={source:'Email / PO',summary:'Fictional request with two kinds of parts',contact:'fixture@example.test',neededBy:'2026-11-20'};
+      state=await commit([id,JSON.stringify({type:'save'}),JSON.stringify(draft),state.revision,crypto.randomUUID()]);
+      for(const command of [{type:'prepare_quote'},{type:'send_quote',via:'Email'},{type:'revise_quote',reason:'Clarified scope; price unchanged'},{type:'send_quote',via:'Email'}]) {
+        const next=M.quoteCommand(state,id,command);
+        state=await commit([id,JSON.stringify({type:'save'}),JSON.stringify(next.orders[0]),state.revision,crypto.randomUUID()]);
+      }
+      state=(await db.query('select public.ops_preview_load() state')).rows[0].state;
+      assert.equal(M.stage(state.orders[0]),'awaiting');
+      assert.equal(state.orders[0].quoteHistory.length,2);
+      assert.equal(state.orders[0].quoteOffer.totals.total,110);
+      assert.equal((await db.query('select count(*)::int n from public.orders')).rows[0].n,0);
+      assert.equal((await db.query('select count(*)::int n from public.production_material_reservations')).rows[0].n,0);
+    });
     await t.test('quote acceptance freezes the canonical invoice and creates one order', async () => {
       await action('approve',{method:'Verbal agreement recorded'});
       assert.equal(state.orders[0].reference,'OP-000001');

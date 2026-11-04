@@ -41,6 +41,76 @@
     return root.calculateQuoteTotals({lineItems: items, taxRate: order.taxRate,
       taxExempt: order.taxExempt, taxIncluded: order.taxIncluded, depositPercent: 0});
   }
+  const stages = [
+    ['request', 'New request'], ['quoting', 'Preparing quote'], ['awaiting', 'Awaiting approval'],
+    ['approved', 'Quote approved'], ['queued', 'Queued for production'], ['printing', 'In progress'],
+    ['ready', 'Ready for pickup'], ['payment', 'Awaiting payment'], ['complete', 'Completed']
+  ];
+  function stage(order) {
+    if (!order.snapshot) return order.quoteStage === 'request' ? 'request' : order.quoteStage === 'sent' ? 'awaiting' : 'quoting';
+    if (order.fulfilled) return balance(order) === 0 ? 'complete' : 'payment';
+    if (!order.released) return 'approved';
+    if (order.runs.some(run => run.status === 'printing')) return 'printing';
+    if (order.items.every(item => remaining(order, item) === 0)) return 'ready';
+    return 'queued';
+  }
+  function nextStep(order) {
+    return {
+      request: ['Review request', 'request'], quoting: ['Prepare quote', 'details'], awaiting: ['Review quote / approval', 'quote'],
+      approved: ['Release to production', 'production'], queued: ['Start next run', 'production'], printing: ['Finish & inspect', 'production'],
+      ready: ['Arrange pickup', 'pickup'], payment: ['Record payment', 'money'], complete: ['View receipt', 'receipt']
+    }[stage(order)];
+  }
+  function queue(state, filter = 'open', search = '') {
+    const query = search.trim().toLowerCase();
+    return state.orders.filter(order => (filter === 'all' || (filter === 'open' ? stage(order) !== 'complete' : stage(order) === filter)) &&
+      `${order.customer} ${order.title} ${order.reference} ${order.intake?.contact || ''} ${order.intake?.summary || ''}`.toLowerCase().includes(query))
+      .slice().sort((a, b) => {
+        // Dated work first; undated work retains its existing insertion order.
+        const dateA = a.intake?.neededBy || '9999-12-31';
+        const dateB = b.intake?.neededBy || '9999-12-31';
+        return dateA.localeCompare(dateB);
+      });
+  }
+  function newRequest() {
+    const order = copy(seed().orders[0]);
+    Object.assign(order, {id: uid(), reference: 'NEW REQUEST', customer: '', title: '', quoteStage: 'request',
+      designFee: 0, estimatedLabor: 0, evidence: 'Idea / reference',
+      intake: {source: 'Email / PO', contact: '', summary: '', neededBy: '', fileReference: '', materialPreference: 'Not decided'},
+      turnaround: '', validUntil: '', customerNotes: '', quoteHistory: []});
+    order.items = [{id: uid(), description: 'Requested component', quantity: 1, unit_price: 0, hours_each: 0, materials: []}];
+    return order;
+  }
+  function quoteCommand(original, orderId, action) {
+    const state = copy(original);
+    const current = state.orders.find(row => row.id === orderId);
+    if (!current || current.snapshot) throw new Error('Open an unapproved request or quote.');
+    const order = copy(current);
+    if (action.type === 'prepare_quote') {
+      if (order.quoteStage !== 'request') throw new Error('This request is already being quoted.');
+      order.quoteStage = 'draft';
+    } else if (action.type === 'send_quote') {
+      if (order.quoteStage === 'request') throw new Error('Prepare the quote before marking it sent.');
+      if (order.quoteStage === 'sent') throw new Error('This quote is already awaiting approval.');
+      if (!order.customer.trim() || !order.title.trim()) throw new Error('Save the customer and project first.');
+      const offer = {revision: (order.quoteHistory?.length || 0) + 1, sentAt: new Date().toISOString(),
+        sharedVia: String(action.via || 'Email'), customer: order.customer, title: order.title,
+        items: copy(order.items), totals: copy(totals(order)), terms: order.terms,
+        turnaround: order.turnaround || '', validUntil: order.validUntil || '',
+        customerNotes: order.customerNotes || '', changeReason: order.revisionReason || ''};
+      order.quoteHistory = [...(order.quoteHistory || []), offer];
+      order.quoteOffer = offer;
+      order.quoteStage = 'sent';
+    } else if (action.type === 'revise_quote') {
+      if (order.quoteStage !== 'sent') throw new Error('Only a sent quote needs a revision.');
+      if (!String(action.reason || '').trim()) throw new Error('Record the reason for the revision.');
+      order.quoteStage = 'draft'; order.revisionReason = String(action.reason).trim();
+      delete order.quoteOffer;
+    } else throw new Error('Unknown quote action.');
+    saveDraft(state, order);
+    state.revision += 1;
+    return state;
+  }
   function accepted(order, itemId) {
     return order.runs.filter(run => run.itemId === itemId && run.status === 'inspected').reduce((sum, run) => sum + run.accepted, 0);
   }
@@ -95,6 +165,7 @@
   function saveDraft(state, draft) {
     const existing = state.orders.find(order => order.id === draft.id);
     if (existing?.snapshot) throw new Error('This sample has an accepted price. Create a new sample to explore different pricing.');
+    if (existing?.quoteStage === 'sent' && draft.quoteStage === 'sent') throw new Error('Start a quote revision before editing a sent quote.');
     const items = root.OliPolyLineItems.normalize(draft.items);
     if (!items.length) throw new Error('Add at least one item.');
     if (!draft.customer.trim() || !draft.title.trim()) throw new Error('Enter a customer and project name.');
@@ -116,7 +187,8 @@
       if (order.snapshot) throw new Error('This scope has already been approved.');
       if (!order.customer.trim() || !order.title.trim() || !order.items.length) throw new Error('Save the customer, project and items before recording approval.');
       if (!action.method) throw new Error('Select how the customer approved the work.');
-      order.snapshot = totals(order);
+      if (order.quoteStage === 'request') throw new Error('Prepare the quote before recording approval.');
+      order.snapshot = copy(order.quoteOffer?.totals || totals(order));
       order.approval = action.method;
       order.approvedAt = new Date().toISOString();
       order.status = 'approved';
@@ -190,5 +262,6 @@
     state.revision += 1;
     return state;
   }
-  return {seed, totals, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid};
+  return {seed, totals, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+    stages, stage, nextStep, queue, newRequest, quoteCommand};
 });

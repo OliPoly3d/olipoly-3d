@@ -1,12 +1,22 @@
 # OliPoly mobile operations pilot
 
-Three unique pages exercise one mixed-item, fixed-price pickup order:
+Three unique pages now cover request intake, quote preparation and a mixed-item, fixed-price pickup order:
 
-- `ops-preview.html` — Today, shared work and available material.
-- `ops-order-preview.html` — draft, approval, production runs, pickup, payment and receipt.
+- `ops-preview.html` — All work: new requests, quotes awaiting approval, approved/queued/active work, pickup, payment and completion.
+- `ops-order-preview.html` — Request, Quote builder, Customer quote, approval, production runs, pickup, payment and receipt.
 - `ops-track-preview.html` — overall customer milestones.
 
 Without a query parameter the sample uses fictional browser-local records under `olipoly.ops.preview.v1`. Choose **Use test database**, or open `ops-preview.html?database=test`, for the prepared separate-project connection. The migrations in [MIGRATION_REVIEW.md](MIGRATION_REVIEW.md) were approved and applied to **OliPoly ERP Test** on November 4, 2026; see [APPLIED.md](APPLIED.md) for hosted verification and advisor findings. A separate user-created test account is still required. The source remains in a draft PR and is not deployed to the customer website. A separate owner-private test copy is now published at https://olipoly-ops-test.siwicki05.chatgpt.site; see [DEPLOYMENT.md](DEPLOYMENT.md) for the exact version and login steps.
+
+## Request-to-order entry
+
+Start with **New request** on All work. Capture the customer/contact, request source, scope, available design information, initial quantity, requested date and file/conversation reference. Save it without committing to a price or print estimates. Use **Save & start quote** when ready. The quote builder supports mixed items, separate design/preparation charge, entered selling prices, sample tax, payment terms, delivery text and validity date, with the existing estimated-cost feedback.
+
+Customer quote previews the canonical totals snapshot. Copy a prepared message or print/save the quote, then **Mark quote sent** after sharing it yourself. The queue shows **Awaiting approval**. Revisions retain the shared quote history; accepted scope remains locked. Direct recorded approval is still available for quick in-person work. Approval creates the canonical accepted order, then production release reserves material.
+
+Queue filters cover New request, Preparing quote, Awaiting approval, Quote approved, Queued for production, In progress, Ready for pickup, Awaiting payment and Completed. Search includes customer, project/reference and intake contact/notes; dated work sorts ahead of undated work using the requested date, which is expressly not a delivery promise. Existing records without the new intake fields keep their saved data and receive a stage derived from existing approval/run/fulfillment/payment state.
+
+No schema change was needed. Intake metadata, sent offers and revision history use the existing authenticated workspace/job-payload save contract. The current pilot materializes its canonical Quote row during the established approval command; preapproval send/revision metadata remains in the staging workspace. Public customer quote links/automatic acceptance and automatic email sending are not added by this UI iteration. Printing uses the browser; actual Safari PDF/share behavior remains a device check.
 
 ## Connected boundary
 
@@ -49,7 +59,7 @@ node --check js/ops-preview/model.js
 node --check js/ops-preview/cloud.js
 node --check js/ops-preview/workspace.js
 node --check js/quote-pricing.js
-node --test tests/ops-preview.test.js tests/ops-preview-cloud.test.js tests/order-line-items-pricing.test.js tests/quote-totals-unification.test.js
+node --test tests/ops-preview.test.js tests/ops-preview-cloud.test.js tests/ops-preview-intake.test.js tests/order-line-items-pricing.test.js tests/quote-totals-unification.test.js
 ```
 
 The SQL rehearsal uses a local Postgres engine and never connects to Supabase:
@@ -62,6 +72,6 @@ OPS_PGLITE_MODULE=/tmp/olipoly-db-rehearsal/node_modules/@electric-sql/pglite/di
 
 It restores all business DDL and runs acceptance, stale/tampered write rejection, a zero-use failure, parallel printers, failed-part/reprint/overage consumption, command replay, pickup, Finance, tax cent boundaries, second-owner RLS and anonymous tracking. PGlite uses local Auth stubs and substitutes its built-in UUID generator for Supabase's installed UUID extensions. It cannot prove hosted Auth, PostgREST, email confirmation, extension installation or actual iPad Safari behavior.
 
-Browser verification on this branch covered local async save and the separate-project sign-in screen. The earlier local workflow walkthrough covered the full sample and 820/390px responsive layouts. After application, verify hosted login, REST RPC parameter binding, real cross-device concurrency, pending-save recovery, the complete connected browser journey, and iPad Safari print/share before any live use.
+Browser verification on this branch also covered new idea-only request intake, starting a quote, separate design pricing, the customer preview, marking sent and the resulting mixed-stage queue. Responsive iframe checks at 390px and 820px found no document-width overflow. It remains local browser QA rather than a signed-in hosted walkthrough. The earlier local workflow walkthrough covered the full sample and 820/390px responsive layouts. After application, verify hosted login, REST RPC parameter binding, real cross-device concurrency, pending-save recovery, the complete connected browser journey, and iPad Safari print/share before any live use.
 
 Existing `invoice-authority-contract.test.js` fails at its unchanged expected labels (`Deposit / prior payment`, `Current amount due` versus current `Total due`), before the new pricing code executes. This pre-existing failure is not suppressed.

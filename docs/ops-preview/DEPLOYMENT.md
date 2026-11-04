@@ -35,3 +35,15 @@ The database connection accepts only `llscjdyiiatmuqhilube` (OliPoly ERP Test). 
 The confirmation redirect destination has not been verified or changed through Supabase Management settings; return to the original test URL after confirming. If the email confirmation step fails, inspect the actual response before sending another signup request. Do not bypass confirmation or fabricate an Auth user.
 
 The signed-in connected journey, cross-device conflicts/reload and actual iPad Safari print/share remain pending Rob's account setup. Use fictional data only. Current Finance reconciliation and tax-sourcing limits are unchanged.
+
+## Request-to-order update — November 4, 2026
+
+The same owner-private Site was updated successfully to expose New request, Quote builder, Customer quote and the complete All work stage queue. No database migrations or existing-record resets were performed.
+
+- Site source commit: `d2699ac0e017529e2d7f420d471beb29c7cb7591`
+- Saved version: `appgprj_6aeb3558bd9081919ef7993f1c3a6924~appgver_83683f695ea48191b8ed268334d6d28f`
+- Deployment: `appgdep_6aeb40ddc1488191b1675ffea810c8e9`
+- Native publication status: **succeeded** at the unchanged URL above.
+- Validation: 36 focused checks passed, plus local browser intake → draft quote → customer preview → Mark quote sent → Awaiting approval queue walkthrough. 390px/820px responsive frames showed no document-width overflow.
+
+Use **New request** on All work to try the beginning of the process. See [REQUEST_TO_ORDER.md](REQUEST_TO_ORDER.md) for the updated walkthrough. Browser print-to-PDF and the full signed-in hosted journey remain device checks. The screenshot in that guide's change set uses local fictional data and does not represent additional records inserted into Rob's test account.
