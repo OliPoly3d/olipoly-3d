@@ -10,11 +10,12 @@
     return Math.round((finiteNumber(value) + Number.EPSILON) * 100) / 100;
   }
 
-  function inclusiveNetItems(items, divisor, netSubtotal) {
+  function inclusiveNetItems(items, netSubtotal) {
     // Allocate whole cents across lines so many small items still reconcile
     // to the order's net subtotal. Preserve the entered gross display lines.
+    const gross = items.reduce((sum, item) => sum + item.line_total, 0);
     const allocations = items.map((item, index) => {
-      const exactCents = item.line_total * 100 / divisor;
+      const exactCents = gross ? item.line_total / gross * Math.round(netSubtotal * 100) : 0;
       const cents = Math.floor(exactCents + Number.EPSILON);
       return {item, index, cents, fraction: exactCents - cents};
     });
@@ -35,17 +36,21 @@
       const grossDiscount = Math.min(grossSubtotal, Math.max(0, finiteNumber(input.discount)));
       const grossShipping = input.shippingDeferred ? 0 : roundCurrency(Math.max(0, finiteNumber(input.customerShipping)));
       const grossBeforeRounding = roundCurrency(grossSubtotal - grossDiscount + grossShipping);
-      const netSubtotal = roundCurrency(grossSubtotal / divisor);
-      const netAfterDiscount = roundCurrency((grossSubtotal - grossDiscount) / divisor);
+      const includedTax = roundCurrency(grossBeforeRounding * rate / (100 + rate));
+      const beforeTax = roundCurrency(grossBeforeRounding - includedTax);
+      const netShipping = roundCurrency(grossShipping / divisor);
+      const netDiscount = roundCurrency(grossDiscount / divisor);
+      const netSubtotal = roundCurrency(beforeTax - netShipping + netDiscount);
       const increment = Math.max(0, finiteNumber(input.roundingIncrement));
       const total = roundCurrency(increment ? Math.round(grossBeforeRounding / increment) * increment : grossBeforeRounding);
       const net = calculateQuoteTotals({...input, taxIncluded: false, roundingIncrement: 0,
-        lineItems: inclusiveNetItems(grossItems, divisor, netSubtotal),
-        discount: roundCurrency(netSubtotal - netAfterDiscount), customerShipping: roundCurrency(grossShipping / divisor)});
+        lineItems: inclusiveNetItems(grossItems, netSubtotal),
+        discount: netDiscount, customerShipping: netShipping});
       const deposit = roundCurrency(total * Math.min(100, Math.max(0, finiteNumber(input.depositPercent))) / 100);
-      const adjustment = roundCurrency(total - net.unroundedTotal);
+      const adjustment = roundCurrency(total - grossBeforeRounding);
       return Object.freeze({...net, taxIncluded: true, grossLineItems: grossItems,
-        grossSubtotal, grossDiscount, grossShipping, total, final: total,
+        grossSubtotal, grossDiscount, grossShipping, beforeTax, tax: includedTax,
+        unroundedTotal: grossBeforeRounding, unroundedFinal: grossBeforeRounding, total, final: total,
         roundingAdjustment: adjustment, roundingGain: adjustment,
         deposit, balance: roundCurrency(total - deposit)});
     }

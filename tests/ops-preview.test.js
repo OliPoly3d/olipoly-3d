@@ -89,7 +89,7 @@ test('tax-inclusive amounts reuse canonical engine and preserve all-in prices', 
         lineItems: [{id: 'a', description: 'A', quantity: 3, unit_price: price}, {id: 'b', description: 'B', quantity: 2, unit_price: 2.19}]});
       assert.equal(t.total, Math.round((3 * price + 4.38) * 100) / 100);
       assert.equal(Math.round((t.beforeTax + t.tax + t.roundingAdjustment) * 100) / 100, t.total);
-      assert.equal(t.tax, global.calculateSalesTax(t.beforeTax, rate));
+      assert.equal(t.tax, Math.round((t.total * rate / (100 + rate) + Number.EPSILON) * 100) / 100);
     }
   }
   const exempt = global.calculateQuoteTotals({taxIncluded: true, taxExempt: true, taxRate: 7,
@@ -106,10 +106,11 @@ test('tax-inclusive shipping, discount and deposit reconcile', () => {
   assert.equal(t.grossLineItems[0].unit_price, 53.50);
 });
 
-test('sample entry pages include no production auth or backend connection', () => {
+test('sample entry pages isolate their optional staging connection from production auth', () => {
   for (const path of ['ops-preview.html', 'ops-order-preview.html', 'ops-track-preview.html']) {
     const text = fs.readFileSync(path, 'utf8');
     assert.match(text, /Fictional records saved on this device/);
+    assert.match(text, /js\/ops-preview\/cloud\.js/);
     assert.doesNotMatch(text, /olipoly-auth|alffoktlwhpfothieude|supabase\.co/);
   }
   const script = fs.readFileSync('js/ops-preview/workspace.js', 'utf8');
@@ -131,4 +132,15 @@ test('an unnamed new draft cannot be approved or released', () => {
   const state = M.seed();
   state.orders[0].customer = '';
   assert.throws(() => apply(state, {type:'approve', method:'Email / text'}), /Save the customer/);
+});
+
+
+test('all-in shipping and discount cent boundaries retain the commercial breakdown', () => {
+  for (const [price,discount,shipping] of [[0.09,0.08,0.07],[0.10,0.08,0.06],[0.31,0.14,0.22],[0.08,0,0],[0.01,0.01,0.08]]) {
+    const t = calculateQuoteTotals({taxIncluded:true,taxRate:7,discount,customerShipping:shipping,
+      lineItems:[{description:'Small item',quantity:1,unit_price:price}]});
+    assert.equal(Math.round((t.preDiscount-t.discount+t.customerShipping)*100)/100,t.beforeTax);
+    assert.equal(Math.round((t.beforeTax+t.tax)*100)/100,t.total);
+    assert.equal(t.lineItems.reduce((sum,row)=>sum+row.line_total,0),t.preDiscount);
+  }
 });

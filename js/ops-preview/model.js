@@ -24,7 +24,7 @@
       id: 'sample-mixed-order', reference: 'SAMPLE-001', customer: 'Sample customer',
       title: 'A small custom project', preset: 'individual', status: 'draft',
       evidence: 'Drawing', taxRate: 7, taxIncluded: true, taxExempt: false,
-      county: 'Sample jurisdiction', designFee: 20, laborRate: 30,
+      county: 'Portage', designFee: 20, laborRate: 30,
       estimatedLabor: 0.5, actualLabor: 0, otherCosts: 0, terms: 'Payment at pickup',
       approval: '', released: false, fulfilled: false, payments: [], runs: [],
       items: [
@@ -54,6 +54,11 @@
     return result;
   }
   function reserved(state, key, excludeId) {
+    if (state.databaseMode) {
+      const stock = state.inventory.find(row => row.key === key);
+      const excluded = state.orders.find(order => order.id === excludeId);
+      return Math.max(0, (stock?.reserved || 0) - (excluded?.reservedMaterials?.[key] || 0));
+    }
     return state.orders.filter(order => order.released && !order.fulfilled && order.id !== excludeId)
       .reduce((sum, order) => sum + (requirements(order)[key] || 0), 0);
   }
