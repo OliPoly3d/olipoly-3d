@@ -109,7 +109,7 @@ test('tax-inclusive shipping, discount and deposit reconcile', () => {
 test('sample entry pages isolate their optional staging connection from production auth', () => {
   for (const path of ['ops-preview.html', 'ops-order-preview.html', 'ops-track-preview.html']) {
     const text = fs.readFileSync(path, 'utf8');
-    assert.match(text, /Fictional records saved on this device/);
+    assert.match(text, path==='ops-track-preview.html' ? /INTERNAL TEST PREVIEW/ : /Fictional records saved on this device/);
     assert.match(text, /js\/ops-preview\/cloud\.js/);
     assert.doesNotMatch(text, /olipoly-auth|alffoktlwhpfothieude|supabase\.co/);
   }
