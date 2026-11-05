@@ -10,7 +10,50 @@
     return Math.round((finiteNumber(value) + Number.EPSILON) * 100) / 100;
   }
 
+  function inclusiveNetItems(items, netSubtotal) {
+    // Allocate whole cents across lines so many small items still reconcile
+    // to the order's net subtotal. Preserve the entered gross display lines.
+    const gross = items.reduce((sum, item) => sum + item.line_total, 0);
+    const allocations = items.map((item, index) => {
+      const exactCents = gross ? item.line_total / gross * Math.round(netSubtotal * 100) : 0;
+      const cents = Math.floor(exactCents + Number.EPSILON);
+      return {item, index, cents, fraction: exactCents - cents};
+    });
+    const remaining = Math.round(netSubtotal * 100) - allocations.reduce((sum, row) => sum + row.cents, 0);
+    allocations.sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+    allocations.forEach((row, rank) => { if (rank < remaining) row.cents += 1; });
+    allocations.sort((a, b) => a.index - b.index);
+    return allocations.map(({item, cents}) => ({...item, unit_price: cents / 100 / item.quantity}));
+  }
+
   function calculateQuoteTotals(input = {}) {
+    if (input.taxIncluded === true) {
+      const grossItems = root.OliPolyLineItems.commercial(input.lineItems || []);
+      if (!grossItems.length) throw new Error('Tax-inclusive pricing requires itemized prices.');
+      const rate = input.taxExempt ? 0 : root.normalizeTaxRatePercent(input.taxRate ?? 0);
+      const divisor = 1 + rate / 100;
+      const grossSubtotal = roundCurrency(grossItems.reduce((sum, item) => sum + item.line_total, 0));
+      const grossDiscount = Math.min(grossSubtotal, Math.max(0, finiteNumber(input.discount)));
+      const grossShipping = input.shippingDeferred ? 0 : roundCurrency(Math.max(0, finiteNumber(input.customerShipping)));
+      const grossBeforeRounding = roundCurrency(grossSubtotal - grossDiscount + grossShipping);
+      const includedTax = roundCurrency(grossBeforeRounding * rate / (100 + rate));
+      const beforeTax = roundCurrency(grossBeforeRounding - includedTax);
+      const netShipping = roundCurrency(grossShipping / divisor);
+      const netDiscount = roundCurrency(grossDiscount / divisor);
+      const netSubtotal = roundCurrency(beforeTax - netShipping + netDiscount);
+      const increment = Math.max(0, finiteNumber(input.roundingIncrement));
+      const total = roundCurrency(increment ? Math.round(grossBeforeRounding / increment) * increment : grossBeforeRounding);
+      const net = calculateQuoteTotals({...input, taxIncluded: false, roundingIncrement: 0,
+        lineItems: inclusiveNetItems(grossItems, netSubtotal),
+        discount: netDiscount, customerShipping: netShipping});
+      const deposit = roundCurrency(total * Math.min(100, Math.max(0, finiteNumber(input.depositPercent))) / 100);
+      const adjustment = roundCurrency(total - grossBeforeRounding);
+      return Object.freeze({...net, taxIncluded: true, grossLineItems: grossItems,
+        grossSubtotal, grossDiscount, grossShipping, beforeTax, tax: includedTax,
+        unroundedTotal: grossBeforeRounding, unroundedFinal: grossBeforeRounding, total, final: total,
+        roundingAdjustment: adjustment, roundingGain: adjustment,
+        deposit, balance: roundCurrency(total - deposit)});
+    }
     const lineItems = input.lineItems?.length ? root.OliPolyLineItems.commercial(input.lineItems) : [];
     const quantity = lineItems.length ? lineItems.reduce((sum, item) => sum + item.quantity, 0)
       : Math.max(1, Math.round(finiteNumber(input.quantity) || 1));
