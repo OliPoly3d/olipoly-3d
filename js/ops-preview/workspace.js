@@ -55,6 +55,19 @@
     }).join('')}</select></label>`;
   }
   function row(label, value) { return `<div class="row"><span>${escape(label)}</span><strong>${escape(value)}</strong></div>`; }
+  function projectLabel(order) {
+    const identity = M.projectIdentity(order);
+    return `${escape(identity.primary)}${identity.legacyQuote ? ` · Original quote ${escape(identity.legacyQuote)}` : ''}`;
+  }
+  function sharedProductionQueue() {
+    const orders = M.productionQueue(state);
+    return `<section class="card"><h2>Shared production queue</h2><p class="muted">All approved projects, including those awaiting release. Open a project to release materials or manage its runs.</p>${orders.map(order => {
+      const ready = !order.released;
+      const accepted = order.items.reduce((sum, item) => sum + M.accepted(order, item.id), 0);
+      const quantity = order.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+      return `<article class="queue-row"><div><strong>${projectLabel(order)}</strong><h3>${escape(order.title)}</h3><p>${escape(order.customer)}</p><span class="badge ${ready ? 'rose' : ''}">${ready ? 'Approved · awaiting release' : escape(status(order))}</span><p>${accepted} / ${quantity} pieces accepted${order.intake?.neededBy ? ` · Requested ${escape(order.intake.neededBy)}` : ''}</p></div><div class="queue-row-end"><a class="button" href="${orderLink(order, 'production')}">${ready ? 'Review & release' : 'Open production'}</a></div></article>`;
+    }).join('') || '<p class="empty">No approved projects awaiting production or fulfillment.</p>'}</section>`;
+  }
   function orderLink(order, section = M.nextStep(order)[1]) { return `ops-order-preview.html?order=${encodeURIComponent(order.id)}&section=${section}${cloud ? '&database=test' : ''}`; }
   function trackingLink(order) { return cloud && order.database?.orderNumber ? `ops-track-preview.html?database=test&tracking=${encodeURIComponent(order.database.orderNumber)}` : `ops-track-preview.html?order=${encodeURIComponent(order.id)}${cloud ? '&database=test' : ''}`; }
   function textArea(label, name, value, attrs = '') {
@@ -92,7 +105,7 @@
       <section class="card"><div class="section-head"><div><h2>All work</h2><p class="muted" style="margin-bottom:0">Each request stays in this queue as it becomes a quote, order and completed job.</p></div><span class="badge neutral">${state.orders.filter(order=>M.stage(order)!=='complete').length} open</span></div>
       <nav class="queue-filters" aria-label="Filter work by stage">${[['open','All open'],...M.stages,['all','Everything']].map(([id,label])=>`<button data-filter="${id}" class="${queueFilter===id?'active':''}" aria-pressed="${queueFilter===id}">${escape(label)} <span>${id==='open'?state.orders.length-counts.complete:id==='all'?state.orders.length:counts[id]}</span></button>`).join('')}</nav>
       <input class="search" id="search" aria-label="Find work" placeholder="Find a customer, project or reference…" value="${escape(queueSearch)}"><div id="order-list">${orderRows()}</div></section>
-      <div class="two-col" style="margin-top:22px"><section class="card"><h2>From request to production</h2><ol class="journey"><li><strong>New request</strong><span>Customer, idea, files and requested date.</span></li><li><strong>Prepare quote</strong><span>Mixed items, estimates, design fee, price and terms.</span></li><li><strong>Await approval</strong><span>Preview or print the quote, then record when it was shared.</span></li><li><strong>Approved → production</strong><span>Record authorization, release materials and assign runs.</span></li></ol></section><section class="card"><h2>Materials & balances</h2>${state.inventory.map(stock => row(stock.key, `${Math.round(stock.grams-M.reserved(state,stock.key))} g available`)).join('')}${row('Accepted-order balances', format(state.orders.filter(o=>o.snapshot).reduce((sum,o)=>sum+M.balance(o),0)))}<button style="margin-top:18px" data-action="reset">${cloud?'Reload test records':'Reset local sample'}</button></section></div>`;
+      <div style="margin-top:22px">${sharedProductionQueue()}</div><div class="two-col" style="margin-top:22px"><section class="card"><h2>From request to production</h2><ol class="journey"><li><strong>New request</strong><span>Customer, idea, files and requested date.</span></li><li><strong>Prepare quote</strong><span>Mixed items, estimates, design fee, price and terms.</span></li><li><strong>Await approval</strong><span>Preview or print the quote, then record when it was shared.</span></li><li><strong>Approved → production</strong><span>Record authorization, release materials and assign runs.</span></li></ol></section><section class="card"><h2>Materials & balances</h2>${state.inventory.map(stock => row(stock.key, `${Math.round(stock.grams-M.reserved(state,stock.key))} g available`)).join('')}${row('Accepted-order balances', format(state.orders.filter(o=>o.snapshot).reduce((sum,o)=>sum+M.balance(o),0)))}<button style="margin-top:18px" data-action="reset">${cloud?'Reload test records':'Reset local sample'}</button></section></div>`;
   }
   function orderRows() {
     const orders = M.queue(state, queueFilter, queueSearch);
@@ -100,7 +113,7 @@
       const [action] = M.nextStep(order);
       const stage = M.stage(order);
       const amount = stage === 'request' ? 'Not priced yet' : format((order.snapshot || order.quoteOffer?.totals || M.totals(order)).total);
-      return `<article class="queue-row"><div><span class="badge ${order.snapshot?'':'rose'}">${escape(status(order))}</span><h3>${escape(order.title)}</h3><p>${escape(order.customer)} · ${escape(order.reference)}${order.intake?.neededBy ? ` · Requested ${escape(order.intake.neededBy)}`:''}</p></div><div class="queue-row-end"><strong>${amount}</strong><a class="button" href="${orderLink(order)}">${escape(action)}</a></div></article>`;
+      return `<article class="queue-row"><div><span class="badge ${order.snapshot?'':'rose'}">${escape(status(order))}</span><h3>${escape(order.title)}</h3><p>${escape(order.customer)} · ${projectLabel(order)}${order.intake?.neededBy ? ` · Requested ${escape(order.intake.neededBy)}`:''}</p></div><div class="queue-row-end"><strong>${amount}</strong><a class="button" href="${orderLink(order)}">${escape(action)}</a></div></article>`;
     }).join('') || '<p class="empty">No work matches this view. Use New request to capture the next conversation.</p>';
   }
   function requestPanel(order) {
@@ -162,7 +175,7 @@
     const offer = order.quoteOffer;
     const t = order.snapshot || offer?.totals || M.totals(order);
     const doc = offer || order;
-    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${escape(order.database?.quoteNumber || order.reference)}${offer?` · Rev ${offer.revision}`:''}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
+    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${projectLabel(order)}${offer?` · Rev ${offer.revision}`:''}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
@@ -172,7 +185,7 @@
   }
   function productionPanel(order) {
     const pending = order.items.filter(item => M.remaining(order, item) > 0);
-    return `<section class="card"><div class="section-head"><h2>Shared production queue</h2><span class="badge">${escape(status(order))}</span></div>
+    return `${sharedProductionQueue()}<section class="card"><div class="eyebrow">${projectLabel(order)}</div><div class="section-head"><h2>${escape(order.title)}</h2><span class="badge">${order.snapshot && !order.released ? 'Approved · awaiting release' : escape(status(order))}</span></div><p>${escape(order.customer)} · Selected project production</p>
       ${order.items.map(item => row(item.description, `${M.accepted(order, item.id)} / ${item.quantity} accepted`)).join('')}
       ${!order.released ? `<p class="muted" style="margin-top:20px">Release the approved scope to reserve its sample material.</p><button class="primary" data-action="release" ${!order.snapshot ? 'disabled' : ''}>Release to production</button>` : ''}
       ${order.released && pending.length ? `<form data-form="start" class="form-grid" style="margin-top:22px">${select('Item to print', 'itemId', pending.map(item => [item.id, `${item.description} · ${M.remaining(order, item)} remaining`]), pending[0].id)}${select('Printer', 'printer', ['P1S', 'P2S'], 'P1S')}${field('Pieces in this run', 'quantity', 1, 'number', 'min="1" step="1" required')}<button class="primary" type="submit">Start sample run</button></form>` : ''}
@@ -209,7 +222,7 @@
   function renderOrder() {
     const order = selectedOrder();
     draft = M.copy(order);
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${escape(order.reference)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Pickup'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Pickup'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
       <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This milestone tests the mixed-item, fixed-price pickup journey. PO, fundraiser, capped-design and shipping workflows are scheduled for later milestones.</p></section></aside></div>
       <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${pickupPanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
   }
@@ -291,6 +304,12 @@
         await persist(M.quoteCommand(state,selected,action),{type:'save'});
         if(action.type==='revise_quote') activeTab='details';
       } else await persist(M.command(state, selected, action), action);
+      if (action.type === 'approve') {
+        activeTab = 'production';
+        const url = new URL(location.href);
+        url.searchParams.set('section', activeTab);
+        history.replaceState(null, '', url);
+      }
       render(); message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.');
     } catch (error) { message(error.message, true); }
   });

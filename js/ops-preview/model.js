@@ -64,13 +64,21 @@
   function queue(state, filter = 'open', search = '') {
     const query = search.trim().toLowerCase();
     return state.orders.filter(order => (filter === 'all' || (filter === 'open' ? stage(order) !== 'complete' : stage(order) === filter)) &&
-      `${order.customer} ${order.title} ${order.reference} ${order.intake?.contact || ''} ${order.intake?.summary || ''}`.toLowerCase().includes(query))
+      `${order.customer} ${order.title} ${order.reference} ${order.database?.quoteNumber || ''} ${order.database?.orderNumber || ''} ${order.intake?.contact || ''} ${order.intake?.summary || ''}`.toLowerCase().includes(query))
       .slice().sort((a, b) => {
         // Dated work first; undated work retains its existing insertion order.
         const dateA = a.intake?.neededBy || '9999-12-31';
         const dateB = b.intake?.neededBy || '9999-12-31';
         return dateA.localeCompare(dateB);
       });
+  }
+  function projectIdentity(order) {
+    const primary = order.database?.orderNumber || order.reference;
+    const quote = order.database?.quoteNumber;
+    return {primary, legacyQuote: quote && quote !== primary ? quote : ''};
+  }
+  function productionQueue(state) {
+    return queue(state, 'all').filter(order => order.snapshot && !order.fulfilled);
   }
   function newRequest() {
     const order = copy(seed().orders[0]);
@@ -263,5 +271,5 @@
     return state;
   }
   return {seed, totals, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
-    stages, stage, nextStep, queue, newRequest, quoteCommand};
+    stages, stage, nextStep, queue, projectIdentity, productionQueue, newRequest, quoteCommand};
 });

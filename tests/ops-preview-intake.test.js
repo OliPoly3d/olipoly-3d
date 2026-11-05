@@ -58,3 +58,18 @@ test('all-work queue distinguishes unapproved work, production, pickup, payment 
   state.orders[1].intake={neededBy:'2026-11-15'};state.orders[2].intake={neededBy:'2026-11-10'};
   assert.equal(M.queue(state,'all')[0].id,'awaiting');
 });
+
+test('production queue includes approved projects and retains searchable legacy identities',()=>{
+  const state=M.seed(), first=state.orders[0];
+  first.reference='OP-000123';first.database={quoteNumber:'Q-000987',orderNumber:'OP-000123'};
+  first.snapshot=M.totals(first);
+  const second={...M.copy(first),id:'second',reference:'OP-000124',database:{quoteNumber:'OP-000124',orderNumber:'OP-000124'},released:true};
+  const draft={...M.copy(first),id:'draft'};delete draft.snapshot;
+  const done={...M.copy(first),id:'done',fulfilled:true};
+  state.orders=[first,second,draft,done];
+  assert.deepEqual(M.productionQueue(state).map(o=>o.id),[first.id,'second']);
+  assert.deepEqual(M.projectIdentity(first),{primary:'OP-000123',legacyQuote:'Q-000987'});
+  assert.deepEqual(M.projectIdentity(second),{primary:'OP-000124',legacyQuote:''});
+  assert.equal(M.queue({orders:[first]},'all','q-000987')[0].id,first.id);
+  assert.equal(M.stage(first),'approved');assert.equal(M.nextStep(first)[0],'Release to production');
+});
