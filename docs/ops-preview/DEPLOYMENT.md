@@ -47,3 +47,18 @@ The same owner-private Site was updated successfully to expose New request, Quot
 - Validation: 36 focused checks passed, plus local browser intake → draft quote → customer preview → Mark quote sent → Awaiting approval queue walkthrough. 390px/820px responsive frames showed no document-width overflow.
 
 Use **New request** on All work to try the beginning of the process. See [REQUEST_TO_ORDER.md](REQUEST_TO_ORDER.md) for the updated walkthrough. Browser print-to-PDF and the full signed-in hosted journey remain device checks. The screenshot in that guide's change set uses local fictional data and does not represent additional records inserted into Rob's test account.
+
+
+## Shared production queue and permanent OP numbering — November 4, 2026
+
+Published with Rob's explicit approval at the unchanged owner-private URL: https://olipoly-ops-test.siwicki05.chatgpt.site
+
+- Source: `5d94d471502fa131649c4415a4b2c14858f2a828`.
+- Saved version: `appgprj_6aeb3558bd9081919ef7993f1c3a6924~appgver_0d9bc761b58081918b8c910a6206b22c` (version 3).
+- Deployment: `appgdep_6aebd4080c58819183c172b7023a69a0`; native status **succeeded**.
+- Access was verified owner-only, with no external visitors; unchanged by publication.
+- Packaged model/controller matched the reviewed source. JS syntax and diff checks passed. Prior local browser QA confirmed approved work in the shared queue and separate release control; hosted signed-in/iPad verification remains pending.
+- Only preview model/controller changed in the private Site. The live ERP, public customer website and personal Money were not changed.
+- Approved test migration application, record-preservation digests and access checks are recorded in APPLIED.md.
+
+Retest by refreshing All work, looking up an existing legacy reference under Everything, then saving a fictional New request and following the same OP reference through approval and release. Closed/fulfilled projects intentionally leave the active production list. Do not share the internal Customer view preview with real customers.

@@ -58,3 +58,27 @@ A user-created, separately confirmed test Auth account is needed for signed-in h
 Private test publication is recorded in [DEPLOYMENT.md](DEPLOYMENT.md). Any PR merge or deployment to the customer website remains a separate action. Finance direct-cost reconciliation, verified tax sourcing/certificates and the other staged workflows retain the limits in [README.md](README.md). This application did not convert or migrate legacy business data and did not reconcile physical inventory.
 
 For recovery, stop using the optional test connection and retain the applied schema/data. Any corrective schema change requires its own reviewed migration. Do not automatically reset this project or drop records. See [MIGRATION_REVIEW.md](MIGRATION_REVIEW.md) for the approved scope and recovery procedure.
+
+
+## Permanent project numbering and shared production queue — November 4, 2026
+
+Rob explicitly approved merge and implementation. PR #299 merged into the existing `agent/ipad-operations-preview` test branch at `430cc209fe664ccd72e685785e011fd6696859e4`. PR #298 remains separate from main; this did not publish olipoly3d.com.
+
+- Exact approved script: `supabase/ops-preview/migrations/20261105003419_ops_test_permanent_project_numbers.sql`.
+- SHA-256: `2cab67f8459bb8435d689bbaa447ee7ab6af05838b2ad7de18e8d28e3997eb4e`.
+- Verified target: OliPoly ERP Test, `llscjdyiiatmuqhilube`.
+- Hosted migration: `20261105005406 ops_test_permanent_project_numbers`; application succeeded.
+- Before application, all four hosted function bodies matched the reviewed originals. After application, all four body hashes matched the approved replacement SQL exactly.
+- Complete-row digests and row counts were identical before/after for orders (1), quotes (1), production jobs (1), workspace (1), financial entries (1), raw inventory (3), accepted snapshots (1). No business row reset or renumbering occurred.
+- Existing suffix 1 is reserved. Sequence is at 1/already-called; no verification allocation burned another number. New allocation logic was exercised in the local PostgreSQL rehearsal.
+- Reservation table RLS is enabled; authenticated table SELECT and sequence UPDATE are denied, anonymous sequence USAGE is denied. Anonymous commit EXECUTE is denied, authenticated commit EXECUTE retained. Legacy lookup Q-000001 still resolves to OP-000001; its current public status is closed/paid with zero balance.
+- 33 focused local checks passed, zero skips, including migration, high historical Q/counter seeding, retry, stable send/accept/release identity, skipped rollback allocation, surviving legacy reservation after row deletion, next project for a second owner, QC/Inventory/Finance/isolation regressions. Syntax and diff checks passed.
+
+Security advisors returned no ERROR-level findings. The new private reservation table contributes an intentional INFO finding for RLS enabled without client policies: access is server-only and no client grants were added. Inherited warnings remain for six anonymous privileged functions, 36 authenticated privileged functions and disabled leaked-password protection. These were not silently changed by this numbering migration. Remediation references:
+
+- https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+- https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable
+- https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
+- https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+A signed-in hosted/iPad/cross-device walkthrough remains a user test; no credentials were fabricated or requested in chat, and no test record was added to the owner's workspace for verification. The customer preview is still internal and not approved for public customer sharing. Finance integration and final customer quote/tracking/payment screens remain subsequent milestones.

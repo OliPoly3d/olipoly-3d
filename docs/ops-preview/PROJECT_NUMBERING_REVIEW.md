@@ -1,6 +1,6 @@
 # Project identity and production queue correction
 
-Prepared November 4, 2026. **Not applied or deployed.** This is a focused correction to the existing test workspace, not a separate tool or a replacement for the Finance milestone.
+Prepared November 4, 2026. **Approved, applied to OliPoly ERP Test and published privately on November 4, 2026.** The original pre-application review is retained below; the current execution record is in [APPLIED.md](APPLIED.md). This is a focused correction to the existing test workspace, not a separate tool or a replacement for the Finance milestone.
 
 ## Observable behavior
 
