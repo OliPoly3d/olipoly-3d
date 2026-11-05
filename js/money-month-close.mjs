@@ -1,3 +1,4 @@
+import {sameJsonContent} from './money-json.mjs';
 import {occurrences,balances,addDays,date,principalSnapshots} from './money-engine.mjs';
 import {budgetMonth,monthBounds,seasonalMonth} from './money-budget.mjs';
 import {checkpointValid} from './money-confidence.mjs';
@@ -32,7 +33,7 @@ export function reopenMonth(m,month,entity,reason,asOf){
 }
 export function assertMonthLocks(previous,next){
  for(const c of previous.monthClosures||[]){const retained=next.monthClosures?.find(x=>x.month===c.month&&x.entity===c.entity);if(!retained){if(!next.monthReopenHistory?.some(r=>r.month===c.month&&r.entity===c.entity&&r.reason?.trim()&&!previous.monthReopenHistory?.some(old=>JSON.stringify(old)===JSON.stringify(r))))throw Error('Reopen '+c.month+' with a reason first.');continue;}
-  if(monthFingerprint(next,c.month,c.entity)!==c.signature)throw Error(c.month+' is closed for '+c.entity+'. Record a current-month correction, or reopen that month with a reason.');
+  if(!sameJsonContent(monthFingerprint(next,c.month,c.entity),c.signature))throw Error(c.month+' is closed for '+c.entity+'. Record a current-month correction, or reopen that month with a reason.');
  }
 }
 

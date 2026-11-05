@@ -1,8 +1,9 @@
+import {readBackup,recoveryPreview} from '../js/money-recovery.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {reconciliation,verifyBalance,checkpointValid,cashCapacity,attentionItems,saveForecastSnapshot,forecastComparison,categoryTrend,validateConfidence} from '../js/money-confidence.mjs';
 import {planningForecast} from '../js/money-planning.mjs';
 import {planningSnapshot} from '../js/money-insights.mjs';
-import {closeMonth,reopenMonth,assertMonthLocks,closeRequirements} from '../js/money-month-close.mjs';
+import {closeMonth,reopenMonth,assertMonthLocks,closeRequirements,monthFingerprint} from '../js/money-month-close.mjs';
 const plan=()=>({version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Checking',entity:'household',type:'cash',opening:100000,reserve:10000}],transactions:[],schedules:[],budgets:[{id:'food',name:'Food',entity:'household',account:'cash',monthly:{'2026-10':31001,'2026-11':30000}}]});
 const expense=(id,when,amount)=>({id,date:when,kind:'expense',category:'Food',description:id,status:'cleared',entries:[{account:'cash',amount:-amount}]});
 test('reconciliation respects pending basis, invalidates edited history and requires explicit adjustment with a reason',()=>{
@@ -35,4 +36,23 @@ test('closing requires completed month checks, blocks historical edits and permi
  m=verifyBalance(m,{account:'cash',asOf:'2026-10-31',basis:'posted',bankBalance:100000});const closed=closeMonth(m,'2026-10','household','2026-11-01');const edited=structuredClone(closed);edited.transactions.push(expense('late','2026-10-25',100));assert.throws(()=>assertMonthLocks(closed,edited),/closed/);
  const forward=structuredClone(closed);forward.transactions.push({...expense('correction','2026-11-01',100),kind:'adjustment',category:undefined,note:'Prior-month correction'});assert.doesNotThrow(()=>assertMonthLocks(closed,forward));
  const nextMonth=structuredClone(closed);nextMonth.budgets[0].overrides={'2026-11':40000};assert.doesNotThrow(()=>assertMonthLocks(closed,nextMonth));assert.throws(()=>reopenMonth(closed,'2026-10','household','','2026-11-01'),/Explain/);const reopened=reopenMonth(closed,'2026-10','household','Correct duplicate','2026-11-01');assert.doesNotThrow(()=>assertMonthLocks(closed,reopened));assert.throws(()=>assertMonthLocks(closed,{...closed,monthClosures:[]}),/reason/);
+});
+
+
+test('reordered saved fields allow a later month status update without unlocking October',()=>{
+ let m=plan();
+ m.transactions=[expense('october','2026-10-25',1000),{...expense('november','2026-11-03',2000),status:'pending'}];
+ m=verifyBalance(m,{account:'cash',asOf:'2026-10-31',basis:'posted',bankBalance:99000});
+ const before=closeMonth(m,'2026-10','household','2026-11-01'),loaded=structuredClone(before);
+ loaded.transactions[0].entries=[{amount:-1000,account:'cash'}];
+ assert.notEqual(monthFingerprint(loaded,'2026-10','household'),before.monthClosures[0].signature);
+ const draft=structuredClone(loaded);draft.transactions[1].status='cleared';
+ assert.doesNotThrow(()=>assertMonthLocks(loaded,draft));
+ assert.doesNotThrow(()=>readBackup(loaded,'owner'));
+ draft.monthClosures[0].signature=monthFingerprint(draft,'2026-10','household');
+ assert.equal(recoveryPreview(loaded,draft,'2026-11-05').reopened.length,0);
+ draft.transactions[0].entries[0].amount=-1001;
+ assert.throws(()=>assertMonthLocks(loaded,draft),/2026-10 is closed/);
+ assert.throws(()=>readBackup(draft,'owner'),/does not match/);
+ assert.equal(recoveryPreview(loaded,draft,'2026-11-05').reopened.length,1);
 });

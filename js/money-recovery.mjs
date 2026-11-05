@@ -1,3 +1,4 @@
+import {comparable,sameJsonContent} from './money-json.mjs';
 import {validate,balances,balanceUnknownAt,date} from './money-engine.mjs';
 import {validateBudgets} from './money-budget.mjs';
 import {validateConfidence} from './money-confidence.mjs';
@@ -7,11 +8,9 @@ export function backupEnvelope(model,{owner,revision,asOf}){return {format:'olip
 export function readBackup(input,owner){
  const enveloped=input?.format==='olipoly-money-backup';if(enveloped&&(input.version!==1||input.owner!==owner))throw Error('This backup belongs to a different account or uses an unsupported format.');
  const model=structuredClone(enveloped?input.body:input);validateConfidence(validateBudgets(validate(model)));
- for(const c of model.monthClosures||[])if(monthFingerprint(model,c.month,c.entity)!==c.signature)throw Error('This backup contains a closed-month signature that does not match its contents.');
+ for(const c of model.monthClosures||[])if(!sameJsonContent(monthFingerprint(model,c.month,c.entity),c.signature))throw Error('This backup contains a closed-month signature that does not match its contents.');
  return {model,legacy:!enveloped,revision:enveloped?input.revision:null};
 }
-const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
-const comparable=value=>JSON.stringify(canonical(value));
 export function recoveryPreview(current,candidate,asOf){
  validateConfidence(validateBudgets(validate(candidate)));date(asOf);
  const changes=[];for(const [key,label,name] of [['accounts','Account','name'],['transactions','Transaction','description'],['schedules','Schedule','name'],['budgets','Budget','name'],['seasonalItems','YOY item','name'],['savingsBuckets','Savings bucket','name'],['savingsMoves','Savings allocation','note'],['reviewDecisions','Decision','name']]){
@@ -20,7 +19,7 @@ export function recoveryPreview(current,candidate,asOf){
   for(const [id,value] of next)if(!old.has(id))changes.push({type:label,change:'Add',name:value[name]||id});
  }
  const oldBalances=balances(current,asOf),newBalances=balances(candidate,asOf),accounts=[...new Set([...current.accounts,...candidate.accounts].map(a=>a.id))].map(id=>{const before=current.accounts.find(a=>a.id===id),after=candidate.accounts.find(a=>a.id===id);return {id,name:after?.name||before.name,before:!before||balanceUnknownAt(before,asOf)?null:oldBalances[id],after:!after||balanceUnknownAt(after,asOf)?null:newBalances[id],debt:(after||before).type!=='cash'};});
- const reopened=(current.monthClosures||[]).filter(c=>{try{return !candidate.monthClosures?.some(n=>n.month===c.month&&n.entity===c.entity&&n.signature===c.signature)||monthFingerprint(candidate,c.month,c.entity)!==c.signature;}catch{return true;}});
+ const reopened=(current.monthClosures||[]).filter(c=>{try{return !candidate.monthClosures?.some(n=>n.month===c.month&&n.entity===c.entity&&sameJsonContent(n.signature,c.signature))||!sameJsonContent(monthFingerprint(candidate,c.month,c.entity),c.signature);}catch{return true;}});
  return {changes,accounts,reopened,startBefore:current.start,startAfter:candidate.start};
 }
 export function restorePlan(current,candidate,{reason,reopenClosed=false,asOf,source,revision}){
