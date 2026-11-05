@@ -82,3 +82,20 @@ test('pending commands survive signing out and stay scoped to their test account
   await client.retry();
   assert.equal(client.pending(),null);
 });
+
+test('legacy history requires authentication and sends only an exact reference to the read RPC', async () => {
+  const requests = [];
+  const {client} = fixture(async (url, request) => {
+    requests.push({url,...request});
+    return ok(url.includes('/auth/') ? login : []);
+  });
+  await assert.rejects(client.historyLookup('001234'), /Sign in/);
+  assert.equal(requests.length, 0);
+  await client.auth('fixture@example.test', 'fictional-password');
+  assert.deepEqual(await client.historyLookup('001234'), []);
+  const request = requests[1];
+  assert.ok(request.url.endsWith('/rest/v1/rpc/ops_preview_history_lookup'));
+  assert.equal(request.headers.Authorization, 'Bearer fixture-token');
+  assert.deepEqual(JSON.parse(request.body), {p_reference:'001234'});
+  assert.equal(client.pending(), null);
+});
