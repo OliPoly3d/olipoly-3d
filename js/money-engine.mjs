@@ -79,7 +79,7 @@ export function validate(model) {
     for (const skipped of s.skipped || []) date(skipped);
     if(s.stoppedFrom)date(s.stoppedFrom);
     for (const [key, o] of Object.entries(s.overrides || {})) {
-      date(key); if (o.date) date(o.date); integer(o.amount);
+      date(key); if (o.date) date(o.date); if (o.amount!==undefined || !o.date) integer(o.amount);
       if (o.account && !ids.has(o.account)) throw Error('Unknown expected account.');
       if (o.to && (!s.to || !ids.has(o.to))) throw Error('Unknown expected transfer destination.');
       if (s.to && (o.amount > 0 || (o.account||s.account)===(o.to||s.to))) throw Error('Expected transfer must be outgoing to a different account.');
@@ -101,14 +101,13 @@ export function occurrences(model, end, {includeSkipped=false}={}) {
     for (const day of nominalDates(s,nominalEnd)) {
       // Overrides may move an occurrence across a month boundary, in either direction.
       const nominalDay = day;
-      const override = s.overrides?.[nominalDay];
+      const override = s.overrides?.[nominalDay], eventDate = override?.date || day;
       const key = `${s.id}:${day}`;
       const skipped=(s.skipped||[]).includes(day);
-      if (day >= s.anchor && day >= model.start && (!s.end||day<=s.end) && (!s.stoppedFrom||day<s.stoppedFrom) && !matched.has(key) && (!skipped||includeSkipped)) {
+      if (day >= s.anchor && eventDate >= model.start && (!s.end||day<=s.end) && (!s.stoppedFrom||day<s.stoppedFrom) && !matched.has(key) && (!skipped||includeSkipped)) {
         let amount = [...(s.changes || [])].sort((a,b)=>a.date.localeCompare(b.date)).filter(x=>x.date<=day).at(-1)?.amount ?? s.amount;
         if (!calendarFrequency(s) && addDays(day,-dayStride(s)).slice(0,7) !== day.slice(0,7)) amount += s.firstPayBonus || 0;
-        if (override) amount = override.amount;
-        const eventDate = override?.date || day;
+        if (override?.amount!==undefined) amount = override.amount;
         const entries = [{account:override?.account || s.account,amount}];
         if (s.to) entries.push({account:override?.to || s.to,amount:-amount});
         if (eventDate <= end && (!s.end || nominalDay <= s.end)) result.push({id:key,scheduleKey:key,nominalDate:nominalDay,date:eventDate,description:s.name,kind:s.to?'transfer':(amount<0 || amount===0&&s.amount<0)?'expense':'income',category:s.category||'Scheduled',status:'forecast',entries,estimated:s.estimated===true,skipped,expenseEntity:s.expenseEntity,funding:s.funding,incomeType:s.incomeType,oneTime:s.oneTime===true,...(s.savingsBucket?{savingsBucket:s.savingsBucket}:{}),...(s.allocations?{allocations:scaleAllocations(s.allocations,Math.abs(amount))}:{})});

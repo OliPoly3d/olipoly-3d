@@ -91,7 +91,11 @@ export function scenarioSnapshot(model,asOf,overrides={}){
   const allocations=[...remaining].filter(([,amount])=>amount>0).map(([category,amount])=>({category,amount}));next.refundContext.push({...original,date:asOf,expenseEntity:transactionOwner(model,original),entries:[{account:original.entries[0].account,amount:-allocations.reduce((n,p)=>n+p.amount,0)}],allocations});
  }if(!next.refundContext.length)delete next.refundContext;
  for(const t of included.filter(t=>t.scheduleKey)){const id=t.scheduleKey.slice(0,-11),s=next.schedules.find(s=>s.id===id);if(s)s.skipped=[...new Set([...(s.skipped||[]),t.scheduleKey.slice(-10)])];}
- for(const s of next.schedules)if(s.overrides)for(const key of Object.keys(s.overrides))if(s.overrides[key].date&&s.overrides[key].date<asOf)delete s.overrides[key];
+ // A moved occurrence before the snapshot must not reappear on its nominal date.
+ for(const s of next.schedules)if(s.overrides)for(const key of Object.keys(s.overrides))if(s.overrides[key].date&&s.overrides[key].date<asOf){
+  if(key>=asOf)s.skipped=[...new Set([...(s.skipped||[]),key])];
+  delete s.overrides[key];
+ }
  return next;
 }
 export function transferScenario(model,from,to,amount,fee=0){

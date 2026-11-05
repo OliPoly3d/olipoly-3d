@@ -47,6 +47,8 @@ Today emphasizes the combined everyday spending allowance, cash headroom after t
 
 Coming up combines the next 14 days of expected income, bills and transfers with future-dated or pending-today actuals. Managed credit payment amounts use the shared planning snapshot from recorded balances; unrecorded overdue payments are not assumed paid. Record opens the existing editable transaction form. Zero or unknown amounts cannot be recorded by a quick action. Matched actuals replace their expectation once.
 
+If an expected bill or deposit is still upcoming but its date is wrong, choose **Reschedule** in Today or the forecast review, or **Move expected date** in the transaction editor. Choose the new date, select **Move in preview**, then **Save changes**. This moves only that occurrence and leaves the account balance and transaction history unchanged.
+
 The expandable Needs review area consolidates unresolved entries and balance/input checks. A possible cash-floor shortfall remains a separate visible warning. Detailed reconciliation stays under Plan ahead, with direct links from the home checklist and watched-account buttons.
 
 The cash chart labels major real scheduled/recorded events, annotates its lowest daily balance, shades the portion of a segment below the floor, and supports tapping, keyboard arrow keys or the Inspect a day field. The date inspector distinguishes category planning reserves and interest estimates from recordable expectations; reserves cannot be recorded as purchases. Selecting a chart date never edits financial data.

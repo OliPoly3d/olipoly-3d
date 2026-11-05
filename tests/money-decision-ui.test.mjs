@@ -1069,3 +1069,28 @@ test('expanding budget move directly populates both lists without a shortcut or 
  change($('budgetEntity'),'household');entry.open=true;entry.dispatchEvent(new p.dom.window.Event('toggle'));await tick();assert.equal(f.elements.from.disabled,false);assert.equal(f.elements.from.options.length,2);
  }finally{p.close();}
 });
+
+
+test('an overdue review and the record editor can move a bill date without posting a payment',{skip},async()=>{
+ const p=await page();
+ try{
+  const {$,submit}=p;
+  const row=[...$('dailyAttention').children].find(x=>x.textContent.includes('Streaming subscription'));
+  [...row.querySelectorAll('button')].find(b=>b.textContent==='Reschedule').click();
+  assert.equal($('rescheduleDialog').open,true);
+  $('cancelReschedule').click();
+  assert.equal(p.revision,0);
+  row.querySelector('button').click();
+  assert.equal($('rescheduleFromEntry').hidden,false);
+  $('rescheduleFromEntry').click();
+  $('rescheduleForm').elements.when.value='2026-10-31';
+  await submit('rescheduleForm');
+  assert.equal($('transactionDialog').open,false);
+  assert.equal(p.revision,0);
+  assert.match($('saveOutcome').textContent,/Nothing was recorded/);
+  $('savePlan').click();await tick();
+  assert.equal(p.revision,1);
+  assert.deepEqual(p.model.transactions,[]);
+  assert.deepEqual(p.model.schedules.find(s=>s.id==='bill').overrides['2026-10-28'],{date:'2026-10-31'});
+ }finally{p.close();}
+});

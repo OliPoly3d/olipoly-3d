@@ -1,3 +1,4 @@
+import {findExpectedOccurrence,rescheduleExpectation} from './money-actions.mjs';
 import {setupWorkspace} from './money-workspace.mjs';
 import {setupDaily} from './money-daily-ui.mjs';
 import {setupReceipts} from './money-receipt-ui.mjs';
@@ -27,10 +28,10 @@ const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
 const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'America/New_York'}).format(new Date());
 let model=null,revision=null,userId=null,busy=false,generation=0,undoState=null;
-const pageWindow=window;let entryPreviewTimer=null;
+const pageWindow=window;let entryPreviewTimer=null,rescheduleKey=null;
 function message(text,error=false){$('message').textContent=text;$('saveOutcome').textContent=text;$('saveOutcome').classList.toggle('low',error);}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);dashboard.clear();workbench.clear();confidence.clear();savings.clear();recovery.clear();duplicateReview.clear();entry.clear();overview.clear();planner.clear();daily.clear();receipts.clear();workspace.clear();undoState=null;pageWindow.clearTimeout(entryPreviewTimer);clearPlanningCache();for(const select of $('oneTimeIncomeForm').querySelectorAll('select[name=account],select[name=from]'))select.replaceChildren();for(const preview of document.querySelectorAll('.section-preview'))preview.textContent='';for(const panel of document.querySelectorAll('#app details'))panel.open=false;}
+function lock(){generation++;model=null;revision=null;userId=null;$('app').hidden=true;$('login').hidden=false;$('logout').hidden=true;for(const id of ['accounts','transactions','months','days','metrics','schedules','forecastNote'])$(id).replaceChildren();for(const f of document.forms)f.reset();resetSchedule(false);closeReschedule();dashboard.clear();workbench.clear();confidence.clear();savings.clear();recovery.clear();duplicateReview.clear();entry.clear();overview.clear();planner.clear();daily.clear();receipts.clear();workspace.clear();undoState=null;pageWindow.clearTimeout(entryPreviewTimer);clearPlanningCache();for(const select of $('oneTimeIncomeForm').querySelectorAll('select[name=account],select[name=from]'))select.replaceChildren();for(const preview of document.querySelectorAll('.section-preview'))preview.textContent='';for(const panel of document.querySelectorAll('#app details'))panel.open=false;}
 window.addEventListener('olipoly-auth-changed',e=>{if(userId && e.detail?.user?.id!==userId){lock();message('Signed out. Sign in to continue.');}});
 window.addEventListener('storage',e=>{if(['sb_token','sb_user','olipoly_auth_session_v1'].includes(e.key)){lock();message('Sign-in changed in another tab. Sign in again.');}});
 async function api(path,options={}) {
@@ -134,6 +135,36 @@ function match(t){
  entry.load(t);markTransactionPrivacy();f.elements.amount.focus();
  message(t.status==='forecast'?'Check the date, account and actual amount, then record.':'Edit the transaction and record the correction.');
 }
+function closeReschedule(){
+ const d=$('rescheduleDialog');rescheduleKey=null;if(d.open&&d.close)d.close();else d.removeAttribute('open');
+ $('rescheduleInfo').textContent='';$('rescheduleError').textContent='';$('rescheduleError').hidden=true;
+ d.removeAttribute('data-debt-private');
+}
+function openReschedule(key){
+ try{
+  const m=dashboard.draft(),t=findExpectedOccurrence(m,key),d=$('rescheduleDialog'),field=$('rescheduleForm').elements.when;
+  const debt=t.entries.some(e=>m.accounts.find(a=>a.id===e.account)?.type!=='cash');
+  if(debt&&$('app').dataset.debtHidden==='true')throw Error('Use Show debt before moving a debt payment.');
+  rescheduleKey=key;d.toggleAttribute('data-debt-private',debt);
+  $('rescheduleInfo').textContent=t.description+' · currently expected '+t.date;
+  $('rescheduleError').textContent='';$('rescheduleError').hidden=true;
+  field.min=[today(),m.start].sort().at(-1);field.max=forecastEnd(m.start);field.value=t.date<field.min?field.min:t.date;
+  if(!d.open){if(d.showModal)d.showModal();else d.setAttribute('open','');}field.focus();
+ }catch(e){message(e.message,true);if($('transactionDialog').open)entry.status(e.message,true);}
+}
+$('cancelReschedule').onclick=closeReschedule;
+$('rescheduleDialog').addEventListener('cancel',e=>{e.preventDefault();closeReschedule();});
+document.addEventListener('money-privacy-changed',e=>{if(e.detail.hidden&&$('rescheduleDialog').hasAttribute('data-debt-private'))closeReschedule();});
+$('rescheduleFromEntry').onclick=()=>openReschedule($('transactionForm').elements.scheduleKey.value);
+$('rescheduleForm').onsubmit=e=>{
+ e.preventDefault();if(!rescheduleKey||!model)return;
+ const when=e.target.elements.when.value;
+ try{
+  dashboard.update(m=>{const next=rescheduleExpectation(m,rescheduleKey,when,today());assertMonthLocks(model,next);return next;});
+  closeReschedule();if($('transactionDialog').open)cancelEditor(false);
+  message('Expected date moved to '+when+' in preview. Save changes keeps it. Nothing was recorded.');
+ }catch(error){$('rescheduleError').textContent=error.message;$('rescheduleError').hidden=false;}
+};
 $('undoLastSave').onclick=()=>action(async()=>{if(!undoState||undoState.owner!==userId||undoState.generation!==generation)throw Error('Undo is no longer available. Use Edit or recovery.');if($('transactionDialog').open)throw Error('Finish or cancel the open entry first.');const next=undoLastSave({previous:undoState.previous,current:model,revision,expectedRevision:undoState.expectedRevision,hasPreview:dashboard.hasChanges()});await save(next,{undoable:false,undone:true});});
 $('loginForm').onsubmit=e=>{e.preventDefault();action(async()=>{const f=e.target;await window.OliPolyAuth.login(f.email.value,f.password.value);f.password.value='';await load();});};
 $('logout').onclick=()=>{window.OliPolyAuth.logout();lock();message('Signed out.');};
@@ -208,7 +239,7 @@ $('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{
  if(kind==='transfer'&&!target.to)throw Error('Choose a transfer destination.');
  if(previous&&kind!==scheduleKind(previous)){
   if(previous.changes)target.changes=previous.changes.map(c=>({...c,amount:signed(c.amount)}));
-  if(previous.overrides)target.overrides=Object.fromEntries(Object.entries(previous.overrides).map(([key,value])=>{const o={...value,amount:signed(value.amount)};delete o.to;return [key,o];}));
+  if(previous.overrides)target.overrides=Object.fromEntries(Object.entries(previous.overrides).map(([key,value])=>{const o={...value};if(o.amount!==undefined)o.amount=signed(o.amount);delete o.to;return [key,o];}));
  }
  if(previous)next.schedules[next.schedules.indexOf(previous)]=target;else next.schedules.push(target);
  await save(next);resetSchedule(false);message('Schedule saved. Income, bills and forecasts updated.');
@@ -242,7 +273,7 @@ const dashboard=setupDashboard({
  setStatus:async(id,status)=>{const next=structuredClone(dashboard.draft());next.transactions.find(t=>t.id===id).status=status;await save(next);}
 });
 const workbench=setupWorkbench({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(fn),today,message,action});
-const confidence=setupConfidence({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(next=>validateConfidence(fn(next))),today,message,record:match,editSchedule,selectCredit:id=>workbench.selectCredit(id)});
+const confidence=setupConfidence({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(next=>validateConfidence(fn(next))),today,message,record:match,reschedule:openReschedule,editSchedule,selectCredit:id=>workbench.selectCredit(id)});
 const savings=setupSavings({getDraft:()=>dashboard.draft(),updateDraft:fn=>dashboard.update(fn),today,message});
 const entry=setupEntry({getDraft:()=>dashboard.draft(),getOwner:()=>userId,today,updateDraft:fn=>dashboard.update(fn),record:match,remove:t=>dashboard.remove(t),cancel:cancelEditor,message});
 document.addEventListener('money-open-entry',()=>entry.show());
@@ -252,7 +283,7 @@ $('refreshTransactionEntry').onclick=()=>action(async()=>{if(dashboard.hasChange
 const recovery=setupRecovery({getModel:()=>model,getRevision:()=>revision,getOwner:()=>userId,hasPreview:()=>dashboard.hasChanges(),api,save,action,message,today});
 const workspace=setupWorkspace({getOwner:()=>userId});
 const receipts=setupReceipts({getDraft:()=>dashboard.draft(),today});
-const daily=setupDaily({getDraft:()=>dashboard.draft(),getOwner:()=>userId,updateDraft:fn=>dashboard.update(fn),today,message,action,save,record:match,removeExpected:t=>dashboard.removeExpected(t),reconcile:id=>confidence.reconcileAccount(id),selectCredit:id=>workbench.selectCredit(id),workspace});
+const daily=setupDaily({getDraft:()=>dashboard.draft(),getOwner:()=>userId,updateDraft:fn=>dashboard.update(fn),today,message,action,save,record:match,reschedule:openReschedule,removeExpected:t=>dashboard.removeExpected(t),reconcile:id=>confidence.reconcileAccount(id),selectCredit:id=>workbench.selectCredit(id),workspace});
 const duplicateReview=setupDuplicateReview({getDraft:()=>dashboard.draft(),record:match,action,message});
 await new Promise(resolve=>{if(document.readyState==='complete')resolve();else window.addEventListener('load',resolve,{once:true});});
 await action(load);
