@@ -234,12 +234,18 @@
     if (order.runs.length) index = 2;
     if (order.released && order.items.every(item => M.remaining(order, item) === 0)) index = 3;
     if (order.fulfilled) index = 4;
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(order.title)} · ${escape(order.reference)}</p></div><a class="button" href="${orderLink(order)}">Back to workspace</a></header><section class="card" style="max-width:700px"><span class="badge">${escape(index < 0 ? 'Awaiting approval' : steps[index])}</span><div class="timeline">${steps.map((step, i) => `<div class="${i <= index ? 'done' : ''}">${step}</div>`).join('')}</div>${row('Remaining balance', format(M.balance(order)))}<p class="muted" style="margin-top:20px">For this interactive sample, the workspace and this view share device storage. For an accepted database order, open its customer link from Pickup to use the existing public tracking lookup.</p></section>`;
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(order.title)} · ${escape(order.reference)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(index < 0 ? 'Awaiting approval' : steps[index])}</span><div class="timeline">${steps.map((step, i) => `<div class="${i <= index ? 'done' : ''}">${step}</div>`).join('')}</div>${row('Remaining balance', format(M.balance(order)))}<p class="muted" style="margin-top:20px">For this interactive sample, the workspace and this view share device storage. For an accepted database order, open its customer link from Pickup to use the existing public tracking lookup.</p></section>`;
   }
   function render() {
     if (page === 'today') renderToday();
     else if (page === 'track') renderTracking();
     else renderOrder();
+    document.querySelectorAll('a[href*="ops-customer-preview.html"]').forEach(link => {
+      const url = new URL(link.href);
+      if (selected) url.searchParams.set('order', selected);
+      if (cloud) url.searchParams.set('database', 'test');
+      link.href = url.href;
+    });
   }
   async function saveDetails() {
     readDraft();
