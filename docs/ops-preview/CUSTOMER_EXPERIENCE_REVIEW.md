@@ -33,3 +33,16 @@ Retain the public `track.html` and `pay.html` addresses when the replacement is 
 Shipping needs separate shipment/delivery records and customer milestones; the current pilot only records complete pickup. Invoice issue timing, immutable issued PDFs/receipts, receipt delivery choices, payment requests, optional quiet tips, reversals, multiple payments/allocation, tax sourcing/exemptions/filing and financial close remain the integrated Finance milestone. Provider URLs/amount-prefill behavior must be verified before enabling redirects. Do not put service-role keys or owner tokens into customer URLs, nor add tax at the provider again.
 
 No schema migration or live site change is part of this review. No additional test account or sample order is created. The full legacy Finance Pro audit remains the preservation checklist; this UI review does not replace it.
+
+
+## Private review publication
+
+Published November 4, 2026 with the next-review milestone authorization, at https://olipoly-ops-test.siwicki05.chatgpt.site. Owner-only audience retained; no external visitors were added.
+
+- Site source: `9e2f7b36c9aeb111d8876030f7e6297512f8c8af`.
+- Saved version: `appgprj_6aeb3558bd9081919ef7993f1c3a6924~appgver_7b46d3747a708191983289be5e510023`.
+- Deployment: `appgdep_6aebd80c13508191a5929267f996f375`; native result **succeeded**.
+- Draft source PR #300: https://github.com/OliPoly3d/olipoly-3d/pull/300 (not merged).
+- Existing public `track.html`/`pay.html`, live database and personal Money remain unchanged. No Supabase migration was requested or applied for this review.
+
+Open a project in the test workspace and choose Customer preview. A sent, unapproved test quote is required for the acceptance form; an existing paid order instead shows the accepted quote and paid state. Sign in to the existing test workspace first and use the same browser tab/session. Do not interpret this owner-authenticated review as completed anonymous customer access.
