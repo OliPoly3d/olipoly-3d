@@ -120,6 +120,7 @@ export function setupEntry({
     f.elements.splitPurchase.disabled = !expense;
     $('splitRows').hidden = !expense || !f.elements.splitPurchase.checked;
     $('addSplit').hidden = !expense || !f.elements.splitPurchase.checked;
+    $('rescheduleFromEntry').hidden = !f.elements.scheduleKey.value || !!f.elements.editTransactionId.value;
     const expected = f.elements.entryTiming.value === 'plan';
     f.elements.entryTiming.disabled =
       !!f.elements.editTransactionId.value ||

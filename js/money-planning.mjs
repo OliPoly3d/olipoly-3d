@@ -52,10 +52,10 @@ export function planningForecast(model, end) {
       const a=linked.get(t.scheduleKey.slice(0,-11)),c=a.credit,state=states[a.id],final=a.type==='loan'&&c.finalPaymentDate===d.date;
       if(final&&state?.accrued>0){const interest=Math.max(0,Math.round(state.accrued));state.accrued=0;state.interest+=interest;if(interest)post({id:'interest:'+a.id+':'+d.date,date:d.date,description:a.name+' — estimated final interest',kind:'expense',category:'Interest',expenseEntity:a.entity,status:'plan',creditInterest:true,entries:[{account:a.id,amount:-interest}]});}
       const total=Math.max(0,-d.closing[a.id]-adjustments[a.id]);
-      const source=model.schedules.find(s=>s.id===c.scheduleId),override=source.overrides?.[t.nominalDate];
+      const source=model.schedules.find(s=>s.id===c.scheduleId),amountOverride=source.overrides?.[t.nominalDate]?.amount!==undefined;
       const paid=model.transactions.filter(x=>x.kind==='transfer'&&x.date.slice(0,7)===t.date.slice(0,7)&&x.date<=t.date).reduce((n,x)=>n+x.entries.filter(e=>e.account===a.id&&e.amount>0).reduce((sum,e)=>sum+e.amount,0),0);
-      const target=final&&!override?total:t.date<(c.paymentStart||model.start)?Math.abs(t.entries[0].amount):c.mode==='full'&&!override?total:c.mode==='fixed'&&c.paymentAmount===0&&!override?0:Math.abs(t.entries[0].amount);
-      const wanted=final&&!override||c.mode==='full'&&!override?target:Math.max(0,target-paid),amount=Math.min(wanted,total);
+      const target=final&&!amountOverride?total:t.date<(c.paymentStart||model.start)?Math.abs(t.entries[0].amount):c.mode==='full'&&!amountOverride?total:c.mode==='fixed'&&c.paymentAmount===0&&!amountOverride?0:Math.abs(t.entries[0].amount);
+      const wanted=final&&!amountOverride||c.mode==='full'&&!amountOverride?target:Math.max(0,target-paid),amount=Math.min(wanted,total);
       if(c.minimum!=null&&total>0&&wanted<Math.min(Math.max(0,c.minimum-paid),total))creditWarnings.add(a.name+': planned payment below latest entered statement minimum');
       const payment={...t,creditPayment:true,estimated:true,entries:[{account:t.entries[0].account,amount:-amount},{account:a.id,amount}]};
       if(states[a.id]){states[a.id].promo=reducePromo(states[a.id].promo,total,amount,creditRates(c,d.date));states[a.id].total=Math.max(0,total-amount);}

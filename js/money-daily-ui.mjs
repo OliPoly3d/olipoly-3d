@@ -54,6 +54,7 @@ export function setupDaily({
   action,
   save,
   record,
+  reschedule,
   removeExpected,
   reconcile,
   selectCredit,
@@ -216,6 +217,7 @@ export function setupDaily({
       ...state.expected.map((t) => ({
         text: t.description + ' · ' + t.date,
         action: () => record(t),
+        rescheduleKey: t.scheduleKey,
         debt: debtEntry(m, t),
       })),
       ...state.pending.map((t) => ({
@@ -244,6 +246,7 @@ export function setupDaily({
       row.className = 'daily-attention-row';
       row.toggleAttribute('data-debt-private', !!item.debt);
       row.append(el('span', item.text), button('Review', item.action));
+      if(item.rescheduleKey)row.append(button('Reschedule',()=>reschedule(item.rescheduleKey)));
       target.append(row);
     }
     if (items.length > 12)

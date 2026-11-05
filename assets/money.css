@@ -564,7 +564,7 @@ button[aria-pressed=true] { box-shadow:inset 0 0 0 1px var(--accent); }
  .month-toolbar > label { grid-column:1 / -1; }
  .daily-metrics .metric:first-child strong { font-size:clamp(32px,10vw,44px); }
  .money-view-nav { padding-top:max(9px,env(safe-area-inset-top)); }
- .entry-dialog-toolbar { padding-top:max(14px,env(safe-area-inset-top)); }
+ .entry-dialog-toolbar { flex-wrap:wrap;padding-top:max(14px,env(safe-area-inset-top)); }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important;animation:none!important;scroll-behavior:auto!important; } }
 .category-icon{width:25px;height:25px;fill:none;stroke:var(--category-accent,var(--accent));stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}

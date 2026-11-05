@@ -1,9 +1,25 @@
-import {validate} from './money-engine.mjs';
+import {date,forecastEnd,occurrences,validate} from './money-engine.mjs';
 
 function occurrence(model,key){
   const source=model.schedules.find(s=>s.id===key?.slice(0,-11));
   if(!source)throw Error('The recurring plan was not found.');
   return {source,day:key.slice(-10)};
+}
+export function findExpectedOccurrence(model,key){
+  const {source,day}=occurrence(model,key);
+  const end=[day,source.overrides?.[day]?.date].filter(Boolean).sort().at(-1);
+  const item=occurrences(model,end).find(t=>t.scheduleKey===key);
+  if(!item)throw Error('This item is no longer expected. If it was recorded, edit the actual entry instead.');
+  return item;
+}
+export function rescheduleExpectation(model,key,when,asOf){
+  date(when);date(asOf);
+  if(when<asOf||when<model.start)throw Error('Choose today or a later expected date.');
+  if(when>forecastEnd(model.start))throw Error('Choose a date within the available forecast.');
+  findExpectedOccurrence(model,key);
+  const next=structuredClone(model),{source,day}=occurrence(next,key);
+  source.overrides={...source.overrides,[day]:{...source.overrides?.[day],date:when}};
+  return validate(next);
 }
 function oneOff(t){
  const outgoing=t.entries.find(e=>e.amount<0)||t.entries[0];
