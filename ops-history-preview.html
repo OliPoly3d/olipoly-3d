@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Legacy history · OliPoly ERP Test</title>
+  <link rel="stylesheet" href="css/ops-preview/workspace.css">
+  <script defer src="js/ops-preview/config.js"></script>
+  <script defer src="js/ops-preview/cloud.js"></script>
+  <script defer src="js/ops-preview/history.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="wordmark" href="ops-preview.html?database=test">Oli<span>Poly</span></a>
+      <div class="brand-sub">Your working studio</div>
+      <nav class="nav" aria-label="Test operations">
+        <a href="ops-preview.html?database=test">All work</a>
+        <a class="active" aria-current="page" href="ops-history-preview.html">Legacy history</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="notice"><strong>OWNER REVIEW · TEST DATABASE</strong><span>Read-only archived records</span></div>
+      <header class="page-head">
+        <div>
+          <div class="eyebrow">Original records</div>
+          <h1>Legacy history</h1>
+          <p>Look up the original status and supporting evidence for a historical reference.</p>
+        </div>
+      </header>
+      <section class="card">
+        <form id="history-search" hidden>
+          <div class="stack">
+          <label>Full quote, order, invoice, or PO reference
+            <input id="history-reference" type="text" required maxlength="128" autocomplete="off" spellcheck="false" placeholder="For example, Q-000251">
+          </label>
+          <div class="actions"><button class="primary" type="submit">Search history</button></div>
+          </div>
+        </form>
+        <div id="history-sign-in" hidden>
+          <p>Sign in to the private OliPoly test workspace to view history.</p>
+          <a href="ops-preview.html?database=test">Open test workspace</a>
+        </div>
+      </section>
+      <p id="history-status" role="status" class="status-line" aria-live="polite"></p>
+      <section id="history-results" class="stack" aria-label="History matches"></section>
+      <noscript>Enable JavaScript to search legacy history.</noscript>
+    </main>
+  </div>
+</body>
+</html>

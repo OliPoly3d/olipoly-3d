@@ -61,7 +61,7 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token());
     }
@@ -92,6 +92,7 @@
     }
     return {auth, save, retry, pending, signedIn: () => !!session?.access_token,
       initialize: () => rpc('ops_preview_initialize'), load: () => rpc('ops_preview_load'),
+      historyLookup: reference => rpc('ops_preview_history_lookup', {p_reference: reference}),
       tracking: reference => rpc('public_order_tracking_lookup', {tracking_identifier: reference}, true),
       // Pending receipts survive signing out, so a retry can resolve an uncertain commit.
       signOut: () => storeSession(null)};
