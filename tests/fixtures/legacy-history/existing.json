@@ -1,0 +1,39 @@
+[
+  {
+    "source_key": "fixture:issued-quote",
+    "record_type": "quote",
+    "archived_status": "Issued",
+    "related_order": null,
+    "evidence": [
+      "Fictional issued PDF"
+    ],
+    "open_issues": [],
+    "references": [
+      "Q-900001"
+    ]
+  },
+  {
+    "source_key": "fixture:converted-order",
+    "record_type": "order",
+    "archived_status": "Closed",
+    "related_order": "OP-900002",
+    "evidence": [],
+    "open_issues": [],
+    "references": [
+      "OP-900002",
+      "Q-900002"
+    ]
+  },
+  {
+    "source_key": "fixture:shared-po-first",
+    "record_type": "order",
+    "archived_status": "Closed",
+    "related_order": "OP-900004",
+    "evidence": [],
+    "open_issues": [],
+    "references": [
+      "OP-900004",
+      "000123"
+    ]
+  }
+]
