@@ -99,3 +99,26 @@ test('legacy history requires authentication and sends only an exact reference t
   assert.deepEqual(JSON.parse(request.body), {p_reference:'001234'});
   assert.equal(client.pending(), null);
 });
+
+test('archive PDF fetch uses the signed-in token and refuses invalid or missing files', async () => {
+  const requests = [];
+  const object = '11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222.pdf';
+  const sample = new Blob(['%PDF-fixture'],{type:'application/pdf'});
+  let response = {ok:true,blob:async()=>sample};
+  const {client} = fixture(async (url, request) => {
+    requests.push({url,...request});
+    return url.includes('/auth/') ? ok(login) : response;
+  });
+  await assert.rejects(client.historyPdf(object),/Sign in/);
+  assert.equal(requests.length,0);
+  await client.auth('fixture@example.test','fictional-password');
+  await assert.rejects(client.historyPdf('../outside.pdf'),/Invalid PDF reference/);
+  assert.equal(await client.historyPdf(object),sample);
+  assert.ok(requests[1].url.endsWith('/storage/v1/object/authenticated/ops-history-pdfs/'+object));
+  assert.equal(requests[1].headers.Authorization,'Bearer fixture-token');
+  assert.equal(requests[1].cache,'no-store');
+  response={ok:false,status:404};
+  await assert.rejects(client.historyPdf(object),{code:404});
+  response={ok:true,blob:async()=>new Blob(['<html>'],{type:'application/pdf'})};
+  await assert.rejects(client.historyPdf(object),/Invalid PDF response/);
+});
