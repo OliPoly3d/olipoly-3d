@@ -61,9 +61,30 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token());
+    }
+    async function historyPdf(objectName) {
+      if (typeof objectName !== 'string' || !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.pdf$/.test(objectName)) {
+        throw new Error('Invalid PDF reference.');
+      }
+      const response = await fetch(`${config.url}/storage/v1/object/authenticated/ops-history-pdfs/${objectName}`, {
+        headers: {apikey: config.publishableKey, Authorization: `Bearer ${await token()}`},
+        cache: 'no-store',
+        redirect: 'error'
+      });
+      if (!response.ok) {
+        const error = new Error('PDF request failed.');
+        error.code = response.status;
+        throw error;
+      }
+      const pdf = await response.blob();
+      if (pdf.type !== 'application/pdf' || pdf.size > 10 * 1024 * 1024 ||
+          await pdf.slice(0, 5).text() !== '%PDF-') {
+        throw new Error('Invalid PDF response.');
+      }
+      return pdf;
     }
     function pending() {
       const value = read(pendingKey());
@@ -93,6 +114,8 @@
     return {auth, save, retry, pending, signedIn: () => !!session?.access_token,
       initialize: () => rpc('ops_preview_initialize'), load: () => rpc('ops_preview_load'),
       historyLookup: reference => rpc('ops_preview_history_lookup', {p_reference: reference}),
+      historyWithDocuments: reference => rpc('ops_preview_history_with_documents', {p_reference: reference}),
+      historyPdf,
       tracking: reference => rpc('public_order_tracking_lookup', {tracking_identifier: reference}, true),
       // Pending receipts survive signing out, so a retry can resolve an uncertain commit.
       signOut: () => storeSession(null)};
