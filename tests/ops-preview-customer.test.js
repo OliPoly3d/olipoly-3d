@@ -43,10 +43,42 @@ test('acceptance remains explicit and milestones remain separate from payment',(
  assert.doesNotMatch(V.render(V.project(o)),/id="customer-accept"/);
 });
 
-test('owner review shell contains no internal navigation or authoritative browser-only storage',()=>{
+test('owner review shell keeps ERP navigation hidden by default and uses shared test storage',()=>{
  const html=fs.readFileSync('ops-customer-preview.html','utf8'),js=fs.readFileSync('js/ops-preview/customer-preview.js','utf8');
- assert.match(html,/OWNER REVIEW/);assert.doesNotMatch(html,/href="ops-(order|preview)|Back to workspace|sidebar/);
+ assert.match(html,/OWNER REVIEW/);assert.match(html,/id="owner-return" hidden/);assert.doesNotMatch(html,/sidebar/);
  assert.doesNotMatch(js,/localStorage|sessionStorage|window\.open|location\.assign|buy\.stripe|paypal\.com|venmo\.com/);
  assert.match(js,/cloud\.load\(\)/);assert.match(js,/cloud\.save\(/);assert.match(js,/state\.revision/);
  assert.match(js,/Owner preview sign-in required/);
+});
+
+test('Back to ERP stays available across owner previews and recovers from a failed load',async()=>{
+ const vm=require('node:vm');
+ const script=fs.readFileSync('js/ops-preview/customer-preview.js','utf8');
+ const order=fixture();
+ const allWork='ops-preview.html?database=test';
+ async function launch(signedIn,search,load){
+  const link={getAttribute:()=>allWork};
+  const ownerReturn={hidden:true,querySelector:()=>link};
+  const nodes={'owner-return':ownerReturn,'customer-app':{},'customer-message':{}};
+  vm.runInNewContext(script,{
+   URLSearchParams,location:{search},
+   document:{getElementById:id=>nodes[id],addEventListener(){}},
+   window:{OliPolyCustomerView:V,OliPolyOpsPreview:M,OliPolyLineItems:{escape:String},OliPolyOpsCloud:{create:()=>({signedIn:()=>signedIn,load,pending:()=>false})}},
+  });
+  await new Promise(resolve=>setImmediate(resolve));
+  return {hidden:ownerReturn.hidden,href:link.href};
+ }
+ const load=async()=>({orders:[order]});
+ assert.deepEqual(await launch(false,'',load),{hidden:true,href:allWork});
+ assert.deepEqual(await launch(true,'',async()=>{throw new Error('Session expired');}),{hidden:false,href:allWork});
+ assert.deepEqual(await launch(true,'?order=missing',load),{hidden:false,href:allWork});
+ for(const view of ['quote','track','pay']){
+  const selected=await launch(true,`?order=${encodeURIComponent(order.id)}&view=${view}`,load);
+  assert.equal(selected.hidden,false);
+  const target=new URL(selected.href,'https://test.example');
+  assert.equal(target.pathname,'/ops-order-preview.html');
+  assert.equal(target.searchParams.get('database'),'test');
+  assert.equal(target.searchParams.get('order'),order.id);
+  assert.equal(target.searchParams.get('section'),'production');
+ }
 });
