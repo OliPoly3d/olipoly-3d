@@ -122,3 +122,31 @@ test('archive PDF fetch uses the signed-in token and refuses invalid or missing 
   response={ok:true,blob:async()=>new Blob(['<html>'],{type:'application/pdf'})};
   await assert.rejects(client.historyPdf(object),/Invalid PDF response/);
 });
+
+test('stock warning preferences require the owner session and save one material setting', async () => {
+  const requests = [];
+  const {client} = fixture(async (url, options) => {
+    requests.push({url, ...options});
+    if (url.includes('/auth/')) return ok(login);
+    if (url.includes('/raw_material_inventory?')) return ok([{id:'roll', reorder_threshold_grams:250}]);
+    if (options.method === 'POST') return {ok:true, status:204};
+    return ok([
+      {setting_key:'ops_preview_low_stock:PLA / White',setting_value:true},
+      {setting_key:'ops_preview_low_stock:PETG / Black',setting_value:false},
+    ]);
+  });
+  await assert.rejects(client.inventoryWarnings(), /Sign in/);
+  await assert.rejects(client.saveInventoryWarning('PLA / White', false), /Sign in/);
+  assert.equal(requests.length, 0);
+  await client.auth('fixture@example.test', 'fictional-password');
+  assert.deepEqual(await client.inventoryWarnings(), {
+    levels:[{id:'roll', reorder_threshold_grams:250}], excluded:['PLA / White'],
+  });
+  await client.saveInventoryWarning('PLA / White', false);
+  for (const request of requests.slice(1)) assert.equal(request.headers.Authorization, 'Bearer fixture-token');
+  assert.equal(new URL(requests[1].url).searchParams.get('user_id'), 'eq.fixture-user');
+  assert.equal(new URL(requests[2].url).searchParams.get('user_id'), 'eq.fixture-user');
+  const {updated_at, ...saved} = JSON.parse(requests[3].body);
+  assert.ok(updated_at);
+  assert.deepEqual(saved, {user_id:'fixture-user',setting_key:'ops_preview_low_stock:PLA / White',setting_value:false});
+});

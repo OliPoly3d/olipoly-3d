@@ -3,9 +3,11 @@
   const M = window.OliPolyOpsPreview;
   const escape = window.OliPolyLineItems.escape;
   const format = value => new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(value);
+  const grams = new Intl.NumberFormat('en-US', {maximumFractionDigits: 2});
   const key = 'olipoly.ops.preview.v1';
   const app = document.getElementById('app');
   const page = document.body.dataset.page;
+  const inventoryView = page === 'today' && new URLSearchParams(location.search).get('view') === 'inventory';
   const databaseMode = new URLSearchParams(location.search).get('database') === 'test';
   const cloud = databaseMode ? window.OliPolyOpsCloud.create(window.OliPolyOpsTestConfig) : null;
   let busy = false;
@@ -17,6 +19,8 @@
   let intakeDraft = null;
   let queueFilter = new URLSearchParams(location.search).get('filter') || 'open';
   let queueSearch = '';
+  let inventorySearch = '';
+  let warningSettings;
   try { state = JSON.parse(localStorage.getItem(key)) || M.seed(); }
   catch { state = M.seed(); }
   if (state.version !== 1 || !Array.isArray(state.orders) || !Array.isArray(state.inventory)) state = M.seed();
@@ -69,7 +73,14 @@
     }).join('') || '<p class="empty">No approved projects awaiting production or fulfillment.</p>'}</section>`;
   }
   function orderLink(order, section = M.nextStep(order)[1]) { return `ops-order-preview.html?order=${encodeURIComponent(order.id)}&section=${section}${cloud ? '&database=test' : ''}`; }
-  function trackingLink(order) { return cloud && order.database?.orderNumber ? `ops-track-preview.html?database=test&tracking=${encodeURIComponent(order.database.orderNumber)}` : `ops-track-preview.html?order=${encodeURIComponent(order.id)}${cloud ? '&database=test' : ''}`; }
+  function trackingLink(order) {
+    const params = new URLSearchParams({order: order.id});
+    if (cloud) {
+      params.set('database', 'test');
+      if (order.database?.orderNumber) params.set('tracking', order.database.orderNumber);
+    }
+    return `ops-track-preview.html?${params}`;
+  }
   function textArea(label, name, value, attrs = '') {
     return `<label class="full">${escape(label)}<textarea name="${name}" ${attrs}>${escape(value || '')}</textarea></label>`;
   }
@@ -95,17 +106,65 @@
     return result;
   }
   function renderToday() {
+    if (inventoryView) {
+      app.innerHTML = `<header class="page-head"><div><h1>All inventory</h1><p class="muted">Find available filament for your next project.</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header>${inventoryPanel()}`;
+      return;
+    }
     if (intakeDraft) {
       app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Start here</div><h1>Capture a new request.</h1><p class="muted">Record what you know. Add more items and set their quantities in Quote builder.</p></div></header><form id="new-request-form" class="card"><div class="form-grid">${intakeFields(intakeDraft,true)}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit" value="request">Save new request</button><button type="submit" value="quote">Save & start quote</button><button type="button" data-action="cancel-intake">Cancel</button></div><p class="muted" style="margin-top:18px">A request is not an accepted order and does not reserve materials.</p></form>`;
       return;
     }
     const counts = Object.fromEntries(M.stages.map(([id]) => [id,state.orders.filter(order => M.stage(order) === id).length]));
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Your studio, from the first conversation</div><h1>All your work. One queue.</h1><p class="muted">Capture requests, prepare quotes and see what needs your attention next.</p></div><button class="primary" data-action="new">+ New request</button></header>
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Your studio, from the first conversation</div><h1>All your work. One queue.</h1><p class="muted">Capture requests, prepare quotes and see what needs your attention next.</p></div><div class="actions"><a class="button" href="ops-preview.html?view=inventory${cloud ? '&database=test' : ''}">All inventory</a><button class="primary" data-action="new">+ New request</button></div></header>
       <div class="grid metrics queue-metrics"><button class="card metric" data-filter="request"><small>NEW REQUESTS</small><strong>${counts.request}</strong><small>Need review or more information</small></button><button class="card metric" data-filter="awaiting"><small>AWAITING APPROVAL</small><strong>${counts.awaiting}</strong><small>Quotes shared with customers</small></button><button class="card metric" data-filter="approved"><small>QUOTE APPROVED</small><strong>${counts.approved}</strong><small>Ready for production release</small></button><button class="card metric" data-filter="printing"><small>IN PROGRESS</small><strong>${counts.printing}</strong><small>${counts.queued} queued · ${counts.ready} ready</small></button></div>
       <section class="card"><div class="section-head"><div><h2>All work</h2><p class="muted" style="margin-bottom:0">Each request stays in this queue as it becomes a quote, order and completed job.</p></div><span class="badge neutral">${state.orders.filter(order=>M.stage(order)!=='complete').length} open</span></div>
       <nav class="queue-filters" aria-label="Filter work by stage">${[['open','All open'],...M.stages,['all','Everything']].map(([id,label])=>`<button data-filter="${id}" class="${queueFilter===id?'active':''}" aria-pressed="${queueFilter===id}">${escape(label)} <span>${id==='open'?state.orders.length-counts.complete:id==='all'?state.orders.length:counts[id]}</span></button>`).join('')}</nav>
       <input class="search" id="search" aria-label="Find work" placeholder="Find a customer, project or reference…" value="${escape(queueSearch)}"><div id="order-list">${orderRows()}</div></section>
-      <div style="margin-top:22px">${sharedProductionQueue()}</div><div class="two-col" style="margin-top:22px"><section class="card"><h2>From request to production</h2><ol class="journey"><li><strong>New request</strong><span>Customer, idea, files and requested date.</span></li><li><strong>Prepare quote</strong><span>Mixed items, estimates, design fee, price and terms.</span></li><li><strong>Await approval</strong><span>Preview or print the quote, then record when it was shared.</span></li><li><strong>Approved → production</strong><span>Record authorization, release materials and assign runs.</span></li></ol></section><section class="card"><h2>Materials & balances</h2>${state.inventory.map(stock => row(stock.key, `${Math.round(stock.grams-M.reserved(state,stock.key))} g available`)).join('')}${row('Accepted-order balances', format(state.orders.filter(o=>o.snapshot).reduce((sum,o)=>sum+M.balance(o),0)))}<button style="margin-top:18px" data-action="reset">${cloud?'Reload test records':'Reset local sample'}</button></section></div>`;
+      <div style="margin-top:22px">${sharedProductionQueue()}</div>${inventoryPanel(true)}<div class="two-col" style="margin-top:22px"><section class="card"><h2>From request to production</h2><ol class="journey"><li><strong>New request</strong><span>Customer, idea, files and requested date.</span></li><li><strong>Prepare quote</strong><span>Mixed items, estimates, design fee, price and terms.</span></li><li><strong>Await approval</strong><span>Preview or print the quote, then record when it was shared.</span></li><li><strong>Approved → production</strong><span>Record authorization, release materials and assign runs.</span></li></ol></section><section class="card"><h2>Balances</h2>${row('Accepted-order balances', format(state.orders.filter(o=>o.snapshot).reduce((sum,o)=>sum+M.balance(o),0)))}<button style="margin-top:18px" data-action="reset">${cloud?'Reload test records':'Reset local sample'}</button></section></div>`;
+  }
+  function stockNeedsAttention(stock, available) {
+    if (warningSettings?.excluded.includes(stock.key)) return false;
+    const level = warningSettings?.levels.find(row => row.id === stock.databaseId);
+    if (level?.reorder_policy && level.reorder_policy !== 'auto') return false;
+    if (level?.snooze_until >= new Date().toISOString().slice(0, 10)) return false;
+    const threshold = Number(level?.reorder_threshold_grams || 0);
+    return available <= 0 || (threshold > 0 && available <= threshold);
+  }
+  function inventoryRows(alertsOnly = false) {
+    const terms = alertsOnly ? [] : inventorySearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const stocks = state.inventory
+      .filter(stock => terms.every(term => stock.key.toLowerCase().includes(term)))
+      .map(stock => ({stock, reserved: M.reserved(state, stock.key)}))
+      .filter(({stock, reserved}) => !alertsOnly || ((!cloud || warningSettings) && stockNeedsAttention(stock, stock.grams - reserved)))
+      .sort((a, b) => a.stock.key.localeCompare(b.stock.key));
+    const showControls = !alertsOnly && !!warningSettings;
+    const rows = stocks.map(({stock, reserved}) => {
+      const label = escape(`Exclude ${stock.key} from low-stock warnings`);
+      const control = showControls ? `<td><input type="checkbox" data-inventory-warning="${escape(stock.key)}" aria-label="${label}" ${warningSettings.excluded.includes(stock.key) ? 'checked' : ''}></td>` : '';
+      return `<tr><th scope="row">${escape(stock.key)}</th><td>${grams.format(stock.grams)}</td><td>${grams.format(reserved)}</td><td><strong>${grams.format(stock.grams - reserved)}</strong></td>${control}</tr>`;
+    }).join('');
+    const empty = alertsOnly ? (cloud && !warningSettings ? 'Reorder levels are unavailable.' : 'No stock warnings.') : 'No filament matches this search.';
+    return {
+      count: alertsOnly
+        ? (cloud && !warningSettings ? 'Stock warning settings unavailable' : `${stocks.length} stock warning${stocks.length === 1 ? '' : 's'}`)
+        : `${stocks.length} of ${state.inventory.length} material and color combinations`,
+      markup: rows || `<tr><td colspan="${showControls ? 5 : 4}">${empty}</td></tr>`,
+      showControls,
+    };
+  }
+  function inventoryPanel(alertsOnly = false) {
+    const {count, markup, showControls} = inventoryRows(alertsOnly);
+    return `<section class="card inventory-panel" id="inventory" aria-labelledby="inventory-heading">
+      <h2 id="inventory-heading">${alertsOnly ? 'Stock warnings' : 'Filament availability'}</h2>
+      <p class="muted">${alertsOnly ? 'Low or unavailable filament that still has warnings enabled.' : 'Available grams exclude reservations for released work.'}</p>
+      ${alertsOnly ? '' : `<label>Search by material or color<input class="search" id="inventory-search" type="search" placeholder="Try PETG or matte white" value="${escape(inventorySearch)}"></label>`}
+      <p class="muted" id="inventory-count" role="status">${count}</p>
+      <div class="inventory-scroll" role="region" aria-label="Filament stock" tabindex="0">
+        <table class="inventory-table"><thead><tr><th scope="col">Material / color</th><th scope="col">On hand (g)</th><th scope="col">Reserved (g)</th><th scope="col">Available (g)</th>${showControls ? '<th scope="col">Exclude low-stock warning</th>' : ''}</tr></thead>
+        <tbody id="inventory-rows">${markup}</tbody></table>
+      </div>
+      ${alertsOnly ? `<p><a href="ops-preview.html?view=inventory${cloud ? '&database=test' : ''}">See all inventory</a></p>` : ''}
+    </section>`;
   }
   function orderRows() {
     const orders = M.queue(state, queueFilter, queueSearch);
@@ -270,6 +329,13 @@
     await persist(next);
   }
   document.addEventListener('input', event => {
+    if (event.target.id === 'inventory-search') {
+      inventorySearch = event.target.value;
+      const {count, markup} = inventoryRows();
+      document.getElementById('inventory-count').textContent = count;
+      document.getElementById('inventory-rows').innerHTML = markup;
+      return;
+    }
     if (event.target.id === 'search') {
       queueSearch = event.target.value;
       document.getElementById('order-list').innerHTML = orderRows();
@@ -294,6 +360,24 @@
       });
       try { document.getElementById('price-card').innerHTML = priceCard(draft); }
       catch { document.getElementById('price-card').textContent = 'Complete the item fields to preview totals.'; }
+    }
+  });
+  document.addEventListener('change', async event => {
+    const box = event.target;
+    const key = box.dataset.inventoryWarning;
+    if (!key || !cloud || !warningSettings || !state.inventory.some(stock => stock.key === key)) return;
+    const excluded = box.checked;
+    box.disabled = true;
+    try {
+      await cloud.saveInventoryWarning(key, excluded);
+      warningSettings.excluded = warningSettings.excluded.filter(value => value !== key);
+      if (excluded) warningSettings.excluded.push(key);
+      message(excluded ? 'Low-stock warning excluded.' : 'Low-stock warning enabled.');
+    } catch (error) {
+      box.checked = !excluded;
+      message(error.message, true);
+    } finally {
+      box.disabled = false;
     }
   });
   document.addEventListener('submit', async event => {
@@ -415,17 +499,26 @@
   });
   function renderConnection() {
     const notice = document.querySelector('.notice');
+    let backToErp = '';
+    if (page === 'track' && (!cloud || cloud.signedIn())) {
+      const href = selected ? orderLink({id: selected}, 'pickup') : 'ops-preview.html?database=test';
+      backToErp = `<a class="button" href="${escape(href)}">Back to ERP</a>`;
+    }
     if (!cloud) {
-      notice.innerHTML = '<strong>INTERACTIVE SAMPLE</strong><span>Fictional records saved on this device.</span><a class="button" href="ops-preview.html?database=test">Use test database</a>';
+      notice.innerHTML = `<strong>INTERACTIVE SAMPLE</strong><span>Fictional records saved on this device.</span><a class="button" href="ops-preview.html?database=test">Use test database</a>${backToErp}`;
       return;
     }
-    notice.innerHTML = `<strong>TEST DATABASE</strong><span>OliPoly ERP Test · fictional data only.</span>${cloud.signedIn() ? '<button data-action="test-reload">Reload</button><button data-action="test-signout">Sign out</button>' : ''}${cloud.pending() ? '<button class="primary" data-action="test-retry">Resolve pending save</button>' : ''}`;
+    notice.innerHTML = `<strong>TEST DATABASE</strong><span>OliPoly ERP Test · fictional data only.</span>${backToErp}${cloud.signedIn() ? '<button data-action="test-reload">Reload</button><button data-action="test-signout">Sign out</button>' : ''}${cloud.pending() ? '<button class="primary" data-action="test-retry">Resolve pending save</button>' : ''}`;
   }
   function renderAuth() {
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Separate test account</div><h1>Your test studio.</h1><p class="muted">Sign in on each device with the same test account to share these fictional records.</p></div></header><form class="card stack" style="max-width:520px" data-form="test-auth">${field('Email', 'email', '', 'email', 'autocomplete="username" required')}${field('Password', 'password', '', 'password', 'minlength="12" autocomplete="current-password" required')}<div class="actions"><button class="primary" type="submit" value="signin">Sign in</button><button type="submit" value="signup">Create test account</button></div><p class="muted">This account belongs only to OliPoly ERP Test. Use a new password. Confirmation may be required by email.</p></form>`;
   }
   async function loadCloud() {
     state = await cloud.initialize();
+    if (page === 'today') {
+      try { warningSettings = await cloud.inventoryWarnings(); }
+      catch { warningSettings = undefined; }
+    }
     if (!selected) selected = state.orders[0]?.id;
     dirty = false; render(); renderConnection();
     if (cloud.pending()) message('An earlier save needs to be resolved. Use Resolve pending save before editing.', true);
@@ -439,6 +532,14 @@
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(record.order_number)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(record.public_status_text || window.OliPolyWorkflow.orderStatusLabel(record.status))}</span><p style="margin-top:20px">${escape(record.public_next_step || '')}</p>${record.shipping_or_pickup_note ? `<p class="muted">${escape(record.shipping_or_pickup_note)}</p>` : ''}${row('Remaining balance', format(record.balance_amount))}</section>`;
   }
   renderConnection();
+  if (inventoryView) {
+    document.querySelectorAll('[data-work-nav]').forEach(link => {
+      const active = link.dataset.workNav === 'inventory';
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  }
   if (cloud) {
     // Keep the staging query attached only to these three unique entry pages.
     document.querySelectorAll('a[href^="ops-"]').forEach(link => {

@@ -6,3 +6,39 @@
 @media(max-width:650px){.tabs{flex-wrap:wrap;overflow:visible}.tabs button{flex:1 1 auto}}
 .notice{flex-wrap:wrap}
 .queue-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.queue-metrics button{display:block;text-align:left;white-space:normal}.queue-filters{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.queue-filters button{font-size:.75rem;padding:9px 12px;min-height:44px}.queue-filters button.active{background:var(--soft);color:#8b3259;border-color:#d8a0b9}.queue-filters span{background:#eee8e3;border-radius:12px;padding:3px 7px;font-size:.7rem}.queue-row{display:flex;justify-content:space-between;gap:20px;padding:20px 0;border-top:1px solid var(--line)}.queue-row h3{font-size:1rem;margin:12px 0 6px}.queue-row p{font-size:.8rem;color:var(--muted);margin-bottom:0}.queue-row-end{display:flex;align-items:center;justify-content:flex-end;gap:15px;text-align:right;flex-wrap:wrap}.journey{padding-left:20px;display:grid;gap:18px}.journey strong,.journey span{display:block}.journey span{color:var(--muted);font-size:.82rem;line-height:1.5;margin-top:5px}.request-notes{white-space:pre-wrap;margin-top:20px;overflow-wrap:anywhere}.quote-document h1{font-size:2.1rem}.queue-row>div{min-width:0}.queue-row h3,.queue-row p{overflow-wrap:anywhere}@media(max-width:900px){.queue-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.queue-row{display:block}.queue-row-end{margin-top:15px;justify-content:space-between;text-align:left}.queue-row-end .button{max-width:100%}.queue-filters button{flex:1 1 auto}.quote-document .section-head{display:block}}@media print{body[data-print-view="quote"] .panel.receipt{display:none!important}body[data-print-view="quote"] .panel.quote{display:block!important}body[data-print-view="quote"] .panel.quote .two-col{display:block}body[data-print-view="quote"] .quote-document{max-width:none}body[data-print-view="quote"] .panel.quote aside{display:none!important}}
+
+.inventory-panel {
+  margin-top: 22px;
+}
+.inventory-scroll {
+  max-height: 28rem;
+  overflow: auto;
+}
+.inventory-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .875rem;
+}
+.inventory-table th,
+.inventory-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+.inventory-table th:first-child {
+  text-align: left;
+}
+.inventory-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+.inventory-table td {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 650px) {
+  .nav {
+    flex-wrap: wrap;
+  }
+}
