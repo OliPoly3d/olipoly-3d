@@ -123,9 +123,13 @@
     return order.runs.filter(run => run.itemId === itemId && run.status === 'inspected').reduce((sum, run) => sum + run.accepted, 0);
   }
   function remaining(order, item) { return item.quantity - accepted(order, item.id); }
+  function productionItems(order) { return order.productionPlan || order.items; }
+  function costsReady(order) {
+    return productionItems(order).every(item => Number(item.hours_each) > 0 && item.materials.some(material => Number(material.grams_each) > 0));
+  }
   function requirements(order) {
     const result = {};
-    order.items.forEach(item => item.materials.forEach(material => {
+    productionItems(order).forEach(item => item.materials.forEach(material => {
       const key = materialKey(material);
       result[key] = (result[key] || 0) + remaining(order, item) * material.grams_each;
     }));
@@ -148,6 +152,13 @@
     if (order.runs.some(run => run.status === 'printing')) return 'printing';
     return 'ready_to_print';
   }
+  function estimatedItemCost(state, item) {
+    const filament = item.materials.reduce((sum, material) => {
+      const stock = state.inventory.find(row => row.key === materialKey(material));
+      return sum + material.grams_each * (stock?.cost || 0);
+    }, 0);
+    return filament + item.hours_each * 0.53;
+  }
   function costs(state, order) {
     let material = 0;
     let hours = 0;
@@ -156,14 +167,11 @@
       hours += run.hours;
       run.usage.forEach(usage => { material += usage.grams * usage.unitCost; });
     });
-    const estimateMaterial = order.items.reduce((total, item) => total + item.quantity * item.materials.reduce((sum, m) => {
-      const inventory = state.inventory.find(row => row.key === materialKey(m));
-      return sum + m.grams_each * (inventory?.cost || 0);
-    }, 0), 0);
-    const estimatedHours = order.items.reduce((sum, item) => sum + item.quantity * item.hours_each, 0);
     const fees = order.payments.reduce((sum, p) => sum + p.fee, 0);
-    const actual = money(material + hours * 0.53 + order.actualLabor * order.laborRate + order.otherCosts + fees);
-    const estimated = money(estimateMaterial + estimatedHours * 0.53 + order.estimatedLabor * order.laborRate);
+    const preparationHours = order.productionPrepHours || 0;
+    const laborEstimate = order.productionPlan ? preparationHours + (order.productionRemainingHours || 0) : order.estimatedLabor;
+    const actual = money(material + hours * 0.53 + Math.max(order.actualLabor, preparationHours) * order.laborRate + order.otherCosts + fees);
+    const estimated = money(productionItems(order).reduce((sum, item) => sum + item.quantity * estimatedItemCost(state, item), 0) + laborEstimate * order.laborRate + order.otherCosts + fees);
     const snapshot = order.snapshot || totals(order);
     const revenue = money(snapshot.total - snapshot.tax);
     return {material: money(material), hours, actual, estimated, revenue,
@@ -201,9 +209,27 @@
       order.approvedAt = new Date().toISOString();
       order.status = 'approved';
       order.estimateBaseline = costs(state, order).estimated;
+    } else if (action.type === 'production_plan') {
+      if (!order.snapshot || order.released || order.runs.length) throw new Error('Prepare approved work before releasing it to production.');
+      if (!Array.isArray(action.items) || action.items.length !== order.items.length) throw new Error('Prepare every approved item.');
+      order.productionPrepHours = number(action.prepHours ?? order.productionPrepHours ?? 0, 'Design and preparation hours already spent');
+      order.productionRemainingHours = number(action.remainingHours ?? order.productionRemainingHours ?? 0, 'Remaining hands-on hours');
+      order.productionPlan = order.items.map((item, index) => {
+        const proposed = action.items[index];
+        if (!proposed || proposed.id !== item.id) throw new Error('Keep the approved item identities and order.');
+        const hours = number(proposed.hours_each, 'Print hours per piece');
+        if (!hours || !Array.isArray(proposed.materials) || !proposed.materials.length) throw new Error('Enter print time and filament for every item.');
+        const materials = proposed.materials.map(material => {
+          const grams = number(material.grams_each, 'Grams per piece');
+          if (!state.inventory.some(stock => stock.key === materialKey(material))) throw new Error('Choose filament from inventory.');
+          return {...copy(material), grams_each: grams};
+        });
+        if (!materials.some(material => material.grams_each > 0)) throw new Error('Enter positive filament consumption for every item.');
+        return {...copy(item), hours_each: hours, materials};
+      });
     } else if (action.type === 'release') {
       if (!order.snapshot || order.released) throw new Error('Release an approved order once.');
-      if (order.items.some(item => !item.materials.length || !item.hours_each || !item.materials.some(m => m.grams_each > 0))) {
+      if (productionItems(order).some(item => !item.materials.length || !item.hours_each || !item.materials.some(m => m.grams_each > 0))) {
         throw new Error('Complete material and print-time estimates before releasing this sample to production.');
       }
       Object.entries(requirements(order)).forEach(([key, grams]) => {
@@ -215,7 +241,7 @@
       if (!order.released || order.fulfilled) throw new Error('Release the order before starting a run.');
       if (!['P1S', 'P2S'].includes(action.printer)) throw new Error('Choose a printer.');
       if (state.orders.some(o => o.runs.some(run => run.printer === action.printer && run.status === 'printing'))) throw new Error('That sample printer already has an active run.');
-      const item = order.items.find(row => row.id === action.itemId);
+      const item = productionItems(order).find(row => row.id === action.itemId);
       if (!item) throw new Error('Select an item.');
       const quantity = number(action.quantity, 'Run quantity', true);
       const running = order.runs.filter(run => run.itemId === item.id && run.status === 'printing').reduce((sum, run) => sum + run.quantity, 0);
@@ -237,7 +263,7 @@
       const good = number(action.accepted, 'Accepted count', true);
       const rejected = number(action.rejected, 'Rejected count', true);
       if (good + rejected !== run.quantity) throw new Error('Accepted plus rejected must equal the run quantity.');
-      const item = order.items.find(row => row.id === run.itemId);
+      const item = productionItems(order).find(row => row.id === run.itemId);
       const keys = [...new Set(item.materials.map(materialKey))];
       if (!Array.isArray(action.usage) || action.usage.length !== keys.length || new Set(action.usage.map(u => u.key)).size !== keys.length) throw new Error('Record each material once.');
       run.usage = action.usage.map(usage => {
@@ -271,5 +297,5 @@
     return state;
   }
   return {seed, totals, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
-    stages, stage, nextStep, queue, projectIdentity, productionQueue, newRequest, quoteCommand};
+    stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });

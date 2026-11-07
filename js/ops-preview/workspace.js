@@ -122,13 +122,19 @@
     return `<form id="request-form" class="card"><h2>Customer request</h2><div class="form-grid">${intakeFields(order)}</div><div class="actions" style="margin-top:22px"><button type="submit" value="request">Save request details</button>${M.stage(order)==='request'?'<button class="primary" type="submit" value="quote">Save & start quote</button>':`<a class="button primary" href="${orderLink(order,'details')}">Open quote builder</a>`}</div><small id="request-save-state">Saved request</small></form>`;
   }
   function readDraft() {
-    const form = document.getElementById('details-form');
+    const form = document.getElementById('details-form') || document.getElementById('production-plan-form');
     if (!form || !draft) return;
-    const data = new FormData(form);
-    ['customer', 'title', 'preset', 'evidence', 'terms', 'county', 'turnaround', 'validUntil', 'customerNotes'].forEach(name => { draft[name] = String(data.get(name)); });
-    ['designFee', 'taxRate', 'laborRate', 'estimatedLabor'].forEach(name => { draft[name] = Number(data.get(name)); });
-    draft.taxIncluded = data.get('taxIncluded') === 'yes';
-    draft.taxExempt = data.has('taxExempt');
+    if (form.id === 'details-form') {
+      const data = new FormData(form);
+      ['customer', 'title', 'preset', 'evidence', 'terms', 'county', 'turnaround', 'validUntil', 'customerNotes'].forEach(name => { draft[name] = String(data.get(name)); });
+      ['designFee', 'taxRate', 'laborRate', 'estimatedLabor'].forEach(name => { draft[name] = Number(data.get(name)); });
+      draft.taxIncluded = data.get('taxIncluded') === 'yes';
+      draft.taxExempt = data.has('taxExempt');
+    } else {
+      const data = new FormData(form);
+      draft.productionPrepHours = Number(data.get('prepHours'));
+      draft.productionRemainingHours = Number(data.get('remainingHours'));
+    }
     form.querySelectorAll('[data-item]').forEach(node => {
       const item = draft.items[Number(node.dataset.item)];
       node.querySelectorAll('[data-field]').forEach(input => { item[input.dataset.field] = input.type === 'number' ? input.value : input.value; });
@@ -139,9 +145,9 @@
       });
     });
   }
-  function itemEditor(order) {
+  function itemEditor(order, productionOnly = false) {
     return order.items.map((item, i) => `<fieldset class="item" data-item="${i}"><legend>ITEM ${i + 1}</legend><div class="form-grid">
-      <label class="full">Description<input data-field="description" value="${escape(item.description)}" required></label><label>Quantity<input data-field="quantity" type="number" min="1" step="1" value="${item.quantity}" required></label><label>${order.taxIncluded ? 'All-in unit price' : 'Unit price before tax'}<input data-field="unit_price" type="number" min="0" step=".01" value="${item.unit_price}" required></label><label>Print hours per piece<input data-field="hours_each" type="number" min="0" step=".01" value="${item.hours_each}" required></label><button type="button" data-action="remove-item" data-index="${i}" ${order.items.length === 1 ? 'disabled' : ''}>Remove item</button></div>
+      ${productionOnly ? `<div class="full"><strong>${escape(item.description)}</strong> · ${item.quantity} pieces</div>` : `<label class="full">Description<input data-field="description" value="${escape(item.description)}" required></label><label>Quantity<input data-field="quantity" type="number" min="1" step="1" value="${item.quantity}" required></label><label>${order.taxIncluded ? 'All-in unit price' : 'Unit price before tax'}<input data-field="unit_price" type="number" min="0" step=".01" value="${item.unit_price}" required></label><button type="button" data-action="remove-item" data-index="${i}" ${order.items.length === 1 ? 'disabled' : ''}>Remove item</button>`}<label>Print hours per piece<input data-field="hours_each" type="number" min="0" step=".01" value="${item.hours_each}" required></label><p class="muted full" data-item-cost="${i}">Filament + printer cost per piece: ${format(M.estimatedItemCost(state, item))}. Hands-on labor is included separately in project costs.</p></div>
       ${item.materials.map((material, j) => `<div class="material-row" data-material="${j}"><label>Material / color<select>${state.inventory.map(stock => `<option ${stock.key === M.materialKey(material) ? 'selected' : ''}>${escape(stock.key)}</option>`).join('')}</select></label><label>Grams per piece<input type="number" min="0" step=".01" value="${material.grams_each}" required></label><button type="button" data-action="remove-material" data-index="${i}" data-material-index="${j}">Remove</button></div>`).join('')}
       <button style="margin-top:14px" type="button" data-action="add-material" data-index="${i}">+ Material or support filament</button></fieldset>`).join('');
   }
@@ -165,11 +171,15 @@
   function approvalForm(order) {
     return `<form data-form="approve">${select('Approval evidence', 'method', ['Email / text', 'Verbal agreement recorded', 'Purchase order', 'Customer quote link', 'Payment for agreed items'], 'Email / text')}<button class="primary" style="width:100%;margin-top:15px" type="submit">Record approval & create order</button></form>`;
   }
+  function costPreview(order) {
+    if (!M.costsReady(order)) return '<p class="muted">Cost estimate incomplete. Add filament, grams and print time to preview profit. You can finish the quote now and prepare production after acceptance.</p>';
+    const cost = M.costs(state, order);
+    return `${row('Projected production cost',format(cost.estimated))}${row('Projected profit before unrecorded costs',format(cost.estimatedProfit))}${row('Projected margin', cost.revenue > 0 ? `${(cost.estimatedProfit / cost.revenue * 100).toFixed(1)}%` : 'Enter a selling price')}<p class="muted">Based on the entered labor, filament and print time. Scrap, failures and other costs change actual profit.</p>`;
+  }
   function priceCard(order) {
     if (M.stage(order)==='request') return `<section class="card"><h2>No quote needed yet</h2><p class="muted">Save the request with the information available. Prepare pricing when you are ready.</p></section>`;
     const t = order.snapshot || order.quoteOffer?.totals || M.totals(order);
-    const cost = M.costs(state,order);
-    return `<section class="card money-list"><div class="eyebrow">${order.snapshot?'Accepted price':'Quote pricing'}</div><h2>One combined total</h2>${row('Before tax',format(t.beforeTax))}${row('Sample tax',format(t.tax))}${t.roundingAdjustment?row('Price rounding',format(t.roundingAdjustment)):''}<div class="row"><strong>Total</strong><span class="total">${format(t.total)}</span></div><p class="muted">${order.taxIncluded?'Tax is included in entered prices.':'Sample tax is added to item prices.'}</p>${!order.snapshot?`${row('Estimated production cost',format(cost.estimated))}${row('Estimated profit before unrecorded costs',format(cost.estimatedProfit))}<p class="muted">Estimates use the entered grams/hours and sample cost settings. Missing design or slicing information makes the cost estimate incomplete. This pilot records a final fixed price; capped additions remain a later step.</p><a class="button primary" href="${orderLink(order,'quote')}">Preview customer quote</a>`:'<span class="badge">Approval recorded</span>'}</section>`;
+    return `<section class="card money-list"><div class="eyebrow">${order.snapshot?'Accepted price':'Quote pricing'}</div><h2>One combined total</h2>${row('Before tax',format(t.beforeTax))}${row('Sample tax',format(t.tax))}${t.roundingAdjustment?row('Price rounding',format(t.roundingAdjustment)):''}<div class="row"><strong>Total</strong><span class="total">${format(t.total)}</span></div><p class="muted">${order.taxIncluded?'Tax is included in entered prices.':'Sample tax is added to item prices.'}</p>${!order.snapshot?`${costPreview(order)}<a class="button primary" href="${orderLink(order,'quote')}">Preview customer quote</a>`:'<span class="badge">Approval recorded</span>'}</section>`;
   }
   function quoteDocument(order) {
     const offer = order.quoteOffer;
@@ -183,16 +193,19 @@
     const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}Please reply to confirm the scope and price. Thank you, OliPoly 3D LLC`;
     return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p><div class="actions"><button data-action="print-quote">Print / Save quote PDF</button><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
   }
+  function productionPreparation(order) {
+    return `<form class="card" id="production-plan-form" style="margin-top:22px"><h3>Production preparation</h3><p class="muted">Enter body and support filament separately, with grams and print hours per piece. Match the customer's agreed material requirements.</p>${itemEditor({...order, items: draft.items}, true)}<div class="form-grid">${field('Design / prep hours already spent','prepHours',draft.productionPrepHours || 0,'number','min="0" step=".01" required')}${field('Remaining hands-on hours (estimate)','remainingHours',draft.productionRemainingHours || 0,'number','min="0" step=".01" required')}</div><p class="muted">Labor cost rate: ${format(order.laborRate)} per hour.</p><div id="production-profit-preview">${costPreview({...order, productionPlan: draft.items, productionPrepHours: draft.productionPrepHours || 0, productionRemainingHours: draft.productionRemainingHours || 0})}</div><button class="primary" type="submit" style="margin-top:18px">Save production preparation</button><small id="production-plan-state">${order.productionPlan ? 'Saved production preparation' : 'Production preparation needs review'}</small></form>`;
+  }
   function productionPanel(order) {
     const pending = order.items.filter(item => M.remaining(order, item) > 0);
     return `${sharedProductionQueue()}<section class="card"><div class="eyebrow">${projectLabel(order)}</div><div class="section-head"><h2>${escape(order.title)}</h2><span class="badge">${order.snapshot && !order.released ? 'Approved · awaiting release' : escape(status(order))}</span></div><p>${escape(order.customer)} · Selected project production</p>
       ${order.items.map(item => row(item.description, `${M.accepted(order, item.id)} / ${item.quantity} accepted`)).join('')}
       ${!order.released ? `<p class="muted" style="margin-top:20px">Release the approved scope to reserve its sample material.</p><button class="primary" data-action="release" ${!order.snapshot ? 'disabled' : ''}>Release to production</button>` : ''}
       ${order.released && pending.length ? `<form data-form="start" class="form-grid" style="margin-top:22px">${select('Item to print', 'itemId', pending.map(item => [item.id, `${item.description} · ${M.remaining(order, item)} remaining`]), pending[0].id)}${select('Printer', 'printer', ['P1S', 'P2S'], 'P1S')}${field('Pieces in this run', 'quantity', 1, 'number', 'min="1" step="1" required')}<button class="primary" type="submit">Start sample run</button></form>` : ''}
-      </section>${order.runs.slice().reverse().map(run => runCard(order, run)).join('')}`;
+      </section>${order.snapshot && !order.released ? productionPreparation(order) : ''}${order.runs.slice().reverse().map(run => runCard(order, run)).join('')}`;
   }
   function runCard(order, run) {
-    const item = order.items.find(row => row.id === run.itemId);
+    const item = M.productionItems(order).find(row => row.id === run.itemId);
     if (run.status === 'inspected') return `<section class="card"><div class="section-head"><h3>${escape(item.description)} · ${escape(run.printer)}</h3><span class="badge neutral">Inspected</span></div><p>${run.accepted} accepted · ${run.rejected} rejected · ${run.hours} printer hours</p><p class="muted">${run.usage.map(u => `${escape(u.key)} ${u.grams} g`).join(' · ')}</p>${run.notes ? `<p class="muted">${escape(run.notes)}</p>` : ''}</section>`;
     const grouped = {};
     item.materials.forEach(m => { const key = M.materialKey(m); grouped[key] = (grouped[key] || 0) + m.grams_each * run.quantity; });
@@ -212,7 +225,7 @@
     return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format((order.snapshot || M.totals(order)).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
       ${order.snapshot && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
-      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', order.actualLabor, 'number', 'min="0" step=".01" required')}${field('Other actual costs (packaging, shipping, etc.)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit', format(cost.revenue - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
+      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (packaging, shipping, etc.)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit', format(cost.revenue - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
   function receiptPanel(order) {
     const t = order.snapshot || M.totals(order);
@@ -222,6 +235,7 @@
   function renderOrder() {
     const order = selectedOrder();
     draft = M.copy(order);
+    if (order.snapshot) draft.items = M.copy(M.productionItems(order));
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Pickup'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
       <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This milestone tests the mixed-item, fixed-price pickup journey. PO, fundraiser, capped-design and shipping workflows are scheduled for later milestones.</p></section></aside></div>
       <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${pickupPanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
@@ -262,10 +276,22 @@
       return;
     }
     if (event.target.closest('#new-request-form, #request-form')) { dirty = true; const label=document.getElementById('request-save-state'); if(label) label.textContent='Unsaved request changes'; }
+    if (event.target.closest('#production-plan-form')) {
+      dirty = true;
+      document.getElementById('production-plan-state').textContent = 'Unsaved production preparation';
+      readDraft();
+      document.querySelectorAll('[data-item-cost]').forEach(node => {
+        node.textContent = `Filament + printer cost per piece: ${format(M.estimatedItemCost(state, draft.items[Number(node.dataset.itemCost)]))}.`;
+      });
+      document.getElementById('production-profit-preview').innerHTML = costPreview({...selectedOrder(), productionPlan: draft.items, productionPrepHours: draft.productionPrepHours, productionRemainingHours: draft.productionRemainingHours});
+    }
     if (event.target.closest('#details-form')) {
       dirty = true;
       document.getElementById('draft-state').textContent = 'Unsaved changes';
       readDraft();
+      document.querySelectorAll('[data-item-cost]').forEach(node => {
+        node.textContent = `Filament + printer cost per piece: ${format(M.estimatedItemCost(state, draft.items[Number(node.dataset.itemCost)]))}. Hands-on labor is included separately in project costs.`;
+      });
       try { document.getElementById('price-card').innerHTML = priceCard(draft); }
       catch { document.getElementById('price-card').textContent = 'Complete the item fields to preview totals.'; }
     }
@@ -295,6 +321,12 @@
         intakeDraft=null; selected=order.id; dirty=false;
         location.href=orderLink(state.orders.find(o=>o.id===order.id),event.submitter?.value==='quote'?'details':'request');
         return;
+      }
+      if (form.id === 'production-plan-form') {
+        readDraft();
+        const action = {type: 'production_plan', items: draft.items, prepHours: draft.productionPrepHours, remainingHours: draft.productionRemainingHours};
+        await persist(M.command(state, selected, action), action);
+        dirty = false; render(); message('Production preparation saved. Review and release when ready.'); return;
       }
       if (form.id === 'details-form') {
         await saveDetails(); render(); message(cloud ? 'Saved to OliPoly ERP Test.' : 'Sample details saved on this device.'); return;
@@ -368,12 +400,13 @@
       else if (action === 'add-material') draft.items[index].materials.push({material: 'PLA', color: 'Black', grams_each: 0});
       else if (action === 'remove-material') draft.items[index].materials.splice(Number(button.dataset.materialIndex), 1);
       else return;
-      const editor = document.getElementById('details-form');
+      const editor = document.getElementById('details-form') || document.getElementById('production-plan-form');
       const currentDraft = draft;
-      editor.outerHTML = detailPanel(currentDraft);
+      const preparation = editor.id === 'production-plan-form';
+      editor.outerHTML = preparation ? productionPreparation(selectedOrder()) : detailPanel(currentDraft);
       dirty = true;
-      document.getElementById('draft-state').textContent = 'Unsaved changes';
-      document.getElementById('price-card').innerHTML = priceCard(currentDraft);
+      document.getElementById(preparation ? 'production-plan-state' : 'draft-state').textContent = 'Unsaved changes';
+      if (!preparation) document.getElementById('price-card').innerHTML = priceCard(currentDraft);
     } catch (error) { message(error.message, true); }
   });
   window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
