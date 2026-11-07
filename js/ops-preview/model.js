@@ -272,7 +272,15 @@
         const grams = number(usage.grams, 'Consumed grams');
         if (!stock || grams > stock.grams) throw new Error('Consumption exceeds sample stock.');
         stock.grams = money(stock.grams - grams);
-        return {key: usage.key, grams, unitCost: stock.cost};
+        const result = {key: usage.key, grams, unitCost: stock.cost};
+        if (usage.rolls?.length) {
+          result.rolls = usage.rolls.map(roll => ({raw_material_roll_id: String(roll.raw_material_roll_id), grams_used: number(roll.grams_used, 'Roll grams')}));
+          const rollTotal = result.rolls.reduce((sum, roll) => sum + roll.grams_used, 0);
+          if (Math.abs(rollTotal - grams) > 0.000001 || result.rolls.some(roll => roll.grams_used <= 0) || new Set(result.rolls.map(roll => roll.raw_material_roll_id)).size !== result.rolls.length) {
+            throw new Error('Actual roll grams must add up to the material consumption without duplicate rolls.');
+          }
+        }
+        return result;
       });
       Object.assign(run, {status: 'inspected', accepted: good, rejected,
         hours: number(action.hours, 'Actual print hours'), notes: String(action.notes || '')});
