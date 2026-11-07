@@ -150,3 +150,26 @@ test('stock warning preferences require the owner session and save one material 
   assert.ok(updated_at);
   assert.deepEqual(saved, {user_id:'fixture-user',setting_key:'ops_preview_low_stock:PLA / White',setting_value:false});
 });
+
+test('an interrupted inventory adjustment retries its exact command without crossing into order writes', async () => {
+  const requests=[];let fail=true;
+  const {client}=fixture(async(url,request)=>{
+    requests.push({url,...request});
+    if(url.includes('/auth/'))return ok(login);
+    if(fail)throw new Error('Disconnected after submission');
+    return ok({workspace:{revision:7},inventory:{rolls:[]}});
+  });
+  await assert.rejects(client.inventoryLoad(),/Sign in/);
+  await client.auth('fixture@example.test','fictional-password');
+  const action={type:'adjust_supply',id:'supply-1',data:{mode:'consume',quantity:2},reason:'Packed order'};
+  await assert.rejects(client.inventorySave(action,6),/Connection interrupted/);
+  assert.equal(client.pending().kind,'inventory');
+  await assert.rejects(client.save({id:'order-1'},{type:'save'},6),/pending command/);
+  fail=false;const result=await client.retry();
+  assert.equal(result.workspace.revision,7);
+  assert.equal(requests[1].url,requests[2].url);
+  assert.ok(requests[2].url.endsWith('/rpc/ops_preview_inventory_commit'));
+  assert.equal(requests[1].body,requests[2].body);
+  assert.deepEqual(JSON.parse(requests[2].body).p_action,action);
+  assert.equal(client.pending(),null);
+});

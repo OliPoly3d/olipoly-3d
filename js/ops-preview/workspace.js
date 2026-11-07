@@ -21,6 +21,9 @@
   let queueSearch = '';
   let inventorySearch = '';
   let warningSettings;
+  let inventoryData;
+  let inventoryControls;
+  let inventoryError;
   try { state = JSON.parse(localStorage.getItem(key)) || M.seed(); }
   catch { state = M.seed(); }
   if (state.version !== 1 || !Array.isArray(state.orders) || !Array.isArray(state.inventory)) state = M.seed();
@@ -38,6 +41,7 @@
       try {
         state = await cloud.save(next.orders.find(order => order.id === orderId), action, state.revision);
         dirty = false;
+        if (['release', 'inspect'].includes(action.type)) await refreshInventory();
       } finally { busy = false; app.inert = false; renderConnection(); }
       return;
     }
@@ -107,7 +111,7 @@
   }
   function renderToday() {
     if (inventoryView) {
-      app.innerHTML = `<header class="page-head"><div><h1>All inventory</h1><p class="muted">Find available filament for your next project.</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header>${inventoryPanel()}`;
+      app.innerHTML = `<header class="page-head"><div><h1>All inventory</h1><p class="muted">Manage filament, reusable spools and non-filament supplies.</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header>${inventoryControls ? inventoryControls.render() : inventoryError ? `<section class="card"><h2>Inventory controls unavailable</h2><p>${escape(inventoryError)}</p><button data-action="test-reload">Reload</button></section>` : inventoryPanel()}`;
       return;
     }
     if (intakeDraft) {
@@ -120,14 +124,44 @@
       <section class="card"><div class="section-head"><div><h2>All work</h2><p class="muted" style="margin-bottom:0">Each request stays in this queue as it becomes a quote, order and completed job.</p></div><span class="badge neutral">${state.orders.filter(order=>M.stage(order)!=='complete').length} open</span></div>
       <nav class="queue-filters" aria-label="Filter work by stage">${[['open','All open'],...M.stages,['all','Everything']].map(([id,label])=>`<button data-filter="${id}" class="${queueFilter===id?'active':''}" aria-pressed="${queueFilter===id}">${escape(label)} <span>${id==='open'?state.orders.length-counts.complete:id==='all'?state.orders.length:counts[id]}</span></button>`).join('')}</nav>
       <input class="search" id="search" aria-label="Find work" placeholder="Find a customer, project or reference…" value="${escape(queueSearch)}"><div id="order-list">${orderRows()}</div></section>
-      <div style="margin-top:22px">${sharedProductionQueue()}</div>${inventoryPanel(true)}<div class="two-col" style="margin-top:22px"><section class="card"><h2>From request to production</h2><ol class="journey"><li><strong>New request</strong><span>Customer, idea, files and requested date.</span></li><li><strong>Prepare quote</strong><span>Mixed items, estimates, design fee, price and terms.</span></li><li><strong>Await approval</strong><span>Preview or print the quote, then record when it was shared.</span></li><li><strong>Approved → production</strong><span>Record authorization, release materials and assign runs.</span></li></ol></section><section class="card"><h2>Balances</h2>${row('Accepted-order balances', format(state.orders.filter(o=>o.snapshot).reduce((sum,o)=>sum+M.balance(o),0)))}<button style="margin-top:18px" data-action="reset">${cloud?'Reload test records':'Reset local sample'}</button></section></div>`;
+      <div style="margin-top:22px">${sharedProductionQueue()}</div>${inventoryPanel(true)}${supplyWarningPanel()}<div class="two-col" style="margin-top:22px"><section class="card"><h2>From request to production</h2><ol class="journey"><li><strong>New request</strong><span>Customer, idea, files and requested date.</span></li><li><strong>Prepare quote</strong><span>Mixed items, estimates, design fee, price and terms.</span></li><li><strong>Await approval</strong><span>Preview or print the quote, then record when it was shared.</span></li><li><strong>Approved → production</strong><span>Record authorization, release materials and assign runs.</span></li></ol></section><section class="card"><h2>Balances</h2>${row('Accepted-order balances', format(state.orders.filter(o=>o.snapshot).reduce((sum,o)=>sum+M.balance(o),0)))}<button style="margin-top:18px" data-action="reset">${cloud?'Reload test records':'Reset local sample'}</button></section></div>`;
+  }
+  function supplyWarningPanel() {
+    if (!inventoryData || !window.OliPolyOpsInventory) return '';
+    const supplies = window.OliPolyOpsInventory.supplyWarnings(inventoryData);
+    if (!supplies.length) return '';
+    return `<section class="card" style="margin-top:22px"><h2>Supply stock warnings</h2>${supplies.map(s => row(s.item_name, `${grams.format(s.quantity_on_hand)} ${s.unit_type} remaining`)).join('')}<p><a href="ops-preview.html?view=inventory${cloud ? '&database=test' : ''}">Open All inventory</a></p></section>`;
+  }
+  async function refreshInventory() {
+    if (!cloud.inventoryLoad) return;
+    try {
+      inventoryData = await cloud.inventoryLoad();
+      inventoryError = null;
+      if (inventoryControls) inventoryControls.update(inventoryData, state.inventory);
+      else if (window.OliPolyOpsInventory) inventoryControls = window.OliPolyOpsInventory.create({
+        snapshot: inventoryData, stocks: state.inventory, warnings: () => warningSettings,
+        save: async action => {
+          busy = true; app.inert = true;
+          try {
+            const result = await cloud.inventorySave(action, state.revision);
+            state = result.workspace; inventoryData = result.inventory;
+            inventoryControls.update(inventoryData, state.inventory);
+            try { warningSettings = await cloud.inventoryWarnings(); } catch { warningSettings = undefined; }
+          } finally { busy = false; app.inert = false; renderConnection(); }
+        },
+      });
+    } catch (error) {
+      inventoryData = undefined; inventoryControls = undefined;
+      inventoryError = error.message;
+    }
   }
   function stockNeedsAttention(stock, available) {
     if (warningSettings?.excluded.includes(stock.key)) return false;
-    const level = warningSettings?.levels.find(row => row.id === stock.databaseId);
+    const levels = warningSettings?.levels.filter(row => row.id === stock.databaseId || `${row.material_type} / ${row.color_name}` === stock.key) || [];
+    const level = levels.find(row => (!row.reorder_policy || row.reorder_policy === 'auto') && (!row.snooze_until || row.snooze_until < new Date().toISOString().slice(0, 10))) || levels[0];
     if (level?.reorder_policy && level.reorder_policy !== 'auto') return false;
     if (level?.snooze_until >= new Date().toISOString().slice(0, 10)) return false;
-    const threshold = Number(level?.reorder_threshold_grams || 0);
+    const threshold = Math.max(0, ...levels.filter(row => (!row.reorder_policy || row.reorder_policy === 'auto') && (!row.snooze_until || row.snooze_until < new Date().toISOString().slice(0, 10))).map(row => Number(row.reorder_threshold_grams || 0)));
     return available <= 0 || (threshold > 0 && available <= threshold);
   }
   function inventoryRows(alertsOnly = false) {
@@ -263,6 +297,11 @@
       ${order.released && pending.length ? `<form data-form="start" class="form-grid" style="margin-top:22px">${select('Item to print', 'itemId', pending.map(item => [item.id, `${item.description} · ${M.remaining(order, item)} remaining`]), pending[0].id)}${select('Printer', 'printer', ['P1S', 'P2S'], 'P1S')}${field('Pieces in this run', 'quantity', 1, 'number', 'min="1" step="1" required')}<button class="primary" type="submit">Start sample run</button></form>` : ''}
       </section>${order.snapshot && !order.released ? productionPreparation(order) : ''}${order.runs.slice().reverse().map(run => runCard(order, run)).join('')}`;
   }
+  function actualRollInputs(key) {
+    const rolls = (inventoryData?.rolls || []).filter(roll => roll.is_mounted && roll.remaining_grams > 0 && `${roll.material_type} / ${roll.color_name}` === key);
+    if (!rolls.length) return '';
+    return `<details class="full"><summary>Choose actual rolls for ${escape(key)} (optional)</summary><p class="muted">Leave blank to use the job's reserved mounted rolls, then older mounted stock. To record specific rolls, enter grams for every roll used. Their sum must match this material's consumed grams.</p>${rolls.map(roll => `<label>${escape(roll.roll_label || roll.spool_label || roll.id)} · ${escape(roll.brand || '')} · ${grams.format(roll.remaining_grams)} g remaining<input type="number" min="0" step=".01" placeholder="Leave blank for automatic allocation" data-roll-key="${escape(key)}" data-actual-roll="${escape(roll.id)}"></label>`).join('')}</details>`;
+  }
   function runCard(order, run) {
     const item = M.productionItems(order).find(row => row.id === run.itemId);
     if (run.status === 'inspected') return `<section class="card"><div class="section-head"><h3>${escape(item.description)} · ${escape(run.printer)}</h3><span class="badge neutral">Inspected</span></div><p>${run.accepted} accepted · ${run.rejected} rejected · ${run.hours} printer hours</p><p class="muted">${run.usage.map(u => `${escape(u.key)} ${u.grams} g`).join(' · ')}</p>${run.notes ? `<p class="muted">${escape(run.notes)}</p>` : ''}</section>`;
@@ -270,6 +309,7 @@
     item.materials.forEach(m => { const key = M.materialKey(m); grouped[key] = (grouped[key] || 0) + m.grams_each * run.quantity; });
     return `<form class="card" data-form="inspect" data-run="${run.id}"><div class="section-head"><h3>${escape(item.description)} · ${escape(run.printer)}</h3><span class="badge rose">Printing ${run.quantity}</span></div><div class="form-grid">${field('Accepted pieces', 'accepted', run.quantity, 'number', 'min="0" step="1" required')}${field('Rejected pieces', 'rejected', 0, 'number', 'min="0" step="1" required')}${field('Actual printer hours', 'hours', run.plannedHours, 'number', 'min="0" step=".01" required')}
       ${Object.entries(grouped).map(([key, grams], i) => `<label>${escape(key)} consumed (g)<input name="usage-${i}" data-usage-key="${escape(key)}" type="number" min="0" step=".01" value="${grams}" required></label>`).join('')}
+      ${Object.keys(grouped).map(actualRollInputs).join('')}
       <p class="muted full">Enter total consumption for this attempt, including failed pieces and purge. Reject count records the loss without deducting the same filament twice.</p><label class="full">Optional notes<textarea name="notes" placeholder="Fit, appearance or reason for a rejected piece"></textarea></label></div><button class="primary" type="submit" style="margin-top:18px">Finish & inspect run</button></form>`;
   }
   function pickupPanel(order) {
@@ -328,7 +368,28 @@
     next.revision += 1;
     await persist(next);
   }
+  function updateWeighForm(target) {
+    const form = target.closest?.('[data-inv-form="adjust_roll"]');
+    if (!form?.elements.gross_grams) return;
+    const weighing = form.elements.mode.value === 'weigh';
+    form.elements.quantity.readOnly = weighing;
+    form.elements.gross_grams.disabled = !weighing;
+    form.elements.tare_grams.disabled = !weighing;
+    const net = Number(form.elements.gross_grams.value) - Number(form.elements.tare_grams.value);
+    if (weighing) form.elements.quantity.value = net;
+    form.querySelector('[data-inv-weight-preview]').hidden = !weighing;
+    form.querySelector('[data-inv-net]').textContent = `Calculated net filament = ${grams.format(net)} g`;
+  }
   document.addEventListener('input', event => {
+    updateWeighForm(event.target);
+    if (event.target.id === 'inv-search' && inventoryControls) {
+      const input = event.target;
+      const position = input.selectionStart;
+      inventoryControls.search(input.value); render();
+      const replacement = document.getElementById('inv-search'); replacement.focus();
+      replacement.setSelectionRange(position, position);
+      return;
+    }
     if (event.target.id === 'inventory-search') {
       inventorySearch = event.target.value;
       const {count, markup} = inventoryRows();
@@ -363,6 +424,7 @@
     }
   });
   document.addEventListener('change', async event => {
+    updateWeighForm(event.target);
     const box = event.target;
     const key = box.dataset.inventoryWarning;
     if (!key || !cloud || !warningSettings || !state.inventory.some(stock => stock.key === key)) return;
@@ -385,6 +447,9 @@
     const form = event.target;
     try {
       if (busy) return;
+      if (form.dataset.invForm && inventoryControls) {
+        await inventoryControls.submit(form); render(); message('Inventory change saved with its audit history.'); return;
+      }
       if (form.dataset.form === 'test-auth') {
         const values = Object.fromEntries(new FormData(form));
         busy = true; form.inert = true;
@@ -421,7 +486,12 @@
       const action = {...values, type: form.dataset.form};
       if (action.type === 'inspect') {
         action.runId = form.dataset.run;
-        action.usage = [...form.querySelectorAll('[data-usage-key]')].map(input => ({key: input.dataset.usageKey, grams: input.value}));
+        action.usage = [...form.querySelectorAll('[data-usage-key]')].map(input => {
+          const rolls = [...form.querySelectorAll('[data-actual-roll]')]
+            .filter(roll => roll.dataset.rollKey === input.dataset.usageKey && Number(roll.value) > 0)
+            .map(roll => ({raw_material_roll_id: roll.dataset.actualRoll, grams_used: Number(roll.value)}));
+          return {key: input.dataset.usageKey, grams: input.value, ...(rolls.length ? {rolls} : {})};
+        });
       }
       if (['send_quote','revise_quote'].includes(action.type)) {
         await persist(M.quoteCommand(state,selected,action),{type:'save'});
@@ -441,9 +511,10 @@
     if (!button) return;
     try {
       if (busy) return;
+      if (inventoryControls?.click(button)) { render(); document.querySelector('.inventory-editor')?.scrollIntoView({block:'start', behavior:'smooth'}); return; }
       if (button.dataset.action === 'test-signout') { cloud.signOut(); state = M.seed(); renderAuth(); renderConnection(); return; }
       if (button.dataset.action === 'test-reload') { await loadCloud(); return; }
-      if (button.dataset.action === 'test-retry') { state = await cloud.retry(); render(); renderConnection(); message('Pending command resolved.'); return; }
+      if (button.dataset.action === 'test-retry') { const result = await cloud.retry(); state = result.workspace || result; if (page === 'today') await refreshInventory(); render(); renderConnection(); message('Pending command resolved.'); return; }
       if (button.dataset.filter) { queueFilter=button.dataset.filter; const url=new URL(location.href); url.searchParams.set('filter',queueFilter); history.replaceState(null,'',url); renderToday(); return; }
       if (button.dataset.tab) {
         if (dirty) throw new Error('Save your changes before changing sections.');
@@ -519,6 +590,7 @@
       try { warningSettings = await cloud.inventoryWarnings(); }
       catch { warningSettings = undefined; }
     }
+    if (page === 'today' || page === 'order') await refreshInventory();
     if (!selected) selected = state.orders[0]?.id;
     dirty = false; render(); renderConnection();
     if (cloud.pending()) message('An earlier save needs to be resolved. Use Resolve pending save before editing.', true);

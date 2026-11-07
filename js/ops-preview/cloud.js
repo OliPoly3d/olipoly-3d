@@ -61,7 +61,7 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token());
     }
@@ -77,7 +77,7 @@
         return response.json();
       };
       const [levels, settings] = await Promise.all([
-        readRows('raw_material_inventory', 'id,reorder_threshold_grams,reorder_policy,snooze_until'),
+        readRows('raw_material_inventory', 'id,material_type,color_name,reorder_threshold_grams,reorder_policy,snooze_until'),
         readRows('inventory_settings', 'setting_key,setting_value', {setting_key: `like.${warningPrefix}*`}),
       ]);
       const excluded = settings
@@ -125,7 +125,8 @@
       const value = pending();
       if (!value) throw new Error('No pending command for this test account.');
       try {
-        const state = await rpc('ops_preview_commit', value.params);
+        const name = value.kind === 'inventory' ? 'ops_preview_inventory_commit' : 'ops_preview_commit';
+        const state = await rpc(name, value.params);
         storage.removeItem(pendingKey());
         return state;
       } catch (error) {
@@ -142,12 +143,20 @@
       storage.setItem(pendingKey(), JSON.stringify(value));
       return retry();
     }
+    async function inventorySave(action, revision) {
+      if (pending()) throw new Error('Retry the pending command before making another change.');
+      if (!session?.user?.id) throw new Error('Sign in to the test project.');
+      storage.setItem(pendingKey(), JSON.stringify({userId: session.user.id, kind: 'inventory',
+        params: {p_action: action, p_expected_revision: revision, p_command_id: root.crypto.randomUUID()}}));
+      return retry();
+    }
     return {auth, save, retry, pending, signedIn: () => !!session?.access_token,
       initialize: () => rpc('ops_preview_initialize'), load: () => rpc('ops_preview_load'),
       historyLookup: reference => rpc('ops_preview_history_lookup', {p_reference: reference}),
       historyWithDocuments: reference => rpc('ops_preview_history_with_documents', {p_reference: reference}),
       historyPdf,
-      inventoryWarnings, saveInventoryWarning,
+      inventoryWarnings, saveInventoryWarning, inventorySave,
+      inventoryLoad: () => rpc('ops_preview_inventory_load'),
       tracking: reference => rpc('public_order_tracking_lookup', {tracking_identifier: reference}, true),
       // Pending receipts survive signing out, so a retry can resolve an uncertain commit.
       signOut: () => storeSession(null)};
