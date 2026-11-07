@@ -20,8 +20,8 @@
   try { state = JSON.parse(localStorage.getItem(key)) || M.seed(); }
   catch { state = M.seed(); }
   if (state.version !== 1 || !Array.isArray(state.orders) || !Array.isArray(state.inventory)) state = M.seed();
-  let selected = new URLSearchParams(location.search).get('order') || state.orders[0]?.id;
-  if (!state.orders.some(order => order.id === selected)) selected = state.orders[0]?.id;
+  let selected = new URLSearchParams(location.search).get('order');
+  if (!cloud && !selected) selected = state.orders[0]?.id;
   function message(text, error = false) {
     const node = document.getElementById('message');
     node.className = error ? 'alert error-live' : 'status-line error-live';
@@ -82,7 +82,7 @@
       ${select('Information available', 'evidence', ['Idea / reference','Drawing','Completed model','Sliced file','Previous actual results'], order.evidence)}
       ${field('Customer requested date (not a promise)', 'neededBy', intake.neededBy || '', 'date')}
       ${select('Material preference', 'materialPreference', ['Not decided','PLA','PETG','PETG-CF','Other'], intake.materialPreference || 'Not decided')}
-      ${fresh ? field('Initial quantity (can revise)', 'quantity', 1, 'number', 'min="1" step="1" required') : ''}
+      ${fresh ? field('Quantity of first item (can revise)', 'quantity', 1, 'number', 'min="1" step="1" required') : ''}
       ${field('File, drawing or conversation reference', 'fileReference', intake.fileReference || '', 'text', 'maxlength="500"')}
       ${textArea('What does the customer need?', 'summary', intake.summary, 'maxlength="5000"')}`;
   }
@@ -96,7 +96,7 @@
   }
   function renderToday() {
     if (intakeDraft) {
-      app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Start here</div><h1>Capture a new request.</h1><p class="muted">Record what you know. Pricing, materials and print estimates can follow.</p></div></header><form id="new-request-form" class="card"><div class="form-grid">${intakeFields(intakeDraft,true)}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit" value="request">Save new request</button><button type="submit" value="quote">Save & start quote</button><button type="button" data-action="cancel-intake">Cancel</button></div><p class="muted" style="margin-top:18px">A request is not an accepted order and does not reserve materials.</p></form>`;
+      app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Start here</div><h1>Capture a new request.</h1><p class="muted">Record what you know. Add more items and set their quantities in Quote builder.</p></div></header><form id="new-request-form" class="card"><div class="form-grid">${intakeFields(intakeDraft,true)}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit" value="request">Save new request</button><button type="submit" value="quote">Save & start quote</button><button type="button" data-action="cancel-intake">Cancel</button></div><p class="muted" style="margin-top:18px">A request is not an accepted order and does not reserve materials.</p></form>`;
       return;
     }
     const counts = Object.fromEntries(M.stages.map(([id]) => [id,state.orders.filter(order => M.stage(order) === id).length]));
@@ -238,6 +238,7 @@
   }
   function render() {
     if (page === 'today') renderToday();
+    else if (!selectedOrder()) app.innerHTML = `<section class="card"><h1>Project unavailable</h1><p>Open All work to find a project in this workspace.</p><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></section>`;
     else if (page === 'track') renderTracking();
     else renderOrder();
     document.querySelectorAll('a[href*="ops-customer-preview.html"]').forEach(link => {
@@ -392,7 +393,7 @@
   }
   async function loadCloud() {
     state = await cloud.initialize();
-    if (!state.orders.some(order => order.id === selected)) selected = state.orders[0]?.id;
+    if (!selected) selected = state.orders[0]?.id;
     dirty = false; render(); renderConnection();
     if (cloud.pending()) message('An earlier save needs to be resolved. Use Resolve pending save before editing.', true);
     else message('Loaded the shared test workspace.');
