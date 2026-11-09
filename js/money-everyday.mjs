@@ -31,7 +31,7 @@ export function budgetMoveAvailability(model, month, entity) {
         t.kind === 'expense' && t.date.startsWith(month) && transactionOwner(model, t) === entity,
     );
   return b.buckets
-    .filter((b) => !b.seasonal && !b.oneTimeMonth)
+    .filter((b) => !b.oneTimeMonth)
     .map((b) => {
       const names = new Set([b.name, ...(b.aliases || [])].map(normalized)),
         committed = expected.reduce(
@@ -69,13 +69,11 @@ export function moveCategoryBudget(model, { from, to, amount, month, through = m
     !source ||
     !destination ||
     source.entity !== destination.entity ||
-    source.seasonal ||
     source.oneTimeMonth ||
-    destination.seasonal ||
     destination.oneTimeMonth
   )
     throw Error(
-      'Move between everyday categories in the same owner view. YOY and one-time earmarks keep their own editors.',
+      'Move between category budgets in the same owner view. One-time earmarks keep their own editor.',
     );
   if (
     model.monthClosures?.some(
@@ -86,12 +84,21 @@ export function moveCategoryBudget(model, { from, to, amount, month, through = m
   const next = structuredClone(model),
     first = next.budgets.find((b) => b.id === from),
     second = next.budgets.find((b) => b.id === to);
+  function apply(budget,key,allowance,change){
+    if(budget.seasonal){
+      budget.yoyMoves={...budget.yoyMoves,[key]:(budget.yoyMoves?.[key]||0)+change};
+      if(!budget.yoyMoves[key])delete budget.yoyMoves[key];
+      if(!Object.keys(budget.yoyMoves).length)delete budget.yoyMoves;
+    }else budget.overrides={...budget.overrides,[key]:allowance+change};
+  }
   for (let key = month; key <= through; key = shiftMonth(key, 1)) {
     const rows = budgetMoveAvailability(model, key, source.entity),
       a = rows.find((b) => b.id === from),
       b = rows.find((b) => b.id === to);
     if (a.allowance === null || b.allowance === null)
       throw Error('Set both category targets for ' + key + ' before moving money.');
+    if (!a.account || !b.account)
+      throw Error('Choose a funding account for both categories in ' + key + '.');
     if (a.account !== b.account)
       throw Error(
         'These categories use different funding accounts in ' +
@@ -102,8 +109,8 @@ export function moveCategoryBudget(model, { from, to, amount, month, through = m
       throw Error(
         key + ': this move exceeds the source category’s unspent, uncommitted allowance.',
       );
-    first.overrides = { ...first.overrides, [key]: a.allowance - amount };
-    second.overrides = { ...second.overrides, [key]: b.allowance + amount };
+    apply(first,key,a.allowance,-amount);
+    apply(second,key,b.allowance,amount);
   }
   next.budgetMoves = [
     ...(next.budgetMoves || []),

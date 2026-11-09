@@ -1,6 +1,6 @@
 import {renderVisualExtras,clearVisualExtras,categorySymbol} from './money-visual-extras.mjs';
 import { addDays, balances, cents, forecastEnd } from './money-engine.mjs';
-import { budgetMonth, categoryBudgetSummary, monthBounds } from './money-budget.mjs';
+import { budgetMonth, categoryBudgetSummary, monthBounds, seasonalMonth } from './money-budget.mjs';
 import {
   budgetMoveAvailability,
   moveCategoryBudget,
@@ -521,7 +521,7 @@ export function setupDaily({
     f.elements.through.disabled = !range;
     f.elements.through.required = range;
   }
-  function moveChoices({ reset = false } = {}) {
+  function moveChoices({ reset = false, sourceId } = {}) {
     const m = getDraft();
     if (!m) return;
     const f = $('budgetMoveForm'),
@@ -537,21 +537,22 @@ export function setupDaily({
       f.elements.through.value = month;
     const choices = budgetMoveAvailability(m, month, entity());
     let to = reset ? choices.find((b) => b.remaining < 0)?.id : f.elements.to.value,
-      from = reset
+      from = sourceId || (reset
         ? choices.filter((b) => b.id !== to).sort((a, b) => (b.movable || 0) - (a.movable || 0))[0]
             ?.id
-        : f.elements.from.value;
+        : f.elements.from.value);
+    const label=b=>b.seasonal?'YOY extras total':b.shortName||b.name;
     options(
       f.elements.from,
       choices.map((b) => [
         b.id,
-        b.name + ' · ' + (b.movable === null ? 'target missing' : money(b.movable) + ' can move'),
+        label(b) + ' · ' + (b.movable === null ? 'target missing' : money(b.movable) + ' can move'),
       ]),
       from,
     );
     options(
       f.elements.to,
-      choices.map((b) => [b.id, b.name]),
+      choices.map((b) => [b.id, label(b)]),
       to,
     );
     if (f.elements.to.value === f.elements.from.value && choices.length > 1)
@@ -561,7 +562,7 @@ export function setupDaily({
     if (reset && destination?.remaining < 0 && source?.movable > 0)
       f.elements.amount.value = (Math.min(-destination.remaining, source.movable) / 100).toFixed(2);
     $('budgetMoveInfo').textContent = source
-      ? source.name +
+      ? label(source) +
         ' · Unspent ' +
         money(source.remaining || 0) +
         ' · Known upcoming category expenses ' +
@@ -569,26 +570,45 @@ export function setupDaily({
         ' · Available to reassign ' +
         (source.movable === null ? 'Incomplete' : money(source.movable)) +
         '. Both categories must use the same funding account.'
-      : 'Add two everyday category targets to use a guided budget move.';
+      : 'Add two category targets to move budget between them.';
     const usable = choices.length >= 2;
     f.elements.from.disabled = !usable;
     f.elements.to.disabled = !usable;
     f.querySelector('button[type=submit],button:not([type])').disabled = !usable;
-    if (!usable) $('budgetMoveInfo').textContent = 'Add at least two everyday category budgets for this account owner before moving an allowance. YOY and one-time earmarks use their own editors.';
+    if (!usable) $('budgetMoveInfo').textContent = 'Add at least two category budgets for this account owner before moving an allowance.';
+    const yoy = source?.seasonal && source.allowance!==null ? seasonalMonth(m,month,entity()) : null;
+    const note=$('budgetMoveYoyNote');
+    function showYoyNote(){
+      note.hidden=!yoy;
+      note.textContent='';
+      if(!yoy)return;
+      const amount=Math.max(0,Math.round(Number(f.elements.amount.value)*100))||0;
+      const left=source.allowance-amount;
+      const gap=yoy.items.length?Math.max(0,yoy.total-left):0;
+      note.textContent=month+' · '+(yoy.items.length?'The YOY item list stays at '+money(yoy.total)+'. ':'')+
+        (amount>source.movable?'Enter an amount within the available YOY budget. ':
+          amount?'This move leaves '+money(left)+' budgeted for YOY. '+
+            (gap?'If all listed items go ahead, '+money(gap)+' would still need to be covered. ':''):
+            'Choose an amount to see the YOY budget left after the move. ')+
+        'Item amounts and carry-forward settings stay the same.';
+    }
+    f.elements.amount.oninput=showYoyNote;
+    showYoyNote();
     moveControls();
   }
-  function openMove() {
+  function openMove({ from, month } = {}) {
     const f = $('budgetMoveForm');
     f.reset();
-    f.elements.month.value =
-      $('app').dataset.moneyView === 'today' ? asOf().slice(0, 7) : $('budgetMonth').value;
-    moveChoices({ reset: true });
+    f.elements.month.value = month ||
+      ($('app').dataset.moneyView === 'today' ? asOf().slice(0, 7) : $('budgetMonth').value);
+    moveChoices({ reset: true, sourceId:from });
     $('budgetMoveResult').replaceChildren();
     revealSection($('budgetMoveEntry'));
     $('budgetMoveEntry').scrollIntoView({ behavior: 'smooth' });
     f.elements.amount.focus();
   }
   $('openBudgetMove').onclick = () => run(openMove);
+  document.addEventListener('money-open-budget-move', e => run(() => openMove(e.detail)));
   $('budgetMoveEntry').addEventListener('toggle', () => {
     if ($('budgetMoveEntry').open) run(() => moveChoices());
   });
@@ -598,6 +618,9 @@ export function setupDaily({
   $('cancelBudgetMove').onclick = () => {
     $('budgetMoveEntry').open = false;
     $('budgetMoveForm').reset();
+    $('budgetMoveForm').elements.amount.oninput=null;
+    $('budgetMoveYoyNote').hidden=true;
+    $('budgetMoveYoyNote').textContent='';
     $('budgetMoveResult').replaceChildren();
     message('Budget move cancelled. Existing preview changes remain.');
   };
@@ -636,6 +659,7 @@ export function setupDaily({
           'Different timing patterns can change daily cash lows. The status bar shows whether these changes are saved or still in preview.',
         ),
       );
+      e.target.elements.amount.value='';
       moveChoices();
       message('Budget moved in preview. The combined target is unchanged. Save changes keeps it.');
     });
@@ -1060,6 +1084,7 @@ export function setupDaily({
       'weeklyReviewMessage',
       'budgetMoveResult',
       'budgetMoveInfo',
+      'budgetMoveYoyNote',
     ])
       $(id).replaceChildren();
     clearChart($('dailyCategoryChart'));
@@ -1070,6 +1095,8 @@ export function setupDaily({
     $('dailyFavoritesForm').reset();
     $('dailyFavoritesForm').elements.bucket.replaceChildren();
     $('budgetMoveForm').reset();
+    $('budgetMoveForm').elements.amount.oninput=null;
+    $('budgetMoveYoyNote').hidden=true;
     for (const select of $('budgetMoveForm').querySelectorAll('select[name=from],select[name=to]'))
       select.replaceChildren();
   }

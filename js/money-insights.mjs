@@ -5,7 +5,7 @@ import {savingsSummary} from './money-savings.mjs';
 
 export function planningSnapshot(model,asOf,overrides={}){
  const next=scenarioSnapshot(model,asOf,overrides),month=asOf.slice(0,7);next.snapshotUnresolved=(model.snapshotUnresolved||[]).concat(occurrences(model,asOf).filter(t=>t.date<asOf).flatMap(t=>t.entries.filter(e=>e.amount<0).map(e=>({account:e.account,date:t.date,name:t.description}))));
- for(const entity of ['household','business','custodial'])for(const b of budgetMonth(model,month,entity,asOf).buckets)if(b.allowance!==null){const target=next.budgets.find(x=>x.id===b.id);target.overrides={...target.overrides,[month]:Math.max(0,b.remaining)};}
+ for(const entity of ['household','business','custodial'])for(const b of budgetMonth(model,month,entity,asOf).buckets)if(b.allowance!==null){const target=next.budgets.find(x=>x.id===b.id);target.overrides={...target.overrides,[month]:Math.max(0,b.remaining)};if(target.yoyMoves)delete target.yoyMoves[month];}
  return next;
 }
 

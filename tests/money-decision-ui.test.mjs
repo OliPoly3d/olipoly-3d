@@ -1143,3 +1143,34 @@ test('Activity edits a purchase to another account and confirms deletion without
   assert.equal(row('Mistaken grocery entry'),undefined);
  }finally{p.close();}
 });
+
+test('the monthly YOY row opens a move with a shortfall warning and preserves the item list after saving',{skip},async()=>{
+ const m=fixture();
+ m.budgets.push({id:'yoy',name:'Seasonal',entity:'household',account:'cash',seasonal:true});
+ m.seasonalItems=[{id:'gift',name:'Gifts',month:10,amount:30000,entity:'household',changes:[{year:2027,amount:40000}]}];
+ const p=await page(m);
+ try{
+  const {$,change,submit}=p,row=()=>$('categoryRows').querySelector('[data-budget-id="yoy"]');
+  assert.equal($('seasonalSection').closest('#spendingSection')?.id,'spendingSection');
+  const total=$('categoryBudgetTotal').cells[1].textContent;
+  const move=[...row().querySelectorAll('button')].find(b=>b.textContent==='Move YOY budget');
+  move.click();
+  const f=$('budgetMoveForm');
+  assert.equal($('budgetMoveEntry').open,true);
+  assert.equal(f.elements.from.value,'yoy');
+  change(f.elements.to,'food');
+  f.elements.amount.value='75.00';f.elements.amount.dispatchEvent(new p.dom.window.Event('input'));
+  assert.match($('budgetMoveYoyNote').textContent,/list stays at \$300.00.*leaves \$225.00.*\$75.00 would still need/);
+  await submit('budgetMoveForm');
+  assert.equal(p.revision,0);
+  assert.equal(row().querySelector('[data-value="allowance"]').textContent,'$225.00');
+  assert.match($('seasonalBudgetNote').textContent,/\$75.00 would still need/);
+  assert.equal($('categoryBudgetTotal').cells[1].textContent,total);
+  assert.equal($('seasonalRows').querySelector('input').value,'300.00');
+  $('savePlan').click();await tick();
+  assert.equal(p.revision,1);
+  assert.deepEqual(p.model.transactions,[]);
+  assert.deepEqual(p.model.seasonalItems,m.seasonalItems);
+  assert.deepEqual(p.model.budgets.find(b=>b.seasonal).yoyMoves,{'2026-10':-7500});
+ }finally{p.close();}
+});

@@ -70,13 +70,13 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  $('savePlan').onclick=()=>{if(!dirty)return;action(async()=>{validateBudgets(getDraft());await savePlan(structuredClone(getDraft()));});};
  $('resetPlan').onclick=()=>{resetDraft();render();message('Preview reset to the saved plan.');};
  $('repeatSeasonal').onclick=()=>run(()=>{
-  const model=getDraft(),month=$('budgetMonth').value,year=Number(month.slice(0,4));
+  const model=structuredClone(getDraft()),month=$('budgetMonth').value,year=Number(month.slice(0,4));
   for(const item of seasonalMonth(model,month,$('budgetEntity').value).items){
    const target=model.seasonalItems.find(i=>i.id===item.id);
    target.changes=[...(target.changes||[]).filter(c=>c.year<year),{year,amount:item.expected}];
    for(const key of Object.keys(target.overrides||{}))if(key>=month)delete target.overrides[key];
   }
-  mark();render();message('Preview repeats these amounts for this calendar month in future years. Save changes to keep it.');
+  draft=validateBudgets(model);mark();render();message('Preview repeats these item amounts in future years. Budget moves stay in their selected months. Save changes to keep it.');
  });
  function clear(){for(const id of ['incomeSection','billsSection','spendingSection','seasonalSection'])sectionPreview(id,'');closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
  function render(){
@@ -144,7 +144,11 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   const footer=$('categoryBudgetTotal');if(footer){footer.cells[1].textContent=b.missing?'Incomplete':money(b.totals.budget);footer.cells[2].textContent=money(b.totals.spent);footer.cells[3].textContent=b.missing?'Incomplete':money(b.totals.remaining);footer.cells[3].classList.toggle('low',!b.missing&&b.totals.remaining<0);}
   for(const item of b.buckets){const row=[...document.querySelectorAll('[data-budget-id]')].find(r=>r.dataset.budgetId===item.id);if(row){
    const allowance=row.querySelector('[data-value="allowance"]');if(allowance)allowance.textContent=item.allowance===null?'Set target':money(item.allowance);
-   const source=row.querySelector('[data-value="source"]');if(source)source.textContent=item.partial?'Full month '+money(item.full||0)+' · opening-month allowance shown':'Total of the YOY list below';
+   const source=row.querySelector('[data-value="source"]');if(source){
+    const moved=item.yoyMoves?.[month]||0;
+    source.textContent=(item.partial?'Full month '+money(item.full||0)+' · opening-month allowance shown':'From the YOY list below')+
+      (moved?' · '+money(Math.abs(moved))+(moved<0?' moved out':' moved in'):'');
+   }
    row.querySelector('[data-value="spent"]').textContent=money(item.spent);const remainder=row.querySelector('[data-value="remaining"]');remainder.textContent=item.remaining===null?'Set target':money(item.remaining);remainder.classList.toggle('low',item.remaining!==null&&item.remaining<0);
   }}
   onPreview(model);
@@ -212,6 +216,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const account=accountSelect(model,b.funding?.[month]||b.account,'Fund '+b.name+' from',true,entity);cell(row,account,'Fund from');
    if(input)input.onchange=()=>run(()=>{const n=cents(input.value);if(n<0)throw Error('Budget cannot be negative.');const item=model.budgets.find(i=>i.id===b.id);item.overrides={...item.overrides,[month]:n};mark();});
    const timing=el('button','Edit timing: '+budgetTimingLabel(model,b,month));timing.type='button';timing.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-edit-budget-timing',{detail:{budget:b.id}}));label.append(timing);
+   if(b.seasonal){const move=el('button','Move YOY budget');move.type='button';move.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-open-budget-move',{detail:{from:b.id,month}}));label.append(move);}
    account.onchange=()=>{const item=model.budgets.find(i=>i.id===b.id);item.funding={...item.funding,[month]:account.value};mark();};$('categoryRows').append(row);
   }
   $('categoryTotals').replaceChildren();const tr=el('tr');tr.id='categoryBudgetTotal';cell(tr,'All category budgets');cell(tr,result.missing?'Incomplete':money(result.totals.budget));cell(tr,money(result.totals.spent));const left=cell(tr,result.missing?'Incomplete':money(result.totals.remaining));left.classList.toggle('low',!result.missing&&result.totals.remaining<0);cell(tr,'Includes YOY once');$('categoryTotals').append(tr);
@@ -222,12 +227,20 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   $('seasonalHead').replaceChildren();const header=el('tr');for(const label of ['Expense',String(year),String(year+1),String(year+2)])header.append(el('th',label));$('seasonalHead').append(header);
   $('seasonalRows').replaceChildren();for(const item of result.items){const row=el('tr');const label=el('div');label.append(el('strong',item.name));if(item.review){label.append(el('small',item.review));const review=el('button','Review note');review.type='button';review.onclick=()=>{const note=el('input');note.value=item.review;note.setAttribute('aria-label','Review note for '+item.name);const done=el('button','Save note / clear if resolved');done.type='button';done.onclick=()=>run(()=>{const source=model.seasonalItems.find(i=>i.id===item.id);if(note.value.trim())source.review=note.value.trim();else delete source.review;mark();renderSeasonal(model,month,entity);});label.append(note,done);review.remove();};label.append(review);}cell(row,label,'Expense');const input=amountInput(item.expected,'Expected '+item.name);cell(row,input,String(year));
    for(let offset=1;offset<=2;offset++){const future=seasonalMonth(model,(year+offset)+month.slice(4),entity).items.find(i=>i.id===item.id);cell(row,money(future.expected),String(year+offset));}
-   input.onchange=()=>run(()=>{const value=cents(input.value);const source=model.seasonalItems.find(i=>i.id===item.id);source.overrides={...source.overrides,[month]:value};const budget=model.budgets.find(b=>b.seasonal&&b.entity===entity);if(budget?.overrides)delete budget.overrides[month];mark();renderSeasonal(model,month,entity);});$('seasonalRows').append(row);
+   input.onchange=()=>run(()=>{
+    const value=cents(input.value),next=structuredClone(getDraft());
+    input.value=(item.expected/100).toFixed(2);
+    const source=next.seasonalItems.find(i=>i.id===item.id);source.overrides={...source.overrides,[month]:value};
+    const budget=next.budgets.find(b=>b.seasonal&&b.entity===entity);if(budget?.overrides)delete budget.overrides[month];
+    draft=validateBudgets(next);mark();renderSeasonal(next,month,entity);
+   });$('seasonalRows').append(row);
   }
-  $('seasonalTotals').replaceChildren();const total=el('tr');cell(total,'Expected total');for(let offset=0;offset<=2;offset++)cell(total,money(seasonalMonth(model,(year+offset)+month.slice(4),entity).total));$('seasonalTotals').append(total);
+  $('seasonalTotals').replaceChildren();const total=el('tr');cell(total,'Itemized plan total');for(let offset=0;offset<=2;offset++)cell(total,money(seasonalMonth(model,(year+offset)+month.slice(4),entity).total));$('seasonalTotals').append(total);
   const budget=budgetMonth(model,month,entity,today()).buckets.find(b=>b.seasonal);
-  sectionPreview('seasonalSection','Expected '+money(budget?.allowance??result.total)+' · Remaining '+(budget?.remaining===null?'Set target':money(budget?.remaining??result.total)));
-  $('seasonalBudgetNote').textContent=budget?'This month’s seasonal allowance '+money(budget.allowance||0)+' · Actual '+money(budget.spent)+' · Remaining '+(budget.remaining===null?'Set target':money(budget.remaining))+(budget.partial?' (opening-month proration applied).':'.'): 'No seasonal budget is configured for this view.';
+  sectionPreview('seasonalSection','Itemized '+money(result.total)+' · Budget '+(budget?.allowance==null?'Set target':money(budget.allowance)));
+  const gap=budget?.allowance!=null&&budget.yoyMoves?.[month]<0?Math.max(0,result.total-budget.allowance):0;
+  $('seasonalBudgetNote').textContent=budget?'This list feeds the YOY row above. The row shows the adjusted budget, including any moves. '+
+   (gap?'If all listed items go ahead, '+money(gap)+' would still need to be covered.':''):'No seasonal budget is configured for this view.';
  }
  function renderTransactions(model,month,entity){
   $('transactions').replaceChildren();const entries=[...model.transactions].filter(t=>!t.scheduleKey&&incomingOwner(model,t)!==entity&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date));const count=entries.length;
