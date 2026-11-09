@@ -235,8 +235,9 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const account=accountSelect(model,b.funding?.[month]||b.account,'Fund '+b.name+' from',true,entity);cell(row,account,'Fund from');
    if(input)input.onchange=()=>run(()=>{const n=cents(input.value);if(n<0)throw Error('Budget cannot be negative.');const item=model.budgets.find(i=>i.id===b.id);item.overrides={...item.overrides,[month]:n};mark();});
    const actions=el('div',undefined,'row-actions');
+   const timing=el('button','Edit timing: '+budgetTimingLabel(model,b,month));timing.type='button';timing.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-edit-budget-timing',{detail:{budget:b.id}}));actions.append(timing);
    if(!b.seasonal){const rename=el('button','Edit name','rename-budget');rename.type='button';rename.setAttribute('aria-label','Edit name for '+(b.shortName||b.name));rename.onclick=()=>openRename(b);actions.append(rename);}
-   const timing=el('button','Edit timing: '+budgetTimingLabel(model,b,month));timing.type='button';timing.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-edit-budget-timing',{detail:{budget:b.id}}));actions.append(timing);label.append(actions);
+   label.append(actions);
    account.onchange=()=>{const item=model.budgets.find(i=>i.id===b.id);item.funding={...item.funding,[month]:account.value};mark();};$('categoryRows').append(row);
   }
   $('categoryTotals').replaceChildren();const tr=el('tr');tr.id='categoryBudgetTotal';cell(tr,'All category budgets');cell(tr,result.missing?'Incomplete':money(result.totals.budget));cell(tr,money(result.totals.spent));const left=cell(tr,result.missing?'Incomplete':money(result.totals.remaining));left.classList.toggle('low',!result.missing&&result.totals.remaining<0);cell(tr,'Includes YOY once');$('categoryTotals').append(tr);
