@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { balances, validate } from '../js/money-engine.mjs';
-import { budgetMonth } from '../js/money-budget.mjs';
+import { budgetMonth, seasonalMonth, validateBudgets } from '../js/money-budget.mjs';
+import { planningSnapshot } from '../js/money-insights.mjs';
 import { verifyBalance, validateConfidence } from '../js/money-confidence.mjs';
 import { monthFingerprint } from '../js/money-month-close.mjs';
 import {
@@ -124,7 +125,9 @@ test('budget moves protect future booked purchases and known unmatched category 
 });
 test('budget move range rejects owner, earmark, funding, missing-target and closed-month conflicts atomically', () => {
   const m = fixture();
-  assert.throws(() => move(m, { to: 'yoy' }), /earmarks/);
+  const earmark=structuredClone(m);
+  earmark.budgets[2].seasonal=false;earmark.budgets[2].oneTimeMonth='2026-10';
+  assert.throws(() => move(earmark, { to: 'yoy' }), /earmarks/);
   const cross = structuredClone(m);
   cross.budgets[1].entity = 'business';
   assert.throws(() => move(cross), /same owner/);
@@ -377,4 +380,32 @@ test('weekly review retains cash uncertainty outside watched accounts and catche
   });
   assert.ok(b.cash.reasons.includes('Confirm additional tax / working-cash reserve'));
   assert.ok(b.followups >= 2);
+});
+
+test('moving YOY budget preserves item amounts and future years, and forecasts reserve the adjusted amount once',()=>{
+ const m=fixture();
+ m.seasonalItems=[{id:'gifts',name:'Gifts',amount:50000,month:10,entity:'household',changes:[{year:2027,amount:60000}]}];
+ m.transactions.push(expense('gift',5000,'Extras'));
+ m.schedules.push({id:'booked',name:'Booked expense',account:'cash',amount:-12000,frequency:'yearly',anchor:'2026-10-30',day:30,category:'Extras'});
+ const current=plan=>budgetMonth(plan,'2026-10','household','2026-10-29');
+ const source=budgetMoveAvailability(m,'2026-10','household').find(b=>b.id==='yoy');
+ assert.equal(source.movable,33000);
+ assert.throws(()=>move(m,{from:'yoy',amount:33001}),/unspent, uncommitted/);
+ const n=move(m,{from:'yoy'});
+ assert.deepEqual(n.seasonalItems,m.seasonalItems);
+ assert.deepEqual(n.transactions,m.transactions);
+ assert.equal(current(n).totals.budget,current(m).totals.budget);
+ assert.equal(current(n).buckets.find(b=>b.seasonal).allowance,40000);
+ assert.equal(current(n).buckets.find(b=>b.id==='food').allowance,current(m).buckets.find(b=>b.id==='food').allowance+10000);
+ assert.equal(budgetMonth(n,'2027-10','household','2027-10-01').buckets.find(b=>b.seasonal).allowance,60000);
+ const snapshot=planningSnapshot(n,'2026-10-29');
+ assert.equal(current(snapshot).buckets.find(b=>b.seasonal).allowance,35000);
+ const edited=structuredClone(n);edited.seasonalItems[0].overrides={'2026-10':45000};
+ assert.equal(seasonalMonth(edited,'2026-10','household').total,45000);
+ assert.equal(current(edited).buckets.find(b=>b.seasonal).allowance,35000);
+ edited.seasonalItems[0].overrides['2026-10']=9999;
+ assert.throws(()=>validateBudgets(edited),/cannot cover/);
+ const reversed=move(n,{from:'food',to:'yoy'});
+ assert.equal(reversed.budgets.find(b=>b.seasonal).yoyMoves,undefined);
+ assert.deepEqual(current(reversed).totals,current(m).totals);
 });

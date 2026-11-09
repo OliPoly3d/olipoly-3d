@@ -63,6 +63,17 @@ export function validateBudgets(model) {
     for (const change of item.changes || []) if (!Number.isInteger(change.year) || change.year < 1900 || !Number.isSafeInteger(change.amount)) throw Error('Invalid yearly seasonal change.');
     for (const [month, amount] of Object.entries(item.overrides || {})) {monthBounds(month);if (!Number.isSafeInteger(amount)) throw Error('Invalid seasonal amount.');}
   }
+  for(const b of budgets)if(b.yoyMoves!==undefined){
+    if(!b.seasonal||!b.yoyMoves||typeof b.yoyMoves!=='object'||Array.isArray(b.yoyMoves))throw Error('Invalid YOY budget moves.');
+    for(const [month,moved] of Object.entries(b.yoyMoves)){
+      const bounds=monthBounds(month);
+      if(!Number.isSafeInteger(moved))throw Error('YOY budget moves must use exact cents.');
+      if(bounds.last<model.start)continue;
+      const {baseAllowance}=budgetTarget(model,b,month,bounds);
+      if(baseAllowance===null||!Number.isSafeInteger(baseAllowance+moved)||baseAllowance+moved<0)
+        throw Error(month+': the YOY target cannot cover the budget already moved out. Move money back or keep enough in the YOY items.');
+    }
+  }
   const accounts = new Map(model.accounts.map(a=>[a.id,a]));
   for (const b of budgets) if (b.account && accounts.get(b.account)?.type !== 'cash') throw Error('Choose a cash account to fund this budget.');
   for (const b of budgets) for (const [month,account] of Object.entries(b.funding||{})) {monthBounds(month);if(accounts.get(account)?.type!=='cash'||accounts.get(account)?.entity!==b.entity)throw Error('Invalid monthly budget funding account.');}
@@ -80,6 +91,15 @@ export function seasonalMonth(model, month, entity) {
   });
   return {items,total:items.reduce((n,i)=>n+i.expected,0)};
 }
+function budgetTarget(model,b,month,bounds){
+  const seasonal=b.seasonal&&model.seasonalItems?.length?seasonalMonth(model,month,b.entity).total:null;
+  const full=seasonal===null?b.monthly?.[month]??null:Math.max(0,seasonal);
+  const partial=model.start.slice(0,7)===month&&model.start>bounds.first&&b.prorate!==false;
+  let baseAllowance=b.overrides?.[month]??full;
+  if(baseAllowance!==null&&partial&&b.overrides?.[month]===undefined)
+    baseAllowance=Math.round(baseAllowance*(bounds.days-Number(model.start.slice(-2))+1)/bounds.days);
+  return {full,partial,baseAllowance:bounds.last<model.start?null:baseAllowance};
+}
 
 // One owner/category/month calculation for every card, cash account and chart.
 // Pending purchases consume a bucket; transfers, card payments and openings do not.
@@ -95,14 +115,8 @@ export function budgetMonth(model, month, entity, asOf) {
     const matches = transactions.flatMap(t=>spendingParts(t).filter(p=>names.has(normalized(p.category))).map(p=>({transaction:t,amount:p.amount})));
     const spent = matches.reduce((n,p)=>n+p.amount,0);
     const pending = matches.filter(p=>p.transaction.status==='pending').reduce((n,p)=>n+p.amount,0);
-    const seasonal = b.seasonal && model.seasonalItems?.length ? seasonalMonth(model,month,entity).total : null;
-    const full = seasonal === null ? b.monthly?.[month] ?? null : Math.max(0,seasonal);
-    let allowance = b.overrides?.[month] ?? full;
-    const partial = model.start.slice(0, 7) === month && model.start > bounds.first && b.prorate !== false;
-    if (allowance !== null && partial && b.overrides?.[month] === undefined) {
-      allowance = Math.round(allowance * (bounds.days - Number(model.start.slice(-2)) + 1) / bounds.days);
-    }
-    if (bounds.last < model.start) allowance = null;
+    const {full,partial,baseAllowance}=budgetTarget(model,b,month,bounds);
+    const allowance=baseAllowance===null?null:baseAllowance+(b.yoyMoves?.[month]||0);
     return {...b, full, allowance, spent, pending, partial, remaining: allowance === null ? null : allowance - spent};
   });
   const allNames=new Set(buckets.flatMap(b=>[b.name,...(b.aliases||[])].map(normalized)));
