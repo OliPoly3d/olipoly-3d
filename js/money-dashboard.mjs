@@ -6,6 +6,7 @@ import {changeExpectation,removeActual} from './money-actions.mjs';
 import {sectionPreview,revealSection} from './money-sections.mjs';
 import {incomingOwner} from './money-income.mjs';
 import {savingsCategory} from './money-savings.mjs';
+import {transactionRowActions} from './money-entry-ui.mjs';
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
 const monthName=m=>new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(m+'-01T00:00:00Z'));
@@ -49,6 +50,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   if(!actual&&target.oneTime){$('removeDescription').textContent='Remove this one-time expectation from the forecast. No other month is affected; you can restore it later.';$('removeDelete').textContent='Remove expected entry';}
   const d=$('removeDialog');if(d.showModal)d.showModal();else d.setAttribute('open','');
  }
+ function removeRecorded(actual){removePrompt({description:actual.description,actual});}
  function applyRemoval(mode){action(async()=>{
   if(!removing)return;const t=removing;
   $('removeError').textContent='';$('removeError').hidden=true;
@@ -232,8 +234,13 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function renderTransactions(model,month,entity){
   $('transactions').replaceChildren();const entries=[...model.transactions].filter(t=>!t.scheduleKey&&incomingOwner(model,t)!==entity&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date));const count=entries.length;
   for(const t of entries.slice(0,300)){
-   const row=el('tr');row.toggleAttribute('data-debt-private',!['expense','refund'].includes(t.kind)&&t.entries.some(e=>model.accounts.find(a=>a.id===e.account)?.type!=='cash'));cell(row,t.date);cell(row,t.description);const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
-   const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const controls=el('div',undefined,'row-actions');const edit=el('button','Edit');edit.onclick=()=>record(t);const remove=el('button','Remove');remove.onclick=()=>removePrompt({description:t.description,actual:t});controls.append(edit,remove);cell(row,controls);$('transactions').append(row);
+   const row=el('tr');row.toggleAttribute('data-debt-private',!['expense','refund'].includes(t.kind)&&t.entries.some(e=>model.accounts.find(a=>a.id===e.account)?.type!=='cash'));
+   cell(row,t.date,'Date');
+   cell(row,t.description,'Description').append(transactionRowActions(t,record,removeRecorded));
+   const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));
+   cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id),'Category');
+   cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '),'Account / amount');
+   const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status,'Status');$('transactions').append(row);
   }
   $('transactionNote').textContent=count+' other transactions this month.'+(count>300?' First 300 shown; use Activity to search all entries.':'')+' Recorded income and bill matches appear in their sections above.';
  }
@@ -243,5 +250,5 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    const label=el('label');label.className='check-label';const input=el('input');input.type='checkbox';input.checked=p.enabled!==false;label.append(input,document.createTextNode('Plan full '+model.accounts.find(a=>a.id===p.card).name+' payoff by month end'));input.onchange=()=>{p.enabled=input.checked;mark();};$('planningSettings').append(label);
   }
  }
- return {acceptSaved:resetDraft,removeExpected:removePrompt,remove:t=>removePrompt({description:t.description,actual:t}),render,clear,rebaseSnapshots:(previous,next)=>{if(saved===previous){saved=next;draft.forecastSnapshots=structuredClone(next.forecastSnapshots);}},draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
+ return {acceptSaved:resetDraft,removeExpected:removePrompt,remove:removeRecorded,render,clear,rebaseSnapshots:(previous,next)=>{if(saved===previous){saved=next;draft.forecastSnapshots=structuredClone(next.forecastSnapshots);}},draft:getDraft,hasChanges:()=>dirty,update:fn=>{const next=fn(structuredClone(getDraft()));validateBudgets(next);draft=next;dirty=true;render();}};
 }
