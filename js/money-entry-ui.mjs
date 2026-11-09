@@ -26,6 +26,16 @@ function button(text, fn) {
   b.onclick = fn;
   return b;
 }
+export function transactionRowActions(t, record, remove) {
+  const actions = el('div'),
+    edit = button('Edit', () => record(t)),
+    del = button('Delete', () => remove(t));
+  actions.className = 'row-actions ledger-actions';
+  edit.setAttribute('aria-label', 'Edit transaction: ' + t.description);
+  del.setAttribute('aria-label', 'Delete transaction: ' + t.description);
+  actions.append(edit, del);
+  return actions;
+}
 export function setupEntry({
   getDraft,
   getOwner,
@@ -486,13 +496,7 @@ export function setupEntry({
         td.dataset.label = ['Date', 'Description', 'Type', 'Categories', 'Accounts', 'Status'][i];
         tr.append(td);
       }
-      const actions = el('div'),
-        edit = button('Edit', () => record(t)),
-        del = button('Delete', () => remove(t));
-      actions.className = 'row-actions ledger-actions';
-      edit.setAttribute('aria-label', 'Edit transaction: ' + t.description);
-      del.setAttribute('aria-label', 'Delete transaction: ' + t.description);
-      actions.append(edit, del);
+      const actions = transactionRowActions(t, record, remove);
       if(t.kind==='expense')actions.append(button('Repeat purchase',()=>repeatPurchase(t)));
       if (t.kind === 'expense' && refundableParts(m, t.id).length)
         actions.append(
