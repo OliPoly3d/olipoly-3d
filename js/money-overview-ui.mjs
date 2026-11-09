@@ -193,7 +193,7 @@ export function setupOverview({ getDraft, today, record, selectCredit, message }
         const tr = el('tr');
         tr.dataset.paceBudget = b.id;
         for (const value of [
-          b.name,
+          b.shortName || b.name,
           b.allowance === null ? 'Set target' : money(b.allowance),
           money(b.spent),
           b.remaining === null ? 'Incomplete' : money(b.remaining),

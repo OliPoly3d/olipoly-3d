@@ -1143,3 +1143,39 @@ test('Activity edits a purchase to another account and confirms deletion without
   assert.equal(row('Mistaken grocery entry'),undefined);
  }finally{p.close();}
 });
+
+test('a one-time category rename keeps purchases attached and uses the new name in the ledger and entry picker',{skip},async()=>{
+ const m=fixture();
+ m.budgets.push({id:'party',name:'Party supplies',entity:'household',account:'cash',oneTimeMonth:'2026-10',prorate:false,monthly:{'2026-10':10000},timing:{'2026-10':{mode:'date',date:'2026-10-31'}}});
+ m.transactions.push({id:'party-food',date:'2026-10-27',description:'Snacks',kind:'expense',category:'Party supplies',status:'cleared',entries:[{account:'cash',amount:-3702}]});
+ const p=await page(m);
+ try{
+  const {$,submit,change}=p,row=()=>$('categoryRows').querySelector('[data-budget-id="party"]');
+  const button=()=>row().querySelector('.rename-budget'),field=$('renameBudgetForm').elements.name;
+  button().click();
+  assert.equal(field.value,'Party supplies');
+  field.value='Gas';await submit('renameBudgetForm');
+  assert.match($('renameBudgetError').textContent,/already uses/);
+  assert.equal(p.revision,0);
+  $('cancelRenameBudget').click();
+  assert.match(row().textContent,/Party supplies/);
+  button().click();field.value='House party';await submit('renameBudgetForm');
+  assert.equal($('renameBudgetDialog').open,false);
+  assert.equal(p.revision,0);
+  assert.match(row().textContent,/House party/);
+  assert.equal(row().querySelector('[data-value="spent"]').textContent,'$37.02');
+  assert.equal(row().querySelector('[data-value="remaining"]').textContent,'$62.98');
+  assert.match($('ledgerRows').textContent,/House party/);
+  assert.match($('transactions').textContent,/House party/);
+  assert.equal([...$('transactionCategory').options].find(o=>o.value==='Party supplies').textContent,'House party');
+  $('ledgerQuery').value='House party';
+  $('ledgerQuery').dispatchEvent(new p.dom.window.Event('input'));
+  assert.match($('ledgerRows').textContent,/Snacks/);
+  change($('ledgerCategory'),'House party');
+  assert.match($('ledgerRows').textContent,/Snacks/);
+  $('savePlan').click();await tick();
+  assert.equal(p.revision,1);
+  assert.deepEqual(p.model.transactions,m.transactions);
+  assert.deepEqual(p.model.budgets.find(b=>b.id==='party'),{...m.budgets.at(-1),shortName:'House party'});
+ }finally{p.close();}
+});

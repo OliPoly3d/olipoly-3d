@@ -13,6 +13,7 @@ import {
   weeklyDates,
   seasonalMonth,
   budgetTiming,
+  transactionCategoryLabel,
 } from './money-budget.mjs';
 import { planningForecast } from './money-planning.mjs';
 import { planningSnapshot } from './money-insights.mjs';
@@ -279,15 +280,15 @@ export function searchLedger(
         (!status || t.status === status) &&
         (!account || t.entries.some((e) => e.account === account)) &&
         (!category ||
-          spendingParts(t).some((p) => p.category === category) ||
-          t.category === category) &&
+          spendingParts(t).some((p) => p.category === category || transactionCategoryLabel(model,t,p.category) === category) ||
+          t.category === category || transactionCategoryLabel(model,t) === category) &&
         (!needle ||
           normalized(
             [
               t.description,
               t.note,
               t.category,
-              ...spendingParts(t).map((p) => p.category),
+              ...spendingParts(t).flatMap((p) => [p.category,transactionCategoryLabel(model,t,p.category)]),
               ...t.entries.map((e) => model.accounts.find((a) => a.id === e.account)?.name),
             ].join(' '),
           ).includes(needle)),
@@ -525,7 +526,7 @@ export function explainPlanChange(before, after, { asOf, account, revision, mont
   for (const b of after.budgets || []) {
     const old = before.budgets?.find((x) => x.id === b.id);
     if (!old || JSON.stringify(old) !== JSON.stringify(b))
-      changes.push({ type: 'budget', name: b.name, id: b.id });
+      changes.push({ type: 'budget', name: b.shortName || b.name, id: b.id });
   }
   const now = balances(after, asOf),
     was = balances(before, asOf),
@@ -555,7 +556,7 @@ export function explainPlanChange(before, after, { asOf, account, revision, mont
     for (const b of current.buckets) {
       const prior = old.buckets.find((x) => x.id === b.id),
         amount = b.spent - (prior?.spent || 0);
-      if (amount) categories.push({ name: b.name, entity, amount, remaining: b.remaining });
+      if (amount) categories.push({ name: b.shortName || b.name, entity, amount, remaining: b.remaining });
     }
   }
   return {

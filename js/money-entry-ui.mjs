@@ -1,4 +1,5 @@
 import { cents, balances } from './money-engine.mjs';
+import { transactionCategoryLabel } from './money-budget.mjs';
 import { refundableParts, spendingParts, transactionOwner } from './money-categories.mjs';
 import { categoryAccent } from './money-home.mjs';
 import { defaultWatchedAccounts } from './money-everyday.mjs';
@@ -453,7 +454,8 @@ export function setupEntry({
       key =
         JSON.stringify(filter) +
         JSON.stringify(m.transactions) +
-        m.accounts.map((a) => a.name).join('|');
+        JSON.stringify(m.accounts.map((a) => a.name)) +
+        JSON.stringify((m.budgets || []).map((b) => [b.name,b.shortName,b.aliases,b.entity,b.oneTimeMonth]));
     if (key === lastLedger) return;
     lastLedger = key;
     const rows = searchLedger(m, filter);
@@ -472,7 +474,7 @@ export function setupEntry({
           t.description,
           t.kind,
           parts.length
-            ? parts.map((p) => p.category + ' ' + formatMoney(p.amount)).join(' · ')
+            ? parts.map((p) => transactionCategoryLabel(m,t,p.category) + ' ' + formatMoney(p.amount)).join(' · ')
             : t.category || '—',
           t.entries
             .map(
@@ -597,8 +599,8 @@ export function setupEntry({
     options($('ledgerAccount'), choices);
     const categories = [
       ...new Set([
-        ...m.transactions.flatMap((t) => spendingParts(t).map((p) => p.category)),
-        ...m.transactions.map((t) => t.category).filter(Boolean),
+        ...m.transactions.flatMap((t) => spendingParts(t).map((p) => transactionCategoryLabel(m,t,p.category))),
+        ...m.transactions.map((t) => transactionCategoryLabel(m,t)).filter(Boolean),
       ]),
     ].sort();
     options($('ledgerCategory'), [['', 'All categories'], ...categories.map((c) => [c, c])]);
