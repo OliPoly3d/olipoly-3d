@@ -608,7 +608,7 @@ export function setupPlanner({
       (b) => b.entity === entity() && !b.seasonal && !b.oneTimeMonth,
     )) {
       const tr = el('tr');
-      tr.append(el('th', b.name));
+      tr.append(el('th', b.shortName || b.name));
       for (let i = 1; i <= 12; i++) {
         const suffix = '-' + String(i).padStart(2, '0'),
           to = target + suffix,
@@ -621,7 +621,7 @@ export function setupPlanner({
         input.value = value === undefined ? '' : (value / 100).toFixed(2);
         input.dataset.budget = b.id;
         input.dataset.month = to;
-        input.setAttribute('aria-label', b.name + ' ' + to);
+        input.setAttribute('aria-label', (b.shortName || b.name) + ' ' + to);
         const td = el('td');
         td.append(input);
         if (b.overrides?.[to] !== undefined || b.monthly?.[to] !== undefined)
@@ -651,7 +651,7 @@ export function setupPlanner({
         .map((s) => ({ id: s.id, name: s.name + ' · ' + s.anchor })),
       ...m.budgets
         .filter((b) => b.oneTimeMonth?.startsWith(String(source)) && b.entity === entity())
-        .map((b) => ({ id: b.id, name: b.name + ' · ' + b.oneTimeMonth })),
+        .map((b) => ({ id: b.id, name: (b.shortName || b.name) + ' · ' + b.oneTimeMonth })),
     ]) {
       const label = el('label');
       label.className = 'check-label';
@@ -748,7 +748,7 @@ export function setupPlanner({
       all = m.accounts.filter((a) => a.entity === entity()).map((a) => [a.id, a.name]),
       categories = (m.budgets || [])
         .filter((b) => b.entity === entity())
-        .map((b) => [b.id, b.name]),
+        .map((b) => [b.id, b.shortName || b.name]),
       f = $('affordForm');
     options(f.elements.account, all);
     options(f.elements.watchAccount, cash);

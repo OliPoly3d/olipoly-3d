@@ -23,9 +23,33 @@ export function weeklyDates(month,weekday,start=month+'-01'){
 export function addOneTimeBudget(model,{id,name,month,amount,entity,account}){
  monthBounds(month);if(!name?.trim()||!Number.isSafeInteger(amount)||amount<0)throw Error('Enter a name and nonnegative budget amount.');
  if(!model.accounts.some(a=>a.id===account&&a.type==='cash'&&a.entity===entity))throw Error('Choose a cash account belonging to this view.');
- const next=structuredClone(model);next.budgets=[...(next.budgets||[]),{id,name:name.trim(),entity,account,oneTimeMonth:month,prorate:false,monthly:{[month]:amount}}];return validateBudgets(next);
+ const source={id,name:name.trim(),entity,account,oneTimeMonth:month,prorate:false,monthly:{[month]:amount}};
+ if(budgetNameTaken(model,source,source.name))throw Error('Another category already uses that name.');
+ const next=structuredClone(model);next.budgets=[...(next.budgets||[]),source];return validateBudgets(next);
 }
 const normalized = value => String(value || '').trim().toLowerCase();
+function budgetNameTaken(model,source,name){
+ return (model.budgets||[]).some(b=>b.id!==source.id&&b.entity===source.entity&&
+  (!b.oneTimeMonth||!source.oneTimeMonth||b.oneTimeMonth===source.oneTimeMonth)&&
+  [b.name,b.shortName,...(b.aliases||[])].some(n=>normalized(n)===normalized(name)));
+}
+export function renameCategoryBudget(model,id,name){
+ const source=model.budgets?.find(b=>b.id===id&&!b.seasonal);
+ if(!source)throw Error('Choose an editable category budget.');
+ const label=name.trim();
+ if(!label||label.length>100)throw Error('Enter a category name of 1 to 100 characters.');
+ if(label===(source.shortName||source.name))return model;
+ if(budgetNameTaken(model,source,label))throw Error('Another category already uses that name.');
+ // Keep the matching keys used by the ledger, forecasts and closed months.
+ return {...model,budgets:model.budgets.map(b=>b.id===id?{...b,shortName:label}:b)};
+}
+export function transactionCategoryLabel(model,t,category=t.category){
+ if(!category||!['expense','refund'].includes(t.kind))return category;
+ const month=t.date.slice(0,7),entity=entityOf(model,t),key=normalized(category);
+ const b=(model.budgets||[]).find(b=>b.entity===entity&&(!b.oneTimeMonth||b.oneTimeMonth===month)&&
+  [b.name,...(b.aliases||[])].some(n=>normalized(n)===key));
+ return b?.shortName||category;
+}
 function entityOf(model, transaction) {
   return transaction.expenseEntity || model.accounts.find(a => a.id === transaction.entries[0].account)?.entity;
 }

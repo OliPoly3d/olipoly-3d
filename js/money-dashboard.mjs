@@ -1,6 +1,6 @@
 import {categoryAccent} from './money-home.mjs';
 import {addDays,balanceUnknownAt,cents, date, forecastEnd} from './money-engine.mjs';
-import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets,budgetTimingLabel,categoryBudgetSummary} from './money-budget.mjs';
+import {budgetMonth, seasonalMonth, monthBounds, shiftMonth, validateBudgets,budgetTimingLabel,categoryBudgetSummary,renameCategoryBudget,transactionCategoryLabel} from './money-budget.mjs';
 import {monthProjection, expectedRows} from './money-planning.mjs';
 import {changeExpectation,removeActual} from './money-actions.mjs';
 import {sectionPreview,revealSection} from './money-sections.mjs';
@@ -32,6 +32,29 @@ function comparisonRow(name,id,expected,actual,max,missingLabel='Set target'){
 export function setupDashboard({getModel,today,savePlan,record,action,message,setStatus,cancelRecord=()=>{},onPreview=()=>{}}){
  let saved=null,draft=null,dirty=false;
  let removing=null;
+ const renameDialog=$('renameBudgetDialog'),renameForm=$('renameBudgetForm'),renameError=$('renameBudgetError');
+ let renaming=null;
+ function closeRename(){
+  renaming=null;renameForm.reset();renameError.textContent='';renameError.hidden=true;
+  if(renameDialog.open&&renameDialog.close)renameDialog.close();else renameDialog.removeAttribute('open');
+ }
+ function openRename(b){
+  renaming=b.id;const field=renameForm.elements.name;field.value=b.shortName||b.name;
+  if(renameDialog.showModal)renameDialog.showModal();else renameDialog.setAttribute('open','');
+  field.focus();field.select();
+ }
+ $('cancelRenameBudget').onclick=closeRename;
+ renameDialog.addEventListener('cancel',e=>{e.preventDefault();closeRename();});
+ renameForm.onsubmit=e=>{
+  e.preventDefault();if(!renaming||!getDraft())return;
+  try{
+   const next=renameCategoryBudget(getDraft(),renaming,renameForm.elements.name.value);
+   if(next===draft){closeRename();return;}
+   const id=renaming;draft=next;dirty=true;closeRename();render();
+   [...$('categoryRows').rows].find(row=>row.dataset.budgetId===id)?.querySelector('.rename-budget')?.focus();
+   message('Category renamed in preview. Choose Save changes to keep the new name.');
+  }catch(error){renameError.textContent=error.message;renameError.hidden=false;}
+ };
  function closeRemoval(){removing=null;const d=$('removeDialog');if(d.open&&d.close)d.close();else d.removeAttribute('open');}
  function removePrompt(target){
   removing=target;const actual=target.actual,skipped=target.skipped;
@@ -78,7 +101,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
   }
   mark();render();message('Preview repeats these amounts for this calendar month in future years. Save changes to keep it.');
  });
- function clear(){for(const id of ['incomeSection','billsSection','spendingSection','seasonalSection'])sectionPreview(id,'');closeRemoval();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
+ function clear(){for(const id of ['incomeSection','billsSection','spendingSection','seasonalSection'])sectionPreview(id,'');closeRemoval();closeRename();$('removeTitle').textContent='';$('removeDescription').textContent='';saved=null;draft=null;dirty=false;for(const id of ids)$(id).replaceChildren();for(const id of ['monthHeading','projectionNote','seasonalHeading','seasonalBudgetNote','transactionNote','planState'])$(id).textContent='';$('chartAccount').replaceChildren();}
  function render(){
   const model=getDraft();if(!model)return;
   const min=model.start.slice(0,7),max=forecastEnd(model.start).slice(0,7),input=$('budgetMonth');input.min=min;input.max=max;
@@ -211,7 +234,9 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
    cell(row,money(b.spent),'Actual').dataset.value='spent';cell(row,b.remaining===null?'Set target':money(b.remaining),'Remaining').dataset.value='remaining';
    const account=accountSelect(model,b.funding?.[month]||b.account,'Fund '+b.name+' from',true,entity);cell(row,account,'Fund from');
    if(input)input.onchange=()=>run(()=>{const n=cents(input.value);if(n<0)throw Error('Budget cannot be negative.');const item=model.budgets.find(i=>i.id===b.id);item.overrides={...item.overrides,[month]:n};mark();});
-   const timing=el('button','Edit timing: '+budgetTimingLabel(model,b,month));timing.type='button';timing.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-edit-budget-timing',{detail:{budget:b.id}}));label.append(timing);
+   const actions=el('div',undefined,'row-actions');
+   if(!b.seasonal){const rename=el('button','Edit name','rename-budget');rename.type='button';rename.setAttribute('aria-label','Edit name for '+(b.shortName||b.name));rename.onclick=()=>openRename(b);actions.append(rename);}
+   const timing=el('button','Edit timing: '+budgetTimingLabel(model,b,month));timing.type='button';timing.onclick=()=>document.dispatchEvent(new window.CustomEvent('money-edit-budget-timing',{detail:{budget:b.id}}));actions.append(timing);label.append(actions);
    account.onchange=()=>{const item=model.budgets.find(i=>i.id===b.id);item.funding={...item.funding,[month]:account.value};mark();};$('categoryRows').append(row);
   }
   $('categoryTotals').replaceChildren();const tr=el('tr');tr.id='categoryBudgetTotal';cell(tr,'All category budgets');cell(tr,result.missing?'Incomplete':money(result.totals.budget));cell(tr,money(result.totals.spent));const left=cell(tr,result.missing?'Incomplete':money(result.totals.remaining));left.classList.toggle('low',!result.missing&&result.totals.remaining<0);cell(tr,'Includes YOY once');$('categoryTotals').append(tr);
@@ -232,7 +257,7 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function renderTransactions(model,month,entity){
   $('transactions').replaceChildren();const entries=[...model.transactions].filter(t=>!t.scheduleKey&&incomingOwner(model,t)!==entity&&t.date.startsWith(month)&&(t.expenseEntity||model.accounts.find(a=>a.id===t.entries[0].account)?.entity)===entity).sort((a,b)=>b.date.localeCompare(a.date));const count=entries.length;
   for(const t of entries.slice(0,300)){
-   const row=el('tr');row.toggleAttribute('data-debt-private',!['expense','refund'].includes(t.kind)&&t.entries.some(e=>model.accounts.find(a=>a.id===e.account)?.type!=='cash'));cell(row,t.date);cell(row,t.description);const category=(model.budgets||[]).find(b=>[b.name,...(b.aliases||[])].some(n=>n.trim().toLowerCase()===(t.category||'').trim().toLowerCase()));cell(row,categoryLabel(category?.shortName||t.category||t.kind,category?.id));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
+   const row=el('tr');row.toggleAttribute('data-debt-private',!['expense','refund'].includes(t.kind)&&t.entries.some(e=>model.accounts.find(a=>a.id===e.account)?.type!=='cash'));cell(row,t.date);cell(row,t.description);cell(row,categoryLabel(transactionCategoryLabel(model,t)||t.kind));cell(row,t.entries.map(e=>model.accounts.find(a=>a.id===e.account).name+': '+money(e.amount)).join(' → '));
    const status=el('select');status.setAttribute('aria-label','Status for '+t.description);for(const name of ['pending','cleared','reconciled']){const o=el('option',name);o.value=name;status.append(o);}status.value=t.status;status.onchange=()=>action(()=>setStatus(t.id,status.value));cell(row,status);const controls=el('div',undefined,'row-actions');const edit=el('button','Edit');edit.onclick=()=>record(t);const remove=el('button','Remove');remove.onclick=()=>removePrompt({description:t.description,actual:t});controls.append(edit,remove);cell(row,controls);$('transactions').append(row);
   }
   $('transactionNote').textContent=count+' other transactions this month.'+(count>300?' First 300 shown; use Activity to search all entries.':'')+' Recorded income and bill matches appear in their sections above.';

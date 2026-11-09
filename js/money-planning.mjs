@@ -42,7 +42,7 @@ export function planningForecast(model, end) {
     else dates=[bounds.last];
     if(!dates.length)dates.push(bounds.last);
     const share=Math.floor(amount/dates.length),extra=amount%dates.length;
-    dates.forEach((when,i)=>{const part=share+(i<extra?1:0);if(!part||when>end)return;const t={id:'budget:'+b.id+':'+month+':'+when,date:when,description:b.name+' — unspent budget allowance',kind:'expense',category:b.name,status:'plan',budgetReserve:true,entries:[{account:account.id,amount:-part}]};if(!budgetPosts.has(when))budgetPosts.set(when,[]);budgetPosts.get(when).push(t);});
+    dates.forEach((when,i)=>{const part=share+(i<extra?1:0);if(!part||when>end)return;const t={id:'budget:'+b.id+':'+month+':'+when,date:when,description:(b.shortName||b.name)+' — unspent budget allowance',kind:'expense',category:b.name,status:'plan',budgetReserve:true,entries:[{account:account.id,amount:-part}]};if(!budgetPosts.has(when))budgetPosts.set(when,[]);budgetPosts.get(when).push(t);});
    }
   }
   for (const d of base) {

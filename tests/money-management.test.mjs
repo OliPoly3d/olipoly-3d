@@ -1,3 +1,4 @@
+import {renameCategoryBudget,budgetMonth} from '../js/money-budget.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {balances,forecast,balanceUnknownAt,validate,occurrences} from '../js/money-engine.mjs';
 import {validateBudgets} from '../js/money-budget.mjs';
@@ -50,3 +51,14 @@ test('closing a month protects savings carried from earlier allocations while al
 });
 
 test('dated transfer fees use the scenario date and keep an unknown fee unknown',()=>{const c={transferFeePercent:4,transferFeeChanges:[{date:'2026-11-16',percent:5}]};assert.equal(transferFeeAt(c,'2026-11-15'),4);assert.equal(transferFeeAt(c,'2026-11-16'),5);assert.equal(transferFeeAt({},'2026-11-16'),undefined);});
+
+test('renaming a recurring budget leaves the closed-month signature and spending intact',()=>{
+ const m=model();
+ m.budgets=[{id:'food',name:'Groceries',aliases:['Food'],entity:'household',account:'checking',monthly:{'2026-10':10000},prorate:false}];
+ m.transactions=[{id:'shop',date:'2026-10-25',description:'Shopping',kind:'expense',category:'Food',status:'cleared',entries:[{account:'checking',amount:-2500}]}];
+ m.monthClosures=[{month:'2026-10',entity:'household',closedOn:'2026-11-01',cash:217500,signature:monthFingerprint(m,'2026-10','household')}];
+ const next=renameCategoryBudget(m,'food','Groceries and household');
+ assertMonthLocks(m,next);
+ assert.deepEqual(budgetMonth(next,'2026-10','household','2026-10-31').totals,budgetMonth(m,'2026-10','household','2026-10-31').totals);
+ assert.deepEqual(next.transactions,m.transactions);
+});

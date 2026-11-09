@@ -545,13 +545,13 @@ export function setupDaily({
       f.elements.from,
       choices.map((b) => [
         b.id,
-        b.name + ' · ' + (b.movable === null ? 'target missing' : money(b.movable) + ' can move'),
+        (b.shortName || b.name) + ' · ' + (b.movable === null ? 'target missing' : money(b.movable) + ' can move'),
       ]),
       from,
     );
     options(
       f.elements.to,
-      choices.map((b) => [b.id, b.name]),
+      choices.map((b) => [b.id, b.shortName || b.name]),
       to,
     );
     if (f.elements.to.value === f.elements.from.value && choices.length > 1)
@@ -561,7 +561,7 @@ export function setupDaily({
     if (reset && destination?.remaining < 0 && source?.movable > 0)
       f.elements.amount.value = (Math.min(-destination.remaining, source.movable) / 100).toFixed(2);
     $('budgetMoveInfo').textContent = source
-      ? source.name +
+      ? (source.shortName || source.name) +
         ' · Unspent ' +
         money(source.remaining || 0) +
         ' · Known upcoming category expenses ' +
@@ -889,11 +889,11 @@ export function setupDaily({
       const tile = button('', () => go('spendingSection', { currentMonth: true }));
       tile.className = 'category-tile';
       tile.style.setProperty('--category-accent', categoryAccent(b.name));
-      tile.setAttribute('aria-label', 'Review ' + b.name + ' budget');
+      tile.setAttribute('aria-label', 'Review ' + (b.shortName || b.name) + ' budget');
       const progress = el('progress');
       progress.max = Math.max(1, b.allowance || 0);
       progress.value = Math.min(progress.max, Math.max(0, b.spent));
-      progress.setAttribute('aria-label', b.name + ' spent against target');
+      progress.setAttribute('aria-label', (b.shortName || b.name) + ' spent against target');
       tile.append(
         categorySymbol(b.name),
         el('span', b.shortName || b.name),
