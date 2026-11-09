@@ -375,6 +375,8 @@ body:has(#app:not([hidden])) main { max-width:1440px; }
 .entry-dialog-toolbar button { min-height:40px;padding:8px 12px; }
 .entry-dialog #entryStatus { top:54px; }
 .entry-dialog input,.entry-dialog select,.entry-dialog form > * { min-width:0; }
+.activity-cards td:nth-child(2) { min-width:13rem;white-space:normal;overflow-wrap:anywhere; }
+.ledger-actions { margin-top:6px; }
 @media(max-width:700px) {
  #decisionMetrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
  .entry-dialog label:has(select[name=account]),.entry-dialog label:has(select[name=to]),.entry-dialog label:has(input[name=description]) { grid-column:1 / -1; }
@@ -399,9 +401,7 @@ body:has(#app:not([hidden])) main { max-width:1440px; }
  .summary-table.mobile-cards td:nth-child(3) { color:var(--accent); }
  .summary-table.mobile-cards td.negative { color:var(--debt); }
  .activity-cards td:nth-child(2) { order:-1;grid-column:1 / -1;font-size:15px;font-weight:600; }
- .activity-cards td:nth-child(4),.activity-cards td:nth-child(5),.activity-cards td:last-child { grid-column:1 / -1; }
- .activity-cards td:last-child { flex-direction:row;flex-wrap:wrap; }
- .activity-cards td:last-child::before { width:100%; }
+ .activity-cards td:nth-child(4),.activity-cards td:nth-child(5) { grid-column:1 / -1; }
  .activity-cards button { min-height:44px; }
 }
 @media(min-width:701px) and (max-width:1024px) {

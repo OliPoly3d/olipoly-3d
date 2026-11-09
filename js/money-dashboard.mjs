@@ -35,8 +35,11 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  function closeRemoval(){removing=null;const d=$('removeDialog');if(d.open&&d.close)d.close();else d.removeAttribute('open');}
  function removePrompt(target){
   removing=target;const actual=target.actual,skipped=target.skipped;
-  $('removeTitle').textContent=target.description;
-  $('removeDescription').textContent=actual?'Put back in budget removes the actual entry and keeps this amount as an editable expectation. Delete removes the actual and skips its matched expectation this time; later repeats stay. Category targets remain unchanged.':'Skip only this occurrence, or stop this recurring item from this date forward. Existing recorded history is kept.';
+  $('removeTitle').textContent=actual?'Delete '+target.description+'?':target.description;
+  $('removeError').textContent='';$('removeError').hidden=true;
+  $('removeDescription').textContent=actual
+   ?'Deleting removes this entry and updates account balances and recorded spending.'+(actual.scheduleKey?' Its matched expectation is skipped this time; later repeats stay.':'')+(!['adjustment','refund'].includes(actual.kind)?' Choose Put back in budget if you still expect it to happen.':'')
+   :'Skip only this occurrence, or stop this recurring item from this date forward. Existing recorded history is kept.';
   $('removeBudget').hidden=!actual&&!skipped;
   $('removeBudget').textContent='Put back in budget';
   $('removeBudget').disabled=['adjustment','refund'].includes(actual?.kind);
@@ -48,8 +51,11 @@ export function setupDashboard({getModel,today,savePlan,record,action,message,se
  }
  function applyRemoval(mode){action(async()=>{
   if(!removing)return;const t=removing;
-  const next=t.actual?removeActual(getDraft(),t.actual.id,mode):changeExpectation(getDraft(),t.scheduleKey,mode==='plan'?'restore':mode==='stop'?'stop':'skip');
-  await savePlan(next);closeRemoval();cancelRecord();message(mode==='plan'?'Put back in budget. No actual transaction remains.':'Removed. Saved history is retained.');
+  $('removeError').textContent='';$('removeError').hidden=true;
+  try{
+   const next=t.actual?removeActual(getDraft(),t.actual.id,mode):changeExpectation(getDraft(),t.scheduleKey,mode==='plan'?'restore':mode==='stop'?'stop':'skip');
+   await savePlan(next);closeRemoval();cancelRecord();message(mode==='plan'?'Put back in budget. No actual transaction remains.':t.actual?'Transaction deleted. Balances, categories and forecasts updated.':'Removed. Saved history is retained.');
+  }catch(error){if(removing===t){$('removeError').textContent=error.message;$('removeError').hidden=false;}throw error;}
  });}
  $('removeCancel').onclick=closeRemoval;
  $('removeDialog').addEventListener('cancel',()=>{removing=null;});

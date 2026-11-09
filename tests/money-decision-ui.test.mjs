@@ -1094,3 +1094,52 @@ test('an overdue review and the record editor can move a bill date without posti
   assert.deepEqual(p.model.schedules.find(s=>s.id==='bill').overrides['2026-10-28'],{date:'2026-10-31'});
  }finally{p.close();}
 });
+
+test('Activity edits a purchase to another account and confirms deletion without changing its budget target',{skip},async()=>{
+ const m=fixture();
+ m.transactions=[
+  {id:'wrong-account',date:'2026-10-27',description:'Groceries and gas',kind:'expense',category:'Split purchase',status:'cleared',entries:[{account:'cash',amount:-2534}],allocations:[{category:'Groceries',amount:2000},{category:'Gas',amount:534}]},
+  {id:'extra-entry',date:'2026-10-26',description:'Mistaken grocery entry',kind:'expense',category:'Groceries',status:'cleared',entries:[{account:'cash',amount:-876}]},
+ ];
+ const p=await page(m);
+ try{
+  const {$,change,submit}=p;
+  const original=balances(p.model,'2026-10-29');
+  const row=name=>[...$('ledgerRows').rows].find(r=>r.cells[1].textContent.includes(name));
+  const action=(name,label)=>[...row(name).cells[1].querySelectorAll('button')].find(b=>b.textContent===label);
+  action('Groceries and gas','Edit').click();
+  const f=$('transactionForm');
+  assert.equal($('transactionDialogTitle').textContent,'Edit transaction');
+  assert.equal(f.elements.account.value,'cash');
+  assert.equal($('editAccountHelp').hidden,false);
+  assert.equal($('recordTransaction').textContent,'Save transaction changes');
+  change(f.elements.account,'card');
+  await submit('transactionForm');
+  assert.equal(p.revision,1);
+  assert.equal(p.model.transactions.length,2);
+  const updated=p.model.transactions.find(t=>t.id==='wrong-account');
+  assert.deepEqual(updated.entries,[{account:'card',amount:-2534}]);
+  assert.deepEqual(updated.allocations,m.transactions[0].allocations);
+  const moved=balances(p.model,'2026-10-29');
+  assert.equal(moved.cash,original.cash+2534);
+  assert.equal(moved.card,original.card-2534);
+  assert.match(row('Groceries and gas').textContent,/Daily card/);
+  action('Mistaken grocery entry','Delete').click();
+  assert.match($('removeTitle').textContent,/Delete Mistaken grocery entry/);
+  $('removeCancel').click();
+  assert.equal(p.revision,1);
+  action('Mistaken grocery entry','Delete').click();
+  p.fail=true;
+  $('removeDelete').click();await tick();
+  assert.match($('removeError').textContent,/Synthetic server failure/);
+  assert.equal($('removeDialog').open,true);
+  assert.equal(p.revision,1);
+  p.fail=false;
+  $('removeDelete').click();await tick();
+  assert.equal(p.revision,2);
+  assert.deepEqual(p.model.transactions.map(t=>t.id),['wrong-account']);
+  assert.equal(balances(p.model,'2026-10-29').cash,moved.cash+876);
+  assert.deepEqual(p.model.budgets,m.budgets);
+  assert.equal(row('Mistaken grocery entry'),undefined);
+ }finally{p.close();}
+});
