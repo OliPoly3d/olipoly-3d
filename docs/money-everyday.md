@@ -55,6 +55,8 @@ The cash chart labels major real scheduled/recorded events, annotates its lowest
 
 Entry starts with the amount. Account/category choice buttons update the original form fields and preserve their full dropdown alternatives. Date, status, split/refund allocation, savings, funding and notes remain editable. Record and Cancel stay outside the scrolling entry surface and use native form association. At widths of 900 pixels or more, a read-only recent-account-activity pane sits beside the editor; narrower screens use the full entry width. Closing and sign-out clear the appropriate financial display state.
 
+Under **This month → Activity · all recorded transactions**, choose **Edit** beside a purchase. Select the correct card or bank account under **Paid from**, then select **Save transaction changes**. The entry keeps its original category and amount unless you edit them. Choose **Delete** beside an erroneous entry and confirm **Delete transaction** to remove it.
+
 ### Appearance polish (October 2026)
 
 More actions → Appearance offers Graphite (default), Light, or Use device setting.

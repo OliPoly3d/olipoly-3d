@@ -106,14 +106,20 @@ export function setupEntry({
     const kind = f.elements.kind.value,
       transfer = kind === 'transfer',
       refund = kind === 'refund',
-      expense = kind === 'expense' || refund;
+      expense = kind === 'expense' || refund,
+      editing = !!f.elements.editTransactionId.value;
+    $('transactionDialogTitle').textContent = editing ? 'Edit transaction' : 'Transaction';
     $('transactionCategoryLabel').hidden = !expense;
     f.elements.category.disabled = !expense;
     $('transactionToLabel').hidden = !transfer;
     f.elements.to.disabled = !transfer;
     f.elements.to.required = transfer;
     $('transactionAccountText').textContent =
-      refund || kind === 'income' ? 'Received into' : 'Paid from / account';
+      refund || kind === 'income' ? 'Received into' : kind === 'expense' ? 'Paid from' : 'From account';
+    const showAccountHelp = editing && kind === 'expense';
+    $('editAccountHelp').hidden = !showAccountHelp;
+    if (showAccountHelp) f.elements.account.setAttribute('aria-describedby', 'editAccountHelp');
+    else f.elements.account.removeAttribute('aria-describedby');
     $('refundEntry').hidden = !refund;
     f.elements.refundOf.disabled = !refund;
     $('splitEntry').hidden = !expense;
@@ -128,8 +134,11 @@ export function setupEntry({
       refund ||
       kind === 'adjustment';
     if (f.elements.entryTiming.disabled) f.elements.entryTiming.value = 'actual';
-    $('recordTransaction').textContent =
-      expected && !f.elements.entryTiming.disabled ? 'Add to budget preview' : 'Record actual';
+    $('recordTransaction').textContent = editing
+      ? 'Save transaction changes'
+      : expected && !f.elements.entryTiming.disabled
+        ? 'Add to budget preview'
+        : 'Record actual';
     if (!expense) f.elements.splitPurchase.checked = false;
     updateSplitTotal();
     const from=getDraft()?.accounts.find(a=>a.id===f.elements.account.value),to=getDraft()?.accounts.find(a=>a.id===f.elements.to.value),g=$('paymentGuide');
@@ -477,12 +486,13 @@ export function setupEntry({
         td.dataset.label = ['Date', 'Description', 'Type', 'Categories', 'Accounts', 'Status'][i];
         tr.append(td);
       }
-      const actions = el('td');
-      actions.dataset.label = 'Actions';
-      actions.append(
-        button('Edit', () => record(t)),
-        button('Remove', () => remove(t)),
-      );
+      const actions = el('div'),
+        edit = button('Edit', () => record(t)),
+        del = button('Delete', () => remove(t));
+      actions.className = 'row-actions ledger-actions';
+      edit.setAttribute('aria-label', 'Edit transaction: ' + t.description);
+      del.setAttribute('aria-label', 'Delete transaction: ' + t.description);
+      actions.append(edit, del);
       if(t.kind==='expense')actions.append(button('Repeat purchase',()=>repeatPurchase(t)));
       if (t.kind === 'expense' && refundableParts(m, t.id).length)
         actions.append(
@@ -494,7 +504,7 @@ export function setupEntry({
             });
           }),
         );
-      tr.append(actions);
+      tr.cells[1].append(actions);
       $('ledgerRows').append(tr);
     }
     $('ledgerCount').textContent =
