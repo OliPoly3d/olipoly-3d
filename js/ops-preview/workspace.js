@@ -14,7 +14,7 @@
   let state;
   let dirty = false;
   const requestedTab = new URLSearchParams(location.search).get('section');
-  let activeTab = ['request', 'details', 'quote', 'production', 'pickup', 'money', 'receipt'].includes(requestedTab) ? requestedTab : 'details';
+  let activeTab = ['request', 'details', 'quote', 'production', 'pickup', 'invoice', 'money', 'receipt'].includes(requestedTab) ? requestedTab : 'details';
   let draft;
   let intakeDraft = null;
   let queueFilter = new URLSearchParams(location.search).get('filter') || 'open';
@@ -514,9 +514,65 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     const baseline = order.estimateBaseline ?? cost.estimated;
     const marginChange = cost.revenue > 0 ? ((baseline - cost.actual) / cost.revenue * 100).toFixed(1) : '0.0';
     return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format(M.currentTotals(order).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
+      ${order.preset==='business' && order.fulfilled ? `<p><a class="button" href="${orderLink(order,'invoice')}">${order.invoice?'View issued invoice':'Review & issue invoice'}</a></p>` : ''}
       ${order.snapshot && !order.shippingDraft && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
       <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${order.historicalCompletion ? `${row('Recorded job cost',format(cost.actual))}${row('Profit after recorded costs',format(cost.actualProfit))}` : M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.historicalCompletion && order.runs.some(run => run.hours == null || run.usage.some(usage => usage.materialCost == null)) ? 'Recorded cost is incomplete because historical printer time or filament cost is unknown.' : order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
+  }
+  function invoicePanel(order) {
+    if (order.preset !== 'business') return '<section class="card"><h2>Business invoices</h2><p>Open Receipt for this order’s payment record.</p></section>';
+    if (!order.snapshot || !order.fulfilled) return '<section class="card"><h2>Business invoice</h2><p>Record final carrier handoff, pickup, or delivery to issue the invoice.</p></section>';
+    const invoice = order.invoice;
+    const t = invoice?.totals || M.currentTotals(order);
+    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+    const reference = M.projectIdentity(order).primary;
+    const address = value => escape(value || '').replace(/\n/g,'<br>');
+    const recipient = invoice?.recipient || order.poReview?.apEmail || order.poReview?.purchasingEmail || '';
+    const billTo = invoice?.billTo ?? order.poReview?.billTo ?? '';
+    const shipTo = invoice?.shipTo ?? order.fulfillmentPlan?.address ?? order.poReview?.shipTo ?? '';
+    const totalDue = invoice?.balance ?? M.balance(order);
+    const amountReceived = invoice?.paid ?? M.paid(order);
+    const issueForm = `<section class="card no-print"><h2>Review and issue</h2><p class="muted">Issuing saves this invoice at its current amounts. You can then save the PDF and send it to the confirmed billing contact.</p>
+      <form class="form-grid" data-form="issue_invoice" data-terms="${escape(order.terms)}">
+        ${field('Invoice date','issueDate',today,'date',`required max="${today}"`)}
+        ${field('Payment due date','dueDate',M.invoiceDueDate(order.terms,today),'date','required')}
+        ${field('Invoice recipient','recipient',recipient,'email','required maxlength="254"')}
+        ${textArea('Billing address','billTo',billTo,'maxlength="500"')}
+        <div class="actions full"><button class="primary" type="submit">Issue invoice</button></div>
+      </form></section>`;
+    const recorded = order.invoiceDelivery;
+    const sendMessage = invoice ? `Subject: Invoice ${invoice.number} · ${invoice.reference}
+
+Please see the attached invoice from OliPoly 3D LLC${invoice.poNumber ? ` for PO ${invoice.poNumber}` : ''}.
+Invoice total: ${format(invoice.totals.total)}.
+Amount due at issuance: ${format(invoice.balance)} by ${invoice.dueDate}.
+Please reference ${invoice.number} with your payment. Thank you.` : '';
+    const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>${row('Confirmed recipient',invoice.recipient)}
+      <button data-action="print-invoice">Print / Save invoice PDF</button>
+      ${recorded ? `<p class="status-line">Owner marked sent · ${escape(new Date(recorded.recordedAt).toLocaleString())}</p>
+        ${recorded.reference ? row('Send reference',recorded.reference) : ''}` :
+        `<form data-form="record_invoice_sent">
+          ${textArea('Suggested email','invoiceMessage',sendMessage,'id="invoice-message" readonly')}
+          <button type="button" data-action="copy-invoice-message">Copy invoice message</button>
+          ${field('Send reference (optional)','reference','','text','maxlength="500"')}
+          <label class="check"><input type="checkbox" name="confirmSent" value="yes" required> I sent the issued invoice to the confirmed recipient.</label>
+          <button type="submit">Record invoice sent</button>
+        </form>`}
+    </section>` : '';
+    return `<div class="two-col"><section class="card invoice-document"><div class="eyebrow">OliPoly 3D LLC · ERP Test</div>
+      <div class="section-head"><h1>${invoice ? 'Invoice' : 'Invoice preview'}</h1><strong>${escape(invoice?.number || reference)}</strong></div>
+      <p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p>
+      <div class="two-col"><div><h3>Bill to</h3><p>${escape(invoice?.customer || order.customer)}${billTo ? `<br>${address(billTo)}` : ''}</p></div>
+        ${shipTo ? `<div><h3>Ship to</h3><p>${address(shipTo)}</p></div>` : ''}</div>
+      ${row('Order',reference)}${(invoice?.poNumber || order.poReview?.number) ? row('Purchase order',invoice?.poNumber || order.poReview.number) : ''}
+      ${row('Terms',invoice?.terms || order.terms)}${invoice ? row('Invoice date',invoice.issueDate)+row('Payment due',invoice.dueDate) : ''}
+      <table class="receipt-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount before tax</th></tr></thead>
+      <tbody>${t.lineItems.map(item=>`<tr><td>${escape(item.description)}</td><td>${item.quantity}</td><td>${format(item.line_total)}</td></tr>`).join('')}</tbody></table>
+      ${row('Item subtotal',format(t.preDiscount))}${t.discount ? row('Discount',format(-t.discount)) : ''}
+      ${t.customerShipping ? row('Shipping or delivery charge',format(t.customerShipping)) : ''}
+      ${row('Sales tax',format(t.tax))}${Math.round((t.roundingAdjustment||0)*100) ? row('Discount or Adjustment',format(t.roundingAdjustment)) : ''}
+      ${row('Invoice total',format(t.total))}${row('Payments received at issuance',format(amountReceived))}${row('Amount due at issuance',format(totalDue))}
+    </section><aside class="no-print">${invoice ? sendPanel : issueForm}</aside></div>`;
   }
   function receiptPanel(order) {
     const t = M.currentTotals(order);
@@ -527,9 +583,9 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     const order = selectedOrder();
     draft = M.copy(order);
     if (order.snapshot) draft.items = M.copy(M.productionItems(order));
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Fulfillment'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Fulfillment'], ...(order.preset==='business' ? [['invoice','Invoice']] : []), ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
       <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This workspace supports pickup, local delivery, and single-box shipping.</p></section></aside></div>
-      <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel stack" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${fulfillmentPanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
+      <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel stack" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${fulfillmentPanel(order)}</div><div class="panel invoice" data-panel="invoice" ${activeTab !== 'invoice' ? 'hidden' : ''}>${invoicePanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
   }
   function renderTracking() {
     const order = selectedOrder();
@@ -573,6 +629,10 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     form.querySelector('[data-inv-net]').textContent = `Calculated net filament = ${grams.format(net)} g`;
   }
   document.addEventListener('input', event => {
+    if (event.target.name === 'issueDate' && event.target.form?.dataset.form === 'issue_invoice') {
+      const form = event.target.form;
+      form.elements.dueDate.value = M.invoiceDueDate(form.dataset.terms,event.target.value);
+    }
     const poForm = event.target.closest?.('[data-form="po_review"]');
     if (poForm) {
       const formData = new FormData(poForm);
@@ -725,7 +785,9 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       }
       if (action.type === 'historical_completion') activeTab = 'pickup';
       render();
-      if (action.type === 'po_review') message('PO review saved. Prepare the acknowledgment or open Production to release the accepted items.');
+      if (action.type === 'issue_invoice') message('Invoice issued. Save the PDF and review the message before sending.');
+      else if (action.type === 'record_invoice_sent') message('Invoice send recorded.');
+      else if (action.type === 'po_review') message('PO review saved. Prepare the acknowledgment or open Production to release the accepted items.');
       else if (action.type === 'po_acknowledgment') message('Acknowledgment send recorded.');
       else if (action.type === 'historical_completion') message('Completed order recorded. Stock and payments were left unchanged.');
       else if (action.type === 'fulfillment_plan') message(action.method === 'shipping' ? 'Shipping choice saved. Confirm the shipment details to publish the update.' : 'Fulfillment confirmed. The customer balance and order summary are up to date.');
@@ -761,13 +823,13 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
         if (!confirm('Reset all fictional records saved by this sample?')) return;
         const next = M.seed(); next.revision = state.revision + 1; await persist(next); render(); message('Sample reset.'); return;
       }
-      if (action === 'print' || action === 'print-quote') { if(dirty) throw new Error('Save your changes before printing.'); activeTab=action==='print-quote'?'quote':'receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
+      if (['print','print-quote','print-invoice'].includes(action)) { if(dirty) throw new Error('Save your changes before printing.'); activeTab=action==='print-quote'?'quote':action==='print-invoice'?'invoice':'receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
       if (action === 'copy-quote') {
         if(dirty) throw new Error('Save your changes before copying the quote.');
         await navigator.clipboard.writeText(document.getElementById('quote-message').value); message('Quote message copied. Review it before sending.'); return;
       }
-      if (action === 'copy-message' || action === 'copy-po-ack') {
-        const input = document.getElementById(action === 'copy-po-ack' ? 'po-ack-message' : 'fulfillment-message');
+      if (['copy-message','copy-po-ack','copy-invoice-message'].includes(action)) {
+        const input = document.getElementById(action === 'copy-po-ack' ? 'po-ack-message' : action === 'copy-invoice-message' ? 'invoice-message' : 'fulfillment-message');
         if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(input.value);
         else { input.select(); if (!document.execCommand('copy')) throw new Error('Select and copy the prepared message.'); }
         message('Customer update copied.'); return;
