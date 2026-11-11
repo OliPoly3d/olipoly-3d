@@ -64,7 +64,7 @@ test('Fulfillment form shows tracking and a copyable update after carrier handof
     assert.match(doc.querySelector('#fulfillment-message').value, /has shipped via USPS Ground Advantage.*TEST-1234/);
     assert.match(doc.querySelector('[data-panel="money"]').textContent, /Actual postage included\$7.25/);
     const tracking = customer.render(customer.project(saved()), 'track');
-    assert.match(tracking, /Your order has shipped.*TEST-1234/);
+    assert.match(tracking, /<strong>Shipped<\/strong>.*Shipping method · USPS · Ground Advantage.*Tracking number · TEST-1234/);
     assert.doesNotMatch(tracking, /123 Fictional Street|7\.25|example\.test\/receipt|ORDER-LABEL-1234/);
   } finally {
     window.close();
