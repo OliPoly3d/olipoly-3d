@@ -255,11 +255,73 @@
     else state.orders.push(order);
     return state;
   }
+  const poFields = {number:80, overrideReason:500, purchasingEmail:254, receivingEmail:254,
+    receivingName:160, apEmail:254, shipTo:500, billTo:500, terms:120, evidence:500, county:50};
+  function poReview(order, action) {
+    if (order.preset !== 'business' || order.snapshot || order.quoteStage !== 'sent' || !order.quoteOffer) {
+      throw new Error('Share the business quote before reviewing the PO.');
+    }
+    const review = {authorization:action.authorization, quoteRevision:order.quoteOffer.revision};
+    for (const [field,limit] of Object.entries(poFields)) {
+      review[field] = String(action[field] || '').trim();
+      if (review[field].length > limit) throw new Error(`Shorten the PO field ${field}.`);
+    }
+    if (review.authorization === 'po') {
+      if (!review.number) throw new Error('Enter the purchase order number.');
+      review.overrideReason = '';
+    } else if (review.authorization === 'override') {
+      if (!review.overrideReason) throw new Error('Record why a PO is not required.');
+      review.number = '';
+    } else throw new Error('Choose a purchase order or an explicit PO override.');
+    if (!review.terms || !review.county || !review.shipTo || !review.evidence) {
+      throw new Error('Record accepted terms, the ship-to address, tax county, and review evidence.');
+    }
+    if (review.authorization === 'po' && !review.purchasingEmail) throw new Error('Enter the purchasing email.');
+    for (const address of [review.purchasingEmail,review.receivingEmail,review.apEmail]) {
+      if (address && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) throw new Error('Check the purchasing, receiving and AP email addresses.');
+    }
+    const taxRate = number(action.taxRate, 'Ohio tax rate');
+    if (taxRate > 20 || money(taxRate) !== taxRate) throw new Error('Enter a valid Ohio tax rate.');
+    if (!Array.isArray(action.quantities) || action.quantities.length !== order.quoteOffer.items.length) {
+      throw new Error('Review the quantity of every quoted item.');
+    }
+    const items = order.quoteOffer.items.map((item,i) => {
+      const quantity = number(action.quantities[i], 'Accepted quantity', true);
+      return {...item,quantity,line_total:money(item.unit_price * quantity)};
+    })
+      .filter(item => item.quantity > 0);
+    if (!items.length || items.some(item => item.quantity > 100000)) throw new Error('Enter an accepted quantity for at least one quoted item.');
+    review.taxRate = taxRate;
+    const snapshot = totals({...order,items,taxRate});
+    return {review,items,snapshot};
+  }
   function command(original, orderId, action) {
     const state = copy(original);
     const order = state.orders.find(row => row.id === orderId);
     if (!order) throw new Error('Open an existing sample order.');
-    if (action.type === 'approve') {
+    if (action.type === 'po_review') {
+      const {review,items,snapshot} = poReview(order,action);
+      order.poReview = review;
+      order.items = items;
+      order.terms = review.terms;
+      order.county = review.county;
+      order.taxAddress = review.shipTo;
+      order.taxRate = review.taxRate;
+      order.snapshot = snapshot;
+      order.approval = review.authorization === 'po' ? `Reviewed PO ${review.number}` : 'PO requirement overridden';
+      order.approvedAt = new Date().toISOString();
+      order.status = 'approved';
+      order.estimateBaseline = costs(state,order).estimated;
+    } else if (action.type === 'po_acknowledgment') {
+      if (!order.poReview?.number || order.poAcknowledgment || action.confirmSent !== 'yes') {
+        throw new Error('Confirm the PO acknowledgment was sent. It can only be recorded once.');
+      }
+      const reference = String(action.reference || '').trim();
+      const message = String(action.message || '').trim();
+      if (reference.length > 500 || !message || message.length > 8000) throw new Error('Record the message sent and an optional send reference.');
+      order.poAcknowledgment = {recipient:order.poReview.purchasingEmail,reference,message,recordedAt:new Date().toISOString()};
+    } else if (action.type === 'approve') {
+      if (order.preset === 'business') throw new Error('Review the PO or record an explicit override before approving a business order.');
       if (order.snapshot) throw new Error('This scope has already been approved.');
       if (!order.customer.trim() || !order.title.trim() || !order.items.length) throw new Error('Save the customer, project and items before recording approval.');
       if (!action.method) throw new Error('Select how the customer approved the work.');
@@ -514,6 +576,6 @@
     }
     return label;
   }
-  return {seed, totals, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+  return {seed, totals, poReview, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });

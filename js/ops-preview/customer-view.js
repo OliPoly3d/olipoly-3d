@@ -16,9 +16,10 @@
     if(!accepted&&!offer)return null;
     const t=accepted?order.snapshot:offer.totals;
     if(!t||![t.total,t.beforeTax,t.tax].every(v=>Number.isFinite(Number(v))))throw new Error('Saved quote totals are incomplete.');
+    const quoted=order.poReview&&offer?offer.totals:t;
     const current=order.fulfillmentPlan?.totals||t;
     const total=cents(current.total),paid=accepted?(order.payments||[]).reduce((s,p)=>s+cents(p.amount),0):0;
-    const items=(t.grossLineItems||t.lineItems||[]).map(i=>{
+    const items=(quoted.grossLineItems||quoted.lineItems||[]).map(i=>{
       const source=(offer?.items||order.items||[]).find(raw=>raw.id===i.id);
       const materialLabel=[...new Set((source?.materials||[]).map(m=>[m.material,m.color].filter(Boolean).join(' · ')))].join('; ');
       return {description:String(i.description||''),materialLabel,quantity:i.quantity,unitPrice:i.unit_price,lineTotal:i.line_total};
@@ -31,12 +32,12 @@
       ...(shipment.handoffAt ? {carrier: String(shipment.carrier||''), service: String(shipment.service||''), tracking: String(shipment.tracking||'')} : {})
     } : null;
     const identity=root.OliPolyOpsPreview.projectIdentity(order);
-    const terms=String(offer?.terms||order.terms||'To be agreed');
+    const terms=String((order.poReview ? order.terms : offer?.terms) || order.terms || 'To be agreed');
     return {reference:identity.primary,legacyQuote:identity.legacyQuote,customer:String(offer?.customer||order.customer),title:String(offer?.title||order.title),
       revision:offer?.revision||1,accepted,approvedAt:order.approvedAt||'',phase,items,shipping,handoffDate:historical?.handoffDate||'',paymentPending:!!order.shippingDraft,method:root.OliPolyOpsPreview.fulfillmentMethod(order),
-      totals:customerTotals(current),quoteTotals:customerTotals(t),adjusted:current.total!==t.total || current.tax!==t.tax || current.customerShipping!==t.customerShipping,
-      taxIncluded:!!current.taxIncluded,quoteTaxIncluded:!!t.taxIncluded,taxExempt:!!order.taxExempt,paid:paid/100,balance:Math.max(0,total-paid)/100,credit:Math.max(0,paid-total)/100,
-      terms,business:order.preset==='business',turnaround:String(offer?.turnaround||order.turnaround||'OliPoly will confirm scheduling.'),
+      totals:customerTotals(current),quoteTotals:customerTotals(quoted),approvedTotals:customerTotals(t),adjusted:current.total!==quoted.total || current.tax!==quoted.tax || current.customerShipping!==quoted.customerShipping,
+      taxIncluded:!!current.taxIncluded,quoteTaxIncluded:!!quoted.taxIncluded,taxExempt:!!order.taxExempt,paid:paid/100,balance:Math.max(0,total-paid)/100,credit:Math.max(0,paid-total)/100,
+      terms,quoteTerms:String(offer?.terms||terms),poAccepted:!!order.poReview,business:order.preset==='business',turnaround:String(offer?.turnaround||order.turnaround||'OliPoly will confirm scheduling.'),
       validUntil:String(offer?.validUntil||order.validUntil||''),customerNotes:String(offer?.customerNotes||order.customerNotes||''),
       fulfillmentNote:offer?.fulfillmentNote??root.OliPolyOpsPreview.quoteFulfillmentNote(order),
       payments:(order.payments||[]).map(p=>({amount:Number(p.amount),method:String(p.method),date:String(p.date||'')}))};
@@ -55,13 +56,13 @@
         (cents(t.rounding) ? row('Discount or Adjustment',money(t.rounding)) : '');
       taxNote = v.quoteTaxIncluded ? 'Tax included; breakdown shown above.' : 'Includes the sales tax shown above.';
     } else {
-      const quoted = v.quoteTotals;
+      const quoted = v.approvedTotals;
       // Start from the accepted total, which already includes its original tax
       // and charges. Show only changes made since acceptance.
       const taxChange = cents(t.tax) - cents(quoted.tax);
       const shippingChange = cents(t.shipping) - cents(quoted.shipping);
       const adjustment = cents(t.total) - cents(quoted.total) - taxChange - shippingChange;
-      breakdown = row('Quoted total',money(quoted.total)) +
+      breakdown = row(v.poAccepted?'Accepted order total':'Quoted total',money(quoted.total)) +
         row(taxChange < 0 ? 'Sales tax reduction' : 'Additional sales tax',money(taxChange/100)) +
         (shippingChange || !v.paymentPending ? row(feeLabel,money(shippingChange/100)) : '') +
         (adjustment ? row('Discount or Adjustment',money(adjustment/100)) : '');
@@ -70,7 +71,7 @@
     return `<aside class="card customer-summary"><h2>${isQuote?'Your quotation':'Order summary'}</h2><p class="customer-note customer-reference">${E(v.reference)} · Revision ${v.revision}</p>${breakdown}<div class="customer-total"><small>${isQuote?'Quoted total':'Agreed total'}</small><strong>${money(t.total)}</strong><small>${taxNote}</small></div>${(v.accepted && (!isQuote || !v.adjusted))?`${row('Payments confirmed',money(v.paid))}${row('Remaining balance',money(v.balance))}${v.credit?row('Credit to resolve',money(v.credit)):''}`:''}<p class="customer-note">${E(v.terms)}</p><div class="actions no-print"><button data-action="print">Print / save ${isQuote?'quote PDF':'order summary'}</button></div></aside>`;
   }
   function quote(v) {
-    return `<section class="card"><div class="customer-meta"><div><div class="eyebrow">${v.accepted?'Accepted quotation':'Prepared for you'}</div><h2>${E(v.customer)}</h2></div><p>${E(v.reference)} · Rev ${v.revision}${v.validUntil?`<br>Valid through ${E(v.validUntil)}`:''}${v.legacyQuote?`<br>Original quote ${E(v.legacyQuote)}`:''}</p></div><div class="customer-line-items"><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price${v.quoteTaxIncluded?' · tax included':''}</th><th>Amount</th></tr></thead><tbody>${v.items.map(i=>`<tr><td>${E(i.description)}${i.materialLabel?`<br><small>${E(i.materialLabel)}</small>`:''}</td><td>${E(i.quantity)}</td><td>${money(i.unitPrice)}</td><td>${money(i.lineTotal)}</td></tr>`).join('')}</tbody></table></div><div class="customer-terms"><strong>Timing</strong>${E(v.turnaround)}<strong>Payment terms</strong>${E(v.terms)}${v.customerNotes?`<strong>Scope & notes</strong>${E(v.customerNotes)}`:''}${v.fulfillmentNote?`<strong>Fulfillment</strong>${E(v.fulfillmentNote)}`:''}</div>${v.accepted?'<p class="customer-status" style="margin-top:22px">Your quote is accepted. You can follow your order’s progress and balance below.</p>':`<form id="customer-accept" class="no-print" style="margin-top:24px"><h3>Ready to go ahead?</h3><label>Your name<input name="name" autocomplete="name" required maxlength="160"></label><label class="check customer-check"><input type="checkbox" name="confirm" required><span>I approve revision ${v.revision}, including the listed scope, quantities, total of <strong>${money(v.totals.total)}</strong>, timing and payment terms.</span></label><button class="primary" type="submit">Accept quote · ${money(v.totals.total)}</button><p class="customer-note">Owner test: this records approval in OliPoly ERP Test. It does not release production.${v.business?' OliPoly must also review any required purchase order.':''}</p></form><details class="no-print" style="margin-top:20px"><summary>Need a change before accepting?</summary><p class="customer-note">Contact OliPoly with ${E(v.reference)} and the change you need. Reply to your quote message with the changes you need. Wait for an updated quote before accepting.</p></details>`}</section>`;
+    return `<section class="card"><div class="customer-meta"><div><div class="eyebrow">${v.accepted?'Accepted quotation':'Prepared for you'}</div><h2>${E(v.customer)}</h2></div><p>${E(v.reference)} · Rev ${v.revision}${v.validUntil?`<br>Valid through ${E(v.validUntil)}`:''}${v.legacyQuote?`<br>Original quote ${E(v.legacyQuote)}`:''}</p></div><div class="customer-line-items"><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price${v.quoteTaxIncluded?' · tax included':''}</th><th>Amount</th></tr></thead><tbody>${v.items.map(i=>`<tr><td>${E(i.description)}${i.materialLabel?`<br><small>${E(i.materialLabel)}</small>`:''}</td><td>${E(i.quantity)}</td><td>${money(i.unitPrice)}</td><td>${money(i.lineTotal)}</td></tr>`).join('')}</tbody></table></div><div class="customer-terms"><strong>Timing</strong>${E(v.turnaround)}<strong>Payment terms</strong>${E(v.quoteTerms)}${v.customerNotes?`<strong>Scope & notes</strong>${E(v.customerNotes)}`:''}${v.fulfillmentNote?`<strong>Fulfillment</strong>${E(v.fulfillmentNote)}`:''}</div>${v.accepted?`<p class="customer-status" style="margin-top:22px">${v.poAccepted?'Your business order is confirmed. See Order progress for the accepted order total.':'Your quote is accepted. You can follow your order’s progress and balance below.'}</p>`:v.business?'<p class="customer-status">Send your purchase order or contact OliPoly to confirm authorization.</p>':`<form id="customer-accept" class="no-print" style="margin-top:24px"><h3>Ready to go ahead?</h3><label>Your name<input name="name" autocomplete="name" required maxlength="160"></label><label class="check customer-check"><input type="checkbox" name="confirm" required><span>I approve revision ${v.revision}, including the listed scope, quantities, total of <strong>${money(v.totals.total)}</strong>, timing and payment terms.</span></label><button class="primary" type="submit">Accept quote · ${money(v.totals.total)}</button><p class="customer-note">Owner test: this records approval in OliPoly ERP Test. It does not release production.${v.business?' OliPoly must also review any required purchase order.':''}</p></form><details class="no-print" style="margin-top:20px"><summary>Need a change before accepting?</summary><p class="customer-note">Contact OliPoly with ${E(v.reference)} and the change you need. Reply to your quote message with the changes you need. Wait for an updated quote before accepting.</p></details>`}</section>`;
   }
   function track(v) {
     const [ready, fulfilled] = root.OliPolyOpsPreview.fulfillmentMilestones[v.method];
