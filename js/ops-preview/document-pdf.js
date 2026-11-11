@@ -38,6 +38,7 @@
   function pagesFor(doc) {
     const pages = [];
     let ctx, y;
+    let heading = doc.heading;
 
     function font(size, weight, family) {
       ctx.font = `${weight} ${size}px ${family}`;
@@ -74,7 +75,7 @@
       text('OLIPOLY 3D LLC', right, 43, {size:8.5, weight:700, align:'right'});
       text('olipoly3d.com', right, 58, {size:9, align:'right', color:muted});
       line(77, rose);
-      text(doc.heading, margin, 113, {size:30, weight:500, family:serif});
+      text(heading, margin, 113, {size:heading === doc.heading ? 30 : 24, weight:500, family:serif, maxWidth:width - 150});
       text(doc.number, right, 96, {size:11, weight:700, align:'right', maxWidth:240});
       doc.header.forEach((value, i) => text(value, right, 112 + i * 14, {
         align:'right', color:muted, maxWidth:244
@@ -106,7 +107,7 @@
       }
       return lines;
     }
-    function block(label, value, {size=10, weight=400} = {}) {
+    function block(label, value, {size=10, weight=400, leading=15} = {}) {
       if (!value) return;
       if (y + 29 > bottom) newPage();
       text(label.toUpperCase(), margin, y, {size:8, weight:700, color:muted});
@@ -114,7 +115,7 @@
       for (const entry of wrapped(value, width, size, weight)) {
         if (y > bottom) newPage();
         text(entry, margin, y, {size, weight});
-        y += 15;
+        y += leading;
       }
       y += 9;
     }
@@ -183,6 +184,11 @@
     text(money.format(doc.total), right - 9, y + 8, {size:16, weight:700, align:'right', color:'#fff'});
     y += 41;
     doc.afterTotal.forEach(([label,value]) => block(label, value));
+    if (doc.appendix?.length) {
+      heading = 'Consumer Custom Order Terms';
+      newPage();
+      doc.appendix.forEach(([label,value]) => block(label,value,{size:9.5,leading:12}));
+    }
 
     return pages.map((page,index)=>{
       ctx = page.getContext('2d');
@@ -225,7 +231,8 @@
     return {
       heading:'Quotation', number:quote.displayNumber, partyLabel:'PREPARED FOR', customer:quote.customer,
       header:[quote.sentAt ? `Issued ${dateLabel(quote.sentAt)}` : '',
-        quote.validUntil ? `Valid through ${dateLabel(quote.validUntil)}` : ''].filter(Boolean),
+        quote.validUntil ? `Valid through ${dateLabel(quote.validUntil)}` : '',
+        quote.consumerTerms ? 'Includes Consumer Custom Order Terms' : ''].filter(Boolean),
       beforeItems:[['Project', quote.title]],
       items:totals.grossLineItems || totals.lineItems, showUnit:true,
       summary:[
@@ -233,9 +240,29 @@
         [totals.taxIncluded ? 'Sales tax included in item prices' : 'Sales tax', totals.tax],
         ...(Math.round((totals.roundingAdjustment || 0) * 100) ? [['Discount or adjustment', totals.roundingAdjustment]] : [])
       ],
-      totalLabel:'Quoted total', total:totals.total,
+      totalLabel:'Quoted total', total:totals.total, appendix:quote.consumerTerms,
       afterTotal:[['Payment terms', quote.terms], ['Turnaround', quote.turnaround],
         ['Quote notes', quote.customerNotes], ['Fulfillment', quote.fulfillmentNote], ['Acceptance', quote.acceptance]]
+    };
+  }
+
+  function receiptDocument(receipt) {
+    const totals = receipt.totals;
+    return {
+      heading:'Payment Receipt', number:receipt.number, partyLabel:'RECEIPT FOR', customer:receipt.customer,
+      header:[dateLabel(receipt.date), receipt.status],
+      beforeItems:[['Order',receipt.reference],['Project',receipt.title],['Payment method',receipt.method]],
+      items:totals.lineItems, showUnit:false,
+      summary:[
+        ['Item subtotal',totals.preDiscount],
+        ...(totals.discount ? [['Discount',-totals.discount]] : []),
+        ...(totals.customerShipping ? [['Shipping or delivery',totals.customerShipping]] : []),
+        ['Sales tax',totals.tax],
+        ...(Math.round((totals.roundingAdjustment || 0) * 100) ? [['Discount or adjustment',totals.roundingAdjustment]] : []),
+        ['Order total',totals.total],['Previous payments',receipt.priorPaid],['Remaining balance',receipt.balance]
+      ],
+      totalLabel:'Payment received',total:receipt.amount,
+      afterTotal:[['Order questions',receipt.note]]
     };
   }
 
@@ -279,6 +306,7 @@
   root.OliPolyDocumentPdf = {
     ready,
     invoice: invoice => packPdf(pagesFor(invoiceDocument(invoice))),
-    quote: quote => packPdf(pagesFor(quoteDocument(quote)))
+    quote: quote => packPdf(pagesFor(quoteDocument(quote))),
+    receipt: receipt => packPdf(pagesFor(receiptDocument(receipt)))
   };
 })(globalThis);

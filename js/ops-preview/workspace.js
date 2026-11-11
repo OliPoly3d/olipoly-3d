@@ -335,8 +335,12 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     const offer = order.quoteOffer;
     const details = offer || order;
     const identity = M.projectIdentity(order);
+    const termsVersion = offer ? offer.consumerTermsVersion :
+      order.preset === 'individual' && !order.snapshot ? M.consumerTermsVersion : null;
+    const consumerTerms = M.consumerTerms[termsVersion];
     return {
       number:identity.primary,
+      consumerTerms,
       displayNumber: [identity.primary, identity.legacyQuote, offer ? `Rev ${offer.revision}` : 'Draft'].filter(Boolean).join(' · '),
       revision:offer?.revision,
       sentAt:offer?.sentAt,
@@ -348,11 +352,11 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       customerNotes:details.customerNotes,
       fulfillmentNote:offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order),
       totals:(order.poReview ? offer?.totals : order.snapshot) || offer?.totals || M.totals(order),
-      acceptance:order.preset === 'business' ? 'Send a purchase order referencing this quotation or contact OliPoly to confirm authorization.' : 'Contact OliPoly to confirm the scope and price.'
+      acceptance:consumerTerms ? `By approving Quote ${identity.primary}${offer ? `, revision ${offer.revision},` : ''} by email, text, or online, you agree to the work, price, and Consumer Custom Order Terms included with this quote. Please confirm any required dimensions, fit, finish, or intended use before approving.` : order.preset === 'business' ? 'Send a purchase order referencing this quotation or contact OliPoly to confirm authorization.' : 'Contact OliPoly to confirm the scope and price.'
     };
   }
-  function documentControls(order, kind) {
-    if (!embedded) return `<div><button type="button" data-action="download-${kind}">Download ${kind} PDF</button>
+  function documentControls(order, kind, paymentIndex = 0) {
+    if (!embedded) return `<div><button type="button" data-action="download-${kind}" data-payment-index="${paymentIndex}">Download ${kind} PDF</button>
       <p data-document-download hidden></p></div>`;
     const documentPage = new URL(location.pathname, location.origin);
     documentPage.searchParams.set('order',order.id);
@@ -412,10 +416,16 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     input.select();
     if (!document.execCommand?.('copy')) throw new Error('Copy the selected text using your browser’s copy command.');
   }
+  function termsPreview(terms) {
+    if (!terms) return '';
+    return `<section class="customer-terms"><h3>Consumer Custom Order Terms</h3>
+      ${terms.map(([label,body])=>`<strong>${escape(label)}</strong><p class="request-notes">${escape(body)}</p>`).join('')}</section>`;
+  }
   function quoteDocument(order) {
     const doc = quoteDetails(order);
     const t = doc.totals;
-    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${escape(doc.displayNumber)}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${doc.fulfillmentNote ? `<p class="request-notes">${escape(doc.fulfillmentNote)}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
+    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${escape(doc.displayNumber)}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${doc.fulfillmentNote ? `<p class="request-notes">${escape(doc.fulfillmentNote)}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p>
+      ${doc.consumerTerms ? `<p><strong>Approval</strong> ${escape(doc.acceptance)}</p>${termsPreview(doc.consumerTerms)}` : ''}</section>`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
@@ -678,6 +688,26 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     </section><aside class="no-print">${invoice ? sendPanel : issueForm}</aside></div>`;
   }
   function receiptPanel(order) {
+    if (order.preset === 'individual') {
+      if (!order.payments.length) return '<section class="card"><h2>Payment receipt</h2><p>A receipt becomes available when a payment is recorded.</p></section>';
+      return `<div class="stack">${order.payments.map((_,index) => {
+        const receipt = M.paymentReceipt(order,index);
+        const t = receipt.totals;
+        return `<section class="card"><div class="eyebrow">OliPoly 3D LLC · Test receipt</div>
+          <h2>Payment receipt</h2><p><strong>${escape(receipt.number)}</strong> · ${escape(receipt.status)}</p>
+          <p>${escape(receipt.customer)} · ${escape(receipt.title)}</p>
+          ${row('Payment received',new Date(receipt.date).toLocaleDateString('en-US',{timeZone:'America/New_York'}))}
+          ${row('Payment method',receipt.method)}
+          <table class="receipt-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount before tax</th></tr></thead>
+          <tbody>${t.lineItems.map(item=>`<tr><td>${escape(item.description)}</td><td>${escape(item.quantity)}</td><td>${format(item.line_total)}</td></tr>`).join('')}</tbody></table>
+          ${row('Item subtotal',format(t.preDiscount))}${t.discount ? row('Discount',format(-t.discount)) : ''}
+          ${t.customerShipping ? row('Shipping or delivery',format(t.customerShipping)) : ''}
+          ${row('Sales tax',format(t.tax))}${Math.round((t.roundingAdjustment || 0) * 100) ? row('Discount or adjustment',format(t.roundingAdjustment)) : ''}
+          ${row('Order total',format(t.total))}${row('Previous payments',format(receipt.priorPaid))}
+          ${row('Payment received',format(receipt.amount))}${row('Remaining balance',format(receipt.balance))}
+          <p class="muted">${escape(receipt.note)}</p>${documentControls(order,'receipt',index)}</section>`;
+      }).join('')}</div>`;
+    }
     const t = M.currentTotals(order);
     const items = t.grossLineItems || t.lineItems;
     return `<section class="card receipt"><div class="eyebrow">Sample receipt · ${cloud ? 'test database' : 'device only'}</div><h1>OliPoly 3D LLC</h1><p>${escape(order.customer)}<br>${escape(order.title)} · ${escape(order.reference)}</p><table class="receipt-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${items.map(item => `<tr><td>${escape(item.description)}</td><td>${item.quantity}</td><td>${format(item.line_total)}</td></tr>`).join('')}</tbody></table><div style="margin-top:20px">${t.customerShipping ? row('Fulfillment charge before tax', format(t.customerShipping)) : ''}${row('Before tax', format(t.beforeTax))}${row('Sample tax', format(t.tax))}${t.roundingAdjustment ? row('Rounding adjustment', format(t.roundingAdjustment)) : ''}${row('Total', format(t.total))}${row('Paid', format(M.paid(order)))}${row('Balance', format(M.balance(order)))}</div><p class="muted" style="margin-top:20px">${t.taxIncluded ? 'Applicable sample tax is included in displayed item amounts.' : 'Item amounts are before sample tax.'}</p><button class="primary no-print" data-action="print">Print / Save PDF</button></section>`;
@@ -926,23 +956,24 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
         if (!confirm('Reset all fictional records saved by this sample?')) return;
         const next = M.seed(); next.revision = state.revision + 1; await persist(next); render(); message('Sample reset.'); return;
       }
-      if (['download-quote','download-invoice'].includes(action)) {
+      if (['download-quote','download-invoice','download-receipt'].includes(action)) {
         if (dirty) throw new Error('Save your changes before downloading.');
         const order = selectedOrder();
-        const isQuote = action === 'download-quote';
-        const doc = isQuote ? quoteDetails(order) : order.invoice;
-        if (!doc) throw new Error('Issue the invoice before downloading.');
+        const kind = action.slice('download-'.length);
+        const doc = kind === 'quote' ? quoteDetails(order) : kind === 'invoice' ? order.invoice :
+          M.paymentReceipt(order,Number(button.dataset.paymentIndex));
+        if (!doc) throw new Error('Record the document before downloading.');
         const pdf = window.OliPolyDocumentPdf;
         button.disabled = true;
         try {
           await pdf.ready;
           if (!button.isConnected) return;
-          const blob = isQuote ? pdf.quote(doc) : pdf.invoice(doc);
+          const blob = pdf[kind](doc);
           const link = document.createElement('a');
           if (documentDownloadUrl) URL.revokeObjectURL(documentDownloadUrl);
           documentDownloadUrl = URL.createObjectURL(blob);
           link.href = documentDownloadUrl;
-          link.download = documentFilename(isQuote ? 'quote' : 'invoice',doc);
+          link.download = documentFilename(kind,doc);
           link.textContent = link.download;
           const download = button.parentElement.querySelector('[data-document-download]');
           download.replaceChildren('If your browser didn’t save the file, select ',link,'.');
