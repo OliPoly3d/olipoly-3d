@@ -25,7 +25,7 @@
   let inventoryControls;
   let inventoryError;
   const embedded = window.self !== window.top;
-  let invoiceDownloadUrl;
+  let documentDownloadUrl;
   try { state = JSON.parse(localStorage.getItem(key)) || M.seed(); }
   catch { state = M.seed(); }
   if (state.version !== 1 || !Array.isArray(state.orders) || !Array.isArray(state.inventory)) state = M.seed();
@@ -331,17 +331,50 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     const t = order.snapshot || order.quoteOffer?.totals || M.totals(order);
     return `<section class="card money-list"><div class="eyebrow">${order.snapshot?'Accepted price':'Quote pricing'}</div><h2>One combined total</h2>${row('Before tax',format(t.beforeTax))}${row('Sample tax',format(t.tax))}${t.roundingAdjustment?row('Price rounding',format(t.roundingAdjustment)):''}<div class="row"><strong>Total</strong><span class="total">${format(t.total)}</span></div><p class="muted">${order.taxIncluded?'Tax is included in entered prices.':'Sample tax is added to item prices.'}</p>${!order.snapshot?`${costPreview(order)}<a class="button primary" href="${orderLink(order,'quote')}">Preview customer quote</a>`:'<span class="badge">Approval recorded</span>'}</section>`;
   }
-  function quoteDocument(order) {
+  function quoteDetails(order) {
     const offer = order.quoteOffer;
-    const t = (order.poReview ? offer?.totals : order.snapshot) || offer?.totals || M.totals(order);
-    const doc = offer || order;
-    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${projectLabel(order)}${offer?` · Rev ${offer.revision}`:''}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${(offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)) ? `<p class="request-notes">${escape(offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order))}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
+    const details = offer || order;
+    const identity = M.projectIdentity(order);
+    return {
+      number:identity.primary,
+      displayNumber: [identity.primary, identity.legacyQuote, offer ? `Rev ${offer.revision}` : 'Draft'].filter(Boolean).join(' · '),
+      revision:offer?.revision,
+      sentAt:offer?.sentAt,
+      customer:details.customer,
+      title:details.title,
+      terms:details.terms,
+      turnaround:details.turnaround,
+      validUntil:details.validUntil,
+      customerNotes:details.customerNotes,
+      fulfillmentNote:offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order),
+      totals:(order.poReview ? offer?.totals : order.snapshot) || offer?.totals || M.totals(order),
+      acceptance:order.preset === 'business' ? 'Send a purchase order referencing this quotation or contact OliPoly to confirm authorization.' : 'Contact OliPoly to confirm the scope and price.'
+    };
+  }
+  function documentControls(order, kind) {
+    if (!embedded) return `<div><button type="button" data-action="download-${kind}">Download ${kind} PDF</button>
+      <p data-document-download hidden></p></div>`;
+    const documentPage = new URL(location.pathname, location.origin);
+    documentPage.searchParams.set('order',order.id);
+    documentPage.searchParams.set('section',kind);
+    if (databaseMode) documentPage.searchParams.set('database','test');
+    return `
+      <p class="muted">Open this ${kind} in your browser to download the PDF. You may be asked to sign in again.</p>
+      <a class="button" href="${escape(documentPage.href)}" target="_blank" rel="noopener">Open ${kind} in browser</a>
+      <details><summary>Copy ${kind} page link</summary>
+        ${field('Paste this link into a new browser tab',kind+'PageUrl',documentPage.href,'url','readonly')}
+      </details>`;
+  }
+  function quoteDocument(order) {
+    const doc = quoteDetails(order);
+    const t = doc.totals;
+    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${escape(doc.displayNumber)}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${doc.fulfillmentNote ? `<p class="request-notes">${escape(doc.fulfillmentNote)}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
     const t=(order.poReview ? order.quoteOffer?.totals : order.snapshot) || order.quoteOffer?.totals || M.totals(order);
     const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}${order.quoteOffer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)} ${order.preset==='business'?'Please send your purchase order or contact us to confirm authorization.':'Please reply to confirm the scope and price.'} Thank you, OliPoly 3D LLC`;
-    return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p><div class="actions"><button data-action="print-quote">Print / Save quote PDF</button><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:order.poReview?poAcknowledgmentPanel(order):''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
+    return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p>${documentControls(order,'quote')}<div class="actions"><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:order.poReview?poAcknowledgmentPanel(order):''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
   }
   function productionPreparation(order) {
     return `<form class="card" id="production-plan-form" style="margin-top:22px"><h3>Production preparation</h3><p class="muted">Enter body and support filament separately, with grams and print hours per piece. Match the customer's agreed material requirements.</p>${itemEditor({...order, items: draft.items}, true)}<div class="form-grid">${field('Design / prep hours already spent','prepHours',draft.productionPrepHours || 0,'number','min="0" step=".01" required')}${field('Remaining hands-on hours (estimate)','remainingHours',draft.productionRemainingHours || 0,'number','min="0" step=".01" required')}</div><p class="muted">Labor cost rate: ${format(order.laborRate)} per hour.</p><div id="production-profit-preview">${costPreview({...order, productionPlan: draft.items, productionPrepHours: draft.productionPrepHours || 0, productionRemainingHours: draft.productionRemainingHours || 0})}</div><button class="primary" type="submit" style="margin-top:18px">Save production preparation</button><small id="production-plan-state">${order.productionPlan ? 'Saved production preparation' : 'Production preparation needs review'}</small></form>`;
@@ -549,20 +582,8 @@ Please see the attached invoice from OliPoly 3D LLC${invoice.poNumber ? ` for PO
 Invoice total: ${format(invoice.totals.total)}.
 Amount due at issuance: ${format(invoice.balance)} by ${invoice.dueDate}.
 Please reference ${invoice.number} with your payment. Thank you.` : '';
-    const invoicePage = new URL(location.pathname, location.origin);
-    invoicePage.searchParams.set('order',order.id);
-    invoicePage.searchParams.set('section','invoice');
-    if (databaseMode) invoicePage.searchParams.set('database','test');
-    const invoiceControls = embedded ? `
-      <p class="muted">Open this invoice in your browser to download the PDF. You may be asked to sign in again.</p>
-      <a class="button" href="${escape(invoicePage.href)}" target="_blank" rel="noopener">Open invoice in browser</a>
-      <details><summary>Copy invoice page link</summary>
-        ${field('Paste this link into a new browser tab','invoicePageUrl',invoicePage.href,'url','readonly')}
-      </details>` : `
-      <button type="button" data-action="download-invoice">Download invoice PDF</button>
-      <p data-invoice-download hidden></p>`;
     const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>${row('Confirmed recipient',invoice.recipient)}
-      ${invoiceControls}
+      ${documentControls(order,'invoice')}
       ${recorded ? `<p class="status-line">Owner marked sent · ${escape(new Date(recorded.recordedAt).toLocaleString())}</p>
         ${recorded.reference ? row('Send reference',recorded.reference) : ''}` :
         `<form data-form="record_invoice_sent">
@@ -837,23 +858,35 @@ Please reference ${invoice.number} with your payment. Thank you.` : '';
         if (!confirm('Reset all fictional records saved by this sample?')) return;
         const next = M.seed(); next.revision = state.revision + 1; await persist(next); render(); message('Sample reset.'); return;
       }
-      if (action === 'download-invoice') {
-        const invoice = selectedOrder().invoice;
-        if (!invoice) throw new Error('Issue the invoice before downloading.');
-        const blob = window.OliPolyInvoicePdf.create(invoice);
-        const link = document.createElement('a');
-        if (invoiceDownloadUrl) URL.revokeObjectURL(invoiceDownloadUrl);
-        invoiceDownloadUrl = URL.createObjectURL(blob);
-        link.href = invoiceDownloadUrl;
-        link.download = `${invoice.number.replace(/[^a-z0-9-]/gi,'-')}.pdf`;
-        link.textContent = link.download;
-        const download = button.parentElement.querySelector('[data-invoice-download]');
-        download.replaceChildren('If your browser didn’t save the file, select ',link,'.');
-        download.hidden = false;
-        link.click();
+      if (['download-quote','download-invoice'].includes(action)) {
+        if (dirty) throw new Error('Save your changes before downloading.');
+        const order = selectedOrder();
+        const isQuote = action === 'download-quote';
+        const doc = isQuote ? quoteDetails(order) : order.invoice;
+        if (!doc) throw new Error('Issue the invoice before downloading.');
+        const pdf = window.OliPolyDocumentPdf;
+        button.disabled = true;
+        try {
+          await pdf.ready;
+          if (!button.isConnected) return;
+          const blob = isQuote ? pdf.quote(doc) : pdf.invoice(doc);
+          const file = isQuote ? `${doc.number}-quote-${doc.revision ? `rev-${doc.revision}` : 'draft'}` : doc.number;
+          const link = document.createElement('a');
+          if (documentDownloadUrl) URL.revokeObjectURL(documentDownloadUrl);
+          documentDownloadUrl = URL.createObjectURL(blob);
+          link.href = documentDownloadUrl;
+          link.download = `${file.replace(/[^a-z0-9-]/gi,'-')}.pdf`;
+          link.textContent = link.download;
+          const download = button.parentElement.querySelector('[data-document-download]');
+          download.replaceChildren('If your browser didn’t save the file, select ',link,'.');
+          download.hidden = false;
+          link.click();
+        } finally {
+          button.disabled = false;
+        }
         return;
       }
-      if (['print','print-quote'].includes(action)) { if(dirty) throw new Error('Save your changes before printing.'); activeTab=action==='print-quote'?'quote':'receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
+      if (action === 'print') { if(dirty) throw new Error('Save your changes before printing.'); activeTab='receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
       if (action === 'copy-quote') {
         if(dirty) throw new Error('Save your changes before copying the quote.');
         await navigator.clipboard.writeText(document.getElementById('quote-message').value); message('Quote message copied. Review it before sending.'); return;
