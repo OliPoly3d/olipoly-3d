@@ -43,10 +43,103 @@ test('acceptance remains explicit and milestones remain separate from payment',(
  assert.doesNotMatch(V.render(V.project(o)),/id="customer-accept"/);
 });
 
-test('owner review shell contains no internal navigation or authoritative browser-only storage',()=>{
+test('owner review shell keeps ERP navigation hidden by default and uses shared test storage',()=>{
  const html=fs.readFileSync('ops-customer-preview.html','utf8'),js=fs.readFileSync('js/ops-preview/customer-preview.js','utf8');
- assert.match(html,/OWNER REVIEW/);assert.doesNotMatch(html,/href="ops-(order|preview)|Back to workspace|sidebar/);
+ assert.match(html,/OWNER REVIEW/);assert.match(html,/id="owner-return" hidden/);assert.doesNotMatch(html,/sidebar/);
  assert.doesNotMatch(js,/localStorage|sessionStorage|window\.open|location\.assign|buy\.stripe|paypal\.com|venmo\.com/);
  assert.match(js,/cloud\.load\(\)/);assert.match(js,/cloud\.save\(/);assert.match(js,/state\.revision/);
  assert.match(js,/Owner preview sign-in required/);
+});
+
+test('Back to ERP stays available across owner previews and recovers from a failed load',async()=>{
+ const vm=require('node:vm');
+ const script=fs.readFileSync('js/ops-preview/customer-preview.js','utf8');
+ const order=fixture();
+ const allWork='ops-preview.html?database=test';
+ async function launch(signedIn,search,load){
+  const link={getAttribute:()=>allWork};
+  const ownerReturn={hidden:true,querySelector:()=>link};
+  const nodes={'owner-return':ownerReturn,'customer-app':{},'customer-message':{}};
+  vm.runInNewContext(script,{
+   URLSearchParams,location:{search},
+   document:{getElementById:id=>nodes[id],addEventListener(){}},
+   window:{OliPolyCustomerView:V,OliPolyOpsPreview:M,OliPolyLineItems:{escape:String},OliPolyOpsCloud:{create:()=>({signedIn:()=>signedIn,load,pending:()=>false})}},
+  });
+  await new Promise(resolve=>setImmediate(resolve));
+  return {hidden:ownerReturn.hidden,href:link.href};
+ }
+ const load=async()=>({orders:[order]});
+ assert.deepEqual(await launch(false,'',load),{hidden:true,href:allWork});
+ assert.deepEqual(await launch(true,'',async()=>{throw new Error('Session expired');}),{hidden:false,href:allWork});
+ assert.deepEqual(await launch(true,'?order=missing',load),{hidden:false,href:allWork});
+ for(const view of ['quote','track','pay']){
+  const selected=await launch(true,`?order=${encodeURIComponent(order.id)}&view=${view}`,load);
+  assert.equal(selected.hidden,false);
+  const target=new URL(selected.href,'https://test.example');
+  assert.equal(target.pathname,'/ops-order-preview.html');
+  assert.equal(target.searchParams.get('database'),'test');
+  assert.equal(target.searchParams.get('order'),order.id);
+  assert.equal(target.searchParams.get('section'),'production');
+ }
+});
+
+test('post-QC milestone follows the confirmed handoff and the accepted quote keeps its timing and total', () => {
+  const order = fixture();
+  order.released = true;
+  order.runs = order.items.map(item => ({itemId: item.id, status: 'inspected', accepted: item.quantity}));
+  const view = () => V.project(order);
+  assert.match(V.render(view(), 'track'), /Ready · fulfillment to be arranged/);
+  assert.doesNotMatch(V.render(view(), 'track'), /Agreed timing/);
+  assert.match(V.render(view(), 'quote'), /Two weeks after approval/);
+
+  for (const [method, ready, complete] of [
+    ['shipping', 'Ready to ship', 'Shipped'],
+    ['pickup', 'Ready for pickup', 'Picked up'],
+    ['delivery', 'Ready for local delivery', 'Delivered'],
+  ]) {
+    order.fulfillmentPlan = {method, totals: {...order.snapshot, total: 120, tax: 8, customerShipping: 9.2}};
+    order.fulfilled = false;
+    assert.match(V.render(view(), 'track'), new RegExp(`aria-current="step"><strong>${ready}</strong>`));
+    assert.match(V.render(view(), 'pay'), /\$120\.00/);
+    assert.match(V.render(view(), 'quote'), /\$110\.00/);
+    order.fulfilled = true;
+    assert.match(V.render(view(), 'track'), new RegExp(`aria-current="step"><strong>${complete}</strong>`));
+  }
+});
+
+test('order summary adds post-quote charges to the original tax-inclusive quote', () => {
+  const order = fixture();
+  order.snapshot = {...order.snapshot, total: 15, beforeTax: 14.02, tax: .98, customerShipping: 0};
+  order.fulfillmentPlan = {method: 'shipping', totals: {
+    ...order.snapshot, total: 22.76, beforeTax: 21.27, tax: 1.49, customerShipping: 7.25, taxIncluded: false,
+  }};
+  delete order.fulfillmentPlan.totals.grossShipping;
+  const summary = view => V.render(V.project(order), view).split('<aside')[1];
+  for (const view of ['track','pay']) {
+    const html = summary(view);
+    assert.match(html, /Quoted total<\/span><strong>\$15\.00/);
+    assert.match(html, /Additional sales tax<\/span><strong>\$0\.51/);
+    assert.match(html, /Shipping charged<\/span><strong>\$7\.25/);
+    assert.match(html, /Agreed total<\/small><strong>\$22\.76/);
+    assert.match(html, /Total sales tax included: \$1\.49/);
+    assert.doesNotMatch(html, /Before tax|Discount or Adjustment|Rounding adjustment/);
+  }
+  assert.match(summary('quote'), /Quoted total<\/small><strong>\$15\.00/);
+  order.fulfillmentPlan.totals.total = 21.76;
+  assert.match(summary('track'), /Discount or Adjustment<\/span><strong>-\$1\.00/);
+});
+
+test('shipment method is under Shipped and missing tracking is omitted', () => {
+  const order = fixture();
+  order.released = true;
+  order.runs = order.items.map(item => ({itemId: item.id, status: 'inspected', accepted: item.quantity}));
+  order.shipment = {carrier: 'USPS', service: 'Ground Advantage', tracking: 'TEST-321'};
+  const progress = () => V.render(V.project(order), 'track');
+  assert.doesNotMatch(progress(), /Ground Advantage|TEST-321/);
+  order.fulfilled = true;
+  order.shipment.handoffAt = new Date().toISOString();
+  assert.match(progress(), /aria-current="step"><strong>Shipped<\/strong>.*Shipping method · USPS · Ground Advantage.*Tracking number · TEST-321/);
+  delete order.shipment.tracking;
+  assert.match(progress(), /Ground Advantage/);
+  assert.doesNotMatch(progress(), /Tracking number|undefined/);
 });

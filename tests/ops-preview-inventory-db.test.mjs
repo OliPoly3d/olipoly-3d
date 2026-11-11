@@ -1,0 +1,379 @@
+import fs from 'node:fs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {pathToFileURL} from 'node:url';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+require('../js/tax-rate.js');require('../js/order-line-items.js');require('../js/quote-pricing.js');
+const M=require('../js/ops-preview/model.js');
+const migrations=new URL('../supabase/ops-preview/migrations/',import.meta.url);
+const migration='20261107041010_ops_test_inventory_management.sql';
+test('shared inventory preserves multiple rolls, production costs, spool counts and owner audit history',{skip:!process.env.OPS_PGLITE_MODULE},async t=>{
+ const {PGlite}=await import(pathToFileURL(process.env.OPS_PGLITE_MODULE)); const db=new PGlite();
+ const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
+ let state,inventory,last;
+ const rollData=(extra={})=>({material_type:'PETG',color_name:'Black',brand:'Bambu',roll_label:'Refill A',location:'Shelf',starting_grams:1000,remaining_grams:1000,cost_per_spool:30,reorder_threshold_grams:250,roll_type:'refill',reusable_spool:true,...extra});
+ const run=async(action,rev=state.revision,id=crypto.randomUUID())=>{
+  last=[JSON.stringify(action),rev,id];
+  const result=(await db.query('select public.ops_preview_inventory_commit($1,$2,$3) result',last)).rows[0].result;
+  state=result.workspace; inventory=result.inventory; return result;
+ };
+ const submitOrder=async (id,action,order,revision=state.revision,commandId=crypto.randomUUID())=>{
+  state=(await db.query('select public.ops_preview_commit($1,$2,$3,$4,$5) result',
+   [id,JSON.stringify(action),JSON.stringify(order),revision,commandId])).rows[0].result;
+ };
+ const change=async (action,id=state.orders[0].id)=>{
+  const next=M.command(state,id,action);
+  await submitOrder(id,action,next.orders.find(o=>o.id===id));
+ };
+ try{
+  await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;CREATE SCHEMA auth;CREATE TABLE auth.users(id uuid PRIMARY KEY);
+   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT NULLIF(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+   CREATE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS $$SELECT current_setting('request.jwt.claim.role',true)$$;
+   CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT COALESCE(NULLIF(current_setting('request.jwt.claims',true),'')::jsonb,'{}')$$;
+   GRANT USAGE ON SCHEMA auth TO anon,authenticated;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql','20261111190000_ops_test_business_po_review.sql','20261111201500_ops_test_business_invoice_issue.sql']){
+   let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
+   await db.exec(sql);
+  }
+  await db.exec(`INSERT INTO auth.users VALUES('${owner}'),('${other}');SET request.jwt.claim.sub='${owner}';SET ROLE authenticated;`);
+  state=(await db.query('select public.ops_preview_initialize() result')).rows[0].result;
+  await t.test('new refills aggregate with legacy stock and keep unique physical identities',async()=>{
+   await run({type:'save_roll',data:rollData(),reason:'Receive test refill'});
+   assert.equal(state.inventory.find(s=>s.key==='PETG / Black').grams,3000);
+   assert.equal(inventory.rolls.length,4); assert.equal(inventory.pool,null);
+   assert.equal(inventory.rolls.filter(r=>r.material_type==='PETG').length,2);
+   assert.equal(inventory.events[0].reason,'Receive test refill');
+   const receipt=await db.query('select public.ops_preview_inventory_commit($1,$2,$3) result',last);
+   assert.equal(receipt.rows[0].result.workspace.revision,state.revision);
+   assert.equal(receipt.rows[0].result.inventory.rolls.length,4);
+  });
+  await t.test('stale or malformed commands cannot alter balances or duplicate history',async()=>{
+   await assert.rejects(run({type:'save_roll',data:rollData(),reason:'Stale'},state.revision-1),/changed on another device/);
+   await assert.rejects(run({type:'save_roll',data:rollData({remaining_grams:-1,roll_label:'Invalid negative roll'}),reason:'Invalid'}),/nonnegative/);
+   await assert.rejects(run({type:'save_roll',data:rollData(),reason:''}),/reason/);
+   assert.equal((await db.query('select count(*)::int n from ops_preview_inventory_events')).rows[0].n,1);
+  });
+  const refill=()=>inventory.rolls.find(r=>r.roll_label==='Refill A');
+  await t.test('mounting consumes one free spool, unmounting releases it exactly once',async()=>{
+   await assert.rejects(run({type:'mount_roll',id:refill().id,reason:'Mount without spool'}),/empty spool/);
+   await run({type:'spool_count',data:{available_empty:2,retired:1},reason:'Physical count'});
+   await run({type:'mount_roll',id:refill().id,reason:'Mount refill'});
+   assert.equal(inventory.pool.available_empty,1);assert.equal(refill().is_mounted,true);
+   await assert.rejects(run({type:'mount_roll',id:refill().id,reason:'Double mount'}),/unmounted/);
+   await run({type:'unmount_roll',id:refill().id,data:{confirm:true},reason:'Filament removed and spool free'});
+   assert.equal(inventory.pool.available_empty,2);assert.equal(refill().is_mounted,false);
+   await assert.rejects(run({type:'unmount_roll',id:refill().id,data:{confirm:true},reason:'Double unmount'}),/Unmount/);
+  });
+  await t.test('weigh-ins store tare and gross measurements with audited net gram changes',async()=>{
+   await run({type:'mount_roll',id:refill().id,reason:'Remount for weigh-in'});
+   await run({type:'adjust_roll',id:refill().id,data:{mode:'weigh',gross_grams:700,tare_grams:200},reason:'Periodic weigh-in'});
+   assert.equal(refill().remaining_grams,500); assert.equal(refill().tare_grams,200); assert.equal(refill().last_gross_grams,700);
+   assert.equal(state.inventory.find(s=>s.key==='PETG / Black').grams,2500);
+   assert.equal(inventory.events[0].before_data.remaining_grams,1000);
+   assert.equal(inventory.events[0].after_data.remaining_grams,500);
+   await assert.rejects(run({type:'adjust_roll',id:refill().id,data:{mode:'weigh',gross_grams:100,tare_grams:200},reason:'Bad weigh-in'}),/tare/);
+  });
+  await t.test('production reserves across rolls and protects physical stock corrections',async()=>{
+   const draft=M.copy(state.orders[0]);draft.items[0].materials[0].grams_each=1100;
+   state=(await db.query('select public.ops_preview_commit($1,$2,$3,$4,$5) result',[draft.id,JSON.stringify({type:'save'}),JSON.stringify(draft),state.revision,crypto.randomUUID()])).rows[0].result;
+   await change({type:'approve',method:'Verbal agreement recorded'}); await change({type:'release'});
+   assert.equal(M.reserved(state,'PETG / Black'),2200);
+   assert.equal((await db.query("select count(*)::int n from production_material_reservations where status='active'")).rows[0].n,4);
+   await assert.rejects(run({type:'adjust_roll',id:refill().id,data:{mode:'set',quantity:0},reason:'Cannot remove reserved stock'}),/reservations/);
+   await assert.rejects(run({type:'unmount_roll',id:refill().id,data:{confirm:true},reason:'Reserved roll'}),/unreserved/);
+  });
+  await t.test('actual consumption spans rolls once and retains weighted actual material cost',async()=>{
+   await change({type:'start',itemId:'blocks',quantity:2,printer:'P1S'});
+   const attempt=state.orders[0].runs.at(-1);
+   await change({type:'inspect',runId:attempt.id,accepted:2,rejected:0,hours:4,usage:[{key:'PETG / Black',grams:2200},{key:'PLA / White',grams:20}],notes:'Two physical rolls'});
+   assert.equal(state.inventory.find(s=>s.key==='PETG / Black').grams,300);
+   const saved=state.orders[0].runs.at(-1);assert.equal(saved.usage.length,2);
+   assert.ok(Math.abs(saved.usage.find(u=>u.key==='PETG / Black').unitCost-(2000*0.023+200*0.03)/2200)<0.00001);
+   assert.equal((await db.query("select count(*)::int n from inventory_transactions where transaction_type='production_attempt_consumption'")).rows[0].n,3);
+  });
+  await t.test('an owner can choose actual physical rolls and finish the normal payment and tax flow',async()=>{
+   await change({type:'start',itemId:'tags',quantity:3,printer:'P2S'});
+   const attempt=state.orders[0].runs.at(-1);
+   const wrong=inventory.rolls.find(r=>r.material_type==='PETG').id;
+   const actual=inventory.rolls.find(r=>r.material_type==='PLA'&&r.color_name==='Black').id;
+   await assert.rejects(change({type:'inspect',runId:attempt.id,accepted:3,rejected:0,hours:1.5,usage:[{key:'PLA / Black',grams:45,rolls:[{raw_material_roll_id:wrong,grams_used:45}]}]}),/Mount sufficient/);
+   assert.equal(Number((await db.query("select remaining_grams from raw_material_inventory where id=$1",[actual])).rows[0].remaining_grams),1500);
+   await change({type:'inspect',runId:attempt.id,accepted:3,rejected:0,hours:1.5,usage:[{key:'PLA / Black',grams:45,rolls:[{raw_material_roll_id:actual,grams_used:45}]}]});
+   assert.equal(state.orders[0].runs.at(-1).usage[0].rolls[0].raw_material_roll_id,actual);
+   await change({type:'pickup'});
+   await change({type:'pay',amount:110,fee:1,method:'Stripe',reference:'Fictional payment'});
+   assert.equal(M.balance(state.orders[0]),0);assert.ok(state.orders[0].database.financeEntryId);
+   const finance=(await db.query("select amount,sales_tax_collected from financial_entries where type='income'")).rows[0];
+   assert.equal(Number(finance.amount),102.8);assert.equal(Number(finance.sales_tax_collected),7.2);
+  });
+  await t.test('single-box shipping preserves the accepted total and records postage once',async()=>{
+   const label={type:'save_shipping_label',confirmDetails:'yes',destination:'123 Test Street',weightOz:'16.5',lengthIn:'8',widthIn:'6',heightIn:'4',
+    carrier:'USPS',service:'Ground Advantage',provider:'USPS Click-N-Ship',tracking:'TEST 00001',purchaseRef:'TEST-LABEL-1',
+    purchaseDate:'2026-11-01',postage:'7.25',receiptUrl:'https://example.test/receipt'};
+   const byId=id=>state.orders.find(o=>o.id===id);
+   const track=async id=>(await db.query('select * from public_order_tracking_lookup($1)',[byId(id).reference])).rows[0];
+   const postageRows=async()=> (await db.query("select id,amount,tax_category,receipt_link from financial_entries where category='Shipping' order by amount")).rows;
+   async function readyOrder(id, earlyPayment=false, unitPrice=10) {
+    const draft=M.seed().orders[0];
+    Object.assign(draft,{id,title:id,items:[{...draft.items[1],quantity:1,unit_price:unitPrice}],designFee:0});
+    await submitOrder(id,{type:'new'},draft);
+    await change({type:'approve',method:'Verbal agreement recorded'},id);
+    await assert.rejects(submitOrder(id,label,byId(id)),/Pass QC/);
+    await change({type:'release'},id);
+    await change({type:'start',itemId:'tags',quantity:1,printer:'P2S'},id);
+    const run=byId(id).runs.at(-1);
+    await change({type:'inspect',runId:run.id,accepted:1,rejected:0,hours:0.5,usage:[{key:'PLA / Black',grams:15}]},id);
+    if(earlyPayment) await change({type:'pay',amount:byId(id).snapshot.total,fee:0,method:'Cash'},id);
+   }
+   const id='test-shipment';
+   await readyOrder(id);
+   const agreed=M.copy(byId(id).snapshot);
+   const startingCost=M.costs(state,byId(id)).actual;
+   const handoff={type:'ship',confirmHandoff:'yes'};
+   await assert.rejects(submitOrder(id,handoff,byId(id)),/purchased label first/);
+   await assert.rejects(submitOrder(id,{...label,weightOz:'-1'},byId(id)),/positive packed weight/);
+   assert.equal((await postageRows()).length,0);
+   const proposed=M.command(state,id,label).orders.find(o=>o.id===id);
+   const revision=state.revision, commandId=crypto.randomUUID();
+   await submitOrder(id,label,proposed,revision,commandId);
+   await submitOrder(id,label,proposed,revision,commandId);
+   assert.equal(M.stage(byId(id)),'label');
+   assert.equal(byId(id).fulfilled,false);
+   assert.equal((await track(id)).tracking_number,null);
+   const rows=await postageRows();
+   assert.equal(rows.length,1);
+   assert.equal(Number(rows[0].amount),7.25);
+   assert.equal(rows[0].tax_category,'shipping_out');
+   assert.equal(rows[0].receipt_link,label.receiptUrl);
+   assert.equal(byId(id).shipment.financeEntryId,rows[0].id);
+   assert.equal(M.costs(state,byId(id)).actual,startingCost+7.25);
+   await assert.rejects(submitOrder(id,{type:'pickup'},byId(id)),/shipping label/);
+   await assert.rejects(submitOrder(id,{type:'ship'},byId(id)),/Confirm that the carrier/);
+   await change(handoff,id);
+   assert.ok(byId(id).shipment.handoffAt);
+   assert.equal((await track(id)).tracking_number,label.tracking);
+   assert.equal((await track(id)).public_status_text,'Shipped');
+   assert.equal(M.stage(byId(id)),'payment');
+   await change({type:'pay',amount:agreed.total,fee:0,method:'Cash'},id);
+   assert.equal((await track(id)).status,'closed');
+   assert.equal((await track(id)).public_status_text,'Shipped');
+   assert.deepEqual(byId(id).snapshot,agreed);
+   assert.equal(M.stage(byId(id)),'complete');
+   assert.equal((await postageRows()).length,1);
+
+   const second='test-prepaid-shipment';
+   await readyOrder(second,true);
+   await assert.rejects(submitOrder(second,label,byId(second)),/already recorded/);
+   const expense=(await db.query('select public.create_manual_financial_entry($1) result',[JSON.stringify({
+    type:'expense',entry_date:label.purchaseDate,category:'Shipping',tax_category:'shipping_out',
+    amount:8.5,original_amount:8.5,title:'Postage already entered in Test Finance'
+   })])).rows[0].result;
+   await change({...label,tracking:'TEST 00002',purchaseRef:'TEST-LABEL-2',postage:'8.50',financeEntryId:expense.entry_id},second);
+   await change(handoff,second);
+   assert.equal(byId(second).shipment.financeEntryId,expense.entry_id);
+   assert.equal((await track(second)).status,'closed');
+   assert.equal((await postageRows()).length,2);
+
+   const adjustable='test-15-fulfillment';
+   await readyOrder(adjustable,false,15);
+   assert.equal((await track(adjustable)).public_status_text,'Ready · fulfillment to be arranged');
+   const original=M.copy(byId(adjustable).snapshot);
+   const choice={type:'fulfillment_plan',method:'shipping',address:'123 Fictional Street, Middlefield, OH 44062',
+    county:'Geauga',taxRate:'6.75',customerFee:'7.25',approval:'Fictional customer approved revised total'};
+   const proposal=M.command(state,adjustable,choice).orders.find(o=>o.id===adjustable);
+   await assert.rejects(submitOrder(adjustable,{...choice,approval:''},proposal),/Record customer approval/);
+   await change(choice,adjustable);
+   assert.equal((await track(adjustable)).public_status_text,'Ready · fulfillment to be arranged');
+   assert.equal(Number((await track(adjustable)).balance_amount),15);
+   assert.equal(M.balance(byId(adjustable)),15);
+   assert.equal((await db.query('select totals from order_pricing_revisions where order_id=$1',[byId(adjustable).database.orderId])).rows.length,0);
+   const adjustedLabel={...label,destination:choice.address,tracking:'TEST 00003',purchaseRef:'TEST-LABEL-3',postage:'6.00'};
+   await assert.rejects(submitOrder(adjustable,{...adjustedLabel,confirmDetails:''},byId(adjustable)),/Confirm the shipment details/);
+   await change({...adjustedLabel,confirmDetails:'yes'},adjustable);
+   assert.equal((await track(adjustable)).public_status_text,'Ready to ship');
+   assert.equal(Number((await track(adjustable)).balance_amount),22.71);
+   assert.equal(M.balance(byId(adjustable)),22.71);
+   assert.deepEqual(byId(adjustable).snapshot,original);
+   const adjustment=(await db.query('select totals,reason from order_pricing_revisions where order_id=$1',[byId(adjustable).database.orderId])).rows[0];
+   assert.equal(adjustment.totals.original_quote_total,15);
+   assert.equal(adjustment.totals.shipping_charged,7.25);
+   assert.equal(adjustment.totals.tax,1.44);
+   assert.equal(M.costs(state,byId(adjustable)).postage,6);
+   await change(handoff,adjustable);
+   await change({type:'pay',amount:22.71,fee:0,method:'Cash'},adjustable);
+   const adjustedIncome=(await db.query("select amount,original_amount,shipping_charged,sales_tax_collected,sales_county from financial_entries where finance_command='post_order_income' and order_id=$1",[byId(adjustable).database.orderId])).rows[0];
+   assert.equal(Number(adjustedIncome.amount),14.02);
+   assert.equal(Number(adjustedIncome.original_amount),14.02);
+   assert.equal(Number(adjustedIncome.shipping_charged),7.25);
+   assert.equal(Number(adjustedIncome.sales_tax_collected),1.44);
+   assert.equal(adjustedIncome.sales_county,'Geauga');
+
+   const rounded='test-shipment-with-no-label-purchase';
+   await readyOrder(rounded,false,15);
+   await change({...choice,taxRate:'7',discountMode:'round_down',discountReason:'Whole-dollar courtesy'},rounded);
+   assert.equal(byId(rounded).shippingDraft.totals.total,22);
+   assert.equal(byId(rounded).shippingDraft.totals.fulfillmentDiscount,.71);
+   await change({type:'save_shipping_label',destination:choice.address,carrier:'USPS',service:'N/A',
+    provider:'N/A',tracking:'N/A',purchaseRef:'N/A',postage:'0',noPurchase:'yes',packageNotApplicable:'yes',confirmDetails:'yes'},rounded);
+   assert.equal(byId(rounded).shipment.tracking,null);
+   assert.equal(byId(rounded).shipment.purchaseDate,null);
+   assert.equal(byId(rounded).shipment.financeEntryId,null);
+   assert.equal(M.balance(byId(rounded)),22);
+   const roundedRevision=(await db.query('select totals from order_pricing_revisions where order_id=$1',[byId(rounded).database.orderId])).rows[0].totals;
+   assert.equal(roundedRevision.fulfillment_discount,.71);
+   assert.equal(roundedRevision.fulfillment_discount_reason,'Whole-dollar courtesy');
+   await change(handoff,rounded);
+   assert.equal((await track(rounded)).public_status_text,'Shipped');
+   assert.equal((await track(rounded)).tracking_number,null);
+
+   const local='test-local-drop-off';
+   await readyOrder(local);
+   assert.equal(M.fulfillmentPricing(byId(local),{...choice,discountMode:'fixed',discountValue:'2'}).fulfillmentDiscount,2);
+   const deliveryChoice={...choice,method:'delivery',county:'Portage',taxRate:'7',customerFee:'2',discountMode:'percent',discountValue:'10',approval:'Approved courtesy discount'};
+   await assert.rejects(submitOrder(local,deliveryChoice,byId(local)),/Confirm the local delivery address/);
+   await change({...deliveryChoice,confirmDelivery:'yes'},local);
+   assert.equal((await track(local)).public_status_text,'Ready for local delivery');
+   await change({type:'deliver'},local);
+   assert.equal((await track(local)).public_status_text,'Delivered');
+   assert.equal(M.balance(byId(local)),11.14);
+
+  });
+  await t.test('usage-only QC and completed-order backfill preserve physical stock and reservations', async()=>{
+   const stock=async()=> (await db.query('select id,current_grams,remaining_grams,reserved_grams from raw_material_inventory order by id')).rows;
+   const before=await stock();
+   const beforeFinance=(await db.query('select count(*)::int count from financial_entries')).rows[0].count;
+   async function approved(id, grams_each) {
+    const draft=M.seed().orders[0];
+    Object.assign(draft,{id,title:id,items:[{...draft.items[1],quantity:1,hours_each:grams_each ? .5 : 0,materials:grams_each ? [{material:'PLA',color:'Black',grams_each}] : []}],designFee:0});
+    await submitOrder(id,{type:'new'},draft);
+    await change({type:'approve',method:'Recorded acceptance'},id);
+   }
+   const byId=id=>state.orders.find(o=>o.id===id);
+   const noStock='test-record-usage-only';
+   await approved(noStock,9999);
+   await assert.rejects(change({type:'release'},noStock),/Not enough/);
+   await change({type:'inventory_handling',mode:'usage_only',reason:'Material accounted for separately'},noStock);
+   await change({type:'release'},noStock);
+   assert.deepEqual(byId(noStock).reservedMaterials,{});
+   await change({type:'start',itemId:'tags',quantity:1,printer:'P1S'},noStock);
+   await change({type:'inspect',runId:byId(noStock).runs[0].id,accepted:1,rejected:0,hours:.5,
+    usage:[{key:'PLA / Black',grams:9999,materialCost:'3.25'}]},noStock);
+   assert.equal(byId(noStock).status,'ready_for_fulfillment');
+   assert.equal(M.costs(state,byId(noStock)).material,3.25);
+   await assert.rejects(change({type:'inventory_handling',mode:'track'},noStock),/before release/);
+
+   const historical='test-already-shipped';
+   await approved(historical,0);
+   const backfill={type:'historical_completion',method:'shipping',handoffDate:'2026-11-01',carrier:'USPS',service:'Ground Advantage',
+    tracking:'TEST-HISTORICAL-01',reason:'Completed before opening inventory count',notes:'Private production note',
+    items:[{material:'PETG-CF unavailable in stock',grams:'37',materialCost:'2.35',hours:'1.75',printer:'P2S'}]};
+   await change(backfill,historical);
+   const saved=byId(historical);
+   assert.equal(saved.inventoryHandling.mode,'usage_only');
+   assert.equal(saved.historicalCompletion.handoffDate,'2026-11-01');
+   assert.equal(saved.fulfilled,true);
+   assert.equal(saved.payments.length,0);
+   assert.equal(M.balance(saved),10);
+   assert.equal(M.costs(state,saved).material,2.35);
+   const tracking=(await db.query('select * from public_order_tracking_lookup($1)',[saved.reference])).rows[0];
+   assert.equal(tracking.public_status_text,'Shipped');
+   assert.equal(tracking.tracking_number,'TEST-HISTORICAL-01');
+   assert.equal(tracking.shipping_or_pickup_note,'Shipped on 2026-11-01');
+   assert.doesNotMatch(JSON.stringify(tracking),/Private production note/);
+   assert.deepEqual(await stock(),before);
+   assert.equal((await db.query('select count(*)::int count from financial_entries')).rows[0].count,beforeFinance);
+   await change({type:'pay',amount:10,fee:0,method:'Cash'},historical);
+   assert.equal(byId(historical).status,'closed');
+   assert.deepEqual(await stock(),before);
+  });
+  await t.test('reviewed PO preserves the shared quote and releases only accepted pieces', async()=>{
+   const id='test-reviewed-po';
+   const draft=M.seed().orders[0];
+   Object.assign(draft,{id,title:'Business PO rehearsal',preset:'business',quoteStage:'draft',terms:'Due at handoff',
+    taxIncluded:false,designFee:0,items:[{...draft.items[1],quantity:12,unit_price:25}]});
+   await submitOrder(id,{type:'new'},draft);
+   const sent=M.quoteCommand(state,id,{type:'send_quote',via:'Fictional rehearsal'}).orders.find(o=>o.id===id);
+   await submitOrder(id,{type:'save'},sent);
+   await assert.rejects(submitOrder(id,{type:'approve',method:'Direct approval'},sent),/Review the PO/);
+   const reference=state.orders.find(o=>o.id===id).reference;
+   const input={type:'po_review',authorization:'po',number:'TEST-PO-104',purchasingEmail:'buyer@example.test',
+    receivingName:'Sample Receiving',receivingEmail:'receiving@example.test',apEmail:'ap@example.test',
+    shipTo:'100 Fictional Way, Aurora, OH 44202',billTo:'200 Fictional Way, Aurora, OH 44202',
+    terms:'Net 30 from invoice date',evidence:'Fictional PO copy',county:'Portage',taxRate:'7',quantities:['8']};
+   const proposal=M.command(state,id,input).orders.find(o=>o.id===id);
+   const tampered=M.copy(proposal);
+   tampered.items[0].unit_price=1;
+   await assert.rejects(submitOrder(id,input,tampered),/Accepted items must match/);
+   await change(input,id);
+   const accepted=state.orders.find(o=>o.id===id);
+   assert.equal(accepted.reference,reference);
+   assert.equal(accepted.quoteOffer.items[0].quantity,12);
+   assert.equal(accepted.quoteOffer.totals.total,321);
+   assert.equal(accepted.items[0].quantity,8);
+   assert.equal(accepted.snapshot.total,214);
+   assert.deepEqual(accepted.reservedMaterials,{});
+   const row=(await db.query('select quantity,po_number,customer_email,ap_email,invoice_terms,invoice_date from orders where id=$1',[accepted.database.orderId])).rows[0];
+   assert.deepEqual(row,{quantity:8,po_number:'TEST-PO-104',customer_email:'buyer@example.test',ap_email:'ap@example.test',invoice_terms:'Net 30 from invoice date',invoice_date:null});
+   const acknowledgment={type:'po_acknowledgment',confirmSent:'yes',message:'Fictional acknowledgment',reference:'Gmail test draft reference'};
+   await change(acknowledgment,id);
+   assert.equal(state.orders.find(o=>o.id===id).poAcknowledgment.recipient,'buyer@example.test');
+   await assert.rejects(change(acknowledgment,id),/recorded once/);
+   await change({type:'release'},id);
+   assert.deepEqual(state.orders.find(o=>o.id===id).reservedMaterials,{'PLA / Black':120});
+   const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+   const issue={type:'issue_invoice',issueDate:today,dueDate:M.invoiceDueDate(accepted.terms,today),recipient:'ap@example.test',billTo:'200 Fictional Way, Aurora, OH 44202'};
+   const byId=()=>state.orders.find(o=>o.id===id);
+   assert.equal(M.invoiceDueDate('Net 30 from invoice date','2026-11-11'),'2026-12-11');
+   await assert.rejects(submitOrder(id,issue,byId()),/after final handoff/);
+   await change({type:'start',itemId:'tags',quantity:8,printer:'P2S'},id);
+   await change({type:'inspect',runId:byId().runs.at(-1).id,accepted:8,rejected:0,hours:4,usage:[{key:'PLA / Black',grams:120}]},id);
+   await change({type:'pickup'},id);
+   assert.equal(M.stage(byId()),'invoice');
+   await change(issue,id);
+   const issued=M.copy(byId().invoice);
+   assert.equal(issued.number,accepted.reference.replace(/^OP-/,'I-'));
+   assert.equal(issued.balance,214);
+   assert.equal(issued.poNumber,'TEST-PO-104');
+   assert.equal(issued.totals.lineItems[0].quantity,8);
+   assert.equal(M.stage(byId()),'payment');
+   assert.equal((await db.query('select invoice_due_date::text due from orders where id=$1',[accepted.database.orderId])).rows[0].due,issue.dueDate);
+   await assert.rejects(submitOrder(id,issue,byId()),/only|once/);
+   await change({type:'record_invoice_sent',confirmSent:'yes',reference:'Fictional email'},id);
+   assert.equal(byId().invoiceDelivery.recipient,'ap@example.test');
+   await change({type:'pay',amount:214,fee:0,method:'ACH'},id);
+   assert.deepEqual(byId().invoice,issued);
+   assert.equal(M.balance(byId()),0);
+   const finance=(await db.query("select amount,sales_tax_collected from financial_entries where order_id=$1 and finance_command='post_order_income'",[accepted.database.orderId])).rows[0];
+   assert.equal(Number(finance.amount),200);
+   assert.equal(Number(finance.sales_tax_collected),14);
+
+  });
+  let supplyId;
+  await t.test('supplies retain measurement units and record consumption and audits',async()=>{
+   await run({type:'save_supply',data:{item_name:'Protective wrap',unit_type:'sq.ft.',category:'Packaging',quantity_on_hand:10,cost_per_unit:0.5,reorder_threshold:3,exclude_warning:false},reason:'Opening count'});
+   supplyId=inventory.supplies[0].id;
+   await run({type:'adjust_supply',id:supplyId,data:{mode:'consume',quantity:2.5},reason:'Package OP test order'});
+   assert.equal(inventory.supplies[0].quantity_on_hand,7.5);
+   await assert.rejects(run({type:'adjust_supply',id:supplyId,data:{mode:'consume',quantity:8},reason:'Too much'}),/exceeds stock/);
+   await run({type:'adjust_supply',id:supplyId,data:{mode:'set',quantity:7},reason:'Physical audit'});
+   assert.equal(inventory.events[0].before_data.quantity_on_hand,7.5);
+   assert.equal(inventory.supplies[0].unit_type,'sq.ft.');
+  });
+  await t.test('custom dropdowns persist and protected history cannot be edited',async()=>{
+   await run({type:'options',data:{materials:['PLA Basic','PLA Matte','PLA Silk'],brands:['Bambu'],colors:['Black'],units:['each','sq.ft.']},reason:'Update choices'});
+   assert.deepEqual(inventory.options.materials,['PLA Basic','PLA Matte','PLA Silk']);
+   await assert.rejects(db.exec('delete from ops_preview_inventory_events'),/permission denied/);
+   await db.exec(`SET request.jwt.claim.sub='${other}'`);
+   const otherInventory=(await db.query('select public.ops_preview_inventory_load() result')).rows[0].result;
+   assert.equal(otherInventory.rolls.length,0);assert.equal(otherInventory.events.length,0);
+   await db.exec('select public.ops_preview_initialize()');
+   state=(await db.query('select public.ops_preview_load() result')).rows[0].result;
+   await assert.rejects(run({type:'adjust_supply',id:supplyId,data:{mode:'set',quantity:99},reason:'Wrong owner'}),/no rows/);
+   await db.exec("SET request.jwt.claim.sub='';RESET ROLE;SET ROLE anon");
+   await assert.rejects(db.exec('select public.ops_preview_inventory_load()'),/permission denied/);
+  });
+ }finally{await db.close();}
+});

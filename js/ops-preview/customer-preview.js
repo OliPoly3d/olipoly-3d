@@ -2,6 +2,9 @@
   'use strict';
   const V=window.OliPolyCustomerView,M=window.OliPolyOpsPreview,E=window.OliPolyLineItems.escape;
   const app=document.getElementById('customer-app'),message=document.getElementById('customer-message');
+  const ownerReturn=document.getElementById('owner-return');
+  const returnLink=ownerReturn.querySelector('a');
+  const allWork=returnLink.getAttribute('href');
   const params=new URLSearchParams(location.search);
   const cloud=window.OliPolyOpsCloud.create(window.OliPolyOpsTestConfig);
   let state,order,view=params.get('view')||'quote',busy=false;
@@ -17,15 +20,19 @@
   }
   function notice(text,error=false){message.className=error?'alert':'status-line';message.textContent=text;}
   function render(){
+    returnLink.href=`ops-order-preview.html?${new URLSearchParams({database:'test',order:order.id,section:M.nextStep(order)[1]})}`;
     const safe=V.project(order);
     app.innerHTML=V.render(safe,view);
     app.inert=busy;
   }
   async function load(){
+    ownerReturn.hidden=true;
+    returnLink.href=allWork;
     if(!cloud.signedIn()){
       app.innerHTML='<section class="card"><h1>Owner preview sign-in required.</h1><p>Sign in to the existing private OliPoly test workspace, then return to this page. This review route is not a customer link.</p><button data-action="reload">Reload preview</button></section>';
       return;
     }
+    ownerReturn.hidden=false;
     state=await cloud.load();
     const id=params.get('order');
     order=id?state.orders.find(o=>o.id===id):state.orders[0];
