@@ -44,6 +44,19 @@ test('owner reviews a PO and records the acknowledgment from the quote screen', 
     assert.match(V.render(customer,'pay'),/\$214\.00.*Net 30 from invoice date/);
     assert.doesNotMatch(V.render(customer,'pay'),/receiving@example|ap@example/);
 
+    let quoteDownload;
+    window.OliPolyDocumentPdf={ready:Promise.resolve(),quote(doc) {
+      assert.equal(doc.revision,1);
+      assert.equal(doc.totals.lineItems[0].quantity,12);
+      assert.equal(doc.totals.total,321);
+      return new window.Blob(['test'],{type:'application/pdf'});
+    }};
+    window.URL.createObjectURL=()=> 'blob:https://example.test/quote';
+    window.HTMLAnchorElement.prototype.click=function() { quoteDownload=this.download; };
+    window.document.querySelector('[data-action="download-quote"]').click();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(quoteDownload,'OP-0000007-quote-rev-1.pdf');
+
     const ack = window.document.querySelector('[data-form="po_acknowledgment"]');
     assert.match(ack.elements.message.value,/TEST-PO-104.*OP-0000007/s);
     assert.match(ack.elements.message.value,/8 × .*\$25\.00/);
@@ -97,7 +110,7 @@ test('the invoice screen issues an immutable downloadable copy and records owner
     assert.match(paymentPage,/I-0000007/);
     assert.doesNotMatch(paymentPage,/ap@example\.test/);
     let download;
-    window.OliPolyInvoicePdf={create(value) {
+    window.OliPolyDocumentPdf={ready:Promise.resolve(),invoice(value) {
       assert.equal(value.number,'I-0000007');
       return new window.Blob(['test'],{type:'application/pdf'});
     }};
@@ -107,9 +120,10 @@ test('the invoice screen issues an immutable downloadable copy and records owner
     };
     window.HTMLAnchorElement.prototype.click=function() { download={href:this.href,filename:this.download}; };
     window.document.querySelector('[data-action="download-invoice"]').click();
+    await new Promise(resolve=>setImmediate(resolve));
     assert.deepEqual(download,{href:'blob:https://example.test/invoice',filename:'I-0000007.pdf'});
-    assert.equal(window.document.querySelector('[data-invoice-download] a').textContent,'I-0000007.pdf');
-    assert.equal(window.document.querySelector('[data-invoice-download]').hidden,false);
+    assert.equal(window.document.querySelector('[data-document-download] a').textContent,'I-0000007.pdf');
+    assert.equal(window.document.querySelector('[data-panel="invoice"] [data-document-download]').hidden,false);
 
     const iframe = window.document.createElement('iframe');
     iframe.src = `/ops-order-preview.html?order=${order.id}&section=invoice`;
@@ -121,12 +135,15 @@ test('the invoice screen issues an immutable downloadable copy and records owner
     for (const script of ['tax-rate.js','order-line-items.js','quote-pricing.js','ops-preview/model.js','ops-preview/workspace.js']) {
       frame.eval(fs.readFileSync(new URL('../js/' + script, import.meta.url),'utf8'));
     }
-    const standalone = frame.document.querySelector('a[target="_blank"]');
+    const standalone = frame.document.querySelector('[data-panel="invoice"] a[target="_blank"]');
     assert.equal(standalone.textContent,'Open invoice in browser');
     assert.equal(new URL(standalone.href).searchParams.get('order'),order.id);
     assert.equal(new URL(standalone.href).searchParams.get('section'),'invoice');
     assert.equal(frame.document.querySelector('[name="invoicePageUrl"]').value,standalone.href);
     assert.equal(frame.document.querySelector('[data-action="download-invoice"]'),null);
+    const quoteLink=frame.document.querySelector('[data-panel="quote"] a[target="_blank"]');
+    assert.equal(quoteLink.textContent,'Open quote in browser');
+    assert.equal(new URL(quoteLink.href).searchParams.get('section'),'quote');
     const record=window.document.querySelector('[data-form="record_invoice_sent"]');
     record.elements.confirmSent.checked=true;
     await submit(record);
