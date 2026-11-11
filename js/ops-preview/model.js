@@ -7,6 +7,22 @@
   const copy = value => JSON.parse(JSON.stringify(value));
   const money = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
   const uid = () => root.crypto?.randomUUID?.() || `sample-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const pickupAddress = '990 Aurora Hudson Rd, Aurora, OH 44202';
+  const pickupQuoteNote = 'This quote is priced for customer pickup. If you choose shipping or local delivery, we’ll confirm the additional charge and updated total, including any applicable sales tax, before dispatch.';
+  const fulfillmentMilestones = {
+    pending: ['Ready · fulfillment to be arranged', 'Fulfilled'],
+    pickup: ['Ready for pickup', 'Picked up'],
+    shipping: ['Ready to ship', 'Shipped'],
+    delivery: ['Ready for local delivery', 'Delivered']
+  };
+  function fulfillmentMethod(order) {
+    return order.shipment ? 'shipping' : order.fulfillmentPlan?.method || (order.fulfilled ? 'pickup' : 'pending');
+  }
+  function quoteFulfillmentNote(order) {
+    if (order.preset === 'business' || order.customerNotes?.includes(pickupQuoteNote)) return '';
+    if (!order.taxAddress || order.taxAddress === pickupAddress) return pickupQuoteNote;
+    return 'Shipping and local delivery are billed separately if selected. We’ll confirm the charge and updated total, including any applicable sales tax, before dispatch.';
+  }
   const materialKey = material => [material.material, material.color].join(' / ');
   function number(value, label, integer = false) {
     const n = Number(value);
@@ -87,7 +103,7 @@
     Object.assign(order, {id: uid(), reference: 'NEW REQUEST', customer: '', title: '', quoteStage: 'request',
       designFee: 0, estimatedLabor: 0, evidence: 'Idea / reference',
       intake: {source: 'Email / PO', contact: '', summary: '', neededBy: '', fileReference: '', materialPreference: 'Not decided'},
-      turnaround: '', validUntil: '', customerNotes: '', quoteHistory: []});
+      taxAddress: pickupAddress, turnaround: '', validUntil: '', customerNotes: '', quoteHistory: []});
     order.items = [{id: uid(), description: 'Requested component', quantity: 1, unit_price: 0, hours_each: 0, materials: []}];
     return order;
   }
@@ -107,7 +123,7 @@
         sharedVia: String(action.via || 'Email'), customer: order.customer, title: order.title,
         items: copy(order.items), totals: copy(totals(order)), terms: order.terms,
         turnaround: order.turnaround || '', validUntil: order.validUntil || '',
-        customerNotes: order.customerNotes || '', changeReason: order.revisionReason || ''};
+        customerNotes: order.customerNotes || '', fulfillmentNote: quoteFulfillmentNote(order), changeReason: order.revisionReason || ''};
       order.quoteHistory = [...(order.quoteHistory || []), offer];
       order.quoteOffer = offer;
       order.quoteStage = 'sent';
@@ -147,7 +163,19 @@
       .reduce((sum, order) => sum + (requirements(order)[key] || 0), 0);
   }
   function paid(order) { return money(order.payments.reduce((sum, p) => sum + p.amount, 0)); }
-  function balance(order) { return money((order.snapshot || totals(order)).total - paid(order)); }
+  function currentTotals(order) { return order.fulfillmentPlan?.totals || order.snapshot || totals(order); }
+  function balance(order) { return money(Math.max(0, currentTotals(order).total - paid(order))); }
+  function fulfillmentPricing(order, action) {
+    if (!order.snapshot) throw new Error('Approve the quote before adjusting fulfillment.');
+    const rate = number(action.taxRate, 'Ohio sales tax rate');
+    const fee = money(number(action.customerFee, 'Fulfillment charge'));
+    if (rate > 20 || fee > 100000) throw new Error('Enter a valid tax rate and fulfillment charge.');
+    if (action.method === 'pickup' && fee) throw new Error('Customer pickup has no separate fulfillment charge.');
+    return root.calculateQuoteTotals({
+      lineItems: order.snapshot.lineItems, discount: order.snapshot.discount, customerShipping: fee,
+      taxRate: rate, taxExempt: order.taxExempt
+    });
+  }
   function progress(order) {
     if (order.fulfilled && balance(order) === 0) return 'closed';
     if (order.items.every(item => remaining(order, item) === 0)) return 'ready_for_fulfillment';
@@ -175,7 +203,7 @@
     const postage = order.shipment?.postage || 0;
     const actual = money(material + hours * 0.53 + Math.max(order.actualLabor, preparationHours) * order.laborRate + order.otherCosts + fees + postage);
     const estimated = money(productionItems(order).reduce((sum, item) => sum + item.quantity * estimatedItemCost(state, item), 0) + laborEstimate * order.laborRate + order.otherCosts + fees);
-    const snapshot = order.snapshot || totals(order);
+    const snapshot = currentTotals(order);
     const revenue = money(snapshot.total - snapshot.tax);
     return {material: money(material), hours, actual, estimated, revenue, postage,
       estimatedProfit: money(revenue - estimated), actualProfit: money(revenue - actual),
@@ -287,13 +315,36 @@
       });
       Object.assign(run, {status: 'inspected', accepted: good, rejected,
         hours: number(action.hours, 'Actual print hours'), notes: String(action.notes || '')});
+    } else if (action.type === 'fulfillment_plan') {
+      if (order.fulfilled || order.shipment || !order.released || order.items.some(item => remaining(order, item) > 0)) {
+        throw new Error('Choose fulfillment after QC and before label purchase or handoff.');
+      }
+      const method = action.method;
+      const address = String(action.address || '').trim();
+      const county = String(action.county || '').trim();
+      const approval = String(action.approval || '').trim();
+      if (!['pickup', 'shipping', 'delivery'].includes(method) || !address || address.length > 500 ||
+          !county || county.length > 50 || approval.length > 500) {
+        throw new Error('Choose a fulfillment method and enter its Ohio address and county.');
+      }
+      const revised = fulfillmentPricing(order, action);
+      const current = currentTotals(order);
+      const taxChanged = county.toLowerCase() !== String(order.fulfillmentPlan?.county || order.county).toLowerCase() || revised.taxRate !== current.taxRate;
+      const changed = taxChanged || revised.total !== current.total || revised.customerShipping !== current.customerShipping;
+      if (changed && !approval) throw new Error('Record customer approval for the adjustment.');
+      if (changed && order.payments.length) throw new Error('Payments are already recorded. Use the Finance correction workflow.');
+      order.fulfillmentPlan = {method, address, county, approval, totals: changed ? revised : current};
     } else if (action.type === 'save_shipping_label' || action.type === 'ship') {
       if (order.fulfilled || !order.released || order.items.some(item => remaining(order, item) > 0)) {
         throw new Error('Pass QC on all pieces before shipping.');
       }
       if (action.type === 'save_shipping_label') {
         if (order.shipment) throw new Error('A label is already recorded for this order.');
+        if (order.fulfillmentPlan && order.fulfillmentPlan.method !== 'shipping') throw new Error('Choose carrier shipping before recording a label.');
         order.shipment = shippingLabel(action);
+        if (order.fulfillmentPlan && order.shipment.destination !== order.fulfillmentPlan.address) {
+          throw new Error('The label address must match the confirmed fulfillment address.');
+        }
       } else {
         if (!order.shipment) throw new Error('Record the purchased label first.');
         if (action.confirmHandoff !== 'yes') throw new Error('Confirm that the carrier has the package.');
@@ -301,7 +352,9 @@
         order.fulfilledAt = new Date().toISOString();
         order.shipment.handoffAt = order.fulfilledAt;
       }
-    } else if (action.type === 'pickup') {
+    } else if (['pickup', 'deliver'].includes(action.type)) {
+      if (action.type === 'deliver' && fulfillmentMethod(order) !== 'delivery') throw new Error('Choose local delivery first.');
+      if (action.type === 'pickup' && order.fulfillmentPlan && fulfillmentMethod(order) !== 'pickup') throw new Error('Choose customer pickup first.');
       if (order.shipment) throw new Error('This order has a shipping label. Record carrier handoff in Fulfillment.');
       if (order.fulfilled || !order.released || order.items.some(item => remaining(order, item) > 0)) throw new Error('Inspect all required pieces before recording pickup.');
       order.fulfilled = true;
@@ -350,6 +403,6 @@
     }
     return label;
   }
-  return {seed, totals, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+  return {seed, totals, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });

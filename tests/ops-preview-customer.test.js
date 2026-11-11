@@ -82,3 +82,27 @@ test('Back to ERP stays available across owner previews and recovers from a fail
   assert.equal(target.searchParams.get('section'),'production');
  }
 });
+
+test('post-QC milestone follows the confirmed handoff and the accepted quote keeps its timing and total', () => {
+  const order = fixture();
+  order.released = true;
+  order.runs = order.items.map(item => ({itemId: item.id, status: 'inspected', accepted: item.quantity}));
+  const view = () => V.project(order);
+  assert.match(V.render(view(), 'track'), /Ready · fulfillment to be arranged/);
+  assert.doesNotMatch(V.render(view(), 'track'), /Agreed timing/);
+  assert.match(V.render(view(), 'quote'), /Two weeks after approval/);
+
+  for (const [method, ready, complete] of [
+    ['shipping', 'Ready to ship', 'Shipped'],
+    ['pickup', 'Ready for pickup', 'Picked up'],
+    ['delivery', 'Ready for local delivery', 'Delivered'],
+  ]) {
+    order.fulfillmentPlan = {method, totals: {...order.snapshot, total: 120, tax: 8, customerShipping: 9.2}};
+    order.fulfilled = false;
+    assert.match(V.render(view(), 'track'), new RegExp(`aria-current="step"><strong>${ready}</strong>`));
+    assert.match(V.render(view(), 'pay'), /\$120\.00/);
+    assert.match(V.render(view(), 'quote'), /\$110\.00/);
+    order.fulfilled = true;
+    assert.match(V.render(view(), 'track'), new RegExp(`aria-current="step"><strong>${complete}</strong>`));
+  }
+});
