@@ -16,7 +16,7 @@
     delivery: ['Ready for local delivery', 'Delivered']
   };
   function fulfillmentMethod(order) {
-    return order.shipment ? 'shipping' : order.fulfillmentPlan?.method || (order.fulfilled ? 'pickup' : 'pending');
+    return order.shipment ? 'shipping' : order.shippingDraft ? 'pending' : order.fulfillmentPlan?.method || (order.fulfilled ? 'pickup' : 'pending');
   }
   function quoteFulfillmentNote(order) {
     if (order.preset === 'business' || order.customerNotes?.includes(pickupQuoteNote)) return '';
@@ -171,10 +171,38 @@
     const fee = money(number(action.customerFee, 'Fulfillment charge'));
     if (rate > 20 || fee > 100000) throw new Error('Enter a valid tax rate and fulfillment charge.');
     if (action.method === 'pickup' && fee) throw new Error('Customer pickup has no separate fulfillment charge.');
-    return root.calculateQuoteTotals({
-      lineItems: order.snapshot.lineItems, discount: order.snapshot.discount, customerShipping: fee,
+    const mode = action.discountMode || 'none';
+    if (!['none', 'round_down', 'fixed', 'percent'].includes(mode)) throw new Error('Choose a discount type.');
+    const acceptedDiscount = order.snapshot.discount || 0;
+    const calculate = discount => root.calculateQuoteTotals({
+      lineItems: order.snapshot.lineItems, discount, customerShipping: fee,
       taxRate: rate, taxExempt: order.taxExempt
     });
+    const base = calculate(acceptedDiscount);
+    const productCents = Math.round(base.subtotal * 100);
+    const value = ['fixed', 'percent'].includes(mode) ? number(action.discountValue, 'Discount value') : 0;
+    let discountCents = 0;
+    if (mode === 'fixed') discountCents = Math.round(money(value) * 100);
+    if (mode === 'percent') {
+      if (value > 100) throw new Error('Use a discount percentage from 0 to 100.');
+      discountCents = Math.round(money(base.subtotal * value / 100) * 100);
+    }
+    if (mode === 'round_down') {
+      const target = Math.floor(base.total);
+      let low = 0, high = productCents;
+      if (calculate(acceptedDiscount + high / 100).total > target) throw new Error('The item price is too low to round down to the next dollar.');
+      while (low < high) {
+        const mid = Math.floor((low + high) / 2);
+        if (calculate(acceptedDiscount + mid / 100).total <= target) high = mid;
+        else low = mid + 1;
+      }
+      if (calculate(acceptedDiscount + low / 100).total !== target) {
+        throw new Error('This tax rate and item price skip the exact whole-dollar total. Choose a fixed discount to preview another amount.');
+      }
+      discountCents = low;
+    }
+    if (discountCents > productCents) throw new Error('The discount cannot exceed the remaining item price.');
+    return {...calculate(money(acceptedDiscount + discountCents / 100)), fulfillmentDiscount: discountCents / 100};
   }
   function progress(order) {
     if (order.fulfilled && balance(order) === 0) return 'closed';
@@ -328,22 +356,40 @@
         throw new Error('Choose a fulfillment method and enter its Ohio address and county.');
       }
       const revised = fulfillmentPricing(order, action);
+      if (method === 'delivery' && revised.customerShipping > 0 && action.confirmDelivery !== 'yes') {
+        throw new Error('Confirm the local delivery address and customer charge before publishing.');
+      }
       const current = currentTotals(order);
       const taxChanged = county.toLowerCase() !== String(order.fulfillmentPlan?.county || order.county).toLowerCase() || revised.taxRate !== current.taxRate;
-      const changed = taxChanged || revised.total !== current.total || revised.customerShipping !== current.customerShipping;
+      const changed = taxChanged || revised.total !== current.total || revised.discount !== current.discount || revised.customerShipping !== current.customerShipping;
       if (changed && !approval) throw new Error('Record customer approval for the adjustment.');
       if (changed && order.payments.length) throw new Error('Payments are already recorded. Use the Finance correction workflow.');
-      order.fulfillmentPlan = {method, address, county, approval, totals: changed ? revised : current};
+      const discountMode = action.discountMode || 'none';
+      const discountValue = ['fixed','percent'].includes(discountMode) ? Number(action.discountValue) : 0;
+      const discountReason = String(action.discountReason || '').trim();
+      if (discountReason.length > 500) throw new Error('Use up to 500 characters for the discount reason.');
+      const plan = {method, address, county, approval, discountMode, discountValue, discountReason, totals: changed ? revised : current};
+      if (method === 'shipping') order.shippingDraft = plan;
+      else {
+        delete order.shippingDraft;
+        order.fulfillmentPlan = plan;
+      }
     } else if (action.type === 'save_shipping_label' || action.type === 'ship') {
       if (order.fulfilled || !order.released || order.items.some(item => remaining(order, item) > 0)) {
         throw new Error('Pass QC on all pieces before shipping.');
       }
       if (action.type === 'save_shipping_label') {
         if (order.shipment) throw new Error('A label is already recorded for this order.');
-        if (order.fulfillmentPlan && order.fulfillmentPlan.method !== 'shipping') throw new Error('Choose carrier shipping before recording a label.');
+        const plan = order.shippingDraft || order.fulfillmentPlan;
+        if (plan && plan.method !== 'shipping') throw new Error('Choose carrier shipping before recording a label.');
+        if (action.confirmDetails !== 'yes') throw new Error('Confirm the shipment details before publishing.');
         order.shipment = shippingLabel(action);
-        if (order.fulfillmentPlan && order.shipment.destination !== order.fulfillmentPlan.address) {
+        if (plan && order.shipment.destination !== plan.address) {
           throw new Error('The label address must match the confirmed fulfillment address.');
+        }
+        if (order.shippingDraft) {
+          order.fulfillmentPlan = order.shippingDraft;
+          delete order.shippingDraft;
         }
       } else {
         if (!order.shipment) throw new Error('Record the purchased label first.');
@@ -353,6 +399,7 @@
         order.shipment.handoffAt = order.fulfilledAt;
       }
     } else if (['pickup', 'deliver'].includes(action.type)) {
+      if (order.shippingDraft) throw new Error('Confirm shipment details or change the fulfillment method first.');
       if (action.type === 'deliver' && fulfillmentMethod(order) !== 'delivery') throw new Error('Choose local delivery first.');
       if (action.type === 'pickup' && order.fulfillmentPlan && fulfillmentMethod(order) !== 'pickup') throw new Error('Choose customer pickup first.');
       if (order.shipment) throw new Error('This order has a shipping label. Record carrier handoff in Fulfillment.');
@@ -361,6 +408,7 @@
       order.fulfilledAt = new Date().toISOString();
     } else if (action.type === 'pay') {
       if (!order.snapshot) throw new Error('Record approval before receiving payment.');
+      if (order.shippingDraft) throw new Error('Confirm shipment details before recording payment.');
       const amount = money(number(action.amount, 'Payment amount'));
       const fee = money(number(action.fee, 'Processing fee'));
       if (!amount || amount > balance(order)) throw new Error('Enter an amount up to the remaining balance.');
@@ -380,19 +428,21 @@
     const fields = {destination: 500, carrier: 40, service: 80, provider: 60, tracking: 60, purchaseRef: 100};
     for (const [name, limit] of Object.entries(fields)) {
       const value = String(action[name] ?? '').trim();
-      if (!value || value.length > limit) throw new Error('Complete the shipping address, carrier, service, tracking and purchase details.');
-      label[name] = value;
+      if (!value || value.length > limit) throw new Error('Enter shipment details. Use N/A for an unavailable service, provider, tracking number or purchase reference.');
+      label[name] = ['service','provider','tracking','purchaseRef'].includes(name) && /^n\/a$/i.test(value) ? null : value;
     }
-    if (!/^[A-Za-z0-9][A-Za-z0-9 -]{2,59}$/.test(label.tracking)) throw new Error('Enter a valid tracking number.');
+    if (label.tracking && !/^[A-Za-z0-9][A-Za-z0-9 -]{2,59}$/.test(label.tracking)) throw new Error('Enter a valid tracking number or N/A.');
     for (const name of ['weightOz', 'lengthIn', 'widthIn', 'heightIn']) {
+      if (action.packageNotApplicable === 'yes' && !action[name]) { label[name] = null; continue; }
       const value = number(action[name], 'Packed weight and dimensions');
-      if (!value || value > 10000) throw new Error('Enter positive packed weight and dimensions.');
+      if (!value || value > 10000) throw new Error('Enter positive packed measurements or acknowledge unavailable measurements.');
       label[name] = value;
     }
-    label.purchaseDate = String(action.purchaseDate || '');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(label.purchaseDate)) throw new Error('Enter the label purchase date.');
     label.postage = money(number(action.postage, 'Actual postage'));
     if (label.postage > 100000) throw new Error('Enter the actual postage from the label receipt.');
+    label.purchaseDate = action.noPurchase === 'yes' && !label.postage ? null : String(action.purchaseDate || '');
+    if (label.purchaseDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(label.purchaseDate)) throw new Error('Enter the label purchase date.');
+    if (action.noPurchase === 'yes' && label.postage) throw new Error('Enter $0 postage if there was no label purchase.');
     label.receiptUrl = String(action.receiptUrl || '').trim();
     if (label.receiptUrl && (!/^https:\/\/[^\s/]+(?:\/\S*)?$/i.test(label.receiptUrl) || label.receiptUrl.length > 1000)) {
       throw new Error('Enter an HTTPS receipt link.');

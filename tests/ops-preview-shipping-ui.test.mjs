@@ -42,6 +42,11 @@ test('Fulfillment form shows tracking and a copyable update after carrier handof
     assert.match(choice.querySelector('[data-fulfillment-amounts]').textContent, /Order total\$38.56/);
     submit(choice);
     await settle();
+    const staged = JSON.parse(window.localStorage.getItem('olipoly.ops.preview.v1')).orders[0];
+    const pendingView = window.OliPolyCustomerView;
+    assert.match(pendingView.render(pendingView.project(staged), 'track'), /fulfillment to be arranged/);
+    assert.doesNotMatch(pendingView.render(pendingView.project(staged), 'track'), /Shipping charged|Ready to ship|38\.56/);
+    assert.match(pendingView.render(pendingView.project(staged), 'pay'), /Payment is on hold/);
     const labelForm = doc.querySelector('[data-form="save_shipping_label"]');
     assert.ok(labelForm);
     const values = {
@@ -50,6 +55,7 @@ test('Fulfillment form shows tracking and a copyable update after carrier handof
       postage: '7.25', receiptUrl: 'https://example.test/receipt',
     };
     for (const [name, value] of Object.entries(values)) labelForm.elements.namedItem(name).value = value;
+    labelForm.elements.confirmDetails.checked = true;
     submit(labelForm);
     await settle();
     const saved = () => JSON.parse(window.localStorage.getItem('olipoly.ops.preview.v1')).orders[0];
