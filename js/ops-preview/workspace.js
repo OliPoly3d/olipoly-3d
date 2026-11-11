@@ -365,6 +365,53 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
         ${field('Paste this link into a new browser tab',kind+'PageUrl',documentPage.href,'url','readonly')}
       </details>`;
   }
+  function documentFilename(kind, doc) {
+    const stem = kind === 'quote' ? `${doc.number}-quote-${doc.revision ? `rev-${doc.revision}` : 'draft'}` : doc.number;
+    return `${stem.replace(/[^a-z0-9-]/gi,'-')}.pdf`;
+  }
+  function emailDraft({kind, doc, recipient, subject, heading, introduction, facts, nextStep}) {
+    const values = facts.filter(([,value]) => value);
+    const plain = [`Hello ${doc.customer},`, introduction,
+      values.map(([label,value]) => `${label}: ${value}`).join('\n'), nextStep,
+      'Thank you,\nOliPoly 3D LLC\nolipoly3d.com', 'ERP TEST DRAFT'].join('\n\n');
+    return `<details data-email-draft class="stack">
+      <summary>Review ${kind} email draft</summary>
+      <p class="muted">Copy the draft to your email app, then attach the PDF manually. Test drafts are for review.</p>
+      ${recipient ? field('To','emailRecipient',recipient,'email','readonly') :
+        '<p class="muted">No email address on the request. Add one in Request or enter the address in your email app.</p>'}
+      ${field('Subject','emailSubject',subject,'text','readonly')}
+      ${row('PDF to attach',documentFilename(kind,doc))}
+      <div data-email-body style="margin:16px 0;padding:16px;background:#f5f2ed;color:#19171a;font:14px/1.55 'DM Sans',Arial,sans-serif;overflow-wrap:anywhere">
+        <div style="font:600 27px/1.2 'Playfair Display',Georgia,serif;padding-bottom:10px;border-bottom:1px solid #ce4f87">Oli<span style="color:#a03363">Poly</span></div>
+        <h3 style="margin:12px 0 10px;font:500 23px/1.25 'Playfair Display',Georgia,serif">${escape(heading)}</h3>
+        <p style="margin:0 0 10px">Hello ${escape(doc.customer)},</p>
+        <p style="margin:0 0 10px">${escape(introduction)}</p>
+        <table style="width:100%;border-collapse:collapse;background:#fffdf9;margin-bottom:12px">
+          <tbody>${values.map(([label,value],i) => `<tr>
+            <th scope="row" style="padding:7px;text-align:left;font-weight:600;border-bottom:1px solid #ded8d3;${i === 0 ? 'background:#19171a;color:#fff' : ''}">${escape(label)}</th>
+            <td style="padding:7px;text-align:right;border-bottom:1px solid #ded8d3;${i === 0 ? 'background:#19171a;color:#fff;font-weight:700' : ''}">${escape(value)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <p style="margin:0 0 10px">${escape(nextStep)}</p>
+        <p style="margin:0">Thank you,<br><strong>OliPoly 3D LLC</strong><br>olipoly3d.com</p>
+        <p style="margin:12px 0 0;font-size:11px;color:#625b64">ERP TEST DRAFT</p>
+      </div>
+      <div class="actions">
+        <button type="button" data-action="copy-email-subject">Copy subject</button>
+        <button type="button" data-action="copy-email-formatted">Copy formatted message</button>
+        <button type="button" data-action="copy-email-plain">Copy plain text</button>
+      </div>
+      ${textArea('Plain text message','emailPlain',plain,'readonly')}
+    </details>`;
+  }
+  async function copyEmailText(input) {
+    if (navigator.clipboard?.writeText) {
+      try { await navigator.clipboard.writeText(input.value); return; }
+      catch { /* The selected text is a fallback when clipboard access is blocked. */ }
+    }
+    input.select();
+    if (!document.execCommand?.('copy')) throw new Error('Copy the selected text using your browser’s copy command.');
+  }
   function quoteDocument(order) {
     const doc = quoteDetails(order);
     const t = doc.totals;
@@ -372,9 +419,23 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
-    const t=(order.poReview ? order.quoteOffer?.totals : order.snapshot) || order.quoteOffer?.totals || M.totals(order);
-    const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}${order.quoteOffer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)} ${order.preset==='business'?'Please send your purchase order or contact us to confirm authorization.':'Please reply to confirm the scope and price.'} Thank you, OliPoly 3D LLC`;
-    return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p>${documentControls(order,'quote')}<div class="actions"><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:order.poReview?poAcknowledgmentPanel(order):''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
+    const quote = quoteDetails(order);
+    const contact = String(order.intake?.contact || '').trim();
+    const recipient = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) ? contact : order.poReview?.purchasingEmail;
+    const email = emailDraft({
+      kind:'quote', doc:quote, recipient,
+      subject:`[ERP Test] Quote ${quote.number}${quote.revision ? ` · Rev ${quote.revision}` : ''}`,
+      heading:'Your OliPoly quote',
+      introduction:`Please see the attached quote for ${quote.title}.`,
+      facts:[
+        ['Quote total',format(quote.totals.total)], ['Valid through',quote.validUntil || 'To be agreed'],
+        ['Turnaround',quote.turnaround], ['Payment terms',quote.terms], ['Fulfillment',quote.fulfillmentNote]
+      ],
+      nextStep:order.snapshot ? 'Please keep this quote for your records.' :
+        order.preset === 'business' ? `To proceed, send a purchase order referencing ${quote.number}, or reply to confirm the scope and price.` :
+          'To proceed, reply to confirm the scope and price.'
+    });
+    return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2>${documentControls(order,'quote')}${email}${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:order.poReview?poAcknowledgmentPanel(order):''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
   }
   function productionPreparation(order) {
     return `<form class="card" id="production-plan-form" style="margin-top:22px"><h3>Production preparation</h3><p class="muted">Enter body and support filament separately, with grams and print hours per piece. Match the customer's agreed material requirements.</p>${itemEditor({...order, items: draft.items}, true)}<div class="form-grid">${field('Design / prep hours already spent','prepHours',draft.productionPrepHours || 0,'number','min="0" step=".01" required')}${field('Remaining hands-on hours (estimate)','remainingHours',draft.productionRemainingHours || 0,'number','min="0" step=".01" required')}</div><p class="muted">Labor cost rate: ${format(order.laborRate)} per hour.</p><div id="production-profit-preview">${costPreview({...order, productionPlan: draft.items, productionPrepHours: draft.productionPrepHours || 0, productionRemainingHours: draft.productionRemainingHours || 0})}</div><button class="primary" type="submit" style="margin-top:18px">Save production preparation</button><small id="production-plan-state">${order.productionPlan ? 'Saved production preparation' : 'Production preparation needs review'}</small></form>`;
@@ -576,19 +637,26 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
         <div class="actions full"><button class="primary" type="submit">Issue invoice</button></div>
       </form></section>`;
     const recorded = order.invoiceDelivery;
-    const sendMessage = invoice ? `Subject: Invoice ${invoice.number} · ${invoice.reference}
-
-Please see the attached invoice from OliPoly 3D LLC${invoice.poNumber ? ` for PO ${invoice.poNumber}` : ''}.
-Invoice total: ${format(invoice.totals.total)}.
-Amount due at issuance: ${format(invoice.balance)} by ${invoice.dueDate}.
-Please reference ${invoice.number} with your payment. Thank you.` : '';
-    const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>${row('Confirmed recipient',invoice.recipient)}
+    const outstanding = M.balance(order);
+    const email = invoice ? emailDraft({
+      kind:'invoice', doc:invoice, recipient:invoice.recipient,
+      subject:`[ERP Test] Invoice ${invoice.number} · ${invoice.reference}`,
+      heading:'Your OliPoly invoice',
+      introduction:`Please see the attached invoice for ${invoice.title}.`,
+      facts:[
+        ['Current balance',format(outstanding)],
+        ['Due date',invoice.dueDate], ['Payment terms',invoice.terms],
+        ['Purchase order',invoice.poNumber], ['Order',invoice.reference]
+      ],
+      nextStep:outstanding > 0 ? `Please reference ${invoice.number} with your payment. Reply if you need payment instructions.` :
+        'Thank you for your payment. Please keep the invoice for your records.'
+    }) : '';
+    const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>
       ${documentControls(order,'invoice')}
+      ${email}
       ${recorded ? `<p class="status-line">Owner marked sent · ${escape(new Date(recorded.recordedAt).toLocaleString())}</p>
         ${recorded.reference ? row('Send reference',recorded.reference) : ''}` :
         `<form data-form="record_invoice_sent">
-          ${textArea('Suggested email','invoiceMessage',sendMessage,'id="invoice-message" readonly')}
-          <button type="button" data-action="copy-invoice-message">Copy invoice message</button>
           ${field('Send reference (optional)','reference','','text','maxlength="500"')}
           <label class="check"><input type="checkbox" name="confirmSent" value="yes" required> I sent the issued invoice to the confirmed recipient.</label>
           <button type="submit">Record invoice sent</button>
@@ -870,12 +938,11 @@ Please reference ${invoice.number} with your payment. Thank you.` : '';
           await pdf.ready;
           if (!button.isConnected) return;
           const blob = isQuote ? pdf.quote(doc) : pdf.invoice(doc);
-          const file = isQuote ? `${doc.number}-quote-${doc.revision ? `rev-${doc.revision}` : 'draft'}` : doc.number;
           const link = document.createElement('a');
           if (documentDownloadUrl) URL.revokeObjectURL(documentDownloadUrl);
           documentDownloadUrl = URL.createObjectURL(blob);
           link.href = documentDownloadUrl;
-          link.download = `${file.replace(/[^a-z0-9-]/gi,'-')}.pdf`;
+          link.download = documentFilename(isQuote ? 'quote' : 'invoice',doc);
           link.textContent = link.download;
           const download = button.parentElement.querySelector('[data-document-download]');
           download.replaceChildren('If your browser didn’t save the file, select ',link,'.');
@@ -887,12 +954,28 @@ Please reference ${invoice.number} with your payment. Thank you.` : '';
         return;
       }
       if (action === 'print') { if(dirty) throw new Error('Save your changes before printing.'); activeTab='receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
-      if (action === 'copy-quote') {
-        if(dirty) throw new Error('Save your changes before copying the quote.');
-        await navigator.clipboard.writeText(document.getElementById('quote-message').value); message('Quote message copied. Review it before sending.'); return;
+      if (['copy-email-subject','copy-email-formatted','copy-email-plain'].includes(action)) {
+        if (dirty) throw new Error('Save your changes before copying the email draft.');
+        const preview = button.closest('[data-email-draft]');
+        const subject = action === 'copy-email-subject';
+        const input = preview.querySelector(subject ? '[name="emailSubject"]' : '[name="emailPlain"]');
+        if (action === 'copy-email-formatted' && window.ClipboardItem && navigator.clipboard?.write) {
+          const html = preview.querySelector('[data-email-body]').outerHTML;
+          try {
+            await navigator.clipboard.write([new window.ClipboardItem({
+              'text/html':new Blob([html],{type:'text/html'}),
+              'text/plain':new Blob([input.value],{type:'text/plain'})
+            })]);
+            message('Formatted message copied. Attach the PDF in your email app.');
+            return;
+          } catch { /* Clipboard permissions can prevent formatted copying in an embedded preview. */ }
+        }
+        await copyEmailText(input);
+        message(subject ? 'Subject copied.' : 'Plain text copied. Attach the PDF in your email app.');
+        return;
       }
-      if (['copy-message','copy-po-ack','copy-invoice-message'].includes(action)) {
-        const input = document.getElementById(action === 'copy-po-ack' ? 'po-ack-message' : action === 'copy-invoice-message' ? 'invoice-message' : 'fulfillment-message');
+      if (['copy-message','copy-po-ack'].includes(action)) {
+        const input = document.getElementById(action === 'copy-po-ack' ? 'po-ack-message' : 'fulfillment-message');
         if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(input.value);
         else { input.select(); if (!document.execCommand('copy')) throw new Error('Select and copy the prepared message.'); }
         message('Customer update copied.'); return;

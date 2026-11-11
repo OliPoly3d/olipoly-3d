@@ -23,12 +23,16 @@ test('owner reviews a PO and records the acknowledgment from the quote screen', 
     const state = M.seed();
     const order = state.orders[0];
     Object.assign(order,{reference:'OP-0000007',preset:'business',quoteStage:'draft',designFee:0,taxIncluded:false,
-      terms:'Due at handoff',items:[{...order.items[0],quantity:12,unit_price:25}]});
+      terms:'Due at handoff',validUntil:'2026-12-11',intake:{contact:'rfq@example.test'},items:[{...order.items[0],quantity:12,unit_price:25}]});
     const sent = M.quoteCommand(state,order.id,{type:'send_quote',via:'Fictional rehearsal'});
     assert.doesNotMatch(V.render(V.project(sent.orders[0])) , /id="customer-accept"/);
     window.localStorage.setItem('olipoly.ops.preview.v1',JSON.stringify(sent));
     load('ops-preview/workspace.js');
     const saved = () => JSON.parse(window.localStorage.getItem('olipoly.ops.preview.v1')).orders[0];
+    const draft = () => window.document.querySelector('[data-panel="quote"] [data-email-draft]');
+    assert.equal(draft().querySelector('[name="emailRecipient"]').value,'rfq@example.test');
+    assert.match(draft().textContent,/OP-0000007-quote-rev-1\.pdf/);
+    assert.match(draft().querySelector('[data-email-body]').textContent,/send a purchase order referencing OP-0000007/i);
     const form = window.document.querySelector('[data-form="po_review"]');
     for (const [name,value] of Object.entries({number:'TEST-PO-104',purchasingEmail:'buyer@example.test',
       receivingEmail:'receiving@example.test',apEmail:'ap@example.test',evidence:'Fictional PO',
@@ -43,6 +47,35 @@ test('owner reviews a PO and records the acknowledgment from the quote screen', 
     assert.match(V.render(customer,'quote'),/\$321\.00/);
     assert.match(V.render(customer,'pay'),/\$214\.00.*Net 30 from invoice date/);
     assert.doesNotMatch(V.render(customer,'pay'),/receiving@example|ap@example/);
+
+    assert.match(draft().querySelector('[name="emailPlain"]').value,/Quote total: \$321\.00/);
+    assert.match(draft().querySelector('[name="emailPlain"]').value,/Valid through: 2026-12-11/);
+    assert.match(draft().querySelector('[name="emailPlain"]').value,/Payment terms: Due at handoff/);
+    assert.match(draft().querySelector('[name="emailPlain"]').value,/keep this quote for your records/);
+    assert.doesNotMatch(draft().textContent,/ap@example\.test|receiving@example\.test/);
+
+    let copied;
+    window.ClipboardItem = class { constructor(parts) { this.parts = parts; } };
+    const clipboard = {write:async ([item])=>{copied=item.parts;},writeText:async value=>{copied=value;}};
+    Object.defineProperty(window.navigator,'clipboard',{value:clipboard});
+    draft().querySelector('[data-action="copy-email-formatted"]').click();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.deepEqual(Object.keys(copied),['text/html','text/plain']);
+    const richBody = await new Promise(resolve=>{
+      const reader = new window.FileReader();
+      reader.onload = ()=>resolve(reader.result);
+      reader.readAsText(copied['text/html']);
+    });
+    assert.match(richBody,/Playfair Display/);
+    assert.match(richBody,/Your OliPoly quote/);
+    assert.doesNotMatch(richBody,/rfq@example\.test|data-action/);
+    clipboard.write = async ()=>{throw new Error('Clipboard blocked in preview');};
+    draft().querySelector('[data-action="copy-email-formatted"]').click();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.match(copied,/Quote total: \$321\.00/);
+    draft().querySelector('[data-action="copy-email-subject"]').click();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(copied,'[ERP Test] Quote OP-0000007 · Rev 1');
 
     let quoteDownload;
     window.OliPolyDocumentPdf={ready:Promise.resolve(),quote(doc) {
@@ -106,6 +139,13 @@ test('the invoice screen issues an immutable downloadable copy and records owner
     assert.equal(invoice.number,'I-0000007');
     assert.equal(invoice.balance,214);
     assert.match(window.document.querySelector('.invoice-document').textContent,/Purchase orderTEST-PO-104/);
+    const draft = window.document.querySelector('[data-panel="invoice"] [data-email-draft]');
+    assert.equal(draft.querySelector('[name="emailRecipient"]').value,'ap@example.test');
+    assert.equal(draft.querySelector('[name="emailSubject"]').value,'[ERP Test] Invoice I-0000007 · OP-0000007');
+    assert.match(draft.querySelector('[name="emailPlain"]').value,/Current balance: \$214\.00/);
+    assert.match(draft.querySelector('[name="emailPlain"]').value,/Purchase order: TEST-PO-104/);
+    assert.match(draft.textContent,/I-0000007\.pdf/);
+    assert.equal(saved().invoiceDelivery,undefined);
     const paymentPage=V.render(V.project(saved()),'pay');
     assert.match(paymentPage,/I-0000007/);
     assert.doesNotMatch(paymentPage,/ap@example\.test/);
