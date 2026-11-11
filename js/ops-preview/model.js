@@ -7,6 +7,18 @@
   const copy = value => JSON.parse(JSON.stringify(value));
   const money = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
   const uid = () => root.crypto?.randomUUID?.() || `sample-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const consumerTermsVersion = 'consumer-v1';
+  // Retain prior versions here when terms change so shared quotes can be reproduced.
+  const consumerTerms = {
+    'consumer-v1': [
+      ['1. What’s included', 'OliPoly 3D LLC will provide the items and services listed in your approved quote. The quote states the quantity, material, finish, price, and pickup or shipping arrangements. If you request a change, we’ll confirm any change in price or timing and get your approval before proceeding.'],
+      ['2. Customer files, fit, and intended use', 'If you provide a file, image, or design, you confirm that you have permission for us to reproduce it for your order. Before approving the quote, tell us if the part must fit another item, carry a load, withstand heat, or meet a specific tolerance. We’ll confirm in writing which requirements are included. Design validation, load testing, and safety certification are included only when expressly listed in the quote.'],
+      ['3. Printed appearance', '3D-printed parts may show visible layer lines, seams, minor color or sheen variation, and small marks from support removal. These are normal features of the process when they’re consistent with the agreed finish and specifications. If an item arrives damaged, differs from the approved order, or has a workmanship issue, please contact us so we can review it.'],
+      ['4. Payment, pickup, and shipping', 'Payment is due at pickup or completion unless the quote states otherwise. If a deposit is required, the quote will state the amount, when it’s due, and the conditions for a refund. For shipped orders, the quote will state the expected ship date or shipping window. If we can’t ship within that time, we’ll notify you and explain your options, including how to agree to a delay or cancel for a prompt refund for unshipped items, as required by law.'],
+      ['5. Cancellations and returns', 'If you need to cancel, contact us as soon as possible. We’ll cancel at no charge if work has not started and we have not purchased materials specifically for your order. After that point, a cancellation charge applies only if its amount or calculation and conditions were disclosed in your approved quote and the charge is permitted by law.\n\nMade-to-order and personalized items that match the approved quote are ineligible for change-of-mind returns after pickup or delivery. This policy preserves your rights if an item is defective, damaged, incorrect, or otherwise fails to meet the agreement, as well as any cancellation or refund rights provided by law.'],
+      ['6. Order concerns', 'If something is wrong, reply to your order email with your OP number and a description of the issue. Photos are helpful when available. We’ll review the issue and explain the available resolution, which may include correction, replacement, or refund. These terms preserve your rights and remedies under applicable law.']
+    ]
+  };
   const pickupAddress = '990 Aurora Hudson Rd, Aurora, OH 44202';
   const pickupQuoteNote = 'This quote is priced for customer pickup. If you choose shipping or local delivery, we’ll confirm the additional charge and updated total, including any applicable sales tax, before dispatch.';
   const fulfillmentMilestones = {
@@ -125,6 +137,7 @@
         items: copy(order.items), totals: copy(totals(order)), terms: order.terms,
         turnaround: order.turnaround || '', validUntil: order.validUntil || '',
         customerNotes: order.customerNotes || '', fulfillmentNote: quoteFulfillmentNote(order), changeReason: order.revisionReason || ''};
+      if (order.preset === 'individual') offer.consumerTermsVersion = consumerTermsVersion;
       order.quoteHistory = [...(order.quoteHistory || []), offer];
       order.quoteOffer = offer;
       order.quoteStage = 'sent';
@@ -167,6 +180,19 @@
   function paid(order) { return money(order.payments.reduce((sum, p) => sum + p.amount, 0)); }
   function currentTotals(order) { return order.fulfillmentPlan?.totals || order.snapshot || totals(order); }
   function balance(order) { return money(Math.max(0, currentTotals(order).total - paid(order))); }
+  function paymentReceipt(order, index) {
+    const payment = order.payments[index];
+    if (!payment) return null;
+    const reference = projectIdentity(order).primary;
+    const totals = payment.receiptTotals || currentTotals(order);
+    const priorPaid = money(order.payments.slice(0,index).reduce((sum,item)=>sum+item.amount,0));
+    const balanceAfterPayment = money(Math.max(0,totals.total-priorPaid-payment.amount));
+    return {number:`${reference}-R${String(index+1).padStart(2,'0')}`,reference,
+      customer:order.customer,title:order.title,date:payment.date,method:payment.method,
+      amount:payment.amount,priorPaid,balance:balanceAfterPayment,totals,
+      status:balanceAfterPayment ? 'Partial payment received' : 'Paid in full',
+      note:`Thank you for your payment. This receipt records payment for OliPoly order ${reference}. If you have a question about the payment or an issue with your order, reply to your order email and include your OP number.`};
+  }
   function fulfillmentPricing(order, action) {
     if (!order.snapshot) throw new Error('Approve the quote before adjusting fulfillment.');
     const rate = number(action.taxRate, 'Ohio sales tax rate');
@@ -575,7 +601,8 @@
       if (!amount || amount > balance(order)) throw new Error('Enter an amount up to the remaining balance.');
       if (fee > amount) throw new Error('Fee exceeds the payment.');
       if (!['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'].includes(action.method)) throw new Error('Choose a payment method.');
-      order.payments.push({id: uid(), amount, fee, method: action.method, reference: String(action.reference || ''), date: new Date().toISOString()});
+      order.payments.push({id: uid(), amount, fee, method: action.method, reference: String(action.reference || ''), date: new Date().toISOString(),
+        ...(order.preset === 'individual' ? {receiptTotals:copy(currentTotals(order))} : {})});
     } else if (action.type === 'actuals') {
       order.actualLabor = number(action.hours, 'Hands-on hours');
       order.otherCosts = number(action.otherCosts, 'Other costs');
@@ -620,6 +647,6 @@
     }
     return label;
   }
-  return {seed, totals, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+  return {seed, totals, consumerTerms, consumerTermsVersion, paymentReceipt, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });
