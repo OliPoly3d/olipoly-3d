@@ -24,6 +24,8 @@
   let inventoryData;
   let inventoryControls;
   let inventoryError;
+  const embedded = window.self !== window.top;
+  let invoiceDownloadUrl;
   try { state = JSON.parse(localStorage.getItem(key)) || M.seed(); }
   catch { state = M.seed(); }
   if (state.version !== 1 || !Array.isArray(state.orders) || !Array.isArray(state.inventory)) state = M.seed();
@@ -547,8 +549,20 @@ Please see the attached invoice from OliPoly 3D LLC${invoice.poNumber ? ` for PO
 Invoice total: ${format(invoice.totals.total)}.
 Amount due at issuance: ${format(invoice.balance)} by ${invoice.dueDate}.
 Please reference ${invoice.number} with your payment. Thank you.` : '';
-    const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>${row('Confirmed recipient',invoice.recipient)}
+    const invoicePage = new URL(location.pathname, location.origin);
+    invoicePage.searchParams.set('order',order.id);
+    invoicePage.searchParams.set('section','invoice');
+    if (databaseMode) invoicePage.searchParams.set('database','test');
+    const invoiceControls = embedded ? `
+      <p class="muted">Open this invoice in your browser to download the PDF. You may be asked to sign in again.</p>
+      <a class="button" href="${escape(invoicePage.href)}" target="_blank" rel="noopener">Open invoice in browser</a>
+      <details><summary>Copy invoice page link</summary>
+        ${field('Paste this link into a new browser tab','invoicePageUrl',invoicePage.href,'url','readonly')}
+      </details>` : `
       <button type="button" data-action="download-invoice">Download invoice PDF</button>
+      <p data-invoice-download hidden></p>`;
+    const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>${row('Confirmed recipient',invoice.recipient)}
+      ${invoiceControls}
       ${recorded ? `<p class="status-line">Owner marked sent · ${escape(new Date(recorded.recordedAt).toLocaleString())}</p>
         ${recorded.reference ? row('Send reference',recorded.reference) : ''}` :
         `<form data-form="record_invoice_sent">
@@ -828,13 +842,15 @@ Please reference ${invoice.number} with your payment. Thank you.` : '';
         if (!invoice) throw new Error('Issue the invoice before downloading.');
         const blob = window.OliPolyInvoicePdf.create(invoice);
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
+        if (invoiceDownloadUrl) URL.revokeObjectURL(invoiceDownloadUrl);
+        invoiceDownloadUrl = URL.createObjectURL(blob);
+        link.href = invoiceDownloadUrl;
         link.download = `${invoice.number.replace(/[^a-z0-9-]/gi,'-')}.pdf`;
-        link.textContent = 'Download again';
-        message('Invoice PDF ready.');
-        document.getElementById('message').append(' ',link);
+        link.textContent = link.download;
+        const download = button.parentElement.querySelector('[data-invoice-download]');
+        download.replaceChildren('If your browser didn’t save the file, select ',link,'.');
+        download.hidden = false;
         link.click();
-        setTimeout(()=>{ URL.revokeObjectURL(link.href); link.remove(); },120000);
         return;
       }
       if (['print','print-quote'].includes(action)) { if(dirty) throw new Error('Save your changes before printing.'); activeTab=action==='print-quote'?'quote':'receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
