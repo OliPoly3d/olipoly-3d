@@ -18,9 +18,13 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
   const result=(await db.query('select public.ops_preview_inventory_commit($1,$2,$3) result',last)).rows[0].result;
   state=result.workspace; inventory=result.inventory; return result;
  };
- const change=async action=>{
-  const next=M.command(state,state.orders[0].id,action);
-  state=(await db.query('select public.ops_preview_commit($1,$2,$3,$4,$5) result',[state.orders[0].id,JSON.stringify(action),JSON.stringify(next.orders[0]),state.revision,crypto.randomUUID()])).rows[0].result;
+ const submitOrder=async (id,action,order,revision=state.revision,commandId=crypto.randomUUID())=>{
+  state=(await db.query('select public.ops_preview_commit($1,$2,$3,$4,$5) result',
+   [id,JSON.stringify(action),JSON.stringify(order),revision,commandId])).rows[0].result;
+ };
+ const change=async (action,id=state.orders[0].id)=>{
+  const next=M.command(state,id,action);
+  await submitOrder(id,action,next.orders.find(o=>o.id===id));
  };
  try{
   await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;CREATE SCHEMA auth;CREATE TABLE auth.users(id uuid PRIMARY KEY);
@@ -30,7 +34,7 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    GRANT USAGE ON SCHEMA auth TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
-  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration]){
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql']){
    let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
    await db.exec(sql);
   }
@@ -104,6 +108,74 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    assert.equal(M.balance(state.orders[0]),0);assert.ok(state.orders[0].database.financeEntryId);
    const finance=(await db.query("select amount,sales_tax_collected from financial_entries where type='income'")).rows[0];
    assert.equal(Number(finance.amount),102.8);assert.equal(Number(finance.sales_tax_collected),7.2);
+  });
+  await t.test('single-box shipping preserves the accepted total and records postage once',async()=>{
+   const label={type:'save_shipping_label',destination:'123 Test Street',weightOz:'16.5',lengthIn:'8',widthIn:'6',heightIn:'4',
+    carrier:'USPS',service:'Ground Advantage',provider:'USPS Click-N-Ship',tracking:'TEST 00001',purchaseRef:'TEST-LABEL-1',
+    purchaseDate:'2026-11-01',postage:'7.25',receiptUrl:'https://example.test/receipt'};
+   const byId=id=>state.orders.find(o=>o.id===id);
+   const track=async id=>(await db.query('select * from public_order_tracking_lookup($1)',[byId(id).reference])).rows[0];
+   const postageRows=async()=> (await db.query("select id,amount,tax_category,receipt_link from financial_entries where category='Shipping' order by amount")).rows;
+   async function readyOrder(id, earlyPayment=false) {
+    const draft=M.seed().orders[0];
+    Object.assign(draft,{id,title:id,items:[{...draft.items[1],quantity:1}],designFee:0});
+    await submitOrder(id,{type:'new'},draft);
+    await change({type:'approve',method:'Verbal agreement recorded'},id);
+    await assert.rejects(submitOrder(id,label,byId(id)),/Pass QC/);
+    await change({type:'release'},id);
+    await change({type:'start',itemId:'tags',quantity:1,printer:'P2S'},id);
+    const run=byId(id).runs.at(-1);
+    await change({type:'inspect',runId:run.id,accepted:1,rejected:0,hours:0.5,usage:[{key:'PLA / Black',grams:15}]},id);
+    if(earlyPayment) await change({type:'pay',amount:byId(id).snapshot.total,fee:0,method:'Cash'},id);
+   }
+   const id='test-shipment';
+   await readyOrder(id);
+   const agreed=M.copy(byId(id).snapshot);
+   const startingCost=M.costs(state,byId(id)).actual;
+   const handoff={type:'ship',confirmHandoff:'yes'};
+   await assert.rejects(submitOrder(id,handoff,byId(id)),/purchased label first/);
+   await assert.rejects(submitOrder(id,{...label,weightOz:'-1'},byId(id)),/positive packed weight/);
+   assert.equal((await postageRows()).length,0);
+   const proposed=M.command(state,id,label).orders.find(o=>o.id===id);
+   const revision=state.revision, commandId=crypto.randomUUID();
+   await submitOrder(id,label,proposed,revision,commandId);
+   await submitOrder(id,label,proposed,revision,commandId);
+   assert.equal(M.stage(byId(id)),'label');
+   assert.equal(byId(id).fulfilled,false);
+   assert.equal((await track(id)).tracking_number,null);
+   const rows=await postageRows();
+   assert.equal(rows.length,1);
+   assert.equal(Number(rows[0].amount),7.25);
+   assert.equal(rows[0].tax_category,'shipping_out');
+   assert.equal(rows[0].receipt_link,label.receiptUrl);
+   assert.equal(byId(id).shipment.financeEntryId,rows[0].id);
+   assert.equal(M.costs(state,byId(id)).actual,startingCost+7.25);
+   await assert.rejects(submitOrder(id,{type:'pickup'},byId(id)),/shipping label/);
+   await assert.rejects(submitOrder(id,{type:'ship'},byId(id)),/Confirm that the carrier/);
+   await change(handoff,id);
+   assert.ok(byId(id).shipment.handoffAt);
+   assert.equal((await track(id)).tracking_number,label.tracking);
+   assert.equal((await track(id)).public_status_text,'Shipped');
+   assert.equal(M.stage(byId(id)),'payment');
+   await change({type:'pay',amount:agreed.total,fee:0,method:'Cash'},id);
+   assert.equal((await track(id)).status,'closed');
+   assert.equal((await track(id)).public_status_text,'Shipped');
+   assert.deepEqual(byId(id).snapshot,agreed);
+   assert.equal(M.stage(byId(id)),'complete');
+   assert.equal((await postageRows()).length,1);
+
+   const second='test-prepaid-shipment';
+   await readyOrder(second,true);
+   await assert.rejects(submitOrder(second,label,byId(second)),/already recorded/);
+   const expense=(await db.query('select public.create_manual_financial_entry($1) result',[JSON.stringify({
+    type:'expense',entry_date:label.purchaseDate,category:'Shipping',tax_category:'shipping_out',
+    amount:8.5,original_amount:8.5,title:'Postage already entered in Test Finance'
+   })])).rows[0].result;
+   await change({...label,tracking:'TEST 00002',purchaseRef:'TEST-LABEL-2',postage:'8.50',financeEntryId:expense.entry_id},second);
+   await change(handoff,second);
+   assert.equal(byId(second).shipment.financeEntryId,expense.entry_id);
+   assert.equal((await track(second)).status,'closed');
+   assert.equal((await postageRows()).length,2);
   });
   let supplyId;
   await t.test('supplies retain measurement units and record consumption and audits',async()=>{
