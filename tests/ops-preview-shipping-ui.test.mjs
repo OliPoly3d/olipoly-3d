@@ -31,6 +31,17 @@ test('Fulfillment form shows tracking and a copyable update after carrier handof
     load('ops-preview/workspace.js');
 
     const doc = window.document;
+    const choice = doc.querySelector('[data-form="fulfillment_plan"]');
+    assert.ok(choice);
+    assert.equal(doc.querySelector('[data-form="save_shipping_label"]'), null);
+    choice.elements.method.value = 'shipping';
+    choice.elements.address.value = '123 Fictional Street';
+    choice.elements.customerFee.value = '8';
+    choice.elements.approval.value = 'Fictional customer approved by email';
+    choice.elements.customerFee.dispatchEvent(new window.Event('input', {bubbles: true}));
+    assert.match(choice.querySelector('[data-fulfillment-amounts]').textContent, /Order total\$38.56/);
+    submit(choice);
+    await settle();
     const labelForm = doc.querySelector('[data-form="save_shipping_label"]');
     assert.ok(labelForm);
     const values = {

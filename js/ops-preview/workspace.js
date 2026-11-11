@@ -208,7 +208,7 @@
     return orders.map(order => {
       const [action] = M.nextStep(order);
       const stage = M.stage(order);
-      const amount = stage === 'request' ? 'Not priced yet' : format((order.snapshot || order.quoteOffer?.totals || M.totals(order)).total);
+      const amount = stage === 'request' ? 'Not priced yet' : format((order.snapshot ? M.currentTotals(order) : order.quoteOffer?.totals || M.totals(order)).total);
       return `<article class="queue-row"><div><span class="badge ${order.snapshot?'':'rose'}">${escape(status(order))}</span><h3>${escape(order.title)}</h3><p>${escape(order.customer)} · ${projectLabel(order)}${order.intake?.neededBy ? ` · Requested ${escape(order.intake.neededBy)}`:''}</p></div><div class="queue-row-end"><strong>${amount}</strong><a class="button" href="${orderLink(order)}">${escape(action)}</a></div></article>`;
     }).join('') || '<p class="empty">No work matches this view. Use New request to capture the next conversation.</p>';
   }
@@ -222,7 +222,7 @@
     if (!form || !draft) return;
     if (form.id === 'details-form') {
       const data = new FormData(form);
-      ['customer', 'title', 'preset', 'evidence', 'terms', 'county', 'turnaround', 'validUntil', 'customerNotes'].forEach(name => { draft[name] = String(data.get(name)); });
+      ['customer', 'title', 'preset', 'evidence', 'terms', 'county', 'taxAddress', 'turnaround', 'validUntil', 'customerNotes'].forEach(name => { draft[name] = String(data.get(name)); });
       ['designFee', 'taxRate', 'laborRate', 'estimatedLabor'].forEach(name => { draft[name] = Number(data.get(name)); });
       draft.taxIncluded = data.get('taxIncluded') === 'yes';
       draft.taxExempt = data.has('taxExempt');
@@ -256,10 +256,11 @@
       ${select('Starting preset', 'preset', [['individual', 'Individual / friend'], ['business', 'Business / PO'], ['program', 'Fundraiser'], ['stock', 'Show / stock']], order.preset)}
       ${select('Estimate based on', 'evidence', ['Idea / reference', 'Drawing', 'Completed model', 'Sliced file', 'Previous actual results'], order.evidence)}
       ${field('Payment terms', 'terms', order.terms)}${field('Quoted turnaround / delivery', 'turnaround', order.turnaround || '')}${field('Quote valid through', 'validUntil', order.validUntil || '', 'date')}${select('Prices entered', 'taxIncluded', [['yes', 'Include sample tax'], ['no', 'Before sample tax']], order.taxIncluded ? 'yes' : 'no')}
+      ${field('Assumed handoff address for tax', 'taxAddress', order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
       ${field('Sample Ohio county', 'county', order.county, 'text', 'required')}
       ${field('Sample tax rate (%)', 'taxRate', order.taxRate, 'number', 'min="0" max="20" step=".01" required')}
       <label class="check"><input type="checkbox" name="taxExempt" ${order.taxExempt ? 'checked' : ''}>Sample exemption scenario</label>
-      <p class="muted full">Use this rate only for the fictional sample. Verified county sourcing and certificate evidence are required for a live connection.</p></div>
+      <p class="muted full">Use the pickup address or expected receiving address. Look up the county and rate in Ohio’s The Finder and enter them here. This test workspace does not verify the address or rate automatically.</p></div>
       <h3>Items & manufacturing estimates</h3><p class="muted">Quantities, grams and hours below are per piece. Add body and support filament separately.</p>${itemEditor(order)}
       <button type="button" data-action="add-item">+ Add another item</button><div class="form-grid" style="margin-top:24px">${field('Fixed design / preparation charge', 'designFee', order.designFee, 'number', 'min="0" step=".01" required')}${field('Estimated total hands-on hours', 'estimatedLabor', order.estimatedLabor, 'number', 'min="0" step=".01" required')}${field('Sample labor cost per hour', 'laborRate', order.laborRate, 'number', 'min="0" step=".01" required')}</div>
       <div style="margin-top:18px">${textArea('Customer-facing scope / notes', 'customerNotes', order.customerNotes, 'maxlength="3000"')}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit">Save quote draft</button><small id="draft-state">Saved quote draft</small></div></form>`;
@@ -281,12 +282,12 @@
     const offer = order.quoteOffer;
     const t = order.snapshot || offer?.totals || M.totals(order);
     const doc = offer || order;
-    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${projectLabel(order)}${offer?` · Rev ${offer.revision}`:''}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
+    return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${projectLabel(order)}${offer?` · Rev ${offer.revision}`:''}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${(offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)) ? `<p class="request-notes">${escape(offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order))}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
     const t=order.snapshot || order.quoteOffer?.totals || M.totals(order);
-    const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}Please reply to confirm the scope and price. Thank you, OliPoly 3D LLC`;
+    const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}${order.quoteOffer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)} Please reply to confirm the scope and price. Thank you, OliPoly 3D LLC`;
     return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p><div class="actions"><button data-action="print-quote">Print / Save quote PDF</button><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
   }
   function productionPreparation(order) {
@@ -322,7 +323,7 @@
       const purchaseDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
       return `<section class="card"><h2>Ship one box</h2><p class="muted">Weigh the packed box and measure its outside dimensions. Enter the details from the label you purchased.</p>
         <form class="form-grid" data-form="save_shipping_label">
-          <label class="full">Ship-to address<textarea name="destination" maxlength="500" required></textarea></label>
+          <label class="full">Ship-to address<textarea name="destination" maxlength="500" required ${order.fulfillmentPlan ? 'readonly' : ''}>${escape(order.fulfillmentPlan?.address || '')}</textarea></label>
           ${field('Packed weight (oz)', 'weightOz', '', 'number', 'min=".01" max="10000" step=".01" required')}
           ${field('Outside length (in)', 'lengthIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
           ${field('Outside width (in)', 'widthIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
@@ -360,43 +361,71 @@
         <button class="primary" type="submit">Record carrier handoff</button></form>`}
       </section>`;
   }
+  function fulfillmentAmounts(order, amounts) {
+    return row('Accepted quote', format(order.snapshot.total)) +
+      row('Customer fulfillment charge before tax', format(amounts.customerShipping || 0)) +
+      row('Sales tax', format(amounts.tax)) + row('Order total', format(amounts.total)) +
+      row('Payments recorded', format(M.paid(order))) +
+      row('Remaining balance', format(Math.max(0, amounts.total - M.paid(order))));
+  }
+  function fulfillmentChoice(order) {
+    const plan = order.fulfillmentPlan;
+    return `<section class="card"><h2>Fulfillment method</h2>
+      <p class="muted">Confirm how the customer will receive the order. Verify the Ohio county and rate for that address. Any price or tax change requires customer approval before saving.</p>
+      <form class="form-grid" data-form="fulfillment_plan">
+        ${select('Method', 'method', [['','Choose a method'],['pickup','Customer pickup'],['shipping','Carrier shipping'],['delivery','Local delivery']], plan?.method || '')}
+        ${field('Handoff or receiving address', 'address', plan?.address || order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
+        ${field('Ohio county', 'county', plan?.county || order.county, 'text', 'required maxlength="50"')}
+        ${field('Verified tax rate (%)', 'taxRate', plan?.totals.taxRate ?? order.taxRate, 'number', 'required min="0" max="20" step=".01"')}
+        ${field('Customer fulfillment charge ($ before tax)', 'customerFee', plan?.totals.customerShipping || 0, 'number', 'required min="0" max="100000" step=".01"')}
+        ${field('Customer approval reference for changes', 'approval', '', 'text', 'maxlength="500" placeholder="e.g., Email confirming revised total"')}
+        <div class="full" data-fulfillment-amounts aria-live="polite">${fulfillmentAmounts(order, M.currentTotals(order))}</div>
+        <div class="actions full"><button class="primary" type="submit">Confirm fulfillment</button></div>
+      </form></section>`;
+  }
   function fulfillmentPanel(order) {
     const ready = order.released && order.items.every(item => M.remaining(order, item) === 0);
     const preview = `<a class="button" href="${trackingLink(order)}">Open customer milestone preview</a>`;
-    if (!ready) return `<section class="card"><h2>Fulfillment</h2><p>Pass QC on all pieces to arrange pickup or shipping.</p>${preview}</section>`;
+    if (!ready) return `<section class="card"><h2>Fulfillment</h2><p>Pass QC on all pieces to confirm fulfillment.</p>${preview}</section>`;
     if (order.shipment) return `${shippingPanel(order)}<div class="actions">${preview}</div>`;
-    const update = `Hi ${order.customer}, your ${order.title} is ready for pickup. ${M.balance(order) > 0 ? `The remaining balance is ${format(M.balance(order))}. ` : ''}Please reply to arrange a convenient time. Thank you, OliPoly 3D LLC`;
-    return `<section class="card"><h2>Pickup</h2>${order.fulfilled ? '<p>Pickup recorded.</p>' : ''}
-      <label>Prepared pickup message<textarea id="fulfillment-message" readonly>${escape(update)}</textarea></label>
+    const method = M.fulfillmentMethod(order);
+    const choice = order.fulfilled ? '' : fulfillmentChoice(order);
+    if (method === 'pending') return `${choice}<div class="actions">${preview}</div>`;
+    if (method === 'shipping') return `${choice}${shippingPanel(order)}<div class="actions">${preview}</div>`;
+    const delivery = method === 'delivery';
+    const update = `Hi ${order.customer}, your ${order.title} is ready for ${delivery ? 'local delivery' : 'pickup'}. ${M.balance(order) > 0 ? `The remaining balance is ${format(M.balance(order))}. ` : ''}Please reply to arrange a convenient time. Thank you, OliPoly 3D LLC`;
+    return `${choice}<section class="card"><h2>${delivery ? 'Local delivery' : 'Pickup'}</h2>
+      ${order.fulfilled ? `<p>${delivery ? 'Delivery' : 'Pickup'} recorded.</p>` : `
+      <label>Prepared customer message<textarea id="fulfillment-message" readonly>${escape(update)}</textarea></label>
       <div class="actions"><button data-action="copy-message">Copy message</button>
-      ${order.fulfilled ? '' : '<button class="primary" data-action="pickup">Record pickup</button>'}${preview}</div></section>
-      ${order.fulfilled ? '' : shippingPanel(order)}`;
+      <button class="primary" data-action="${delivery ? 'deliver' : 'pickup'}">${delivery ? 'Record drop-off' : 'Record pickup'}</button></div>`}
+      ${preview}</section>`;
   }
   function moneyPanel(order) {
     const cost = M.costs(state, order);
     const baseline = order.estimateBaseline ?? cost.estimated;
     const marginChange = cost.revenue > 0 ? ((baseline - cost.actual) / cost.revenue * 100).toFixed(1) : '0.0';
-    return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format((order.snapshot || M.totals(order)).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
+    return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format(M.currentTotals(order).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
       ${order.snapshot && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
-      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit', format(cost.revenue - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
+      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
   function receiptPanel(order) {
-    const t = order.snapshot || M.totals(order);
+    const t = M.currentTotals(order);
     const items = t.grossLineItems || t.lineItems;
-    return `<section class="card receipt"><div class="eyebrow">Sample receipt · ${cloud ? 'test database' : 'device only'}</div><h1>OliPoly 3D LLC</h1><p>${escape(order.customer)}<br>${escape(order.title)} · ${escape(order.reference)}</p><table class="receipt-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${items.map(item => `<tr><td>${escape(item.description)}</td><td>${item.quantity}</td><td>${format(item.line_total)}</td></tr>`).join('')}</tbody></table><div style="margin-top:20px">${row('Before tax', format(t.beforeTax))}${row('Sample tax', format(t.tax))}${t.roundingAdjustment ? row('Rounding adjustment', format(t.roundingAdjustment)) : ''}${row('Total', format(t.total))}${row('Paid', format(M.paid(order)))}${row('Balance', format(M.balance(order)))}</div><p class="muted" style="margin-top:20px">${order.taxIncluded ? 'Applicable sample tax is included in displayed item amounts.' : 'Item amounts are before sample tax.'}</p><button class="primary no-print" data-action="print">Print / Save PDF</button></section>`;
+    return `<section class="card receipt"><div class="eyebrow">Sample receipt · ${cloud ? 'test database' : 'device only'}</div><h1>OliPoly 3D LLC</h1><p>${escape(order.customer)}<br>${escape(order.title)} · ${escape(order.reference)}</p><table class="receipt-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${items.map(item => `<tr><td>${escape(item.description)}</td><td>${item.quantity}</td><td>${format(item.line_total)}</td></tr>`).join('')}</tbody></table><div style="margin-top:20px">${t.customerShipping ? row('Fulfillment charge before tax', format(t.customerShipping)) : ''}${row('Before tax', format(t.beforeTax))}${row('Sample tax', format(t.tax))}${t.roundingAdjustment ? row('Rounding adjustment', format(t.roundingAdjustment)) : ''}${row('Total', format(t.total))}${row('Paid', format(M.paid(order)))}${row('Balance', format(M.balance(order)))}</div><p class="muted" style="margin-top:20px">${t.taxIncluded ? 'Applicable sample tax is included in displayed item amounts.' : 'Item amounts are before sample tax.'}</p><button class="primary no-print" data-action="print">Print / Save PDF</button></section>`;
   }
   function renderOrder() {
     const order = selectedOrder();
     draft = M.copy(order);
     if (order.snapshot) draft.items = M.copy(M.productionItems(order));
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Fulfillment'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
-      <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This workspace supports fixed-price jobs with pickup or single-box shipping.</p></section></aside></div>
+      <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This workspace supports pickup, local delivery, and single-box shipping.</p></section></aside></div>
       <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel stack" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${fulfillmentPanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
   }
   function renderTracking() {
     const order = selectedOrder();
-    const steps = ['Approved', 'Ready to print', 'Printing', order.shipment ? 'Ready to ship' : 'Ready for pickup', order.shipment ? 'Shipped' : 'Picked up'];
+    const steps = ['Approved', 'Ready to print', 'Printing', ...M.fulfillmentMilestones[M.fulfillmentMethod(order)]];
     let index = order.snapshot ? 0 : -1;
     if (order.released) index = 1;
     if (order.runs.length) index = 2;
@@ -436,6 +465,14 @@
     form.querySelector('[data-inv-net]').textContent = `Calculated net filament = ${grams.format(net)} g`;
   }
   document.addEventListener('input', event => {
+    const fulfillment = event.target.closest?.('[data-form="fulfillment_plan"]');
+    if (fulfillment) {
+      const order = selectedOrder();
+      const output = fulfillment.querySelector('[data-fulfillment-amounts]');
+      const values = Object.fromEntries(new FormData(fulfillment));
+      try { output.innerHTML = fulfillmentAmounts(order, M.fulfillmentPricing(order, values)); }
+      catch (error) { output.textContent = error.message; }
+    }
     updateWeighForm(event.target);
     if (event.target.id === 'inv-search' && inventoryControls) {
       const input = event.target;
@@ -559,7 +596,8 @@
         history.replaceState(null, '', url);
       }
       render();
-      if (action.type === 'save_shipping_label') message('Label purchased. Record carrier handoff when the box is shipped.');
+      if (action.type === 'fulfillment_plan') message('Fulfillment confirmed. The customer balance and order summary are up to date.');
+      else if (action.type === 'save_shipping_label') message('Label purchased. Record carrier handoff when the box is shipped.');
       else if (action.type === 'ship') message('Shipment recorded. The customer update is ready to copy.');
       else message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.');
     } catch (error) { message(error.message, true); }
@@ -602,7 +640,7 @@
         else { input.select(); if (!document.execCommand('copy')) throw new Error('Select and copy the prepared message.'); }
         message('Customer update copied.'); return;
       }
-      if (['release', 'pickup'].includes(action)) {
+      if (['release', 'pickup', 'deliver'].includes(action)) {
         if (dirty) throw new Error('Save your changes before continuing.');
         await persist(M.command(state, selected, {type: action}), {type: action}); render(); message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.'); return;
       }

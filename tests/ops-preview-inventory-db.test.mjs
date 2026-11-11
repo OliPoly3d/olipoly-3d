@@ -34,7 +34,7 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    GRANT USAGE ON SCHEMA auth TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
-  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql']){
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql']){
    let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
    await db.exec(sql);
   }
@@ -116,9 +116,9 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    const byId=id=>state.orders.find(o=>o.id===id);
    const track=async id=>(await db.query('select * from public_order_tracking_lookup($1)',[byId(id).reference])).rows[0];
    const postageRows=async()=> (await db.query("select id,amount,tax_category,receipt_link from financial_entries where category='Shipping' order by amount")).rows;
-   async function readyOrder(id, earlyPayment=false) {
+   async function readyOrder(id, earlyPayment=false, unitPrice=10) {
     const draft=M.seed().orders[0];
-    Object.assign(draft,{id,title:id,items:[{...draft.items[1],quantity:1}],designFee:0});
+    Object.assign(draft,{id,title:id,items:[{...draft.items[1],quantity:1,unit_price:unitPrice}],designFee:0});
     await submitOrder(id,{type:'new'},draft);
     await change({type:'approve',method:'Verbal agreement recorded'},id);
     await assert.rejects(submitOrder(id,label,byId(id)),/Pass QC/);
@@ -176,6 +176,44 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    assert.equal(byId(second).shipment.financeEntryId,expense.entry_id);
    assert.equal((await track(second)).status,'closed');
    assert.equal((await postageRows()).length,2);
+
+   const adjustable='test-15-fulfillment';
+   await readyOrder(adjustable,false,15);
+   assert.equal((await track(adjustable)).public_status_text,'Ready · fulfillment to be arranged');
+   const original=M.copy(byId(adjustable).snapshot);
+   const choice={type:'fulfillment_plan',method:'shipping',address:'123 Fictional Street, Middlefield, OH 44062',
+    county:'Geauga',taxRate:'6.75',customerFee:'7.25',approval:'Fictional customer approved revised total'};
+   await assert.rejects(submitOrder(adjustable,{...choice,approval:''},byId(adjustable)),/Record customer approval/);
+   await change(choice,adjustable);
+   assert.equal((await track(adjustable)).public_status_text,'Ready to ship');
+   assert.equal(Number((await track(adjustable)).balance_amount),22.71);
+   assert.equal(M.balance(byId(adjustable)),22.71);
+   assert.deepEqual(byId(adjustable).snapshot,original);
+   const adjustment=(await db.query('select totals,reason from order_pricing_revisions where order_id=$1',[byId(adjustable).database.orderId])).rows[0];
+   assert.equal(adjustment.totals.original_quote_total,15);
+   assert.equal(adjustment.totals.shipping_charged,7.25);
+   assert.equal(adjustment.totals.tax,1.44);
+   await change({...label,destination:choice.address,tracking:'TEST 00003',purchaseRef:'TEST-LABEL-3',postage:'6.00'},adjustable);
+   assert.equal((await track(adjustable)).public_status_text,'Ready to ship');
+   assert.equal(M.balance(byId(adjustable)),22.71);
+   assert.equal(M.costs(state,byId(adjustable)).postage,6);
+   await change(handoff,adjustable);
+   await change({type:'pay',amount:22.71,fee:0,method:'Cash'},adjustable);
+   const adjustedIncome=(await db.query("select amount,original_amount,shipping_charged,sales_tax_collected,sales_county from financial_entries where finance_command='post_order_income' and order_id=$1",[byId(adjustable).database.orderId])).rows[0];
+   assert.equal(Number(adjustedIncome.amount),14.02);
+   assert.equal(Number(adjustedIncome.original_amount),14.02);
+   assert.equal(Number(adjustedIncome.shipping_charged),7.25);
+   assert.equal(Number(adjustedIncome.sales_tax_collected),1.44);
+   assert.equal(adjustedIncome.sales_county,'Geauga');
+
+   const local='test-local-drop-off';
+   await readyOrder(local);
+   await change({...choice,method:'delivery',county:'Portage',taxRate:'7',customerFee:'0',approval:''},local);
+   assert.equal((await track(local)).public_status_text,'Ready for local delivery');
+   await change({type:'deliver'},local);
+   assert.equal((await track(local)).public_status_text,'Delivered');
+   assert.equal(M.balance(byId(local)),10);
+
   });
   let supplyId;
   await t.test('supplies retain measurement units and record consumption and audits',async()=>{
