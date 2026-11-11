@@ -108,7 +108,25 @@ test('the invoice screen issues an immutable downloadable copy and records owner
     window.HTMLAnchorElement.prototype.click=function() { download={href:this.href,filename:this.download}; };
     window.document.querySelector('[data-action="download-invoice"]').click();
     assert.deepEqual(download,{href:'blob:https://example.test/invoice',filename:'I-0000007.pdf'});
-    assert.equal(window.document.querySelector('#message a').textContent,'Download again');
+    assert.equal(window.document.querySelector('[data-invoice-download] a').textContent,'I-0000007.pdf');
+    assert.equal(window.document.querySelector('[data-invoice-download]').hidden,false);
+
+    const iframe = window.document.createElement('iframe');
+    iframe.src = `/ops-order-preview.html?order=${order.id}&section=invoice`;
+    window.document.body.append(iframe);
+    const frame = iframe.contentWindow;
+    frame.document.open();
+    frame.document.write(html);
+    frame.document.close();
+    for (const script of ['tax-rate.js','order-line-items.js','quote-pricing.js','ops-preview/model.js','ops-preview/workspace.js']) {
+      frame.eval(fs.readFileSync(new URL('../js/' + script, import.meta.url),'utf8'));
+    }
+    const standalone = frame.document.querySelector('a[target="_blank"]');
+    assert.equal(standalone.textContent,'Open invoice in browser');
+    assert.equal(new URL(standalone.href).searchParams.get('order'),order.id);
+    assert.equal(new URL(standalone.href).searchParams.get('section'),'invoice');
+    assert.equal(frame.document.querySelector('[name="invoicePageUrl"]').value,standalone.href);
+    assert.equal(frame.document.querySelector('[data-action="download-invoice"]'),null);
     const record=window.document.querySelector('[data-form="record_invoice_sent"]');
     record.elements.confirmSent.checked=true;
     await submit(record);
