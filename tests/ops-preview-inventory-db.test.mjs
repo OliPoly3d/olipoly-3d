@@ -34,7 +34,7 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    GRANT USAGE ON SCHEMA auth TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
-  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql','20261111190000_ops_test_business_po_review.sql','20261111201500_ops_test_business_invoice_issue.sql']){
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql','20261111190000_ops_test_business_po_review.sql','20261111201500_ops_test_business_invoice_issue.sql','20261111210000_ops_test_split_payments.sql']){
    let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
    await db.exec(sql);
   }
@@ -350,6 +350,71 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    assert.equal(Number(finance.amount),200);
    assert.equal(Number(finance.sales_tax_collected),14);
 
+  });
+  await t.test('a $25 deposit and $75 final payment produce two receipts and one Finance sale',async()=>{
+   const id='test-consumer-deposit';
+   const draft=M.seed().orders[0];
+   const depositTerms={amount:25,due:'On approval',refunds:'Refundable before work begins',option:'7 days'};
+   Object.assign(draft,{id,title:'Deposit rehearsal',quoteStage:'draft',designFee:0,taxIncluded:true,depositTerms,
+    items:[{...draft.items[0],quantity:1,unit_price:100}]});
+   await submitOrder(id,{type:'new'},draft);
+   const byId=()=>state.orders.find(o=>o.id===id);
+   await assert.rejects(async()=>M.command(state,id,{type:'approve',method:'Fictional'}),/Share the quote/);
+   await submitOrder(id,{type:'save'},M.quoteCommand(state,id,{type:'send_quote'}).orders.find(o=>o.id===id));
+   await change({type:'approve',method:'Fictional'},id);
+   assert.deepEqual(byId().quoteOffer.depositTerms,depositTerms);
+   const orderId=byId().database.orderId;
+   const order=async()=>(await db.query('select status,payment_status,balance_amount,deposit_amount,updated_at,order_number from orders where id=$1',[orderId])).rows[0];
+   const sales=async()=>(await db.query("select amount,sales_tax_collected,original_amount from financial_entries where order_id=$1 and finance_command='post_order_income'",[orderId])).rows;
+   assert.equal((await order()).payment_status,'deposit_due');
+   assert.equal(Number((await order()).balance_amount),100);
+   assert.equal(Number((await order()).deposit_amount),25);
+   const deposit={type:'pay',paymentKind:'deposit',amount:25,fee:1,method:'Stripe'};
+   const proposed=M.command(state,id,deposit).orders.find(o=>o.id===id);
+   const tampered=M.copy(proposed);
+   tampered.payments[0].amount=26;
+   await assert.rejects(submitOrder(id,deposit,tampered),/match the approved deposit/);
+   const rev=state.revision, cmd=crypto.randomUUID();
+   await submitOrder(id,deposit,proposed,rev,cmd);
+   const saved=M.copy(byId().payments);
+   await submitOrder(id,deposit,proposed,rev,cmd);
+   assert.deepEqual(byId().payments,saved);
+   assert.equal(M.balance(byId()),75);
+   assert.equal((await order()).payment_status,'deposit_paid');
+   assert.equal(Number((await order()).balance_amount),75);
+   assert.equal(M.paymentReceipt(byId(),0).status,'Deposit received');
+   assert.deepEqual(M.paymentReceipt(byId(),0).depositTerms,depositTerms);
+   const partial=await order();
+   await assert.rejects(db.query('select public.post_order_finance_income($1,$2,$3,$4)',[orderId,partial.order_number,partial.updated_at,crypto.randomUUID()]),/Record the final payment/);
+   assert.deepEqual(await sales(),[]);
+   await change({type:'release'},id);
+   await change({type:'start',itemId:'blocks',quantity:1,printer:'P1S'},id);
+   await change({type:'inspect',runId:byId().runs.at(-1).id,accepted:1,rejected:0,hours:2,
+    usage:[{key:'PETG / Black',grams:80},{key:'PLA / White',grams:10}]},id);
+   await change({type:'pickup'},id);
+   assert.equal(M.balance(byId()),75);
+   const final={type:'pay',amount:75,fee:0,method:'Cash'};
+   const changedHistory=M.command(state,id,final).orders.find(o=>o.id===id);
+   changedHistory.payments[0].amount=20;
+   await assert.rejects(submitOrder(id,final,changedHistory),/without changing recorded payments/);
+   const finalProposal=M.command(state,id,final).orders.find(o=>o.id===id);
+   const finalRevision=state.revision, finalCmd=crypto.randomUUID();
+   await submitOrder(id,final,finalProposal,finalRevision,finalCmd);
+   await submitOrder(id,final,finalProposal,finalRevision,finalCmd);
+   assert.equal(M.paymentReceipt(byId(),0).balance,75);
+   assert.equal(M.paymentReceipt(byId(),1).priorPaid,25);
+   assert.equal(M.paymentReceipt(byId(),1).status,'Paid in full');
+   assert.equal((await order()).payment_status,'paid');
+   assert.equal((await order()).status,'closed');
+   assert.equal(Number((await order()).balance_amount),0);
+   assert.equal(M.paid(byId()),100);
+   const entries=await sales();
+   assert.equal(entries.length,1);
+   assert.equal(Number(entries[0].amount),93.46);
+   assert.equal(Number(entries[0].sales_tax_collected),6.54);
+   assert.equal(Number(entries[0].original_amount),93.46);
+   assert.equal(Number(entries[0].amount)+Number(entries[0].sales_tax_collected),M.paid(byId()));
+   assert.equal((await db.query("select count(*)::int n from financial_entries where type='expense' and title=$1",['Sample payment fee - '+partial.order_number])).rows[0].n,1);
   });
   let supplyId;
   await t.test('supplies retain measurement units and record consumption and audits',async()=>{

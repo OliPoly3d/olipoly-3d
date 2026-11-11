@@ -166,7 +166,10 @@
         items: copy(order.items), totals: copy(totals(order)), terms: order.terms,
         turnaround: order.turnaround || '', validUntil: order.validUntil || '',
         customerNotes: order.customerNotes || '', fulfillmentNote: quoteFulfillmentNote(order), changeReason: order.revisionReason || ''};
-      if (order.preset === 'individual') offer.consumerTermsVersion = consumerTermsVersion;
+      if (order.preset === 'individual') {
+        offer.consumerTermsVersion = consumerTermsVersion;
+        if (order.depositTerms) offer.depositTerms = validateDepositTerms(order.depositTerms,offer.totals.total);
+      }
       if (order.preset === 'business') offer.businessTermsVersion = businessTermsVersion;
       order.quoteHistory = [...(order.quoteHistory || []), offer];
       order.quoteOffer = offer;
@@ -210,6 +213,20 @@
   function paid(order) { return money(order.payments.reduce((sum, p) => sum + p.amount, 0)); }
   function currentTotals(order) { return order.fulfillmentPlan?.totals || order.snapshot || totals(order); }
   function balance(order) { return money(Math.max(0, currentTotals(order).total - paid(order))); }
+  function depositTerms(order) {
+    return order.quoteOffer ? order.quoteOffer.depositTerms || null : order.snapshot ? null : order.depositTerms || null;
+  }
+  function validateDepositTerms(value, total) {
+    const amount = money(number(value.amount, 'Deposit amount'));
+    const due = String(value.due || '').trim();
+    const refunds = String(value.refunds || '').trim();
+    const option = String(value.option || '').trim();
+    if (!amount || amount >= total) throw new Error('Enter a deposit below the quote total.');
+    if (!due || due.length > 120 || !refunds || refunds.length > 500 || option.length > 120) {
+      throw new Error('Enter when the deposit is due and its refund conditions.');
+    }
+    return {amount,due,refunds,option};
+  }
   function paymentReceipt(order, index) {
     const payment = order.payments[index];
     if (!payment) return null;
@@ -220,7 +237,8 @@
     return {number:`${reference}-R${String(index+1).padStart(2,'0')}`,reference,
       customer:order.customer,title:order.title,date:payment.date,method:payment.method,
       amount:payment.amount,priorPaid,balance:balanceAfterPayment,totals,
-      status:balanceAfterPayment ? 'Partial payment received' : 'Paid in full',
+      depositTerms:payment.kind === 'deposit' ? depositTerms(order) : null,
+      status:payment.kind === 'deposit' ? 'Deposit received' : balanceAfterPayment ? 'Partial payment received' : 'Paid in full',
       note:`Thank you for your payment. This receipt records payment for OliPoly order ${reference}. If you have a question about the payment or an issue with your order, reply to your order email and include your OP number.`};
   }
   function fulfillmentPricing(order, action) {
@@ -307,7 +325,9 @@
     ['designFee', 'laborRate', 'estimatedLabor'].forEach(name => {
       order[name] = number(order[name], name);
     });
-    totals(order);
+    const total = totals(order).total;
+    if (order.depositTerms && order.preset === 'individual') order.depositTerms = validateDepositTerms(order.depositTerms,total);
+    else delete order.depositTerms;
     if (existing) state.orders[state.orders.indexOf(existing)] = order;
     else state.orders.push(order);
     return state;
@@ -414,6 +434,7 @@
       if (!order.customer.trim() || !order.title.trim() || !order.items.length) throw new Error('Save the customer, project and items before recording approval.');
       if (!action.method) throw new Error('Select how the customer approved the work.');
       if (order.quoteStage === 'request') throw new Error('Prepare the quote before recording approval.');
+      if (order.depositTerms && !order.quoteOffer) throw new Error('Share the quote with its deposit terms before approving.');
       order.snapshot = copy(order.quoteOffer?.totals || totals(order));
       order.approval = action.method;
       order.approvedAt = new Date().toISOString();
@@ -631,7 +652,13 @@
       if (!amount || amount > balance(order)) throw new Error('Enter an amount up to the remaining balance.');
       if (fee > amount) throw new Error('Fee exceeds the payment.');
       if (!['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'].includes(action.method)) throw new Error('Choose a payment method.');
-      order.payments.push({id: uid(), amount, fee, method: action.method, reference: String(action.reference || ''), date: new Date().toISOString(),
+      const deposit = depositTerms(order);
+      const paymentKind = action.paymentKind || 'payment';
+      const first = order.payments.length === 0;
+      if (!['deposit','payment'].includes(paymentKind)) throw new Error('Choose a payment type.');
+      if (paymentKind === 'deposit' && (!first || !deposit || amount !== deposit.amount)) throw new Error('The first deposit must match the approved deposit amount.');
+      if (first && deposit && amount < balance(order) && paymentKind !== 'deposit') throw new Error('Record the approved deposit first, or record a full payment.');
+      order.payments.push({id: uid(), kind:paymentKind, amount, fee, method: action.method, reference: String(action.reference || ''), date: new Date().toISOString(),
         ...(order.preset === 'individual' ? {receiptTotals:copy(currentTotals(order))} : {})});
     } else if (action.type === 'actuals') {
       order.actualLabor = number(action.hours, 'Hands-on hours');
@@ -677,6 +704,6 @@
     }
     return label;
   }
-  return {seed, totals, consumerTerms, consumerTermsVersion, quoteTermsDocument, invoiceFooter, paymentReceipt, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+  return {seed, totals, consumerTerms, consumerTermsVersion, quoteTermsDocument, invoiceFooter, depositTerms, paymentReceipt, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });
