@@ -318,38 +318,44 @@
   }
   function shippingPanel(order) {
     const shipment = order.shipment;
+    const plan = order.shippingDraft || order.fulfillmentPlan;
     if (!shipment) {
       const today = new Date();
       const purchaseDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-      return `<section class="card"><h2>Ship one box</h2><p class="muted">Weigh the packed box and measure its outside dimensions. Enter the details from the label you purchased.</p>
+      return `<section class="card"><h2>Ship one box</h2><p class="muted">Confirm the carrier and any available label details. Saving this section publishes the confirmed shipping charges and updates tracking to Ready to ship.</p>
+        ${order.shippingDraft ? `<p class="status-line">Saved customer total to publish: ${format(plan.totals.total)}</p>` : ''}
         <form class="form-grid" data-form="save_shipping_label">
-          <label class="full">Ship-to address<textarea name="destination" maxlength="500" required ${order.fulfillmentPlan ? 'readonly' : ''}>${escape(order.fulfillmentPlan?.address || '')}</textarea></label>
-          ${field('Packed weight (oz)', 'weightOz', '', 'number', 'min=".01" max="10000" step=".01" required')}
-          ${field('Outside length (in)', 'lengthIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
-          ${field('Outside width (in)', 'widthIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
-          ${field('Outside height (in)', 'heightIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
+          <label class="full">Ship-to address<textarea name="destination" maxlength="500" required ${plan ? 'readonly' : ''}>${escape(plan?.address || '')}</textarea></label>
+          ${field('Packed weight (oz)', 'weightOz', '', 'number', 'min=".01" max="10000" step=".01"')}
+          ${field('Outside length (in)', 'lengthIn', '', 'number', 'min=".01" max="10000" step=".01"')}
+          ${field('Outside width (in)', 'widthIn', '', 'number', 'min=".01" max="10000" step=".01"')}
+          ${field('Outside height (in)', 'heightIn', '', 'number', 'min=".01" max="10000" step=".01"')}
+          <label class="check full"><input type="checkbox" name="packageNotApplicable" value="yes"> Unentered package measurements are N/A</label>
+          <p class="muted full">Enter N/A for a service, label provider, tracking number or purchase reference that does not apply.</p>
           ${field('Carrier', 'carrier', 'USPS', 'text', 'maxlength="40" required')}
           ${field('Service', 'service', '', 'text', 'maxlength="80" required')}
           ${field('Label provider', 'provider', 'USPS Click-N-Ship', 'text', 'maxlength="60" required')}
           ${field('Tracking number', 'tracking', '', 'text', 'maxlength="60" required')}
           ${field('Label purchase reference', 'purchaseRef', '', 'text', 'maxlength="100" required')}
-          ${field('Label purchase date', 'purchaseDate', purchaseDate, 'date', `max="${purchaseDate}" required`)}
+          ${field('Label purchase date', 'purchaseDate', purchaseDate, 'date', `max="${purchaseDate}"`)}
+          <label class="check full"><input type="checkbox" name="noPurchase" value="yes"> No label purchase · purchase date is N/A</label>
           ${field('Actual postage ($)', 'postage', '', 'number', 'min="0" max="100000" step=".01" required')}
           ${field('Receipt link (optional)', 'receiptUrl', '', 'url', 'maxlength="1000"')}
           ${cloud ? `<details class="full"><summary>Postage already recorded in Finance?</summary>
             ${field('Existing Finance expense ID', 'financeEntryId', '', 'text', 'maxlength="36"')}
             <p class="muted">Use the ID of the shipping expense for this purchase. Its date and amount must match.</p></details>` : ''}
           <p class="muted full">${cloud ? 'Save the label to record actual postage in Test Finance or link the expense you entered.' : 'Actual postage goes into the sample order’s costs.'}</p>
-          <div class="actions full"><button class="primary" type="submit">Save purchased label</button></div>
+          <label class="check full"><input type="checkbox" name="confirmDetails" value="yes" required> I’ve checked the shipment details and any N/A entries.</label>
+          <div class="actions full"><button class="primary" type="submit">Confirm shipment details</button></div>
         </form></section>`;
     }
     const shipped = Boolean(shipment.handoffAt);
-    const update = `Hi ${order.customer}, your order ${M.projectIdentity(order).primary} (${order.title}) has shipped via ${shipment.carrier} ${shipment.service}. Your tracking number is ${shipment.tracking}. Thank you, OliPoly 3D LLC`;
-    return `<section class="card shipment-card"><div class="section-head"><h2>Shipment</h2><span class="badge">${shipped ? 'Shipped' : 'Label purchased'}</span></div>
+    const update = `Hi ${order.customer}, your order ${M.projectIdentity(order).primary} (${order.title}) has shipped via ${[shipment.carrier,shipment.service].filter(Boolean).join(' ')}.${shipment.tracking ? ` Your tracking number is ${shipment.tracking}.` : ''} Thank you, OliPoly 3D LLC`;
+    return `<section class="card shipment-card"><div class="section-head"><h2>Shipment</h2><span class="badge">${shipped ? 'Shipped' : shipment.purchaseDate ? 'Label purchased' : 'Shipment details confirmed'}</span></div>
       <p>${escape(shipment.destination).replace(/\n/g, '<br>')}</p>
-      ${row('Packed box', `${shipment.weightOz} oz · ${shipment.lengthIn} × ${shipment.widthIn} × ${shipment.heightIn} in`)}
-      ${row('Carrier & service', `${shipment.carrier} ${shipment.service}`)}${row('Tracking', shipment.tracking)}
-      ${row('Label purchase', `${shipment.purchaseDate} · ${shipment.provider} · ${shipment.purchaseRef}`)}
+      ${row('Packed box', `${shipment.weightOz ?? 'N/A'} oz · ${shipment.lengthIn ?? 'N/A'} × ${shipment.widthIn ?? 'N/A'} × ${shipment.heightIn ?? 'N/A'} in`)}
+      ${row('Carrier & service', [shipment.carrier,shipment.service].filter(Boolean).join(' · '))}${row('Tracking', shipment.tracking || 'N/A')}
+      ${row('Label purchase', [shipment.purchaseDate,shipment.provider,shipment.purchaseRef].filter(Boolean).join(' · ') || 'N/A')}
       ${row('Actual postage', format(shipment.postage))}
       ${shipment.financeEntryId ? row('Finance expense', shipment.financeEntryId) : ''}
       ${shipment.receiptUrl ? `<p><a href="${escape(shipment.receiptUrl)}" target="_blank" rel="noopener noreferrer">Open postage receipt</a></p>` : ''}
@@ -364,23 +370,28 @@
   function fulfillmentAmounts(order, amounts) {
     return row('Accepted quote', format(order.snapshot.total)) +
       row('Customer fulfillment charge before tax', format(amounts.customerShipping || 0)) +
+      ((amounts.fulfillmentDiscount || 0) ? row('Discount or Adjustment', format(-amounts.fulfillmentDiscount)) : '') +
       row('Sales tax', format(amounts.tax)) + row('Order total', format(amounts.total)) +
       row('Payments recorded', format(M.paid(order))) +
       row('Remaining balance', format(Math.max(0, amounts.total - M.paid(order))));
   }
   function fulfillmentChoice(order) {
-    const plan = order.fulfillmentPlan;
+    const plan = order.shippingDraft || order.fulfillmentPlan;
     return `<section class="card"><h2>Fulfillment method</h2>
-      <p class="muted">Confirm how the customer will receive the order. Verify the Ohio county and rate for that address. Any price or tax change requires customer approval before saving.</p>
+      <p class="muted">Confirm how the customer will receive the order. Verify the Ohio county and rate for that address. Record customer approval for any price or tax change. Carrier shipping stays pending until you confirm the shipment details below.</p>
       <form class="form-grid" data-form="fulfillment_plan">
         ${select('Method', 'method', [['','Choose a method'],['pickup','Customer pickup'],['shipping','Carrier shipping'],['delivery','Local delivery']], plan?.method || '')}
         ${field('Handoff or receiving address', 'address', plan?.address || order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
         ${field('Ohio county', 'county', plan?.county || order.county, 'text', 'required maxlength="50"')}
         ${field('Verified tax rate (%)', 'taxRate', plan?.totals.taxRate ?? order.taxRate, 'number', 'required min="0" max="20" step=".01"')}
         ${field('Customer fulfillment charge ($ before tax)', 'customerFee', plan?.totals.customerShipping || 0, 'number', 'required min="0" max="100000" step=".01"')}
-        ${field('Customer approval reference for changes', 'approval', '', 'text', 'maxlength="500" placeholder="e.g., Email confirming revised total"')}
-        <div class="full" data-fulfillment-amounts aria-live="polite">${fulfillmentAmounts(order, M.currentTotals(order))}</div>
-        <div class="actions full"><button class="primary" type="submit">Confirm fulfillment</button></div>
+        ${select('Discount or Adjustment', 'discountMode', [['none','None'],['round_down','Round down to a whole dollar'],['fixed','Fixed amount off items'],['percent','Percentage off items']], plan?.discountMode || 'none')}
+        ${field('Discount value ($ or %)', 'discountValue', plan?.discountValue || 0, 'number', 'min="0" step=".01"')}
+        ${field('Discount reason (optional)', 'discountReason', plan?.discountReason || '', 'text', 'maxlength="500"')}
+        ${field('Customer approval reference for changes', 'approval', plan?.approval || '', 'text', 'maxlength="500" placeholder="e.g., Email confirming revised total"')}
+        <label class="check full"><input type="checkbox" name="confirmDelivery" value="yes"> For paid local delivery, I’ve confirmed the drop-off address and customer charge.</label>
+        <div class="full" data-fulfillment-amounts aria-live="polite">${fulfillmentAmounts(order, plan?.totals || M.currentTotals(order))}</div>
+        <div class="actions full"><button class="primary" type="submit">Save fulfillment choice</button></div>
       </form></section>`;
   }
   function fulfillmentPanel(order) {
@@ -390,6 +401,7 @@
     if (order.shipment) return `${shippingPanel(order)}<div class="actions">${preview}</div>`;
     const method = M.fulfillmentMethod(order);
     const choice = order.fulfilled ? '' : fulfillmentChoice(order);
+    if (order.shippingDraft) return `${choice}${shippingPanel(order)}<div class="actions">${preview}</div>`;
     if (method === 'pending') return `${choice}<div class="actions">${preview}</div>`;
     if (method === 'shipping') return `${choice}${shippingPanel(order)}<div class="actions">${preview}</div>`;
     const delivery = method === 'delivery';
@@ -406,7 +418,7 @@
     const baseline = order.estimateBaseline ?? cost.estimated;
     const marginChange = cost.revenue > 0 ? ((baseline - cost.actual) / cost.revenue * 100).toFixed(1) : '0.0';
     return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format(M.currentTotals(order).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
-      ${order.snapshot && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
+      ${order.snapshot && !order.shippingDraft && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
       <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
@@ -596,8 +608,8 @@
         history.replaceState(null, '', url);
       }
       render();
-      if (action.type === 'fulfillment_plan') message('Fulfillment confirmed. The customer balance and order summary are up to date.');
-      else if (action.type === 'save_shipping_label') message('Label purchased. Record carrier handoff when the box is shipped.');
+      if (action.type === 'fulfillment_plan') message(action.method === 'shipping' ? 'Shipping choice saved. Confirm the shipment details to publish the update.' : 'Fulfillment confirmed. The customer balance and order summary are up to date.');
+      else if (action.type === 'save_shipping_label') message('Shipment details confirmed. Record carrier handoff when the box is shipped.');
       else if (action.type === 'ship') message('Shipment recorded. The customer update is ready to copy.');
       else message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.');
     } catch (error) { message(error.message, true); }
