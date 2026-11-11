@@ -60,10 +60,11 @@
   const stages = [
     ['request', 'New request'], ['quoting', 'Preparing quote'], ['awaiting', 'Awaiting approval'],
     ['approved', 'Quote approved'], ['queued', 'Queued for production'], ['printing', 'In progress'],
-    ['ready', 'Ready for fulfillment'], ['label', 'Label purchased'], ['payment', 'Awaiting payment'], ['complete', 'Completed']
+    ['ready', 'Ready for fulfillment'], ['label', 'Label purchased'], ['invoice', 'Awaiting invoice'], ['payment', 'Awaiting payment'], ['complete', 'Completed']
   ];
   function stage(order) {
     if (!order.snapshot) return order.quoteStage === 'request' ? 'request' : order.quoteStage === 'sent' ? 'awaiting' : 'quoting';
+    if (order.fulfilled && order.poReview && !order.invoice) return 'invoice';
     if (order.fulfilled) return balance(order) === 0 ? 'complete' : 'payment';
     if (order.shipment) return 'label';
     if (!order.released) return 'approved';
@@ -76,7 +77,7 @@
       request: ['Review request', 'request'], quoting: ['Prepare quote', 'details'], awaiting: ['Review quote / approval', 'quote'],
       approved: ['Release to production', 'production'], queued: ['Start next run', 'production'], printing: ['Finish & inspect', 'production'],
       ready: ['Arrange fulfillment', 'pickup'], label: ['Record carrier handoff', 'pickup'],
-      payment: ['Record payment', 'money'], complete: ['View receipt', 'receipt']
+      invoice: ['Review & issue invoice', 'invoice'], payment: ['Record payment', 'money'], complete: ['View receipt', 'receipt']
     }[stage(order)];
   }
   function queue(state, filter = 'open', search = '') {
@@ -294,6 +295,37 @@
     review.taxRate = taxRate;
     const snapshot = totals({...order,items,taxRate});
     return {review,items,snapshot};
+  }
+  function invoiceDueDate(terms, issueDate) {
+    const date = new Date(issueDate + 'T12:00:00Z');
+    if (!Number.isFinite(date.getTime())) return '';
+    const net = String(terms || '').match(/^net[\s_-]*(\d{1,3})(?:\b|$)/i);
+    if (!net && !/^due (on|upon) receipt$/i.test(String(terms || '').trim())) return '';
+    date.setUTCDate(date.getUTCDate() + (net ? Number(net[1]) : 0));
+    return date.toISOString().slice(0,10);
+  }
+  function invoiceDetails(order, action) {
+    const issueDate = String(action.issueDate || '');
+    const dueDate = String(action.dueDate || '');
+    const recipient = String(action.recipient || '').trim();
+    const billTo = String(action.billTo || '').trim();
+    const dateIsValid = value => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const parsed = new Date(value + 'T12:00:00Z');
+      return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0,10) === value;
+    };
+    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+    const handoff = order.fulfilledAt ? new Date(order.fulfilledAt).toLocaleDateString('en-CA',{timeZone:'America/New_York'}) : '';
+    if (!dateIsValid(issueDate) || issueDate > today || (handoff && issueDate < handoff) || !dateIsValid(dueDate) || dueDate < issueDate) {
+      throw new Error('Use an issue date between handoff and today, and a due date on or after the issue date.');
+    }
+    if (recipient.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error('Enter the confirmed invoice recipient.');
+    if (billTo.length > 500) throw new Error('Use up to 500 characters for the billing address.');
+    const reference = projectIdentity(order).primary;
+    return {number:`I-${reference.replace(/^(Q|OP)-/,'')}`,reference,issueDate,dueDate,recipient,billTo,
+      customer:order.customer,title:order.title,poNumber:order.poReview?.number||'',terms:order.terms,
+      shipTo:order.fulfillmentPlan?.address||order.poReview?.shipTo||'',
+      totals:copy(currentTotals(order)),paid:paid(order),balance:balance(order)};
   }
   function command(original, orderId, action) {
     const state = copy(original);
@@ -523,6 +555,18 @@
       if (order.fulfilled || !order.released || order.items.some(item => remaining(order, item) > 0)) throw new Error('Inspect all required pieces before recording pickup.');
       order.fulfilled = true;
       order.fulfilledAt = new Date().toISOString();
+    } else if (action.type === 'issue_invoice') {
+      if (order.preset !== 'business' || !order.snapshot || !order.fulfilled || order.invoice) {
+        throw new Error('Issue a business invoice once, after final handoff.');
+      }
+      order.invoice = invoiceDetails(order,action);
+    } else if (action.type === 'record_invoice_sent') {
+      if (!order.invoice || order.invoiceDelivery || action.confirmSent !== 'yes') {
+        throw new Error('Confirm the issued invoice was sent. This can only be recorded once.');
+      }
+      const reference = String(action.reference || '').trim();
+      if (reference.length > 500) throw new Error('Use up to 500 characters for the send reference.');
+      order.invoiceDelivery = {recipient:order.invoice.recipient,reference,recordedAt:new Date().toISOString()};
     } else if (action.type === 'pay') {
       if (!order.snapshot) throw new Error('Record approval before receiving payment.');
       if (order.shippingDraft) throw new Error('Confirm shipment details before recording payment.');
@@ -576,6 +620,6 @@
     }
     return label;
   }
-  return {seed, totals, poReview, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+  return {seed, totals, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });

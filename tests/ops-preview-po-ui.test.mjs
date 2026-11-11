@@ -55,3 +55,57 @@ test('owner reviews a PO and records the acknowledgment from the quote screen', 
     window.close();
   }
 });
+
+test('the invoice screen issues an immutable printable copy and records owner sending', {
+  skip: !process.env.OPS_JSDOM_MODULE,
+}, async () => {
+  const {JSDOM} = await import(pathToFileURL(process.env.OPS_JSDOM_MODULE));
+  const html = fs.readFileSync(new URL('../ops-order-preview.html', import.meta.url),'utf8');
+  const dom = new JSDOM(html,{url:'https://example.test/ops-order-preview.html?section=invoice',runScripts:'outside-only'});
+  const {window} = dom;
+  const load = name => window.eval(fs.readFileSync(new URL('../js/' + name, import.meta.url),'utf8'));
+  const submit = async form => {
+    form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+    await new Promise(resolve=>setImmediate(resolve));
+  };
+
+  try {
+    for (const script of ['tax-rate.js','order-line-items.js','quote-pricing.js','ops-preview/model.js','ops-preview/customer-view.js']) load(script);
+    const M = window.OliPolyOpsPreview;
+    const V = window.OliPolyCustomerView;
+    const state = M.seed();
+    const order = state.orders[0];
+    Object.assign(order,{reference:'OP-0000007',terms:'Net 30 from invoice date',designFee:0,taxIncluded:false,
+      items:[{...order.items[0],quantity:8,unit_price:25}]});
+    const accepted = M.command(state,order.id,{type:'approve',method:'Fictional acceptance'});
+    Object.assign(accepted.orders[0],{preset:'business',released:true,fulfilled:true,fulfilledAt:new Date().toISOString(),
+      poReview:{number:'TEST-PO-104',apEmail:'ap@example.test',billTo:'200 Fictional Way',shipTo:'100 Fictional Way'}});
+    window.localStorage.setItem('olipoly.ops.preview.v1',JSON.stringify(accepted));
+    load('ops-preview/workspace.js');
+    const saved=()=>JSON.parse(window.localStorage.getItem('olipoly.ops.preview.v1')).orders[0];
+    const invoiceForm=window.document.querySelector('[data-form="issue_invoice"]');
+    assert.equal(invoiceForm.elements.recipient.value,'ap@example.test');
+    assert.equal(invoiceForm.elements.dueDate.value,M.invoiceDueDate(order.terms,invoiceForm.elements.issueDate.value));
+    assert.match(V.render(V.project(saved()),'pay'),/Invoice pending/);
+    await submit(invoiceForm);
+
+    const invoice=saved().invoice;
+    assert.equal(invoice.number,'I-0000007');
+    assert.equal(invoice.balance,214);
+    assert.match(window.document.querySelector('.invoice-document').textContent,/Purchase orderTEST-PO-104/);
+    const paymentPage=V.render(V.project(saved()),'pay');
+    assert.match(paymentPage,/I-0000007/);
+    assert.doesNotMatch(paymentPage,/ap@example\.test/);
+    let printed=false;
+    window.print=()=>{printed=window.document.body.dataset.printView==='invoice';};
+    window.document.querySelector('[data-action="print-invoice"]').click();
+    assert.equal(printed,true);
+    const record=window.document.querySelector('[data-form="record_invoice_sent"]');
+    record.elements.confirmSent.checked=true;
+    await submit(record);
+    assert.equal(saved().invoiceDelivery.recipient,'ap@example.test');
+    assert.deepEqual(saved().invoice,invoice);
+  } finally {
+    window.close();
+  }
+});

@@ -34,7 +34,7 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    GRANT USAGE ON SCHEMA auth TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
-  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql','20261111190000_ops_test_business_po_review.sql']){
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql','20261111190000_ops_test_business_po_review.sql','20261111201500_ops_test_business_invoice_issue.sql']){
    let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
    await db.exec(sql);
   }
@@ -323,6 +323,33 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    await assert.rejects(change(acknowledgment,id),/recorded once/);
    await change({type:'release'},id);
    assert.deepEqual(state.orders.find(o=>o.id===id).reservedMaterials,{'PLA / Black':120});
+   const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+   const issue={type:'issue_invoice',issueDate:today,dueDate:M.invoiceDueDate(accepted.terms,today),recipient:'ap@example.test',billTo:'200 Fictional Way, Aurora, OH 44202'};
+   const byId=()=>state.orders.find(o=>o.id===id);
+   assert.equal(M.invoiceDueDate('Net 30 from invoice date','2026-11-11'),'2026-12-11');
+   await assert.rejects(submitOrder(id,issue,byId()),/after final handoff/);
+   await change({type:'start',itemId:'tags',quantity:8,printer:'P2S'},id);
+   await change({type:'inspect',runId:byId().runs.at(-1).id,accepted:8,rejected:0,hours:4,usage:[{key:'PLA / Black',grams:120}]},id);
+   await change({type:'pickup'},id);
+   assert.equal(M.stage(byId()),'invoice');
+   await change(issue,id);
+   const issued=M.copy(byId().invoice);
+   assert.equal(issued.number,accepted.reference.replace(/^OP-/,'I-'));
+   assert.equal(issued.balance,214);
+   assert.equal(issued.poNumber,'TEST-PO-104');
+   assert.equal(issued.totals.lineItems[0].quantity,8);
+   assert.equal(M.stage(byId()),'payment');
+   assert.equal((await db.query('select invoice_due_date::text due from orders where id=$1',[accepted.database.orderId])).rows[0].due,issue.dueDate);
+   await assert.rejects(submitOrder(id,issue,byId()),/only|once/);
+   await change({type:'record_invoice_sent',confirmSent:'yes',reference:'Fictional email'},id);
+   assert.equal(byId().invoiceDelivery.recipient,'ap@example.test');
+   await change({type:'pay',amount:214,fee:0,method:'ACH'},id);
+   assert.deepEqual(byId().invoice,issued);
+   assert.equal(M.balance(byId()),0);
+   const finance=(await db.query("select amount,sales_tax_collected from financial_entries where order_id=$1 and finance_command='post_order_income'",[accepted.database.orderId])).rows[0];
+   assert.equal(Number(finance.amount),200);
+   assert.equal(Number(finance.sales_tax_collected),14);
+
   });
   let supplyId;
   await t.test('supplies retain measurement units and record consumption and audits',async()=>{
