@@ -106,3 +106,40 @@ test('post-QC milestone follows the confirmed handoff and the accepted quote kee
     assert.match(V.render(view(), 'track'), new RegExp(`aria-current="step"><strong>${complete}</strong>`));
   }
 });
+
+test('order summary adds post-quote charges to the original tax-inclusive quote', () => {
+  const order = fixture();
+  order.snapshot = {...order.snapshot, total: 15, beforeTax: 14.02, tax: .98, customerShipping: 0};
+  order.fulfillmentPlan = {method: 'shipping', totals: {
+    ...order.snapshot, total: 22.76, beforeTax: 21.27, tax: 1.49, customerShipping: 7.25, taxIncluded: false,
+  }};
+  delete order.fulfillmentPlan.totals.grossShipping;
+  const summary = view => V.render(V.project(order), view).split('<aside')[1];
+  for (const view of ['track','pay']) {
+    const html = summary(view);
+    assert.match(html, /Quoted total<\/span><strong>\$15\.00/);
+    assert.match(html, /Additional sales tax<\/span><strong>\$0\.51/);
+    assert.match(html, /Shipping charged<\/span><strong>\$7\.25/);
+    assert.match(html, /Agreed total<\/small><strong>\$22\.76/);
+    assert.match(html, /Total sales tax included: \$1\.49/);
+    assert.doesNotMatch(html, /Before tax|Discount or Adjustment|Rounding adjustment/);
+  }
+  assert.match(summary('quote'), /Quoted total<\/small><strong>\$15\.00/);
+  order.fulfillmentPlan.totals.total = 21.76;
+  assert.match(summary('track'), /Discount or Adjustment<\/span><strong>-\$1\.00/);
+});
+
+test('shipment method is under Shipped and missing tracking is omitted', () => {
+  const order = fixture();
+  order.released = true;
+  order.runs = order.items.map(item => ({itemId: item.id, status: 'inspected', accepted: item.quantity}));
+  order.shipment = {carrier: 'USPS', service: 'Ground Advantage', tracking: 'TEST-321'};
+  const progress = () => V.render(V.project(order), 'track');
+  assert.doesNotMatch(progress(), /Ground Advantage|TEST-321/);
+  order.fulfilled = true;
+  order.shipment.handoffAt = new Date().toISOString();
+  assert.match(progress(), /aria-current="step"><strong>Shipped<\/strong>.*Shipping method · USPS · Ground Advantage.*Tracking number · TEST-321/);
+  delete order.shipment.tracking;
+  assert.match(progress(), /Ground Advantage/);
+  assert.doesNotMatch(progress(), /Tracking number|undefined/);
+});

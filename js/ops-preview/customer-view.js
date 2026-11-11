@@ -27,7 +27,7 @@
     const shipment = accepted ? order.shipment : null;
     const shipping = shipment ? {
       shipped: Boolean(shipment.handoffAt),
-      ...(shipment.handoffAt ? {carrier: String(shipment.carrier), tracking: String(shipment.tracking)} : {})
+      ...(shipment.handoffAt ? {carrier: String(shipment.carrier||''), service: String(shipment.service||''), tracking: String(shipment.tracking||'')} : {})
     } : null;
     const identity=root.OliPolyOpsPreview.projectIdentity(order);
     const terms=String(offer?.terms||order.terms||'To be agreed');
@@ -42,10 +42,31 @@
   }
   const row=(label,value)=>`<div class="row"><span>${E(label)}</span><strong>${E(value)}</strong></div>`;
   function totals(v,view) {
-    const t = view === 'quote' ? v.quoteTotals : v.totals;
-    const inclusive = view === 'quote' ? v.quoteTaxIncluded : v.taxIncluded;
-    const feeLabel = v.method === 'delivery' && view !== 'quote' ? 'Local delivery charge' : 'Shipping charged';
-    return `<aside class="card customer-summary"><h2>${view==='quote'?'Your quotation':'Order summary'}</h2><p class="customer-note customer-reference">${E(v.reference)} · Revision ${v.revision}</p>${row('Before tax',money(t.beforeTax))}${row(v.taxExempt?'Sales tax · exempt':'Sales tax',money(t.tax))}${t.discount?row('Discount applied',money(t.discount)):''}${t.shipping?row(feeLabel,money(t.shipping)):row('Separate shipping charge',t.shippingDeferred?'To be confirmed; not in total':money(0))}${t.rounding?row('Rounding adjustment',money(t.rounding)):''}<div class="customer-total"><small>${view==='quote'?'Quoted total':'Agreed total'}</small><strong>${money(t.total)}</strong><small>${inclusive?'Tax included; breakdown shown above.':'Includes the sales tax shown above.'}</small></div>${(v.accepted && (view !== 'quote' || !v.adjusted))?`${row('Payments confirmed',money(v.paid))}${row('Remaining balance',money(v.balance))}${v.credit?row('Credit to resolve',money(v.credit)):''}`:''}<p class="customer-note">${E(v.terms)}</p><div class="actions no-print"><button data-action="print">Print / save ${view==='quote'?'quote PDF':'order summary'}</button></div></aside>`;
+    const isQuote = view === 'quote';
+    const t = isQuote ? v.quoteTotals : v.totals;
+    const feeLabel = v.method === 'delivery' && !isQuote ? 'Local delivery charge' : 'Shipping charged';
+    let breakdown, taxNote;
+    if (isQuote) {
+      breakdown = row('Before tax',money(t.beforeTax)) +
+        row(v.taxExempt?'Sales tax · exempt':'Sales tax',money(t.tax)) +
+        (t.discount ? row('Discount applied',money(t.discount)) : '') +
+        (t.shipping ? row(feeLabel,money(t.shipping)) : row('Separate shipping charge',t.shippingDeferred?'To be confirmed; not in total':money(0))) +
+        (cents(t.rounding) ? row('Discount or Adjustment',money(t.rounding)) : '');
+      taxNote = v.quoteTaxIncluded ? 'Tax included; breakdown shown above.' : 'Includes the sales tax shown above.';
+    } else {
+      const quoted = v.quoteTotals;
+      // Start from the accepted total, which already includes its original tax
+      // and charges. Show only changes made since acceptance.
+      const taxChange = cents(t.tax) - cents(quoted.tax);
+      const shippingChange = cents(t.shipping) - cents(quoted.shipping);
+      const adjustment = cents(t.total) - cents(quoted.total) - taxChange - shippingChange;
+      breakdown = row('Quoted total',money(quoted.total)) +
+        row(taxChange < 0 ? 'Sales tax reduction' : 'Additional sales tax',money(taxChange/100)) +
+        row(feeLabel,money(shippingChange/100)) +
+        (adjustment ? row('Discount or Adjustment',money(adjustment/100)) : '');
+      taxNote = v.taxExempt ? 'Sales tax exempt.' : `Total sales tax included: ${money(t.tax)}.`;
+    }
+    return `<aside class="card customer-summary"><h2>${isQuote?'Your quotation':'Order summary'}</h2><p class="customer-note customer-reference">${E(v.reference)} · Revision ${v.revision}</p>${breakdown}<div class="customer-total"><small>${isQuote?'Quoted total':'Agreed total'}</small><strong>${money(t.total)}</strong><small>${taxNote}</small></div>${(v.accepted && (!isQuote || !v.adjusted))?`${row('Payments confirmed',money(v.paid))}${row('Remaining balance',money(v.balance))}${v.credit?row('Credit to resolve',money(v.credit)):''}`:''}<p class="customer-note">${E(v.terms)}</p><div class="actions no-print"><button data-action="print">Print / save ${isQuote?'quote PDF':'order summary'}</button></div></aside>`;
   }
   function quote(v) {
     return `<section class="card"><div class="customer-meta"><div><div class="eyebrow">${v.accepted?'Accepted quotation':'Prepared for you'}</div><h2>${E(v.customer)}</h2></div><p>${E(v.reference)} · Rev ${v.revision}${v.validUntil?`<br>Valid through ${E(v.validUntil)}`:''}${v.legacyQuote?`<br>Original quote ${E(v.legacyQuote)}`:''}</p></div><div class="customer-line-items"><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price${v.quoteTaxIncluded?' · tax included':''}</th><th>Amount</th></tr></thead><tbody>${v.items.map(i=>`<tr><td>${E(i.description)}${i.materialLabel?`<br><small>${E(i.materialLabel)}</small>`:''}</td><td>${E(i.quantity)}</td><td>${money(i.unitPrice)}</td><td>${money(i.lineTotal)}</td></tr>`).join('')}</tbody></table></div><div class="customer-terms"><strong>Timing</strong>${E(v.turnaround)}<strong>Payment terms</strong>${E(v.terms)}${v.customerNotes?`<strong>Scope & notes</strong>${E(v.customerNotes)}`:''}${v.fulfillmentNote?`<strong>Fulfillment</strong>${E(v.fulfillmentNote)}`:''}</div>${v.accepted?'<p class="customer-status" style="margin-top:22px">Your quote is accepted. You can follow your order’s progress and balance below.</p>':`<form id="customer-accept" class="no-print" style="margin-top:24px"><h3>Ready to go ahead?</h3><label>Your name<input name="name" autocomplete="name" required maxlength="160"></label><label class="check customer-check"><input type="checkbox" name="confirm" required><span>I approve revision ${v.revision}, including the listed scope, quantities, total of <strong>${money(v.totals.total)}</strong>, timing and payment terms.</span></label><button class="primary" type="submit">Accept quote · ${money(v.totals.total)}</button><p class="customer-note">Owner test: this records approval in OliPoly ERP Test. It does not release production.${v.business?' OliPoly must also review any required purchase order.':''}</p></form><details class="no-print" style="margin-top:20px"><summary>Need a change before accepting?</summary><p class="customer-note">Contact OliPoly with ${E(v.reference)} and the change you need. Reply to your quote message with the changes you need. Wait for an updated quote before accepting.</p></details>`}</section>`;
@@ -60,7 +81,12 @@
     }[v.method];
     const steps=[['approved','Approved','Your scope and price are confirmed.'],['scheduled','Scheduled','Your work is released to production.'],['printing','In production','Printing, finishing and quality checks.'],['ready',ready,readyNote],['fulfilled',fulfilled,'Your order has been handed over.']];
     const current=steps.findIndex(s=>s[0]===v.phase);
-    return `<section class="card"><h2>Your project, moving along.</h2><p class="customer-note">We’ll show the important milestones here. Your payment status is separate from production progress.</p>${!v.accepted?'<p class="customer-status">Awaiting quote acceptance. Production has not started.</p>':`<div style="margin:30px 0">${steps.map(([id,label,note],i)=>`<div class="customer-step ${i<=current?'done':''}" ${i===current?'aria-current="step"':''}><strong>${E(label)}</strong><small>${i===current?'Current step · ':i>current?'Upcoming · ':'Completed · '}${E(note)}</small></div>`).join('')}</div><div class="customer-status">${v.phase==='approved'?'Your quote is approved and awaiting production release.':v.phase==='fulfilled'?(v.method==='shipping'?'Your order has shipped.':E(fulfilled)):v.phase==='ready'?E(readyNote):'Your order is progressing.'}</div>`}${v.shipping?.shipped ? row('Carrier',v.shipping.carrier)+row('Tracking number',v.shipping.tracking) : ''}${['ready','fulfilled'].includes(v.phase)?'':`<div class="customer-terms"><strong>Agreed timing</strong>${E(v.turnaround)}</div>`}${v.accepted&&v.balance>0?'<button class="primary no-print" data-view="pay" style="margin-top:24px">View payment details</button>':''}</section>`;
+    const shipmentMethod = [v.shipping?.carrier,v.shipping?.service].filter(Boolean).join(' · ');
+    const shipmentDetails = v.shipping?.shipped ?
+      (shipmentMethod ? `<small>Shipping method · ${E(shipmentMethod)}</small>` : '') +
+      (v.shipping.tracking ? `<small>Tracking number · ${E(v.shipping.tracking)}</small>` : '') : '';
+
+    return `<section class="card"><h2>Your project, moving along.</h2><p class="customer-note">We’ll show the important milestones here. Your payment status is separate from production progress.</p>${!v.accepted?'<p class="customer-status">Awaiting quote acceptance. Production has not started.</p>':`<div style="margin:30px 0">${steps.map(([id,label,note],i)=>`<div class="customer-step ${i<=current?'done':''}" ${i===current?'aria-current="step"':''}><strong>${E(label)}</strong><small>${i===current?'Current step · ':i>current?'Upcoming · ':'Completed · '}${E(note)}</small>${id==='fulfilled'?shipmentDetails:''}</div>`).join('')}</div><div class="customer-status">${v.phase==='approved'?'Your quote is approved and awaiting production release.':v.phase==='fulfilled'?(v.method==='shipping'?'Your order has shipped.':E(fulfilled)):v.phase==='ready'?E(readyNote):'Your order is progressing.'}</div>`}${['ready','fulfilled'].includes(v.phase)?'':`<div class="customer-terms"><strong>Agreed timing</strong>${E(v.turnaround)}</div>`}${v.accepted&&v.balance>0?'<button class="primary no-print" data-view="pay" style="margin-top:24px">View payment details</button>':''}</section>`;
   }
   function pay(v) {
     if(!v.accepted)return '<section class="card"><h2>Payment follows your agreement.</h2><p>Accept the quote first. Your agreed total and any amount due will appear here.</p></section>';
