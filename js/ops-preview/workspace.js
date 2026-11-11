@@ -265,7 +265,58 @@
       <button type="button" data-action="add-item">+ Add another item</button><div class="form-grid" style="margin-top:24px">${field('Fixed design / preparation charge', 'designFee', order.designFee, 'number', 'min="0" step=".01" required')}${field('Estimated total hands-on hours', 'estimatedLabor', order.estimatedLabor, 'number', 'min="0" step=".01" required')}${field('Sample labor cost per hour', 'laborRate', order.laborRate, 'number', 'min="0" step=".01" required')}</div>
       <div style="margin-top:18px">${textArea('Customer-facing scope / notes', 'customerNotes', order.customerNotes, 'maxlength="3000"')}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit">Save quote draft</button><small id="draft-state">Saved quote draft</small></div></form>`;
   }
+  function poReviewForm(order) {
+    if (order.quoteStage !== 'sent') return '<p class="muted">Mark the business quote shared before reviewing the PO.</p>';
+    const offer = order.quoteOffer;
+    return `<form class="form-grid" data-form="po_review">
+      <p class="muted full">Compare the PO with quote revision ${escape(offer.revision)}. Set unaccepted lines to zero. Revise the quote first if item scope or unit prices change.</p>
+      ${select('Authorization', 'authorization', [['po','Reviewed purchase order'],['override','Explicit PO override']], 'po')}
+      ${field('Purchase order number', 'number', '', 'text', 'maxlength="80"')}
+      ${field('Reason for PO override', 'overrideReason', '', 'text', 'maxlength="500"')}
+      ${field('PO document or approval reference', 'evidence', '', 'text', 'required maxlength="500"')}
+      ${field('Purchasing email', 'purchasingEmail', '', 'email', 'maxlength="254"')}
+      ${field('Receiving contact', 'receivingName', '', 'text', 'maxlength="160"')}
+      ${field('Receiving email', 'receivingEmail', '', 'email', 'maxlength="254"')}
+      ${field('Accounts payable email', 'apEmail', '', 'email', 'maxlength="254"')}
+      ${textArea('Ship-to or pickup address', 'shipTo', order.taxAddress || '', 'required maxlength="500"')}
+      ${textArea('Billing address', 'billTo', '', 'maxlength="500"')}
+      ${field('Accepted payment terms', 'terms', order.terms, 'text', 'required maxlength="120"')}
+      ${field('Verified Ohio county', 'county', order.county, 'text', 'required maxlength="50"')}
+      ${field('Verified tax rate (%)', 'taxRate', order.taxRate, 'number', 'required min="0" max="20" step=".01"')}
+      ${offer.items.map(item=>`<div class="full">${field(`${item.description} · quoted ${item.quantity} at ${format(item.unit_price)} · accepted quantity`, 'acceptedQty', item.quantity, 'number', 'required min="0" max="100000" step="1"')}</div>`).join('')}
+      <div class="full" data-po-total aria-live="polite">${row('Original quote total',format(offer.totals.total))}</div>
+      <div class="actions full"><button class="primary" type="submit">Accept reviewed order</button></div>
+    </form>`;
+  }
+  function poAcknowledgmentPanel(order) {
+    const review = order.poReview;
+    const accepted = order.items.map(item=>row(item.description,`${item.quantity} × ${format(item.unit_price)}`)).join('');
+    if (!review.number) return `<section class="card"><h2>PO override recorded</h2><p>${escape(review.overrideReason)}</p>${accepted}</section>`;
+    const recorded = order.poAcknowledgment;
+    const draftMessage = `Subject: Acknowledgment for PO ${review.number} · ${M.projectIdentity(order).primary}
+
+Thank you for PO ${review.number}. OliPoly 3D LLC has accepted the following:
+${order.items.map(item=>`${item.quantity} × ${item.description} at ${format(item.unit_price)}`).join('\n')}
+Agreed total: ${format(order.snapshot.total)} including applicable tax.
+Payment terms: ${review.terms}.
+Ship-to: ${review.shipTo}.
+Please reference ${M.projectIdentity(order).primary} in correspondence.`;
+    return `<section class="card"><h2>PO acknowledgment</h2>${row('Accepted purchase order',review.number)}
+      ${accepted}${row('Accepted order total',format(order.snapshot.total))}${row('Payment terms',review.terms)}
+      ${row('Purchasing recipient',review.purchasingEmail)}
+      ${recorded ? `<p class="status-line">Owner marked sent · ${escape(new Date(recorded.recordedAt).toLocaleString())}</p>
+        ${recorded.reference ? row('Send reference',recorded.reference) : ''}
+        ${textArea('Recorded message','recordedPoMessage',recorded.message,'readonly')}` :
+      `<form data-form="po_acknowledgment">${textArea('Acknowledgment draft','message',draftMessage,'id="po-ack-message" required maxlength="8000"')}
+        <button type="button" data-action="copy-po-ack">Copy acknowledgment</button>
+        ${field('Send reference (optional)','reference','','text','maxlength="500"')}
+        <label class="check"><input type="checkbox" name="confirmSent" value="yes" required> I sent this acknowledgment to purchasing.</label>
+        <button type="submit">Record acknowledgment sent</button>
+      </form>`}
+    </section>`;
+  }
   function approvalForm(order) {
+    if (order.preset === 'business') return poReviewForm(order);
     return `<form data-form="approve">${select('Approval evidence', 'method', ['Email / text', 'Verbal agreement recorded', 'Purchase order', 'Customer quote link', 'Payment for agreed items'], 'Email / text')}<button class="primary" style="width:100%;margin-top:15px" type="submit">Record approval & create order</button></form>`;
   }
   function costPreview(order) {
@@ -280,15 +331,15 @@
   }
   function quoteDocument(order) {
     const offer = order.quoteOffer;
-    const t = order.snapshot || offer?.totals || M.totals(order);
+    const t = (order.poReview ? offer?.totals : order.snapshot) || offer?.totals || M.totals(order);
     const doc = offer || order;
     return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${projectLabel(order)}${offer?` · Rev ${offer.revision}`:''}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${(offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)) ? `<p class="request-notes">${escape(offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order))}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p></section>`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
-    const t=order.snapshot || order.quoteOffer?.totals || M.totals(order);
-    const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}${order.quoteOffer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)} Please reply to confirm the scope and price. Thank you, OliPoly 3D LLC`;
-    return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p><div class="actions"><button data-action="print-quote">Print / Save quote PDF</button><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
+    const t=(order.poReview ? order.quoteOffer?.totals : order.snapshot) || order.quoteOffer?.totals || M.totals(order);
+    const messageText=`Hi ${order.customer}, here is the quote for ${order.title}: ${format(t.total)} total, including sample tax. ${order.terms}. ${order.turnaround?`Turnaround: ${order.turnaround}. `:''}${order.quoteOffer?.fulfillmentNote ?? M.quoteFulfillmentNote(order)} ${order.preset==='business'?'Please send your purchase order or contact us to confirm authorization.':'Please reply to confirm the scope and price.'} Thank you, OliPoly 3D LLC`;
+    return `<div class="two-col"><div>${quoteDocument(order)}</div><aside class="stack no-print"><section class="card"><h2>${order.snapshot?'Customer approved':order.quoteStage==='sent'?'Awaiting customer approval':'Review & share'}</h2><p class="muted">Preview the document, save it as PDF or copy the prepared message. Sending remains your action.</p><div class="actions"><button data-action="print-quote">Print / Save quote PDF</button><button data-action="copy-quote">Copy quote message</button></div><label style="margin-top:18px">Prepared message<textarea id="quote-message" readonly>${escape(messageText)}</textarea></label>${!order.snapshot && order.quoteStage!=='sent'?`<form data-form="send_quote" style="margin-top:20px">${select('How you shared it','via',['Email','Text / social message','PDF handed to customer','In person'],'Email')}<button class="primary" type="submit" style="margin-top:12px">Mark quote sent</button></form>`:''}${order.quoteOffer?`<p class="status-line" style="margin-top:18px">Revision ${order.quoteOffer.revision} shared via ${escape(order.quoteOffer.sharedVia)} · ${escape(new Date(order.quoteOffer.sentAt).toLocaleDateString())}</p>`:''}</section>${!order.snapshot?`<section class="card"><h2>Customer authorization</h2><p class="muted">Record their authorization when it arrives. Quick in-person work may be approved directly without marking a separate send step.</p>${approvalForm(order)}</section>`:order.poReview?poAcknowledgmentPanel(order):''}${!order.snapshot && order.quoteStage==='sent'?`<form class="card" data-form="revise_quote"><h3>Need to change the quote?</h3>${textArea('Reason for revision','reason','','required maxlength="1000"')}<button type="submit" style="margin-top:12px">Start quote revision</button><p class="muted" style="margin-top:12px">The previous shared revision stays in the work record.</p></form>`:''}${order.quoteHistory?.length?`<section class="card"><h3>Shared quote history</h3>${order.quoteHistory.map(offer=>row(`Revision ${offer.revision}`,format(offer.totals.total))).join('')}</section>`:''}</aside></div>`;
   }
   function productionPreparation(order) {
     return `<form class="card" id="production-plan-form" style="margin-top:22px"><h3>Production preparation</h3><p class="muted">Enter body and support filament separately, with grams and print hours per piece. Match the customer's agreed material requirements.</p>${itemEditor({...order, items: draft.items}, true)}<div class="form-grid">${field('Design / prep hours already spent','prepHours',draft.productionPrepHours || 0,'number','min="0" step=".01" required')}${field('Remaining hands-on hours (estimate)','remainingHours',draft.productionRemainingHours || 0,'number','min="0" step=".01" required')}</div><p class="muted">Labor cost rate: ${format(order.laborRate)} per hour.</p><div id="production-profit-preview">${costPreview({...order, productionPlan: draft.items, productionPrepHours: draft.productionPrepHours || 0, productionRemainingHours: draft.productionRemainingHours || 0})}</div><button class="primary" type="submit" style="margin-top:18px">Save production preparation</button><small id="production-plan-state">${order.productionPlan ? 'Saved production preparation' : 'Production preparation needs review'}</small></form>`;
@@ -415,7 +466,7 @@
       <p class="muted">Confirm how the customer will receive the order. Verify the Ohio county and rate for that address. Record customer approval for any price or tax change. Carrier shipping stays pending until you confirm the shipment details below.</p>
       <form class="form-grid" data-form="fulfillment_plan">
         ${select('Method', 'method', [['','Choose a method'],['pickup','Customer pickup'],['shipping','Carrier shipping'],['delivery','Local delivery']], plan?.method || '')}
-        ${field('Handoff or receiving address', 'address', plan?.address || order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
+        ${field('Handoff or receiving address', 'address', plan?.address || order.poReview?.shipTo || order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
         ${field('Ohio county', 'county', plan?.county || order.county, 'text', 'required maxlength="50"')}
         ${field('Verified tax rate (%)', 'taxRate', plan?.totals.taxRate ?? order.taxRate, 'number', 'required min="0" max="20" step=".01"')}
         ${field('Customer fulfillment charge ($ before tax)', 'customerFee', plan?.totals.customerShipping || 0, 'number', 'required min="0" max="100000" step=".01"')}
@@ -522,6 +573,20 @@
     form.querySelector('[data-inv-net]').textContent = `Calculated net filament = ${grams.format(net)} g`;
   }
   document.addEventListener('input', event => {
+    const poForm = event.target.closest?.('[data-form="po_review"]');
+    if (poForm) {
+      const formData = new FormData(poForm);
+      const order = selectedOrder();
+      const output = poForm.querySelector('[data-po-total]');
+      const quoted = row('Original quote total',format(order.quoteOffer.totals.total));
+      try {
+        const price = M.poReview(order,{...Object.fromEntries(formData),quantities:formData.getAll('acceptedQty')}).snapshot;
+        output.innerHTML = quoted + row('Accepted order total',format(price.total));
+      } catch {
+        output.innerHTML = quoted;
+      }
+    }
+
     const fulfillment = event.target.closest?.('[data-form="fulfillment_plan"]');
     if (fulfillment) {
       const order = selectedOrder();
@@ -633,6 +698,7 @@
       if (dirty) throw new Error('Save your changes before continuing.');
       const values = Object.fromEntries(new FormData(form));
       const action = {...values, type: form.dataset.form};
+      if (action.type === 'po_review') action.quantities = new FormData(form).getAll('acceptedQty');
       if (action.type === 'historical_completion') {
         action.items = [...form.querySelectorAll('[data-historical-item]')].map(row =>
           Object.fromEntries([...row.querySelectorAll('[name]')].map(input => [input.name,input.value])));
@@ -659,7 +725,9 @@
       }
       if (action.type === 'historical_completion') activeTab = 'pickup';
       render();
-      if (action.type === 'historical_completion') message('Completed order recorded. Stock and payments were left unchanged.');
+      if (action.type === 'po_review') message('PO review saved. Prepare the acknowledgment or open Production to release the accepted items.');
+      else if (action.type === 'po_acknowledgment') message('Acknowledgment send recorded.');
+      else if (action.type === 'historical_completion') message('Completed order recorded. Stock and payments were left unchanged.');
       else if (action.type === 'fulfillment_plan') message(action.method === 'shipping' ? 'Shipping choice saved. Confirm the shipment details to publish the update.' : 'Fulfillment confirmed. The customer balance and order summary are up to date.');
       else if (action.type === 'save_shipping_label') message('Shipment details confirmed. Record carrier handoff when the box is shipped.');
       else if (action.type === 'ship') message('Shipment recorded. The customer update is ready to copy.');
@@ -698,8 +766,8 @@
         if(dirty) throw new Error('Save your changes before copying the quote.');
         await navigator.clipboard.writeText(document.getElementById('quote-message').value); message('Quote message copied. Review it before sending.'); return;
       }
-      if (action === 'copy-message') {
-        const input = document.getElementById('fulfillment-message');
+      if (action === 'copy-message' || action === 'copy-po-ack') {
+        const input = document.getElementById(action === 'copy-po-ack' ? 'po-ack-message' : 'fulfillment-message');
         if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(input.value);
         else { input.select(); if (!document.execCommand('copy')) throw new Error('Select and copy the prepared message.'); }
         message('Customer update copied.'); return;

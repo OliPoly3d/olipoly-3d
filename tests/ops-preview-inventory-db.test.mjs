@@ -34,7 +34,7 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    GRANT USAGE ON SCHEMA auth TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
-  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql']){
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql','20261111190000_ops_test_business_po_review.sql']){
    let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
    await db.exec(sql);
   }
@@ -288,6 +288,41 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    await change({type:'pay',amount:10,fee:0,method:'Cash'},historical);
    assert.equal(byId(historical).status,'closed');
    assert.deepEqual(await stock(),before);
+  });
+  await t.test('reviewed PO preserves the shared quote and releases only accepted pieces', async()=>{
+   const id='test-reviewed-po';
+   const draft=M.seed().orders[0];
+   Object.assign(draft,{id,title:'Business PO rehearsal',preset:'business',quoteStage:'draft',terms:'Due at handoff',
+    taxIncluded:false,designFee:0,items:[{...draft.items[1],quantity:12,unit_price:25}]});
+   await submitOrder(id,{type:'new'},draft);
+   const sent=M.quoteCommand(state,id,{type:'send_quote',via:'Fictional rehearsal'}).orders.find(o=>o.id===id);
+   await submitOrder(id,{type:'save'},sent);
+   await assert.rejects(submitOrder(id,{type:'approve',method:'Direct approval'},sent),/Review the PO/);
+   const reference=state.orders.find(o=>o.id===id).reference;
+   const input={type:'po_review',authorization:'po',number:'TEST-PO-104',purchasingEmail:'buyer@example.test',
+    receivingName:'Sample Receiving',receivingEmail:'receiving@example.test',apEmail:'ap@example.test',
+    shipTo:'100 Fictional Way, Aurora, OH 44202',billTo:'200 Fictional Way, Aurora, OH 44202',
+    terms:'Net 30 from invoice date',evidence:'Fictional PO copy',county:'Portage',taxRate:'7',quantities:['8']};
+   const proposal=M.command(state,id,input).orders.find(o=>o.id===id);
+   const tampered=M.copy(proposal);
+   tampered.items[0].unit_price=1;
+   await assert.rejects(submitOrder(id,input,tampered),/Accepted items must match/);
+   await change(input,id);
+   const accepted=state.orders.find(o=>o.id===id);
+   assert.equal(accepted.reference,reference);
+   assert.equal(accepted.quoteOffer.items[0].quantity,12);
+   assert.equal(accepted.quoteOffer.totals.total,321);
+   assert.equal(accepted.items[0].quantity,8);
+   assert.equal(accepted.snapshot.total,214);
+   assert.deepEqual(accepted.reservedMaterials,{});
+   const row=(await db.query('select quantity,po_number,customer_email,ap_email,invoice_terms,invoice_date from orders where id=$1',[accepted.database.orderId])).rows[0];
+   assert.deepEqual(row,{quantity:8,po_number:'TEST-PO-104',customer_email:'buyer@example.test',ap_email:'ap@example.test',invoice_terms:'Net 30 from invoice date',invoice_date:null});
+   const acknowledgment={type:'po_acknowledgment',confirmSent:'yes',message:'Fictional acknowledgment',reference:'Gmail test draft reference'};
+   await change(acknowledgment,id);
+   assert.equal(state.orders.find(o=>o.id===id).poAcknowledgment.recipient,'buyer@example.test');
+   await assert.rejects(change(acknowledgment,id),/recorded once/);
+   await change({type:'release'},id);
+   assert.deepEqual(state.orders.find(o=>o.id===id).reservedMaterials,{'PLA / Black':120});
   });
   let supplyId;
   await t.test('supplies retain measurement units and record consumption and audits',async()=>{
