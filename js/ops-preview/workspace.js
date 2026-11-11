@@ -335,12 +335,10 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     const offer = order.quoteOffer;
     const details = offer || order;
     const identity = M.projectIdentity(order);
-    const termsVersion = offer ? offer.consumerTermsVersion :
-      order.preset === 'individual' && !order.snapshot ? M.consumerTermsVersion : null;
-    const consumerTerms = M.consumerTerms[termsVersion];
+    const termsDocument = M.quoteTermsDocument(order,true);
     return {
       number:identity.primary,
-      consumerTerms,
+      termsDocument,
       displayNumber: [identity.primary, identity.legacyQuote, offer ? `Rev ${offer.revision}` : 'Draft'].filter(Boolean).join(' · '),
       revision:offer?.revision,
       sentAt:offer?.sentAt,
@@ -352,7 +350,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       customerNotes:details.customerNotes,
       fulfillmentNote:offer?.fulfillmentNote ?? M.quoteFulfillmentNote(order),
       totals:(order.poReview ? offer?.totals : order.snapshot) || offer?.totals || M.totals(order),
-      acceptance:consumerTerms ? `By approving Quote ${identity.primary}${offer ? `, revision ${offer.revision},` : ''} by email, text, or online, you agree to the work, price, and Consumer Custom Order Terms included with this quote. Please confirm any required dimensions, fit, finish, or intended use before approving.` : order.preset === 'business' ? 'Send a purchase order referencing this quotation or contact OliPoly to confirm authorization.' : 'Contact OliPoly to confirm the scope and price.'
+      acceptance:termsDocument && order.preset === 'individual' ? `By approving Quote ${identity.primary}${offer ? `, revision ${offer.revision},` : ''} by email, text, or online, you agree to the work, price, and Consumer Custom Order Terms included with this quote. Please confirm any required dimensions, fit, finish, or intended use before approving.` : order.preset === 'business' ? (termsDocument ? 'Reference this quotation and its revision on your purchase order. Confirm the included Manufacturing & Sales Terms, and resolve conflicting terms in writing before production.' : 'Send a purchase order referencing this quotation or contact OliPoly to confirm authorization.') : 'Contact OliPoly to confirm the scope and price.'
     };
   }
   function documentControls(order, kind, paymentIndex = 0) {
@@ -416,16 +414,16 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     input.select();
     if (!document.execCommand?.('copy')) throw new Error('Copy the selected text using your browser’s copy command.');
   }
-  function termsPreview(terms) {
-    if (!terms) return '';
-    return `<section class="customer-terms"><h3>Consumer Custom Order Terms</h3>
-      ${terms.map(([label,body])=>`<strong>${escape(label)}</strong><p class="request-notes">${escape(body)}</p>`).join('')}</section>`;
+  function termsPreview(termsDocument) {
+    if (!termsDocument) return '';
+    return `<section class="customer-terms"><h3>${escape(termsDocument.title)}</h3>
+      ${termsDocument.sections.map(([label,body])=>`<strong>${escape(label)}</strong><p class="request-notes">${escape(body)}</p>`).join('')}</section>`;
   }
   function quoteDocument(order) {
     const doc = quoteDetails(order);
     const t = doc.totals;
     return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${escape(doc.displayNumber)}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${doc.fulfillmentNote ? `<p class="request-notes">${escape(doc.fulfillmentNote)}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p>
-      ${doc.consumerTerms ? `<p><strong>Approval</strong> ${escape(doc.acceptance)}</p>${termsPreview(doc.consumerTerms)}` : ''}</section>`;
+      ${doc.termsDocument ? `<p><strong>Approval</strong> ${escape(doc.acceptance)}</p>${termsPreview(doc.termsDocument)}` : ''}</section>`;
   }
   function quotePanel(order) {
     if (M.stage(order)==='request') return detailPanel(order);
@@ -685,6 +683,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       ${t.customerShipping ? row('Shipping or delivery charge',format(t.customerShipping)) : ''}
       ${row('Sales tax',format(t.tax))}${Math.round((t.roundingAdjustment||0)*100) ? row('Discount or Adjustment',format(t.roundingAdjustment)) : ''}
       ${row('Invoice total',format(t.total))}${row('Payments received at issuance',format(amountReceived))}${row('Amount due at issuance',format(totalDue))}
+      ${invoice ? `<p class="muted">${escape(M.invoiceFooter(order))}</p>` : ''}
     </section><aside class="no-print">${invoice ? sendPanel : issueForm}</aside></div>`;
   }
   function receiptPanel(order) {
@@ -968,7 +967,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
         try {
           await pdf.ready;
           if (!button.isConnected) return;
-          const blob = pdf[kind](doc);
+          const blob = pdf[kind](kind === 'invoice' ? {...doc,footer:M.invoiceFooter(order)} : doc);
           const link = document.createElement('a');
           if (documentDownloadUrl) URL.revokeObjectURL(documentDownloadUrl);
           documentDownloadUrl = URL.createObjectURL(blob);

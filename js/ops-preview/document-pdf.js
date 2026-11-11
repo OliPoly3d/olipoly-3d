@@ -184,10 +184,10 @@
     text(money.format(doc.total), right - 9, y + 8, {size:16, weight:700, align:'right', color:'#fff'});
     y += 41;
     doc.afterTotal.forEach(([label,value]) => block(label, value));
-    if (doc.appendix?.length) {
-      heading = 'Consumer Custom Order Terms';
+    if (doc.appendix?.sections.length) {
+      heading = doc.appendix.title;
       newPage();
-      doc.appendix.forEach(([label,value]) => block(label,value,{size:9.5,leading:12}));
+      doc.appendix.sections.forEach(([label,value]) => block(label,value,{size:9.5,leading:11}));
     }
 
     return pages.map((page,index)=>{
@@ -222,7 +222,7 @@
         ['Invoice total', totals.total], ['Payments received at issuance', invoice.paid]
       ],
       totalLabel:'Amount due at issuance', total:invoice.balance,
-      afterTotal:[['Payment terms', invoice.terms]]
+      afterTotal:[['Payment terms', invoice.terms],['Payment and order questions',invoice.footer]]
     };
   }
 
@@ -232,7 +232,7 @@
       heading:'Quotation', number:quote.displayNumber, partyLabel:'PREPARED FOR', customer:quote.customer,
       header:[quote.sentAt ? `Issued ${dateLabel(quote.sentAt)}` : '',
         quote.validUntil ? `Valid through ${dateLabel(quote.validUntil)}` : '',
-        quote.consumerTerms ? 'Includes Consumer Custom Order Terms' : ''].filter(Boolean),
+        quote.termsDocument ? `Includes ${quote.termsDocument.title}` : ''].filter(Boolean),
       beforeItems:[['Project', quote.title]],
       items:totals.grossLineItems || totals.lineItems, showUnit:true,
       summary:[
@@ -240,7 +240,7 @@
         [totals.taxIncluded ? 'Sales tax included in item prices' : 'Sales tax', totals.tax],
         ...(Math.round((totals.roundingAdjustment || 0) * 100) ? [['Discount or adjustment', totals.roundingAdjustment]] : [])
       ],
-      totalLabel:'Quoted total', total:totals.total, appendix:quote.consumerTerms,
+      totalLabel:'Quoted total', total:totals.total, appendix:quote.termsDocument,
       afterTotal:[['Payment terms', quote.terms], ['Turnaround', quote.turnaround],
         ['Quote notes', quote.customerNotes], ['Fulfillment', quote.fulfillmentNote], ['Acceptance', quote.acceptance]]
     };

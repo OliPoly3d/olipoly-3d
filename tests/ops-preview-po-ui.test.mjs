@@ -125,7 +125,7 @@ test('the invoice screen issues an immutable downloadable copy and records owner
       items:[{...order.items[0],quantity:8,unit_price:25}]});
     const accepted = M.command(state,order.id,{type:'approve',method:'Fictional acceptance'});
     Object.assign(accepted.orders[0],{preset:'business',released:true,fulfilled:true,fulfilledAt:new Date().toISOString(),
-      poReview:{number:'TEST-PO-104',apEmail:'ap@example.test',billTo:'200 Fictional Way',shipTo:'100 Fictional Way'}});
+      poReview:{number:'TEST-PO-104',quoteRevision:1,apEmail:'ap@example.test',billTo:'200 Fictional Way',shipTo:'100 Fictional Way'}});
     window.localStorage.setItem('olipoly.ops.preview.v1',JSON.stringify(accepted));
     load('ops-preview/workspace.js');
     const saved=()=>JSON.parse(window.localStorage.getItem('olipoly.ops.preview.v1')).orders[0];
@@ -152,6 +152,7 @@ test('the invoice screen issues an immutable downloadable copy and records owner
     let download;
     window.OliPolyDocumentPdf={ready:Promise.resolve(),invoice(value) {
       assert.equal(value.number,'I-0000007');
+      assert.match(value.footer,/Quote OP-0000007, revision 1 and PO TEST-PO-104/);
       return new window.Blob(['test'],{type:'application/pdf'});
     }};
     window.URL.createObjectURL=blob=>{

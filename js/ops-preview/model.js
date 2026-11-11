@@ -19,6 +19,35 @@
       ['6. Order concerns', 'If something is wrong, reply to your order email with your OP number and a description of the issue. Photos are helpful when available. We’ll review the issue and explain the available resolution, which may include correction, replacement, or refund. These terms preserve your rights and remedies under applicable law.']
     ]
   };
+  const businessTermsVersion = 'business-v1';
+  const businessTerms = {
+    'business-v1': [
+      ['1. Purchase order and order requirements', 'Reference the quote number, revision, and selected option in your purchase order. Confirm billing and delivery details, the purchasing contact, applicable part numbers and revisions, and any packing, labeling, routing, or receiving requirements. Special requirements require written agreement. Freight is handled as stated in the quote.'],
+      ['2. Customer files and dimensional requirements', 'OliPoly 3D LLC will produce the supplied files as provided unless the quote includes design or file work. The buyer is responsible for its design and authorization to reproduce it. Critical dimensions, fits, tolerances, and tests require written agreement before production. Nominal CAD geometry does not imply zero tolerance. Resolve file or specification conflicts and approve changes in writing.'],
+      ['3. Printed appearance and workmanship', 'As-printed parts may show layer lines, seams, support-contact marks, and minor texture, gloss, or color variation when consistent with agreed specifications and function. This does not excuse delamination, missing material, significant underextrusion, incorrect material, or other nonconformance. Finishing and inspection are provided as stated in the quote.'],
+      ['4. Material behavior and intended use', 'Strength and service life depend on geometry, build direction, layer bonding, and operating conditions. Filament data do not establish finished-part load ratings. The buyer validates its design and material for the application and discloses relevant operating conditions. Engineering validation and load or regulatory certification are excluded unless agreed in writing. OliPoly remains responsible for agreed specifications and reasonable manufacturing care.'],
+      ['5. Inspection, manufacturing warranty, and remedies', 'Report apparent shortages, damage, or nonconformance within 10 business days after delivery. OliPoly warrants for 30 calendar days after delivery that parts meet agreed specifications and are free of material and workmanship defects existing on delivery. Report defects discovered during that period in writing within 10 business days of discovery. Initial inspection does not waive latent-defect claims within the warranty and applicable law.\n\nOliPoly will repair or replace covered parts at its expense or refund their price and cancel unpaid charges, including reasonable return or replacement freight. Preserve the parts for investigation. Design errors, misuse, unauthorized changes, use outside agreed conditions, and ordinary wear are excluded only to the extent they caused the issue. These remedies are exclusive except where prohibited or where they fail of their essential purpose.'],
+      ['6. Other warranties', 'EXCEPT FOR THE EXPRESS MANUFACTURING WARRANTY AND OTHER EXPRESS CONTRACT OBLIGATIONS, OLIPOLY DISCLAIMS OTHER WARRANTIES TO THE EXTENT PERMITTED BY LAW, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. AGREED SPECIFICATIONS, BINDING EXPRESS PROMISES, AND NONWAIVABLE RIGHTS REMAIN IN EFFECT.'],
+      ['7. Liability and conflicting terms', 'TO THE EXTENT PERMITTED BY LAW, OLIPOLY EXCLUDES INDIRECT, INCIDENTAL, SPECIAL, AND CONSEQUENTIAL ECONOMIC LOSS, INCLUDING LOST PROFITS AND CONSEQUENTIAL PRODUCTION DOWNTIME. TOTAL LIABILITY ARISING FROM THE ORDER IS LIMITED TO THE PRE-TAX PRICE PAID OR PAYABLE UNDER THE AFFECTED ORDER.\n\nThe exclusions and cap do not apply to death or bodily injury, physical damage to other property, fraud, willful misconduct, gross negligence, or nonwaivable liability. Required remedies remain available if a limited remedy fails of its essential purpose. A separately signed agreement controls express conflicts. Resolve conflicting PO terms in writing before production.']
+    ]
+  };
+  function quoteTermsDocument(order, includeDraft = false) {
+    const offer = order.quoteOffer;
+    const consumerVersion = offer ? offer.consumerTermsVersion : includeDraft && !order.snapshot && order.preset === 'individual' ? consumerTermsVersion : null;
+    const businessVersion = offer ? offer.businessTermsVersion : includeDraft && !order.snapshot && order.preset === 'business' ? businessTermsVersion : null;
+    if (consumerTerms[consumerVersion]) return {title:'Consumer Custom Order Terms',sections:consumerTerms[consumerVersion]};
+    if (businessTerms[businessVersion]) return {title:'Manufacturing & Sales Terms',sections:businessTerms[businessVersion]};
+    return null;
+  }
+  function invoiceFooter(order) {
+    const invoice = order.invoice;
+    const revision = order.poReview?.quoteRevision;
+    const references = [
+      revision ? `Quote ${invoice.reference}, revision ${revision}` : '',
+      invoice.poNumber ? `PO ${invoice.poNumber}` : ''
+    ].filter(Boolean).join(' and ');
+    return `${references ? `This invoice bills work under ${references}. ` : ''}Please reference Invoice ${invoice.number} when paying or contacting us about a billing or shipment issue.`;
+  }
   const pickupAddress = '990 Aurora Hudson Rd, Aurora, OH 44202';
   const pickupQuoteNote = 'This quote is priced for customer pickup. If you choose shipping or local delivery, we’ll confirm the additional charge and updated total, including any applicable sales tax, before dispatch.';
   const fulfillmentMilestones = {
@@ -138,6 +167,7 @@
         turnaround: order.turnaround || '', validUntil: order.validUntil || '',
         customerNotes: order.customerNotes || '', fulfillmentNote: quoteFulfillmentNote(order), changeReason: order.revisionReason || ''};
       if (order.preset === 'individual') offer.consumerTermsVersion = consumerTermsVersion;
+      if (order.preset === 'business') offer.businessTermsVersion = businessTermsVersion;
       order.quoteHistory = [...(order.quoteHistory || []), offer];
       order.quoteOffer = offer;
       order.quoteStage = 'sent';
@@ -647,6 +677,6 @@
     }
     return label;
   }
-  return {seed, totals, consumerTerms, consumerTermsVersion, paymentReceipt, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
+  return {seed, totals, consumerTerms, consumerTermsVersion, quoteTermsDocument, invoiceFooter, paymentReceipt, poReview, invoiceDueDate, invoiceDetails, currentTotals, fulfillmentPricing, fulfillmentMethod, fulfillmentMilestones, pickupAddress, quoteFulfillmentNote, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
 });

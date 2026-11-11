@@ -159,7 +159,13 @@ test('consumer terms follow the shared quote revision and exclude business and o
   delete older.quoteOffer.consumerTermsVersion;
   assert.doesNotMatch(V.render(V.project(older),'quote'),/Consumer Custom Order Terms/);
   draft.orders[0].preset='business';
-  assert.equal(M.quoteCommand(draft,id,{type:'send_quote'}).orders[0].quoteOffer.consumerTermsVersion,undefined);
+  const business = M.quoteCommand(draft,id,{type:'send_quote'}).orders[0];
+  assert.equal(business.quoteOffer.consumerTermsVersion,undefined);
+  assert.equal(business.quoteOffer.businessTermsVersion,'business-v1');
+  assert.match(V.render(V.project(business),'quote'),/Manufacturing &amp; Sales Terms/);
+  assert.doesNotMatch(V.render(V.project(business),'quote'),/Consumer Custom Order Terms/);
+  delete business.quoteOffer.businessTermsVersion;
+  assert.equal(M.quoteTermsDocument(business,true),null);
 });
 
 test('consumer receipts reflect each recorded payment and keep the original amounts', () => {
