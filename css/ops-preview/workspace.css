@@ -58,3 +58,8 @@
 .inventory-event pre { max-height:320px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.8rem; }
 @media(max-width:600px) { .inventory-metrics { grid-template-columns:1fr; } }
 .inventory-table small { overflow-wrap:anywhere; }
+
+.shipment-card .row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

@@ -52,7 +52,10 @@
     dirty = false;
   }
   function selectedOrder() { return state.orders.find(order => order.id === selected); }
-  function status(order) { return M.stages.find(([id]) => id === M.stage(order))[1]; }
+  function status(order) {
+    const label = M.stages.find(([id]) => id === M.stage(order))[1];
+    return order.shipment?.handoffAt ? `Shipped · ${label}` : label;
+  }
   function field(label, name, value, type = 'text', attrs = '') {
     return `<label>${escape(label)}<input name="${name}" type="${type}" value="${escape(value)}" ${attrs}></label>`;
   }
@@ -312,10 +315,62 @@
       ${Object.keys(grouped).map(actualRollInputs).join('')}
       <p class="muted full">Enter total consumption for this attempt, including failed pieces and purge. Reject count records the loss without deducting the same filament twice.</p><label class="full">Optional notes<textarea name="notes" placeholder="Fit, appearance or reason for a rejected piece"></textarea></label></div><button class="primary" type="submit" style="margin-top:18px">Finish & inspect run</button></form>`;
   }
-  function pickupPanel(order) {
+  function shippingPanel(order) {
+    const shipment = order.shipment;
+    if (!shipment) {
+      const today = new Date();
+      const purchaseDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      return `<section class="card"><h2>Ship one box</h2><p class="muted">Weigh the packed box and measure its outside dimensions. Enter the details from the label you purchased.</p>
+        <form class="form-grid" data-form="save_shipping_label">
+          <label class="full">Ship-to address<textarea name="destination" maxlength="500" required></textarea></label>
+          ${field('Packed weight (oz)', 'weightOz', '', 'number', 'min=".01" max="10000" step=".01" required')}
+          ${field('Outside length (in)', 'lengthIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
+          ${field('Outside width (in)', 'widthIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
+          ${field('Outside height (in)', 'heightIn', '', 'number', 'min=".01" max="10000" step=".01" required')}
+          ${field('Carrier', 'carrier', 'USPS', 'text', 'maxlength="40" required')}
+          ${field('Service', 'service', '', 'text', 'maxlength="80" required')}
+          ${field('Label provider', 'provider', 'USPS Click-N-Ship', 'text', 'maxlength="60" required')}
+          ${field('Tracking number', 'tracking', '', 'text', 'maxlength="60" required')}
+          ${field('Label purchase reference', 'purchaseRef', '', 'text', 'maxlength="100" required')}
+          ${field('Label purchase date', 'purchaseDate', purchaseDate, 'date', `max="${purchaseDate}" required`)}
+          ${field('Actual postage ($)', 'postage', '', 'number', 'min="0" max="100000" step=".01" required')}
+          ${field('Receipt link (optional)', 'receiptUrl', '', 'url', 'maxlength="1000"')}
+          ${cloud ? `<details class="full"><summary>Postage already recorded in Finance?</summary>
+            ${field('Existing Finance expense ID', 'financeEntryId', '', 'text', 'maxlength="36"')}
+            <p class="muted">Use the ID of the shipping expense for this purchase. Its date and amount must match.</p></details>` : ''}
+          <p class="muted full">${cloud ? 'Save the label to record actual postage in Test Finance or link the expense you entered.' : 'Actual postage goes into the sample order’s costs.'}</p>
+          <div class="actions full"><button class="primary" type="submit">Save purchased label</button></div>
+        </form></section>`;
+    }
+    const shipped = Boolean(shipment.handoffAt);
+    const update = `Hi ${order.customer}, your order ${M.projectIdentity(order).primary} (${order.title}) has shipped via ${shipment.carrier} ${shipment.service}. Your tracking number is ${shipment.tracking}. Thank you, OliPoly 3D LLC`;
+    return `<section class="card shipment-card"><div class="section-head"><h2>Shipment</h2><span class="badge">${shipped ? 'Shipped' : 'Label purchased'}</span></div>
+      <p>${escape(shipment.destination).replace(/\n/g, '<br>')}</p>
+      ${row('Packed box', `${shipment.weightOz} oz · ${shipment.lengthIn} × ${shipment.widthIn} × ${shipment.heightIn} in`)}
+      ${row('Carrier & service', `${shipment.carrier} ${shipment.service}`)}${row('Tracking', shipment.tracking)}
+      ${row('Label purchase', `${shipment.purchaseDate} · ${shipment.provider} · ${shipment.purchaseRef}`)}
+      ${row('Actual postage', format(shipment.postage))}
+      ${shipment.financeEntryId ? row('Finance expense', shipment.financeEntryId) : ''}
+      ${shipment.receiptUrl ? `<p><a href="${escape(shipment.receiptUrl)}" target="_blank" rel="noopener noreferrer">Open postage receipt</a></p>` : ''}
+      ${shipped ? `${row('Carrier handoff', new Date(shipment.handoffAt).toLocaleString())}
+        <label>Prepared shipping message<textarea id="fulfillment-message" readonly>${escape(update)}</textarea></label>
+        <div class="actions"><button data-action="copy-message">Copy message</button></div>` :
+        `<form data-form="ship"><p class="muted">Record handoff once the carrier has the box.</p>
+        <label class="check"><input type="checkbox" name="confirmHandoff" value="yes" required> The carrier has the package.</label>
+        <button class="primary" type="submit">Record carrier handoff</button></form>`}
+      </section>`;
+  }
+  function fulfillmentPanel(order) {
     const ready = order.released && order.items.every(item => M.remaining(order, item) === 0);
-    const text = `Hi ${order.customer}, your ${order.title} is ready for pickup. ${M.balance(order) > 0 ? `The remaining balance is ${format(M.balance(order))}. ` : ''}Please reply to arrange a convenient time. Thank you, OliPoly 3D LLC`;
-    return `<section class="card"><h2>Pickup & customer update</h2><p class="muted">${order.fulfilled ? 'Pickup has been recorded in this sample.' : ready ? 'Every required piece has passed inspection.' : 'The sample pickup action becomes available after all pieces pass inspection.'}</p><label>Prepared pickup message<textarea id="pickup-message" readonly>${escape(text)}</textarea></label><div class="actions" style="margin-top:18px"><button data-action="copy-message" ${!ready ? 'disabled' : ''}>Copy message</button><button class="primary" data-action="pickup" ${!ready || order.fulfilled ? 'disabled' : ''}>Record pickup</button></div><p class="muted" style="margin-top:20px">The sample follows one complete pickup. Split fulfillment choices will be tested in the connected workflow.</p><a class="button" href="${trackingLink(order)}">Open customer milestone preview</a></section>`;
+    const preview = `<a class="button" href="${trackingLink(order)}">Open customer milestone preview</a>`;
+    if (!ready) return `<section class="card"><h2>Fulfillment</h2><p>Pass QC on all pieces to arrange pickup or shipping.</p>${preview}</section>`;
+    if (order.shipment) return `${shippingPanel(order)}<div class="actions">${preview}</div>`;
+    const update = `Hi ${order.customer}, your ${order.title} is ready for pickup. ${M.balance(order) > 0 ? `The remaining balance is ${format(M.balance(order))}. ` : ''}Please reply to arrange a convenient time. Thank you, OliPoly 3D LLC`;
+    return `<section class="card"><h2>Pickup</h2>${order.fulfilled ? '<p>Pickup recorded.</p>' : ''}
+      <label>Prepared pickup message<textarea id="fulfillment-message" readonly>${escape(update)}</textarea></label>
+      <div class="actions"><button data-action="copy-message">Copy message</button>
+      ${order.fulfilled ? '' : '<button class="primary" data-action="pickup">Record pickup</button>'}${preview}</div></section>
+      ${order.fulfilled ? '' : shippingPanel(order)}`;
   }
   function moneyPanel(order) {
     const cost = M.costs(state, order);
@@ -324,7 +379,7 @@
     return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format((order.snapshot || M.totals(order)).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
       ${order.snapshot && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
-      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (packaging, shipping, etc.)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit', format(cost.revenue - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
+      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit', format(cost.revenue - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
   function receiptPanel(order) {
     const t = order.snapshot || M.totals(order);
@@ -335,19 +390,19 @@
     const order = selectedOrder();
     draft = M.copy(order);
     if (order.snapshot) draft.items = M.copy(M.productionItems(order));
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Pickup'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
-      <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This milestone tests the mixed-item, fixed-price pickup journey. PO, fundraiser, capped-design and shipping workflows are scheduled for later milestones.</p></section></aside></div>
-      <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${pickupPanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Fulfillment'], ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
+      <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This workspace supports fixed-price jobs with pickup or single-box shipping.</p></section></aside></div>
+      <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel stack" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${fulfillmentPanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
   }
   function renderTracking() {
     const order = selectedOrder();
-    const steps = ['Approved', 'Ready to print', 'Printing', 'Ready for pickup', 'Picked up'];
+    const steps = ['Approved', 'Ready to print', 'Printing', order.shipment ? 'Ready to ship' : 'Ready for pickup', order.shipment ? 'Shipped' : 'Picked up'];
     let index = order.snapshot ? 0 : -1;
     if (order.released) index = 1;
     if (order.runs.length) index = 2;
     if (order.released && order.items.every(item => M.remaining(order, item) === 0)) index = 3;
     if (order.fulfilled) index = 4;
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(order.title)} · ${escape(order.reference)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(index < 0 ? 'Awaiting approval' : steps[index])}</span><div class="timeline">${steps.map((step, i) => `<div class="${i <= index ? 'done' : ''}">${step}</div>`).join('')}</div>${row('Remaining balance', format(M.balance(order)))}<p class="muted" style="margin-top:20px">For this interactive sample, the workspace and this view share device storage. For an accepted database order, open its customer link from Pickup to use the existing public tracking lookup.</p></section>`;
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(order.title)} · ${escape(order.reference)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(index < 0 ? 'Awaiting approval' : steps[index])}</span><div class="timeline">${steps.map((step, i) => `<div class="${i <= index ? 'done' : ''}">${step}</div>`).join('')}</div>${order.shipment?.handoffAt ? row('Tracking number', order.shipment.tracking) : ''}${row('Remaining balance', format(M.balance(order)))}<p class="muted" style="margin-top:20px">For this interactive sample, the workspace and this view share device storage. For an accepted database order, open its customer link from Fulfillment to use the existing public tracking lookup.</p></section>`;
   }
   function render() {
     if (page === 'today') renderToday();
@@ -503,7 +558,10 @@
         url.searchParams.set('section', activeTab);
         history.replaceState(null, '', url);
       }
-      render(); message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.');
+      render();
+      if (action.type === 'save_shipping_label') message('Label purchased. Record carrier handoff when the box is shipped.');
+      else if (action.type === 'ship') message('Shipment recorded. The customer update is ready to copy.');
+      else message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.');
     } catch (error) { message(error.message, true); }
   });
   document.addEventListener('click', async event => {
@@ -539,10 +597,10 @@
         await navigator.clipboard.writeText(document.getElementById('quote-message').value); message('Quote message copied. Review it before sending.'); return;
       }
       if (action === 'copy-message') {
-        const input = document.getElementById('pickup-message');
+        const input = document.getElementById('fulfillment-message');
         if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(input.value);
         else { input.select(); if (!document.execCommand('copy')) throw new Error('Select and copy the prepared message.'); }
-        message('Pickup message copied.'); return;
+        message('Customer update copied.'); return;
       }
       if (['release', 'pickup'].includes(action)) {
         if (dirty) throw new Error('Save your changes before continuing.');
@@ -601,7 +659,7 @@
     const rows = await cloud.tracking(reference);
     const record = rows?.[0];
     if (!record) throw new Error('No sample order matches that tracking reference.');
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(record.order_number)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(record.public_status_text || window.OliPolyWorkflow.orderStatusLabel(record.status))}</span><p style="margin-top:20px">${escape(record.public_next_step || '')}</p>${record.shipping_or_pickup_note ? `<p class="muted">${escape(record.shipping_or_pickup_note)}</p>` : ''}${row('Remaining balance', format(record.balance_amount))}</section>`;
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(record.order_number)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(record.public_status_text || window.OliPolyWorkflow.orderStatusLabel(record.status))}</span><p style="margin-top:20px">${escape(record.public_next_step || '')}</p>${record.shipping_or_pickup_note ? `<p class="muted">${escape(record.shipping_or_pickup_note)}</p>` : ''}${record.tracking_number ? row('Tracking number', record.tracking_number) : ''}${row('Remaining balance', format(record.balance_amount))}</section>`;
   }
   renderConnection();
   if (inventoryView) {

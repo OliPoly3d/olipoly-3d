@@ -44,11 +44,12 @@
   const stages = [
     ['request', 'New request'], ['quoting', 'Preparing quote'], ['awaiting', 'Awaiting approval'],
     ['approved', 'Quote approved'], ['queued', 'Queued for production'], ['printing', 'In progress'],
-    ['ready', 'Ready for pickup'], ['payment', 'Awaiting payment'], ['complete', 'Completed']
+    ['ready', 'Ready for fulfillment'], ['label', 'Label purchased'], ['payment', 'Awaiting payment'], ['complete', 'Completed']
   ];
   function stage(order) {
     if (!order.snapshot) return order.quoteStage === 'request' ? 'request' : order.quoteStage === 'sent' ? 'awaiting' : 'quoting';
     if (order.fulfilled) return balance(order) === 0 ? 'complete' : 'payment';
+    if (order.shipment) return 'label';
     if (!order.released) return 'approved';
     if (order.runs.some(run => run.status === 'printing')) return 'printing';
     if (order.items.every(item => remaining(order, item) === 0)) return 'ready';
@@ -58,7 +59,8 @@
     return {
       request: ['Review request', 'request'], quoting: ['Prepare quote', 'details'], awaiting: ['Review quote / approval', 'quote'],
       approved: ['Release to production', 'production'], queued: ['Start next run', 'production'], printing: ['Finish & inspect', 'production'],
-      ready: ['Arrange pickup', 'pickup'], payment: ['Record payment', 'money'], complete: ['View receipt', 'receipt']
+      ready: ['Arrange fulfillment', 'pickup'], label: ['Record carrier handoff', 'pickup'],
+      payment: ['Record payment', 'money'], complete: ['View receipt', 'receipt']
     }[stage(order)];
   }
   function queue(state, filter = 'open', search = '') {
@@ -170,11 +172,12 @@
     const fees = order.payments.reduce((sum, p) => sum + p.fee, 0);
     const preparationHours = order.productionPrepHours || 0;
     const laborEstimate = order.productionPlan ? preparationHours + (order.productionRemainingHours || 0) : order.estimatedLabor;
-    const actual = money(material + hours * 0.53 + Math.max(order.actualLabor, preparationHours) * order.laborRate + order.otherCosts + fees);
+    const postage = order.shipment?.postage || 0;
+    const actual = money(material + hours * 0.53 + Math.max(order.actualLabor, preparationHours) * order.laborRate + order.otherCosts + fees + postage);
     const estimated = money(productionItems(order).reduce((sum, item) => sum + item.quantity * estimatedItemCost(state, item), 0) + laborEstimate * order.laborRate + order.otherCosts + fees);
     const snapshot = order.snapshot || totals(order);
     const revenue = money(snapshot.total - snapshot.tax);
-    return {material: money(material), hours, actual, estimated, revenue,
+    return {material: money(material), hours, actual, estimated, revenue, postage,
       estimatedProfit: money(revenue - estimated), actualProfit: money(revenue - actual),
       variance: money(estimated - actual), complete: order.fulfilled};
   }
@@ -284,7 +287,22 @@
       });
       Object.assign(run, {status: 'inspected', accepted: good, rejected,
         hours: number(action.hours, 'Actual print hours'), notes: String(action.notes || '')});
+    } else if (action.type === 'save_shipping_label' || action.type === 'ship') {
+      if (order.fulfilled || !order.released || order.items.some(item => remaining(order, item) > 0)) {
+        throw new Error('Pass QC on all pieces before shipping.');
+      }
+      if (action.type === 'save_shipping_label') {
+        if (order.shipment) throw new Error('A label is already recorded for this order.');
+        order.shipment = shippingLabel(action);
+      } else {
+        if (!order.shipment) throw new Error('Record the purchased label first.');
+        if (action.confirmHandoff !== 'yes') throw new Error('Confirm that the carrier has the package.');
+        order.fulfilled = true;
+        order.fulfilledAt = new Date().toISOString();
+        order.shipment.handoffAt = order.fulfilledAt;
+      }
     } else if (action.type === 'pickup') {
+      if (order.shipment) throw new Error('This order has a shipping label. Record carrier handoff in Fulfillment.');
       if (order.fulfilled || !order.released || order.items.some(item => remaining(order, item) > 0)) throw new Error('Inspect all required pieces before recording pickup.');
       order.fulfilled = true;
       order.fulfilledAt = new Date().toISOString();
@@ -303,6 +321,34 @@
     if (order.released) order.status = progress(order);
     state.revision += 1;
     return state;
+  }
+  function shippingLabel(action) {
+    const label = {};
+    const fields = {destination: 500, carrier: 40, service: 80, provider: 60, tracking: 60, purchaseRef: 100};
+    for (const [name, limit] of Object.entries(fields)) {
+      const value = String(action[name] ?? '').trim();
+      if (!value || value.length > limit) throw new Error('Complete the shipping address, carrier, service, tracking and purchase details.');
+      label[name] = value;
+    }
+    if (!/^[A-Za-z0-9][A-Za-z0-9 -]{2,59}$/.test(label.tracking)) throw new Error('Enter a valid tracking number.');
+    for (const name of ['weightOz', 'lengthIn', 'widthIn', 'heightIn']) {
+      const value = number(action[name], 'Packed weight and dimensions');
+      if (!value || value > 10000) throw new Error('Enter positive packed weight and dimensions.');
+      label[name] = value;
+    }
+    label.purchaseDate = String(action.purchaseDate || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(label.purchaseDate)) throw new Error('Enter the label purchase date.');
+    label.postage = money(number(action.postage, 'Actual postage'));
+    if (label.postage > 100000) throw new Error('Enter the actual postage from the label receipt.');
+    label.receiptUrl = String(action.receiptUrl || '').trim();
+    if (label.receiptUrl && (!/^https:\/\/[^\s/]+(?:\/\S*)?$/i.test(label.receiptUrl) || label.receiptUrl.length > 1000)) {
+      throw new Error('Enter an HTTPS receipt link.');
+    }
+    label.financeEntryId = String(action.financeEntryId || '').trim().toLowerCase();
+    if (label.financeEntryId && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(label.financeEntryId)) {
+      throw new Error('Enter the existing Finance expense ID.');
+    }
+    return label;
   }
   return {seed, totals, command, saveDraft, accepted, remaining, requirements, reserved, paid, balance, progress, costs, materialKey, copy, uid,
     stages, stage, nextStep, queue, projectIdentity, productionQueue, productionItems, costsReady, estimatedItemCost, newRequest, quoteCommand};
