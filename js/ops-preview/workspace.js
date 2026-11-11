@@ -548,7 +548,7 @@ Invoice total: ${format(invoice.totals.total)}.
 Amount due at issuance: ${format(invoice.balance)} by ${invoice.dueDate}.
 Please reference ${invoice.number} with your payment. Thank you.` : '';
     const sendPanel = invoice ? `<section class="card no-print"><h2>Send invoice</h2>${row('Confirmed recipient',invoice.recipient)}
-      <button data-action="print-invoice">Print / Save invoice PDF</button>
+      <button type="button" data-action="download-invoice">Download invoice PDF</button>
       ${recorded ? `<p class="status-line">Owner marked sent · ${escape(new Date(recorded.recordedAt).toLocaleString())}</p>
         ${recorded.reference ? row('Send reference',recorded.reference) : ''}` :
         `<form data-form="record_invoice_sent">
@@ -823,7 +823,21 @@ Please reference ${invoice.number} with your payment. Thank you.` : '';
         if (!confirm('Reset all fictional records saved by this sample?')) return;
         const next = M.seed(); next.revision = state.revision + 1; await persist(next); render(); message('Sample reset.'); return;
       }
-      if (['print','print-quote','print-invoice'].includes(action)) { if(dirty) throw new Error('Save your changes before printing.'); activeTab=action==='print-quote'?'quote':action==='print-invoice'?'invoice':'receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
+      if (action === 'download-invoice') {
+        const invoice = selectedOrder().invoice;
+        if (!invoice) throw new Error('Issue the invoice before downloading.');
+        const blob = window.OliPolyInvoicePdf.create(invoice);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${invoice.number.replace(/[^a-z0-9-]/gi,'-')}.pdf`;
+        link.textContent = 'Download again';
+        message('Invoice PDF ready.');
+        document.getElementById('message').append(' ',link);
+        link.click();
+        setTimeout(()=>{ URL.revokeObjectURL(link.href); link.remove(); },120000);
+        return;
+      }
+      if (['print','print-quote'].includes(action)) { if(dirty) throw new Error('Save your changes before printing.'); activeTab=action==='print-quote'?'quote':'receipt'; document.body.dataset.printView=activeTab; render(); window.print(); return; }
       if (action === 'copy-quote') {
         if(dirty) throw new Error('Save your changes before copying the quote.');
         await navigator.clipboard.writeText(document.getElementById('quote-message').value); message('Quote message copied. Review it before sending.'); return;
