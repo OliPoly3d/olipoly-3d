@@ -24,7 +24,8 @@
       return {description:String(i.description||''),materialLabel,quantity:i.quantity,unitPrice:i.unit_price,lineTotal:i.line_total};
     });
     const phase=!accepted?'awaiting':order.fulfilled?'fulfilled':!order.released?'approved':order.items.every(i=>root.OliPolyOpsPreview.remaining(order,i)===0)?'ready':order.runs.some(r=>r.status==='printing')?'printing':'scheduled';
-    const shipment = accepted ? order.shipment : null;
+    const historical = order.historicalCompletion;
+    const shipment = accepted ? order.shipment || (historical?.method === 'shipping' ? {...historical, handoffAt:order.fulfilledAt} : null) : null;
     const shipping = shipment ? {
       shipped: Boolean(shipment.handoffAt),
       ...(shipment.handoffAt ? {carrier: String(shipment.carrier||''), service: String(shipment.service||''), tracking: String(shipment.tracking||'')} : {})
@@ -32,7 +33,7 @@
     const identity=root.OliPolyOpsPreview.projectIdentity(order);
     const terms=String(offer?.terms||order.terms||'To be agreed');
     return {reference:identity.primary,legacyQuote:identity.legacyQuote,customer:String(offer?.customer||order.customer),title:String(offer?.title||order.title),
-      revision:offer?.revision||1,accepted,approvedAt:order.approvedAt||'',phase,items,shipping,paymentPending:!!order.shippingDraft,method:root.OliPolyOpsPreview.fulfillmentMethod(order),
+      revision:offer?.revision||1,accepted,approvedAt:order.approvedAt||'',phase,items,shipping,handoffDate:historical?.handoffDate||'',paymentPending:!!order.shippingDraft,method:root.OliPolyOpsPreview.fulfillmentMethod(order),
       totals:customerTotals(current),quoteTotals:customerTotals(t),adjusted:current.total!==t.total || current.tax!==t.tax || current.customerShipping!==t.customerShipping,
       taxIncluded:!!current.taxIncluded,quoteTaxIncluded:!!t.taxIncluded,taxExempt:!!order.taxExempt,paid:paid/100,balance:Math.max(0,total-paid)/100,credit:Math.max(0,paid-total)/100,
       terms,business:order.preset==='business',turnaround:String(offer?.turnaround||order.turnaround||'OliPoly will confirm scheduling.'),
@@ -86,7 +87,7 @@
       (shipmentMethod ? `<small>Shipping method · ${E(shipmentMethod)}</small>` : '') +
       (v.shipping.tracking ? `<small>Tracking number · ${E(v.shipping.tracking)}</small>` : '') : '';
 
-    return `<section class="card"><h2>Your project, moving along.</h2><p class="customer-note">We’ll show the important milestones here. Your payment status is separate from production progress.</p>${!v.accepted?'<p class="customer-status">Awaiting quote acceptance. Production has not started.</p>':`<div style="margin:30px 0">${steps.map(([id,label,note],i)=>`<div class="customer-step ${i<=current?'done':''}" ${i===current?'aria-current="step"':''}><strong>${E(label)}</strong><small>${i===current?'Current step · ':i>current?'Upcoming · ':'Completed · '}${E(note)}</small>${id==='fulfilled'?shipmentDetails:''}</div>`).join('')}</div><div class="customer-status">${v.phase==='approved'?'Your quote is approved and awaiting production release.':v.phase==='fulfilled'?(v.method==='shipping'?'Your order has shipped.':E(fulfilled)):v.phase==='ready'?E(readyNote):'Your order is progressing.'}</div>`}${['ready','fulfilled'].includes(v.phase)?'':`<div class="customer-terms"><strong>Agreed timing</strong>${E(v.turnaround)}</div>`}${v.accepted&&!v.paymentPending&&v.balance>0?'<button class="primary no-print" data-view="pay" style="margin-top:24px">View payment details</button>':''}</section>`;
+    return `<section class="card"><h2>Your project, moving along.</h2><p class="customer-note">We’ll show the important milestones here. Your payment status is separate from production progress.</p>${!v.accepted?'<p class="customer-status">Awaiting quote acceptance. Production has not started.</p>':`<div style="margin:30px 0">${steps.map(([id,label,note],i)=>`<div class="customer-step ${i<=current?'done':''}" ${i===current?'aria-current="step"':''}><strong>${E(label)}</strong><small>${i===current?'Current step · ':i>current?'Upcoming · ':'Completed · '}${E(note)}</small>${id==='fulfilled'?`${v.handoffDate?`<small>Handoff date · ${E(v.handoffDate)}</small>`:''}${shipmentDetails}`:''}</div>`).join('')}</div><div class="customer-status">${v.phase==='approved'?'Your quote is approved and awaiting production release.':v.phase==='fulfilled'?(v.method==='shipping'?'Your order has shipped.':E(fulfilled)):v.phase==='ready'?E(readyNote):'Your order is progressing.'}</div>`}${['ready','fulfilled'].includes(v.phase)?'':`<div class="customer-terms"><strong>Agreed timing</strong>${E(v.turnaround)}</div>`}${v.accepted&&!v.paymentPending&&v.balance>0?'<button class="primary no-print" data-view="pay" style="margin-top:24px">View payment details</button>':''}</section>`;
   }
   function pay(v) {
     if(v.paymentPending)return '<section class="card"><h2>Payment is on hold.</h2><p>OliPoly will confirm the shipping details and update the amount due.</p></section>';

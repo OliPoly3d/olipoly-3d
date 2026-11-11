@@ -293,13 +293,47 @@
   function productionPreparation(order) {
     return `<form class="card" id="production-plan-form" style="margin-top:22px"><h3>Production preparation</h3><p class="muted">Enter body and support filament separately, with grams and print hours per piece. Match the customer's agreed material requirements.</p>${itemEditor({...order, items: draft.items}, true)}<div class="form-grid">${field('Design / prep hours already spent','prepHours',draft.productionPrepHours || 0,'number','min="0" step=".01" required')}${field('Remaining hands-on hours (estimate)','remainingHours',draft.productionRemainingHours || 0,'number','min="0" step=".01" required')}</div><p class="muted">Labor cost rate: ${format(order.laborRate)} per hour.</p><div id="production-profit-preview">${costPreview({...order, productionPlan: draft.items, productionPrepHours: draft.productionPrepHours || 0, productionRemainingHours: draft.productionRemainingHours || 0})}</div><button class="primary" type="submit" style="margin-top:18px">Save production preparation</button><small id="production-plan-state">${order.productionPlan ? 'Saved production preparation' : 'Production preparation needs review'}</small></form>`;
   }
+  function inventoryHandlingPanel(order) {
+    const handling = order.inventoryHandling;
+    return `<section class="card"><h2>Inventory handling</h2>
+      <form class="form-grid" data-form="inventory_handling">
+        ${select('Inventory handling', 'mode', [['track','Track inventory'],['usage_only','Record usage only']], handling?.mode || 'track')}
+        ${field('Reason when stock is excluded', 'reason', handling?.reason || '', 'text', 'maxlength="500"')}
+        <p class="muted full">Record usage only preserves job usage and costs without reserving or deducting filament.</p>
+        <button type="submit">Save inventory handling</button>
+      </form>
+    </section>`;
+  }
+  function historicalCompletionPanel(order) {
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
+    return `<section class="card"><details><summary><strong>Record completed order</strong></summary>
+      <p class="muted">Use this for work that has already passed QC and been handed off. Stock is left unchanged. Payment remains separate.</p>
+      <form class="form-grid" data-form="historical_completion">
+        ${select('Handoff method', 'method', [['','Choose a method'],['shipping','Carrier shipping'],['pickup','Customer pickup'],['delivery','Local delivery']], '')}
+        ${field('Actual handoff date', 'handoffDate', '', 'date', `required max="${today}"`)}
+        ${field('Carrier (if known)', 'carrier', '', 'text', 'maxlength="40"')}
+        ${field('Shipping service (if known)', 'service', '', 'text', 'maxlength="80"')}
+        ${field('Tracking number (if available)', 'tracking', '', 'text', 'maxlength="60"')}
+        ${field('Reason stock is excluded', 'reason', order.inventoryHandling?.reason || 'Completed before opening inventory count', 'text', 'required maxlength="500"')}
+        ${order.items.map(item => `<fieldset class="full form-grid" data-historical-item><legend>${escape(item.description)} · ${item.quantity} accepted</legend>
+          ${field('Filament description', 'material', '', 'text', 'maxlength="120"')}
+          ${field('Total filament used (g)', 'grams', '', 'number', 'min="0" step=".01"')}
+          ${field('Total filament cost ($)', 'materialCost', '', 'number', 'min="0" step=".01"')}
+          ${field('Total printer hours', 'hours', '', 'number', 'min="0" step=".01"')}
+          ${select('Printer', 'printer', ['Not recorded','P1S','P2S'], 'Not recorded')}
+        </fieldset>`).join('')}
+        <p class="muted full">Leave unknown usage, cost or time blank.</p>
+        ${textArea('Internal notes', 'notes', '', 'maxlength="1000"')}
+        <div class="actions full"><button class="primary" type="submit">Save completed order</button></div>
+      </form></details></section>`;
+  }
   function productionPanel(order) {
     const pending = order.items.filter(item => M.remaining(order, item) > 0);
     return `${sharedProductionQueue()}<section class="card"><div class="eyebrow">${projectLabel(order)}</div><div class="section-head"><h2>${escape(order.title)}</h2><span class="badge">${order.snapshot && !order.released ? 'Approved · awaiting release' : escape(status(order))}</span></div><p>${escape(order.customer)} · Selected project production</p>
       ${order.items.map(item => row(item.description, `${M.accepted(order, item.id)} / ${item.quantity} accepted`)).join('')}
-      ${!order.released ? `<p class="muted" style="margin-top:20px">Release the approved scope to reserve its sample material.</p><button class="primary" data-action="release" ${!order.snapshot ? 'disabled' : ''}>Release to production</button>` : ''}
+      ${!order.released ? `<p class="muted" style="margin-top:20px">${order.inventoryHandling?.mode==='usage_only' ? 'Release with no filament reservation.' : 'Release the approved scope to reserve filament.'}</p><button class="primary" data-action="release" ${!order.snapshot ? 'disabled' : ''}>Release to production</button>` : ''}
       ${order.released && pending.length ? `<form data-form="start" class="form-grid" style="margin-top:22px">${select('Item to print', 'itemId', pending.map(item => [item.id, `${item.description} · ${M.remaining(order, item)} remaining`]), pending[0].id)}${select('Printer', 'printer', ['P1S', 'P2S'], 'P1S')}${field('Pieces in this run', 'quantity', 1, 'number', 'min="1" step="1" required')}<button class="primary" type="submit">Start sample run</button></form>` : ''}
-      </section>${order.snapshot && !order.released ? productionPreparation(order) : ''}${order.runs.slice().reverse().map(run => runCard(order, run)).join('')}`;
+      </section>${order.inventoryHandling?.mode==='usage_only' ? `<p class="status-line">Inventory unchanged · ${escape(order.inventoryHandling.reason)}</p>` : ''}${order.snapshot && !order.released ? historicalCompletionPanel(order)+inventoryHandlingPanel(order)+productionPreparation(order) : ''}${order.runs.slice().reverse().map(run => runCard(order, run)).join('')}`;
   }
   function actualRollInputs(key) {
     const rolls = (inventoryData?.rolls || []).filter(roll => roll.is_mounted && roll.remaining_grams > 0 && `${roll.material_type} / ${roll.color_name}` === key);
@@ -308,13 +342,13 @@
   }
   function runCard(order, run) {
     const item = M.productionItems(order).find(row => row.id === run.itemId);
-    if (run.status === 'inspected') return `<section class="card"><div class="section-head"><h3>${escape(item.description)} · ${escape(run.printer)}</h3><span class="badge neutral">Inspected</span></div><p>${run.accepted} accepted · ${run.rejected} rejected · ${run.hours} printer hours</p><p class="muted">${run.usage.map(u => `${escape(u.key)} ${u.grams} g`).join(' · ')}</p>${run.notes ? `<p class="muted">${escape(run.notes)}</p>` : ''}</section>`;
+    if (run.status === 'inspected') return `<section class="card"><div class="section-head"><h3>${escape(item.description)} · ${escape(run.printer)}</h3><span class="badge neutral">Inspected</span></div><p>${run.accepted} accepted · ${run.rejected == null ? 'rejected count not recorded' : `${run.rejected} rejected`} · ${run.hours == null ? 'printer time not recorded' : `${run.hours} printer hours`}</p><p class="muted">${run.usage.filter(u => u.key || u.grams != null).map(u => `${escape(u.key)}${u.grams == null ? '' : ` ${u.grams} g`}`).join(' · ')}</p>${run.notes ? `<p class="muted">${escape(run.notes)}</p>` : ''}</section>`;
     const grouped = {};
     item.materials.forEach(m => { const key = M.materialKey(m); grouped[key] = (grouped[key] || 0) + m.grams_each * run.quantity; });
     return `<form class="card" data-form="inspect" data-run="${run.id}"><div class="section-head"><h3>${escape(item.description)} · ${escape(run.printer)}</h3><span class="badge rose">Printing ${run.quantity}</span></div><div class="form-grid">${field('Accepted pieces', 'accepted', run.quantity, 'number', 'min="0" step="1" required')}${field('Rejected pieces', 'rejected', 0, 'number', 'min="0" step="1" required')}${field('Actual printer hours', 'hours', run.plannedHours, 'number', 'min="0" step=".01" required')}
       ${Object.entries(grouped).map(([key, grams], i) => `<label>${escape(key)} consumed (g)<input name="usage-${i}" data-usage-key="${escape(key)}" type="number" min="0" step=".01" value="${grams}" required></label>`).join('')}
-      ${Object.keys(grouped).map(actualRollInputs).join('')}
-      <p class="muted full">Enter total consumption for this attempt, including failed pieces and purge. Reject count records the loss without deducting the same filament twice.</p><label class="full">Optional notes<textarea name="notes" placeholder="Fit, appearance or reason for a rejected piece"></textarea></label></div><button class="primary" type="submit" style="margin-top:18px">Finish & inspect run</button></form>`;
+      ${order.inventoryHandling?.mode==='usage_only' ? Object.keys(grouped).map(key => `<label>${escape(key)} actual cost ($, optional)<input data-usage-cost="${escape(key)}" type="number" min="0" step=".01"></label>`).join('') : Object.keys(grouped).map(actualRollInputs).join('')}
+      <p class="muted full">Enter total consumption for this attempt, including failed pieces and purge. ${order.inventoryHandling?.mode==='usage_only' ? 'Filament recorded here does not change stock.' : 'Reject count records the loss without deducting the same filament twice.'}</p><label class="full">Optional notes<textarea name="notes" placeholder="Fit, appearance or reason for a rejected piece"></textarea></label></div><button class="primary" type="submit" style="margin-top:18px">Finish & inspect run</button></form>`;
   }
   function shippingPanel(order) {
     const shipment = order.shipment;
@@ -397,6 +431,17 @@
   function fulfillmentPanel(order) {
     const ready = order.released && order.items.every(item => M.remaining(order, item) === 0);
     const preview = `<a class="button" href="${trackingLink(order)}">Open customer milestone preview</a>`;
+    if (order.historicalCompletion) {
+      const historical = order.historicalCompletion;
+      const doneLabel = M.fulfillmentMilestones[historical.method][1];
+      const method = [historical.carrier,historical.service].filter(Boolean).join(' · ');
+      return `<section class="card"><h2>${escape(doneLabel)}</h2>
+        ${row('Actual handoff date',historical.handoffDate)}
+        ${method ? row('Shipping method',method) : ''}
+        ${historical.tracking ? row('Tracking',historical.tracking) : ''}
+        ${historical.notes ? `<p>${escape(historical.notes)}</p>` : ''}
+        ${preview}</section>`;
+    }
     if (!ready) return `<section class="card"><h2>Fulfillment</h2><p>Pass QC on all pieces to confirm fulfillment.</p>${preview}</section>`;
     if (order.shipment) return `${shippingPanel(order)}<div class="actions">${preview}</div>`;
     const method = M.fulfillmentMethod(order);
@@ -420,7 +465,7 @@
     return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format(M.currentTotals(order).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
       ${order.snapshot && !order.shippingDraft && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
-      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
+      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${order.historicalCompletion ? `${row('Recorded job cost',format(cost.actual))}${row('Profit after recorded costs',format(cost.actualProfit))}` : M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.historicalCompletion && order.runs.some(run => run.hours == null || run.usage.some(usage => usage.materialCost == null)) ? 'Recorded cost is incomplete because historical printer time or filament cost is unknown.' : order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
   function receiptPanel(order) {
     const t = M.currentTotals(order);
@@ -443,7 +488,7 @@
     if (order.runs.length) index = 2;
     if (order.released && order.items.every(item => M.remaining(order, item) === 0)) index = 3;
     if (order.fulfilled) index = 4;
-    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(order.title)} · ${escape(order.reference)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(index < 0 ? 'Awaiting approval' : steps[index])}</span><div class="timeline">${steps.map((step, i) => `<div class="${i <= index ? 'done' : ''}">${step}</div>`).join('')}</div>${order.shipment?.handoffAt ? row('Tracking number', order.shipment.tracking) : ''}${row('Remaining balance', format(M.balance(order)))}<p class="muted" style="margin-top:20px">For this interactive sample, the workspace and this view share device storage. For an accepted database order, open its customer link from Fulfillment to use the existing public tracking lookup.</p></section>`;
+    app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Customer milestone preview</div><h1>Your project, moving along.</h1><p class="muted">${escape(order.title)} · ${escape(order.reference)}</p></div></header><section class="card" style="max-width:700px"><span class="badge">${escape(index < 0 ? 'Awaiting approval' : steps[index])}</span><div class="timeline">${steps.map((step, i) => `<div class="${i <= index ? 'done' : ''}">${step}</div>`).join('')}</div>${(order.shipment?.handoffAt && order.shipment.tracking) || order.historicalCompletion?.tracking ? row('Tracking number', order.shipment?.tracking || order.historicalCompletion.tracking) : ''}${row('Remaining balance', format(M.balance(order)))}<p class="muted" style="margin-top:20px">For this interactive sample, the workspace and this view share device storage. For an accepted database order, open its customer link from Fulfillment to use the existing public tracking lookup.</p></section>`;
   }
   function render() {
     if (page === 'today') renderToday();
@@ -588,13 +633,18 @@
       if (dirty) throw new Error('Save your changes before continuing.');
       const values = Object.fromEntries(new FormData(form));
       const action = {...values, type: form.dataset.form};
+      if (action.type === 'historical_completion') {
+        action.items = [...form.querySelectorAll('[data-historical-item]')].map(row =>
+          Object.fromEntries([...row.querySelectorAll('[name]')].map(input => [input.name,input.value])));
+      }
       if (action.type === 'inspect') {
         action.runId = form.dataset.run;
         action.usage = [...form.querySelectorAll('[data-usage-key]')].map(input => {
           const rolls = [...form.querySelectorAll('[data-actual-roll]')]
             .filter(roll => roll.dataset.rollKey === input.dataset.usageKey && Number(roll.value) > 0)
             .map(roll => ({raw_material_roll_id: roll.dataset.actualRoll, grams_used: Number(roll.value)}));
-          return {key: input.dataset.usageKey, grams: input.value, ...(rolls.length ? {rolls} : {})};
+          const materialCost = [...form.querySelectorAll('[data-usage-cost]')].find(cost => cost.dataset.usageCost === input.dataset.usageKey)?.value;
+          return {key: input.dataset.usageKey, grams: input.value, ...(materialCost ? {materialCost} : {}), ...(rolls.length ? {rolls} : {})};
         });
       }
       if (['send_quote','revise_quote'].includes(action.type)) {
@@ -607,8 +657,10 @@
         url.searchParams.set('section', activeTab);
         history.replaceState(null, '', url);
       }
+      if (action.type === 'historical_completion') activeTab = 'pickup';
       render();
-      if (action.type === 'fulfillment_plan') message(action.method === 'shipping' ? 'Shipping choice saved. Confirm the shipment details to publish the update.' : 'Fulfillment confirmed. The customer balance and order summary are up to date.');
+      if (action.type === 'historical_completion') message('Completed order recorded. Stock and payments were left unchanged.');
+      else if (action.type === 'fulfillment_plan') message(action.method === 'shipping' ? 'Shipping choice saved. Confirm the shipment details to publish the update.' : 'Fulfillment confirmed. The customer balance and order summary are up to date.');
       else if (action.type === 'save_shipping_label') message('Shipment details confirmed. Record carrier handoff when the box is shipped.');
       else if (action.type === 'ship') message('Shipment recorded. The customer update is ready to copy.');
       else message(cloud ? 'Saved to OliPoly ERP Test.' : 'Saved in this device’s sample records.');
