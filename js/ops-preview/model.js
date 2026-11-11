@@ -16,7 +16,7 @@
     delivery: ['Ready for local delivery', 'Delivered']
   };
   function fulfillmentMethod(order) {
-    return order.shipment ? 'shipping' : order.shippingDraft ? 'pending' : order.fulfillmentPlan?.method || (order.fulfilled ? 'pickup' : 'pending');
+    return order.historicalCompletion?.method || (order.shipment ? 'shipping' : order.shippingDraft ? 'pending' : order.fulfillmentPlan?.method || (order.fulfilled ? 'pickup' : 'pending'));
   }
   function quoteFulfillmentNote(order) {
     if (order.preset === 'business' || order.customerNotes?.includes(pickupQuoteNote)) return '';
@@ -146,6 +146,7 @@
     return productionItems(order).every(item => Number(item.hours_each) > 0 && item.materials.some(material => Number(material.grams_each) > 0));
   }
   function requirements(order) {
+    if (order.inventoryHandling?.mode === 'usage_only') return {};
     const result = {};
     productionItems(order).forEach(item => item.materials.forEach(material => {
       const key = materialKey(material);
@@ -223,7 +224,7 @@
     order.runs.forEach(run => {
       if (run.status !== 'inspected') return;
       hours += run.hours;
-      run.usage.forEach(usage => { material += usage.grams * usage.unitCost; });
+      run.usage.forEach(usage => { material += usage.materialCost ?? ((usage.grams || 0) * (usage.unitCost || 0)); });
     });
     const fees = order.payments.reduce((sum, p) => sum + p.fee, 0);
     const preparationHours = order.productionPrepHours || 0;
@@ -286,6 +287,55 @@
         if (!materials.some(material => material.grams_each > 0)) throw new Error('Enter positive filament consumption for every item.');
         return {...copy(item), hours_each: hours, materials};
       });
+    } else if (action.type === 'inventory_handling') {
+      if (!order.snapshot || order.released || order.runs.length || order.fulfilled) {
+        throw new Error('Choose inventory handling before release.');
+      }
+      const mode = action.mode;
+      const reason = String(action.reason || '').trim();
+      if (!['track','usage_only'].includes(mode) || reason.length > 500 || (mode === 'usage_only' && !reason)) {
+        throw new Error('Enter a reason for recording usage without changing stock.');
+      }
+      order.inventoryHandling = {mode, reason: mode === 'usage_only' ? reason : ''};
+    } else if (action.type === 'historical_completion') {
+      if (!order.snapshot || order.released || order.runs.length || order.fulfilled) {
+        throw new Error('Record completed work from an approved order before production release.');
+      }
+      const method = action.method;
+      const handoffDate = String(action.handoffDate || '');
+      const date = new Date(handoffDate + 'T12:00:00Z');
+      if (!['shipping','pickup','delivery'].includes(method) || !/^\d{4}-\d{2}-\d{2}$/.test(handoffDate) ||
+          !Number.isFinite(date.getTime()) || date.toISOString().slice(0,10) !== handoffDate ||
+          handoffDate > new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'})) {
+        throw new Error('Enter the actual handoff method and a date on or before today.');
+      }
+      const details = {method, handoffDate};
+      for (const [key, max] of Object.entries({carrier:40, service:80, tracking:60, notes:1000})) {
+        details[key] = String(action[key] || '').trim();
+        if (details[key].length > max) throw new Error('Shorten the shipment details or notes.');
+      }
+      if (method !== 'shipping') Object.assign(details, {carrier:'',service:'',tracking:''});
+      const reason = String(action.reason || '').trim();
+      if (!reason || reason.length > 500) throw new Error('Enter why stock should be left unchanged.');
+      if (!Array.isArray(action.items) || action.items.length !== order.items.length) throw new Error('Record every approved item.');
+      order.runs = order.items.map((item, index) => {
+        const entered = action.items[index];
+        const material = String(entered.material || '').trim();
+        const grams = optionalActual(entered.grams, 'Filament used');
+        const materialCost = optionalActual(entered.materialCost, 'Filament cost');
+        const hours = optionalActual(entered.hours, 'Printer hours');
+        if (material.length > 120 || (grams !== null && grams > 0 && !material)) throw new Error('Enter a material description for recorded grams.');
+        const printer = entered.printer || 'Not recorded';
+        if (!['P1S','P2S','Not recorded'].includes(printer)) throw new Error('Choose the printer used if known.');
+        return {id:uid(), itemId:item.id, printer, quantity:item.quantity, status:'inspected',
+          accepted:item.quantity, rejected:null, hours, usage:[{key:material, grams, materialCost}]};
+      });
+      order.inventoryHandling = {mode:'usage_only',reason};
+      order.historicalCompletion = details;
+      order.released = true;
+      order.fulfilled = true;
+      order.fulfilledAt = date.toISOString();
+      order.status = progress(order);
     } else if (action.type === 'release') {
       if (!order.snapshot || order.released) throw new Error('Release an approved order once.');
       if (productionItems(order).some(item => !item.materials.length || !item.hours_each || !item.materials.some(m => m.grams_each > 0))) {
@@ -310,7 +360,7 @@
         const key = materialKey(m);
         runMaterials[key] = (runMaterials[key] || 0) + m.grams_each * quantity;
       });
-      Object.entries(runMaterials).forEach(([key, grams]) => {
+      if (order.inventoryHandling?.mode !== 'usage_only') Object.entries(runMaterials).forEach(([key, grams]) => {
         const stock = state.inventory.find(row => row.key === key);
         if (!stock || stock.grams - reserved(state, stock.key, order.id) < grams) throw new Error('This run exceeds available sample stock.');
       });
@@ -329,6 +379,11 @@
         if (!keys.includes(usage.key)) throw new Error('Unexpected material.');
         const stock = state.inventory.find(row => row.key === usage.key);
         const grams = number(usage.grams, 'Consumed grams');
+        if (order.inventoryHandling?.mode === 'usage_only') {
+          if (usage.rolls?.length) throw new Error('Roll allocations are unavailable when recording usage only.');
+          const materialCost = optionalActual(usage.materialCost, 'Filament cost');
+          return {key: usage.key, grams, unitCost: stock?.cost || 0, materialCost};
+        }
         if (!stock || grams > stock.grams) throw new Error('Consumption exceeds sample stock.');
         stock.grams = money(stock.grams - grams);
         const result = {key: usage.key, grams, unitCost: stock.cost};
@@ -422,6 +477,12 @@
     if (order.released) order.status = progress(order);
     state.revision += 1;
     return state;
+  }
+  function optionalActual(value, label) {
+    if (value === '' || value == null) return null;
+    const amount = number(value, label);
+    if (amount > 1000000) throw new Error(`Enter a valid ${label.toLowerCase()}.`);
+    return money(amount);
   }
   function shippingLabel(action) {
     const label = {};

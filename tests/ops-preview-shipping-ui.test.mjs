@@ -76,3 +76,48 @@ test('Fulfillment form shows tracking and a copyable update after carrier handof
     window.close();
   }
 });
+
+test('the completed-order form records actual handoff and keeps historical usage out of stock', {
+  skip: !process.env.OPS_JSDOM_MODULE,
+}, async () => {
+  const {JSDOM} = await import(pathToFileURL(process.env.OPS_JSDOM_MODULE));
+  const html = fs.readFileSync(new URL('../ops-order-preview.html', import.meta.url), 'utf8');
+  const dom = new JSDOM(html, {url: 'https://example.test/ops-order-preview.html?section=production', runScripts: 'outside-only'});
+  const {window} = dom;
+  const load = name => window.eval(fs.readFileSync(new URL('../js/' + name, import.meta.url), 'utf8'));
+
+  try {
+    for (const script of ['tax-rate.js', 'order-line-items.js', 'quote-pricing.js', 'ops-preview/model.js', 'ops-preview/customer-view.js']) load(script);
+    const M = window.OliPolyOpsPreview;
+    const initial = M.seed();
+    const state = M.command(initial, initial.orders[0].id, {type:'approve',method:'Recorded acceptance'});
+    window.localStorage.setItem('olipoly.ops.preview.v1', JSON.stringify(state));
+    load('ops-preview/workspace.js');
+    const form = window.document.querySelector('[data-form="historical_completion"]');
+    for (const [name,value] of Object.entries({method:'shipping',handoffDate:'2026-11-01',carrier:'USPS',tracking:'TEST-HISTORY'})) {
+      form.elements[name].value = value;
+    }
+    const items = form.querySelectorAll('[data-historical-item]');
+    items[0].querySelector('[name="material"]').value = 'Untracked PETG-CF';
+    items[0].querySelector('[name="grams"]').value = '300';
+    items[0].querySelector('[name="materialCost"]').value = '8';
+    items[1].querySelector('[name="hours"]').value = '1.25';
+    form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+    await new Promise(resolve => setImmediate(resolve));
+
+    const saved = JSON.parse(window.localStorage.getItem('olipoly.ops.preview.v1'));
+    const order = saved.orders[0];
+    assert.equal(order.historicalCompletion.handoffDate,'2026-11-01');
+    assert.equal(order.runs[0].usage[0].key,'Untracked PETG-CF');
+    assert.equal(order.runs[0].usage[0].materialCost,8);
+    assert.equal(order.runs[1].usage[0].grams,null);
+    assert.equal(order.runs[1].hours,1.25);
+    assert.equal(order.payments.length,0);
+    assert.equal(JSON.stringify(saved.inventory),JSON.stringify(state.inventory));
+    assert.match(window.document.querySelector('[data-panel="pickup"]').textContent,/Actual handoff date2026-11-01/);
+    const V = window.OliPolyCustomerView;
+    assert.match(V.render(V.project(order),'track'),/Shipped.*2026-11-01.*USPS.*TEST-HISTORY/);
+  } finally {
+    window.close();
+  }
+});

@@ -34,7 +34,7 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    GRANT USAGE ON SCHEMA auth TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated;
    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;`);
-  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql']){
+  for(const file of ['20261104125424_ops_test_business_baseline.sql','20261104130021_ops_test_connected_workspace.sql','20261105003419_ops_test_permanent_project_numbers.sql','20261107023919_ops_test_approved_production_preparation.sql',migration,'20261111131013_ops_test_single_package_shipping.sql','20261111145500_ops_test_fulfillment_adjustments.sql','20261111161000_ops_test_shipping_confirmation_discounts.sql','20261111175000_ops_test_historical_orders_inventory_handling.sql']){
    let sql=fs.readFileSync(new URL(file,migrations),'utf8').replaceAll('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','').replaceAll('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;','');
    await db.exec(sql);
   }
@@ -240,6 +240,54 @@ test('shared inventory preserves multiple rolls, production costs, spool counts 
    assert.equal((await track(local)).public_status_text,'Delivered');
    assert.equal(M.balance(byId(local)),11.14);
 
+  });
+  await t.test('usage-only QC and completed-order backfill preserve physical stock and reservations', async()=>{
+   const stock=async()=> (await db.query('select id,current_grams,remaining_grams,reserved_grams from raw_material_inventory order by id')).rows;
+   const before=await stock();
+   const beforeFinance=(await db.query('select count(*)::int count from financial_entries')).rows[0].count;
+   async function approved(id, grams_each) {
+    const draft=M.seed().orders[0];
+    Object.assign(draft,{id,title:id,items:[{...draft.items[1],quantity:1,hours_each:grams_each ? .5 : 0,materials:grams_each ? [{material:'PLA',color:'Black',grams_each}] : []}],designFee:0});
+    await submitOrder(id,{type:'new'},draft);
+    await change({type:'approve',method:'Recorded acceptance'},id);
+   }
+   const byId=id=>state.orders.find(o=>o.id===id);
+   const noStock='test-record-usage-only';
+   await approved(noStock,9999);
+   await assert.rejects(change({type:'release'},noStock),/Not enough/);
+   await change({type:'inventory_handling',mode:'usage_only',reason:'Material accounted for separately'},noStock);
+   await change({type:'release'},noStock);
+   assert.deepEqual(byId(noStock).reservedMaterials,{});
+   await change({type:'start',itemId:'tags',quantity:1,printer:'P1S'},noStock);
+   await change({type:'inspect',runId:byId(noStock).runs[0].id,accepted:1,rejected:0,hours:.5,
+    usage:[{key:'PLA / Black',grams:9999,materialCost:'3.25'}]},noStock);
+   assert.equal(byId(noStock).status,'ready_for_fulfillment');
+   assert.equal(M.costs(state,byId(noStock)).material,3.25);
+   await assert.rejects(change({type:'inventory_handling',mode:'track'},noStock),/before release/);
+
+   const historical='test-already-shipped';
+   await approved(historical,0);
+   const backfill={type:'historical_completion',method:'shipping',handoffDate:'2026-11-01',carrier:'USPS',service:'Ground Advantage',
+    tracking:'TEST-HISTORICAL-01',reason:'Completed before opening inventory count',notes:'Private production note',
+    items:[{material:'PETG-CF unavailable in stock',grams:'37',materialCost:'2.35',hours:'1.75',printer:'P2S'}]};
+   await change(backfill,historical);
+   const saved=byId(historical);
+   assert.equal(saved.inventoryHandling.mode,'usage_only');
+   assert.equal(saved.historicalCompletion.handoffDate,'2026-11-01');
+   assert.equal(saved.fulfilled,true);
+   assert.equal(saved.payments.length,0);
+   assert.equal(M.balance(saved),10);
+   assert.equal(M.costs(state,saved).material,2.35);
+   const tracking=(await db.query('select * from public_order_tracking_lookup($1)',[saved.reference])).rows[0];
+   assert.equal(tracking.public_status_text,'Shipped');
+   assert.equal(tracking.tracking_number,'TEST-HISTORICAL-01');
+   assert.equal(tracking.shipping_or_pickup_note,'Shipped on 2026-11-01');
+   assert.doesNotMatch(JSON.stringify(tracking),/Private production note/);
+   assert.deepEqual(await stock(),before);
+   assert.equal((await db.query('select count(*)::int count from financial_entries')).rows[0].count,beforeFinance);
+   await change({type:'pay',amount:10,fee:0,method:'Cash'},historical);
+   assert.equal(byId(historical).status,'closed');
+   assert.deepEqual(await stock(),before);
   });
   let supplyId;
   await t.test('supplies retain measurement units and record consumption and audits',async()=>{
