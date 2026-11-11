@@ -226,6 +226,12 @@ function editSchedule(id){
 $('scheduleKind').onchange=scheduleControls;$('scheduleForm').elements.frequency.onchange=scheduleControls;
 $('scheduleForm').elements.anchor.onchange=e=>{if(!$('scheduleForm').elements.editScheduleId.value)$('scheduleForm').elements.day.value=Number(e.target.value.slice(-2));};
 $('cancelSchedule').onclick=()=>resetSchedule();
+$('openRecurringBill').onclick=()=>{
+ resetSchedule(false);const f=$('scheduleForm');
+ const first=[today(),dashboard.draft().start,$('budgetMonth').value+'-01'].sort().at(-1);
+ f.elements.kind.value='expense';f.elements.frequency.value='monthly';f.elements.anchor.value=first;f.elements.day.value=Number(first.slice(-2));scheduleControls();
+ revealSection(f);f.scrollIntoView({behavior:'smooth'});f.elements.name.focus();
+};
 $('scheduleForm').onkeydown=e=>{if(e.key==='Escape'&&e.currentTarget.elements.editScheduleId.value){e.preventDefault();resetSchedule();}};
 $('scheduleForm').onsubmit=e=>{e.preventDefault();action(async()=>{
  const f=new FormData(e.target),next=structuredClone(dashboard.draft()),id=f.get('editScheduleId'),previous=id?next.schedules.find(s=>s.id===id):null;

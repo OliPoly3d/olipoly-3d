@@ -1,5 +1,5 @@
 import {spendingParts,transactionOwner} from './money-categories.mjs';
-import {date,addDays,balances,principalSnapshots,balanceUnknownAt} from './money-engine.mjs';
+import {date,addDays,balances,principalSnapshots,balanceUnknownAt,forecastEnd} from './money-engine.mjs';
 
 const validMoney=n=>Number.isSafeInteger(n)&&n>=0;
 const validApr=n=>n===null||n===undefined||Number.isFinite(n)&&n>=0&&n<=1000;
@@ -77,6 +77,24 @@ export function installPaymentPlan(model,id,{mode='fixed',amount=0,day,from,mont
  }
  a.credit={...a.credit,mode,dueDay:day,scheduleId:s.id,paymentStart:asOf,paymentAmount:amount};
  next.planning={...next.planning,cardPayoffs:(next.planning?.cardPayoffs||[]).map(p=>p.card===id?{...p,enabled:false}:p)};
+ return validateCredit(next);
+}
+export function hasCardPaymentSchedule(model,card){
+ return model.schedules.some(s=>s.to===card.id||s.id===card.credit?.scheduleId||s.id===card.credit?.referenceScheduleId);
+}
+export function addMonthlyCardMinimum(model,{card,from,amount,firstDue,asOf}){
+ const account=model.accounts.find(a=>a.id===card&&a.type==='card');
+ if(!account)throw Error('Choose a credit card.');
+ if(hasCardPaymentSchedule(model,account))throw Error('This card already has a payment schedule. Edit it in Debt planner.');
+ if(!model.accounts.some(a=>a.id===from&&a.type==='cash'&&a.entity===account.entity))
+  throw Error('Choose a cash account in the same owner view.');
+ date(firstDue);date(asOf);
+ if(firstDue<asOf||firstDue<model.start||firstDue>forecastEnd(model.start))
+  throw Error('Choose the first due date from today through the end of the forecast.');
+ if(!validMoney(amount)||amount<=0)throw Error('Enter a positive statement minimum.');
+ const next=installPaymentPlan(model,card,{amount,from,day:Number(firstDue.slice(-2)),asOf:firstDue});
+ const credit=next.accounts.find(a=>a.id===card).credit;
+ credit.minimum=amount;credit.minimumAsOf=asOf;
  return validateCredit(next);
 }
 export function scenarioSnapshot(model,asOf,overrides={}){

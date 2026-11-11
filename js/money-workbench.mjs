@@ -2,7 +2,7 @@ import {balanceUnknownAt,cents,balances,occurrences,forecastEnd,forecastMonths} 
 import {sectionPreview,revealSection} from './money-sections.mjs';
 import {monthBounds,shiftMonth,weeklyDates,addOneTimeBudget} from './money-budget.mjs';
 import {planningForecast} from './money-planning.mjs';
-import {installPaymentPlan,transferScenario,promoSummary,transferFeeAt} from './money-credit.mjs';
+import {installPaymentPlan,transferScenario,promoSummary,transferFeeAt,addMonthlyCardMinimum,hasCardPaymentSchedule} from './money-credit.mjs';
 import {resetBaseline,annualSummary,currentInventory,planningSnapshot} from './money-insights.mjs';
 import {setLoanDetails} from './money-loans.mjs';
 const $=id=>document.getElementById(id),money=n=>n==null?'Unknown':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
@@ -21,7 +21,39 @@ export function setupWorkbench({getDraft,updateDraft,today,message,action}){
  let scenario=null,baselineCandidate=null,weeklyKey='',scenarioEdits=new Map();
  const run=fn=>{try{fn();}catch(e){message(e.message);}};
  const endFor=m=>forecastEnd(m.start);
- function clear(){for(const id of ['creditSection','annualSection','openingSection'])sectionPreview(id,'');scenario=null;scenarioEdits.clear();baselineCandidate=null;weeklyKey='';for(const id of ['creditInventory','promoAlerts','annualMetrics','annualRows','annualCashChart','annualDebtChart','scenarioRows','scenarioMetrics','scenarioCashChart','scenarioDebtChart','openingRows','openingIncluded'])$(id).replaceChildren();for(const id of ['annualNote','scenarioNote','baselineReview','weeklyDatesNote'])$(id).textContent='';$('baselineReview').hidden=true;$('baselineApply').hidden=true;$('creditTerms').reset();$('scenarioForm').reset();$('transferForm').reset();$('creditSelect').replaceChildren();$('annualYear').replaceChildren();$('baselineDate').value='';$('creditTermsNote').textContent='';$('weeklyBudgetCategory').replaceChildren();$('oneTimeFunding').replaceChildren();$('scenarioForm').elements.from.replaceChildren();$('transferForm').elements.from.replaceChildren();$('transferForm').elements.to.replaceChildren();}
+ const paymentForm=$('monthlyCardPaymentForm'),paymentEntry=$('monthlyCardPaymentEntry'),paymentError=$('monthlyCardPaymentError');
+ function resetMonthlyCardPayment(){
+  paymentForm.reset();paymentEntry.open=false;paymentError.textContent='';paymentError.hidden=true;
+ }
+ function renderMonthlyCardPayment(m){
+  const entity=$('budgetEntity').value,{card,from,firstDue}=paymentForm.elements;
+  const cards=m.accounts.filter(a=>a.type==='card'&&a.entity===entity&&!hasCardPaymentSchedule(m,a));
+  const cash=m.accounts.filter(a=>a.type==='cash'&&a.entity===entity);
+  const oldCard=card.value;
+  options(card,[['','Choose a card'],...cards.map(a=>[a.id,a.name])],oldCard);
+  options(from,[['','Choose a cash account'],...cash.map(a=>[a.id,a.name])],from.value);
+  if(oldCard&&!card.value){paymentForm.elements.amount.value='';firstDue.value='';}
+  firstDue.min=today()<m.start?m.start:today();firstDue.max=endFor(m);
+  paymentForm.hidden=!cards.length||!cash.length;
+  $('monthlyCardPaymentEmpty').hidden=!paymentForm.hidden;
+ }
+ paymentForm.elements.card.onchange=()=>{
+  const minimum=getDraft()?.accounts.find(a=>a.id===paymentForm.elements.card.value)?.credit?.minimum;
+  paymentForm.elements.amount.value=minimum>0?(minimum/100).toFixed(2):'';
+  paymentError.hidden=true;
+ };
+ $('cancelMonthlyCardPayment').onclick=resetMonthlyCardPayment;
+ document.addEventListener('money-privacy-changed',e=>{if(e.detail.hidden)resetMonthlyCardPayment();});
+ paymentForm.onsubmit=e=>{
+  e.preventDefault();paymentError.hidden=true;
+  if(!getDraft()||$('app').dataset.debtHidden==='true')return;
+  try{
+   const f=new FormData(paymentForm),firstDue=f.get('firstDue');
+   updateDraft(m=>addMonthlyCardMinimum(m,{card:f.get('card'),from:f.get('from'),amount:cents(f.get('amount')),firstDue,asOf:today()}));
+   resetMonthlyCardPayment();message('Monthly card minimum added to the forecast preview. Save changes keeps it. No payment was sent.');
+  }catch(error){paymentError.textContent=error.message;paymentError.hidden=false;}
+ };
+ function clear(){resetMonthlyCardPayment();paymentForm.elements.card.replaceChildren();paymentForm.elements.from.replaceChildren();for(const id of ['creditSection','annualSection','openingSection'])sectionPreview(id,'');scenario=null;scenarioEdits.clear();baselineCandidate=null;weeklyKey='';for(const id of ['creditInventory','promoAlerts','annualMetrics','annualRows','annualCashChart','annualDebtChart','scenarioRows','scenarioMetrics','scenarioCashChart','scenarioDebtChart','openingRows','openingIncluded'])$(id).replaceChildren();for(const id of ['annualNote','scenarioNote','baselineReview','weeklyDatesNote'])$(id).textContent='';$('baselineReview').hidden=true;$('baselineApply').hidden=true;$('creditTerms').reset();$('scenarioForm').reset();$('transferForm').reset();$('creditSelect').replaceChildren();$('annualYear').replaceChildren();$('baselineDate').value='';$('creditTermsNote').textContent='';$('weeklyBudgetCategory').replaceChildren();$('oneTimeFunding').replaceChildren();$('scenarioForm').elements.from.replaceChildren();$('transferForm').elements.from.replaceChildren();$('transferForm').elements.to.replaceChildren();}
  function selectCredit(id){$('creditSelect').value=id;fillCredit();revealSection($('creditTerms'));$('creditSection').scrollIntoView({behavior:'smooth'});}
  function fillCredit(){
   const m=getDraft(),a=m?.accounts.find(a=>a.id===$('creditSelect').value);if(!a)return;
@@ -53,6 +85,7 @@ export function setupWorkbench({getDraft,updateDraft,today,message,action}){
   if(knownCards)lineChart($('annualDebtChart'),summary.rows,'cardDebt','Projected credit card debt');else $('annualDebtChart').replaceChildren(el('p','Enter missing card APRs to show a complete debt curve.','notice'));
  }
  function render(model){
+  renderMonthlyCardPayment(model);
   if(!model)return;if(scenario||scenarioEdits.size){for(const id of ['scenarioMetrics','scenarioCashChart','scenarioDebtChart'])$(id).replaceChildren();$('scenarioNote').textContent='The plan preview changed. Preview the sandbox again to refresh the comparison.';}baselineCandidate=null;$('baselineApply').hidden=true;$('baselineReview').hidden=true;scenario=null;scenarioEdits.clear();$('scenarioApply').disabled=true;$('scenarioApply').dataset.disabled='true';const inventory=currentInventory(model,today()),selection=$('creditSelect').value;
   $('creditInventory').replaceChildren();for(const a of inventory){const row=el('tr'),name=el('div');name.append(el('strong',a.name));if(a.credit?.payoffQuote!=null)name.append(el('small','Payoff quote '+money(a.credit.payoffQuote)+' · principal '+(balanceUnknownAt(a,today())?'unknown':'tracked separately')));cell(row,name);cell(row,a.entity);cell(row,money(a.balance));cell(row,money(a.credit?.minimum));cell(row,a.credit?.dueDay?'Day '+a.credit.dueDay:'Unknown');cell(row,a.credit?.purchaseApr==null?'Unknown':a.credit.purchaseApr+'%');const c=a.credit||{},terms=[];if(c.purchasePromoEnd)terms.push('Purchases '+c.purchasePromoApr+'% until '+c.purchasePromoEnd);if(c.promoEnd)terms.push('Balance '+(c.promoApr==null?'Unknown':c.promoApr+'%')+' until '+c.promoEnd);if(c.transferDeadline)terms.push('Transfer by '+c.transferDeadline+' · fee '+(c.transferFeePercent==null?'unknown':c.transferFeePercent+'%'));for(const change of c.transferFeeChanges||[])terms.push('Fee '+change.percent+'% from '+change.date);if(c.termsProvisional)terms.push('Provisional');if(c.termsNotes)terms.push(c.termsNotes);cell(row,terms.join(' · ')||'No promo entered');const edit=el('button','Terms / plan');edit.onclick=()=>selectCredit(a.id);cell(row,edit);$('creditInventory').append(row);}
   options($('creditSelect'),inventory.map(a=>[a.id,a.name]),selection);
