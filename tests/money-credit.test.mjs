@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {validate,balances,forecastEnd} from '../js/money-engine.mjs';
 import {budgetMonth,addOneTimeBudget,weeklyDates,validateBudgets} from '../js/money-budget.mjs';
 import {planningForecast,expectedRows} from '../js/money-planning.mjs';
-import {installPaymentPlan,scenarioSnapshot,transferScenario,promoSummary,validateCredit} from '../js/money-credit.mjs';
+import {installPaymentPlan,scenarioSnapshot,transferScenario,promoSummary,validateCredit,addMonthlyCardMinimum} from '../js/money-credit.mjs';
 import {resetBaseline,annualSummary,planningSnapshot} from '../js/money-insights.mjs';
 function plan(){return {version:1,start:'2026-10-01',accounts:[{id:'cash',name:'Cash',type:'cash',entity:'household',opening:100000,reserve:20000},{id:'card',name:'Card',type:'card',entity:'household',opening:-100000,reserve:0,credit:{purchaseApr:0,promoBalance:0,minimum:1000,dueDay:15}}],transactions:[],schedules:[],budgets:[]};}
 test('expected card bills at the final selectable month stay within the forecast boundary',()=>{
@@ -83,4 +83,19 @@ test('balance-transfer offers enforce processing deadlines and validate provisio
  p.start='2027-01-01';assert.throws(()=>transferScenario(p,'card','target',50000,0),/deadline/);
  p.accounts[2].credit.purchasePromoApr=null;assert.throws(()=>validateCredit(p),/purchase promotional APR/);
  p.accounts[2].credit.purchasePromoApr=0;p.accounts[2].credit.promoStart='2029-01-01';assert.throws(()=>validateCredit(p),/start/);
+});
+
+test('a new statement minimum begins on the selected date, preserves promo terms and stops drawing cash after payoff',()=>{
+ const m=plan(),card=m.accounts[1];card.opening=-4800;
+ Object.assign(card.credit,{purchasePromoApr:0,purchasePromoEnd:'2027-11-04'});
+ const values={card:'card',from:'cash',amount:3000,firstDue:'2026-10-31',asOf:'2026-10-29'};
+ const next=addMonthlyCardMinimum(m,values),result=planningForecast(next,'2026-12-31');
+ assert.deepEqual(result.planned.filter(t=>t.creditPayment).map(t=>[t.date,t.entries[1].amount]),[['2026-10-31',3000],['2026-11-30',1800],['2026-12-31',0]]);
+ assert.deepEqual(next.transactions,m.transactions);
+ assert.equal(m.schedules.length,0);
+ assert.equal(next.accounts[1].credit.minimum,3000);
+ assert.equal(next.accounts[1].credit.minimumAsOf,'2026-10-29');
+ assert.equal(next.accounts[1].credit.purchasePromoEnd,card.credit.purchasePromoEnd);
+ assert.throws(()=>addMonthlyCardMinimum(next,values),/already has a payment schedule/);
+ assert.throws(()=>addMonthlyCardMinimum(m,{...values,firstDue:'2026-10-28'}),/first due date/);
 });

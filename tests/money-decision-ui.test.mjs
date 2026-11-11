@@ -1174,3 +1174,33 @@ test('the monthly YOY row opens a move with a shortfall warning and preserves th
   assert.deepEqual(p.model.budgets.find(b=>b.seasonal).yoyMoves,{'2026-10':-7500});
  }finally{p.close();}
 });
+
+test('Month bills can open the recurring bill editor or preview a new monthly card minimum without sending a payment',{skip},async()=>{
+ const p=await page();
+ try{
+  const {$,change,submit}=p;
+  p.dom.window.document.querySelector('[data-money-view-button="month"]').click();
+  $('billsSection').open=true;
+  $('openRecurringBill').click();
+  assert.equal($('scheduleForm').elements.kind.value,'expense');
+  assert.equal($('scheduleForm').elements.frequency.value,'monthly');
+  assert.equal($('scheduleForm').closest('details').open,true);
+  p.dom.window.document.querySelector('[data-money-view-button="month"]').click();
+  $('monthlyCardPaymentEntry').open=true;
+  const f=$('monthlyCardPaymentForm');
+  change(f.elements.card,'card');change(f.elements.from,'cash');
+  f.elements.amount.value='25.00';f.elements.firstDue.value='2026-10-30';
+  await submit('monthlyCardPaymentForm');
+  assert.equal(p.revision,0);
+  assert.equal($('monthlyCardPaymentEntry').open,false);
+  assert.match($('billRows').textContent,/Daily card payment/);
+  assert.equal([...$('billRows').rows].find(r=>r.textContent.includes('Daily card payment')).querySelector('input[type=number]').value,'25.00');
+  $('savePlan').click();await tick();
+  assert.equal(p.revision,1);
+  assert.deepEqual(p.model.transactions,[]);
+  const schedule=p.model.schedules.find(s=>s.to==='card');
+  assert.deepEqual([schedule.anchor,schedule.day,schedule.amount],['2026-10-30',30,-2500]);
+  assert.equal(p.model.accounts.find(a=>a.id==='card').credit.minimum,2500);
+  assert.equal([...f.elements.card.options].some(o=>o.value==='card'),false);
+ }finally{p.close();}
+});

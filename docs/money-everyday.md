@@ -49,6 +49,8 @@ Coming up combines the next 14 days of expected income, bills and transfers with
 
 In **This month → Category budgets & other spending**, the **YOY extras total** counts once in the category table. Expand **YOY item breakdown** to edit individual items and decide what repeats in future years. Use **Move YOY budget** to reassign unspent and uncommitted money to another category funded by the same account. Before previewing, Money shows the YOY budget that will remain and any gap if all the listed items happen. Moving money does not change the items or their repeat settings, and only affects the month or range you select.
 
+From **This month → Recurring bills & payments**, use **Add recurring bill** to open the recurring schedule editor. Use **Plan a monthly card minimum** for a card without an existing payment schedule. Enter the latest minimum and first due date, choose the cash account, and select **Add to preview → Save changes**. This is a fixed forecast amount capped at the card's balance. It does not send a payment or set up autopay. Adjust an existing plan in **Debt planner** when your minimum changes.
+
 If an expected bill or deposit is still upcoming but its date is wrong, choose **Reschedule** in Today or the forecast review, or **Move expected date** in the transaction editor. Choose the new date, select **Move in preview**, then **Save changes**. This moves only that occurrence and leaves the account balance and transaction history unchanged.
 
 The expandable Needs review area consolidates unresolved entries and balance/input checks. A possible cash-floor shortfall remains a separate visible warning. Detailed reconciliation stays under Plan ahead, with direct links from the home checklist and watched-account buttons.
