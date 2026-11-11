@@ -56,7 +56,7 @@ test('owner reviews a PO and records the acknowledgment from the quote screen', 
   }
 });
 
-test('the invoice screen issues an immutable printable copy and records owner sending', {
+test('the invoice screen issues an immutable downloadable copy and records owner sending', {
   skip: !process.env.OPS_JSDOM_MODULE,
 }, async () => {
   const {JSDOM} = await import(pathToFileURL(process.env.OPS_JSDOM_MODULE));
@@ -96,10 +96,19 @@ test('the invoice screen issues an immutable printable copy and records owner se
     const paymentPage=V.render(V.project(saved()),'pay');
     assert.match(paymentPage,/I-0000007/);
     assert.doesNotMatch(paymentPage,/ap@example\.test/);
-    let printed=false;
-    window.print=()=>{printed=window.document.body.dataset.printView==='invoice';};
-    window.document.querySelector('[data-action="print-invoice"]').click();
-    assert.equal(printed,true);
+    let download;
+    window.OliPolyInvoicePdf={create(value) {
+      assert.equal(value.number,'I-0000007');
+      return new window.Blob(['test'],{type:'application/pdf'});
+    }};
+    window.URL.createObjectURL=blob=>{
+      assert.equal(blob.type,'application/pdf');
+      return 'blob:https://example.test/invoice';
+    };
+    window.HTMLAnchorElement.prototype.click=function() { download={href:this.href,filename:this.download}; };
+    window.document.querySelector('[data-action="download-invoice"]').click();
+    assert.deepEqual(download,{href:'blob:https://example.test/invoice',filename:'I-0000007.pdf'});
+    assert.equal(window.document.querySelector('#message a').textContent,'Download again');
     const record=window.document.querySelector('[data-form="record_invoice_sent"]');
     record.elements.confirmSent.checked=true;
     await submit(record);

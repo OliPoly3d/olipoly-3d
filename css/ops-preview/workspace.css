@@ -63,9 +63,3 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
-
-@media print {
-  body[data-print-view="invoice"] .panel.receipt { display:none!important }
-  body[data-print-view="invoice"] .panel.invoice { display:block!important }
-  body[data-print-view="invoice"] .panel.invoice > .two-col { display:block }
-}
