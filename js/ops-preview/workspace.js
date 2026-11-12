@@ -228,6 +228,10 @@
       ['designFee', 'taxRate', 'laborRate', 'estimatedLabor'].forEach(name => { draft[name] = Number(data.get(name)); });
       draft.taxIncluded = data.get('taxIncluded') === 'yes';
       draft.taxExempt = data.has('taxExempt');
+      if (Number(data.get('depositAmount')) > 0 && draft.preset === 'individual') {
+        draft.depositTerms = {amount:Number(data.get('depositAmount')),due:String(data.get('depositDue') || ''),
+          refunds:String(data.get('depositRefunds') || ''),option:String(data.get('depositOption') || '')};
+      } else delete draft.depositTerms;
     } else {
       const data = new FormData(form);
       draft.productionPrepHours = Number(data.get('prepHours'));
@@ -263,6 +267,11 @@
       ${field('Sample tax rate (%)', 'taxRate', order.taxRate, 'number', 'min="0" max="20" step=".01" required')}
       <label class="check"><input type="checkbox" name="taxExempt" ${order.taxExempt ? 'checked' : ''}>Sample exemption scenario</label>
       <p class="muted full">Use the pickup address or expected receiving address. Look up the county and rate in Ohio’s The Finder and enter them here. This test workspace does not verify the address or rate automatically.</p></div>
+      <details ${order.depositTerms ? 'open' : ''}><summary>Optional deposit · individual orders</summary><div class="form-grid">
+      ${field('Deposit amount','depositAmount',order.depositTerms?.amount || '', 'number','min="0" step=".01"')}
+      ${field('When the deposit is due','depositDue',order.depositTerms?.due || '', 'text','maxlength="120"')}
+      ${textArea('Deposit refund conditions','depositRefunds',order.depositTerms?.refunds || '', 'maxlength="500"')}
+      ${field('Binding option period (if any)','depositOption',order.depositTerms?.option || '', 'text','maxlength="120"')}</div></details>
       <h3>Items & manufacturing estimates</h3><p class="muted">Quantities, grams and hours below are per piece. Add body and support filament separately.</p>${itemEditor(order)}
       <button type="button" data-action="add-item">+ Add another item</button><div class="form-grid" style="margin-top:24px">${field('Fixed design / preparation charge', 'designFee', order.designFee, 'number', 'min="0" step=".01" required')}${field('Estimated total hands-on hours', 'estimatedLabor', order.estimatedLabor, 'number', 'min="0" step=".01" required')}${field('Sample labor cost per hour', 'laborRate', order.laborRate, 'number', 'min="0" step=".01" required')}</div>
       <div style="margin-top:18px">${textArea('Customer-facing scope / notes', 'customerNotes', order.customerNotes, 'maxlength="3000"')}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit">Save quote draft</button><small id="draft-state">Saved quote draft</small></div></form>`;
@@ -339,6 +348,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     return {
       number:identity.primary,
       termsDocument,
+      depositTerms:M.depositTerms(order),
       displayNumber: [identity.primary, identity.legacyQuote, offer ? `Rev ${offer.revision}` : 'Draft'].filter(Boolean).join(' · '),
       revision:offer?.revision,
       sentAt:offer?.sentAt,
@@ -419,10 +429,15 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     return `<section class="customer-terms"><h3>${escape(termsDocument.title)}</h3>
       ${termsDocument.sections.map(([label,body])=>`<strong>${escape(label)}</strong><p class="request-notes">${escape(body)}</p>`).join('')}</section>`;
   }
+  function depositDetails(deposit) {
+    return deposit ? `${row('Deposit amount',format(deposit.amount))}${row('Deposit due',deposit.due)}
+      ${row('Deposit refund conditions',deposit.refunds)}${deposit.option ? row('Binding option period',deposit.option) : ''}` : '';
+  }
   function quoteDocument(order) {
     const doc = quoteDetails(order);
     const t = doc.totals;
     return `<section class="card quote-document"><div class="eyebrow">OliPoly 3D LLC · test quotation</div><div class="section-head"><h1>Quotation</h1><strong>${escape(doc.displayNumber)}</strong></div><p>990 Aurora Hudson Rd · Aurora, OH 44202<br>olipoly3d.com</p><h3>Prepared for ${escape(doc.customer)}</h3><p>${escape(doc.title)}</p><table class="receipt-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${window.OliPolyLineItems.tableRows(t.grossLineItems || t.lineItems,format)}</tbody></table><div style="margin-top:18px">${row('Before tax',format(t.beforeTax))}${row('Sample sales tax',format(t.tax))}${t.roundingAdjustment?row('Rounding adjustment',format(t.roundingAdjustment)):''}${row('Quoted total',format(t.total))}</div><p style="margin-top:20px"><strong>Payment terms:</strong> ${escape(doc.terms)}<br><strong>Turnaround:</strong> ${escape(doc.turnaround || 'To be agreed')}<br><strong>Valid through:</strong> ${escape(doc.validUntil || 'To be agreed')}</p>${doc.customerNotes?`<p class="request-notes">${escape(doc.customerNotes)}</p>`:''}${doc.fulfillmentNote ? `<p class="request-notes">${escape(doc.fulfillmentNote)}</p>` : ''}<p class="muted">Fictional test quote. ${order.taxIncluded?'Sample tax is included in displayed item amounts.':'Item amounts are before sample tax.'}</p>
+      ${depositDetails(doc.depositTerms)}
       ${doc.termsDocument ? `<p><strong>Approval</strong> ${escape(doc.acceptance)}</p>${termsPreview(doc.termsDocument)}` : ''}</section>`;
   }
   function quotePanel(order) {
@@ -615,12 +630,15 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
   }
   function moneyPanel(order) {
     const cost = M.costs(state, order);
+    const deposit = M.depositTerms(order);
+    const depositDue = order.snapshot && !order.payments.length && deposit;
     const baseline = order.estimateBaseline ?? cost.estimated;
     const marginChange = cost.revenue > 0 ? ((baseline - cost.actual) / cost.revenue * 100).toFixed(1) : '0.0';
     return `<section class="card"><h2>Payment & balance</h2>${row('Agreed total', format(M.currentTotals(order).total))}${row('Payments recorded', format(M.paid(order)))}${row('Remaining balance', format(M.balance(order)))}
+      ${depositDue ? depositDetails(deposit) : ''}
       ${order.preset==='business' && order.fulfilled ? `<p><a class="button" href="${orderLink(order,'invoice')}">${order.invoice?'View issued invoice':'Review & issue invoice'}</a></p>` : ''}
-      ${order.snapshot && !order.shippingDraft && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', M.balance(order), 'number', `min=".01" step=".01" required ${cloud ? 'readonly' : ''}`)}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
-      ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'One combined full payment is supported in this connected pilot. It posts income and any fee to Finance in the test project. Job cost comparisons remain in Production until a later Finance reconciliation step.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
+      ${order.snapshot && !order.shippingDraft && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', depositDue ? deposit.amount : M.balance(order), 'number', `min=".01" max="${M.balance(order)}" step=".01" required`)}${depositDue ? select('Payment type','paymentKind',[['deposit','Deposit'],['payment','Full payment']], 'deposit') : ''}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
+      ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'Each payment reduces the order balance. Finance records processing fees as they occur and posts the sale once the order is paid in full.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
       <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${order.historicalCompletion ? `${row('Recorded job cost',format(cost.actual))}${row('Profit after recorded costs',format(cost.actualProfit))}` : M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.historicalCompletion && order.runs.some(run => run.hours == null || run.usage.some(usage => usage.materialCost == null)) ? 'Recorded cost is incomplete because historical printer time or filament cost is unknown.' : order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
   function invoicePanel(order) {
@@ -704,7 +722,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
           ${row('Sales tax',format(t.tax))}${Math.round((t.roundingAdjustment || 0) * 100) ? row('Discount or adjustment',format(t.roundingAdjustment)) : ''}
           ${row('Order total',format(t.total))}${row('Previous payments',format(receipt.priorPaid))}
           ${row('Payment received',format(receipt.amount))}${row('Remaining balance',format(receipt.balance))}
-          <p class="muted">${escape(receipt.note)}</p>${documentControls(order,'receipt',index)}</section>`;
+          ${depositDetails(receipt.depositTerms)}<p class="muted">${escape(receipt.note)}</p>${documentControls(order,'receipt',index)}</section>`;
       }).join('')}</div>`;
     }
     const t = M.currentTotals(order);

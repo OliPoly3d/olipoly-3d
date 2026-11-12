@@ -187,3 +187,24 @@ test('consumer receipts reflect each recorded payment and keep the original amou
   order.fulfillmentPlan = {totals:{...order.snapshot,total:999}};
   assert.equal(M.paymentReceipt(order,0).totals.total,total);
 });
+
+test('consumer deposit terms are visible before acceptance and the pay screen shows the amount due', () => {
+  const V = require('../js/ops-preview/customer-view.js');
+  const draft = M.seed();
+  const order = draft.orders[0];
+  order.items = [{...order.items[0],quantity:1,unit_price:100}];
+  order.designFee = 0;
+  order.depositTerms = {amount:25,due:'On approval',refunds:'Refundable before work begins',option:''};
+  assert.throws(() => apply(draft,{type:'approve',method:'Email'}), /Share the quote/);
+  const shared = M.quoteCommand(draft,id,{type:'send_quote'});
+  assert.match(V.render(V.project(shared.orders[0]),'quote'),/Refundable before work begins/);
+  assert.match(V.render(V.project(shared.orders[0]),'quote'),/the deposit terms/);
+  let state = apply(shared,{type:'approve',method:'Email'});
+  assert.equal(V.project(state.orders[0]).amountDue,25);
+  assert.match(V.render(V.project(state.orders[0]),'pay'),/Copy amount · \$25\.00/);
+  assert.throws(() => apply(state,{type:'pay',amount:25,fee:0,method:'Cash'}), /approved deposit first/);
+  state = apply(state,{type:'pay',amount:25,fee:0,method:'Cash',paymentKind:'deposit'});
+  assert.equal(V.project(state.orders[0]).amountDue,75);
+  assert.match(V.render(V.project(state.orders[0]),'pay'),/Copy amount · \$75\.00/);
+  assert.equal(M.paymentReceipt(state.orders[0],0).depositTerms.due,'On approval');
+});

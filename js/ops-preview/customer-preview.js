@@ -51,13 +51,13 @@
       const v=order&&V.project(order);if(!v)return;
       if(b.dataset.action==='print'){window.print();return;}
       if(b.dataset.action==='copy-amount'||b.dataset.action==='copy-reference'){
-        const value=b.dataset.action==='copy-amount'?v.balance.toFixed(2):v.reference;
+        const value=b.dataset.action==='copy-amount'?v.amountDue.toFixed(2):v.reference;
         await copyText(value);notice(`${b.dataset.action==='copy-amount'?'Amount':'Order reference'} copied: ${value}`);return;
       }
       if(b.dataset.method&&v.accepted&&v.balance>0&&!v.business){
         const method={card:'Card / Apple Pay',paypal:'PayPal',venmo:'Venmo'}[b.dataset.method];
         if(!method)return;
-        document.getElementById('method-instructions').innerHTML=`<div class="customer-status"><strong>${E(method)}</strong><br>Enter ${V.money(v.balance)} and reference ${E(v.reference)} when the provider allows it. This test preview does not open a provider or collect payment.</div>`;
+        document.getElementById('method-instructions').innerHTML=`<div class="customer-status"><strong>${E(method)}</strong><br>Enter ${V.money(v.amountDue)} and reference ${E(v.reference)} when the provider allows it. This test preview does not open a provider or collect payment.</div>`;
       }
     }catch(error){notice(error.message,true);}
   });

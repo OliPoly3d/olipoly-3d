@@ -242,6 +242,8 @@
       ],
       totalLabel:'Quoted total', total:totals.total, appendix:quote.termsDocument,
       afterTotal:[['Payment terms', quote.terms], ['Turnaround', quote.turnaround],
+        ...(quote.depositTerms ? [['Deposit',money.format(quote.depositTerms.amount)],['Deposit due',quote.depositTerms.due],
+          ['Deposit refund conditions',quote.depositTerms.refunds],['Binding option period',quote.depositTerms.option]] : []),
         ['Quote notes', quote.customerNotes], ['Fulfillment', quote.fulfillmentNote], ['Acceptance', quote.acceptance]]
     };
   }
@@ -262,7 +264,10 @@
         ['Order total',totals.total],['Previous payments',receipt.priorPaid],['Remaining balance',receipt.balance]
       ],
       totalLabel:'Payment received',total:receipt.amount,
-      afterTotal:[['Order questions',receipt.note]]
+      afterTotal:[
+        ...(receipt.depositTerms ? [['Deposit refund conditions',receipt.depositTerms.refunds],['Binding option period',receipt.depositTerms.option]] : []),
+        ['Order questions',receipt.note]
+      ]
     };
   }
 
