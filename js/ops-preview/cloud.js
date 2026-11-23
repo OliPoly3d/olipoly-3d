@@ -62,7 +62,7 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false, range) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry','ops_preview_settings_commit','ops_preview_tax_load','ops_preview_tax_commit'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry','ops_preview_settings_commit','ops_preview_tax_load','ops_preview_tax_commit','ops_preview_import_stage','ops_preview_import_list','ops_preview_import_load'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token(), range);
     }
@@ -222,6 +222,8 @@
       return taxRetry();
     }
     return {auth, save, retry, pending, settingsSave,
+      importList:()=>rpc('ops_preview_import_list'),importLoad:batch=>rpc('ops_preview_import_load',{p_batch_key:batch}),
+      importStage:(manifest,rows)=>rpc('ops_preview_import_stage',{p_manifest_text:manifest,p_rows:rows}),
       taxLoad:()=>rpc('ops_preview_tax_load'),taxSave,taxRetry,taxPending,
       financeLoad, financeCreate,
       financeCorrect, financeCorrectionPending, financeCorrectionRetry,
