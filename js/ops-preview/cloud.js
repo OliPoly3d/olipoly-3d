@@ -21,11 +21,12 @@
       if (value) storage.setItem(sessionKey, JSON.stringify(value));
       else storage.removeItem(sessionKey);
     }
-    async function request(path, body, token) {
+    async function request(path, body, token, range) {
       let response;
       try {
         response = await fetch(config.url + path, {method: 'POST', headers: {
-          apikey: config.publishableKey, 'Content-Type': 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {})
+          apikey: config.publishableKey, 'Content-Type': 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {}),
+          ...(range ? {Range: range, 'Range-Unit': 'items'} : {})
         }, body: JSON.stringify(body)});
       } catch {
         const error = new Error('Connection interrupted. A saved command may already have completed. Retry the pending command before continuing.');
@@ -60,10 +61,10 @@
       if (result.access_token) storeSession(result);
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
-    async function rpc(name, params = {}, publicCall = false) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit'];
+    async function rpc(name, params = {}, publicCall = false, range) {
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
-      return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token());
+      return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token(), range);
     }
     const warningPrefix = 'ops_preview_low_stock:';
     async function inventoryWarnings() {
@@ -150,7 +151,35 @@
         params: {p_action: action, p_expected_revision: revision, p_command_id: root.crypto.randomUUID()}}));
       return retry();
     }
-    return {auth, save, retry, pending, signedIn: () => !!session?.access_token,
+    async function financeCreate(entry) {
+      if (pending()) throw new Error('Resolve the pending workspace save before adding an expense.');
+      if (financePending()) throw new Error('Review the previous interrupted Finance save before continuing.');
+      try { return await rpc('create_manual_financial_entry', {p_entry: entry}); }
+      catch (error) {
+        if (error.uncertain) storage.setItem(financePendingKey(), 'true');
+        throw error;
+      }
+    }
+    const financePendingKey = () => `olipoly.ops.test.${TEST_REF}.finance-review.${session?.user?.id || 'signed-out'}`;
+    const financePending = () => storage.getItem(financePendingKey()) === 'true';
+    async function financeLoad() {
+      const entries = new Map();
+      let offset = 0, page;
+      do {
+        page = await rpc('get_effective_financial_entries', {}, false, `${offset}-${offset + 499}`);
+        if (!Array.isArray(page)) throw new Error('Could not read financial records. Refresh and try again.');
+        page.forEach(row => {
+          const entry = typeof row === 'string' ? JSON.parse(row) : row;
+          entries.set(entry.id, entry);
+        });
+        offset += page.length;
+      } while (page.length === 500);
+      return [...entries.values()];
+    }
+    return {auth, save, retry, pending,
+      financeLoad, financeCreate,
+      financePending, financeReviewed: () => storage.removeItem(financePendingKey()),
+      signedIn: () => !!session?.access_token,
       initialize: () => rpc('ops_preview_initialize'), load: () => rpc('ops_preview_load'),
       historyLookup: reference => rpc('ops_preview_history_lookup', {p_reference: reference}),
       historyWithDocuments: reference => rpc('ops_preview_history_with_documents', {p_reference: reference}),
