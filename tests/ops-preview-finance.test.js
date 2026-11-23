@@ -59,7 +59,9 @@ test('Finance form saves a purchase and mileage through its normal submit contro
   const w = dom.window, rows = [], calls = [];
   w.eval(fs.readFileSync(path.join(root,'js/order-line-items.js'),'utf8'));
   w.eval(fs.readFileSync(path.join(root,'js/ops-preview/finance-model.js'),'utf8'));
+  w.eval(fs.readFileSync(path.join(root,'js/ops-preview/finance-reports.js'),'utf8'));
   w.OliPolyOpsCloud = {create:()=>({signedIn:()=>true,financePending:()=>false,
+    load:async()=>({orders:[]}),
     financeLoad:async()=>rows,financeCreate:async entry=>{calls.push(entry);rows.push({...entry,id:'entry-'+calls.length});return {entry_id:'entry-'+calls.length};}})};
   w.eval(fs.readFileSync(path.join(root,'js/ops-preview/finance.js'),'utf8'));
   const flush = () => new Promise(resolve=>setImmediate(resolve));

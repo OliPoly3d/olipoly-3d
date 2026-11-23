@@ -39,8 +39,7 @@
     if (!mileage) Object.assign(entry,{trip_purpose:'',trip_from:'',trip_to:''});
     return entry;
   }
-  function csv(rows) {
-    const fields = ['entry_date','type','category','title','amount','original_amount','business_use_percent','vendor_name','payment_method','receipt_link','miles_driven','mileage_rate','trip_purpose','trip_from','trip_to','round_trip','order_number','shipping_charged','sales_tax_collected','sales_county','notes','original_entry_id','effective_entry_id'];
+  function csv(rows, fields = ['entry_date','type','category','title','amount','original_amount','business_use_percent','vendor_name','payment_method','receipt_link','miles_driven','mileage_rate','trip_purpose','trip_from','trip_to','round_trip','order_number','shipping_charged','sales_tax_collected','sales_county','notes','original_entry_id','effective_entry_id']) {
     const cell = value => {
       let text = String(value ?? '');
       if (typeof value !== 'number' && /^[\s]*[=+@-]/.test(text)) text = "'" + text;
