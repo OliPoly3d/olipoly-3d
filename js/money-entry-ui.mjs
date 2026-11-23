@@ -45,6 +45,7 @@ export function setupEntry({
     f.elements.entryTiming.closest('label'),
     $('entryAccountChoices').parentElement,
     $('transactionToLabel'),
+    $('entryCardChoices'),
     $('transactionCategoryLabel'),
     f.elements.description.closest('label'),
     f.querySelector('.entry-meta'),
@@ -108,14 +109,26 @@ export function setupEntry({
       refund = kind === 'refund',
       expense = kind === 'expense' || refund,
       editing = !!f.elements.editTransactionId.value;
-    $('transactionDialogTitle').textContent = editing ? 'Edit transaction' : 'Transaction';
+    if (!transfer) f.elements.cardPayment.value = '';
+    const cardPayment = f.elements.cardPayment.value === 'true',
+      m = getDraft(),
+      owner = $('budgetEntity').value;
+    for (const [select, type] of [[f.elements.account,'cash'],[f.elements.to,'card']]) {
+      const wanted = m?.accounts.filter(a => !cardPayment || a.type===type && a.entity===owner) || [];
+      const items = [...(cardPayment ? [['',type==='cash'?'Choose the bank account paying':'Choose the card to pay']] : []),...wanted.map(a=>[a.id,a.name])];
+      if (JSON.stringify([...select.options].map(o=>[o.value,o.textContent])) !== JSON.stringify(items))
+        options(select,items);
+    }
+    $('transactionDialogTitle').textContent = cardPayment ? (editing ? 'Edit card payment' : 'Card payment') : editing ? 'Edit transaction' : 'Transaction';
     $('transactionCategoryLabel').hidden = !expense;
     f.elements.category.disabled = !expense;
     $('transactionToLabel').hidden = !transfer;
     f.elements.to.disabled = !transfer;
     f.elements.to.required = transfer;
-    $('transactionAccountText').textContent =
+    $('transactionAccountText').textContent = cardPayment ? 'Pay from bank account' :
       refund || kind === 'income' ? 'Received into' : kind === 'expense' ? 'Paid from' : 'From account';
+    $('transactionToText').textContent=cardPayment?'Card to pay':'Transfer destination';
+    $('entryCardChoices').hidden=!cardPayment;
     const showAccountHelp = editing && kind === 'expense';
     $('editAccountHelp').hidden = !showAccountHelp;
     if (showAccountHelp) f.elements.account.setAttribute('aria-describedby', 'editAccountHelp');
@@ -142,8 +155,9 @@ export function setupEntry({
     if (!expense) f.elements.splitPurchase.checked = false;
     updateSplitTotal();
     const from=getDraft()?.accounts.find(a=>a.id===f.elements.account.value),to=getDraft()?.accounts.find(a=>a.id===f.elements.to.value),g=$('paymentGuide');
-    g.hidden=!(transfer&&from?.type==='cash'&&to?.type==='card');
-    g.textContent=g.hidden?'':from.name+' → '+to.name+'. Cash decreases; card debt decreases by the same amount. Added category spending: $0.00. Original purchase categories stay intact.';
+    g.hidden=!(cardPayment || transfer&&from?.type==='cash'&&to?.type==='card');
+    g.textContent=g.hidden?'':cardPayment&&!to?'Choose the card under Card to pay. This is a transfer from your bank. Added category spending: $0.00.':
+      from&&to?from.name+' → '+to.name+'. Cash decreases; card debt decreases by the same amount. Added category spending: $0.00. Original purchase categories stay intact.':'Choose the bank account paying and the card to pay.';
     g.toggleAttribute('data-debt-private',!g.hidden);
     renderQuickChoices();
   }
@@ -175,7 +189,8 @@ export function setupEntry({
     const selected = m.accounts.find((a) => a.id === f.elements.account.value),
       entity = selected?.entity || $('budgetEntity').value,
       watch = defaultWatchedAccounts(m, entity).map((id) => m.accounts.find((a) => a.id === id)),
-      favorites = [
+      cardPayment = f.elements.cardPayment.value === 'true',
+      favorites = cardPayment ? m.accounts.filter(a=>a.type==='cash'&&a.entity===$('budgetEntity').value) : [
         ...watch.filter((a) => a.type === 'card').slice(0, 2),
         ...watch.filter((a) => a.type === 'cash').slice(0, 1),
         selected,
@@ -185,6 +200,10 @@ export function setupEntry({
       $('entryAccountChoices'),
       f.elements.account,
       favorites.filter((a) => !seen.has(a.id) && seen.add(a.id)).map((a) => [a.id, a.name]),
+    );
+    if(cardPayment)choiceButtons(
+      $('entryCardChoices'),f.elements.to,
+      m.accounts.filter(a=>a.type==='card'&&a.entity===$('budgetEntity').value).map(a=>[a.id,a.name])
     );
     const categories = m.budgets
         .filter(
@@ -312,6 +331,11 @@ export function setupEntry({
   function fields() {
     const kind = f.elements.kind.value,
       extra = {};
+    if(f.elements.cardPayment.value==='true'){
+      const m=getDraft(),from=m.accounts.find(a=>a.id===f.elements.account.value),to=m.accounts.find(a=>a.id===f.elements.to.value);
+      if(kind!=='transfer'||from?.type!=='cash'||to?.type!=='card'||from.entity!==to.entity)
+        throw Error('For a card payment, choose a bank account under Pay from and a card under Card to pay.');
+    }
     if (kind === 'refund') {
       if (!f.elements.refundOf.value) throw Error('Choose the purchase this receipt repays.');
       extra.refundOf = f.elements.refundOf.value;
@@ -328,6 +352,9 @@ export function setupEntry({
     return extra;
   }
   function load(t) {
+    const m=getDraft(),source=t.entries.find(e=>e.amount<0),target=t.entries.find(e=>e.amount>0),
+      from=m.accounts.find(a=>a.id===source?.account),to=m.accounts.find(a=>a.id===target?.account);
+    f.elements.cardPayment.value=String(t.kind==='transfer'&&from?.type==='cash'&&to?.type==='card'&&from.entity===to.entity&&from.entity===$('budgetEntity').value);
     render(getDraft());
     status();
     $('refreshTransactionEntry').hidden = true;
@@ -344,17 +371,20 @@ export function setupEntry({
     if (t.allocations) f.elements.category.value = t.category;
     show();
   }
-  function quick(kind, { account, to, description, refundOf } = {}) {
+  function quick(kind, { account, to, description, refundOf, cardPayment=false } = {}) {
     const m = getDraft(),
       pref = preference(),
       entity = $('budgetEntity').value;
     f.reset();
+    for(const select of [f.elements.account,f.elements.to])
+      options(select,m.accounts.map(a=>[a.id,a.name]));
     $('splitRows').replaceChildren();
     f.elements.editTransactionId.value = '';
     f.elements.scheduleKey.value = '';
     f.elements.date.value = today();
     f.elements.entryTiming.value = 'actual';
     f.elements.kind.value = kind;
+    f.elements.cardPayment.value = String(cardPayment);
     f.elements.description.value = description || '';
     const wanted = account || pref[kind]?.account;
     if (wanted && m.accounts.some((a) => a.id === wanted && a.entity === entity))
@@ -363,6 +393,7 @@ export function setupEntry({
       f.elements.account.value =
         m.accounts.find((a) => a.type === 'cash' && a.entity === entity)?.id || '';
     if (to) f.elements.to.value = to;
+    else if(cardPayment) f.elements.to.value='';
     const category = pref[kind]?.category;
     if (category) f.elements.category.value = category;
     f.elements.status.value = 'cleared';
@@ -388,8 +419,8 @@ export function setupEntry({
       entity = $('budgetEntity').value;
     quick('transfer', {
       account: m.accounts.find((a) => a.type === 'cash' && a.entity === entity)?.id,
-      to: m.accounts.find((a) => a.type === 'card' && a.entity === entity)?.id,
       description: 'Card payment',
+      cardPayment:true,
     });
   };
   $('quickWallet').onclick = () => {
@@ -629,7 +660,7 @@ export function setupEntry({
     $('paymentGuide').textContent='';$('paymentGuide').hidden=true;
     lastLedger = '';
     $('ledgerRows').replaceChildren();
-    for (const id of ['entryAccountChoices', 'entryCategoryChoices', 'entryContextRows']) {
+    for (const id of ['entryAccountChoices', 'entryCardChoices', 'entryCategoryChoices', 'entryContextRows']) {
       $(id).replaceChildren();
       delete $(id).dataset.choices;
     }
