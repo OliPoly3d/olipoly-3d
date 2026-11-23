@@ -144,3 +144,67 @@ test('all-in shipping and discount cent boundaries retain the commercial breakdo
     assert.equal(t.lineItems.reduce((sum,row)=>sum+row.line_total,0),t.preDiscount);
   }
 });
+
+test('consumer terms follow the shared quote revision and exclude business and older quotes', () => {
+  const V = require('../js/ops-preview/customer-view.js');
+  const draft = M.seed();
+  const shared = M.quoteCommand(draft,id,{type:'send_quote',via:'Email'});
+  const order = shared.orders[0];
+  assert.equal(order.quoteOffer.consumerTermsVersion,'consumer-v1');
+  assert.match(V.render(V.project(order),'quote'),/Cancellations and returns/);
+  assert.match(V.render(V.project(order),'quote'),/and the Consumer Custom Order Terms above/);
+  const approved = apply(shared,{type:'approve',method:'Email / text'});
+  assert.equal(approved.orders[0].quoteOffer.consumerTermsVersion,'consumer-v1');
+  const older = M.copy(order);
+  delete older.quoteOffer.consumerTermsVersion;
+  assert.doesNotMatch(V.render(V.project(older),'quote'),/Consumer Custom Order Terms/);
+  draft.orders[0].preset='business';
+  const business = M.quoteCommand(draft,id,{type:'send_quote'}).orders[0];
+  assert.equal(business.quoteOffer.consumerTermsVersion,undefined);
+  assert.equal(business.quoteOffer.businessTermsVersion,'business-v1');
+  assert.match(V.render(V.project(business),'quote'),/Manufacturing &amp; Sales Terms/);
+  assert.doesNotMatch(V.render(V.project(business),'quote'),/Consumer Custom Order Terms/);
+  delete business.quoteOffer.businessTermsVersion;
+  assert.equal(M.quoteTermsDocument(business,true),null);
+});
+
+test('consumer receipts reflect each recorded payment and keep the original amounts', () => {
+  let state = apply(M.seed(),{type:'approve',method:'Email / text'});
+  assert.equal(M.paymentReceipt(state.orders[0],0),null);
+  const total = M.balance(state.orders[0]);
+  state = apply(state,{type:'pay',amount:20,fee:1,method:'Stripe',reference:'internal-reference'});
+  state = apply(state,{type:'pay',amount:total-20,fee:0,method:'Cash'});
+  const order = state.orders[0];
+  const first = M.paymentReceipt(order,0);
+  const second = M.paymentReceipt(order,1);
+  assert.equal(first.amount,20);
+  assert.equal(first.balance,total-20);
+  assert.equal(first.status,'Partial payment received');
+  assert.equal(second.priorPaid,20);
+  assert.equal(second.balance,0);
+  assert.equal(second.status,'Paid in full');
+  assert.doesNotMatch(JSON.stringify(first),/internal-reference|"fee"/);
+  order.fulfillmentPlan = {totals:{...order.snapshot,total:999}};
+  assert.equal(M.paymentReceipt(order,0).totals.total,total);
+});
+
+test('consumer deposit terms are visible before acceptance and the pay screen shows the amount due', () => {
+  const V = require('../js/ops-preview/customer-view.js');
+  const draft = M.seed();
+  const order = draft.orders[0];
+  order.items = [{...order.items[0],quantity:1,unit_price:100}];
+  order.designFee = 0;
+  order.depositTerms = {amount:25,due:'On approval',refunds:'Refundable before work begins',option:''};
+  assert.throws(() => apply(draft,{type:'approve',method:'Email'}), /Share the quote/);
+  const shared = M.quoteCommand(draft,id,{type:'send_quote'});
+  assert.match(V.render(V.project(shared.orders[0]),'quote'),/Refundable before work begins/);
+  assert.match(V.render(V.project(shared.orders[0]),'quote'),/the deposit terms/);
+  let state = apply(shared,{type:'approve',method:'Email'});
+  assert.equal(V.project(state.orders[0]).amountDue,25);
+  assert.match(V.render(V.project(state.orders[0]),'pay'),/Copy amount · \$25\.00/);
+  assert.throws(() => apply(state,{type:'pay',amount:25,fee:0,method:'Cash'}), /approved deposit first/);
+  state = apply(state,{type:'pay',amount:25,fee:0,method:'Cash',paymentKind:'deposit'});
+  assert.equal(V.project(state.orders[0]).amountDue,75);
+  assert.match(V.render(V.project(state.orders[0]),'pay'),/Copy amount · \$75\.00/);
+  assert.equal(M.paymentReceipt(state.orders[0],0).depositTerms.due,'On approval');
+});

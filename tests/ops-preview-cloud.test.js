@@ -99,3 +99,77 @@ test('legacy history requires authentication and sends only an exact reference t
   assert.deepEqual(JSON.parse(request.body), {p_reference:'001234'});
   assert.equal(client.pending(), null);
 });
+
+test('archive PDF fetch uses the signed-in token and refuses invalid or missing files', async () => {
+  const requests = [];
+  const object = '11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222.pdf';
+  const sample = new Blob(['%PDF-fixture'],{type:'application/pdf'});
+  let response = {ok:true,blob:async()=>sample};
+  const {client} = fixture(async (url, request) => {
+    requests.push({url,...request});
+    return url.includes('/auth/') ? ok(login) : response;
+  });
+  await assert.rejects(client.historyPdf(object),/Sign in/);
+  assert.equal(requests.length,0);
+  await client.auth('fixture@example.test','fictional-password');
+  await assert.rejects(client.historyPdf('../outside.pdf'),/Invalid PDF reference/);
+  assert.equal(await client.historyPdf(object),sample);
+  assert.ok(requests[1].url.endsWith('/storage/v1/object/authenticated/ops-history-pdfs/'+object));
+  assert.equal(requests[1].headers.Authorization,'Bearer fixture-token');
+  assert.equal(requests[1].cache,'no-store');
+  response={ok:false,status:404};
+  await assert.rejects(client.historyPdf(object),{code:404});
+  response={ok:true,blob:async()=>new Blob(['<html>'],{type:'application/pdf'})};
+  await assert.rejects(client.historyPdf(object),/Invalid PDF response/);
+});
+
+test('stock warning preferences require the owner session and save one material setting', async () => {
+  const requests = [];
+  const {client} = fixture(async (url, options) => {
+    requests.push({url, ...options});
+    if (url.includes('/auth/')) return ok(login);
+    if (url.includes('/raw_material_inventory?')) return ok([{id:'roll', reorder_threshold_grams:250}]);
+    if (options.method === 'POST') return {ok:true, status:204};
+    return ok([
+      {setting_key:'ops_preview_low_stock:PLA / White',setting_value:true},
+      {setting_key:'ops_preview_low_stock:PETG / Black',setting_value:false},
+    ]);
+  });
+  await assert.rejects(client.inventoryWarnings(), /Sign in/);
+  await assert.rejects(client.saveInventoryWarning('PLA / White', false), /Sign in/);
+  assert.equal(requests.length, 0);
+  await client.auth('fixture@example.test', 'fictional-password');
+  assert.deepEqual(await client.inventoryWarnings(), {
+    levels:[{id:'roll', reorder_threshold_grams:250}], excluded:['PLA / White'],
+  });
+  await client.saveInventoryWarning('PLA / White', false);
+  for (const request of requests.slice(1)) assert.equal(request.headers.Authorization, 'Bearer fixture-token');
+  assert.equal(new URL(requests[1].url).searchParams.get('user_id'), 'eq.fixture-user');
+  assert.equal(new URL(requests[2].url).searchParams.get('user_id'), 'eq.fixture-user');
+  const {updated_at, ...saved} = JSON.parse(requests[3].body);
+  assert.ok(updated_at);
+  assert.deepEqual(saved, {user_id:'fixture-user',setting_key:'ops_preview_low_stock:PLA / White',setting_value:false});
+});
+
+test('an interrupted inventory adjustment retries its exact command without crossing into order writes', async () => {
+  const requests=[];let fail=true;
+  const {client}=fixture(async(url,request)=>{
+    requests.push({url,...request});
+    if(url.includes('/auth/'))return ok(login);
+    if(fail)throw new Error('Disconnected after submission');
+    return ok({workspace:{revision:7},inventory:{rolls:[]}});
+  });
+  await assert.rejects(client.inventoryLoad(),/Sign in/);
+  await client.auth('fixture@example.test','fictional-password');
+  const action={type:'adjust_supply',id:'supply-1',data:{mode:'consume',quantity:2},reason:'Packed order'};
+  await assert.rejects(client.inventorySave(action,6),/Connection interrupted/);
+  assert.equal(client.pending().kind,'inventory');
+  await assert.rejects(client.save({id:'order-1'},{type:'save'},6),/pending command/);
+  fail=false;const result=await client.retry();
+  assert.equal(result.workspace.revision,7);
+  assert.equal(requests[1].url,requests[2].url);
+  assert.ok(requests[2].url.endsWith('/rpc/ops_preview_inventory_commit'));
+  assert.equal(requests[1].body,requests[2].body);
+  assert.deepEqual(JSON.parse(requests[2].body).p_action,action);
+  assert.equal(client.pending(),null);
+});
