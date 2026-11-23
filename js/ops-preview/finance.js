@@ -79,6 +79,40 @@
     return `<tr><th scope="row">${E(name)}</th>${amounts.map(amount => `<td>${money(amount)}</td>`).join('')}</tr>`;
   }
   function currentReport() { return Reports.summarize(entries,reportYear,reportHalf,orders); }
+  function annualReport() { return Reports.summarize(entries,reportYear,'all',orders); }
+  function annualRows(report) {
+    return [
+      {kind:'Revenue',name:'Products / services',amount:report.total.productRevenue,reference:'Receipts before sales tax'},
+      {kind:'Revenue',name:'Shipping charged',amount:report.total.shippingRevenue,reference:'Included once in revenue'},
+      {kind:'Total',name:'Revenue before sales tax',amount:report.total.revenue,reference:'Schedule C line 1 reference; review returns / allowances'},
+      ...report.categories.map(row=>({...row,kind:'Expense category'})),
+      {kind:'Total',name:'Recorded expenses',amount:report.total.expenses,reference:'Posted business portions; includes purchases and mileage'},
+      {kind:'Total',name:'Revenue less recorded expenses',amount:report.total.profit,reference:'Bookkeeping result; inventory, equipment and home-office tax treatment may differ'},
+      {kind:'Memo',name:'Sales tax recorded',amount:report.total.taxCollected,reference:'Excluded from revenue; separate sales-tax liability'}
+    ];
+  }
+  function officeReference() {
+    if (!sharedSettings) return 'Shared home-office settings unavailable. Refresh to review.';
+    const office = sharedSettings.officeSqft, home = sharedSettings.homeSqft;
+    const percent = home > 0 ? window.OliPolyBusinessSettings?.officePercent(sharedSettings) : null;
+    return `Current shared reference: office ${office || 0} sq. ft.; home ${home || 0} sq. ft.; ${percent == null ? 'area ratio unavailable' : `${percent}% area ratio`}. Verify areas and eligibility for the report year. No home-office deduction is calculated or added to expenses.`;
+  }
+  function renderAnnual() {
+    const report = annualReport();
+    const link = entry => /^https:\/\/[^\s]+$/i.test(entry.receipt_link || '') ? `<a href="${E(entry.receipt_link)}" target="_blank" rel="noopener noreferrer">Receipt / document</a>` : 'No HTTPS receipt link';
+    return `<details id="annual-finance" ${document.getElementById('annual-finance')?.open ? 'open' : ''}><summary>Annual expenses &amp; tax preparation · ${E(reportYear)}</summary>
+      <p>Full year: ${E(report.period.start)} through ${E(report.period.end)}, regardless of the period selected above. Uses effective posted records and saved business portions.</p>
+      <div class="actions"><button data-action="export-annual">Export annual summary</button><button data-action="export-expenses">Export expense detail</button><button data-action="export-mileage">Export mileage log</button></div>
+      ${report.warnings.length ? `<div class="alert"><ul>${report.warnings.map(note=>`<li>${E(note)}</li>`).join('')}</ul></div>` : ''}
+      ${reportTable(['Category / total','Records','Amount','Tax preparation reference'],annualRows(report).map(row=>`<tr><th scope="row">${E(row.name)}</th><td>${row.count ?? '—'}</td><td>${money(row.amount)}</td><td>${E(row.reference)}</td></tr>`))}
+      <p class="muted">Tax references support preparation, not an automatic tax return. Material purchases and production consumption must not both be deducted. Review beginning/ending inventory, equipment treatment, refunds and unpaid orders before filing. Owner design/printing time is not an additional posted expense.</p>
+      <p class="muted">References checked November 23, 2026: <a href="https://www.irs.gov/pub/irs-pdf/f1040sc.pdf" target="_blank" rel="noopener noreferrer">2026 Schedule C</a> · <a href="https://www.irs.gov/instructions/i1040sc" target="_blank" rel="noopener noreferrer">IRS instructions (2025)</a>. Other report years require their own form review.</p>
+      <h3>Business mileage</h3><p class="muted">Total business miles are entered once, including both directions when applicable. Reports retain each saved rate and amount; changing defaults does not reprice past trips. Do not deduct vehicle operating expenses again when using standard mileage.</p>
+      ${report.mileage.length ? reportTable(['Date / purpose','From → to','Miles / saved rate','Recorded amount'],report.mileage.map(row=>`<tr><th scope="row">${E(row.entry_date)} · ${E(row.trip_purpose)}</th><td>${E(row.trip_from)} → ${E(row.trip_to)}</td><td>${E(row.miles_driven)} mi · $${E(row.mileage_rate)}/mi</td><td>${money(row.amount)}</td></tr>`)) : '<p>No recorded mileage in this year.</p>'}
+      <h3>Home office</h3><p>${E(officeReference())}</p>
+      <details><summary>Expense records &amp; receipt links · ${report.expenses.length}</summary>
+      ${report.expenses.length ? reportTable(['Date / description','Category / business portion','Posted expense','Evidence / audit reference'],report.expenses.map(row=>`<tr><th scope="row">${E(row.entry_date)} · ${E(row.title)}</th><td>${E(row.category || 'Uncategorized')} · ${row.business_use_percent == null ? 'Unrecorded' : `${E(row.business_use_percent)}%`}</td><td>${money(row.amount)}</td><td>${link(row)}<br>Original ${E(row.original_entry_id)}<br>Effective ${E(row.effective_entry_id)}</td></tr>`)) : '<p>No posted expenses in this year.</p>'}</details></details>`;
+  }
   function renderReports() {
     const panel = document.getElementById('reports-content');
     if (!panel) return;
@@ -96,6 +130,7 @@
         ${reportTable(['Month','Products / services','Shipping revenue','Revenue before tax','Expenses','Revenue less expenses','Sales tax'],[...report.months,report.total].map(row => reportRow(row.name,[row.productRevenue,row.shippingRevenue,row.revenue,row.expenses,row.profit,row.taxCollected])))}
         <h3>County sales and tax</h3><p class="muted">Sales amounts exclude sales tax. Separate rows retain each recorded rate used during the period.</p>
         ${report.counties.length ? reportTable(['County / rate','Gross sales','Taxable sales','Exempt sales','Tax recorded'],[...report.counties.map(row => reportRow(`${row.name} · ${row.rate}%`,[row.grossSales,row.taxableSales,row.exemptSales,row.taxCollected])),reportRow('Total',[t.grossSales,t.taxableSales,t.exemptSales,t.taxCollected])]) : '<p>No posted sales in this period.</p>'}
+        ${renderAnnual()}
         <h3>Current approved orders awaiting sale posting</h3>
         <p class="muted">Order sales post to Finance after final payment in the current workflow. Review completed or unpaid orders and deposits before preparing a tax return. This list covers current open records across all dates.</p>
         ${report.unpostedOrders.length ? reportTable(['Order','Agreed total','Payments recorded','Balance'],report.unpostedOrders.map(order => `<tr><th scope="row">${E(order.reference)}${order.fulfilled ? ' · fulfilled' : ''}</th><td>${money(order.total)}</td><td>${money(order.paid)}</td><td>${money(order.balance)}</td></tr>`)) : `<p>${ordersError ? 'Refresh to review unposted orders.' : 'All approved orders have a posted sale.'}</p>`}`;
@@ -192,6 +227,17 @@
       if (action === 'cancel-correction') { closeCorrection(); return; }
       if (action === 'retry-correction') { await saveCorrection(null,true); return; }
       if (action === 'reports') { const panel = document.getElementById('finance-reports'); panel.open = true; panel.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+      if (['export-annual','export-expenses','export-mileage'].includes(action)) {
+        if (loadError) throw new Error('Refresh successfully before exporting.');
+        const report = annualReport();
+        const notes = [...report.warnings,...(ordersError ? [ordersError] : []),...report.unpostedOrders.map(order=>`${order.reference} awaiting sale posting`)].join(' | ');
+        const summary = action === 'export-annual';
+        const rows = summary ? annualRows(report) : action === 'export-mileage' ? report.mileage : report.expenses;
+        const fields = summary ? ['kind','name','count','amount','group','reference'] : ['entry_date','category','title','amount','original_amount','business_use_percent','shipping_cost','report_group','tax_category','tax_reference','vendor_name','payment_method','receipt_link','miles_driven','mileage_rate','trip_purpose','trip_from','trip_to','round_trip','order_number','original_entry_id','effective_entry_id','notes'];
+        const exported = rows.map(row=>({...row,periodStart:report.period.start,periodEnd:report.period.end,reviewNotes:notes,...(summary ? {homeOfficeReference:officeReference()} : {})}));
+        download(M.csv(exported,['periodStart','periodEnd',...fields,'reviewNotes',...(summary ? ['homeOfficeReference'] : [])]),`OliPoly-Test-${action.slice(7)}-${reportYear}.csv`);
+        return;
+      }
       if (action === 'export-months' || action === 'export-counties') {
         if (loadError) throw new Error('Refresh successfully before exporting.');
         const report = currentReport();
