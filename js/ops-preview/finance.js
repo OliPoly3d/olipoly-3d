@@ -14,7 +14,7 @@
   let refreshedAfterUncertain = false;
   let filters = {search:'',type:'all',month:''};
   let reportYear = Number(new Intl.DateTimeFormat('en',{year:'numeric',timeZone:'America/New_York'}).format(new Date()));
-  let reportHalf = 'all', orders = [], ordersError = '';
+  let reportHalf = 'all', orders = [], ordersError = '', sharedSettings = null;
   const notice = (text, error = false) => { message.textContent = text; message.className = error ? 'alert error-live' : 'status-line error-live'; };
   function input(label, name, value = '', type = 'text', extra = '') {
     return `<label>${label}<input name="${name}" type="${type}" value="${E(value)}" ${extra}></label>`;
@@ -24,7 +24,7 @@
   }
   function expenseForm() {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
-    return `<section class="card"><h2>Add an expense</h2><form id="expense-form" class="form-grid">
+    return `<section class="card"><h2>Add an expense</h2>${ordersError ? '<p class="alert">Shared defaults are unavailable. Reload before relying on saved business defaults.</p>' : ''}<form id="expense-form" class="form-grid">
       ${input('Date','entry_date',today,'date','required')}
       <label>Category<select name="category">${options(Object.keys(M.categories),'Material')}</select></label>
       <div class="full">${input('Description','title','','text','required maxlength="180"')}</div>
@@ -35,7 +35,7 @@
         ${input('Total business miles','miles_driven','','number','min=".01" max="100000" step=".01"')}
         ${input('Rate used ($ per mile)','mileage_rate','','number','min=".0001" max="100" step=".0001"')}
         <div class="full">${input('Trip purpose','trip_purpose','','text','maxlength="180"')}</div>
-        ${input('From','trip_from',window.OliPolyOpsFinanceDefaults?.headquarters || '','text','maxlength="120"')}${input('To','trip_to','','text','maxlength="120"')}
+        ${input('From','trip_from',sharedSettings?.headquarters ?? (ordersError ? '' : window.OliPolyOpsFinanceDefaults?.headquarters || ''),'text','maxlength="120"')}${input('To','trip_to','','text','maxlength="120"')}
         <label class="check full"><input type="checkbox" name="round_trip" value="yes"> Round trip</label>
         <p class="muted full">Enter total miles, including the return leg. The checkbox labels the trip. Enter the rate appropriate for its date.</p>
       </div>
@@ -126,12 +126,13 @@
     document.querySelector('[name="report_half"]').value = reportHalf;
     renderReports();
     updateForm();
-    window.OliPolyOpsFinanceDefaults?.bind(document.getElementById('expense-form'),{kind:'mileage',rate:'mileage_rate',date:'entry_date',auto:true,initial:true});
+    window.OliPolyOpsFinanceDefaults?.bind(document.getElementById('expense-form'),{kind:'mileage',rate:'mileage_rate',date:'entry_date',auto:true,initial:true,mileageMode:sharedSettings?.mileageMode,customRate:sharedSettings?.mileageRate});
     showCorrectionPending();
   }
   async function load() {
     loadError = '';
     const [ledger,workspace] = await Promise.allSettled([cloud.financeLoad(),cloud.load()]);
+    sharedSettings = workspace.status === 'fulfilled' ? workspace.value.settings || null : null;
     ordersError = workspace.status === 'rejected' ? workspace.reason.message : '';
     orders = workspace.status === 'fulfilled' ? workspace.value.orders || [] : [];
     if (ledger.status === 'rejected') { loadError = ledger.reason.message; throw ledger.reason; }

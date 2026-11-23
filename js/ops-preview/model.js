@@ -140,14 +140,14 @@
   function productionQueue(state) {
     return queue(state, 'all').filter(order => order.snapshot && !order.fulfilled);
   }
-  function newRequest() {
+  function newRequest(settings) {
     const order = copy(seed().orders[0]);
     Object.assign(order, {id: uid(), reference: 'NEW REQUEST', customer: '', title: '', quoteStage: 'request',
       designFee: 0, estimatedLabor: 0, evidence: 'Idea / reference',
       intake: {source: 'Email / PO', contact: '', summary: '', neededBy: '', fileReference: '', materialPreference: 'Not decided'},
       taxAddress: pickupAddress, turnaround: '', validUntil: '', customerNotes: '', quoteHistory: []});
     order.items = [{id: uid(), description: 'Requested component', quantity: 1, unit_price: 0, hours_each: 0, materials: []}];
-    return order;
+    return settings && root.OliPolyBusinessSettings ? root.OliPolyBusinessSettings.apply(order,settings) : order;
   }
   function quoteCommand(original, orderId, action) {
     const state = copy(original);
@@ -286,30 +286,33 @@
     if (order.runs.some(run => run.status === 'printing')) return 'printing';
     return 'ready_to_print';
   }
-  function estimatedItemCost(state, item) {
+  function machineRate(order,printer='planning') { return Number(order?.costRates?.[printer] ?? order?.costRates?.planning ?? .53); }
+  function estimatedItemCost(state, item, order) {
     const filament = item.materials.reduce((sum, material) => {
       const stock = state.inventory.find(row => row.key === materialKey(material));
       return sum + material.grams_each * (stock?.cost || 0);
     }, 0);
-    return filament + item.hours_each * 0.53;
+    return filament + item.hours_each * machineRate(order);
   }
   function costs(state, order) {
     let material = 0;
-    let hours = 0;
+    let hours = 0, machine = 0;
     order.runs.forEach(run => {
       if (run.status !== 'inspected') return;
       hours += run.hours;
+      machine += run.hours * machineRate(order,run.printer);
       run.usage.forEach(usage => { material += usage.materialCost ?? ((usage.grams || 0) * (usage.unitCost || 0)); });
     });
     const fees = order.payments.reduce((sum, p) => sum + p.fee, 0);
     const preparationHours = order.productionPrepHours || 0;
     const laborEstimate = order.productionPlan ? preparationHours + (order.productionRemainingHours || 0) : order.estimatedLabor;
     const postage = order.shipment?.postage || 0;
-    const actual = money(material + hours * 0.53 + Math.max(order.actualLabor, preparationHours) * order.laborRate + order.otherCosts + fees + postage);
-    const estimated = money(productionItems(order).reduce((sum, item) => sum + item.quantity * estimatedItemCost(state, item), 0) + laborEstimate * order.laborRate + order.otherCosts + fees);
+    const actual = money(material + machine + Math.max(order.actualLabor, preparationHours) * order.laborRate + order.otherCosts + fees + postage);
+    const estimated = money(productionItems(order).reduce((sum, item) => sum + item.quantity * estimatedItemCost(state, item, order), 0) + laborEstimate * order.laborRate + order.otherCosts + fees);
     const snapshot = currentTotals(order);
     const revenue = money(snapshot.total - snapshot.tax);
-    return {material: money(material), hours, actual, estimated, revenue, postage,
+    const targetMargin = Number(order.targetMargin ?? 45);
+    return {material: money(material), machine:money(machine), hours, actual, estimated, revenue, postage,targetMargin,suggestedRevenue:money(estimated/(1-targetMargin/100)),
       estimatedProfit: money(revenue - estimated), actualProfit: money(revenue - actual),
       variance: money(estimated - actual), complete: order.fulfilled};
   }
@@ -325,6 +328,10 @@
     ['designFee', 'laborRate', 'estimatedLabor'].forEach(name => {
       order[name] = number(order[name], name);
     });
+    if (order.costRates) {
+      for (const key of ['planning','P1S','P2S']) { order.costRates[key]=number(order.costRates[key],key+' hourly cost'); if(order.costRates[key]>100000) throw new Error('Check printer hourly costs.'); }
+    }
+    if (order.targetMargin != null && number(order.targetMargin,'Target margin')>=100) throw new Error('Target margin must be below 100%.');
     const total = totals(order).total;
     if (order.depositTerms && order.preset === 'individual') order.depositTerms = validateDepositTerms(order.depositTerms,total);
     else delete order.depositTerms;

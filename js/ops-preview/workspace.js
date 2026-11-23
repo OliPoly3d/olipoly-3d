@@ -111,6 +111,7 @@
     const result = M.copy(order);
     ['customer','title','preset','evidence'].forEach(name => { result[name] = String(data[name] || '').trim(); });
     result.intake = Object.fromEntries(['source','contact','neededBy','materialPreference','fileReference','summary'].map(name => [name,String(data[name] || '').trim()]));
+    if (form.id==='new-request-form' && state.settings && window.OliPolyBusinessSettings) Object.assign(result,window.OliPolyBusinessSettings.apply(result,state.settings));
     if (data.quantity != null) result.items = [{...result.items[0], description: result.title || 'Requested component', quantity: data.quantity}];
     return result;
   }
@@ -225,6 +226,7 @@
     if (form.id === 'details-form') {
       const data = new FormData(form);
       ['customer', 'title', 'preset', 'evidence', 'terms', 'county', 'taxAddress', 'turnaround', 'validUntil', 'customerNotes'].forEach(name => { draft[name] = String(data.get(name)); });
+      if (form.elements.planningRate) { draft.costRates={planning:Number(data.get('planningRate')),P1S:Number(data.get('p1sRate')),P2S:Number(data.get('p2sRate'))}; draft.targetMargin=Number(data.get('targetMargin')); }
       ['designFee', 'taxRate', 'laborRate', 'estimatedLabor'].forEach(name => { draft[name] = Number(data.get(name)); });
       draft.taxIncluded = data.get('taxIncluded') === 'yes';
       draft.taxExempt = data.has('taxExempt');
@@ -249,7 +251,7 @@
   }
   function itemEditor(order, productionOnly = false) {
     return order.items.map((item, i) => `<fieldset class="item" data-item="${i}"><legend>ITEM ${i + 1}</legend><div class="form-grid">
-      ${productionOnly ? `<div class="full"><strong>${escape(item.description)}</strong> · ${item.quantity} pieces</div>` : `<label class="full">Description<input data-field="description" value="${escape(item.description)}" required></label><label>Quantity<input data-field="quantity" type="number" min="1" step="1" value="${item.quantity}" required></label><label>${order.taxIncluded ? 'All-in unit price' : 'Unit price before tax'}<input data-field="unit_price" type="number" min="0" step=".01" value="${item.unit_price}" required></label><button type="button" data-action="remove-item" data-index="${i}" ${order.items.length === 1 ? 'disabled' : ''}>Remove item</button>`}<label>Print hours per piece<input data-field="hours_each" type="number" min="0" step=".01" value="${item.hours_each}" required></label><p class="muted full" data-item-cost="${i}">Filament + printer cost per piece: ${format(M.estimatedItemCost(state, item))}. Hands-on labor is included separately in project costs.</p></div>
+      ${productionOnly ? `<div class="full"><strong>${escape(item.description)}</strong> · ${item.quantity} pieces</div>` : `<label class="full">Description<input data-field="description" value="${escape(item.description)}" required></label><label>Quantity<input data-field="quantity" type="number" min="1" step="1" value="${item.quantity}" required></label><label>${order.taxIncluded ? 'All-in unit price' : 'Unit price before tax'}<input data-field="unit_price" type="number" min="0" step=".01" value="${item.unit_price}" required></label><button type="button" data-action="remove-item" data-index="${i}" ${order.items.length === 1 ? 'disabled' : ''}>Remove item</button>`}<label>Print hours per piece<input data-field="hours_each" type="number" min="0" step=".01" value="${item.hours_each}" required></label><p class="muted full" data-item-cost="${i}">Filament + printer cost per piece: ${format(M.estimatedItemCost(state, item, order))}. Hands-on labor is included separately in project costs.</p></div>
       ${item.materials.map((material, j) => `<div class="material-row" data-material="${j}"><label>Material / color<select>${state.inventory.map(stock => `<option ${stock.key === M.materialKey(material) ? 'selected' : ''}>${escape(stock.key)}</option>`).join('')}</select></label><label>Grams per piece<input type="number" min="0" step=".01" value="${material.grams_each}" required></label><button type="button" data-action="remove-material" data-index="${i}" data-material-index="${j}">Remove</button></div>`).join('')}
       <button style="margin-top:14px" type="button" data-action="add-material" data-index="${i}">+ Material or support filament</button></fieldset>`).join('');
   }
@@ -273,7 +275,8 @@
       ${textArea('Deposit refund conditions','depositRefunds',order.depositTerms?.refunds || '', 'maxlength="500"')}
       ${field('Binding option period (if any)','depositOption',order.depositTerms?.option || '', 'text','maxlength="120"')}</div></details>
       <h3>Items & manufacturing estimates</h3><p class="muted">Quantities, grams and hours below are per piece. Add body and support filament separately.</p>${itemEditor(order)}
-      <button type="button" data-action="add-item">+ Add another item</button><div class="form-grid" style="margin-top:24px">${field('Fixed design / preparation charge', 'designFee', order.designFee, 'number', 'min="0" step=".01" required')}${field('Estimated total hands-on hours', 'estimatedLabor', order.estimatedLabor, 'number', 'min="0" step=".01" required')}${field('Sample labor cost per hour', 'laborRate', order.laborRate, 'number', 'min="0" step=".01" required')}</div>
+      <button type="button" data-action="add-item">+ Add another item</button><div class="form-grid" style="margin-top:24px">${field('Fixed design / preparation charge', 'designFee', order.designFee, 'number', 'min="0" step=".01" required')}${field('Estimated total hands-on hours', 'estimatedLabor', order.estimatedLabor, 'number', 'min="0" step=".01" required')}${field('Labor cost per hour', 'laborRate', order.laborRate, 'number', 'min="0" step=".01" required')}</div>
+      <details><summary>Cost defaults and target margin</summary><p class="muted">These internal cost assumptions are saved with this project. Applying shared defaults preserves the entered selling prices.</p><div class="form-grid">${field('Planning cost per printer hour','planningRate',order.costRates?.planning ?? .53,'number','min="0" max="100000" step=".01" required')}${field('P1S cost per hour','p1sRate',order.costRates?.P1S ?? .53,'number','min="0" max="100000" step=".01" required')}${field('P2S cost per hour','p2sRate',order.costRates?.P2S ?? .53,'number','min="0" max="100000" step=".01" required')}${field('Target margin (%)','targetMargin',order.targetMargin ?? 45,'number','min="0" max="99.99" step=".01" required')}</div><button type="button" data-action="apply-business-defaults">Apply current business defaults</button> <a href="ops-settings-preview.html?database=test">Business settings</a></details>
       <div style="margin-top:18px">${textArea('Customer-facing scope / notes', 'customerNotes', order.customerNotes, 'maxlength="3000"')}</div><div class="actions" style="margin-top:22px"><button class="primary" type="submit">Save quote draft</button><small id="draft-state">Saved quote draft</small></div></form>`;
   }
   function poReviewForm(order) {
@@ -333,7 +336,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
   function costPreview(order) {
     if (!M.costsReady(order)) return '<p class="muted">Cost estimate incomplete. Add filament, grams and print time to preview profit. You can finish the quote now and prepare production after acceptance.</p>';
     const cost = M.costs(state, order);
-    return `${row('Projected production cost',format(cost.estimated))}${row('Projected profit before unrecorded costs',format(cost.estimatedProfit))}${row('Projected margin', cost.revenue > 0 ? `${(cost.estimatedProfit / cost.revenue * 100).toFixed(1)}%` : 'Enter a selling price')}<p class="muted">Based on the entered labor, filament and print time. Scrap, failures and other costs change actual profit.</p>`;
+    return `${row('Projected production cost',format(cost.estimated))}${row(`Suggested revenue before tax at ${cost.targetMargin}% margin`,format(cost.suggestedRevenue))}${row('Projected profit before unrecorded costs',format(cost.estimatedProfit))}${row('Projected margin', cost.revenue > 0 ? `${(cost.estimatedProfit / cost.revenue * 100).toFixed(1)}%` : 'Enter a selling price')}<p class="muted">Based on the entered labor, filament and print time. Scrap, failures and other costs change actual profit.</p>`;
   }
   function priceCard(order) {
     if (M.stage(order)==='request') return `<section class="card"><h2>No quote needed yet</h2><p class="muted">Save the request with the information available. Prepare pricing when you are ready.</p></section>`;
@@ -639,7 +642,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       ${order.preset==='business' && order.fulfilled ? `<p><a class="button" href="${orderLink(order,'invoice')}">${order.invoice?'View issued invoice':'Review & issue invoice'}</a></p>` : ''}
       ${order.snapshot && !order.shippingDraft && M.balance(order) > 0 ? `<form class="form-grid" data-form="pay" style="margin-top:22px">${field('Amount received', 'amount', depositDue ? deposit.amount : M.balance(order), 'number', `min=".01" max="${M.balance(order)}" step=".01" required`)}${depositDue ? select('Payment type','paymentKind',[['deposit','Deposit'],['payment','Full payment']], 'deposit') : ''}${select('Method', 'method', ['Cash', 'Check', 'ACH', 'Stripe', 'PayPal', 'Venmo'], 'Cash')}${field('Processing fee', 'fee', 0, 'number', 'min="0" step=".01" required')}${field('Reference / check number', 'reference', '')}<button class="primary" type="submit">Record sample payment</button></form>` : ''}
       ${order.payments.map(p => row(`${p.method} ${p.reference}`, `${format(p.amount)} · fee ${format(p.fee)}`)).join('')}<p class="muted" style="margin-top:18px">${cloud ? 'Each payment reduces the order balance. Finance records processing fees as they occur and posts the sale once the order is paid in full.' : 'These payment records are on this device. Finance Pro posting is pending the test database connection.'}</p></section>
-      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Sample cost settings include $0.53 per printer hour for machine/energy reserves and the labor cost entered in Details. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${order.historicalCompletion ? `${row('Recorded job cost',format(cost.actual))}${row('Profit after recorded costs',format(cost.actualProfit))}` : M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.historicalCompletion && order.runs.some(run => run.hours == null || run.usage.some(usage => usage.materialCost == null)) ? 'Recorded cost is incomplete because historical printer time or filament cost is unknown.' : order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
+      <section class="card"><h2>Actual costs & profit</h2><p class="muted">Machine and labor costs use the assumptions saved with this project. Older projects retain the original $0.53 printer-hour assumption unless revised before approval. Recorded consumption starts with slicer figures.</p><form class="form-grid" data-form="actuals">${field('Actual total design + hands-on hours', 'hours', Math.max(order.actualLabor, order.productionPrepHours || 0), 'number', 'min="0" step=".01" required')}${field('Other actual costs (excluding recorded postage)', 'otherCosts', order.otherCosts, 'number', 'min="0" step=".01" required')}<button type="submit">Save actual costs</button></form><div style="margin-top:20px">${order.historicalCompletion ? `${row('Recorded job cost',format(cost.actual))}${row('Profit after recorded costs',format(cost.actualProfit))}` : M.costsReady(order) ? `${row('Estimated job cost', format(order.estimateBaseline ?? cost.estimated))}${order.shipment ? row('Actual postage included', format(cost.postage)) : ''}${row('Recorded cost to date', format(cost.actual))}${row('Estimated profit at acceptance', format((order.snapshot ? order.snapshot.total - order.snapshot.tax : cost.revenue) - baseline))}${row(order.fulfilled ? 'Profit after recorded costs' : 'Profit at recorded costs so far', format(cost.actualProfit))}${row('Cost variance (positive = under estimate)', format(baseline - cost.actual))}${row('Margin change from estimate', `${marginChange} percentage points`)}` : costPreview(order)}</div><p class="muted" style="margin-top:15px">${order.historicalCompletion && order.runs.some(run => run.hours == null || run.usage.some(usage => usage.materialCost == null)) ? 'Recorded cost is incomplete because historical printer time or filament cost is unknown.' : order.fulfilled ? 'Review all actual costs before treating this as reconciled.' : 'Profit remains provisional while production and actual cost entry are incomplete.'}</p></section>`;
   }
   function invoicePanel(order) {
     if (order.preset !== 'business') return '<section class="card"><h2>Business invoices</h2><p>Open Receipt for this order’s payment record.</p></section>';
@@ -839,7 +842,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       document.getElementById('production-plan-state').textContent = 'Unsaved production preparation';
       readDraft();
       document.querySelectorAll('[data-item-cost]').forEach(node => {
-        node.textContent = `Filament + printer cost per piece: ${format(M.estimatedItemCost(state, draft.items[Number(node.dataset.itemCost)]))}.`;
+        node.textContent = `Filament + printer cost per piece: ${format(M.estimatedItemCost(state, draft.items[Number(node.dataset.itemCost)], draft))}.`;
       });
       document.getElementById('production-profit-preview').innerHTML = costPreview({...selectedOrder(), productionPlan: draft.items, productionPrepHours: draft.productionPrepHours, productionRemainingHours: draft.productionRemainingHours});
     }
@@ -848,7 +851,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       document.getElementById('draft-state').textContent = 'Unsaved changes';
       readDraft();
       document.querySelectorAll('[data-item-cost]').forEach(node => {
-        node.textContent = `Filament + printer cost per piece: ${format(M.estimatedItemCost(state, draft.items[Number(node.dataset.itemCost)]))}. Hands-on labor is included separately in project costs.`;
+        node.textContent = `Filament + printer cost per piece: ${format(M.estimatedItemCost(state, draft.items[Number(node.dataset.itemCost)], draft))}. Hands-on labor is included separately in project costs.`;
       });
       try { document.getElementById('price-card').innerHTML = priceCard(draft); }
       catch { document.getElementById('price-card').textContent = 'Complete the item fields to preview totals.'; }
@@ -959,6 +962,13 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     try {
       if (busy) return;
       if (inventoryControls?.click(button)) { render(); document.querySelector('.inventory-editor')?.scrollIntoView({block:'start', behavior:'smooth'}); return; }
+      if (button.dataset.action === 'apply-business-defaults') {
+        if (!cloud || !state.settings) throw new Error('Save shared business settings first.');
+        readDraft(); const next=window.OliPolyBusinessSettings.apply(draft,state.settings);
+        const form=document.getElementById('details-form');
+        for (const [name,value] of Object.entries({laborRate:next.laborRate,targetMargin:next.targetMargin,terms:next.terms,planningRate:next.costRates.planning,p1sRate:next.costRates.P1S,p2sRate:next.costRates.P2S})) form.elements[name].value=value;
+        form.elements.laborRate.dispatchEvent(new Event('input',{bubbles:true})); message('Current defaults applied to this draft. Review and save. Selling prices are unchanged.'); return;
+      }
       if (button.dataset.action === 'test-signout') { cloud.signOut(); state = M.seed(); renderAuth(); renderConnection(); return; }
       if (button.dataset.action === 'test-reload') { await loadCloud(); return; }
       if (button.dataset.action === 'test-retry') { const result = await cloud.retry(); state = result.workspace || result; if (page === 'today') await refreshInventory(); render(); renderConnection(); message('Pending command resolved.'); return; }
@@ -973,7 +983,7 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
       }
       const action = button.dataset.action;
       if (!action) return;
-      if (action === 'new') { intakeDraft=M.newRequest(); renderToday(); return; }
+      if (action === 'new') { intakeDraft=M.newRequest(state.settings); renderToday(); return; }
       if (action === 'cancel-intake') { intakeDraft=null; dirty=false; renderToday(); return; }
       if (action === 'reset') {
         if (cloud) { await loadCloud(); return; }

@@ -62,7 +62,7 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false, range) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry','ops_preview_settings_commit'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token(), range);
     }
@@ -126,7 +126,7 @@
       const value = pending();
       if (!value) throw new Error('No pending command for this test account.');
       try {
-        const name = value.kind === 'inventory' ? 'ops_preview_inventory_commit' : 'ops_preview_commit';
+        const name = value.kind === 'settings' ? 'ops_preview_settings_commit' : value.kind === 'inventory' ? 'ops_preview_inventory_commit' : 'ops_preview_commit';
         const state = await rpc(name, value.params);
         storage.removeItem(pendingKey());
         return state;
@@ -142,6 +142,12 @@
         p_order: order, p_expected_revision: revision, p_command_id: root.crypto.randomUUID()}};
       if (!value.userId) throw new Error('Sign in to the test project.');
       storage.setItem(pendingKey(), JSON.stringify(value));
+      return retry();
+    }
+    async function settingsSave(settings, revision, reason) {
+      if (pending() || financePending() || financeCorrectionPending()) throw new Error('Resolve the pending save before changing settings.');
+      if (!session?.user?.id) throw new Error('Sign in to the test project.');
+      storage.setItem(pendingKey(), JSON.stringify({userId:session.user.id,kind:'settings',params:{p_settings:settings,p_expected_revision:revision,p_reason:reason,p_command_id:root.crypto.randomUUID()}}));
       return retry();
     }
     async function inventorySave(action, revision) {
@@ -198,7 +204,7 @@
       } while (page.length === 500);
       return [...entries.values()];
     }
-    return {auth, save, retry, pending,
+    return {auth, save, retry, pending, settingsSave,
       financeLoad, financeCreate,
       financeCorrect, financeCorrectionPending, financeCorrectionRetry,
       financePending, financeReviewed: () => storage.removeItem(financePendingKey()),
