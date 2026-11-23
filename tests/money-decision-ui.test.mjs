@@ -1204,3 +1204,55 @@ test('Month bills can open the recurring bill editor or preview a new monthly ca
   assert.equal([...f.elements.card.options].some(o=>o.value==='card'),false);
  }finally{p.close();}
 });
+
+test('Card payment keeps bank and card choices separate when paying two recorded balances',{skip},async()=>{
+ const m=fixture();
+ m.accounts.find(a=>a.id==='cash').opening=773266;
+ m.accounts.find(a=>a.id==='card').opening=-14253;
+ m.accounts.push({id:'unlimited',name:'Freedom Unlimited',type:'card',entity:'household',opening:-128041,reserve:0,credit:{purchaseApr:0}});
+ const p=await page(m);
+ try{
+  const {$,change,submit}=p,f=$('transactionForm');
+  const before=budgetMonth(p.model,'2026-10','household','2026-10-29').totals;
+  $('quickCardPayment').click();
+  assert.equal($('transactionDialogTitle').textContent,'Card payment');
+  assert.equal($('transactionAccountText').textContent,'Pay from bank account');
+  assert.equal($('transactionToText').textContent,'Card to pay');
+  assert.equal(f.elements.account.value,'cash');
+  assert.equal(f.elements.to.value,'');
+  assert.equal([...f.elements.account.options].some(o=>o.value==='card'||o.value==='unlimited'),false);
+  assert.equal([...f.elements.to.options].some(o=>o.value==='cash'),false);
+  assert.equal($('entryAccountChoices').querySelector('[data-value="unlimited"]'),null);
+  $('entryCardChoices').querySelector('[data-value="card"]').click();
+  change(f.elements.amount,'142.53');
+  await submit('transactionForm');
+  assert.equal(p.revision,1);
+  assert.equal(balances(p.model,'2026-10-29').card,0);
+  $('quickCardPayment').click();
+  assert.equal(f.elements.account.value,'cash');
+  assert.equal(f.elements.to.value,'');
+  $('entryCardChoices').querySelector('[data-value="unlimited"]').click();
+  assert.equal(f.elements.to.value,'unlimited');
+  assert.equal(f.elements.account.value,'cash');
+  change(f.elements.amount,'1280.41');
+  await submit('transactionForm');
+  assert.equal(p.revision,2);
+  const b=balances(p.model,'2026-10-29');
+  assert.deepEqual([b.cash,b.card,b.unlimited],[630972,0,0]);
+  assert.deepEqual(p.model.transactions.map(t=>t.entries),[
+   [{account:'cash',amount:-14253},{account:'card',amount:14253}],
+   [{account:'cash',amount:-128041},{account:'unlimited',amount:128041}]
+  ]);
+  assert.deepEqual(budgetMonth(p.model,'2026-10','household','2026-10-29').totals,before);
+  $('quickCardPayment').click();
+  const opt=p.dom.window.document.createElement('option');opt.value='unlimited';f.elements.account.append(opt);f.elements.account.value='unlimited';
+  change(f.elements.amount,'20');
+  await submit('transactionForm');
+  assert.equal(p.revision,2);
+  assert.match($('entryStatus').textContent,/choose a bank account/);
+  $('closeTransactionEntry').click();
+  $('quickPurchase').click();
+  assert.equal($('entryCardChoices').hidden,true);
+  assert.ok([...f.elements.account.options].some(o=>o.value==='unlimited'));
+ }finally{p.close();}
+});
