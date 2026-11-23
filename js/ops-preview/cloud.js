@@ -62,7 +62,7 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false, range) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token(), range);
     }
@@ -153,6 +153,7 @@
     }
     async function financeCreate(entry) {
       if (pending()) throw new Error('Resolve the pending workspace save before adding an expense.');
+      if (financeCorrectionPending()) throw new Error('Resolve the pending Finance correction before continuing.');
       if (financePending()) throw new Error('Review the previous interrupted Finance save before continuing.');
       try { return await rpc('create_manual_financial_entry', {p_entry: entry}); }
       catch (error) {
@@ -162,6 +163,27 @@
     }
     const financePendingKey = () => `olipoly.ops.test.${TEST_REF}.finance-review.${session?.user?.id || 'signed-out'}`;
     const financePending = () => storage.getItem(financePendingKey()) === 'true';
+    const financeCorrectionKey = () => `olipoly.ops.test.${TEST_REF}.finance-correction.${session?.user?.id || 'signed-out'}`;
+    const financeCorrectionPending = () => read(financeCorrectionKey());
+    async function financeCorrectionRetry() {
+      const command = financeCorrectionPending();
+      if (!command || command.userId !== session?.user?.id) throw new Error('No pending correction for this account.');
+      try {
+        const result = await rpc('correct_financial_entry', command.params);
+        storage.removeItem(financeCorrectionKey());
+        return result;
+      } catch (error) {
+        if (!error.uncertain && error.code !== 401) storage.removeItem(financeCorrectionKey());
+        throw error;
+      }
+    }
+    async function financeCorrect(params) {
+      if (pending() || financePending() || financeCorrectionPending()) throw new Error('Resolve the pending financial or workspace save before correcting an entry.');
+      if (!session?.user?.id) throw new Error('Sign in to the test project.');
+      const command = {userId:session.user.id,params:{...params,p_correlation_id:root.crypto.randomUUID()}};
+      storage.setItem(financeCorrectionKey(), JSON.stringify(command));
+      return financeCorrectionRetry();
+    }
     async function financeLoad() {
       const entries = new Map();
       let offset = 0, page;
@@ -178,6 +200,7 @@
     }
     return {auth, save, retry, pending,
       financeLoad, financeCreate,
+      financeCorrect, financeCorrectionPending, financeCorrectionRetry,
       financePending, financeReviewed: () => storage.removeItem(financePendingKey()),
       signedIn: () => !!session?.access_token,
       initialize: () => rpc('ops_preview_initialize'), load: () => rpc('ops_preview_load'),

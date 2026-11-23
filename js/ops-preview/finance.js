@@ -1,6 +1,9 @@
 (function () {
   'use strict';
   const M = window.OliPolyOpsFinance;
+  const Corrections = window.OliPolyOpsFinanceCorrections;
+  let correcting = null, correctionDirty = new Set();
+  const correctionPending = () => cloud.financeCorrectionPending?.();
   const Reports = window.OliPolyOpsFinanceReports;
   const E = window.OliPolyLineItems.escape;
   const cloud = window.OliPolyOpsCloud.create(window.OliPolyOpsTestConfig);
@@ -60,6 +63,7 @@
     return `<article class="finance-entry"><div class="section-head"><div><strong>${E(entry.title)}</strong><p class="muted">${E(entry.entry_date)} · ${E(entry.category)}${linked ? ` · ${E(linked)}` : ''}${entry.vendor_name ? ` · ${E(entry.vendor_name)}` : ''}</p></div><strong>${money(entry.amount)}</strong></div>
       <details><summary>Transaction details${entry.is_corrected ? ' · corrected' : ''}</summary>
       ${fields.filter(([,value]) => value !== '' && value != null).map(([label,value]) => `<div class="row"><span>${label}</span><span>${E(value)}</span></div>`).join('')}
+      <button type="button" data-action="correct" data-entry-id="${E(entry.id)}">Correct entry</button>${auditHistory(entry)}
       ${receipt}${entry.correction_reason ? `<p>Correction reason · ${E(entry.correction_reason)}</p>` : ''}
       <p class="muted">${entry.finance_command_owned || entry.order_id ? 'Created by the order workflow.' : 'Manually recorded.'}</p></details></article>`;
   }
@@ -109,6 +113,8 @@
       return;
     }
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Your working studio</div><h1>Finance</h1><p class="muted">Shared transactions, expenses and business mileage.</p></div><div class="actions"><button data-action="reports">Reports</button><button data-action="reload">Refresh records</button><button data-action="export" ${loadError ? 'disabled' : ''}>Export filtered CSV</button></div></header>
+      <section class="card" id="finance-correction" hidden></section>
+      <section class="alert" id="correction-pending" hidden><p>A Finance correction is awaiting confirmation. Retry this same correction to check its saved result.</p><button data-action="retry-correction">Check pending correction</button></section>
       ${reportPanel()}
       ${uncertain ? '<section class="alert"><p>The expense save was interrupted. Refresh and inspect recent transactions before entering it again.</p><button data-action="reviewed">I checked the records and this expense is missing</button></section>' : ''}
       <div class="two-col"><section class="card"><h2>Transactions</h2><div class="form-grid">
@@ -120,6 +126,7 @@
     document.querySelector('[name="report_half"]').value = reportHalf;
     renderReports();
     updateForm();
+    showCorrectionPending();
   }
   async function load() {
     loadError = '';
@@ -143,6 +150,7 @@
     catch { preview.textContent = mileage ? 'Enter total business miles, rate and trip purpose.' : 'Enter the purchase amount and business use percentage.'; }
   }
   app.addEventListener('input',event => {
+    if (event.target.closest('#correction-form')) { correctionDirty.add(event.target.name); previewCorrection(); return; }
     if (event.target.closest('#expense-form')) updateForm();
     if (event.target.name === 'search') { filters.search = event.target.value; renderTransactions(); }
   });
@@ -151,13 +159,15 @@
     if (event.target.name === 'report_half') { reportHalf = event.target.value; renderReports(); return; }
     if (event.target.name === 'filter_type') filters.type = event.target.value;
     if (event.target.name === 'filter_month') filters.month = event.target.value;
+    if (event.target.closest('#correction-form')) { correctionDirty.add(event.target.name); previewCorrection(); return; }
     if (event.target.closest('#expense-form')) updateForm();
     else renderTransactions();
   });
   app.addEventListener('submit',async event => {
+    if (event.target.id === 'correction-form') { event.preventDefault(); await saveCorrection(event.target); return; }
     if (event.target.id !== 'expense-form') return;
     event.preventDefault();
-    if (busy || uncertain || loadError) { notice('Refresh and review the financial records before saving.',true); return; }
+    if (busy || uncertain || correctionPending() || loadError) { notice('Refresh and review the financial records before saving.',true); return; }
     let saved = false;
     try {
       const payload = M.expense(Object.fromEntries(new FormData(event.target)));
@@ -176,6 +186,9 @@
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action || busy) return;
     try {
+      if (action === 'correct') { openCorrection(event.target.closest('[data-entry-id]').dataset.entryId); return; }
+      if (action === 'cancel-correction') { closeCorrection(); return; }
+      if (action === 'retry-correction') { await saveCorrection(null,true); return; }
       if (action === 'reports') { const panel = document.getElementById('finance-reports'); panel.open = true; panel.scrollIntoView({behavior:'smooth',block:'start'}); return; }
       if (action === 'export-months' || action === 'export-counties') {
         if (loadError) throw new Error('Refresh successfully before exporting.');
@@ -198,10 +211,88 @@
         if (loadError || !refreshedAfterUncertain) throw new Error('Refresh successfully and review recent entries before continuing.');
         cloud.financeReviewed(); uncertain = false; render(); return;
       }
-      if (action === 'reload') { busy = true; await load(); refreshedAfterUncertain = true; renderTransactions(); renderReports(); notice('Financial records refreshed.'); }
+      if (action === 'reload') { busy = true; closeCorrection(); await load(); refreshedAfterUncertain = true; renderTransactions(); renderReports(); notice('Financial records refreshed.'); }
     } catch (error) { notice(error.message,true); if (document.getElementById('finance-rows')) { renderTransactions(); renderReports(); } }
     finally { busy = false; }
   });
+  const fieldLabel = key => key.replaceAll('_',' ');
+  const displayValue = value => value == null || value === '' ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
+  function auditHistory(entry) {
+    const history = entry.correction_history || [];
+    return `<details><summary>Correction history · ${history.length}</summary><p class="muted">Original entry ${E(entry.original_entry_id || entry.id)}<br>Effective entry ${E(entry.effective_entry_id || entry.id)}</p>${history.map(item => `<article class="finance-entry"><strong>${E(item.reason)}</strong><p>${E(item.created_at)} · ${item.correction_kind === 'metadata_only' ? 'Details updated' : 'Reversal and replacement'}</p>${reportTable(['Field','Previous','Corrected'],Object.entries(item.changed_fields || {}).map(([key,value]) => `<tr><th scope="row">${E(fieldLabel(key))}</th><td>${E(displayValue(value.old))}</td><td>${E(displayValue(value.new))}</td></tr>`))}<p class="muted">Command ${E(item.command_identity)}<br>Audit entry ${E(item.metadata_entry_id || item.replacement_entry_id)}${item.reversal_entry_id ? `<br>Reversal ${E(item.reversal_entry_id)}` : ''}</p></article>`).join('') || '<p>No corrections recorded.</p>'}</details>`;
+  }
+  function showCorrectionPending() {
+    const pending = !!correctionPending();
+    const panel = document.getElementById('correction-pending');
+    if (panel) panel.hidden = !pending;
+    const save = document.querySelector('#expense-form button[type="submit"]');
+    if (save) save.disabled = pending || uncertain;
+  }
+  function closeCorrection() {
+    correcting = null; correctionDirty = new Set();
+    const panel = document.getElementById('finance-correction');
+    if (panel) { panel.hidden = true; panel.innerHTML = ''; }
+  }
+  function openCorrection(id) {
+    if (loadError || uncertain || correctionPending()) throw new Error('Refresh and resolve any pending save before correcting an entry.');
+    correcting = entries.find(entry => entry.id === id);
+    if (!correcting) throw new Error('Refresh to find this entry.');
+    correctionDirty = new Set();
+    const entry = Corrections.baseline(correcting), income = entry.type === 'income';
+    const number = (label,key,step='.01') => input(label,key,entry[key] ?? 0,'number',`min="0" step="${step}"`);
+    const text = (label,key,type='text') => input(label,key,entry[key] || '',type);
+    const check = (label,key) => `<label class="check full"><input name="${key}" type="checkbox" value="yes" ${entry[key] ? 'checked' : ''}>${label}</label>`;
+    const panel = document.getElementById('finance-correction'); panel.hidden = false;
+    panel.innerHTML = `<h2>Correct ${income ? 'income' : 'expense'}</h2><p>${E(correcting.title)} · ${E(correcting.order_number || '')}</p><p class="muted">Corrections preserve the original entry and require a reason. This updates accounting records. Manage customer pricing, invoices and payments in the order.</p>
+      <form id="correction-form" class="form-grid">
+      ${text('Date','entry_date','date')}${text('Description','title')}${text('Category','category')}${text('Tax reporting category','tax_category')}
+      ${text('Vendor','vendor_name')}${text('Payment method','payment_method')}${text('Receipt or supporting document link','receipt_link','url')}
+      <label class="full">Notes<textarea name="notes" maxlength="4000">${E(entry.notes || '')}</textarea></label>
+      ${income ? `${number('Products / services before tax ($)','amount')}${number('Shipping charged ($)','shipping_charged')}${text('Tax reporting county','sales_county')}${number('Recorded sales-tax rate (%)','sales_tax_rate')}${check('Tax-exempt sale','tax_exempt_sale')}${text('Exemption reason','tax_exempt_reason')}${check('Exemption certificate on file','exemption_certificate_on_file')}
+      <p class="muted full">The tax reporting county follows the applicable sourcing rule. A delivery-address change alone does not select a new county or rate. Enter the rate applicable to the sale date and explain any reallocation below. A rate change proposes recalculated recorded tax. If the customer actually paid a different tax amount, use Actual tax override and record any customer settlement separately.</p><p class="full">Current recorded sales tax · ${money(entry.sales_tax_collected)}</p>
+      <details class="full"><summary>Actual tax override</summary><label class="check"><input type="checkbox" name="overrideEnabled" value="yes">Record actual tax differing from calculated tax</label>${input('Actual tax ($)','overrideAmount',entry.sales_tax_collected || 0,'number','min="0" step=".01"')}${input('Tax override explanation','overrideReason','','text','maxlength="500"')}</details>
+      <details class="full"><summary>Recorded fulfillment and production costs</summary><div class="form-grid">${['shipping_cost','material_cost','packaging_cost','labor_cost','other_direct_cost'].map(key => number(`${fieldLabel(key)} ($)`,key)).join('')}</div></details>` : `${number('Full purchase amount ($)','original_amount')}${number('Business use (%)','business_use_percent')}
+      <details class="full" ${entry.category === 'Vehicle / Delivery Mileage' ? 'open' : ''}><summary>Mileage details — used for Vehicle / Delivery Mileage</summary><div class="form-grid">${number('Total business miles','miles_driven')}${number('Rate used ($ per mile)','mileage_rate','.0001')}${text('Trip purpose','trip_purpose')}${text('From','trip_from')}${text('To','trip_to')}${check('Round trip — total miles already include the return','round_trip')}</div></details>`}
+      <label class="full">Reason for correction<textarea name="reason" required minlength="3" maxlength="500"></textarea></label>
+      <div class="full" id="correction-review" role="status"></div>
+      <div class="actions full"><button class="primary" type="submit">Save audited correction</button><button type="button" data-action="cancel-correction">Cancel</button></div></form>`;
+    panel.scrollIntoView?.({behavior:'smooth',block:'start'}); previewCorrection();
+  }
+  function correctionValues(form) {
+    const values = Object.fromEntries(new FormData(form));
+    if (correcting?.type === 'expense' && correctionDirty.has('category') && !correctionDirty.has('tax_category') && Object.hasOwn(M.categories,values.category)) { values.tax_category = M.categories[values.category]; }
+    form.querySelectorAll('input[type="checkbox"]').forEach(input => { values[input.name] = input.checked; });
+    return values;
+  }
+  function proposalFields(values) {
+    return new Set([...correctionDirty,...(correcting.type === 'expense' && correctionDirty.has('category') && !correctionDirty.has('tax_category') && Object.hasOwn(M.categories,values.category) ? ['tax_category'] : [])]);
+  }
+  function previewCorrection() {
+    const form = document.getElementById('correction-form'); if (!form || !correcting) return;
+    if (correcting.type === 'expense') form.elements.original_amount.readOnly = form.elements.category.value.trim() === 'Vehicle / Delivery Mileage';
+    const review = document.getElementById('correction-review');
+    try {
+      const values = correctionValues(form);
+      const proposal = Corrections.prepare(correcting,{...values,reason:values.reason || 'Preview only'},proposalFields(values));
+      review.innerHTML = `<p>${proposal.kind === 'metadata_only' ? 'Details correction. Recorded amounts stay the same.' : 'Financial correction. The original is retained with a reversal and corrected replacement.'}</p>${reportTable(['Field','Current','Proposed'],proposal.changes.map(change => `<tr><th scope="row">${E(fieldLabel(change.field))}</th><td>${E(displayValue(change.old))}</td><td>${E(displayValue(change.new))}</td></tr>`))}`;
+    } catch (error) { review.textContent = error.message; }
+  }
+  async function saveCorrection(form,retry=false) {
+    if (busy) return;
+    let saved = false;
+    try {
+      if (loadError && !retry) throw new Error('Refresh successfully before correcting an entry.');
+      const values = retry ? null : correctionValues(form);
+      const proposal = retry ? null : Corrections.prepare(correcting,values,proposalFields(values));
+      busy = true; if (form) form.inert = true;
+      if (retry) await cloud.financeCorrectionRetry(); else await cloud.financeCorrect(proposal.params);
+      saved = true; closeCorrection(); await load(); renderTransactions(); renderReports();
+      notice('Finance correction saved. Reports and history now use the corrected entry.');
+    } catch (error) {
+      notice(saved ? 'Correction saved. Refresh records to load its history. Avoid entering it again.' : error.message,true);
+      if (loadError) { renderTransactions(); renderReports(); }
+    } finally { busy = false; if (form) form.inert = false; showCorrectionPending(); }
+  }
   function download(text, filename) {
     const url = URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));
     const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
