@@ -62,7 +62,7 @@
       return {signedIn: !!result.access_token, confirmationRequired: !result.access_token};
     }
     async function rpc(name, params = {}, publicCall = false, range) {
-      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry','ops_preview_settings_commit'];
+      const allowed = publicCall ? ['public_order_tracking_lookup'] : ['ops_preview_initialize', 'ops_preview_load', 'ops_preview_commit', 'ops_preview_history_lookup', 'ops_preview_history_with_documents', 'ops_preview_inventory_load', 'ops_preview_inventory_commit', 'get_effective_financial_entries', 'create_manual_financial_entry', 'correct_financial_entry','ops_preview_settings_commit','ops_preview_tax_load','ops_preview_tax_commit'];
       if (!allowed.includes(name)) throw new Error('Unsupported test workspace command.');
       return request(`/rest/v1/rpc/${name}`, params, publicCall ? undefined : await token(), range);
     }
@@ -145,7 +145,7 @@
       return retry();
     }
     async function settingsSave(settings, revision, reason) {
-      if (pending() || financePending() || financeCorrectionPending()) throw new Error('Resolve the pending save before changing settings.');
+      if (pending() || financePending() || financeCorrectionPending() || taxPending()) throw new Error('Resolve the pending save before changing settings.');
       if (!session?.user?.id) throw new Error('Sign in to the test project.');
       storage.setItem(pendingKey(), JSON.stringify({userId:session.user.id,kind:'settings',params:{p_settings:settings,p_expected_revision:revision,p_reason:reason,p_command_id:root.crypto.randomUUID()}}));
       return retry();
@@ -158,6 +158,7 @@
       return retry();
     }
     async function financeCreate(entry) {
+      if (taxPending()) throw new Error('Resolve the pending tax filing command first.');
       if (pending()) throw new Error('Resolve the pending workspace save before adding an expense.');
       if (financeCorrectionPending()) throw new Error('Resolve the pending Finance correction before continuing.');
       if (financePending()) throw new Error('Review the previous interrupted Finance save before continuing.');
@@ -184,7 +185,7 @@
       }
     }
     async function financeCorrect(params) {
-      if (pending() || financePending() || financeCorrectionPending()) throw new Error('Resolve the pending financial or workspace save before correcting an entry.');
+      if (pending() || financePending() || financeCorrectionPending() || taxPending()) throw new Error('Resolve the pending financial or workspace save before correcting an entry.');
       if (!session?.user?.id) throw new Error('Sign in to the test project.');
       const command = {userId:session.user.id,params:{...params,p_correlation_id:root.crypto.randomUUID()}};
       storage.setItem(financeCorrectionKey(), JSON.stringify(command));
@@ -204,7 +205,24 @@
       } while (page.length === 500);
       return [...entries.values()];
     }
+    const taxKey=()=>`olipoly.ops.test.${TEST_REF}.tax-command.${session?.user?.id||'signed-out'}`;
+    const taxPending=()=>read(taxKey());
+    async function taxRetry(){
+      const command=taxPending();
+      if(!command||command.userId!==session?.user?.id)throw Error('No pending tax command for this account.');
+      try{
+        const result=await rpc('ops_preview_tax_commit',command.params);
+        storage.removeItem(taxKey());return result;
+      }catch(error){if(!error.uncertain&&error.code!==401)storage.removeItem(taxKey());throw error;}
+    }
+    async function taxSave(params){
+      if(pending()||financePending()||financeCorrectionPending()||taxPending())throw Error('Resolve the pending save before recording tax history.');
+      if(!session?.user?.id)throw Error('Sign in to the test project.');
+      storage.setItem(taxKey(),JSON.stringify({userId:session.user.id,params:{...params,p_command_id:root.crypto.randomUUID()}}));
+      return taxRetry();
+    }
     return {auth, save, retry, pending, settingsSave,
+      taxLoad:()=>rpc('ops_preview_tax_load'),taxSave,taxRetry,taxPending,
       financeLoad, financeCreate,
       financeCorrect, financeCorrectionPending, financeCorrectionRetry,
       financePending, financeReviewed: () => storage.removeItem(financePendingKey()),

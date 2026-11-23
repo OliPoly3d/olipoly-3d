@@ -16,6 +16,7 @@
   let reportYear = Number(new Intl.DateTimeFormat('en',{year:'numeric',timeZone:'America/New_York'}).format(new Date()));
   let reportHalf = 'all', orders = [], ordersError = '', sharedSettings = null;
   const notice = (text, error = false) => { message.textContent = text; message.className = error ? 'alert error-live' : 'status-line error-live'; };
+  const filings=window.OliPolyTaxFilingsUI?.create({cloud,host:app,getEntries:()=>entries,ledgerError:()=>loadError,refresh:async()=>{await load();renderTransactions();renderReports();},notice});
   function input(label, name, value = '', type = 'text', extra = '') {
     return `<label>${label}<input name="${name}" type="${type}" value="${E(value)}" ${extra}></label>`;
   }
@@ -150,7 +151,7 @@
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">Your working studio</div><h1>Finance</h1><p class="muted">Shared transactions, expenses and business mileage.</p></div><div class="actions"><button data-action="reports">Reports</button><button data-action="reload">Refresh records</button><button data-action="export" ${loadError ? 'disabled' : ''}>Export filtered CSV</button></div></header>
       <section class="card" id="finance-correction" hidden></section>
       <section class="alert" id="correction-pending" hidden><p>A Finance correction is awaiting confirmation. Retry this same correction to check its saved result.</p><button data-action="retry-correction">Check pending correction</button></section>
-      ${reportPanel()}
+      ${reportPanel()}<section class="card finance-reports" id="tax-filings"></section>
       ${uncertain ? '<section class="alert"><p>The expense save was interrupted. Refresh and inspect recent transactions before entering it again.</p><button data-action="reviewed">I checked the records and this expense is missing</button></section>' : ''}
       <div class="two-col"><section class="card"><h2>Transactions</h2><div class="form-grid">
       ${input('Search description, vendor or OP number','search',filters.search,'search')}
@@ -160,6 +161,7 @@
     renderTransactions();
     document.querySelector('[name="report_half"]').value = reportHalf;
     renderReports();
+    filings?.render();
     updateForm();
     window.OliPolyOpsFinanceDefaults?.bind(document.getElementById('expense-form'),{kind:'mileage',rate:'mileage_rate',date:'entry_date',auto:true,initial:true,mileageMode:sharedSettings?.mileageMode,customRate:sharedSettings?.mileageRate});
     showCorrectionPending();
@@ -170,8 +172,9 @@
     sharedSettings = workspace.status === 'fulfilled' ? workspace.value.settings || null : null;
     ordersError = workspace.status === 'rejected' ? workspace.reason.message : '';
     orders = workspace.status === 'fulfilled' ? workspace.value.orders || [] : [];
-    if (ledger.status === 'rejected') { loadError = ledger.reason.message; throw ledger.reason; }
+    if (ledger.status === 'rejected') { loadError = ledger.reason.message; filings?.render(); throw ledger.reason; }
     entries = ledger.value.map(row => typeof row === 'string' ? JSON.parse(row) : row);
+    await filings?.load();
   }
   function updateForm() {
     const form = document.getElementById('expense-form');

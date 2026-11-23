@@ -74,10 +74,18 @@
     return {year,half,start:`${year}-${half === 'H2' ? '07' : '01'}-01`,end:`${year}-${half === 'H1' ? '06-30' : '12-31'}`};
   }
   function summarize(source, year, half = 'all', orders = []) {
-    const range = period(year,half);
+    return aggregate(source,period(year,half),orders);
+  }
+  function summarizeRange(source,start,end,orders = []) {
+    const valid = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value;
+    if (!valid(start) || !valid(end) || start>end || start.slice(0,4)!==end.slice(0,4)) throw Error('Choose a valid filing period within one calendar year.');
+    const range=period(Number(start.slice(0,4)),'all');
+    return aggregate(source,{...range,start,end,half:'custom'},orders);
+  }
+  function aggregate(source,range,orders) {
     const months = new Map(), counties = new Map(), categories = new Map(), expenses = [], mileage = [], total = bucket('Total'), warnings = [];
-    const firstMonth = half === 'H2' ? 7 : 1;
-    const lastMonth = half === 'H1' ? 6 : 12;
+    const firstMonth = Number(range.start.slice(5,7));
+    const lastMonth = Number(range.end.slice(5,7));
     for (let month = firstMonth; month <= lastMonth; month += 1) {
       const name = `${range.year}-${String(month).padStart(2,'0')}`;
       months.set(name,bucket(name));
@@ -130,7 +138,7 @@
     });
     return {period:range,total:dollars(total),months:[...months.values()].map(dollars),counties:[...counties.values()].sort((a,b) => a.name.localeCompare(b.name) || a.rate-b.rate).map(dollars),categories:[...categories.values()].sort((a,b)=>a.name.localeCompare(b.name) || a.group.localeCompare(b.group)).map(row=>({...row,amount:row.amount/100})),expenses,mileage,warnings:[...new Set(warnings)],unpostedOrders};
   }
-  const api = {summarize};
+  const api = {summarize,summarizeRange};
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.OliPolyOpsFinanceReports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
