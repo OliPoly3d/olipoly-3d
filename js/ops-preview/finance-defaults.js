@@ -57,10 +57,10 @@
     const panel = form.ownerDocument.createElement('div'); panel.className='muted full rate-guidance';
     const label = form.ownerDocument.createElement('p'), source = form.ownerDocument.createElement('a'), button = form.ownerDocument.createElement('button');
     source.target='_blank';source.rel='noopener noreferrer';source.textContent=options.kind==='mileage' ? 'IRS rate reference' : 'Ohio rate reference / The Finder';
-    button.type='button';button.textContent='Use standard rate';
+    button.type='button';button.textContent=options.mileageMode==='custom'?'Use saved default':'Use standard rate';
     panel.append(label,source,form.ownerDocument.createTextNode(' '),button); rateInput.closest('label').after(panel);
     const active = () => options.kind!=='mileage' || form.elements.category?.value==='Vehicle / Delivery Mileage';
-    const lookup = () => options.kind==='mileage' ? mileage(form.elements[options.date]?.value || '') : salesTax(form.elements[options.county]?.value,options.date ? form.elements[options.date]?.value : options.asOf || today(),options.exemptValue === true || form.elements[options.exempt]?.checked);
+    const lookup = () => options.kind==='mileage' ? (options.mileageMode==='custom' ? {rate:options.customRate,source:mileageSource,label:'Your saved business mileage default'} : mileage(form.elements[options.date]?.value || '')) : salesTax(form.elements[options.county]?.value,options.date ? form.elements[options.date]?.value : options.asOf || today(),options.exemptValue === true || form.elements[options.exempt]?.checked);
     function apply(suggestion) {
       if (suggestion.rate==null) return;
       rateInput.value=String(suggestion.rate);lastAuto=rateInput.value;overridden=false;
@@ -73,7 +73,7 @@
         rateInput.value='';lastAuto=null;internal=true;rateInput.dispatchEvent(new root.Event('input',{bubbles:true}));internal=false;
       }
       const matches=suggestion.rate!=null && rateInput.value!=='' && Number(rateInput.value)===suggestion.rate;
-      const status=matches ? 'Standard rate selected.' : rateInput.value!=='' ? 'Entered rate retained. Editable override.' : 'Enter a verified rate.';
+      const status=matches ? (options.mileageMode==='custom'?'Saved business default selected.':'Standard rate selected.') : rateInput.value!=='' ? 'Entered rate retained. Editable override.' : 'Enter a verified rate.';
       label.textContent=`${suggestion.label}${suggestion.rate==null ? '' : ` · ${options.kind==='mileage' ? '$'+suggestion.rate.toFixed(4)+'/mile' : suggestion.rate+'%'}`} ${status} Reference checked ${verifiedOn}.`;
     }
     form.addEventListener('input',event => {if (internal) return;if(event.target===rateInput){overridden=true;update();}});

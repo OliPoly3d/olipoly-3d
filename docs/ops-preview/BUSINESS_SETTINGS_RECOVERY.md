@@ -1,6 +1,6 @@
 # Shared business settings recovery checkpoint
 
-Prepared November 23, 2026 after the execution environment disconnected and recovery timed out. This branch is a recovery checkpoint, not a completed release or reviewable implementation. No settings migration has been applied, no settings PR has been merged, and no settings Site update has been published.
+Archived recovery checkpoint from November 23, 2026. The implementation was subsequently reconstructed and freshly verified; see BUSINESS_SETTINGS_REVIEW.md for the current migration, validation and release review. The historical notes below describe the interrupted working copy, not current release status.
 
 ## Durable base
 
