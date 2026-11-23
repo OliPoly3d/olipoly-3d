@@ -5,6 +5,15 @@ body[data-page="finance"] label, body[data-page="finance"] .muted { font-size: .
 .finance-entry p { margin: 6px 0; }
 .finance-entry summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
 .finance-entry .row { align-items: flex-start; }
+.finance-reports { margin-bottom: 24px; }
+.finance-reports > summary { cursor: pointer; min-height: 44px; font-weight: 600; font-size: 1.1rem; padding-bottom: 16px; }
+.finance-report-metrics { grid-template-columns: repeat(4,minmax(0,1fr)); margin: 24px 0; }
+.finance-report-scroll { overflow-x: auto; margin-bottom: 26px; }
+.finance-report-scroll table { min-width: 620px; }
+.finance-report-scroll th { font-size: .875rem; }
+.finance-report-scroll td { white-space: nowrap; }
+.finance-reports h3 { margin-top: 24px; }
 body[data-page="finance"] [hidden] { display: none !important; }
 @media(max-width:1050px) { body[data-page="finance"] .two-col { grid-template-columns: 1fr; } }
 @media(max-width:650px) { body[data-page="finance"] .nav { flex-wrap: wrap; } }
+@media(max-width:900px) { .finance-report-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
