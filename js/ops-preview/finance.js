@@ -35,7 +35,7 @@
         ${input('Total business miles','miles_driven','','number','min=".01" max="100000" step=".01"')}
         ${input('Rate used ($ per mile)','mileage_rate','','number','min=".0001" max="100" step=".0001"')}
         <div class="full">${input('Trip purpose','trip_purpose','','text','maxlength="180"')}</div>
-        ${input('From','trip_from','','text','maxlength="120"')}${input('To','trip_to','','text','maxlength="120"')}
+        ${input('From','trip_from',window.OliPolyOpsFinanceDefaults?.headquarters || '','text','maxlength="120"')}${input('To','trip_to','','text','maxlength="120"')}
         <label class="check full"><input type="checkbox" name="round_trip" value="yes"> Round trip</label>
         <p class="muted full">Enter total miles, including the return leg. The checkbox labels the trip. Enter the rate appropriate for its date.</p>
       </div>
@@ -126,6 +126,7 @@
     document.querySelector('[name="report_half"]').value = reportHalf;
     renderReports();
     updateForm();
+    window.OliPolyOpsFinanceDefaults?.bind(document.getElementById('expense-form'),{kind:'mileage',rate:'mileage_rate',date:'entry_date',auto:true,initial:true});
     showCorrectionPending();
   }
   async function load() {
@@ -256,6 +257,7 @@
       <label class="full">Reason for correction<textarea name="reason" required minlength="3" maxlength="500"></textarea></label>
       <div class="full" id="correction-review" role="status"></div>
       <div class="actions full"><button class="primary" type="submit">Save audited correction</button><button type="button" data-action="cancel-correction">Cancel</button></div></form>`;
+    window.OliPolyOpsFinanceDefaults?.bind(document.getElementById('correction-form'),income ? {kind:'tax',rate:'sales_tax_rate',date:'entry_date',county:'sales_county',exempt:'tax_exempt_sale',auto:false} : {kind:'mileage',rate:'mileage_rate',date:'entry_date',auto:false});
     panel.scrollIntoView?.({behavior:'smooth',block:'start'}); previewCorrection();
   }
   function correctionValues(form) {
