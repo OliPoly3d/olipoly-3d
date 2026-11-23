@@ -263,10 +263,10 @@
       ${select('Estimate based on', 'evidence', ['Idea / reference', 'Drawing', 'Completed model', 'Sliced file', 'Previous actual results'], order.evidence)}
       ${field('Payment terms', 'terms', order.terms)}${field('Quoted turnaround / delivery', 'turnaround', order.turnaround || '')}${field('Quote valid through', 'validUntil', order.validUntil || '', 'date')}${select('Prices entered', 'taxIncluded', [['yes', 'Include sample tax'], ['no', 'Before sample tax']], order.taxIncluded ? 'yes' : 'no')}
       ${field('Assumed handoff address for tax', 'taxAddress', order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
-      ${field('Sample Ohio county', 'county', order.county, 'text', 'required')}
-      ${field('Sample tax rate (%)', 'taxRate', order.taxRate, 'number', 'min="0" max="20" step=".01" required')}
+      ${field('Tax reporting county', 'county', order.county, 'text', 'required')}
+      ${field('Sales-tax rate (%)', 'taxRate', order.taxRate, 'number', 'min="0" max="20" step=".01" required')}
       <label class="check"><input type="checkbox" name="taxExempt" ${order.taxExempt ? 'checked' : ''}>Sample exemption scenario</label>
-      <p class="muted full">Use the pickup address or expected receiving address. Look up the county and rate in Ohio’s The Finder and enter them here. This test workspace does not verify the address or rate automatically.</p></div>
+      <p class="muted full">Confirm the tax sourcing location. Ohio vendor origin rules may apply; a receiving-address change alone does not change the tax county. The dated county-rate suggestion is editable. Verify exact locations and transit exceptions in Ohio’s The Finder.</p></div>
       <details ${order.depositTerms ? 'open' : ''}><summary>Optional deposit · individual orders</summary><div class="form-grid">
       ${field('Deposit amount','depositAmount',order.depositTerms?.amount || '', 'number','min="0" step=".01"')}
       ${field('When the deposit is due','depositDue',order.depositTerms?.due || '', 'text','maxlength="120"')}
@@ -582,11 +582,11 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
   function fulfillmentChoice(order) {
     const plan = order.shippingDraft || order.fulfillmentPlan;
     return `<section class="card"><h2>Fulfillment method</h2>
-      <p class="muted">Confirm how the customer will receive the order. Verify the Ohio county and rate for that address. Record customer approval for any price or tax change. Carrier shipping stays pending until you confirm the shipment details below.</p>
+      <p class="muted">Confirm how the customer will receive the order. Verify the tax sourcing location, Ohio reporting county and sale-date rate. Record customer approval for any price or tax change. Carrier shipping stays pending until you confirm the shipment details below.</p>
       <form class="form-grid" data-form="fulfillment_plan">
         ${select('Method', 'method', [['','Choose a method'],['pickup','Customer pickup'],['shipping','Carrier shipping'],['delivery','Local delivery']], plan?.method || '')}
         ${field('Handoff or receiving address', 'address', plan?.address || order.poReview?.shipTo || order.taxAddress || M.pickupAddress, 'text', 'required maxlength="500"')}
-        ${field('Ohio county', 'county', plan?.county || order.county, 'text', 'required maxlength="50"')}
+        ${field('Tax reporting county', 'county', plan?.county || order.county, 'text', 'required maxlength="50"')}
         ${field('Verified tax rate (%)', 'taxRate', plan?.totals.taxRate ?? order.taxRate, 'number', 'required min="0" max="20" step=".01"')}
         ${field('Customer fulfillment charge ($ before tax)', 'customerFee', plan?.totals.customerShipping || 0, 'number', 'required min="0" max="100000" step=".01"')}
         ${select('Discount or Adjustment', 'discountMode', [['none','None'],['round_down','Round down to a whole dollar'],['fixed','Fixed amount off items'],['percent','Percentage off items']], plan?.discountMode || 'none')}
@@ -736,6 +736,13 @@ Please reference ${M.projectIdentity(order).primary} in correspondence.`;
     app.innerHTML = `<header class="page-head"><div><div class="eyebrow">${projectLabel(order)} · ${escape(status(order))}</div><h1>${escape(order.title)}</h1><p class="muted">${escape(order.customer)} · ${escape(order.terms)}</p></div><a class="button" href="ops-preview.html${cloud ? '?database=test' : ''}">All work</a></header><nav class="tabs" aria-label="Order sections">${[['request', 'Request'], ['details', 'Quote builder'], ['quote', 'Customer quote'], ['production', 'Production'], ['pickup', 'Fulfillment'], ...(order.preset==='business' ? [['invoice','Invoice']] : []), ['money', 'Money'], ['receipt', 'Receipt']].map(([id, name]) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}">${name}</button>`).join('')}</nav>
       <div class="panel" data-panel="request" ${activeTab !== 'request' ? 'hidden' : ''}>${requestPanel(order)}</div><div class="panel quote" data-panel="quote" ${activeTab !== 'quote' ? 'hidden' : ''}>${quotePanel(order)}</div><div class="panel two-col" data-panel="details" ${activeTab !== 'details' ? 'hidden' : ''}><div>${detailPanel(order)}</div><aside class="stack"><div id="price-card">${priceCard(order)}</div><section class="card"><h3>About this sample</h3><p class="muted">The starting preset is editable. This workspace supports pickup, local delivery, and single-box shipping.</p></section></aside></div>
       <div class="panel stack" data-panel="production" ${activeTab !== 'production' ? 'hidden' : ''}>${productionPanel(order)}</div><div class="panel stack" data-panel="pickup" ${activeTab !== 'pickup' ? 'hidden' : ''}>${fulfillmentPanel(order)}</div><div class="panel invoice" data-panel="invoice" ${activeTab !== 'invoice' ? 'hidden' : ''}>${invoicePanel(order)}</div><div class="panel stack" data-panel="money" ${activeTab !== 'money' ? 'hidden' : ''}>${moneyPanel(order)}</div><div class="panel receipt" data-panel="receipt" ${activeTab !== 'receipt' ? 'hidden' : ''}>${receiptPanel(order)}</div>`;
+    bindRateDefaults();
+  }
+  function bindRateDefaults() {
+    const defaults=window.OliPolyOpsFinanceDefaults;
+    if (!defaults) return;
+    defaults.bind(document.getElementById('details-form'),{kind:'tax',rate:'taxRate',county:'county',exempt:'taxExempt',auto:true});
+    for (const type of ['po_review','fulfillment_plan']) defaults.bind(document.querySelector(`form[data-form="${type}"]`),{kind:'tax',rate:'taxRate',county:'county',auto:false,exemptValue:selectedOrder()?.taxExempt===true,asOf:selectedOrder()?.quoteOffer?.sentAt?.slice(0,10)});
   }
   function renderTracking() {
     const order = selectedOrder();
