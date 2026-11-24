@@ -19,22 +19,22 @@ test('generic event payments retain all existing methods without a lookup',()=>{
  assert.equal(page.calls(),0);assert.equal(page.node('.payment-landing').hidden,false);
 });
 test('order-specific payment options stay hidden while the lookup is pending',()=>{
- const page=setup('?order=OP-000010',[],{pending:true});
+ const page=setup('?order=OP-999981',[],{pending:true});
  assert.equal(page.calls(),1);assert.equal(page.node('.payment-landing').hidden,true);
  assert.match(html,/\.order-payment-loading \.payment-landing\{display:none!important\}/);
  assert.match(html,/\.pay-page \[hidden\]/);
 });
-test('a completed paid order shows the amount received and no payment methods',async()=>{
- const page=setup('?order=OP-000010',[{order_number:'OP-000010',payment_status:'paid',order_total:21.83,deposit_amount:0,balance_amount:0}]);
+test('a fictional completed paid order shows the amount received and no payment methods',async()=>{
+ const page=setup('?order=OP-999981',[{order_number:'OP-999981',payment_status:'paid',order_total:120.00,deposit_amount:0,balance_amount:0}]);
  await settle();
  assert.equal(page.node('.payment-landing').hidden,true);
- assert.equal(page.node('orderDepositDisplay').textContent,'$21.83');
+ assert.equal(page.node('orderDepositDisplay').textContent,'$120.00');
  assert.equal(page.node('orderBalanceDisplay').textContent,'$0.00');
  assert.equal(page.node('orderPayStatus').textContent,'Paid');
  assert.match(page.node('orderPayGuidance').innerHTML,/No additional payment/);
 });
 test('a positive unpaid balance keeps payment options and uses actual balance for received amount',async()=>{
- const page=setup('?order=OP-000204',[{order_number:'OP-000204',payment_status:'partial',order_total:100,deposit_amount:20,balance_amount:50,payment_link_stripe:'https://example.com/order-checkout'}]);
+ const page=setup('?order=OP-999982',[{order_number:'OP-999982',payment_status:'partial',order_total:100,deposit_amount:20,balance_amount:50,payment_link_stripe:'https://example.com/order-checkout'}]);
  await settle();
  assert.equal(page.node('.payment-landing').hidden,false);
  assert.equal(page.node('orderDepositDisplay').textContent,'$50.00');
@@ -42,8 +42,8 @@ test('a positive unpaid balance keeps payment options and uses actual balance fo
  assert.equal(page.node('a.cardpay').href,'https://example.com/order-checkout');
 });
 test('lookup failure, missing records and zero balances never reveal generic payment methods',async()=>{
- for(const [body,options] of [[[],{}],[{message:'Unavailable'},{fail:true}],[[{order_number:'OP-000204',payment_status:'unpaid',order_total:0,balance_amount:0}],{}]]){
-  const page=setup('?order=OP-000204',body,options);await settle();
+ for(const [body,options] of [[[],{}],[{message:'Unavailable'},{fail:true}],[[{order_number:'OP-999982',payment_status:'unpaid',order_total:0,balance_amount:0}],{}]]){
+  const page=setup('?order=OP-999982',body,options);await settle();
   assert.equal(page.node('.payment-landing').hidden,true);
  }
 });
