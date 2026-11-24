@@ -1,6 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Pay an Invoice | OliPoly</title><meta name="description" content="Review an OliPoly balance and access secure card, PayPal, or Venmo payment options."><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600&amp;display=swap" rel="stylesheet"><link href="assets/css/home-v1.css" rel="stylesheet"><link href="assets/css/rc2-customer-v1.css" rel="stylesheet"><link href="assets/css/utility-v1.css" rel="stylesheet"><link href="assets/css/rc3-editorial.css" rel="stylesheet"/>
 <link rel="canonical" href="https://olipoly3d.com/pay.html">
 <meta name="robots" content="noindex, follow">
+<style>.pay-page [hidden],.order-payment-loading .payment-landing{display:none!important}</style>
+<script>if(new URLSearchParams(location.search).get('order')||new URLSearchParams(location.search).get('q'))document.documentElement.classList.add('order-payment-loading');</script>
 </head><body class="utility-page pay-page"><a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header" data-header><a aria-label="OliPoly home" class="brand" href="index.html"><span class="brand__name">Oli<span>Poly</span></span><span class="brand__line">Thoughtful design for real life.</span></a><button aria-controls="site-menu" aria-expanded="false" aria-label="Open navigation" class="menu-word" data-menu-toggle type="button"><span data-menu-label>Menu</span><i aria-hidden="true">+</i></button></header>
 <div aria-hidden="true" class="menu-layer" data-menu id="site-menu"><div class="menu-layer__backdrop" data-menu-dismiss></div><div aria-label="Site navigation" aria-modal="true" class="menu-layer__panel" role="dialog"><div class="menu-layer__top"><span>Menu</span><button aria-label="Close navigation" class="menu-layer__close" data-menu-close type="button">Close <i aria-hidden="true">×</i></button></div><nav aria-label="Main navigation" class="menu-layer__nav"><a href="index.html"><span>01</span>Home</a><a href="collections.html"><span>02</span>Collections</a><a href="studio.html"><span>03</span>Studio</a><a href="creations.html"><span>04</span>Create</a><a href="collaboration.html"><span>05</span>Collaborate</a><a href="community.html"><span>06</span>Community</a><a href="about.html"><span>07</span>About</a><a href="faq.html"><span>08</span>FAQ</a></nav><div class="menu-layer__footer"><p>Have an idea in mind?</p><a href="start-project.html">Start a project <span aria-hidden="true">→</span></a></div></div></div><main id="main-content" class="utility-main">
@@ -14,6 +16,10 @@
   const params = new URLSearchParams(location.search);
   const rawOrder = params.get('order') || params.get('q');
   if(!rawOrder) return; // Generic event/in-person mode remains unchanged.
+
+  const paymentLanding=document.querySelector('.payment-landing');
+  paymentLanding.hidden=true;
+  document.documentElement.classList.remove('order-payment-loading');
 
   const SUPABASE_URL = 'https://llscjdyiiatmuqhilube.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_BD4Fm8NwC9k9-IibIpHPqQ_iiBQ1gti';
@@ -47,13 +53,15 @@
     const balance=status==='paid'?0:Math.max(0,Number(order.balance_amount ?? (total-deposit))||0);
     document.getElementById('orderPayTitle').textContent=`${order.order_number}${order.order_title ? ` — ${order.order_title}` : ''}`;
     document.getElementById('orderTotalDisplay').textContent=money(total);
-    document.getElementById('orderDepositDisplay').textContent=money(deposit);
+    document.getElementById('orderDepositDisplay').textContent=money(Math.max(0,total-balance));
     document.getElementById('orderBalanceDisplay').textContent=money(balance);
-    document.getElementById('orderPayStatus').textContent=status==='paid'?'Paid':'Payment Due';
-    document.getElementById('orderPayGuidance').innerHTML=status==='paid'
-      ? '<strong>This order is paid in full.</strong> No additional payment is currently due.'
-      : `<strong>Exact amount to enter: ${money(balance)}.</strong> Choose Card, PayPal, or Venmo below and include ${order.order_number} in the payment note when the processor allows it.`;
-    if(status==='paid') document.querySelector('.pay-card')?.setAttribute('hidden','');
+    const canPay=status!=='paid' && balance>0;
+    paymentLanding.hidden=!canPay;
+    document.getElementById('orderPayStatus').textContent=status==='paid'?'Paid':canPay?'Payment Due':'No payment due';
+    document.getElementById('orderPayGuidance').innerHTML=canPay
+      ? `<strong>Exact amount to enter: ${money(balance)}.</strong> Choose Card, PayPal, or Venmo below and include ${order.order_number} in the payment note when the processor allows it.`
+      : status==='paid' ? '<strong>This order is paid in full.</strong> No additional payment is currently due.'
+      : 'No additional payment is currently due.';
     const links={
       card:order.payment_link_stripe||order.payment_link||'',
       paypal:order.payment_link_paypal||'',
@@ -66,10 +74,11 @@
     document.getElementById('orderPayTitle').textContent=`Order ${orderNumber}`;
     document.getElementById('orderPayStatus').textContent='Unavailable';
     const box=document.getElementById('orderPayError'); box.textContent=error.message; box.classList.add('active');
-    document.getElementById('orderPayGuidance').textContent='You may still use the generic payment options below after confirming the amount directly with OliPoly 3D.';
+    document.getElementById('orderPayGuidance').textContent='Contact OliPoly to confirm this order and any amount due before making a payment.';
   });
 })();
 </script>
 <script defer="" src="assets/erp-upgrade.js"></script>
   <script src="assets/public-mobile.js" defer></script>
 </body></html>
+
