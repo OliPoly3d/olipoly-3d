@@ -15,8 +15,8 @@
 <section class="utility-contact"><div><p class="section-kicker">Need help?</p><h2>Questions about your order?</h2><p>Email your order number and we’ll help confirm the latest status.</p></div><a class="primary-action" href="mailto:OliPoly3D@gmail.com">Email OliPoly <span aria-hidden="true">→</span></a></section>
 </main><footer class="support-footer"><div class="support-footer__lead"><p class="support-footer__eyebrow">Support</p><h2>Here for the next step.</h2><p>Track an order, make a payment, find an answer, or begin something new.</p></div><div class="support-footer__groups"><div class="support-footer__group"><h3>Orders</h3><a href="track.html">Track an order</a><a href="pay.html">Pay an invoice</a></div><div class="support-footer__group"><h3>Projects</h3><a href="start-project.html">Start a project</a><a href="faq.html">Frequently asked questions</a><a href="events.html">Events</a><a href="community.html">Community</a></div><div class="support-footer__group"><h3>OliPoly</h3><a href="about.html">About the studio</a><a href="legal.html">Policies &amp; accessibility</a><a href="mailto:OliPoly3D@gmail.com">Email OliPoly</a></div></div><div class="support-footer__base"><span>© 2026 OliPoly 3D LLC</span><span>Aurora, Ohio</span></div></footer><script src="assets/js/home-v1.js"></script><script src="js/workflow-status.js?v=20260716-m2a"></script>
 <script>
-    const SUPABASE_URL = 'https://alffoktlwhpfothieude.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_z7kdHOnVhLgBpn0uXwd4GA_tXwWQx_Y';
+    const SUPABASE_URL = 'https://llscjdyiiatmuqhilube.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_BD4Fm8NwC9k9-IibIpHPqQ_iiBQ1gti';
 
     const $ = id => document.getElementById(id);
     const els = {
@@ -233,7 +233,7 @@ if(venmo && canShowPaymentButtons){
 
       const currency = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(value)||0);
       els.viewTotal.textContent = o.order_total != null ? currency(o.order_total) : '—';
-      document.getElementById('viewShippingCharge').textContent = o.shipping_deferred ? 'Not included yet — added at final invoice' : currency(o.shipping_charged || 0);
+      document.getElementById('viewShippingCharge').textContent = o.shipping_charged == null ? 'Included in recorded total' : o.shipping_deferred ? 'Not included yet — added at final invoice' : currency(o.shipping_charged || 0);
       const trackerBalance = o.payment_status === 'paid' ? 0 : Math.max(0, Number(o.balance_amount ?? ((Number(o.order_total)||0) - (Number(o.deposit_amount)||0))) || 0);
       els.viewBalance.textContent = o.order_total != null ? currency(trackerBalance) : '—';
       els.viewPublicStatus.textContent=o.public_status_text||'No public update yet.';
