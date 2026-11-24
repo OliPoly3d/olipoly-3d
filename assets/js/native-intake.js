@@ -23,7 +23,7 @@
       const endpoint=form.dataset.endpoint || '/api/intake';
       const response=await fetch(endpoint,{method:'POST',body:data,credentials:new URL(endpoint,location.href).origin===location.origin?'same-origin':'omit'});
       const result=await response.json();
-      if (!response.ok) throw Error(result.error || 'Unable to save the request.');
+      if (!response.ok) throw Object.assign(Error(result.error || 'Unable to save the request.'),{canEdit:result.canEdit===true});
       form.hidden=true;
       const heading=document.createElement('h2');heading.textContent=`Request ${result.reference} received.`;
       const detail=document.createElement('p');detail.textContent='Your details are saved. OliPoly will review the request and follow up by email.';
@@ -31,10 +31,11 @@
       output.replaceChildren(heading,detail,link);
       sessionStorage.removeItem(key);
     } catch(error) {
-      output.textContent=`${error.message} Your original details and files are preserved in this tab. Retry this request using the same details. Email OliPoly if you need to change an interrupted request.`;
+      output.textContent=error.canEdit ? `${error.message} Correct the form and submit again.` : `${error.message} Your original details and files are preserved in this tab. Retry this request using the same details. Email OliPoly if you need to change an interrupted request.`;
       form.inert=false;
-      form.querySelectorAll('input,select,textarea').forEach(field=>{field.disabled=true;});
-      form.querySelector('[type="submit"]').textContent='Retry this request';
+      form.querySelectorAll('input,select,textarea').forEach(field=>{field.disabled=!error.canEdit;});
+      form.querySelector('[type="submit"]').textContent=error.canEdit?'Send project request':'Retry this request';
+      if(error.canEdit) {originalData=null;attempted=false;}
     }
   });
 })();
