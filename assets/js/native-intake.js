@@ -8,7 +8,7 @@
   sessionStorage.setItem(key,submissionId);
   form.addEventListener('input',()=>{
     if (attempted) {
-      output.textContent='Retry the saved submission with the original details. Start a new request after verifying an interrupted submission in ERP Test.';
+      output.textContent='A previous attempt is awaiting confirmation. Retry the original request, or email OliPoly if you need to change it.';
     }
   });
   form.addEventListener('submit',async event=>{
